@@ -16,11 +16,14 @@ after the first public release.
 - **`relations[].speech` on a character card records how they speak to that person.** "반말", "존댓말" or "누나라 부르며 존댓말" switches the per-character dialogue polish between formal and informal speech by listener, and the review applies the same rule. (#88)
 - **Each character receives what it knows.** The witness tags in the story-state ledger select, per character, what it experienced or learned before this scene, and the skeleton and the dialogue polish carry it in the character block as `[아는 것 — 이 장면 이전]`. The knowledge-boundary instruction is back in the skeleton prompt. (#88)
 - **Section expansion receives the background card's facts.** Time, weather, description and senses go to every expansion call as `[공간 사실]`, so a defined space no longer collapses into a generic house or street. (#88)
+- **The dialogue polish receives the ledger's relation changes.** A relation that changed in an earlier scene ("they now speak informally") arrives as `[관계 변화 — 이 장면 이전]`, and where it disagrees with the card's per-listener speech the change wins. (#88)
+- **A beat cast entry that matches no character is reported.** A `cast` value that is no character card's id, name or alias becomes a draft warning at generation and a `비트 출연` warning in `doctor`. (#88)
 
 ### Changed (structure track)
 
-- **Dialogue polish is now one call per character.** The skeleton's lines are numbered, and each call receives only that character's persona, catchphrases, voice samples, knowledge and speech rules and returns its own lines by number. When two characters claim the same line the skeleton wins, with a warning. The stage makes one call per character instead of one in all; the task name (`sceneDialoguePolish`) and its routing are unchanged. (#88)
-- **Story-state facts carry their witnesses.** `storyStateUpdate` tags facts and reveals with the names of the characters present, and the engine maps them to card ids. Untagged items fall back to the whole cast, as before. (#88)
+- **Dialogue polish is now one call per character.** The skeleton's lines are numbered, and each call receives only that character's persona, catchphrases, voice samples, knowledge and speech rules and returns its own lines by number. When two characters claim the same line the skeleton wins, with a warning. Validation is per character too: only a character whose rewrite failed is asked again, with the reasons, and one that still fails keeps its skeleton lines. A response cut at the output limit is a warning, and the number of lines touched is logged. The stage makes one call per character instead of one in all; the task name (`sceneDialoguePolish`) and its routing are unchanged. (#88)
+- **Story-state facts carry their witnesses.** `storyStateUpdate` tags facts and reveals with the names of the characters present (compact models included), and the engine maps them to card ids. An item with no tag, or with any name no card answers to, falls back to the whole cast as before, and the unknown names are logged as a warning. (#88)
+- Changing a character card's `relations[].speech` now invalidates the draft cache of the scenes that character is in. Works that set no speech keep their cache. (#88)
 - The pre-skeleton beat-by-beat persona dialogue prompt (`personaDialogue`) is gone. Its task name stays so old usage ledgers still read.
 
 ### Added
