@@ -24,6 +24,17 @@ const kindByField: Readonly<Record<NoteConsolidatedField, ListKind>> = {
   senses: 'sense',
 };
 
+// 경고는 작가가 읽으므로 칸 이름을 한국어로 쓰고, 카드 파일에서 찾을 수 있게 키를 괄호로 붙인다.
+const labelByField: Readonly<Record<NoteConsolidatedField, string>> = {
+  aliases: '다른 이름',
+  traits: '성격',
+  tags: '태그',
+  description: '소개',
+  voice: '말투',
+  desire: '바라는 것',
+  senses: '감각',
+};
+
 const fieldByKind = new Map(
   Object.entries(kindByField).map(([field, kind]) => [kind, field as NoteConsolidatedField]),
 );
@@ -411,7 +422,7 @@ function describeConflicts(
 ): string[] {
   return (answer.conflicts ?? []).map(
     (conflict) =>
-      `${target.name} 의 ${conflict.field} 후보가 서로 맞지 않습니다: ${conflict.items
+      `${target.name} 의 ${labelByField[conflict.field]}(${conflict.field}) 후보가 서로 맞지 않습니다: ${conflict.items
         .map((item) => `«${item}»`)
         .join(' / ')}. 둘 다 남겼으니 카드를 확인해 하나를 지우세요.`,
   );
