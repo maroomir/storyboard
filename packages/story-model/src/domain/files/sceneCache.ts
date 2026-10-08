@@ -166,6 +166,10 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       desire: joinCardText(character.desire),
       attributes: formatCardAttributes(character.attributes),
       recentDialogues: character.recentDialogues ?? [],
+      // NOTE: 입버릇이 없는 카드는 키를 넣지 않아 입버릇 도입 전에 만든 초안의 해시가 그대로 맞는다.
+      ...(character.catchphrases && character.catchphrases.length > 0
+        ? { catchphrases: character.catchphrases }
+        : {}),
     })),
     background: input.background
       ? {
