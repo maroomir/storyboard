@@ -1,5 +1,4 @@
 import type {
-  SceneGrounding,
   StyleDirective,
   AiProviderId,
   ReasoningEffort,
@@ -14,7 +13,6 @@ export interface GenerateTextOptions {
   readonly reasoningEffort?: ReasoningEffort;
   readonly attribution?: UsageAttribution;
   readonly styleDirective?: StyleDirective;
-  readonly sceneGrounding?: SceneGrounding;
 }
 
 export type OnUsageRecordCallback = (record: UsageRecord) => void;
