@@ -12,6 +12,7 @@ import {
   isDirectSceneCardFile,
   computeSceneInputHash,
   sceneNarrationHashInput,
+  findUnknownBeatCast,
 } from '@storyboard/story-model';
 import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
 import type {
@@ -363,9 +364,14 @@ async function loadSceneContextBundle(
     characterRelations: narrativeContext.characterRelations,
     sceneBreakJoiner,
     inputHash,
-    warnings: [memoryAudit.staleWarning, chapterAudit.staleWarning].filter(
-      (warning): warning is string => warning !== undefined,
-    ),
+    warnings: [
+      memoryAudit.staleWarning,
+      chapterAudit.staleWarning,
+      ...findUnknownBeatCast(scene.card?.beats, context.characters).map(
+        ({ beat, ref }) =>
+          `비트 ${beat}의 출연 «${ref}»이(가) 이 씬의 인물 카드와 맞지 않아 그대로 프롬프트에 실렸습니다`,
+      ),
+    ].filter((warning): warning is string => warning !== undefined),
     threadPaths: thread.threadPaths,
     threadId: thread.threadId,
     narration,

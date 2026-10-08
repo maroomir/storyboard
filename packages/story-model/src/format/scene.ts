@@ -51,6 +51,32 @@ export function sceneBeatTexts(beats: readonly SceneBeat[] | undefined): string[
   return (beats ?? []).map(sceneBeatText);
 }
 
+// 비트 좌표의 출연 중 어느 인물 카드의 id·이름·별칭과도 맞지 않는 것. 그런 출연은 이름으로 바뀌지
+// 못한 채 프롬프트에 그대로 실린다. beat 는 1부터 센다.
+export interface UnknownBeatCast {
+  readonly beat: number;
+  readonly ref: string;
+}
+
+export function findUnknownBeatCast(
+  beats: readonly SceneBeat[] | undefined,
+  characters: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly aliases?: readonly string[];
+  }[],
+): UnknownBeatCast[] {
+  const known = new Set(
+    characters.flatMap((character) => [character.id, character.name, ...(character.aliases ?? [])]),
+  );
+
+  return (beats ?? []).flatMap((beat, index) =>
+    typeof beat === 'string'
+      ? []
+      : (beat.cast ?? []).filter((ref) => !known.has(ref)).map((ref) => ({ beat: index + 1, ref })),
+  );
+}
+
 export const sceneBeatCoordinateLabels = { cast: '출연', place: '장소', time: '시각' } as const;
 
 // 좌표는 사건 줄 아래 괄호 한 줄로 붙는다. 빈 줄이 없어야 사건 재료 분할에서 한 블록으로 남는다.

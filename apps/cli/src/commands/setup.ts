@@ -12,6 +12,7 @@ import {
   type AiProviderId,
   type AiTaskName,
   formatSceneOrderRanges,
+  findUnknownBeatCast,
   findUnreadableStoryStateLines,
   flattenChapterPlan,
   mainThreadId,
@@ -698,7 +699,47 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
         : { fix: 'storyboard scene seed  또는  storyboard scene create --name <이름>' }),
     },
     ...(await collectNarrationChecks(container, sceneCards)),
+    ...(await collectBeatCastChecks(container, sceneCards)),
   ];
+}
+
+// NOTE: 비트 좌표의 출연이 어느 인물 카드와도 맞지 않으면 이름으로 바뀌지 못하고 id·오타 그대로
+// 프롬프트에 실린다. 생성 때도 경고하지만 장편은 그 씬에 닿기까지 오래 걸리므로 미리 본다.
+async function collectBeatCastChecks(
+  container: CliContainer,
+  sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
+): Promise<DoctorCheck[]> {
+  const hasCast = sceneCards.some(({ card }) =>
+    (card.beats ?? []).some((beat) => typeof beat !== 'string' && (beat.cast?.length ?? 0) > 0),
+  );
+  if (!hasCast) {
+    return [];
+  }
+
+  const summaries = await container.cards.list(container.workspaceRoot, 'character');
+  const characters: { id: string; name: string; aliases: readonly string[] }[] = [];
+  for (const summary of summaries) {
+    const reading = await container.cards.read(container.workspaceRoot, summary.id);
+    const aliases = reading?.card.type === 'character' ? (reading.card.aliases ?? []) : [];
+    characters.push({ id: summary.id, name: summary.name, aliases });
+  }
+
+  const unknown = sceneCards.flatMap(({ fileName, card }) =>
+    findUnknownBeatCast(card.beats, characters).map(
+      ({ beat, ref }) => `${fileName.replace(/\.card$/, '')} 비트 ${beat}: ${ref}`,
+    ),
+  );
+
+  return unknown.length === 0
+    ? []
+    : [
+        {
+          status: 'warn',
+          label: '비트 출연',
+          detail: `인물 카드의 id·이름·별칭과 맞지 않는 출연이 있습니다 (${unknown.join(', ')}). 이름으로 바뀌지 않고 그대로 프롬프트에 실립니다.`,
+          fix: 'storyboard card list character',
+        },
+      ];
 }
 
 // The author's resource files (prompts, the craft contract, the pipeline specs, …) are read at every
