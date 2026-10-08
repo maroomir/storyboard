@@ -12,8 +12,9 @@ maxTokens: 900
 어느 항목에서도 본문의 대사를 따옴표로 옮기지 마라. 무슨 말이 오갔는지는 사실로 풀어 써라. 원문을 남기면 다음 장면이 같은 대사를 그대로 다시 쓴다.
 본문에 실제로 쓰인 것만 담고 추측하지 마라. 이전 상태에 이미 있는 항목은 다시 쓰지 마라.
 각 항목은 한 문장으로 짧게 쓰고, 항목 수는 종류당 최대 5개로 제한하라.
+facts 와 revealed 의 항목은 {"text":"…","witnesses":["이름",…]} 꼴로 적어라. witnesses 는 그 일이 벌어지는 자리에 있었거나 그것을 알게 된 인물의 이름이다. 그 자리에 없던 인물은 넣지 마라. 장면의 모든 인물이 아는 일이면 witnesses 를 생략해도 된다.
 설명 없이 JSON 객체만 출력하라.
-{"facts":string[],"relations":string[],"revealed":string[],"motifs":string[]}
+{"facts":[{"text":"","witnesses":[""]}],"relations":string[],"revealed":[{"text":"","witnesses":[""]}],"motifs":string[]}
 
 ## system:xs
 장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[],"relations":[],"revealed":[],"motifs":[]}. 본문 근거만, 한국어. 대사 원문 인용 금지.

@@ -11,6 +11,30 @@ export type StoryStateUpdateSection = (typeof storyStateUpdateSections)[number];
 export interface StoryStateUpdateItem {
   readonly section: StoryStateUpdateSection;
   readonly text: string;
+  // 그 사실이 확립되는 자리에 있었거나 그것을 알게 된 인물의 이름. 없으면 그 씬의 모든 인물이다.
+  readonly witnesses?: readonly string[];
+}
+
+const taggedItemSchema = z.object({
+  text: z.string(),
+  witnesses: z.array(z.unknown()).optional(),
+});
+
+function readTaggedItem(item: unknown): { text: string; witnesses?: string[] } | undefined {
+  if (typeof item === 'string') {
+    return { text: item.trim() };
+  }
+
+  const tagged = taggedItemSchema.safeParse(item);
+  if (!tagged.success) {
+    return undefined;
+  }
+
+  const witnesses = (tagged.data.witnesses ?? [])
+    .flatMap((name) => (typeof name === 'string' ? [name.trim()] : []))
+    .filter((name) => name.length > 0);
+
+  return { text: tagged.data.text.trim(), ...(witnesses.length > 0 ? { witnesses } : {}) };
 }
 
 const sectionListSchema = z.array(z.unknown()).optional();
@@ -27,10 +51,17 @@ function coerceSectionItems(
   }
 
   return parsed.data
-    .flatMap((item) => (typeof item === 'string' ? [item.trim()] : []))
-    .filter((text) => text.length > 0 && !hasForeignScript(text))
+    .flatMap((item) => {
+      const tagged = readTaggedItem(item);
+      return tagged === undefined ? [] : [tagged];
+    })
+    .filter((item) => item.text.length > 0 && !hasForeignScript(item.text))
     .slice(0, maxItemsPerSection)
-    .map((text) => ({ section, text: text.slice(0, maxItemLength) }));
+    .map((item) => ({
+      section,
+      text: item.text.slice(0, maxItemLength),
+      ...(item.witnesses === undefined ? {} : { witnesses: item.witnesses }),
+    }));
 }
 
 export function coerceStoryStateUpdate(rawText: string): StoryStateUpdateItem[] {

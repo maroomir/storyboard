@@ -11,17 +11,40 @@ import type { StoryStateUpdateItem } from '@storyboard/story-model';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 
-// NOTE: 목격자는 그 씬에 있던 인물이다. 목격 범위 서술자가 자기가 없던 자리의 사실을 아는 것을
-// 막으려면, 사실이 확립되는 자리에서 누가 그 자리에 있었는지를 남겨 두어야 한다.
-function toStoryStateEntries(
+// NOTE: 목격자는 그 사실이 확립되는 자리에 있던 인물이다. 목격 범위 서술자가 자기가 없던 자리의
+// 사실을 아는 것을 막으려면 누가 그 자리에 있었는지를 남겨 두어야 한다. 모델이 항목마다 이름을
+// 달아 주면 그것을 카드 id로 옮기고, 달지 않았거나 아는 이름이 하나도 없으면 씬의 모든 인물이다 —
+// 한 씬 안에서 인물마다 아는 것이 갈리는 것은 그 태그가 있을 때만이다.
+export function toStoryStateEntries(
   items: readonly StoryStateUpdateItem[],
-  witnesses: readonly string[],
+  characters: readonly { readonly id: string; readonly name: string; readonly aliases?: readonly string[] }[],
 ): StoryStateEntry[] {
-  return items.map((item) => ({
-    section: item.section,
-    text: item.text,
-    ...(witnesses.length > 0 ? { witnesses } : {}),
-  }));
+  const everyone = characters.map((character) => character.id);
+  const idByName = new Map<string, string>();
+  for (const character of characters) {
+    idByName.set(character.name, character.id);
+    for (const alias of character.aliases ?? []) {
+      idByName.set(alias, character.id);
+    }
+  }
+
+  return items.map((item) => {
+    const tagged = [
+      ...new Set(
+        (item.witnesses ?? []).flatMap((name) => {
+          const id = idByName.get(name);
+          return id === undefined ? [] : [id];
+        }),
+      ),
+    ];
+    const witnesses = tagged.length > 0 ? tagged : everyone;
+
+    return {
+      section: item.section,
+      text: item.text,
+      ...(witnesses.length > 0 ? { witnesses } : {}),
+    };
+  });
 }
 
 // NOTE: 다음 씬 생성이 이 원장을 읽으므로 백그라운드 큐가 아니라 저장 경로에서 await 한다.
@@ -48,13 +71,12 @@ export async function updateStoryStateAfterGeneration(
       },
     );
 
-    const witnesses = context.characters.map((character) => character.id);
     const merged =
       items.length === 0
         ? recordStoryStateScene(previous, scene.order, inputHash)
         : mergeStoryState(
             previous,
-            toStoryStateEntries(items, witnesses),
+            toStoryStateEntries(items, context.characters),
             scene.order,
             inputHash,
           );
