@@ -1,0 +1,66 @@
+{
+  "sceneStem": "02-sc-1-2",
+  "bodyHash": "sha256:ddb531a084af198a9a9485d7962984cd1216ef90bb9919de2b735b0376982eb3",
+  "turns": [
+    {
+      "index": 1,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 2,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 둘입니다."
+    },
+    {
+      "index": 3,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 4,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 둘입니다."
+    },
+    {
+      "index": 5,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 6,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 둘입니다."
+    },
+    {
+      "index": 7,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 8,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 둘입니다."
+    },
+    {
+      "index": 9,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 10,
+      "speaker": "unknown",
+      "text": "다듬은 다듬은 모의 대사 둘입니다."
+    },
+    {
+      "index": 11,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 12,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 둘입니다."
+    }
+  ]
+}

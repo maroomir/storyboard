@@ -31,6 +31,36 @@ describe("MockAiProvider", () => {
     expect(response.text).toContain("엘리아가 학교에 도착했다.")
   })
 
+  it("ends the skeleton with dialogue so the polish has lines to number", async () => {
+    const response = await new MockAiProvider().generate({
+      taskName: "sceneSkeleton",
+      messages: [{ role: "user", content: "[이 장면의 사건]\n둘이 만난다" }]
+    })
+
+    expect(response.text).toMatch(/“[^”]+”/)
+  })
+
+  it("splits the numbered lines between the characters of a polish, never claiming one twice", async () => {
+    const provider = new MockAiProvider()
+    const skeleton = "[뼈대]\n⟨1⟩“가자.” ⟨2⟩“싫어.” ⟨3⟩“왜?”"
+    const polishFor = async (self: string, others: string) =>
+      JSON.parse(
+        (
+          await provider.generate({
+            taskName: "sceneDialoguePolish",
+            messages: [{ role: "user", content: `[이 인물]\n${self}\n\n[다른 등장 인물]\n${others}\n\n${skeleton}` }]
+          })
+        ).text
+      ) as { n: number; text: string }[]
+
+    const hana = await polishFor("하나", "준")
+    const jun = await polishFor("준", "하나")
+
+    // 이름순(준, 하나)으로 번호를 돌아가며 가진다.
+    expect(jun).toEqual([{ n: 1, text: "다듬은 가자." }, { n: 3, text: "다듬은 왜?" }])
+    expect(hana).toEqual([{ n: 2, text: "다듬은 싫어." }])
+  })
+
   it("returns valid JSON for situation extraction so the draft pipeline works with the default provider", async () => {
     const provider = new MockAiProvider()
 
