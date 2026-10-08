@@ -14,6 +14,7 @@ import {
   writePersonaMemoryFile,
   writeSceneDialogueFile,
 } from '@storyboard/story-model';
+import { promptResourceFingerprint } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type {
@@ -65,6 +66,10 @@ export function createPersonaMemoryStore(
   paths: StoryboardProjectPaths,
   sceneStem: string,
 ): IPersonaMemoryStore {
+  // NOTE: 페르소나는 personaGeneration 프롬프트의 산출물이다. 그 문구(작가의 덮어쓰기 포함)를 키에
+  // 넣어야 프롬프트를 고친 뒤에도 옛 문구로 만든 페르소나가 재사용되지 않는다.
+  const promptFingerprint = promptResourceFingerprint('personaGeneration');
+
   return {
     async load(card: CharacterCard): Promise<string | undefined> {
       const uri = personaMemoryFilePath(paths, card.id);
@@ -76,7 +81,7 @@ export function createPersonaMemoryStore(
       try {
         const record = await readPersonaMemoryFile(uri, fs);
         const isReusable =
-          record.cardHash === computePersonaCardHash(card) &&
+          record.cardHash === computePersonaCardHash(card, promptFingerprint) &&
           !isMemoryAheadOfScene(record.updatedThroughScene, sceneStem);
 
         return isReusable ? record.persona : undefined;
@@ -90,7 +95,7 @@ export function createPersonaMemoryStore(
         cardId: card.id,
         persona,
         updatedThroughScene: sceneStem,
-        cardHash: computePersonaCardHash(card),
+        cardHash: computePersonaCardHash(card, promptFingerprint),
       });
     },
   };

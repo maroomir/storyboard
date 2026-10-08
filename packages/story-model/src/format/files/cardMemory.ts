@@ -55,8 +55,10 @@ export function parseBackgroundMemory(rawMemory: string): BackgroundMemoryRecord
   return backgroundMemoryRecordSchema.parse(JSON.parse(rawMemory));
 }
 
-export function computePersonaCardHash(card: CharacterCard): string {
+// promptFingerprint 는 페르소나를 만든 프롬프트의 문구다. 문구가 바뀌면 같은 카드라도 다시 만든다.
+export function computePersonaCardHash(card: CharacterCard, promptFingerprint: string): string {
   const digestSource = {
+    prompt: promptFingerprint,
     id: card.id,
     name: card.name,
     role: card.role,

@@ -205,6 +205,14 @@ class PromptResourceStore {
 
 export const promptResources = new PromptResourceStore();
 
+// The text in force for a prompt, bundled or the author's, as one stable string. A cache of what the
+// prompt produced keys on it so a reworded prompt does not keep serving the old wording's output.
+export function promptResourceFingerprint(key: string): string {
+  const resource = promptResources.get(key);
+
+  return JSON.stringify({ config: resource.config ?? null, sections: [...resource.sections] });
+}
+
 export function promptResourceKeys(): readonly string[] {
   return Object.keys(promptResourceSources);
 }

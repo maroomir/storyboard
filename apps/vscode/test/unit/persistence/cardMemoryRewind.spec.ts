@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
 import { createBackgroundMemoryStore, createPersonaMemoryStore } from '@storyboard/story-engine';
+import { promptResourceFingerprint, promptResources } from '@storyboard/story-ai';
 import {
   getStoryboardProjectPaths,
   computeBackgroundCardHash,
@@ -85,7 +86,7 @@ describe('card memory rewind', () => {
         cardId: 'elia',
         persona: '저장된 페르소나',
         updatedThroughScene,
-        cardHash: computePersonaCardHash(character),
+        cardHash: computePersonaCardHash(character, promptResourceFingerprint('personaGeneration')),
       }),
     );
   };
@@ -136,6 +137,22 @@ describe('card memory rewind', () => {
     const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
 
     expect(await store.load(character)).toBe('저장된 페르소나');
+  });
+
+  it('drops a persona made with a persona prompt that has since been reworded', async () => {
+    writePersona('04-fourth');
+    promptResources.override(
+      'personaGeneration',
+      '---\ntemperature: 0.7\nmaxTokens: 500\n---\n## system\n고친 문구\n\n## user\n{{name}}\n',
+    );
+
+    try {
+      const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
+
+      expect(await store.load(character)).toBeUndefined();
+    } finally {
+      promptResources.clearOverrides();
+    }
   });
 
   it('rewinds background atmosphere on the same rule', async () => {
