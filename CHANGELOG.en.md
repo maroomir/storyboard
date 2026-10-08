@@ -10,6 +10,19 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added (structure track)
+
+- **Scene beats can carry coordinates.** Written as an object with `text`, `cast` (card ids or names), `place` and `time` instead of a string, a beat tells the skeleton who is present and where and when it happens. String beats read as before. (#88)
+- **`relations[].speech` on a character card records how they speak to that person.** "반말", "존댓말" or "누나라 부르며 존댓말" switches the per-character dialogue polish between formal and informal speech by listener, and the review applies the same rule. (#88)
+- **Each character receives what it knows.** The witness tags in the story-state ledger select, per character, what it experienced or learned before this scene, and the skeleton and the dialogue polish carry it in the character block as `[아는 것 — 이 장면 이전]`. The knowledge-boundary instruction is back in the skeleton prompt. (#88)
+- **Section expansion receives the background card's facts.** Time, weather, description and senses go to every expansion call as `[공간 사실]`, so a defined space no longer collapses into a generic house or street. (#88)
+
+### Changed (structure track)
+
+- **Dialogue polish is now one call per character.** The skeleton's lines are numbered, and each call receives only that character's persona, catchphrases, voice samples, knowledge and speech rules and returns its own lines by number. When two characters claim the same line the skeleton wins, with a warning. The stage makes one call per character instead of one in all; the task name (`sceneDialoguePolish`) and its routing are unchanged. (#88)
+- **Story-state facts carry their witnesses.** `storyStateUpdate` tags facts and reveals with the names of the characters present, and the engine maps them to card ids. Untagged items fall back to the whole cast, as before. (#88)
+- The pre-skeleton beat-by-beat persona dialogue prompt (`personaDialogue`) is gone. Its task name stays so old usage ledgers still read.
+
 ### Added
 
 - **Character cards have `catchphrases`.** Sample lines under `voice` describe how someone talks, so the prompts refuse to copy them; a catchphrase or running gag is material that must repeat. Put it under `catchphrases` and the skeleton and the dialogue polish use it again and again, and the repeat limit and the review leave it alone. The VSCode card editor and the desktop story bible have a field for it. (#88)
