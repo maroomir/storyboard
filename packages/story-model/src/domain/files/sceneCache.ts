@@ -149,6 +149,10 @@ function hasNarrationInput(narration: SceneNarrationHashInput | undefined): bool
   );
 }
 
+function hasRelationSpeech(relations: CharacterCard['relations']): boolean {
+  return (relations ?? []).some((relation) => relation.speech !== undefined);
+}
+
 export function computeSceneInputHash(input: SceneInputHashInput): string {
   // NOTE: A draft cache hit skips the whole generation pipeline (incl. persona/background
   // regen), so every card field that reaches a generation prompt must be digested here or
@@ -169,6 +173,15 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       // NOTE: 입버릇이 없는 카드는 키를 넣지 않아 입버릇 도입 전에 만든 초안의 해시가 그대로 맞는다.
       ...(character.catchphrases && character.catchphrases.length > 0
         ? { catchphrases: character.catchphrases }
+        : {}),
+      // NOTE: 상대별 말투는 다듬기·감수 프롬프트에 실린다. 적은 것이 없으면 키를 넣지 않아 그 전에
+      // 만든 초안의 해시가 그대로 맞는다.
+      ...(hasRelationSpeech(character.relations)
+        ? {
+            relationSpeech: (character.relations ?? []).flatMap((relation) =>
+              relation.speech ? [{ target: relation.target, speech: relation.speech }] : [],
+            ),
+          }
         : {}),
     })),
     background: input.background

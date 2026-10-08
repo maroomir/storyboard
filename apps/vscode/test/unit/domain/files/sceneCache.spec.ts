@@ -158,6 +158,23 @@ describe("scene cache codec", () => {
     expect(withEmptyCatchphrases).toBe(baseHash)
   })
 
+  it("changes the hash when a relation speech is set and keeps it for relations without one", () => {
+    const input = {
+      sceneBody: "같은 입력",
+      characters: [{ ...sampleCharacter, relations: [{ target: "jun", type: "친구" }] }],
+      background: sampleBackground,
+      format: "novel"
+    } as const
+    const baseHash = computeSceneInputHash(input)
+    const withSpeech = computeSceneInputHash({
+      ...input,
+      characters: [{ ...sampleCharacter, relations: [{ target: "jun", type: "친구", speech: "존댓말" }] }]
+    })
+
+    expect(withSpeech).not.toBe(baseHash)
+    expect(computeSceneInputHash({ ...input, characters: [sampleCharacter] })).toBe(baseHash)
+  })
+
   it("changes the hash when bible facts are injected", () => {
     const withoutFacts = computeSceneInputHash({
       sceneBody: "같은 입력",
