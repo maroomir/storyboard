@@ -5,6 +5,7 @@ import {
   SceneParseError,
   sceneContextPaths,
   getStoryboardProjectPaths,
+  sceneBeatTexts,
 } from '@storyboard/story-model';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -55,7 +56,7 @@ export class GenerateSceneBeatsUseCase {
     }
 
     if (hasSceneBeats(scene) && request.force !== true) {
-      return { ok: true, kind: 'kept', beats: scene.card.beats ?? [] };
+      return { ok: true, kind: 'kept', beats: sceneBeatTexts(scene.card.beats) };
     }
 
     const paths = getStoryboardProjectPaths(request.workspaceRoot);

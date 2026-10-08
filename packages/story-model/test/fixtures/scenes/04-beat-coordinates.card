@@ -1,0 +1,17 @@
+type: scene
+id: 04-beat-coordinates
+title: 좌표 비트
+characters:
+  - elia
+  - jihoon
+beats:
+  - text: 엘리아가 정문 앞에서 숨을 고른다.
+    cast:
+      - elia
+    place: 교문 앞
+    time: 등교 직전
+  - 지훈이 먼저 이름을 부른다.
+  - text: 둘은 나란히 교문을 지난다.
+    cast:
+      - elia
+      - jihoon

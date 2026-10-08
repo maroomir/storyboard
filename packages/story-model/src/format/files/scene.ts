@@ -10,6 +10,7 @@ import {
   sceneCardSchema,
   sceneSummaryReference,
   toSceneFrontmatter,
+  type SceneBeat,
   type SceneCard,
   type SceneFile,
   type SceneFileNameParts,
@@ -189,6 +190,19 @@ function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
     ...(card.foreshadowing === undefined ? {} : { foreshadowing: card.foreshadowing }),
     ...(card.neededCanon === undefined ? {} : { neededCanon: card.neededCanon }),
     ...(card.summary === undefined ? {} : { summary: card.summary }),
-    ...(card.beats === undefined ? {} : { beats: card.beats }),
+    ...(card.beats === undefined ? {} : { beats: card.beats.map(normalizeSceneBeat) }),
+  };
+}
+
+function normalizeSceneBeat(beat: SceneBeat): SceneBeat {
+  if (typeof beat === 'string') {
+    return beat;
+  }
+
+  return {
+    text: beat.text,
+    ...(beat.cast === undefined ? {} : { cast: beat.cast }),
+    ...(beat.place === undefined ? {} : { place: beat.place }),
+    ...(beat.time === undefined ? {} : { time: beat.time }),
   };
 }

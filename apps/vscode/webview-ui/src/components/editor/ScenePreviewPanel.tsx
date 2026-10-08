@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import type React from 'react';
 
+import { sceneBeatText } from '@storyboard/story-model/contracts';
 import type { SceneCard } from '@webview/lib/types';
 import { Pill } from '../ui/Pill';
 
@@ -99,7 +100,7 @@ export function ScenePreviewPanel({
           </p>
           <ol className="m-0 flex flex-col gap-1 pl-5 text-sm leading-relaxed text-sb-fg">
             {card.beats.map((beat, index) => (
-              <li key={index}>{beat}</li>
+              <li key={index}>{sceneBeatText(beat)}</li>
             ))}
           </ol>
         </div>

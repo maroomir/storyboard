@@ -14,6 +14,7 @@ import {
   parseScene,
   parseSceneFileName,
   parseSceneStem,
+  renderSceneCardBody,
   readSceneFile,
   resolveSceneOrder,
   sceneSummaryReference,
@@ -337,6 +338,26 @@ describe("scene summary file and beats", () => {
       "샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다."
     )
     expect(splitSceneNarrativeSource(scene.body).design).toContain("[창작자 요약]\n요약 산문 첫 문단.\n둘째 문단에는 말버릇 메모가 있다.")
+  })
+
+  it("round-trips beat coordinates and renders them under the beat", () => {
+    const rawScene = readFixtureScene("04-beat-coordinates.card")
+    const scene = parseScene(rawScene, "04-beat-coordinates.card")
+
+    expect(canonicalizeSceneCardText(rawScene)).toEqual({ text: rawScene, changed: false })
+    expect(scene.card.beats?.[0]).toEqual({ text: "엘리아가 정문 앞에서 숨을 고른다.", cast: ["elia"], place: "교문 앞", time: "등교 직전" })
+    expect(scene.card.beats?.[1]).toBe("지훈이 먼저 이름을 부른다.")
+    expect(extractSceneNarrativeSource(scene.body)).toBe(
+      [
+        "엘리아가 정문 앞에서 숨을 고른다.\n(출연: elia / 장소: 교문 앞 / 시각: 등교 직전)",
+        "지훈이 먼저 이름을 부른다.",
+        "둘은 나란히 교문을 지난다.\n(출연: elia, jihoon)",
+      ].join("\n\n")
+    )
+    // 프롬프트에는 카드 id 대신 이름이 간다.
+    expect(renderSceneCardBody(scene.card, undefined, (ref) => ({ elia: "엘리아", jihoon: "지훈" })[ref] ?? ref)).toContain(
+      "(출연: 엘리아, 지훈)"
+    )
   })
 
   it("renders the summary file text when the card has no beats", () => {
