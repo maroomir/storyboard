@@ -564,6 +564,7 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
     "jihoon": "<페르소나 텍스트>"
   },
   "backgroundSnapshot": { "id": "school", "name": "학교 정문" },
+  "sceneCoordinates": ["1. 시각: 아침 / 장소: 거실 / 있는 사람: 나, 은하"],
   "previousContext": "...",
   "providers": { "sceneSkeleton": "openai", "sceneDialoguePolish": "claude" },
   "inputHash": "sha256:..."
@@ -573,6 +574,8 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 용도:
 - 같은 씬 재생성 시 입력 hash 비교로 캐시 hit 판정
 - "왜 이렇게 나왔는가" 디버깅
+- `sceneCoordinates`: 뼈대가 `---`로 나눈 대목마다 남긴 시각·장소·있는 사람(없으면 객체 비트의 좌표).
+  재작성 전 검수가 장면 안 시간·공간 연속성의 기준으로 쓴다
 - 추후 회귀 테스트 자료
 
 씬 입력 hash에는 주입된 정전 설정(아래 4.7)도 포함되어, canon이 바뀌면 하위 씬 캐시가 무효화된다.
@@ -921,6 +924,12 @@ buildPersonas
 방이 있다») `checkBackgroundFacts` 단계가 카드마다 한 번 판정해 초안 경고로 알리고, 그 짝을 뼈대와
 살붙임에 따로 실어 사건에 맞는 하나만 쓰게 한다. 판정은 `background-conflicts.json`에 남아
 `doctor`가 AI 호출 없이 읽는다.
+
+**대목 좌표는 장부로 넘긴다.** 뼈대는 장면 첫 줄과 `---` 다음 줄에 그 대목의 좌표를
+`⟪시각: … / 장소: … / 있는 사람: …⟫` 한 줄로 남기고, 파이프라인이 그 표식을 장부로 옮긴 뒤 본문에서
+지운다(`pipeline/sceneCoordinates.ts`). 표식이 없으면 객체 비트의 좌표로 대신한다. 살붙임은 구간마다
+장부 전체를 `[장면 좌표]`로 받고 이 구간이 덮는 대목에 «← 이번 구간»이 달린다. 장부는 씬 캐시의
+`sceneCoordinates`에 남아 재작성 전 검수가 읽는다(§4.6).
 
 ### 8.1 에이전트 카탈로그
 

@@ -100,6 +100,7 @@ const aiServiceStub = {
 const pipelineSuccessResult = {
   draftBody: "생성된 초안 본문",
   detectedCharacters: ["준서"],
+  sceneCoordinates: [] as readonly string[],
   situations: [],
   personasUsed: new Map<string, string>(),
   warnings: [] as readonly string[],
@@ -578,6 +579,20 @@ describe("GenerateDraftUseCase", () => {
 
       const record = sceneCacheRepository.write.mock.calls[0]?.[1] as { bodyHash?: string }
       expect(record.bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/)
+    })
+
+    it("records the scene coordinates in the scene cache for the review", async () => {
+      pipelineRunMock.mockResolvedValue({
+        ...pipelineSuccessResult,
+        sceneCoordinates: ["1. 시각: 아침 / 장소: 거실"]
+      })
+      const sceneCacheRepository = createSceneCacheRepository()
+      const dependencies = createDependencies({ sceneCacheRepository })
+
+      await execute(dependencies, createRequest({ force: true }))
+
+      const record = sceneCacheRepository.write.mock.calls[0]?.[1] as { sceneCoordinates?: readonly string[] }
+      expect(record.sceneCoordinates).toEqual(["1. 시각: 아침 / 장소: 거실"])
     })
 
     it("logs how many lines the dialogue polish touched", async () => {

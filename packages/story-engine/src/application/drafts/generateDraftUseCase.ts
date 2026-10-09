@@ -100,6 +100,7 @@ function buildSceneCacheRecord(
     input: context.scene.body,
     detectedCharacters: result.detectedCharacters,
     skeleton: result.skeleton,
+    ...(result.sceneCoordinates.length > 0 ? { sceneCoordinates: result.sceneCoordinates } : {}),
     bodyHash,
     personasUsed: Object.fromEntries(result.personasUsed),
     backgroundSnapshot: toBackgroundSnapshot(context.background),

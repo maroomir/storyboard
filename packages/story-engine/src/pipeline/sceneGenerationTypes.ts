@@ -104,6 +104,8 @@ export interface RunSceneGenerationPipelineResult {
   readonly draftBody: string;
   // 1단계 산출물. 사건·등장·종료 지점이 여기서 확정되므로 캐시와 디버깅의 기준이 된다.
   readonly skeleton: string;
+  // 뼈대가 남긴 대목별 좌표(시각·장소·있는 사람), 없으면 객체 비트의 좌표. 검수가 연속성 기준으로 쓴다.
+  readonly sceneCoordinates: readonly string[];
   // 재시도로도 못 고친 검증 위반. 원고 헤더에 실려 읽는 사람에게 보인다.
   readonly warnings: readonly string[];
   readonly detectedCharacters: readonly string[];

@@ -401,6 +401,51 @@ describe("runSceneGenerationPipeline — 배경 사실 점검", () => {
   })
 })
 
+describe("runSceneGenerationPipeline — 장면 좌표", () => {
+  it("moves the skeleton's coordinate markers into a ledger every expansion receives", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(
+      ["⟪시각: 아침 / 장소: 거실 / 있는 사람: 엘리아⟫", "엘리아가 밥을 먹었다.", "", "---", "", "⟪시각: 방과 후 / 장소: 교문 앞 / 있는 사람: 엘리아⟫", "그날 오후, 엘리아가 교문을 나섰다."].join("\n")
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const expansion = ai.expandSceneSection.mock.calls[0]?.[0] as {
+      skeleton: string
+      sceneCoordinates: readonly string[]
+    }
+    expect(expansion.skeleton).not.toContain("⟪")
+    expect(expansion.sceneCoordinates).toEqual([
+      "1. 시각: 아침 / 장소: 거실 / 있는 사람: 엘리아 ← 이번 구간",
+      "2. 시각: 방과 후 / 장소: 교문 앞 / 있는 사람: 엘리아 ← 이번 구간"
+    ])
+    expect(result.skeleton).not.toContain("⟪")
+    expect(result.sceneCoordinates).toEqual([
+      "1. 시각: 아침 / 장소: 거실 / 있는 사람: 엘리아",
+      "2. 시각: 방과 후 / 장소: 교문 앞 / 있는 사람: 엘리아"
+    ])
+  })
+
+  it("leaves the ledger empty when neither the skeleton nor the beats give coordinates", async () => {
+    const ai = createRecordingAiService()
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.sceneCoordinates).toEqual([])
+    expect((ai.expandSceneSection.mock.calls[0]?.[0] as { sceneCoordinates: readonly string[] }).sceneCoordinates).toEqual([])
+  })
+})
+
 describe("runSceneGenerationPipeline — 살붙임 단계", () => {
   const longSkeleton = Array.from({ length: 6 }, (_, i) => `문단${i} ${"가".repeat(300)}`).join(
     "\n\n"

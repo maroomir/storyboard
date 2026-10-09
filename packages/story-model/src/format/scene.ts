@@ -79,13 +79,13 @@ export function findUnknownBeatCast(
 
 export const sceneBeatCoordinateLabels = { cast: '출연', place: '장소', time: '시각' } as const;
 
-// 좌표는 사건 줄 아래 괄호 한 줄로 붙는다. 빈 줄이 없어야 사건 재료 분할에서 한 블록으로 남는다.
-export function renderSceneBeat(
+// 비트의 좌표 한 줄(«출연: … / 장소: … / 시각: …»). 문자열 비트나 좌표 없는 비트는 undefined.
+export function formatSceneBeatCoordinates(
   beat: SceneBeat,
   castName: (ref: string) => string = (ref) => ref,
-): string {
+): string | undefined {
   if (typeof beat === 'string') {
-    return beat;
+    return undefined;
   }
 
   const coordinates = [
@@ -96,7 +96,17 @@ export function renderSceneBeat(
     beat.time ? `${sceneBeatCoordinateLabels.time}: ${beat.time}` : undefined,
   ].filter((part): part is string => part !== undefined);
 
-  return coordinates.length > 0 ? `${beat.text}\n(${coordinates.join(' / ')})` : beat.text;
+  return coordinates.length > 0 ? coordinates.join(' / ') : undefined;
+}
+
+// 좌표는 사건 줄 아래 괄호 한 줄로 붙는다. 빈 줄이 없어야 사건 재료 분할에서 한 블록으로 남는다.
+export function renderSceneBeat(
+  beat: SceneBeat,
+  castName: (ref: string) => string = (ref) => ref,
+): string {
+  const coordinates = formatSceneBeatCoordinates(beat, castName);
+
+  return coordinates === undefined ? sceneBeatText(beat) : `${sceneBeatText(beat)}\n(${coordinates})`;
 }
 
 export const sceneFrontmatterSchema = z

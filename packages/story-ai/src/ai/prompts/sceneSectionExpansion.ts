@@ -17,6 +17,8 @@ export interface SceneSectionExpansionInput {
   readonly backgroundFacts?: readonly string[];
   // 공간 사실 가운데 함께 참일 수 없는 두 줄. 뼈대에 맞는 하나만 쓰라고 따로 싣는다.
   readonly backgroundConflicts?: readonly string[];
+  // 대목마다 시각·장소·있는 사람. 이 구간이 덮는 대목에는 «← 이번 구간»이 달려 있다.
+  readonly sceneCoordinates?: readonly string[];
   readonly retryReasons?: readonly string[];
   // 앞 판이 분량 미달로 반려됐다. 첫 판의 «못 미친 채 끝내라»는 채움 억제가 길이 요구와 충돌한다(#106).
   readonly isUnderLengthRetry?: boolean;
@@ -38,6 +40,8 @@ export const SceneSectionExpansionPrompt = {
         backgroundFacts: input.backgroundFacts ?? [],
         hasBackgroundConflicts: (input.backgroundConflicts ?? []).length > 0,
         backgroundConflicts: input.backgroundConflicts ?? [],
+        hasSceneCoordinates: (input.sceneCoordinates ?? []).length > 0,
+        sceneCoordinates: input.sceneCoordinates ?? [],
         skeleton: input.skeleton,
         previousSection: input.previousSection,
         section: input.section,
