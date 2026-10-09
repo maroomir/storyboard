@@ -26,6 +26,8 @@ export interface SceneCacheRecord {
   readonly detectedCharacters: readonly string[];
   // 1단계 뼈대. 사건·등장·종료 지점이 여기서 확정되므로 재생성 결과를 견주는 기준이 된다.
   readonly skeleton?: string;
+  // 대목마다 시각·장소·있는 사람(«1. 시각: … / 장소: …»). 재작성 전 검수가 장면 안 연속성의 기준으로 쓴다.
+  readonly sceneCoordinates?: readonly string[];
   // 이 기록과 함께 쓴 초안 본문의 해시. 디스크의 초안이 우리가 쓴 그것인지 판정하는 데 쓴다.
   readonly bodyHash?: string;
   readonly personasUsed: Readonly<Record<string, string>>;
@@ -91,6 +93,7 @@ const sceneCacheRecordSchema = z.object({
   input: z.string(),
   detectedCharacters: z.array(z.string()),
   skeleton: z.string().optional(),
+  sceneCoordinates: z.array(z.string()).optional(),
   bodyHash: z
     .string()
     .regex(/^sha256:[a-f0-9]{64}$/)

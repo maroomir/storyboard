@@ -28,6 +28,14 @@ import {
 } from '@storyboard/story-model';
 import { condensePreviousContext } from './sceneGenerationPolicies';
 import {
+  extractSceneCoordinates,
+  hasSceneCoordinates,
+  listSceneCoordinates,
+  sceneCoordinatesFromBeats,
+  sectionSceneCoordinates,
+  type SceneCoordinateLedger,
+} from './sceneCoordinates';
+import {
   assertNotCancelled,
   buildGenerateOptions,
   buildScenePersonas,
@@ -167,6 +175,11 @@ function sectionTargetLengths(
 // 문장을 다듬으므로, 여기서 설정을 다시 보여 주면 묘사가 새 설정을 끌어들일 여지만 생긴다.
 // 비트 좌표의 출연은 카드 id로 적힐 수 있다. 프롬프트에는 이름이 가야 하므로, 좌표 비트가 있는
 // 씬만 이름으로 다시 렌더링한다. 씬 본문(해시·저장)은 그대로 둔다.
+function castNameOf(context: SceneContext): (ref: string) => string {
+  const nameById = new Map(context.characters.map((character) => [character.id, character.name]));
+  return (ref) => nameById.get(ref) ?? ref;
+}
+
 function renderNarrativeBodyWithCastNames(context: SceneContext): string | undefined {
   const card = context.scene.card;
   const hasCoordinates = (card?.beats ?? []).some((beat) => typeof beat !== 'string');
@@ -174,8 +187,7 @@ function renderNarrativeBodyWithCastNames(context: SceneContext): string | undef
     return undefined;
   }
 
-  const nameById = new Map(context.characters.map((character) => [character.id, character.name]));
-  return renderSceneCardBody(card, context.scene.summaryText, (ref) => nameById.get(ref) ?? ref);
+  return renderSceneCardBody(card, context.scene.summaryText, castNameOf(context));
 }
 
 function buildSkeletonContext(
@@ -244,6 +256,7 @@ async function expandSectionWithRetries(input: {
   readonly targetLength: number;
   readonly backgroundFacts: readonly string[];
   readonly backgroundConflicts: readonly string[];
+  readonly sceneCoordinates: readonly string[];
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
@@ -271,6 +284,7 @@ async function expandSectionWithRetries(input: {
         targetLength: input.targetLength,
         backgroundFacts: input.backgroundFacts,
         backgroundConflicts: input.backgroundConflicts,
+        sceneCoordinates: input.sceneCoordinates,
         retryReasons: reasons,
         isUnderLengthRetry,
       },
@@ -626,6 +640,7 @@ interface SceneRunState {
   backgroundFactConflicts: readonly BackgroundFactConflict[];
   voiceSamples: Map<string, readonly string[]>;
   skeleton: string;
+  sceneCoordinates: SceneCoordinateLedger;
   polishedText: string;
   dialoguePolish: DialoguePolishSummary | undefined;
   readonly warnings: string[];
@@ -743,7 +758,11 @@ const draftSkeletonStage: ISceneStage = {
       ctx.tuning.skeletonRetryLimit,
       ctx.tuning,
     );
-    state.skeleton = skeleton.text;
+    const extracted = extractSceneCoordinates(skeleton.text);
+    state.skeleton = extracted.text;
+    state.sceneCoordinates = hasSceneCoordinates(extracted.ledger)
+      ? extracted.ledger
+      : sceneCoordinatesFromBeats(ctx.context.scene.card?.beats, castNameOf(ctx.context));
     state.polishedText = state.skeleton;
     state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
     assertNotCancelled(ctx.shouldCancel);
@@ -806,6 +825,7 @@ const expandSectionStage: ISceneStage = {
       planSectionCount(ctx.styleDirective?.targetWordCount ?? 0, outputLimit),
     );
     const targetLengths = sectionTargetLengths(ctx.styleDirective, sections, outputLimit);
+    const coordinatesBySection = sectionSceneCoordinates(state.sceneCoordinates, sections);
     const expandedSections: string[] = [];
 
     for (let index = 0; index < sections.length; index += 1) {
@@ -819,6 +839,7 @@ const expandSectionStage: ISceneStage = {
         targetLength: targetLengths[index] as number,
         backgroundFacts: backgroundFactLines(state.background),
         backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
+        sceneCoordinates: coordinatesBySection[index] ?? [],
         characters: ctx.context.characters,
         options: withAttribution(
           {
@@ -895,6 +916,7 @@ async function executeSceneGenerationPipeline(
     backgroundFactConflicts: [],
     voiceSamples: new Map(),
     skeleton: '',
+    sceneCoordinates: { segments: [], isAlignedWithBreaks: true },
     polishedText: '',
     dialoguePolish: undefined,
     warnings: [],
@@ -909,6 +931,7 @@ async function executeSceneGenerationPipeline(
   return {
     draftBody: state.draftBody,
     skeleton: state.polishedText,
+    sceneCoordinates: listSceneCoordinates(state.sceneCoordinates),
     warnings: state.warnings,
     detectedCharacters: ctx.detectedCharacters,
     personasUsed: state.personasUsed,
