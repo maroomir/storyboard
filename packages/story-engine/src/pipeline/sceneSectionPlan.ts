@@ -301,8 +301,8 @@ export function findRepeatedDialogueRun(text: string, tuning?: SceneGenerationTu
   return longest;
 }
 
-// NOTE: 뼈대는 일부러 얇게 쓰는 단계라 살붙임(0.85)만큼 죄지 않는다. 실측에서 뼈대가 목표의 1/3만
-// 나오면 살붙임이 9배 확장을 떠안아 분량이 목표 절반에도 못 미쳤다. 절반 아래면 한 번 더 부른다.
+// NOTE: 살붙임은 뼈대의 2~3배를 넘지 못해 뼈대 미달은 뒤에서 회복되지 않는다. 문턱이 절반일 때
+// 목표의 55% 뼈대가 통과해 본문이 목표의 59%에 그쳤다(#106). 하한 비율 아래면 한 번 더 부른다.
 export function validateSceneSkeleton(
   skeleton: string,
   targetLength?: number,
@@ -325,7 +325,7 @@ export function validateSceneSkeleton(
   ) {
     violations.push({
       kind: 'too-short',
-      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 절반에도 못 미칩니다 (${skeleton.length.toLocaleString()}자). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
+      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 ${Math.round(resolved.skeletonMinimumLengthRatio * 100)}%에 못 미칩니다 (${skeleton.length.toLocaleString()}자). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
     });
   }
 

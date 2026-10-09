@@ -192,9 +192,11 @@ async function draftSkeletonWithRetries(
   options: GenerateTextOptions,
   retryLimit: number,
   tuning: ResolvedSceneGenerationTuning,
-): Promise<string> {
+): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
-  let best: { text: string; weight: number; distance: number } | undefined;
+  let best:
+    | { text: string; violations: readonly SectionViolation[]; weight: number; distance: number }
+    | undefined;
 
   for (let attempt = 0; attempt <= retryLimit; attempt += 1) {
     const skeleton = await aiService.draftSceneSkeleton(
@@ -204,7 +206,7 @@ async function draftSkeletonWithRetries(
     const violations = validateSceneSkeleton(skeleton, input.targetLength, tuning);
 
     if (violations.length === 0) {
-      return skeleton;
+      return { text: skeleton, violations: [] };
     }
 
     const weight = weighViolations(violations, tuning.violationWeights);
@@ -215,13 +217,13 @@ async function draftSkeletonWithRetries(
       weight < best.weight ||
       (weight === best.weight && distance < best.distance)
     ) {
-      best = { text: skeleton, weight, distance };
+      best = { text: skeleton, violations, weight, distance };
     }
 
     reasons = violations.map((violation) => violation.detail);
   }
 
-  return best?.text ?? '';
+  return { text: best?.text ?? '', violations: best?.violations ?? [] };
 }
 
 async function expandSectionWithRetries(input: {
@@ -647,7 +649,7 @@ const draftSkeletonStage: ISceneStage = {
   async run(state) {
     const { ctx, input } = state;
     ctx.onProgress?.('draftSkeleton', 1, 1);
-    state.skeleton = await draftSkeletonWithRetries(
+    const skeleton = await draftSkeletonWithRetries(
       ctx.aiService,
       {
         narrativeSource: ctx.narrativeSource,
@@ -671,7 +673,9 @@ const draftSkeletonStage: ISceneStage = {
       ctx.tuning.skeletonRetryLimit,
       ctx.tuning,
     );
+    state.skeleton = skeleton.text;
     state.polishedText = state.skeleton;
+    state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
     assertNotCancelled(ctx.shouldCancel);
   },
 };
