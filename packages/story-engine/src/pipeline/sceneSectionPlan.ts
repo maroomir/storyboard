@@ -29,6 +29,9 @@ export function planSectionCount(targetLength: number, outputLimit = SECTION_OUT
 
 // NOTE: 절단은 뜻이 끊기는 자리에서 해야 한다. 뼈대가 남긴 --- 장면 전환이 예산 근처에 있으면
 // 그 자리를 우선 쓰고, 없을 때만 문단 경계로 내려간다. 결투 한복판에서 구간이 갈리는 일을 막는다.
+// 장면 전환마다 예산의 절반만 차도 자르던 때는 전환이 잦은 씬에서 앞 구간이 일찍 닫혀 뼈대의 절반
+// 가까이가 마지막 구간에 몰렸다(#106 실측: 44~47%). 이제 예산은 남은 뼈대를 남은 구간 수로 나눠 매번
+// 다시 재고, 전환 자리는 다음 전환보다 예산에 가까울 때만 쓴다.
 const SCENE_BREAK_LINE = '---';
 
 interface SkeletonUnit {
@@ -42,6 +45,24 @@ function splitIntoUnits(skeleton: string): SkeletonUnit[] {
     .map((block) => block.trim())
     .filter((block) => block.length > 0)
     .map((block) => ({ text: block, endsScene: block === SCENE_BREAK_LINE }));
+}
+
+// 이 전환에서 자르지 않고 다음 전환까지 갔을 때 구간이 될 길이. 다음 전환이 없으면 undefined.
+function lengthAtNextSceneBreak(
+  units: readonly SkeletonUnit[],
+  fromIndex: number,
+  currentLength: number,
+): number | undefined {
+  let length = currentLength;
+
+  for (const unit of units.slice(fromIndex + 1)) {
+    if (unit.endsScene) {
+      return length + unit.text.length;
+    }
+    length += unit.text.length;
+  }
+
+  return undefined;
 }
 
 export function splitSkeletonIntoSections(skeleton: string, sectionCount: number): string[] {
@@ -58,8 +79,8 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
     return [trimmed];
   }
 
-  const budget = trimmed.length / sectionCount;
   const sections: string[] = [];
+  let remainingLength = units.reduce((sum, unit) => sum + unit.text.length, 0);
   let current: string[] = [];
   let currentLength = 0;
   let closedSections = 0;
@@ -74,13 +95,19 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
       return;
     }
 
-    // 장면 전환 자리는 예산의 절반만 채워도 자른다. 그 자리가 가장 자연스러운 절단점이기 때문이다.
-    const atSceneBreak = unit.endsScene && currentLength >= budget / 2;
+    const budget = remainingLength / (sectionCount - closedSections);
+    const nextBreakLength = lengthAtNextSceneBreak(units, index, currentLength);
+    const atSceneBreak =
+      unit.endsScene &&
+      currentLength >= budget / 2 &&
+      (nextBreakLength === undefined ||
+        Math.abs(currentLength - budget) <= Math.abs(nextBreakLength - budget));
     const filled = currentLength >= budget;
     const mustClose = remainingUnits === remainingSections;
 
     if (atSceneBreak || filled || mustClose) {
       sections.push(current.join('\n\n'));
+      remainingLength -= currentLength;
       current = [];
       currentLength = 0;
       closedSections += 1;
@@ -96,7 +123,9 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
 
 // NOTE: 뼈대는 문단 경계에서 끊기므로 조각 길이가 고르지 않고, 마지막 조각이 가장 얇기 쉽다. 예산을
 // 균등하게 나누면 얇은 조각이 남는 재료 없이 큰 분량을 요구받아 앞 구간을 되풀이한다. 조각 길이에
-// 비례해 나누되 한 호출의 출력 한도는 넘기지 않는다.
+// 비례해 나누되 한 호출의 출력 한도는 넘기지 않는다. 한도에 잘린 몫은 버리지 않고 여유 있는 구간에
+// 비례로 다시 얹는다 — 잘린 몫을 버리면 구간 목표의 합이 씬 목표에 못 미쳐(#106 실측: 73%) 살붙임이
+// 구간 목표를 다 채워도 분량이 닿지 않는다.
 export function planSectionTargetLengths(
   sections: readonly string[],
   totalTarget: number,
@@ -109,9 +138,31 @@ export function planSectionTargetLengths(
     return sections.map(() => Math.max(1, Math.round(totalTarget / sections.length)));
   }
 
-  return weights.map((weight) =>
+  let targets = weights.map((weight) =>
     Math.min(outputLimit, Math.max(1, Math.round((totalTarget * weight) / totalWeight))),
   );
+
+  // 얹는 만큼 또 한도에 닿는 구간이 생길 수 있어 구간 수만큼만 되돌며, 모두 한도에 닿으면 멈춘다.
+  for (let round = 0; round < sections.length; round += 1) {
+    const shortfall = totalTarget - targets.reduce((sum, target) => sum + target, 0);
+    const openWeights = weights.map((weight, index) =>
+      (targets[index] as number) < outputLimit ? weight : 0,
+    );
+    const openWeight = openWeights.reduce((sum, weight) => sum + weight, 0);
+
+    if (shortfall <= 0 || openWeight === 0) {
+      break;
+    }
+
+    targets = targets.map((target, index) =>
+      Math.min(
+        outputLimit,
+        target + Math.round((shortfall * (openWeights[index] as number)) / openWeight),
+      ),
+    );
+  }
+
+  return targets;
 }
 
 // NOTE: detectCharactersInText는 매칭된 토큰을 그대로 돌려주므로, 별칭이나 게임명으로 부른 인물이

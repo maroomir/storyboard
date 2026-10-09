@@ -346,7 +346,7 @@ describe("runSceneGenerationPipeline — 살붙임 단계", () => {
       expect(input.skeleton).toBe(longSkeleton)
       expect(input.targetLength).toBe(budgets[index])
     }
-    expect(inputs.at(-1)?.targetLength).toBeLessThan(inputs[0]?.targetLength as number)
+    expect(inputs.reduce((sum, input) => sum + input.targetLength, 0)).toBe(15000)
   })
 
   it("hands the previous finished section to the next call, and none to the first", async () => {
@@ -556,10 +556,10 @@ describe("planSectionTargetLengths", () => {
     expect(planSectionTargetLengths(sections, 10000)).toEqual([6000, 3000, 1000])
   })
 
-  it("caps a fat slice at the output limit", () => {
+  it("caps a fat slice at the output limit and hands the excess to the other slices", () => {
     const sections = ["가".repeat(900), "나".repeat(100)]
 
-    expect(planSectionTargetLengths(sections, 15000)).toEqual([7000, 1500])
+    expect(planSectionTargetLengths(sections, 15000)).toEqual([7000, 7000])
   })
 
   it("ignores whitespace when weighing slices", () => {
