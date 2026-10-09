@@ -24,6 +24,7 @@ import {
   writeDraftFile,
   resolveSceneTargetLength,
   buildStyleDirective,
+  type SceneBeat,
 } from '@storyboard/story-model';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -35,6 +36,7 @@ import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
+import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
 import {
   runReviseLoop,
   type ReviseLoopContext,
@@ -129,11 +131,45 @@ interface ReviseDraftContext {
   readonly draft: ReturnType<typeof parseDraft>;
 }
 
+// NOTE: 장면 좌표는 생성이 씬 캐시에 남긴 장부다(#108). 기록이 없으면(캐시 없는 작업본, 캐시를 두지
+// 않는 호스트) 객체 비트의 좌표로 대신하고, 그것도 없으면 장면 안 연속성은 검수 기준에 들지 않는다.
+async function loadSceneCoordinateLines(
+  fs: IFileSystem,
+  repository: ISceneCacheRepository | undefined,
+  paths: StoryboardProjectPaths,
+  scene: { readonly stem: string; readonly card?: { readonly beats?: readonly SceneBeat[] } },
+  characters: readonly { readonly id: string; readonly name: string }[],
+): Promise<string[]> {
+  let recorded: readonly string[] | undefined;
+
+  if (repository) {
+    const cacheUri = sceneCacheFilePath(paths, scene.stem);
+    // A record that cannot be read is no record: the cache never blocks a review.
+    try {
+      recorded = (await fs.exists(cacheUri))
+        ? (await repository.read(cacheUri)).sceneCoordinates
+        : undefined;
+    } catch {
+      recorded = undefined;
+    }
+  }
+
+  const nameById = new Map(characters.map((character) => [character.id, character.name]));
+  const coordinates =
+    recorded ??
+    listSceneCoordinates(
+      sceneCoordinatesFromBeats(scene.card?.beats, (ref) => nameById.get(ref) ?? ref),
+    );
+
+  return coordinates.map((line) => `장면 좌표 ${line}`);
+}
+
 async function prepareReviseDraftContext(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
   draftUri: StoryUri,
   sceneStem: string,
+  sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<ReviseDraftContext> {
   const sceneFileName = `${sceneStem}.card`;
   const scene = await readSceneFile(
@@ -162,6 +198,7 @@ async function prepareReviseDraftContext(
   const factLines = [
     ...canonFactLines,
     ...storyStateFactLines(priorState, scene.order, scene.body),
+    ...(await loadSceneCoordinateLines(fs, sceneCacheRepository, paths, scene, context.characters)),
   ];
 
   const draft = parseDraft(await readDraftFile(draftUri, fs));
@@ -202,7 +239,13 @@ async function runReviseDraftWorkflow(
     },
   });
   const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
-  const ctx = await prepareReviseDraftContext(options.fileSystem, paths, draftUri, sceneStem);
+  const ctx = await prepareReviseDraftContext(
+    options.fileSystem,
+    paths,
+    draftUri,
+    sceneStem,
+    options.sceneCacheRepository,
+  );
 
   const result = await runReviseLoop({
     aiService,

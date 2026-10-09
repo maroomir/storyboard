@@ -30,7 +30,13 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
     orderText: "01",
     slug: "scene",
     frontmatter: {},
-    body: "씬 의도"
+    body: "씬 의도",
+    card: {
+      beats: [
+        { text: "아침을 먹는다", place: "거실", time: "아침", cast: ["hero"] },
+        { text: "하교한다", place: "교문 앞", time: "방과 후" }
+      ]
+    }
   }),
   parseDraft: (): unknown => ({ format: "novel", body: "원본 본문" }),
   createDraft: (input: unknown): unknown => input,
@@ -120,6 +126,37 @@ describe("ReviseDraftUseCase", () => {
     expect(result.remainingBlocking).toBe(0)
     expect(reviseDraftMock).not.toHaveBeenCalled()
     expect(writeDraftFileMock).not.toHaveBeenCalled()
+  })
+
+  it("reviews against the scene coordinates the generation recorded", async () => {
+    const sceneCacheRepository = {
+      read: vi.fn(async () => ({ sceneCoordinates: ["1. 시각: 아침 / 장소: 거실 / 있는 사람: 주인공"] })),
+      write: vi.fn(async () => undefined),
+      ensureDirectory: vi.fn(async () => undefined)
+    }
+    const options = baseOptions()
+
+    await runReviseDraftWorkflow({
+      ...options,
+      paths: { ...(options.paths as object), sceneCacheDirectory: vscode.Uri.file("/ws/project/.storyboard/cache/scenes") } as never,
+      fileSystem: { ...(options.fileSystem as object), exists: async () => true } as never,
+      sceneCacheRepository: sceneCacheRepository as never
+    })
+
+    const facts = (critiqueDraftMock.mock.calls[0]?.[0] as { facts: readonly string[] }).facts
+    expect(facts).toContain("장면 좌표 1. 시각: 아침 / 장소: 거실 / 있는 사람: 주인공")
+  })
+
+  it("falls back to the beat coordinates when no generation record exists", async () => {
+    await runReviseDraftWorkflow(baseOptions())
+
+    const facts = (critiqueDraftMock.mock.calls[0]?.[0] as { facts: readonly string[] }).facts
+    expect(facts).toEqual(
+      expect.arrayContaining([
+        "장면 좌표 1. 출연: 주인공 / 장소: 거실 / 시각: 아침",
+        "장면 좌표 2. 장소: 교문 앞 / 시각: 방과 후"
+      ])
+    )
   })
 
   it("Q4: passes without revising when continuity issues are all low severity", async () => {
