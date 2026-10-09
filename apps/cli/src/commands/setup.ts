@@ -12,7 +12,9 @@ import {
   type AiProviderId,
   type AiTaskName,
   formatSceneOrderRanges,
+  backgroundCardRelativePath,
   findUnknownBeatCast,
+  formatBackgroundFactConflict,
   findUnreadableStoryStateLines,
   flattenChapterPlan,
   mainThreadId,
@@ -700,6 +702,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     },
     ...(await collectNarrationChecks(container, sceneCards)),
     ...(await collectBeatCastChecks(container, sceneCards)),
+    ...(await collectBackgroundConflictChecks(container)),
   ];
 }
 
@@ -740,6 +743,19 @@ async function collectBeatCastChecks(
           fix: 'storyboard card list character',
         },
       ];
+}
+
+// NOTE: 상충 판정은 AI 호출이라 doctor 는 하지 않는다. 생성이 카드마다 한 번 판정해 남긴 캐시만 읽으므로,
+// 아직 생성에 쓰이지 않았거나 판정 뒤 고친 카드는 여기 나오지 않는다.
+async function collectBackgroundConflictChecks(container: CliContainer): Promise<DoctorCheck[]> {
+  const reports = await container.cards.listBackgroundFactConflicts(container.workspaceRoot);
+
+  return reports.map((report) => ({
+    status: 'warn' as const,
+    label: '배경 사실 상충',
+    detail: `${report.cardId}: ${report.conflicts.map(formatBackgroundFactConflict).join(', ')}는 함께 참일 수 없습니다. 생성은 사건에 맞는 쪽만 씁니다.`,
+    fix: `${backgroundCardRelativePath(report.cardId)}에서 하나를 지우거나 고치세요`,
+  }));
 }
 
 // The author's resource files (prompts, the craft contract, the pipeline specs, …) are read at every

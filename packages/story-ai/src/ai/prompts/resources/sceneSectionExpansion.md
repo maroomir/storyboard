@@ -29,6 +29,12 @@ maxTokens: 8000
 {{#backgroundFacts}}
 - {{.}}
 {{/backgroundFacts}}
+{{#hasBackgroundConflicts}}
+[어긋나는 공간 사실 — 둘 중 뼈대에 맞는 하나만]
+{{/hasBackgroundConflicts}}
+{{#backgroundConflicts}}
+- {{.}}
+{{/backgroundConflicts}}
 {{#hasBackgroundFacts}}
 
 {{/hasBackgroundFacts}}

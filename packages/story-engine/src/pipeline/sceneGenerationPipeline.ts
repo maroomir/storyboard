@@ -1,5 +1,6 @@
 import type {
   Background,
+  BackgroundFactConflict,
   CharacterCard,
   ProjectFormat,
   SceneContext,
@@ -20,6 +21,7 @@ import {
 import {
   computeDraftBodyHash,
   createEmptyBackground,
+  formatBackgroundFactConflict,
   renderSceneCardBody,
   splitSceneNarrativeSource,
   unknownDialogueSpeaker,
@@ -30,6 +32,7 @@ import {
   buildGenerateOptions,
   buildScenePersonas,
   describeBackgroundForScene,
+  findBackgroundFactConflictsForScene,
   withAttribution,
 } from './sceneGenerationStages';
 import {
@@ -55,6 +58,7 @@ import {
 } from './sceneGenerationTypes';
 
 export type {
+  BackgroundFactConflictStore,
   BackgroundMemoryStore,
   DialoguePolishSummary,
   PersonaMemoryStore,
@@ -239,6 +243,7 @@ async function expandSectionWithRetries(input: {
   readonly previousSection: string | undefined;
   readonly targetLength: number;
   readonly backgroundFacts: readonly string[];
+  readonly backgroundConflicts: readonly string[];
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
@@ -265,6 +270,7 @@ async function expandSectionWithRetries(input: {
         previousSection: input.previousSection,
         targetLength: input.targetLength,
         backgroundFacts: input.backgroundFacts,
+        backgroundConflicts: input.backgroundConflicts,
         retryReasons: reasons,
         isUnderLengthRetry,
       },
@@ -617,6 +623,7 @@ interface SceneRunState {
   readonly ctx: ResolvedExecutionContext;
   personasUsed: Map<string, string>;
   background: Background;
+  backgroundFactConflicts: readonly BackgroundFactConflict[];
   voiceSamples: Map<string, readonly string[]>;
   skeleton: string;
   polishedText: string;
@@ -667,6 +674,31 @@ const describeBackgroundStage: ISceneStage = {
   },
 };
 
+// NOTE: 노트 흡수가 남긴 배경 카드의 상충은 흡수 때만 경고됐다(#88). 이미 있는 카드도 여기서 한 번
+// 판정해 경고하고, 뼈대·살붙임이 둘 중 사건에 맞는 하나만 쓰도록 짝을 넘긴다(#108).
+const checkBackgroundFactsStage: ISceneStage = {
+  id: 'checkBackgroundFacts',
+  async run(state) {
+    const { ctx, input } = state;
+    const card = ctx.context.background;
+
+    if (card) {
+      state.backgroundFactConflicts = await findBackgroundFactConflictsForScene(
+        card,
+        ctx.aiService,
+        input.backgroundFactConflictStore,
+      );
+      state.warnings.push(
+        ...state.backgroundFactConflicts.map(
+          (conflict) =>
+            `배경 «${card.name}»: ${formatBackgroundFactConflict(conflict)}는 함께 참일 수 없어 사건에 맞는 쪽만 씁니다.`,
+        ),
+      );
+    }
+    assertNotCancelled(ctx.shouldCancel);
+  },
+};
+
 const collectVoiceSamplesStage: ISceneStage = {
   id: 'collectVoiceSamples',
   async run(state) {
@@ -695,6 +727,7 @@ const draftSkeletonStage: ISceneStage = {
         catchphrases: characterCatchphrases(ctx.context.characters),
         characterKnowledge: input.characterKnowledge,
         background: state.background,
+        backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
         previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
         endState: ctx.context.scene.card?.endState,
         grounding: ctx.context.scene.frontmatter.grounding,
@@ -785,6 +818,7 @@ const expandSectionStage: ISceneStage = {
         previousSection: expandedSections.at(-1),
         targetLength: targetLengths[index] as number,
         backgroundFacts: backgroundFactLines(state.background),
+        backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
         characters: ctx.context.characters,
         options: withAttribution(
           {
@@ -838,6 +872,7 @@ const attributeDialogueStage: ISceneStage = {
 export const sceneStages: Readonly<Record<SceneStageId, ISceneStage>> = {
   buildPersonas: buildPersonasStage,
   describeBackground: describeBackgroundStage,
+  checkBackgroundFacts: checkBackgroundFactsStage,
   collectVoiceSamples: collectVoiceSamplesStage,
   draftSkeleton: draftSkeletonStage,
   polishDialogue: polishDialogueStage,
@@ -857,6 +892,7 @@ async function executeSceneGenerationPipeline(
     ctx,
     personasUsed: new Map(),
     background: createEmptyBackground('scene-default', '미정'),
+    backgroundFactConflicts: [],
     voiceSamples: new Map(),
     skeleton: '',
     polishedText: '',

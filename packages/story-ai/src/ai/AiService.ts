@@ -192,6 +192,13 @@ export class StoryboardAiService {
     return this.sceneAiService.describeBackground(background, options, recentExcerpt);
   }
 
+  public async findBackgroundFactConflicts(
+    background: Background,
+    options: GenerateTextOptions = {},
+  ): ReturnType<SceneAiService['findBackgroundFactConflicts']> {
+    return this.sceneAiService.findBackgroundFactConflicts(background, options);
+  }
+
   public async draftSceneSkeleton(
     input: Parameters<SceneAiService['draftSceneSkeleton']>[0],
     options: GenerateTextOptions = {},

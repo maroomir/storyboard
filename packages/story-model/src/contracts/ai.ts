@@ -38,6 +38,7 @@ export const aiTaskCatalog = [
   // 원장·설정 파일이 이 이름을 담고 있어 enum 에서 빼면 그 파일들이 읽히지 않는다.
   { name: 'personaDialogue', label: '페르소나 대화 (사용 안 함)' },
   { name: 'backgroundDescription', label: '배경 묘사' },
+  { name: 'backgroundFactConflicts', label: '배경 사실 상충 검사' },
   { name: 'sceneDraft', label: '씬 드래프트' },
   { name: 'sceneSkeleton', label: '씬 뼈대' },
   { name: 'sceneDialoguePolish', label: '대사 다듬기' },

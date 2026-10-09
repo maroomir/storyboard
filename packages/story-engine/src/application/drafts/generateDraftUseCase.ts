@@ -13,6 +13,7 @@ import {
   type SceneCacheRecord,
 } from '@storyboard/story-model';
 import {
+  createBackgroundFactConflictStore,
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
   createSceneDialogueStore,
@@ -289,6 +290,7 @@ async function runAndPersistDraft(
       tuning: options.configBridge.getSceneGenerationTuning(),
       personaStore: createPersonaMemoryStore(options.fileSystem, threadPaths, scene.stem),
       backgroundStore: createBackgroundMemoryStore(options.fileSystem, threadPaths, scene.stem),
+      backgroundFactConflictStore: createBackgroundFactConflictStore(options.fileSystem, paths),
       dialogueCorpus: createSceneDialogueStore(options.fileSystem, threadPaths),
       backgroundRecentExcerpt,
     }).run();

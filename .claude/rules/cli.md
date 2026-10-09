@@ -126,7 +126,9 @@ is the single source for the parser's flag table, `--help`, per-verb help and `n
 `narrator create|list|show|remove`가 서술자 카드를 다루고, `init`·`project set`의 `--composition`이
 구성 프리셋을 적용한다(프리셋이 줄기와 서술자 카드를 만든다). `scene show <stem>`은 해석된
 시점·줄기를 한 줄로 보여 주고, `doctor`는 카드 없는 서술자 참조를 실패로, 계약에 없는 줄기와
-초점 없는 1·2인칭 서술자, 어느 인물 카드와도 맞지 않는 비트 출연(`cast`)을 경고로 보고한다.
+초점 없는 1·2인칭 서술자, 어느 인물 카드와도 맞지 않는 비트 출연(`cast`), 생성이 판정해 둔
+배경 카드의 상충(`.storyboard/cache/background-conflicts.json`, 카드가 그 뒤 바뀌었으면 보지 않음)을
+경고로 보고한다. doctor 자신은 AI를 부르지 않는다.
 
 ## Note import (`apps/cli/src/commands/notes.ts`)
 

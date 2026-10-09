@@ -28,10 +28,13 @@ import type {
   StoryCardTarget,
   StoryFileSnapshot,
 } from '@storyboard/story-engine';
+import { createBackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
+  getStoryboardProjectPaths,
   parseCard,
+  type BackgroundFactConflict,
   type CardCandidateItem,
   type CardCollectProposal,
   type NarratorCard,
@@ -45,6 +48,12 @@ export interface CardReading {
   readonly category: SidebarCardCategory;
   readonly uri: StoryUri;
   readonly card: StoryboardCard;
+}
+
+export interface BackgroundFactConflictReport {
+  readonly cardId: string;
+  readonly name: string;
+  readonly conflicts: readonly BackgroundFactConflict[];
 }
 
 export interface CardManagerDependencies {
@@ -97,6 +106,32 @@ export class CardManager {
     }
 
     return undefined;
+  }
+
+  // What generation's conflict check found on the background cards as they are now. A card changed
+  // since its check, or never checked, has no answer yet; reading costs nothing.
+  public async listBackgroundFactConflicts(
+    workspaceRoot: StoryUri,
+  ): Promise<BackgroundFactConflictReport[]> {
+    const store = createBackgroundFactConflictStore(
+      this.deps.fileSystem,
+      getStoryboardProjectPaths(workspaceRoot),
+    );
+    const reports: BackgroundFactConflictReport[] = [];
+
+    for (const summary of await this.list(workspaceRoot, 'background')) {
+      const reading = await this.read(workspaceRoot, summary.id);
+      if (reading === undefined || reading.card.type === 'character') {
+        continue;
+      }
+
+      const conflicts = (await store.load(reading.card)) ?? [];
+      if (conflicts.length > 0) {
+        reports.push({ cardId: reading.card.id, name: reading.card.name, conflicts });
+      }
+    }
+
+    return reports;
   }
 
   public listNarrators(workspaceRoot: StoryUri): Promise<ReadonlyMap<string, NarratorCard>> {

@@ -2,6 +2,10 @@ import {
   joinStoryPath,
   type StoryUri,
   computeBackgroundCardHash,
+  computeBackgroundFactConflictKey,
+  parseBackgroundFactConflictRecords,
+  serializeBackgroundFactConflictRecords,
+  type BackgroundFactConflictRecords,
   computeDraftBodyHash,
   computePersonaCardHash,
   parseDraft,
@@ -24,6 +28,7 @@ import type {
   SceneDialogueRecord,
 } from '@storyboard/story-model';
 import type {
+  IBackgroundFactConflictStore,
   IBackgroundMemoryStore,
   IPersonaMemoryStore,
   ISceneDialogueStore,
@@ -133,6 +138,57 @@ export function createBackgroundMemoryStore(
         updatedThroughScene: sceneStem,
         cardHash: computeBackgroundCardHash(card),
       });
+    },
+  };
+}
+
+// A record that cannot be read is no record: the cache saves a call, it never blocks one.
+export async function readBackgroundFactConflictRecords(
+  fs: IFileSystem,
+  paths: StoryboardProjectPaths,
+): Promise<BackgroundFactConflictRecords> {
+  if (!(await fs.exists(paths.backgroundFactConflicts))) {
+    return {};
+  }
+
+  try {
+    const raw = new TextDecoder().decode(await fs.readFile(paths.backgroundFactConflicts));
+    return parseBackgroundFactConflictRecords(raw);
+  } catch {
+    return {};
+  }
+}
+
+// NOTE: 판정은 카드 줄과 프롬프트 문구(작가의 덮어쓰기 포함)에만 달려 있으므로 줄기·씬과 무관하게
+// 작품 캐시 한 파일에 카드마다 둔다. doctor 가 같은 파일을 읽는다.
+export function createBackgroundFactConflictStore(
+  fs: IFileSystem,
+  paths: StoryboardProjectPaths,
+): IBackgroundFactConflictStore {
+  const promptFingerprint = promptResourceFingerprint('backgroundFactConflicts');
+
+  return {
+    async load(card) {
+      const record = (await readBackgroundFactConflictRecords(fs, paths))[card.id];
+      const isCurrent =
+        record?.inputKey === computeBackgroundFactConflictKey(card, promptFingerprint);
+
+      return isCurrent ? record?.conflicts : undefined;
+    },
+    async save(card, conflicts) {
+      const records = await readBackgroundFactConflictRecords(fs, paths);
+      const next = {
+        ...records,
+        [card.id]: {
+          inputKey: computeBackgroundFactConflictKey(card, promptFingerprint),
+          conflicts,
+        },
+      };
+      await fs.createDirectory(paths.cacheDirectory);
+      await fs.writeFile(
+        paths.backgroundFactConflicts,
+        new TextEncoder().encode(serializeBackgroundFactConflictRecords(next)),
+      );
     },
   };
 }

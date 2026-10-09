@@ -40,6 +40,12 @@ maxTokens: 8000
 [배경]
 {{backgroundDescription}}
 {{/backgroundDescription}}
+{{#hasBackgroundConflicts}}
+[어긋나는 배경 설정 — 둘 중 사건에 맞는 하나만]
+{{/hasBackgroundConflicts}}
+{{#backgroundConflicts}}
+- {{.}}
+{{/backgroundConflicts}}
 {{#hasPersonas}}
 [등장 캐릭터 페르소나]
 {{/hasPersonas}}

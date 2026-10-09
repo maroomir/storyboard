@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { configurationTargets } from '@storyboard/story-config';
 import { collectCurrentChapterHashes } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths } from '@storyboard/story-model';
+import { promptResourceFingerprint } from '@storyboard/story-ai';
+import {
+  computeBackgroundFactConflictKey,
+  getStoryboardProjectPaths,
+  type BackgroundCard,
+} from '@storyboard/story-model';
 
 import { createCliContainer } from '../src/container';
 import {
@@ -760,5 +765,75 @@ describe('storyboard doctor beat cast', () => {
     const checks = checksOf(await runDoctor({ container: container(), args: args() }));
 
     expect(checks.some((entry) => entry.label === '비트 출연')).toBe(false);
+  });
+});
+
+describe('storyboard doctor background conflicts', () => {
+  const sofa = '손님은 거실 소파에서 잔다';
+  const room = '손님에게 자기 방이 있다';
+
+  function checksOf(outcome: { data?: unknown }): { label: string; detail: string }[] {
+    return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
+  }
+
+  function writeWorkspaceWithCheckedCard(checkedLines: readonly string[]): void {
+    mkdirSync(join(workspace, '.storyboard', 'cache'), { recursive: true });
+    mkdirSync(join(workspace, 'background'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'project.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        id: 'p1',
+        name: '테스트',
+        format: 'novel',
+        language: 'ko',
+        createdAt: new Date().toISOString(),
+        editor: { scenePrefixDigits: 2 },
+      }),
+    );
+    writeFileSync(
+      join(workspace, 'background', 'condo.card'),
+      `type: location\nid: condo\nname: 해외 콘도\ndescription:\n  - ${sofa}\n  - ${room}\n`,
+    );
+    const checked = {
+      type: 'location',
+      id: 'condo',
+      name: '해외 콘도',
+      description: checkedLines,
+    } as unknown as BackgroundCard;
+    writeFileSync(
+      join(workspace, '.storyboard', 'cache', 'background-conflicts.json'),
+      JSON.stringify({
+        version: 1,
+        cards: {
+          condo: {
+            inputKey: computeBackgroundFactConflictKey(
+              checked,
+              promptResourceFingerprint('backgroundFactConflicts'),
+            ),
+            conflicts: [{ items: [sofa, room] }],
+          },
+        },
+      }),
+    );
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
+  }
+
+  it('warns about a conflict generation found on the card as it is', async () => {
+    writeWorkspaceWithCheckedCard([sofa, room]);
+
+    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+      (entry) => entry.label === '배경 사실 상충',
+    );
+
+    expect(check?.detail).toContain(`condo: 「${sofa}」 ↔ 「${room}」`);
+  });
+
+  it('stays quiet once the card changed since the check', async () => {
+    writeWorkspaceWithCheckedCard([sofa, room, '거실 통창 너머 바다']);
+
+    const checks = checksOf(await runDoctor({ container: container(), args: args() }));
+
+    expect(checks.some((entry) => entry.label === '배경 사실 상충')).toBe(false);
   });
 });

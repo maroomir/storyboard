@@ -76,6 +76,8 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       return '[]';
     case 'cardFactExtraction':
       return JSON.stringify({ attributes: [], relations: [], arc: { summary: '' } });
+    case 'backgroundFactConflicts':
+      return JSON.stringify({ conflicts: [] });
     case 'backgroundFactExtraction':
       return JSON.stringify({
         description: [],

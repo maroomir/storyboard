@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 
 import type {
   BackgroundCard,
+  BackgroundFactConflict,
   CharacterCard,
   SceneContext,
   SceneDialogueRecord,
@@ -73,6 +74,7 @@ function contextFor(
 function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly createCharacterPersona: ReturnType<typeof vi.fn>
   readonly describeBackground: ReturnType<typeof vi.fn>
+  readonly findBackgroundFactConflicts: ReturnType<typeof vi.fn>
   readonly draftSceneSkeleton: ReturnType<typeof vi.fn>
   readonly polishSceneDialogue: ReturnType<typeof vi.fn>
   readonly attributeSceneDialogue: ReturnType<typeof vi.fn>
@@ -81,6 +83,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   return {
     createCharacterPersona: vi.fn(async () => "p"),
     describeBackground: vi.fn(async () => ""),
+    findBackgroundFactConflicts: vi.fn(async () => []),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
     polishSceneDialogue: vi.fn(async () => polishResponse([])),
     attributeSceneDialogue: vi.fn(async (input) =>
@@ -311,6 +314,90 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
 
     const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as { backgroundFacts: readonly string[] }
     expect(expansionInput.backgroundFacts).toEqual(["오후", "12층", "거실 통창 너머 바다", "에어컨 바람 냄새"])
+  })
+})
+
+describe("runSceneGenerationPipeline — 배경 사실 점검", () => {
+  const guestRoom: BackgroundCard = {
+    type: "location",
+    id: "condo",
+    name: "해외 콘도",
+    locationKind: "place",
+    description: ["손님은 거실 소파에서 잔다", "손님에게 자기 방이 있다", "거실 통창 너머 바다"],
+    characterIds: [],
+    tags: []
+  }
+  const sofaOrRoom: BackgroundFactConflict = {
+    items: ["손님은 거실 소파에서 잔다", "손님에게 자기 방이 있다"]
+  }
+
+  function createMemoryConflictStore(): {
+    load: ReturnType<typeof vi.fn>
+    save: ReturnType<typeof vi.fn>
+  } {
+    const saved = new Map<string, readonly BackgroundFactConflict[]>()
+    return {
+      load: vi.fn(async (card: BackgroundCard) => saved.get(card.id)),
+      save: vi.fn(async (card: BackgroundCard, conflicts: readonly BackgroundFactConflict[]) => {
+        saved.set(card.id, conflicts)
+      })
+    }
+  }
+
+  it("warns about a contradicting pair and hands it to the skeleton and every expansion", async () => {
+    const ai = createRecordingAiService()
+    ai.findBackgroundFactConflicts.mockResolvedValueOnce([sofaOrRoom])
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", guestRoom),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const pair = "「손님은 거실 소파에서 잔다」 ↔ 「손님에게 자기 방이 있다」"
+    expect(result.warnings).toContain(
+      `배경 «해외 콘도»: ${pair}는 함께 참일 수 없어 사건에 맞는 쪽만 씁니다.`
+    )
+    const skeletonInput = ai.draftSceneSkeleton.mock.calls[0]?.[0] as {
+      backgroundConflicts: readonly string[]
+    }
+    expect(skeletonInput.backgroundConflicts).toEqual([pair])
+    for (const call of ai.expandSceneSection.mock.calls) {
+      expect((call[0] as { backgroundConflicts: readonly string[] }).backgroundConflicts).toEqual([pair])
+    }
+  })
+
+  it("asks once per card and reuses the stored answer", async () => {
+    const ai = createRecordingAiService()
+    const store = createMemoryConflictStore()
+    const run = (): ReturnType<typeof runSceneGenerationPipeline> =>
+      runSceneGenerationPipeline({
+        sceneStem: "01-opening",
+        context: contextFor([eliaCard], "본문", guestRoom),
+        aiService: ai,
+        format: "novel",
+        backgroundFactConflictStore: store
+      })
+
+    await run()
+    await run()
+
+    expect(ai.findBackgroundFactConflicts).toHaveBeenCalledTimes(1)
+    expect(store.save).toHaveBeenCalledWith(guestRoom, [])
+  })
+
+  it("does not ask about a card with a single line", async () => {
+    const ai = createRecordingAiService()
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", { ...guestRoom, description: ["거실 통창 너머 바다"] }),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.findBackgroundFactConflicts).not.toHaveBeenCalled()
   })
 })
 

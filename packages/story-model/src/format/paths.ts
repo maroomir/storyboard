@@ -15,6 +15,7 @@ export interface StoryboardRelativePaths {
   readonly runLock: string;
   readonly sceneRenameJournal: string;
   readonly sceneGroundingGaps: string;
+  readonly backgroundFactConflicts: string;
   readonly sceneCacheDirectory: string;
   readonly storyState: string;
   readonly chapterSummaries: string;
@@ -65,6 +66,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   runLock: '.storyboard/cache/run.lock',
   sceneRenameJournal: '.storyboard/cache/scene-rename.json',
   sceneGroundingGaps: '.storyboard/cache/grounding-gaps.json',
+  backgroundFactConflicts: '.storyboard/cache/background-conflicts.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
   storyState: '.storyboard/memory/storyState.md',
   chapterSummaries: '.storyboard/memory/summaries.md',

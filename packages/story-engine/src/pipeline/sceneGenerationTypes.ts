@@ -6,6 +6,7 @@ import type {
   StyleDirective,
 } from '@storyboard/story-model';
 import type {
+  IBackgroundFactConflictStore,
   IBackgroundMemoryStore,
   IPersonaMemoryStore,
   ISceneDialogueCorpus,
@@ -18,6 +19,7 @@ export type SceneGenerationPipelineAiService = Pick<
   StoryboardAiService,
   | 'createCharacterPersona'
   | 'describeBackground'
+  | 'findBackgroundFactConflicts'
   | 'draftSceneSkeleton'
   | 'polishSceneDialogue'
   | 'attributeSceneDialogue'
@@ -41,6 +43,7 @@ export interface SceneGenerationPipelineTaskProviders {
 
 export type PersonaMemoryStore = IPersonaMemoryStore;
 export type BackgroundMemoryStore = IBackgroundMemoryStore;
+export type BackgroundFactConflictStore = IBackgroundFactConflictStore;
 export type SceneDialogueStore = ISceneDialogueStore;
 export type SceneDialogueCorpus = ISceneDialogueCorpus;
 
@@ -80,6 +83,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly tuning?: SceneGenerationTuning;
   readonly personaStore?: PersonaMemoryStore;
   readonly backgroundStore?: BackgroundMemoryStore;
+  readonly backgroundFactConflictStore?: BackgroundFactConflictStore;
   readonly dialogueCorpus?: SceneDialogueCorpus;
   // 같은 장소가 다시 나올 때 직전 등장 씬에서 뽑은 발췌. 있으면 배경 묘사를 캐시 대신 갱신한다.
   readonly backgroundRecentExcerpt?: string;
