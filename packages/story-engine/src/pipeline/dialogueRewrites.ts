@@ -54,14 +54,11 @@ export function mergeDialogueRewrites(
 
   for (const rewrites of rewritesByCharacter.values()) {
     for (const rewrite of rewrites) {
-      const text = stripOuterQuotes(rewrite.text);
-      const dialogue = numbered.dialogues[rewrite.index - 1];
+      const text = claimableRewriteText(rewrite, numbered);
 
-      if (dialogue === undefined || text.length === 0 || forbiddenRewriteCharacters.test(text)) {
-        continue;
+      if (text !== undefined) {
+        claims.set(rewrite.index, [...(claims.get(rewrite.index) ?? []), text]);
       }
-
-      claims.set(rewrite.index, [...(claims.get(rewrite.index) ?? []), text]);
     }
   }
 
@@ -90,6 +87,24 @@ export function mergeDialogueRewrites(
   }
 
   return { text, replacedCount, contestedIndices };
+}
+
+// 병합이 실제로 바꿔 넣을 문장. 없는 번호, 빈 문장, 따옴표·줄바꿈·번호 표시가 든 문장은 버린다.
+export function claimableRewriteText(
+  rewrite: SceneDialogueRewrite,
+  numbered: NumberedSkeleton,
+): string | undefined {
+  const text = stripOuterQuotes(rewrite.text);
+
+  if (
+    numbered.dialogues[rewrite.index - 1] === undefined ||
+    text.length === 0 ||
+    forbiddenRewriteCharacters.test(text)
+  ) {
+    return undefined;
+  }
+
+  return text;
 }
 
 // NOTE: 모델은 받은 뼈대의 ⟨n⟩ 번호를 문장 앞에 그대로 붙여 돌려주기도 한다. 그대로 넣으면 어느

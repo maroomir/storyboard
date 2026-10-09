@@ -74,7 +74,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 구 버전 항목은 판정할 수 없으므로 통과시킨다. 목격자는 `storyStateUpdate`가 항목마다 이름으로 달고
 (없거나 단 이름 중 하나라도 카드와 맞지 않으면 씬 전원), 뼈대와 인물별 대사 다듬기는 인물마다 자기가
 목격한 항목만 `[아는 것]`으로 받는다. 씬 카드의 비트는 `cast`·`place`·`time` 좌표를 달 수 있고, 대사
-다듬기는 인물 하나에 호출 하나이며 검증·재호출도 인물 단위다(끝내 위반한 인물만 뼈대 대사로 남는다).
+다듬기는 인물 하나에 호출 하나이며 검증은 번호 단위, 재호출은 인물 단위다(끝내 위반한 번호만 뼈대 대사로 남는다).
 다듬기는 원장의 관계 변화를 받아 카드의 상대별 말투(`relations[].speech`)보다 앞세운다.
 
 ## Domain Boundaries

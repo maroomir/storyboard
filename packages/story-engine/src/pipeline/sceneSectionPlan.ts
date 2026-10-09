@@ -590,3 +590,52 @@ export function validatePolishedSkeleton(input: {
 
   return violations;
 }
+
+// NOTE: 다듬기 위반은 대개 번호 하나의 일이다 — 4자 미만으로 줄어 대사로 세어지지 않는 "응." 하나가
+// 그 인물의 손질 전체를 뼈대로 되돌렸다(#106). 번호마다 판정해 그 번호만 뼈대대로 둔다. 분량은 씬
+// 전체로만 판정할 수 있으므로 여기서 보지 않는다.
+export function findPolishedLineViolations(input: {
+  readonly skeleton: string;
+  readonly lines: ReadonlyMap<number, string>;
+  readonly characters: readonly CharacterCard[];
+  readonly tuning?: SceneGenerationTuningInput;
+}): Map<number, SectionViolation[]> {
+  const resolved = resolveSceneGenerationTuning(input.tuning);
+  const skeletonCast = detectCanonicalCast(input.skeleton, input.characters);
+  const violationsByIndex = new Map<number, SectionViolation[]>();
+
+  for (const [index, line] of input.lines) {
+    const violations: SectionViolation[] = [];
+
+    if (countDialogueTurns(`“${line}”`, resolved) !== 1) {
+      violations.push({
+        kind: 'dialogue-count',
+        detail: `⟨${index}⟩이 ${resolved.dialogueMinimumQuotedLength}자보다 짧아져 대사로 세어지지 않습니다`,
+      });
+    }
+
+    const added = [...detectCanonicalCast(line, input.characters)].filter(
+      (name) => !skeletonCast.has(name),
+    );
+    if (added.length > 0) {
+      violations.push({
+        kind: 'cast',
+        detail: `⟨${index}⟩에 뼈대에 없는 인물이 나옵니다 (${added.join(', ')})`,
+      });
+    }
+
+    const foreign = findForeignScriptSpans(line);
+    if (foreign.length > 0) {
+      violations.push({
+        kind: 'foreign-script',
+        detail: `⟨${index}⟩에 외국 문자가 섞였습니다 (${foreign.map((span) => `"${span.text}"`).join(', ')})`,
+      });
+    }
+
+    if (violations.length > 0) {
+      violationsByIndex.set(index, violations);
+    }
+  }
+
+  return violationsByIndex;
+}
