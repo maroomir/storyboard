@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  countMissingSceneCoordinates,
   extractSceneCoordinates,
   listSceneCoordinates,
   sceneCoordinatesFromBeats,
@@ -38,6 +39,20 @@ describe('scene coordinate markers', () => {
     expect(extracted.text).toBe('첫 대목.\n---\n교문을 나섰다.');
     expect(extracted.ledger.segments).toEqual([undefined, afternoon]);
     expect(listSceneCoordinates(extracted.ledger)).toEqual([`2. ${afternoon}`]);
+    expect(countMissingSceneCoordinates(extracted.ledger)).toBe(1);
+  });
+
+  it('keeps a slot for a trailing segment whose marker is missing', () => {
+    const extracted = extractSceneCoordinates(
+      [`⟪${morning}⟫`, '첫 대목.', '---', '둘째 대목.', '---', '셋째 대목.'].join('\n'),
+    );
+
+    expect(extracted.ledger.segments).toEqual([morning, undefined, undefined]);
+    expect(countMissingSceneCoordinates(extracted.ledger)).toBe(2);
+  });
+
+  it('counts nothing missing when the skeleton has no markers at all', () => {
+    expect(countMissingSceneCoordinates(extractSceneCoordinates('첫 대목.\n---\n둘째 대목.').ledger)).toBe(0);
   });
 
   it('falls back to object beat coordinates, merging consecutive repeats', () => {

@@ -431,6 +431,36 @@ describe("runSceneGenerationPipeline — 장면 좌표", () => {
     ])
   })
 
+  it("drops a ledger with a marker missing after a break and uses the beats instead, with a warning", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(
+      ["⟪시각: 아침 / 장소: 거실 / 있는 사람: 엘리아⟫", "엘리아가 밥을 먹었다.", "", "---", "", "그날 오후, 엘리아가 교문을 나섰다."].join("\n")
+    )
+    const context = contextFor([eliaCard], "본문")
+    const scene = {
+      ...context.scene,
+      card: {
+        type: "scene",
+        id: "01-opening",
+        beats: [
+          { text: "밥을 먹는다", place: "거실", time: "아침" },
+          { text: "교문을 나선다", place: "교문 앞", time: "방과 후" }
+        ]
+      }
+    }
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: { ...context, scene } as SceneContext,
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.skeleton).not.toContain("⟪")
+    expect(result.sceneCoordinates).toEqual(["1. 장소: 거실 / 시각: 아침", "2. 장소: 교문 앞 / 시각: 방과 후"])
+    expect(result.warnings).toContain("뼈대: 장면 표식이 1곳 빠져 비트의 좌표를 대신 씁니다.")
+  })
+
   it("leaves the ledger empty when neither the skeleton nor the beats give coordinates", async () => {
     const ai = createRecordingAiService()
 
