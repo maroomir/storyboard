@@ -110,7 +110,7 @@ async function reportResult(result: {
 }): Promise<void> {
   if (result.preservedOriginal && result.rejection) {
     await vscode.window.showWarningMessage(
-      `재작성 결과가 너무 짧거나 본문 형식이 아니어서 원본을 유지했습니다 (${result.rejection.candidateLength}자 / 원본 ${result.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
+      `재작성 결과가 분량·본문 형식·장면 구분(---) 기준을 통과하지 않아 원본을 유지했습니다 (${result.rejection.candidateLength}자 / 원본 ${result.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
     );
     return;
   }

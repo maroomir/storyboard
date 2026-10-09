@@ -2,7 +2,12 @@ import { clampIntegerSetting, integerSettingDefault } from '@storyboard/story-mo
 
 export { resolveSceneTargetLength } from '@storyboard/story-model';
 
-export type DraftCandidateRejectionReason = 'empty' | 'meta-response' | 'too-short' | 'not-shorter';
+export type DraftCandidateRejectionReason =
+  | 'empty'
+  | 'meta-response'
+  | 'too-short'
+  | 'not-shorter'
+  | 'scene-breaks-changed';
 
 export interface DraftCandidateLengthPolicy {
   readonly maxCompressionPercent: number;
@@ -71,7 +76,17 @@ export function validateDraftCandidate(
     return { accepted: false, candidateLength, minimumLength, reason: 'not-shorter' };
   }
 
+  // NOTE: 재작성은 본문 전체를 한 번에 다시 쓰므로 프롬프트의 «--- 유지»만으로는 구간 경계가 지켜지지
+  // 않았다(#108: 6구간이 경계가 옮겨진 채 통과). 장면 전환 수가 바뀐 후보는 원본을 지킨다.
+  if (countSceneBreaks(candidate) !== countSceneBreaks(originalBody)) {
+    return { accepted: false, candidateLength, minimumLength, reason: 'scene-breaks-changed' };
+  }
+
   return { accepted: true, candidateLength, minimumLength };
+}
+
+function countSceneBreaks(text: string): number {
+  return text.split('\n').filter((line) => line.trim() === '---').length;
 }
 
 function looksLikeDraftMetaResponse(text: string): boolean {
