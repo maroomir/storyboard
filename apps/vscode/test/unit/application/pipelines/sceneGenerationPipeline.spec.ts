@@ -994,10 +994,62 @@ describe("대사 다듬기 단계", () => {
     expect(names).toEqual(["엘리아", "지훈", "엘리아"])
     expect(result.skeleton).toBe("엘리아가 말했다. “가자, 지금.” 그가 답했다. “알았다니까.”")
     const polishWarnings = result.warnings.filter((warning) => warning.includes("다듬기"))
-    expect(polishWarnings).toHaveLength(1)
-    expect(polishWarnings[0]).toContain("엘리아의 대사 다듬기를 되돌렸습니다")
-    expect(polishWarnings[0]).toContain("지훈")
+    expect(polishWarnings).toEqual([])
+    const heldBack = result.warnings.filter((warning) => warning.includes("뼈대대로 두었습니다"))
+    expect(heldBack).toHaveLength(1)
+    expect(heldBack[0]).toContain("엘리아의 대사 1개를")
+    expect(heldBack[0]).toContain("⟨1⟩에 뼈대에 없는 인물이 나옵니다 (지훈)")
     expect(result.dialoguePolish).toEqual({ lineCount: 2, polishedCount: 1, contestedCount: 0 })
+  })
+
+  // #106: 주인공의 대사 하나가 "응."으로 줄어 턴 수가 하나 모자라자 그 인물의 손질 전체가 뼈대로
+  // 돌아가 163개 중 39개만 손봤다. 이제 그 번호만 뼈대대로 두고 나머지는 받는다.
+  it("keeps the skeleton line only for the number that broke, and the rest of the character's rewrites", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(
+      "엘리아가 말했다. “가자, 지금.” 이어서 “정말이야, 진짜로.” 마지막으로 “늦으면 안 돼.”"
+    )
+    ai.polishSceneDialogue.mockResolvedValue(
+      polishResponse([
+        { index: 1, text: "가자, 당장." },
+        { index: 2, text: "응." },
+        { index: 3, text: "늦으면 끝이야." }
+      ])
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(2)
+    const retryInput = ai.polishSceneDialogue.mock.calls[1]?.[0] as { retryReasons?: string[] }
+    expect(retryInput.retryReasons).toEqual(["⟨2⟩이 4자보다 짧아져 대사로 세어지지 않습니다"])
+    expect(result.skeleton).toBe(
+      "엘리아가 말했다. “가자, 당장.” 이어서 “정말이야, 진짜로.” 마지막으로 “늦으면 끝이야.”"
+    )
+    expect(result.warnings).toContain(
+      "엘리아의 대사 1개를 뼈대대로 두었습니다 — ⟨2⟩이 4자보다 짧아져 대사로 세어지지 않습니다"
+    )
+    expect(result.dialoguePolish).toEqual({ lineCount: 3, polishedCount: 2, contestedCount: 0 })
+  })
+
+  it("still rolls the whole character back when its rewrites push the scene past the length limit", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
+    ai.polishSceneDialogue.mockResolvedValue(polishResponse([{ index: 1, text: "가자, ".repeat(30) }]))
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.skeleton).toBe("엘리아가 말했다. “가자, 지금.”")
+    expect(result.warnings.some((warning) => warning.startsWith("엘리아의 대사 다듬기를 되돌렸습니다"))).toBe(true)
   })
 
   it("hands the rejection reasons to the retry call", async () => {

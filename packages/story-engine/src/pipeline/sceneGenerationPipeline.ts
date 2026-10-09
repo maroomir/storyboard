@@ -12,7 +12,11 @@ import {
   type GenerateTextOptions,
   type SceneDialogueRewrite,
 } from '@storyboard/story-ai';
-import { mergeDialogueRewrites, numberSkeletonDialogue } from './dialogueRewrites';
+import {
+  claimableRewriteText,
+  mergeDialogueRewrites,
+  numberSkeletonDialogue,
+} from './dialogueRewrites';
 import {
   computeDraftBodyHash,
   createEmptyBackground,
@@ -29,6 +33,7 @@ import {
   withAttribution,
 } from './sceneGenerationStages';
 import {
+  findPolishedLineViolations,
   planSectionCount,
   planSectionTargetLengths,
   quotedDialoguePatternFor,
@@ -351,6 +356,8 @@ async function polishDialogueOrKeepSkeleton(input: {
 
   const accepted = new Map<string, readonly SceneDialogueRewrite[]>();
   const rejected = new Map<string, readonly SectionViolation[]>();
+  // 위반한 번호를 뺀 나머지가 씬 검증을 통과하면, 재시도가 끝내 실패해도 그 나머지는 받는다.
+  const partial = new Map<string, { rewrites: readonly SceneDialogueRewrite[]; heldBack: number }>();
   const truncated = new Set<string>();
   let pending = speakers;
 
@@ -391,30 +398,53 @@ async function polishDialogueOrKeepSkeleton(input: {
         truncated.delete(name);
       }
 
-      const solo = mergeDialogueRewrites(
-        input.skeleton,
-        numbered,
-        new Map([[name, response.rewrites]]),
+      const lines = new Map(
+        response.rewrites.flatMap((rewrite) => {
+          const text = claimableRewriteText(rewrite, numbered);
+          return text === undefined ? [] : [[rewrite.index, text] as const];
+        }),
       );
-      const violations = validateAgainstSkeleton(solo.text);
+      const lineViolations = findPolishedLineViolations({
+        skeleton: input.skeleton,
+        lines,
+        characters: input.characters,
+        tuning: input.tuning,
+      });
+      const kept = response.rewrites.filter((rewrite) => !lineViolations.has(rewrite.index));
+      const solo = mergeDialogueRewrites(input.skeleton, numbered, new Map([[name, kept]]));
+      const sceneViolations = validateAgainstSkeleton(solo.text);
+      const violations = [...[...lineViolations.values()].flat(), ...sceneViolations];
 
       if (violations.length === 0) {
         accepted.set(name, response.rewrites);
         rejected.delete(name);
+        partial.delete(name);
       } else {
         rejected.set(name, violations);
         failing.push(name);
+        if (sceneViolations.length === 0) {
+          partial.set(name, { rewrites: kept, heldBack: lineViolations.size });
+        } else {
+          partial.delete(name);
+        }
       }
     }
 
     pending = failing;
   }
 
+  for (const [name, kept] of partial) {
+    accepted.set(name, kept.rewrites);
+  }
+
   const warnings = [
-    ...[...rejected.entries()].map(
-      ([name, violations]) =>
-        `${name}의 대사 다듬기를 되돌렸습니다 — ${violations.map((violation) => violation.detail).join(' / ')}`,
-    ),
+    ...[...rejected.entries()].map(([name, violations]) => {
+      const details = violations.map((violation) => violation.detail).join(' / ');
+      const kept = partial.get(name);
+      return kept === undefined
+        ? `${name}의 대사 다듬기를 되돌렸습니다 — ${details}`
+        : `${name}의 대사 ${kept.heldBack}개를 뼈대대로 두었습니다 — ${details}`;
+    }),
     ...[...truncated]
       .filter((name) => !rejected.has(name))
       .map(
