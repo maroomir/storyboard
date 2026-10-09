@@ -28,6 +28,7 @@ import {
 } from '@storyboard/story-model';
 import { condensePreviousContext } from './sceneGenerationPolicies';
 import {
+  countMissingSceneCoordinates,
   extractSceneCoordinates,
   hasSceneCoordinates,
   listSceneCoordinates,
@@ -760,9 +761,20 @@ const draftSkeletonStage: ISceneStage = {
     );
     const extracted = extractSceneCoordinates(skeleton.text);
     state.skeleton = extracted.text;
-    state.sceneCoordinates = hasSceneCoordinates(extracted.ledger)
-      ? extracted.ledger
-      : sceneCoordinatesFromBeats(ctx.context.scene.card?.beats, castNameOf(ctx.context));
+    const missingCoordinates = countMissingSceneCoordinates(extracted.ledger);
+    if (hasSceneCoordinates(extracted.ledger) && missingCoordinates === 0) {
+      state.sceneCoordinates = extracted.ledger;
+    } else {
+      state.sceneCoordinates = sceneCoordinatesFromBeats(
+        ctx.context.scene.card?.beats,
+        castNameOf(ctx.context),
+      );
+      if (hasSceneCoordinates(extracted.ledger)) {
+        state.warnings.push(
+          `뼈대: 장면 표식이 ${missingCoordinates}곳 빠져 비트의 좌표를 대신 씁니다.`,
+        );
+      }
+    }
     state.polishedText = state.skeleton;
     state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
     assertNotCancelled(ctx.shouldCancel);

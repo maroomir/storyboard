@@ -43,14 +43,21 @@ export function extractSceneCoordinates(skeleton: string): {
   }
 
   const hasMarkers = segments.length > 0 || skeleton.includes('⟪');
+  // 표식이 하나라도 있으면 끝 대목까지 자리를 잡아 두어, 뒤쪽 표식 누락도 빈 대목으로 드러난다.
+  const segmentCount = hasMarkers ? segmentIndex + 1 : 0;
 
   return {
     text: hasMarkers ? keptLines.join('\n').replace(/\n{3,}/g, '\n\n').trim() : skeleton,
     ledger: {
-      segments: Array.from({ length: segments.length }, (_, index) => segments[index]),
+      segments: Array.from({ length: segmentCount }, (_, index) => segments[index]),
       isAlignedWithBreaks: true,
     },
   };
+}
+
+// 빈 대목이 있는 장부는 검수가 앞 대목의 좌표를 뒤 대목까지 적용해 거짓 모순을 내므로 통째로 쓰지 않는다.
+export function countMissingSceneCoordinates(ledger: SceneCoordinateLedger): number {
+  return ledger.segments.filter((segment) => segment === undefined).length;
 }
 
 // 뼈대가 표식을 남기지 않았을 때 객체 비트의 좌표로 대신한다. 같은 좌표가 이어지면 한 대목으로 본다.
