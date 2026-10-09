@@ -20,6 +20,7 @@ import {
   validateExpandedSection,
   validatePolishedSkeleton,
   validateSceneSkeleton,
+  findCatchphraseOveruse,
   findRepeatedDialogueRun,
   type SceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
@@ -1095,6 +1096,56 @@ describe("대사 다듬기 단계", () => {
     expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(1)
     expect(result.warnings).toContain("엘리아의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다")
   })
+})
+
+// #106: 입버릇은 반복 제한의 예외라 23,511자에 "세기의 철학자"가 46회 나왔다.
+describe("findCatchphraseOveruse", () => {
+  const joker: CharacterCard = { ...eliaCard, catchphrases: ["세기의 철학자", "평민"] }
+
+  it("warns when a character's catchphrases outnumber the beats", () => {
+    const text = `${"세기의 철학자가 말하노니. ".repeat(3)}평민들아.`
+
+    expect(findCatchphraseOveruse({ text, characters: [joker, jihoonCard], beatCount: 3 })).toEqual([
+      '엘리아의 입버릇이 4회 나옵니다 (비트 3개, 상한 3회): "세기의 철학자" 3회, "평민" 1회'
+    ])
+  })
+
+  it("stays quiet at the limit, and when the scene has no beats to measure by", () => {
+    const text = "세기의 철학자. 세기의 철학자."
+
+    expect(findCatchphraseOveruse({ text, characters: [joker], beatCount: 2 })).toEqual([])
+    expect(findCatchphraseOveruse({ text, characters: [joker], beatCount: 0 })).toEqual([])
+  })
+
+  it("scales the limit by the per-beat knob", () => {
+    const text = "세기의 철학자. ".repeat(4)
+
+    expect(
+      findCatchphraseOveruse({
+        text,
+        characters: [joker],
+        beatCount: 2,
+        tuning: { "generation.catchphrase.perBeatLimit": 2 }
+      })
+    ).toEqual([])
+  })
+})
+
+it("reports catchphrase overuse in the generated draft's warnings", async () => {
+  const ai = createRecordingAiService()
+  const joker: CharacterCard = { ...eliaCard, catchphrases: ["세기의 철학자"] }
+  ai.expandSceneSection.mockResolvedValue(longProse("세기의 철학자 세기의 철학자 세기의 철학자"))
+  const context = contextFor([joker], "본문")
+  const scene = { ...context.scene, card: { type: "scene", id: "01-opening", beats: ["문을 연다", "나간다"] } }
+
+  const result = await runSceneGenerationPipeline({
+    sceneStem: "01-opening",
+    context: { ...context, scene } as SceneContext,
+    aiService: ai,
+    format: "novel"
+  })
+
+  expect(result.warnings.some((warning) => warning.startsWith("엘리아의 입버릇이 3회 나옵니다 (비트 2개"))).toBe(true)
 })
 
 describe("대사 화자 귀속 단계", () => {

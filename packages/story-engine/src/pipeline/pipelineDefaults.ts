@@ -44,6 +44,10 @@ const pipelineDefaultsSchema = z.object({
     lengthLimitRatio: z.number().positive(),
     retryLimit: positiveInt,
   }),
+  catchphrase: z.object({
+    // 인물 하나의 입버릇이 비트 하나에 나와도 되는 횟수. 넘으면 초안 경고만 낸다.
+    perBeatLimit: positiveInt,
+  }),
   padding: z.object({
     // 같은 문단을 되풀이한 것으로 보는 유사도 임계와, 그 판정에 넣을 최소 문단 길이.
     paragraphRatio: ratio,

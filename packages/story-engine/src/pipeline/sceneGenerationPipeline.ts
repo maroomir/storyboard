@@ -33,6 +33,7 @@ import {
   withAttribution,
 } from './sceneGenerationStages';
 import {
+  findCatchphraseOveruse,
   findPolishedLineViolations,
   planSectionCount,
   planSectionTargetLengths,
@@ -357,7 +358,10 @@ async function polishDialogueOrKeepSkeleton(input: {
   const accepted = new Map<string, readonly SceneDialogueRewrite[]>();
   const rejected = new Map<string, readonly SectionViolation[]>();
   // 위반한 번호를 뺀 나머지가 씬 검증을 통과하면, 재시도가 끝내 실패해도 그 나머지는 받는다.
-  const partial = new Map<string, { rewrites: readonly SceneDialogueRewrite[]; heldBack: number }>();
+  const partial = new Map<
+    string,
+    { rewrites: readonly SceneDialogueRewrite[]; heldBack: number }
+  >();
   const truncated = new Set<string>();
   let pending = speakers;
 
@@ -800,6 +804,14 @@ const expandSectionStage: ISceneStage = {
     }
 
     state.draftBody = expandedSections.join('\n\n');
+    state.warnings.push(
+      ...findCatchphraseOveruse({
+        text: state.draftBody,
+        characters: ctx.context.characters,
+        beatCount: ctx.context.scene.card?.beats?.length ?? 0,
+        tuning: ctx.tuning,
+      }),
+    );
   },
 };
 

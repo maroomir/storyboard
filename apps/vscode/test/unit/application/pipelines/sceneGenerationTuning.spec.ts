@@ -38,6 +38,7 @@ describe("resolveSceneGenerationTuning", () => {
       dialogueMinimumQuotedLength: pipelineDefaults.dialogue.minimumQuotedLength,
       polishLengthLimitRatio: pipelineDefaults.polish.lengthLimitRatio,
       polishRetryLimit: pipelineDefaults.polish.retryLimit,
+      catchphrasePerBeatLimit: pipelineDefaults.catchphrase.perBeatLimit,
       paddingParagraphRatio: pipelineDefaults.padding.paragraphRatio,
       paddingParagraphMinimumLength: pipelineDefaults.padding.paragraphMinimumLength,
       voiceSampleLimit: pipelineDefaults.voiceSamples.limit,

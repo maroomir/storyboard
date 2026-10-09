@@ -255,7 +255,7 @@ description:
 voice:
   - 밝고 또렷한 1인칭으로 말한다
   - 긴장해도 말끝을 흐리지 않는다
-catchphrases:            # 반복돼야 하는 입버릇·러닝개그. voice 의 예시 대사와 달리 복사 금지·반복 제한의 예외
+catchphrases:            # 반복돼야 하는 입버릇·러닝개그. voice 의 예시 대사와 달리 복사 금지·반복 제한의 예외. 비트당 1회(generation.catchphrase.perBeatLimit)를 넘으면 초안 경고
   - 이 몸이 말이야
 desire:
   - 새 학교에서 진짜 친구를 만들고 싶다

@@ -58,7 +58,11 @@ export function formatAugmentCards(
   for (const character of characters) {
     const lines = [`[${character.name}] 역할: ${character.role ?? 'extra'}`];
     appendCardLine(lines, '말투', joinCardText(character.voice));
-    appendCardLine(lines, '입버릇(반복해야 함)', (character.catchphrases ?? []).join(' / '));
+    appendCardLine(
+      lines,
+      '입버릇(대사에서 되풀이, 사건 하나에 한 번까지)',
+      (character.catchphrases ?? []).join(' / '),
+    );
     appendCardLine(
       lines,
       '상대별 말투',

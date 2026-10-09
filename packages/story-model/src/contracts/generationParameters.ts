@@ -118,6 +118,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 1, max: 4 },
   },
   {
+    id: 'generation.catchphrase.perBeatLimit',
+    label: '비트당 입버릇 상한',
+    kind: 'count',
+    bounds: { min: 1, max: 5 },
+  },
+  {
     id: 'generation.padding.paragraphRatio',
     label: '문단 되풀이 유사도',
     kind: 'ratio',
