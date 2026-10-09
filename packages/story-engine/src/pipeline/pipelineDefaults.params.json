@@ -8,7 +8,7 @@
   "skeleton": {
     "lengthRatio": 0.3333333333333333,
     "retryLimit": 1,
-    "minimumLengthRatio": 0.5
+    "minimumLengthRatio": 0.8
   },
   "dialogue": {
     "preservedRatio": 0.85,

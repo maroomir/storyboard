@@ -191,7 +191,7 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     expect(input.targetLength).toBe(5000)
   })
 
-  it("redrafts a skeleton that came in under half its target, carrying the reason", async () => {
+  it("redrafts a skeleton that came in under 80% of its target, carrying the reason", async () => {
     const ai = createRecordingAiService()
     const thin = `엘리아가 문을 열었다. "가자." ${"짧다. ".repeat(20)}`
     const fuller = `엘리아가 문을 열었다. "가자." ${"밀고 당기는 말이 이어졌다. ".repeat(80)}`
@@ -209,8 +209,9 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     const retryInput = ai.draftSceneSkeleton.mock.calls[1]?.[0] as {
       retryReasons?: readonly string[]
     }
-    expect(retryInput.retryReasons?.join(" ")).toContain("절반")
+    expect(retryInput.retryReasons?.join(" ")).toContain("80%")
     expect(result.skeleton).toBe(fuller)
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대:"))).toEqual([])
   })
 
   it("keeps the fuller of two short skeletons rather than the last one", async () => {
@@ -229,6 +230,24 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
 
     expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)
     expect(result.skeleton).toBe(thin)
+  })
+
+  // #106: 재시도 뒤에도 짧은 뼈대가 경고 없이 통과해 살붙임 미달 경고만 남았다. 원인은 뼈대였다.
+  it("warns when the kept skeleton is still under its floor after the retry", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValue(`"가자." ${"짧다. ".repeat(10)}`)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 3000 }
+    })
+
+    const skeletonWarnings = result.warnings.filter((warning) => warning.startsWith("뼈대:"))
+    expect(skeletonWarnings).toHaveLength(1)
+    expect(skeletonWarnings[0]).toContain("목표 1,000자의 80%")
   })
 
   it("passes the card end state so the skeleton knows where to stop", async () => {
@@ -448,7 +467,9 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
 
     expect(ai.expandSceneSection).toHaveBeenCalledTimes(3)
     expect(result.draftBody).toContain("엘리아가 문을 천천히 열었다.")
-    expect(result.warnings[0]).toContain("크게 못 미칩니다")
+    expect(result.warnings.find((warning) => warning.startsWith("1구간"))).toContain(
+      "크게 못 미칩니다"
+    )
   })
 })
 
@@ -583,17 +604,20 @@ describe("findRepeatedDialogueRun", () => {
   })
 
   // 실측(the-missing-summer 23씬): 뼈대가 목표 1,000자의 1/3(337~368자)만 나와 살붙임이 9배
-  // 확장을 떠안았고 최종 분량이 목표 절반에도 못 미쳤다.
-  it("flags a skeleton under half of its target and tells it to add beats, not description", () => {
+  // 확장을 떠안았고 최종 분량이 목표 절반에도 못 미쳤다. #106에서는 55%가 문턱 0.5를 넘어 통과했다.
+  it("flags a skeleton under 80% of its target and tells it to add beats, not description", () => {
     const violations = validateSceneSkeleton("가".repeat(300), 1000)
 
     expect(violations.map((violation) => violation.kind)).toEqual(["too-short"])
     expect(violations[0]?.detail).toContain("단계로 쪼개")
+    expect(validateSceneSkeleton("가".repeat(550), 1000).map((violation) => violation.kind)).toEqual([
+      "too-short"
+    ])
   })
 
-  it("accepts a thin skeleton when no target was given, or when it clears half", () => {
+  it("accepts a thin skeleton when no target was given, or when it clears 80%", () => {
     expect(validateSceneSkeleton("가".repeat(300))).toEqual([])
-    expect(validateSceneSkeleton("가".repeat(500), 1000)).toEqual([])
+    expect(validateSceneSkeleton("가".repeat(800), 1000)).toEqual([])
   })
 })
 
