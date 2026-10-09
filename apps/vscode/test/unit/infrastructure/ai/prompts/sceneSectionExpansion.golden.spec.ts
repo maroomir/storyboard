@@ -10,6 +10,7 @@ describe("SceneSectionExpansionPrompt golden", () => {
     targetLength: 1500,
     backgroundFacts: ["해외 콘도 12층", "거실 통창 너머 바다"],
     retryReasons: ["대사 반복", "분량 부족"],
+    isUnderLengthRetry: true,
     style: {
       narration: { person: "first", knowledge: "witnessed", tense: "present", focal: "하나", voice: ["건조함"] },
       genre: "스릴러",

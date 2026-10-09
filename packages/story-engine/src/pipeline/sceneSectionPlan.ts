@@ -393,7 +393,7 @@ export function validateExpandedSection(input: {
   if (input.expanded.length < input.targetLength * resolved.sectionMinimumLengthRatio) {
     violations.push({
       kind: 'too-short',
-      detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자). 사건 사이의 감각·행동·내면을 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요`,
+      detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자). 사건 사이에 시점 인물의 반응·해석과 행동을 서술자의 목소리로 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요`,
     });
   }
 

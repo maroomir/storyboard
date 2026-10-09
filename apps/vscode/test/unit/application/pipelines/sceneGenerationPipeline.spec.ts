@@ -429,6 +429,28 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
     expect(result.warnings[0]).toContain("지훈")
   })
 
+  // #106: 첫 판의 «못 미친 채 끝내는 쪽이 낫다»가 미달 재시도의 길이 요구와 부딪쳤다.
+  it("marks only a retry after a too-short attempt as an under-length retry", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
+    ai.expandSceneSection
+      .mockResolvedValueOnce("엘리아가 문을 천천히 열었다.")
+      .mockResolvedValueOnce(longProse("엘리아가 문을 연다."))
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 6000 }
+    })
+
+    const calls = ai.expandSceneSection.mock.calls.map(
+      (call) => (call[0] as { isUnderLengthRetry?: boolean }).isUnderLengthRetry
+    )
+    expect(calls.slice(0, 2)).toEqual([false, true])
+  })
+
   it("prefers the attempt closest to target when severity ties", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
