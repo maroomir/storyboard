@@ -202,7 +202,9 @@ async function reportFailure(
         ? '축소되지 않았습니다.'
         : result.reason === 'too-short'
           ? `너무 짧습니다 (${result.candidateLength}자 / 최소 ${result.minimumLength}자).`
-          : '본문으로 적용할 수 없는 응답입니다.';
+          : result.reason === 'scene-breaks-changed'
+            ? '장면 구분(---)의 수가 바뀌었습니다.'
+            : '본문으로 적용할 수 없는 응답입니다.';
     await vscode.window.showWarningMessage(`원본을 유지했습니다: ${reason}`);
     return;
   }

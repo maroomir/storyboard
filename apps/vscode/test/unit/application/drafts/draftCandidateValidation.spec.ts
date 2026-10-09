@@ -63,4 +63,14 @@ describe('draft candidate validation', () => {
         .reason,
     ).toBe('not-shorter');
   });
+
+  it('rejects a candidate whose scene breaks were added, dropped or merged', () => {
+    const policy = { maxCompressionPercent: 50 };
+    const original = ['가'.repeat(200), '---', '나'.repeat(200), '---', '다'.repeat(200)].join('\n\n');
+    const merged = ['가'.repeat(300), '---', '나'.repeat(300)].join('\n\n');
+    const kept = ['라'.repeat(250), '---', '마'.repeat(150), '---', '바'.repeat(200)].join('\n\n');
+
+    expect(validateDraftCandidate(original, merged, policy).reason).toBe('scene-breaks-changed');
+    expect(validateDraftCandidate(original, kept, policy).accepted).toBe(true);
+  });
 });

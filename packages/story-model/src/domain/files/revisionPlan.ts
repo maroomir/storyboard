@@ -13,7 +13,7 @@ export interface RevisionPlanEntry {
   readonly instructions: readonly string[];
   readonly preservedOriginal?: boolean;
   readonly rejection?: {
-    readonly reason: 'empty' | 'meta-response' | 'too-short' | 'not-shorter';
+    readonly reason: 'empty' | 'meta-response' | 'too-short' | 'not-shorter' | 'scene-breaks-changed';
     readonly originalLength: number;
     readonly candidateLength: number;
   };
@@ -53,7 +53,7 @@ const revisionPlanEntrySchema = z.object({
   preservedOriginal: z.boolean().optional(),
   rejection: z
     .object({
-      reason: z.enum(['empty', 'meta-response', 'too-short', 'not-shorter']),
+      reason: z.enum(['empty', 'meta-response', 'too-short', 'not-shorter', 'scene-breaks-changed']),
       originalLength: z.number().int().nonnegative(),
       candidateLength: z.number().int().nonnegative(),
     })
