@@ -7,6 +7,7 @@ import {
 } from './aiResponseCoercion';
 import { AiTextGateway } from './AiTextGateway';
 import { BackgroundDescriptionPrompt } from './prompts/backgroundDescription';
+import { BackgroundFactConflictsPrompt } from './prompts/backgroundFactConflicts';
 import { GenreFormattingPrompt } from './prompts/genreFormatting';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneBeatsPrompt } from './prompts/sceneBeats';
@@ -25,8 +26,11 @@ import {
 import {
   coerceDialogueAttribution,
   type DialogueAttribution,
+  listBackgroundFactLines,
   parseJsonArray,
   parseJsonObject,
+  readBackgroundFactConflictResponse,
+  type BackgroundFactConflict,
   sceneGroundingLines,
   sceneGroundingFieldKeys,
   sceneGroundingFieldLabels,
@@ -187,6 +191,28 @@ export class SceneAiService {
     );
 
     return response.text.trim();
+  }
+
+  public async findBackgroundFactConflicts(
+    background: Background,
+    options: GenerateTextOptions = {},
+  ): Promise<BackgroundFactConflict[]> {
+    const variant = this.gateway.resolvePromptVariant('backgroundFactConflicts', options);
+    const prompt = BackgroundFactConflictsPrompt.build(background, variant);
+    const response = await this.gateway.generate(
+      'backgroundFactConflicts',
+      toPromptMessages(prompt),
+      {
+        ...options,
+        temperature: options.temperature ?? BackgroundFactConflictsPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? BackgroundFactConflictsPrompt.config.maxTokens,
+      },
+    );
+
+    return readBackgroundFactConflictResponse(
+      parseJsonObject(response.text),
+      listBackgroundFactLines(background),
+    );
   }
 
   public async draftSceneSkeleton(

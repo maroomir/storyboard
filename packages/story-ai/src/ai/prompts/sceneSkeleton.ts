@@ -24,6 +24,8 @@ export interface SceneSkeletonInput {
   // 이름 → 이 씬 이전에 그 인물이 아는 것. 없는 사실은 그 인물이 모른다.
   readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
   readonly background: Background;
+  // 배경 카드에서 함께 참일 수 없는 두 줄. 사건에 맞는 하나만 쓰라고 따로 싣는다.
+  readonly backgroundConflicts?: readonly string[];
   readonly previousContext?: string;
   readonly endState?: string;
   readonly grounding?: SceneGrounding;
@@ -47,6 +49,8 @@ export const SceneSkeletonPrompt = {
         hasRetryReasons: input.retryReasons !== undefined && input.retryReasons.length > 0,
         retryReasons: input.retryReasons?.join(' / '),
         backgroundDescription: joinCardText(input.background.description),
+        hasBackgroundConflicts: (input.backgroundConflicts ?? []).length > 0,
+        backgroundConflicts: input.backgroundConflicts ?? [],
         hasPersonas: input.personas.size > 0,
         personas: Array.from(input.personas.entries()).map(([name, persona]) => ({
           name,

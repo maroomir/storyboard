@@ -1,7 +1,15 @@
-import type { EntityRef, Background, BackgroundCard, CharacterCard } from '@storyboard/story-model';
+import {
+  listBackgroundFactLines,
+  type EntityRef,
+  type Background,
+  type BackgroundCard,
+  type BackgroundFactConflict,
+  type CharacterCard,
+} from '@storyboard/story-model';
 import type { GenerateTextOptions, StoryboardAiService } from '@storyboard/story-ai';
 import {
   SceneGenerationPipelineCancelledError,
+  type BackgroundFactConflictStore,
   type BackgroundMemoryStore,
   type PersonaMemoryStore,
   type RunSceneGenerationPipelineInput,
@@ -55,6 +63,29 @@ export async function describeBackgroundForScene(
 
   const description = [...(card.description ?? []), atmosphere];
   return { ...card, description };
+}
+
+// 줄이 하나뿐인 카드는 어긋날 상대가 없으므로 묻지 않는다.
+export async function findBackgroundFactConflictsForScene(
+  card: BackgroundCard,
+  aiService: Pick<StoryboardAiService, 'findBackgroundFactConflicts'>,
+  store: BackgroundFactConflictStore | undefined,
+): Promise<readonly BackgroundFactConflict[]> {
+  if (listBackgroundFactLines(card).length < 2) {
+    return [];
+  }
+
+  const cached = await store?.load(card);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const conflicts = await aiService.findBackgroundFactConflicts(card, {
+    attribution: { primary: { kind: 'background', id: card.id } },
+  });
+  await store?.save(card, conflicts);
+
+  return conflicts;
 }
 
 export function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {

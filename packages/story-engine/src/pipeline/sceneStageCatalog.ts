@@ -10,6 +10,7 @@ import {
 export const sceneStageCatalog = [
   { id: 'buildPersonas', label: '인물 기억', required: true },
   { id: 'describeBackground', label: '배경 묘사', required: true },
+  { id: 'checkBackgroundFacts', label: '배경 사실 점검' },
   { id: 'collectVoiceSamples', label: '말투 표본' },
   {
     id: 'draftSkeleton',
