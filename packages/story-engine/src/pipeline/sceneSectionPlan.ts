@@ -639,3 +639,36 @@ export function findPolishedLineViolations(input: {
 
   return violationsByIndex;
 }
+
+// NOTE: 입버릇은 반복 제한의 예외라 빈도를 붙잡는 것이 없었다. 23,511자에 "세기의 철학자"가 46회 나와
+// 러닝개그가 틱이 됐다(#106). 넘쳐도 경고만 한다 — 지우려면 대사를 수술해야 한다. 비트가 없는 씬은
+// 잴 기준이 없어 보지 않는다.
+export function findCatchphraseOveruse(input: {
+  readonly text: string;
+  readonly characters: readonly CharacterCard[];
+  readonly beatCount: number;
+  readonly tuning?: SceneGenerationTuningInput;
+}): string[] {
+  if (input.beatCount === 0) {
+    return [];
+  }
+
+  const limit =
+    input.beatCount * resolveSceneGenerationTuning(input.tuning).catchphrasePerBeatLimit;
+  const warnings: string[] = [];
+
+  for (const character of input.characters) {
+    const counts = (character.catchphrases ?? [])
+      .map((phrase) => ({ phrase, count: input.text.split(phrase).length - 1 }))
+      .filter((entry) => entry.phrase.length > 0 && entry.count > 0);
+    const total = counts.reduce((sum, entry) => sum + entry.count, 0);
+
+    if (total > limit) {
+      warnings.push(
+        `${character.name}의 입버릇이 ${total}회 나옵니다 (비트 ${input.beatCount}개, 상한 ${limit}회): ${counts.map((entry) => `"${entry.phrase}" ${entry.count}회`).join(', ')}`,
+      );
+    }
+  }
+
+  return warnings;
+}

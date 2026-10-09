@@ -21,6 +21,9 @@
     "lengthLimitRatio": 2,
     "retryLimit": 2
   },
+  "catchphrase": {
+    "perBeatLimit": 1
+  },
   "padding": {
     "paragraphRatio": 0.8,
     "paragraphMinimumLength": 40
