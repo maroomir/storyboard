@@ -238,6 +238,7 @@ async function expandSectionWithRetries(input: {
   readonly tuning: ResolvedSceneGenerationTuning;
 }): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
+  let isUnderLengthRetry = false;
   let best: {
     text: string;
     violations: readonly SectionViolation[];
@@ -259,6 +260,7 @@ async function expandSectionWithRetries(input: {
         targetLength: input.targetLength,
         backgroundFacts: input.backgroundFacts,
         retryReasons: reasons,
+        isUnderLengthRetry,
       },
       input.options,
     );
@@ -286,6 +288,7 @@ async function expandSectionWithRetries(input: {
     }
 
     reasons = violations.map((violation) => violation.detail);
+    isUnderLengthRetry = violations.some((violation) => violation.kind === 'too-short');
   }
 
   // 재시도로도 못 고치면 가장 가벼운 판을 채택하되, 위반 내역은 원고 헤더로 올려 바로 보게 한다.

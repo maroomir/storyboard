@@ -16,6 +16,8 @@ export interface SceneSectionExpansionInput {
   // 이 씬의 배경 카드가 적어 둔 공간 사실(구조·층수·소품·감각). 씬 사이 재료(원장·캐넌)는 아니다.
   readonly backgroundFacts?: readonly string[];
   readonly retryReasons?: readonly string[];
+  // 앞 판이 분량 미달로 반려됐다. 첫 판의 «못 미친 채 끝내라»는 채움 억제가 길이 요구와 충돌한다(#106).
+  readonly isUnderLengthRetry?: boolean;
   readonly style?: StyleDirective;
 }
 
@@ -29,6 +31,7 @@ export const SceneSectionExpansionPrompt = {
         targetLength: input.targetLength.toLocaleString(),
         hasRetryReasons: input.retryReasons !== undefined && input.retryReasons.length > 0,
         retryReasons: input.retryReasons?.join(' / '),
+        isUnderLengthRetry: input.isUnderLengthRetry === true,
         hasBackgroundFacts: (input.backgroundFacts ?? []).length > 0,
         backgroundFacts: input.backgroundFacts ?? [],
         skeleton: input.skeleton,
