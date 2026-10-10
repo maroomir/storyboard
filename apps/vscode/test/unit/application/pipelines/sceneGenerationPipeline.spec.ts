@@ -1506,6 +1506,29 @@ describe("대사 화자 귀속 단계", () => {
     expect(polishInput.character.samples).toEqual(["값보다 내력이 먼저입니다."])
   })
 
+  // #105-14: 첫 씬은 앞선 초안이 없다. 노트의 예시 대사가 그 자리를 채운다.
+  it("fills the first scene's samples from the notes' quoted lines", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
+    const corpus: SceneDialogueCorpus = {
+      loadCorpus: async () => [],
+      loadVoiceSeeds: async () => ({ characters: { elia: ["값보다 내력이 먼저입니다.", "응."] } })
+    }
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      dialogueCorpus: corpus
+    })
+
+    const polishInput = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
+      character: { samples: readonly string[] }
+    }
+    expect(polishInput.character.samples).toEqual(["값보다 내력이 먼저입니다."])
+  })
+
   it("never samples a scene that comes after the one being generated", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")

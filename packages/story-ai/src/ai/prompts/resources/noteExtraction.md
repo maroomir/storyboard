@@ -24,6 +24,7 @@ entities: 인물과 배경. 같은 대상이 여러 노트에 나오면 하나�
     traits: 성격·행동 특징. 같은 뜻을 다른 말로 여러 번 적지 마라.
     tags: 인물을 묶는 짧은 낱말 (직업, 소속, 역할).
     voice: 말투. desire: 바라는 것.
+    sampleLines: 노트에 따옴표로 적힌 이 인물의 대사. 고치거나 요약하지 말고 한 줄에 하나씩 그대로 옮기되 따옴표는 뺀다. 노트에 없으면 비워 둔다.
     attributes: 나이·성별·직업처럼 키와 값으로 적히는 사실.
     relations: 다른 인물과의 관계. target 은 상대의 이름.
   배경(background)에만 적는 것:
@@ -45,7 +46,7 @@ scenes: 장면 메모 노트 하나당 장면 하나. 노트를 받은 순서대
 premise: 작품 전체에 관한 문장을 노트에서 옮긴 목록 (장르, 독자, 시점, 콘셉트, 줄거리, 결말, 주제, 분위기, 문체 규칙).
 
 모르는 값은 생략하거나 빈 배열로 둔다. 설명 없이 JSON 객체 하나만 출력하라.
-{"notes":[{"id":"","kinds":["other"]}],"entities":[{"type":"character","name":"","suggestedId":"","role":"extra","aliases":[],"description":[],"traits":[],"tags":[],"voice":[],"desire":[],"attributes":[{"key":"","value":""}],"relations":[{"target":"","type":""}],"sourceNotes":[]},{"type":"background","name":"","suggestedId":"","aliases":[],"description":[],"tags":[],"senses":[],"time":"","weather":"","characterNames":[],"sourceNotes":[]}],"scenes":[{"title":"","slug":"","summary":"","beats":[],"characterNames":[],"locationName":"","sourceNote":""}],"premise":[]}
+{"notes":[{"id":"","kinds":["other"]}],"entities":[{"type":"character","name":"","suggestedId":"","role":"extra","aliases":[],"description":[],"traits":[],"tags":[],"voice":[],"sampleLines":[],"desire":[],"attributes":[{"key":"","value":""}],"relations":[{"target":"","type":""}],"sourceNotes":[]},{"type":"background","name":"","suggestedId":"","aliases":[],"description":[],"tags":[],"senses":[],"time":"","weather":"","characterNames":[],"sourceNotes":[]}],"scenes":[{"title":"","slug":"","summary":"","beats":[],"characterNames":[],"locationName":"","sourceNote":""}],"premise":[]}
 
 ## user
 {{#hasKnownCards}}

@@ -143,6 +143,12 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     );
   }
 
+  if (outcome.seededCharacters.length > 0) {
+    lines.push(
+      `노트의 예시 대사를 말투 표본으로 두었습니다 (.storyboard/memory/voiceSeeds.json): ${outcome.seededCharacters.join(', ')}`,
+    );
+  }
+
   if (outcome.filledSettingKeys.length > 0) {
     lines.push(
       `작품 계약의 빈 칸을 채웠습니다: ${outcome.filledSettingKeys.map((key) => settingLabels[key] ?? key).join(', ')}`,

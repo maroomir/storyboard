@@ -56,6 +56,11 @@ export interface INoteAbsorbRepository {
   // The notes' synopses kept beside an author's own. Empty text removes the file.
   loadSynopsisCandidate(workspaceRoot: StoryUri): Promise<string | undefined>;
   saveSynopsisCandidate(workspaceRoot: StoryUri, text: string): Promise<void>;
+  // Adds each character's quoted lines to the work's voice seeds; lines already there stay once.
+  addVoiceSeeds(
+    workspaceRoot: StoryUri,
+    seeds: Readonly<Record<string, readonly string[]>>,
+  ): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void>;
 }

@@ -81,6 +81,7 @@ const fixedExtraction = coerceNoteExtraction({
       role: 'main',
       description: ['등대지기의 손녀.'],
       desire: ['달의 문 너머를 보고 싶다'],
+      sampleLines: ['만조엔 문이 열려. 난 봤어.'],
       attributes: [{ key: 'age', value: '19' }],
       relations: [{ target: '준', type: '소꿉친구' }],
       sourceNotes: ['달의 문/인물/하나.md'],
@@ -305,6 +306,12 @@ describe('notes absorb', () => {
     ) as { setting?: { genre?: string } };
     expect(project.setting?.genre).toBeUndefined();
     expect(outcome.message).toContain("storyboard project set --genre '해양 미스터리'");
+
+    // #105-14: 노트의 예시 대사는 첫 씬의 말투 표본이 된다.
+    expect(
+      JSON.parse(readFileSync(join(workspace, '.storyboard', 'memory', 'voiceSeeds.json'), 'utf8')),
+    ).toEqual({ characters: { hana: ['만조엔 문이 열려. 난 봤어.'] } });
+    expect(outcome.message).toContain('노트의 예시 대사를 말투 표본으로 두었습니다');
   });
 
   it('turns notes about an existing card into candidates that card promote applies', async () => {

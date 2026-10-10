@@ -638,18 +638,28 @@ async function buildVoiceSamples(
   }
 
   const corpus = await dialogueCorpus.loadCorpus();
+  const seeds = (await dialogueCorpus.loadVoiceSeeds?.())?.characters ?? {};
+  const bounds = {
+    minimumLength: tuning.voiceSampleMinimumLength,
+    maximumLength: tuning.voiceSampleMaximumLength,
+  };
 
   for (const character of characters) {
-    const samples = selectRepresentativeDialogue(
+    const fromDrafts = selectRepresentativeDialogue(
       corpus,
       character.id,
       sceneStem ?? '',
       tuning.voiceSampleLimit,
-      {
-        minimumLength: tuning.voiceSampleMinimumLength,
-        maximumLength: tuning.voiceSampleMaximumLength,
-      },
+      bounds,
     );
+    // 작품의 대사가 쌓일수록 노트의 예시 대사는 자리를 내준다.
+    const fromNotes = (seeds[character.id] ?? []).filter(
+      (line) =>
+        line.length >= bounds.minimumLength &&
+        line.length <= bounds.maximumLength &&
+        !fromDrafts.includes(line),
+    );
+    const samples = [...fromDrafts, ...fromNotes].slice(0, tuning.voiceSampleLimit);
     if (samples.length > 0) {
       voiceSamples.set(character.name, samples);
     }
