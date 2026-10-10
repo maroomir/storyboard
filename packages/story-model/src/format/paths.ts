@@ -20,6 +20,7 @@ export interface StoryboardRelativePaths {
   readonly storyState: string;
   readonly chapterSummaries: string;
   readonly sceneDialogueDirectory: string;
+  readonly voiceSeeds: string;
   readonly personaMemoryDirectory: string;
   readonly backgroundMemoryDirectory: string;
   readonly bibleCacheDirectory: string;
@@ -71,6 +72,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   storyState: '.storyboard/memory/storyState.md',
   chapterSummaries: '.storyboard/memory/summaries.md',
   sceneDialogueDirectory: '.storyboard/memory/dialogue',
+  voiceSeeds: '.storyboard/memory/voiceSeeds.json',
   personaMemoryDirectory: '.storyboard/memory/personas',
   backgroundMemoryDirectory: '.storyboard/memory/backgrounds',
   bibleCacheDirectory: '.storyboard/cache/bible',

@@ -43,6 +43,8 @@ export interface ApplyNoteAbsorbOutcome {
   readonly synopsis: 'written' | 'candidate' | 'none';
   readonly filledSettingKeys: readonly string[];
   readonly settingProposals: NoteSynthesisSetting;
+  // Characters whose quoted lines from the notes became voice samples.
+  readonly seededCharacters: readonly string[];
 }
 
 export type ApplyNoteAbsorbResult = ApplyNoteAbsorbOutcome | UseCaseFailure;
@@ -69,8 +71,12 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       const scenes = await this.applyScenes(request);
       const synopsis = await this.applySynopsis(request);
       const setting = await this.applySetting(request);
+      const seededCharacters = Object.keys(request.plan.voiceSeeds);
+      if (seededCharacters.length > 0) {
+        await this.deps.noteRepository.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
+      }
 
-      return { ok: true as const, ...cards, ...scenes, synopsis, ...setting };
+      return { ok: true as const, ...cards, ...scenes, synopsis, ...setting, seededCharacters };
     });
   }
 
