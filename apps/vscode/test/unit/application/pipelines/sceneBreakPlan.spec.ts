@@ -9,6 +9,7 @@ import {
   findThinDialogueBeats,
   findThinExpansionSpots,
   isTimeJump,
+  keepOnlyMarkers,
   planSceneBreaks,
   planSkeletonCalls,
   renderPlannedNarrative,
@@ -174,6 +175,11 @@ describe("segment markers of one call", () => {
   it("prepends the call's first marker when the model dropped it", () => {
     expect(ensureLeadingMarker("교문을 나섰다.", 2)).toBe("⟪대목 2⟫\n교문을 나섰다.")
     expect(ensureLeadingMarker("⟪대목 2⟫\n교문을 나섰다.", 2)).toBe("⟪대목 2⟫\n교문을 나섰다.")
+  })
+
+  it("drops markers the call invented and the lines they stood on", () => {
+    expect(keepOnlyMarkers("⟪대목 5⟫\n문을 열었다.\n⟪대목 6⟫\n은하가 말했다. ⟪대목 7⟫", [5])).toBe("⟪대목 5⟫\n문을 열었다.\n은하가 말했다. ")
+    expect(keepOnlyMarkers("⟪대목 1⟫ 밥.", [1, 2])).toBe("⟪대목 1⟫ 밥.")
   })
 
   it("counts only the asked markers as missing", () => {

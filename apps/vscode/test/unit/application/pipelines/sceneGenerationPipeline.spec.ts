@@ -520,7 +520,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
   it("drafts a long planned scene in bundled calls that continue each other", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton
-      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다."].join("\n"))
+      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "⟪대목 2⟫", "", "엘리아가 설거지를 했다."].join("\n"))
       .mockResolvedValueOnce("엘리아가 교문을 나섰다.")
 
     const planned = plannedScene(contextFor([eliaCard], "본문"))

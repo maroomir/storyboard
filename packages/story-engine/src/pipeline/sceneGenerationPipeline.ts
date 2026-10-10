@@ -69,6 +69,7 @@ import {
   countSceneBreakLines,
   ensureLeadingMarker,
   findThinDialogueBeats,
+  keepOnlyMarkers,
   planSceneBreaks,
   planSkeletonCalls,
   renderPlannedNarrative,
@@ -258,7 +259,14 @@ async function draftSkeletonWithRetries(
       options,
     );
     const skeleton =
-      segmentNumbers?.[0] === undefined ? response : ensureLeadingMarker(response, segmentNumbers[0]);
+      segmentNumbers === undefined
+        ? response
+        : keepOnlyMarkers(
+            segmentNumbers[0] === undefined
+              ? response
+              : ensureLeadingMarker(response, segmentNumbers[0]),
+            segmentNumbers,
+          );
     const violations = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
       ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
