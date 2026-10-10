@@ -30,6 +30,9 @@ const pipelineDefaultsSchema = z.object({
     // 설전으로 보고 그 사건들을 지목한다. 지목한 사건은 requestedDialogueTurns 턴으로 늘리라고 한다.
     thinDialogueTurns: positiveInt,
     requestedDialogueTurns: positiveInt,
+    // 대목이 계획된 씬에서 뼈대 호출 하나가 맡는 목표 글자 수의 상한. 한 호출은 그 몫을 넘기지 않게
+    // 연속한 대목을 묶어 받는다. 한 호출의 뼈대는 목표와 무관하게 9~10k자에서 멈췄다(#115·#111).
+    charsPerCall: positiveInt,
   }),
   sceneBreak: z.object({
     // 좌표 비트 사이 시각 차가 이 분 이상이면 장면을 끊는다. 시:분이 읽히지 않으면 시간대 낱말로 본다.
