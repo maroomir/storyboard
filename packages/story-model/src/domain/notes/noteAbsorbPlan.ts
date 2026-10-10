@@ -59,6 +59,8 @@ export interface NoteAbsorbPlan {
   readonly unclassifiedNotes: readonly UnclassifiedNote[];
   // Prose already written: read for cards and premise, never turned into scenes.
   readonly draftNotes: readonly UnclassifiedNote[];
+  // Each character's lines quoted in the notes, by card id: the voice samples of the first scene.
+  readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
   readonly warnings: readonly string[];
 }
 
@@ -125,6 +127,7 @@ function mergeEntity(
     traits: unionText(first.traits, second.traits),
     description: unionText(first.description, second.description),
     voice: unionText(first.voice, second.voice),
+    sampleLines: union(first.sampleLines, second.sampleLines),
     desire: unionText(first.desire, second.desire),
     attributes: [
       ...first.attributes,
@@ -443,6 +446,7 @@ function planCards(
   readonly plans: NoteCardPlan[];
   readonly characters: CardNameIndex;
   readonly backgrounds: CardNameIndex;
+  readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
 } {
   const characters = new CardNameIndex('character');
   const backgrounds = new CardNameIndex('background');
@@ -503,7 +507,13 @@ function planCards(
       : [];
   });
 
-  return { plans, characters, backgrounds };
+  const voiceSeeds = Object.fromEntries(
+    resolved
+      .filter((entry) => entry.entity.type === 'character' && entry.entity.sampleLines.length > 0)
+      .map((entry) => [entry.card.id, entry.entity.sampleLines]),
+  );
+
+  return { plans, characters, backgrounds, voiceSeeds };
 }
 
 function findDraftNoteIds(extractions: readonly NoteExtraction[]): Set<string> {
@@ -723,6 +733,7 @@ export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan 
     ...(synopsis === undefined ? {} : { synopsis }),
     unclassifiedNotes: findUnclassifiedNotes(input),
     draftNotes: findDraftNotes(input),
+    voiceSeeds: cards.voiceSeeds,
     warnings: scenes.warnings,
   };
 }

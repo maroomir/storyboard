@@ -39,6 +39,8 @@ export interface StoryboardProjectPaths {
   readonly storyState: StoryUri;
   readonly chapterSummaries: StoryUri;
   readonly sceneDialogueDirectory: StoryUri;
+  // 노트에서 옮긴 인물별 예시 대사. 줄기와 무관하게 작품에 하나다.
+  readonly voiceSeeds: StoryUri;
   readonly personaMemoryDirectory: StoryUri;
   readonly backgroundMemoryDirectory: StoryUri;
   readonly bibleCacheDirectory: StoryUri;
@@ -99,6 +101,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
     chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
+    voiceSeeds: resolve(STORYBOARD_RELATIVE_PATHS.voiceSeeds),
     personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
     backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
     bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),

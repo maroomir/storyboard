@@ -3,6 +3,7 @@ import type {
   BackgroundFactConflict,
   CharacterCard,
   SceneDialogueRecord,
+  VoiceSeeds,
 } from '@storyboard/story-model';
 
 export interface IPersonaMemoryStore {
@@ -24,6 +25,8 @@ export interface IBackgroundFactConflictStore {
 // 파이프라인은 코퍼스를 읽기만 한다. 쓰기는 초안을 디스크에 쓴 뒤 호출자가 한다.
 export interface ISceneDialogueCorpus {
   loadCorpus(): Promise<readonly SceneDialogueRecord[]>;
+  // 노트에서 옮긴 인물별 예시 대사. 코퍼스가 표본 한도를 못 채울 때만 쓴다.
+  loadVoiceSeeds?(): Promise<VoiceSeeds>;
 }
 
 export interface ISceneDialogueStore extends ISceneDialogueCorpus {
