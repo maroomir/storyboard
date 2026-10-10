@@ -76,6 +76,8 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │       │   └── 01-prologue.json
 │       ├── scenes/               # 씬별 생성 컨텍스트 스냅샷
 │       │   └── 01-prologue.json
+│       ├── revisions/            # 씬별 마지막 감수의 회차 기록 (검사 결과·지시·구간별 반영/기각)
+│       │   └── 01-prologue.json
 │       ├── grounding-gaps.json   # 사실 시트 제안에서 모델이 비워 둔 칸 (씬 본문·사실 시트·인물이 같으면 다시 묻지 않음)
 │       ├── background-conflicts.json # 배경 카드마다 함께 참일 수 없는 두 줄 (카드 줄·프롬프트가 같으면 다시 묻지 않음, doctor 가 읽음)
 │       ├── novel-run.json        # 원클릭 장편 생성 진행/재개 상태
