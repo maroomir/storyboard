@@ -37,10 +37,13 @@ import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
 import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
+import { recordRevisionRounds } from '#engine/persistence/revisionPlanRecorder';
 import {
+  describeReviseRound,
   runReviseLoop,
   type ReviseLoopContext,
   type ReviseLoopFailure,
+  type ReviseRound,
   type ReviseSeedIssues,
 } from '#engine/pipeline/reviseLoop';
 
@@ -126,6 +129,7 @@ export interface ReviseDraftWorkflowResult {
     readonly candidateLength: number;
   };
   readonly failure?: ReviseLoopFailure;
+  readonly rounds: readonly ReviseRound[];
 }
 
 export type ReviseOutcomeStatus =
@@ -313,7 +317,15 @@ async function runReviseDraftWorkflow(
     onProgress: options.onProgress,
     shouldCancel: options.shouldCancel,
     ...(options.seedIssues === undefined ? {} : { seedIssues: options.seedIssues }),
+    onRound: (round) => options.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
   });
+
+  // NOTE: 기록은 감수를 보이게 하려는 부수 효과다. 쓰지 못해도 감수 결과(이미 반영된 재작성)를 버리지 않는다.
+  try {
+    await recordRevisionRounds(options.fileSystem, paths, sceneStem, result.rounds);
+  } catch (error) {
+    options.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
+  }
 
   if (result.revisionCount > 0 && !result.rejection && !result.cancelled) {
     const revisionConfig = options.aiProviderRegistry.getTaskAiConfig('draftRevision');
@@ -342,6 +354,7 @@ async function runReviseDraftWorkflow(
     preservedOriginal: result.preservedOriginal,
     rejection: result.rejection,
     ...(result.failure === undefined ? {} : { failure: result.failure }),
+    rounds: result.rounds,
   };
 }
 

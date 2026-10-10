@@ -13,6 +13,8 @@ const reviseDraftMock = vi.fn(async (input: unknown): Promise<string> => {
   return "인물은 창가에서 잠시 숨을 골랐다."
 })
 const writeDraftFileMock = vi.fn(async () => undefined)
+const loggerInfoMock = vi.fn()
+const fileWriteMock = vi.fn<[unknown, Uint8Array], Promise<undefined>>(async () => undefined)
 
 vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-ai")>()),
@@ -78,7 +80,8 @@ function baseOptions(
       getTaskAiConfig: () => ({ providerId: "mock", model: "mock-model" })
     } as never,
     usageRecorder: {} as never,
-    logger: { error: () => undefined } as never,
+    logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
+    fileSystem: { createDirectory: async () => undefined, writeFile: fileWriteMock, exists: async () => false } as never,
     generator: "storyboard@0.0.0-test",
     workspaceUri: vscode.Uri.file("/ws/project"),
     paths: {
@@ -88,7 +91,8 @@ function baseOptions(
       characterDirectory: vscode.Uri.file("/ws/project/character"),
       backgroundDirectory: vscode.Uri.file("/ws/project/background"),
       bibleCanon: vscode.Uri.file("/ws/project/.storyboard/bible/canon.yaml"),
-      projectJson: vscode.Uri.file("/ws/project/.storyboard/project.json")
+      projectJson: vscode.Uri.file("/ws/project/.storyboard/project.json"),
+      revisionRoundsDirectory: vscode.Uri.file("/ws/project/.storyboard/cache/revisions")
     } as never,
     draftUri: vscode.Uri.file("/ws/project/draft/01-scene.md"),
     sceneStem: "01-scene",
@@ -111,6 +115,8 @@ describe("ReviseDraftUseCase", () => {
     critiqueDraftMock.mockReset()
     reviseDraftMock.mockClear()
     writeDraftFileMock.mockClear()
+    loggerInfoMock.mockClear()
+    fileWriteMock.mockClear()
     checkContinuityMock.mockResolvedValue([])
     critiqueDraftMock.mockResolvedValue([])
   })
@@ -197,6 +203,24 @@ describe("ReviseDraftUseCase", () => {
     checkContinuityMock.mockRejectedValueOnce(new TypeError("bug"))
 
     await expect(runReviseDraftWorkflow(baseOptions())).rejects.toThrow("bug")
+  })
+
+  // #113: 앞 회차가 무엇을 잡고 재작성이 무엇을 받았는지 남긴다.
+  it("records every round in the cache and logs one line per round", async () => {
+    checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.rounds.map((round) => round.round)).toEqual([1, 2])
+    expect(result.rounds[0]?.rewrite?.acceptedSections).toEqual([0])
+    const [uri, content] = fileWriteMock.mock.calls.at(-1) ?? []
+    expect(String((uri as { path: string }).path)).toContain(".storyboard/cache/revisions/01-scene.json")
+    const record = JSON.parse(new TextDecoder().decode(content)) as { rounds: unknown[] }
+    expect(record.rounds).toHaveLength(2)
+    expect(loggerInfoMock.mock.calls.map((call) => call[0])).toEqual([
+      "01-scene: 검사 1: 연속성 1건(높음 1) · 비평 0건 · 차단 1 → 재작성 1구간 중 1구간 반영",
+      "01-scene: 검사 2: 연속성 0건(높음 0) · 비평 0건 · 차단 0 → 통과"
+    ])
   })
 
   it("Q4: passes without revising when continuity issues are all low severity", async () => {

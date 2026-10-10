@@ -36,6 +36,8 @@ export interface StoryboardProjectPaths {
   readonly sceneGroundingGaps: StoryUri;
   readonly backgroundFactConflicts: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
+  // 감수 루프가 회차마다 남기는 검사·재작성 기록. 씬 하나에 파일 하나, 다시 돌리면 덮어쓴다.
+  readonly revisionRoundsDirectory: StoryUri;
   readonly storyState: StoryUri;
   readonly chapterSummaries: StoryUri;
   readonly sceneDialogueDirectory: StoryUri;
@@ -98,6 +100,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     sceneGroundingGaps: resolve(STORYBOARD_RELATIVE_PATHS.sceneGroundingGaps),
     backgroundFactConflicts: resolve(STORYBOARD_RELATIVE_PATHS.backgroundFactConflicts),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
+    revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
     storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
     chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),

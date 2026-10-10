@@ -72,6 +72,8 @@ export interface ReviseLoopOptions {
   // volume, so a long-range contradiction it spots is invisible to a per-scene check. They join the
   // first iteration's own findings and are dropped afterwards, once the rewrite has answered them.
   readonly seedIssues?: ReviseSeedIssues;
+  // Called as each round ends, so a long review can be followed while it runs.
+  readonly onRound?: (round: ReviseRound) => void;
 }
 
 // A provider that fails mid-review (a timeout on a long rewrite, a dropped connection) ends the loop
@@ -80,6 +82,23 @@ export interface ReviseLoopFailure {
   readonly stage: 'check' | 'revise';
   readonly kind: 'timeout' | 'provider';
   readonly message: string;
+}
+
+// One check of the loop and what it led to. Every round is kept (#113): only the last round's
+// instructions used to survive, so what an earlier check caught and what its rewrite fixed was lost.
+export interface ReviseRound {
+  readonly round: number;
+  readonly continuityIssues: readonly ContinuityIssueLike[];
+  readonly critiqueIssues: readonly DraftCritiqueIssue[];
+  readonly blocking: number;
+  readonly passed: boolean;
+  readonly instructions: readonly string[];
+  readonly rewrite?: {
+    readonly plannedSections: readonly number[];
+    readonly acceptedSections: readonly number[];
+    readonly rejectedSections: readonly SectionRejection[];
+  };
+  readonly failure?: ReviseLoopFailure;
 }
 
 export interface ReviseLoopResult {
@@ -96,6 +115,7 @@ export interface ReviseLoopResult {
     readonly candidateLength: number;
   };
   readonly failure?: ReviseLoopFailure;
+  readonly rounds: readonly ReviseRound[];
 }
 
 function toReviseLoopFailure(stage: ReviseLoopFailure['stage'], error: unknown): ReviseLoopFailure {
@@ -241,7 +261,7 @@ function evaluateReviewResult(
   return { blocking, instructions, passed };
 }
 
-interface SectionRejection {
+export interface SectionRejection {
   readonly section: number;
   readonly reason: DraftCandidateRejectionReason;
   readonly originalLength: number;
@@ -353,15 +373,30 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
   let lastInstructions: string[] = [];
   let rejection: ReviseLoopResult['rejection'];
   let failure: ReviseLoopFailure | undefined;
+  const rounds: ReviseRound[] = [];
+  const endRound = (round: ReviseRound): void => {
+    rounds.push(round);
+    options.onRound?.(round);
+  };
 
   while (!isCancelled()) {
-    options.onProgress?.(`검사 중 (${revisionCount + 1}/${maxIterations + 1})…`);
+    const round = revisionCount + 1;
+    options.onProgress?.(`검사 중 (${round}/${maxIterations + 1})…`);
 
     let checked: Awaited<ReturnType<typeof runReviewChecks>>;
     try {
       checked = await runReviewChecks(session, body);
     } catch (error) {
       failure = toReviseLoopFailure('check', error);
+      endRound({
+        round,
+        continuityIssues: [],
+        critiqueIssues: [],
+        blocking,
+        passed: false,
+        instructions: [],
+        failure,
+      });
       break;
     }
 
@@ -371,21 +406,31 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
     const review = evaluateReviewResult(continuityIssues, critiqueIssues, reviseScoreThreshold);
     blocking = review.blocking;
     lastInstructions = review.instructions;
+    const checkedRound = {
+      round,
+      continuityIssues,
+      critiqueIssues,
+      blocking: review.blocking,
+      passed: review.passed,
+      instructions: review.instructions,
+    };
 
     if (review.passed) {
       passed = true;
+      endRound(checkedRound);
       break;
     }
 
     if (revisionCount >= maxIterations || isCancelled()) {
+      endRound(checkedRound);
       break;
     }
 
-    const round = revisionCount + 1;
     options.onProgress?.(`재작성 중 (${round}/${maxIterations})…`);
 
     const plans = planSectionRevisions(body, continuityIssues, critiqueIssues, ctx.characters);
     if (plans.length === 0) {
+      endRound(checkedRound);
       break;
     }
 
@@ -399,6 +444,15 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
         options.onProgress?.(`재작성 중 (${round}/${maxIterations}) · 구간 ${done}/${total}…`),
     );
     failure = applied.failure;
+    endRound({
+      ...checkedRound,
+      rewrite: {
+        plannedSections: plans.map((plan) => plan.section),
+        acceptedSections: applied.acceptedSections,
+        rejectedSections: applied.rejectedSections,
+      },
+      ...(failure === undefined ? {} : { failure }),
+    });
 
     if (applied.acceptedSections.length === 0) {
       if (applied.rejectedSections.length > 0 && failure === undefined) {
@@ -426,5 +480,45 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
     preservedOriginal: rejection !== undefined,
     rejection,
     ...(failure === undefined ? {} : { failure }),
+    rounds,
   };
+}
+
+const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
+  empty: '빈 결과',
+  'meta-response': '설명문',
+  'too-short': '분량 미달',
+  'not-shorter': '줄지 않음',
+  'scene-breaks-changed': '장면 구분 변경',
+};
+
+// The one line `--verbose` shows per round: what the check found and what the rewrite did with it.
+export function describeReviseRound(round: ReviseRound): string {
+  const highContinuity = round.continuityIssues.filter((issue) => issue.severity === 'high').length;
+  const parts = [
+    `검사 ${round.round}: 연속성 ${round.continuityIssues.length}건(높음 ${highContinuity}) · 비평 ${round.critiqueIssues.length}건 · 차단 ${round.blocking}`,
+  ];
+
+  if (round.passed) {
+    parts.push('통과');
+  }
+
+  if (round.rewrite) {
+    const { plannedSections, acceptedSections, rejectedSections } = round.rewrite;
+    const rejected = rejectedSections
+      .map(
+        (item) =>
+          `${item.section + 1}구간 ${rejectionReasonLabels[item.reason]}(${item.candidateLength}/${item.originalLength}자)`,
+      )
+      .join(', ');
+    parts.push(
+      `재작성 ${plannedSections.length}구간 중 ${acceptedSections.length}구간 반영${rejected.length > 0 ? `, 기각: ${rejected}` : ''}`,
+    );
+  }
+
+  if (round.failure) {
+    parts.push(`중단: ${round.failure.message}`);
+  }
+
+  return parts.join(' → ');
 }

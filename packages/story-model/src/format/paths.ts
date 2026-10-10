@@ -20,6 +20,7 @@ export interface StoryboardRelativePaths {
   readonly storyState: string;
   readonly chapterSummaries: string;
   readonly sceneDialogueDirectory: string;
+  readonly revisionRoundsDirectory: string;
   readonly voiceSeeds: string;
   readonly personaMemoryDirectory: string;
   readonly backgroundMemoryDirectory: string;
@@ -69,6 +70,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   sceneGroundingGaps: '.storyboard/cache/grounding-gaps.json',
   backgroundFactConflicts: '.storyboard/cache/background-conflicts.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
+  revisionRoundsDirectory: '.storyboard/cache/revisions',
   storyState: '.storyboard/memory/storyState.md',
   chapterSummaries: '.storyboard/memory/summaries.md',
   sceneDialogueDirectory: '.storyboard/memory/dialogue',
