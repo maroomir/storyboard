@@ -40,6 +40,7 @@ after the first public release.
 - **The skeleton keeps the information order of the beats.** A fact a character first learns in one event must first surface there. (#88)
 - **The fact sheet's `time` no longer invents a calendar.** Season, month and year are written only when the text or the known facts support them, never inferred from the day the command ran. (#88)
 - **The README recommends routing `sceneSkeleton` and `sceneSectionExpansion` to a top-tier model.** Those two tasks decide length and voice. (#88)
+- **The review rewrite is now called once per scene-break (`---`) section.** Rewriting the whole body (20,000+ characters) in one call outran the 600-second timeout on top models, and one candidate under the length floor threw every fix away. The review still reads the whole body once; each instruction is attributed to the section its quote (`excerpt`, `original`) came from — verbatim, then ignoring spacing and punctuation, then the section sharing the most text. Only sections with instructions are rewritten, each is validated on its own, and only a rejected section keeps its original. A section's length floor is its share of the scene target, and a candidate that adds `---` inside a section is rejected. An instruction quoting nothing goes to every section. When a call times out, the sections accepted before it are saved. Progress reads «재작성 중 (1/2) · 구간 3/7», and `draftRevision`'s `maxTokens` went from 4,000 to 12,000 so a long section is not cut on the API-key path. (#114, #115)
 
 ### Fixed
 
