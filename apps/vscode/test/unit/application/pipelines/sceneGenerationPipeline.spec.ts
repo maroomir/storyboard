@@ -533,7 +533,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
       aiService: ai,
       format: "novel",
       styleDirective: { targetWordCount: 9000 },
-      tuning: { "generation.skeleton.charsPerCall": 1500, "generation.skeleton.retryLimit": 0 }
+      tuning: { "generation.skeleton.charsPerCall": 2000, "generation.skeleton.retryLimit": 0 }
     })
 
     expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)

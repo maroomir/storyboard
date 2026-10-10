@@ -135,6 +135,13 @@ describe("planSceneBreaks", () => {
     expect(narrative).toContain("\n\n⟪대목 3⟫\n공원에서")
     expect(narrative).not.toContain("⟪대목 1⟫")
   })
+
+  it("adds no marker to the rest of a segment another call began", () => {
+    const beats = [beat("집", "아침"), beat("집", "아침 6시 10분"), beat("학교", "오후")]
+    const plan = planSceneBreaks(beats, name, 60)!
+
+    expect(renderPlannedNarrative(beats, plan, name, [1]).startsWith("집에서 아침 6시 10분에")).toBe(true)
+  })
 })
 
 describe("planSkeletonCalls", () => {
@@ -142,20 +149,23 @@ describe("planSkeletonCalls", () => {
 
   it("bundles consecutive segments until a call's share of the target would pass the cap", () => {
     // 25비트·목표 10,000자 → 비트당 400자. 대목 비트 수 [2,1,2,2,8,3,3,4].
-    expect(planSkeletonCalls(plan, 10_000, 3_000).map((call) => call.segments)).toEqual([
-      [0, 1, 2, 3],
-      [4],
-      [5, 6],
-      [7]
-    ])
+    expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.markers)).toEqual([[1, 2, 3, 4], [5], [6, 7], [8]])
+    expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.beats.length)).toEqual([7, 8, 6, 4])
   })
 
-  it("keeps a segment larger than the cap whole", () => {
-    expect(planSkeletonCalls(plan, 10_000, 1_000).map((call) => call.beatCount)).toEqual([2, 1, 2, 2, 8, 3, 3, 4])
+  it("splits a segment larger than the cap into even runs of beats that carry no marker", () => {
+    const calls = planSkeletonCalls(plan, 10_000, 1_400)
+    const fifth = calls.filter((call) => call.beats.every((beat) => beat >= 7 && beat <= 14))
+
+    expect(fifth.map((call) => call.beats)).toEqual([[7, 8, 9], [10, 11, 12], [13, 14]])
+    expect(fifth.map((call) => call.markers)).toEqual([[5], [], []])
+    expect(calls.flatMap((call) => call.beats)).toEqual(Array.from({ length: 25 }, (_, index) => index))
   })
 
   it("makes one call when the cap covers the scene or there is no target", () => {
-    expect(planSkeletonCalls(plan, 10_000, 10_000)).toEqual([{ segments: [0, 1, 2, 3, 4, 5, 6, 7], beatCount: 25 }])
+    expect(planSkeletonCalls(plan, 10_000, 10_000)).toEqual([
+      { beats: Array.from({ length: 25 }, (_, index) => index), markers: [1, 2, 3, 4, 5, 6, 7, 8] }
+    ])
     expect(planSkeletonCalls(plan, undefined, 1_000)).toHaveLength(1)
   })
 })

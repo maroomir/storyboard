@@ -226,38 +226,41 @@ export function planSceneBreaks(
   };
 }
 
-// 뼈대에 넘기는 사건 목록. 대목마다 ⟪대목 n⟫ 줄을 앞세운다. only 를 주면 그 대목(0부터)만 싣되 번호는
-// 전체 기준이다.
+// 뼈대에 넘기는 사건 목록. 대목마다 ⟪대목 n⟫ 줄을 앞세운다. onlyBeats 를 주면 그 비트(0부터)만 싣고,
+// 대목의 첫 비트가 빠진 대목(앞 호출이 쓰기 시작한 대목)에는 표식을 달지 않는다. 번호는 전체 기준이다.
 export function renderPlannedNarrative(
   beats: readonly SceneBeat[],
   plan: SceneBreakPlan,
   castName: (ref: string) => string,
-  only?: readonly number[],
+  onlyBeats?: readonly number[],
 ): string {
   return plan.segments
     .flatMap((segment, index) => {
-      if (only !== undefined && !only.includes(index)) {
+      const chosen = segment.beats.filter(
+        (beat) => onlyBeats === undefined || onlyBeats.includes(beat),
+      );
+      if (chosen.length === 0) {
         return [];
       }
 
-      const rendered = segment.beats.map((beat) =>
-        renderSceneBeat(beats[beat] as SceneBeat, castName),
-      );
-      return [`⟪대목 ${index + 1}⟫\n${rendered.join('\n\n')}`];
+      const rendered = chosen.map((beat) => renderSceneBeat(beats[beat] as SceneBeat, castName));
+      const marker = chosen[0] === segment.beats[0] ? `⟪대목 ${index + 1}⟫\n` : '';
+      return [`${marker}${rendered.join('\n\n')}`];
     })
     .join('\n\n');
 }
 
 export interface SkeletonCall {
-  // 이 호출이 쓰는 대목 번호(0부터), 연속.
-  readonly segments: readonly number[];
-  readonly beatCount: number;
+  // 이 호출이 쓰는 비트 번호(0부터), 연속.
+  readonly beats: readonly number[];
+  // 이 호출 안에서 시작하는 대목의 번호(1부터). 그 표식을 옮겨 적어야 한다.
+  readonly markers: readonly number[];
 }
 
 // NOTE: 42비트를 한 호출에 담으면 목표가 13k든 18k든 뼈대는 9~10k자에서 멈췄다(#115·#111 실측 4회).
-// 호출 하나가 낼 수 있는 사건의 밀도에 상한이 있으므로, 뼈대 목표를 비트 수대로 대목에 나눠 한 호출의
-// 몫이 charsPerCall 을 넘지 않게 연속한 대목을 묶는다. 대목 하나가 그보다 커도 쪼개지 않는다 — 대목은
-// 한 자리에서 이어지는 한 흐름이다. 목표가 없으면 한 호출이다.
+// 호출 하나가 낼 수 있는 사건의 밀도에 상한이 있으므로, 뼈대 목표를 비트 수대로 나눠 한 호출의 몫이
+// charsPerCall 을 넘지 않게 연속한 대목을 묶는다. 대목 하나의 몫이 그보다 크면 비트를 고르게 나눠
+// 여러 호출로 이어 쓴다(15비트 대목이 한 호출에서 다시 69%에 멈춤). 목표가 없으면 한 호출이다.
 export function planSkeletonCalls(
   plan: SceneBreakPlan,
   targetLength: number | undefined,
@@ -265,19 +268,31 @@ export function planSkeletonCalls(
 ): SkeletonCall[] {
   const totalBeats = plan.segments.reduce((sum, segment) => sum + segment.beats.length, 0);
   if (targetLength === undefined || totalBeats === 0) {
-    return [{ segments: plan.segments.map((_, index) => index), beatCount: totalBeats }];
+    return [
+      {
+        beats: plan.segments.flatMap((segment) => segment.beats),
+        markers: plan.segments.map((_, index) => index + 1),
+      },
+    ];
   }
 
   const shareOf = (beatCount: number): number => (targetLength * beatCount) / totalBeats;
-  const calls: { segments: number[]; beatCount: number }[] = [];
+  const calls: { beats: number[]; markers: number[] }[] = [];
 
   plan.segments.forEach((segment, index) => {
     const last = calls.at(-1);
-    if (last !== undefined && shareOf(last.beatCount + segment.beats.length) <= charsPerCall) {
-      last.segments.push(index);
-      last.beatCount += segment.beats.length;
-    } else {
-      calls.push({ segments: [index], beatCount: segment.beats.length });
+    if (last !== undefined && shareOf(last.beats.length + segment.beats.length) <= charsPerCall) {
+      last.beats.push(...segment.beats);
+      last.markers.push(index + 1);
+      return;
+    }
+
+    const chunkCount = Math.max(1, Math.ceil(shareOf(segment.beats.length) / charsPerCall));
+    let rest = [...segment.beats];
+    for (let chunk = 0; chunk < chunkCount; chunk += 1) {
+      const size = Math.ceil(rest.length / (chunkCount - chunk));
+      calls.push({ beats: rest.slice(0, size), markers: chunk === 0 ? [index + 1] : [] });
+      rest = rest.slice(size);
     }
   });
 
