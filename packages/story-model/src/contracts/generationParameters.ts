@@ -86,6 +86,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 2, max: 20 },
   },
   {
+    id: 'generation.skeleton.charsPerCall',
+    label: '뼈대 호출 하나의 목표 글자 수 상한',
+    kind: 'chars',
+    bounds: { min: 500, max: 50000 },
+  },
+  {
     id: 'generation.sceneBreak.timeJumpMinutes',
     label: '장면 전환으로 보는 시각 차(분)',
     kind: 'count',

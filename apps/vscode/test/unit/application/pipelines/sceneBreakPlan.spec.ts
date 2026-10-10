@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest"
 import type { SceneBeat } from '@storyboard/story-model';
 import {
   applyPlannedSceneBreaks,
+  countMissingSegmentMarkers,
   countSceneBreakLines,
+  ensureLeadingMarker,
   findThinDialogueBeats,
   findThinExpansionSpots,
   isTimeJump,
   planSceneBreaks,
+  planSkeletonCalls,
   renderPlannedNarrative,
   restoreSceneBreaks
 } from "@storyboard/story-engine"
@@ -120,6 +123,53 @@ describe("planSceneBreaks", () => {
 
     expect(narrative.startsWith("⟪대목 1⟫\n")).toBe(true)
     expect(narrative).toContain("\n\n⟪대목 2⟫\n학교에서")
+  })
+
+  it("renders only the asked segments, numbered as in the whole scene", () => {
+    const beats = [beat("집", "아침"), beat("학교", "오후"), beat("공원", "저녁")]
+    const plan = planSceneBreaks(beats, name, 60)!
+
+    const narrative = renderPlannedNarrative(beats, plan, name, [1, 2])
+
+    expect(narrative.startsWith("⟪대목 2⟫\n학교에서")).toBe(true)
+    expect(narrative).toContain("\n\n⟪대목 3⟫\n공원에서")
+    expect(narrative).not.toContain("⟪대목 1⟫")
+  })
+})
+
+describe("planSkeletonCalls", () => {
+  const plan = planSceneBreaks(dayBeats, name, 60)!
+
+  it("bundles consecutive segments until a call's share of the target would pass the cap", () => {
+    // 25비트·목표 10,000자 → 비트당 400자. 대목 비트 수 [2,1,2,2,8,3,3,4].
+    expect(planSkeletonCalls(plan, 10_000, 3_000).map((call) => call.segments)).toEqual([
+      [0, 1, 2, 3],
+      [4],
+      [5, 6],
+      [7]
+    ])
+  })
+
+  it("keeps a segment larger than the cap whole", () => {
+    expect(planSkeletonCalls(plan, 10_000, 1_000).map((call) => call.beatCount)).toEqual([2, 1, 2, 2, 8, 3, 3, 4])
+  })
+
+  it("makes one call when the cap covers the scene or there is no target", () => {
+    expect(planSkeletonCalls(plan, 10_000, 10_000)).toEqual([{ segments: [0, 1, 2, 3, 4, 5, 6, 7], beatCount: 25 }])
+    expect(planSkeletonCalls(plan, undefined, 1_000)).toHaveLength(1)
+  })
+})
+
+describe("segment markers of one call", () => {
+  it("prepends the call's first marker when the model dropped it", () => {
+    expect(ensureLeadingMarker("교문을 나섰다.", 2)).toBe("⟪대목 2⟫\n교문을 나섰다.")
+    expect(ensureLeadingMarker("⟪대목 2⟫\n교문을 나섰다.", 2)).toBe("⟪대목 2⟫\n교문을 나섰다.")
+  })
+
+  it("counts only the asked markers as missing", () => {
+    expect(countMissingSegmentMarkers("⟪대목 2⟫\n교문.", [2, 3])).toBe(1)
+    expect(countMissingSegmentMarkers("⟪대목 2⟫\n교문.", [1])).toBe(1)
+    expect(countMissingSegmentMarkers("⟪대목 1⟫ 밥. ⟪대목 2⟫ 교문.", [1, 2])).toBe(0)
   })
 })
 

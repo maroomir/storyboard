@@ -226,20 +226,79 @@ export function planSceneBreaks(
   };
 }
 
-// 뼈대에 넘기는 사건 목록. 대목마다 ⟪대목 n⟫ 줄을 앞세운다.
+// 뼈대에 넘기는 사건 목록. 대목마다 ⟪대목 n⟫ 줄을 앞세운다. only 를 주면 그 대목(0부터)만 싣되 번호는
+// 전체 기준이다.
 export function renderPlannedNarrative(
   beats: readonly SceneBeat[],
   plan: SceneBreakPlan,
   castName: (ref: string) => string,
+  only?: readonly number[],
 ): string {
   return plan.segments
-    .map((segment, index) => {
+    .flatMap((segment, index) => {
+      if (only !== undefined && !only.includes(index)) {
+        return [];
+      }
+
       const rendered = segment.beats.map((beat) =>
         renderSceneBeat(beats[beat] as SceneBeat, castName),
       );
-      return `⟪대목 ${index + 1}⟫\n${rendered.join('\n\n')}`;
+      return [`⟪대목 ${index + 1}⟫\n${rendered.join('\n\n')}`];
     })
     .join('\n\n');
+}
+
+export interface SkeletonCall {
+  // 이 호출이 쓰는 대목 번호(0부터), 연속.
+  readonly segments: readonly number[];
+  readonly beatCount: number;
+}
+
+// NOTE: 42비트를 한 호출에 담으면 목표가 13k든 18k든 뼈대는 9~10k자에서 멈췄다(#115·#111 실측 4회).
+// 호출 하나가 낼 수 있는 사건의 밀도에 상한이 있으므로, 뼈대 목표를 비트 수대로 대목에 나눠 한 호출의
+// 몫이 charsPerCall 을 넘지 않게 연속한 대목을 묶는다. 대목 하나가 그보다 커도 쪼개지 않는다 — 대목은
+// 한 자리에서 이어지는 한 흐름이다. 목표가 없으면 한 호출이다.
+export function planSkeletonCalls(
+  plan: SceneBreakPlan,
+  targetLength: number | undefined,
+  charsPerCall: number,
+): SkeletonCall[] {
+  const totalBeats = plan.segments.reduce((sum, segment) => sum + segment.beats.length, 0);
+  if (targetLength === undefined || totalBeats === 0) {
+    return [{ segments: plan.segments.map((_, index) => index), beatCount: totalBeats }];
+  }
+
+  const shareOf = (beatCount: number): number => (targetLength * beatCount) / totalBeats;
+  const calls: { segments: number[]; beatCount: number }[] = [];
+
+  plan.segments.forEach((segment, index) => {
+    const last = calls.at(-1);
+    if (last !== undefined && shareOf(last.beatCount + segment.beats.length) <= charsPerCall) {
+      last.segments.push(index);
+      last.beatCount += segment.beats.length;
+    } else {
+      calls.push({ segments: [index], beatCount: segment.beats.length });
+    }
+  });
+
+  return calls;
+}
+
+// 호출이 자기 첫 대목의 표식을 빠뜨렸으면 앞에 붙인다. 호출의 시작 대목은 파이프라인이 안다.
+export function ensureLeadingMarker(text: string, segmentNumber: number): string {
+  const hasMarker = [...text.matchAll(SEGMENT_MARKER)].some(
+    (match) => Number(match[1]) === segmentNumber,
+  );
+  return hasMarker ? text : `⟪대목 ${segmentNumber}⟫\n${text}`;
+}
+
+// 본문에 없는 ⟪대목 n⟫ 표식의 수. 번호는 1부터.
+export function countMissingSegmentMarkers(
+  text: string,
+  segmentNumbers: readonly number[],
+): number {
+  const seen = new Set([...text.matchAll(SEGMENT_MARKER)].map((match) => Number(match[1])));
+  return segmentNumbers.filter((segmentNumber) => !seen.has(segmentNumber)).length;
 }
 
 export interface PlannedBreakResult {

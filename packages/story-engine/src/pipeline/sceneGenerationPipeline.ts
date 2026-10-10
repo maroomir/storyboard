@@ -65,12 +65,16 @@ import {
 import { selectRepresentativeDialogue } from './dialogueCorpus';
 import {
   applyPlannedSceneBreaks,
+  countMissingSegmentMarkers,
   countSceneBreakLines,
+  ensureLeadingMarker,
   findThinDialogueBeats,
   planSceneBreaks,
+  planSkeletonCalls,
   renderPlannedNarrative,
   restoreSceneBreaks,
   type SceneBreakPlan,
+  type SkeletonCall,
 } from './sceneBreakPlan';
 import {
   type DialoguePolishSummary,
@@ -239,6 +243,8 @@ async function draftSkeletonWithRetries(
   tuning: ResolvedSceneGenerationTuning,
   breakPlan: SceneBreakPlan | undefined,
   beats: readonly SceneBeat[],
+  // 대목 묶음 호출이면 이 호출이 맡은 대목 번호(1부터). 표식 검사와 첫 표식 보충이 그 범위로 좁혀진다.
+  segmentNumbers?: readonly number[],
 ): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
   let best:
@@ -246,13 +252,15 @@ async function draftSkeletonWithRetries(
     | undefined;
 
   for (let attempt = 0; attempt <= retryLimit; attempt += 1) {
-    const skeleton = await aiService.draftSceneSkeleton(
+    const response = await aiService.draftSceneSkeleton(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
     );
+    const skeleton =
+      segmentNumbers?.[0] === undefined ? response : ensureLeadingMarker(response, segmentNumbers[0]);
     const violations = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
-      ...validatePlannedSceneBreaks(skeleton, breakPlan),
+      ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
     ];
 
     if (violations.length === 0) {
@@ -311,12 +319,16 @@ function thinDialogueReasons(
 function validatePlannedSceneBreaks(
   skeleton: string,
   breakPlan: SceneBreakPlan | undefined,
+  segmentNumbers?: readonly number[],
 ): SectionViolation[] {
   if (breakPlan === undefined) {
     return [];
   }
 
-  const { missingMarkers } = applyPlannedSceneBreaks(skeleton, breakPlan);
+  const missingMarkers = countMissingSegmentMarkers(
+    skeleton,
+    segmentNumbers ?? breakPlan.segments.map((_, index) => index + 1),
+  );
   return missingMarkers === 0
     ? []
     : [
@@ -840,41 +852,134 @@ const collectVoiceSamplesStage: ISceneStage = {
   },
 };
 
+type SkeletonCallInput = Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0];
+
+// 대목 묶음마다 한 호출(#111). 앞 호출까지의 뼈대를 그대로 보여 주고 이어 쓰게 하며, 다음 호출의 첫
+// 사건을 알려 거기까지 쓰지 않게 한다. 종료 지점은 마지막 호출만 받는다. 호출의 미달·되풀이는 그
+// 호출만 다시 부른다.
+async function draftSkeletonInCalls(input: {
+  readonly ctx: ResolvedExecutionContext;
+  readonly base: SkeletonCallInput;
+  readonly options: GenerateTextOptions;
+  readonly calls: readonly SkeletonCall[];
+  readonly plan: SceneBreakPlan;
+  readonly beats: readonly SceneBeat[];
+  readonly targetLength: number;
+}): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
+  const { ctx, base, options, calls, plan, beats, targetLength } = input;
+  const castName = castNameOf(ctx.context);
+  const totalBeats = calls.reduce((sum, call) => sum + call.beatCount, 0);
+  const endState = ctx.context.scene.card?.endState;
+  const parts: string[] = [];
+  const warnings: string[] = [];
+
+  for (const [index, call] of calls.entries()) {
+    ctx.onProgress?.('draftSkeleton', index + 1, calls.length);
+    const next = calls[index + 1];
+    const nextBeat =
+      next === undefined ? undefined : firstBeatText(plan, beats, next.segments[0] as number);
+    const segmentNumbers = call.segments.map((segment) => segment + 1);
+
+    const result = await draftSkeletonWithRetries(
+      ctx.aiService,
+      {
+        ...base,
+        narrativeSource: renderPlannedNarrative(beats, plan, castName, call.segments),
+        targetLength: Math.round((targetLength * call.beatCount) / totalBeats),
+        ...(parts.length > 0 ? { priorSkeleton: parts.join('\n\n') } : {}),
+        ...(nextBeat === undefined ? {} : { nextBeat }),
+        ...(next === undefined && endState !== undefined ? { endState } : {}),
+      },
+      options,
+      ctx.tuning.skeletonRetryLimit,
+      ctx.tuning,
+      plan,
+      beats,
+      segmentNumbers,
+    );
+    parts.push(result.text);
+    warnings.push(
+      ...result.violations.map(
+        (violation) => `뼈대 ${index + 1}/${calls.length}: ${violation.detail}`,
+      ),
+    );
+    assertNotCancelled(ctx.shouldCancel);
+  }
+
+  return { text: parts.join('\n\n'), warnings };
+}
+
+function firstBeatText(
+  plan: SceneBreakPlan,
+  beats: readonly SceneBeat[],
+  segment: number,
+): string | undefined {
+  const beat = beats[plan.segments[segment]?.beats[0] ?? -1];
+  return beat === undefined ? undefined : typeof beat === 'string' ? beat : beat.text;
+}
+
 // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
+// 대목이 계획된 긴 씬은 호출 하나의 몫이 charsPerCall 을 넘지 않게 대목 묶음으로 나눠 이어 쓴다.
 const draftSkeletonStage: ISceneStage = {
   id: 'draftSkeleton',
   async run(state) {
     const { ctx, input } = state;
-    ctx.onProgress?.('draftSkeleton', 1, 1);
-    const skeleton = await draftSkeletonWithRetries(
-      ctx.aiService,
+    const beats = ctx.context.scene.card?.beats ?? [];
+    const targetLength = skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio);
+    const endState = ctx.context.scene.card?.endState;
+    const base: SkeletonCallInput = {
+      narrativeSource: ctx.narrativeSource,
+      ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
+      personas: state.personasUsed,
+      catchphrases: characterCatchphrases(ctx.context.characters),
+      characterKnowledge: input.characterKnowledge,
+      background: state.background,
+      backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
+      previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
+      grounding: ctx.context.scene.frontmatter.grounding,
+      ...(targetLength === undefined ? {} : { targetLength }),
+      ...(ctx.breakPlan === undefined ? {} : { plannedBreaks: true }),
+    };
+    const options = withAttribution(
       {
-        narrativeSource: ctx.narrativeSource,
-        ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
-        personas: state.personasUsed,
-        catchphrases: characterCatchphrases(ctx.context.characters),
-        characterKnowledge: input.characterKnowledge,
-        background: state.background,
-        backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
-        previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
-        endState: ctx.context.scene.card?.endState,
-        grounding: ctx.context.scene.frontmatter.grounding,
-        targetLength: skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio),
-        ...(ctx.breakPlan === undefined ? {} : { plannedBreaks: true }),
+        ...buildGenerateOptions(ctx.providers, 'sceneSkeleton'),
+        styleDirective: ctx.styleDirective,
       },
-      withAttribution(
-        {
-          ...buildGenerateOptions(ctx.providers, 'sceneSkeleton'),
-          styleDirective: ctx.styleDirective,
-        },
-        { primary: ctx.sceneRef },
-      ),
-      ctx.tuning.skeletonRetryLimit,
-      ctx.tuning,
-      ctx.breakPlan,
-      ctx.context.scene.card?.beats ?? [],
+      { primary: ctx.sceneRef },
     );
-    state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
+    const calls =
+      ctx.breakPlan === undefined
+        ? undefined
+        : planSkeletonCalls(ctx.breakPlan, targetLength, ctx.tuning.skeletonCharsPerCall);
+
+    let skeleton: { readonly text: string; readonly warnings: readonly string[] };
+    if (calls === undefined || calls.length === 1 || targetLength === undefined) {
+      ctx.onProgress?.('draftSkeleton', 1, 1);
+      const whole = await draftSkeletonWithRetries(
+        ctx.aiService,
+        { ...base, ...(endState === undefined ? {} : { endState }) },
+        options,
+        ctx.tuning.skeletonRetryLimit,
+        ctx.tuning,
+        ctx.breakPlan,
+        beats,
+      );
+      skeleton = {
+        text: whole.text,
+        warnings: whole.violations.map((violation) => `뼈대: ${violation.detail}`),
+      };
+    } else {
+      skeleton = await draftSkeletonInCalls({
+        ctx,
+        base,
+        options,
+        calls,
+        plan: ctx.breakPlan as SceneBreakPlan,
+        beats,
+        targetLength,
+      });
+    }
+    state.warnings.push(...skeleton.warnings);
 
     // 전환 자리를 파이프라인이 정한 씬은 장부도 그 대목들이다. 표식이 빠진 대목은 앞 대목에 붙었다.
     const applied =

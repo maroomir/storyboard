@@ -517,6 +517,42 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     ])
   })
 
+  it("drafts a long planned scene in bundled calls that continue each other", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton
+      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다."].join("\n"))
+      .mockResolvedValueOnce("엘리아가 교문을 나섰다.")
+
+    const planned = plannedScene(contextFor([eliaCard], "본문"))
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: {
+        ...planned,
+        scene: { ...planned.scene, card: { ...planned.scene.card, endState: "엘리아가 집에 닿는다." } }
+      } as SceneContext,
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 9000 },
+      tuning: { "generation.skeleton.charsPerCall": 1500, "generation.skeleton.retryLimit": 0 }
+    })
+
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)
+    const first = ai.draftSceneSkeleton.mock.calls[0]?.[0] as Record<string, unknown>
+    const second = ai.draftSceneSkeleton.mock.calls[1]?.[0] as Record<string, unknown>
+    expect(first.narrativeSource).toContain("⟪대목 1⟫")
+    expect(first.narrativeSource).not.toContain("⟪대목 2⟫")
+    expect(first.targetLength).toBe(2000)
+    expect(first.nextBeat).toBe("교문을 나선다")
+    expect(first.endState).toBeUndefined()
+    expect(second.narrativeSource).toBe("⟪대목 2⟫\n교문을 나선다\n(장소: 학교 교문 앞 / 시각: 오후 4시)")
+    expect(second.priorSkeleton).toBe(["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다."].join("\n"))
+    expect(second.targetLength).toBe(1000)
+    expect(second.endState).toBe("엘리아가 집에 닿는다.")
+    expect(result.skeleton).toBe(["엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다.", "", "---", "", "엘리아가 교문을 나섰다."].join("\n"))
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 1/2:"))).toHaveLength(1)
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 2/2:"))).toHaveLength(1)
+  })
+
   it("names the thin conversations when a planned skeleton comes back short", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValue(["⟪대목 1⟫", "\u201c밥 먹자.\u201d", "⟪대목 2⟫", "교문을 나섰다."].join("\n"))

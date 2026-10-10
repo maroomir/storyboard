@@ -10,7 +10,8 @@
     "retryLimit": 1,
     "minimumLengthRatio": 0.8,
     "thinDialogueTurns": 3,
-    "requestedDialogueTurns": 6
+    "requestedDialogueTurns": 6,
+    "charsPerCall": 3000
   },
   "sceneBreak": {
     "timeJumpMinutes": 60
