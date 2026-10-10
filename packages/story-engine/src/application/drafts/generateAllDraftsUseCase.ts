@@ -3,6 +3,7 @@ import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
+import { describeReviseOutcome } from './reviseDraftUseCase';
 import type { IUseCase } from '#engine/application/useCase';
 
 export interface ISceneBatchRepository {
@@ -122,10 +123,14 @@ export class GenerateAllDraftsUseCase implements IUseCase<
           if (result.warnings.length > 0) {
             this.deps.logger.warn(`${label}: ${result.warnings.join(' / ')}`);
           }
-          await this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
+          const revised = await this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
             onWillRun: () => options.onProgress?.({ current, kind: 'revising', label, total }),
             shouldCancel: options.shouldCancel,
           });
+          const reviseWarning = revised && describeReviseOutcome(revised).warning;
+          if (reviseWarning) {
+            this.deps.logger.warn(`${label}: ${reviseWarning}`);
+          }
         }
         continue;
       }

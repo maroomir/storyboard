@@ -1000,6 +1000,49 @@ describe('draft generate warnings', () => {
   });
 });
 
+describe('draft generate after a failed review', () => {
+  // #114: 초안이 써진 뒤 감수가 멈추면 생성은 성공이다. 종료 코드로 판단하는 에이전트가 초안을 다시 사지 않게.
+  it('succeeds with the review status and a warning when the rewrite timed out', async () => {
+    const warned: string[] = [];
+    const real = container();
+    const stubbed = {
+      ...real,
+      logger: { ...silentLogger, warn: (message: string) => warned.push(message) },
+      progress: { update: () => {}, finish: () => {} },
+      drafts: stubManager(real.drafts, {
+        generate: async () => ({
+          ok: true,
+          kind: 'generated',
+          draftUri: real.workspaceRoot,
+          warnings: [],
+        }),
+        reviseScene: async () => ({
+          passed: false,
+          revisionCount: 0,
+          remainingBlocking: 2,
+          cancelled: false,
+          instructions: [],
+          preservedOriginal: false,
+          failure: { stage: 'revise', kind: 'timeout', message: '600초 안에 끝나지 않아 중단했습니다.' },
+        }),
+      } as never),
+      configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
+    } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
+
+    const outcome = await commands['draft generate']({
+      container: stubbed,
+      args: args(['draft', 'generate'], {}, ['01-first']),
+    });
+
+    expect(outcome.ok).toBe(true);
+    const data = outcome.data as { draft: string; warnings: string[]; revise: { status: string } };
+    expect(data.draft).toBeTruthy();
+    expect(data.revise.status).toBe('timeout');
+    expect(data.warnings).toHaveLength(1);
+    expect(warned[0]).toContain('600초');
+  });
+});
+
 describe('narrator verbs', () => {
   it('reports no narrator cards on a fresh workspace', async () => {
     const outcome = await run('narrator list', args(['narrator', 'list']));

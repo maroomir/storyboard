@@ -40,6 +40,7 @@ import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipelin
 import {
   runReviseLoop,
   type ReviseLoopContext,
+  type ReviseLoopFailure,
   type ReviseSeedIssues,
 } from '#engine/pipeline/reviseLoop';
 
@@ -124,6 +125,59 @@ export interface ReviseDraftWorkflowResult {
     readonly originalLength: number;
     readonly candidateLength: number;
   };
+  readonly failure?: ReviseLoopFailure;
+}
+
+export type ReviseOutcomeStatus =
+  | 'passed'
+  | 'applied'
+  | 'unresolved'
+  | 'rejected'
+  | 'timeout'
+  | 'failed'
+  | 'cancelled';
+
+export interface ReviseOutcome {
+  readonly status: ReviseOutcomeStatus;
+  readonly revisionCount: number;
+  // What a person should hear when the review did not do what it set out to; absent otherwise.
+  readonly warning?: string;
+}
+
+// NOTE: Every host reports the review after generation through this, so a rewrite that timed out
+// reads the same in the CLI's json, the desktop log and the extension's notice.
+export function describeReviseOutcome(result: ReviseDraftWorkflowResult): ReviseOutcome {
+  const { revisionCount } = result;
+  const kept = revisionCount > 0 ? `재작성 ${revisionCount}회는 반영했습니다` : '초안은 생성된 그대로입니다';
+
+  if (result.failure) {
+    const stage = result.failure.stage === 'check' ? '검사' : '재작성';
+    return {
+      status: result.failure.kind === 'timeout' ? 'timeout' : 'failed',
+      revisionCount,
+      warning: `검수 ${stage}가 끝나지 않아 감수를 멈췄습니다. ${kept}: ${result.failure.message}`,
+    };
+  }
+
+  if (result.rejection) {
+    return {
+      status: 'rejected',
+      revisionCount,
+      warning:
+        `검수 재작성 결과가 안전 기준(${result.rejection.reason})을 통과하지 않아 원본을 유지했습니다 ` +
+        `(${result.rejection.candidateLength}자 / 원본 ${result.rejection.originalLength}자).`,
+    };
+  }
+
+  if (result.cancelled) {
+    return { status: 'cancelled', revisionCount };
+  }
+
+  if (result.passed) {
+    return { status: revisionCount > 0 ? 'applied' : 'passed', revisionCount };
+  }
+
+  return { status: revisionCount > 0 ? 'applied' : 'unresolved', revisionCount };
 }
 
 interface ReviseDraftContext {
@@ -287,6 +341,7 @@ async function runReviseDraftWorkflow(
     instructions: result.instructions,
     preservedOriginal: result.preservedOriginal,
     rejection: result.rejection,
+    ...(result.failure === undefined ? {} : { failure: result.failure }),
   };
 }
 
