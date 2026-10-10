@@ -34,6 +34,10 @@ export interface SceneSkeletonInput {
   readonly retryReasons?: readonly string[];
   // 사건 목록에 ⟪대목 n⟫ 으로 장면 전환 자리가 미리 정해져 있다. 모델은 그 자리에만 --- 를 쓴다.
   readonly plannedBreaks?: boolean;
+  // 대목 묶음 호출(#111): 앞 호출까지 쓴 뼈대. 모델은 그 끝에서 이어 쓴다.
+  readonly priorSkeleton?: string;
+  // 다음 호출의 첫 사건. 모델은 거기까지 쓰지 않는다.
+  readonly nextBeat?: string;
 }
 
 // NOTE: 씬의 뼈대를 한 번에 쓴다. 사건 순서·등장·종료 지점 같은 연속성 결정이 전부 이 한 문맥에서
@@ -50,6 +54,8 @@ export const SceneSkeletonPrompt = {
         endState: input.endState,
         hasRetryReasons: input.retryReasons !== undefined && input.retryReasons.length > 0,
         retryReasons: input.retryReasons?.join(' / '),
+        priorSkeleton: input.priorSkeleton,
+        nextBeat: input.nextBeat,
         backgroundDescription: joinCardText(input.background.description),
         hasBackgroundConflicts: (input.backgroundConflicts ?? []).length > 0,
         backgroundConflicts: input.backgroundConflicts ?? [],
