@@ -8,7 +8,9 @@
   "skeleton": {
     "lengthRatio": 0.3333333333333333,
     "retryLimit": 1,
-    "minimumLengthRatio": 0.8
+    "minimumLengthRatio": 0.8,
+    "thinDialogueTurns": 3,
+    "requestedDialogueTurns": 6
   },
   "sceneBreak": {
     "timeJumpMinutes": 60

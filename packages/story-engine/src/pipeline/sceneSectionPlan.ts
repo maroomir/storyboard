@@ -224,7 +224,8 @@ function isDialoguePreserved(
     let joined = '';
 
     for (let width = 0; width < splitLimit && start + width < candidates.length; width += 1) {
-      joined = width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
+      joined =
+        width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
 
       if (similarityRatio(line, joined) >= preservedRatio) {
         return true;
@@ -376,7 +377,7 @@ export function validateSceneSkeleton(
   ) {
     violations.push({
       kind: 'too-short',
-      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 ${Math.round(resolved.skeletonMinimumLengthRatio * 100)}%에 못 미칩니다 (${skeleton.length.toLocaleString()}자). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
+      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 ${Math.round(resolved.skeletonMinimumLengthRatio * 100)}%에 못 미칩니다 (${skeleton.length.toLocaleString()}자, ${Math.round((skeleton.length / targetLength) * 100)}%). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
     });
   }
 
@@ -624,7 +625,10 @@ export function validatePolishedSkeleton(input: {
   );
 
   if (added.length > 0) {
-    violations.push({ kind: 'cast', detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})` });
+    violations.push({
+      kind: 'cast',
+      detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})`,
+    });
   }
 
   const foreign = findForeignScriptSpans(input.polished);
@@ -737,4 +741,70 @@ export function findCatchphraseOveruse(input: {
   }
 
   return warnings;
+}
+
+export interface ThinExpansionSpot {
+  readonly line: string;
+  readonly added: number;
+}
+
+const thinSpotLimit = 3;
+
+// NOTE: 미달 구간을 «목표까지 채워라»로만 다시 부르면 모델이 어디를 펼칠지 몰라 이미 두꺼운 곳을 더
+// 늘리거나 그대로 멈췄다(#105-9). 뼈대 조각의 대사를 살붙임 결과에서 찾아, 다음 대사까지 서술이 가장
+// 적게 붙은 자리를 고른다. 살붙임은 대사를 그대로 두므로 대사가 두 글을 잇는 닻이 된다.
+export function findThinExpansionSpots(
+  section: string,
+  expanded: string,
+  minimumQuotedLength: number,
+): ThinExpansionSpot[] {
+  const found: {
+    line: string;
+    skeletonStart: number;
+    skeletonEnd: number;
+    expandedStart: number;
+    expandedEnd: number;
+  }[] = [];
+  let searchFrom = 0;
+
+  for (const match of section.matchAll(quotedDialoguePatternFor(minimumQuotedLength))) {
+    const line = (match[1] ?? '').trim();
+    const at = expanded.indexOf(line, searchFrom);
+    if (line.length === 0 || at < 0 || match.index === undefined) {
+      continue;
+    }
+
+    found.push({
+      line,
+      skeletonStart: match.index,
+      skeletonEnd: match.index + match[0].length,
+      expandedStart: at,
+      expandedEnd: at + line.length,
+    });
+    searchFrom = at + line.length;
+  }
+
+  return found
+    .slice(0, -1)
+    .map((current, index) => {
+      const next = found[index + 1] ?? current;
+      const skeletonGap = next.skeletonStart - current.skeletonEnd;
+      const expandedGap = next.expandedStart - current.expandedEnd;
+      return { line: current.line, added: expandedGap - skeletonGap };
+    })
+    .sort((left, right) => left.added - right.added)
+    .slice(0, thinSpotLimit);
+}
+
+export function describeThinExpansionSpots(
+  spots: readonly ThinExpansionSpot[],
+): string | undefined {
+  if (spots.length === 0) {
+    return undefined;
+  }
+
+  const quoted = spots
+    .map((spot) => `“${spot.line.length > 20 ? `${spot.line.slice(0, 20)}…` : spot.line}”`)
+    .join(', ');
+  return `특히 대사 ${quoted} 다음에는 서술이 거의 붙지 않았습니다. 그 자리부터 시점 인물의 반응·해석·행동을 펼치세요`;
 }
