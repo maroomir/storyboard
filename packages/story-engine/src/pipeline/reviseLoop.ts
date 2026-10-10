@@ -28,6 +28,12 @@ import {
   routeReviewIssues,
   type RoutingCharacter,
 } from './reviewRouting';
+import {
+  joinDraftSections,
+  locateQuoteSection,
+  replaceSectionText,
+  splitDraftSections,
+} from './revisionSections';
 
 export interface ReviseLoopCharacter extends RoutingCharacter {
   readonly name: string;
@@ -104,12 +110,11 @@ function toReviseLoopFailure(stage: ReviseLoopFailure['stage'], error: unknown):
   };
 }
 
-function buildRevisionPasses(
+function buildSectionInstructions(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[],
   characters: readonly ReviseLoopCharacter[],
-  globalInstructions: readonly string[],
-): readonly (readonly string[])[] {
+): string[] {
   const reviewIssues = [
     ...adaptContinuityIssues(continuityIssues),
     ...adaptCritiqueIssues(critiqueIssues, characters),
@@ -123,7 +128,56 @@ function buildRevisionPasses(
     buildScopedInstructions(group, (cardId) => cardNameById.get(cardId)),
   );
 
-  return [[...scoped, ...(routing.global.length > 0 ? globalInstructions : [])]];
+  return [
+    ...scoped,
+    ...(routing.global.length > 0 ? buildRevisionInstructions(continuityIssues, critiqueIssues) : []),
+  ];
+}
+
+export interface SectionRevisionPlan {
+  readonly section: number;
+  readonly instructions: readonly string[];
+}
+
+// Each issue goes to the section its quote came from. An issue that quotes nothing cannot be placed,
+// so it rides with every section — rare, since both review prompts ask for the quoted text.
+export function planSectionRevisions(
+  body: string,
+  continuityIssues: readonly ContinuityIssueLike[],
+  critiqueIssues: readonly DraftCritiqueIssue[],
+  characters: readonly ReviseLoopCharacter[],
+): SectionRevisionPlan[] {
+  const { sections } = splitDraftSections(body);
+  const continuityBySection = sections.map((): ContinuityIssueLike[] => []);
+  const critiqueBySection = sections.map((): DraftCritiqueIssue[] => []);
+
+  const assign = <T>(buckets: T[][], issue: T, quote: string | undefined): void => {
+    const index = locateQuoteSection(sections, quote);
+    for (const [bucketIndex, bucket] of buckets.entries()) {
+      if (index === undefined || index === bucketIndex) {
+        bucket.push(issue);
+      }
+    }
+  };
+
+  continuityIssues.forEach((issue) => assign(continuityBySection, issue, issue.original));
+  critiqueIssues.forEach((issue) => assign(critiqueBySection, issue, issue.excerpt));
+
+  return sections.flatMap((_, section) => {
+    const sectionContinuity = continuityBySection[section] ?? [];
+    const sectionCritique = critiqueBySection[section] ?? [];
+
+    if (sectionContinuity.length === 0 && sectionCritique.length === 0) {
+      return [];
+    }
+
+    return [
+      {
+        section,
+        instructions: buildSectionInstructions(sectionContinuity, sectionCritique, characters),
+      },
+    ];
+  });
 }
 
 interface ReviseSession {
@@ -185,67 +239,102 @@ function evaluateReviewResult(
   return { blocking, instructions, passed };
 }
 
-async function applyRevisionPasses(
+interface SectionRejection {
+  readonly section: number;
+  readonly reason: DraftCandidateRejectionReason;
+  readonly originalLength: number;
+  readonly candidateLength: number;
+}
+
+interface SectionRevisionOutcome {
+  readonly body: string;
+  readonly acceptedSections: readonly number[];
+  readonly rejectedSections: readonly SectionRejection[];
+  readonly failure?: ReviseLoopFailure;
+}
+
+// A rejected section keeps its original text and the others still land: one bad candidate no longer
+// costs the whole round. Each section is held to its share of the scene's target length.
+async function applySectionRevisions(
   session: ReviseSession,
-  revisionPasses: readonly (readonly string[])[],
+  plans: readonly SectionRevisionPlan[],
   currentBody: string,
   isCancelled: () => boolean,
   maxCompressionPercent: number,
-): Promise<
-  | { body: string; appliedAnyPass: boolean; rejection?: undefined }
-  | {
-      body: string;
-      appliedAnyPass: false;
-      rejection: {
-        readonly reason: DraftCandidateRejectionReason;
-        readonly candidateLength: number;
-        readonly originalLength: number;
-      };
-    }
-> {
+  onSection?: (done: number, total: number) => void,
+): Promise<SectionRevisionOutcome> {
   const { aiService, registry, attribution, ctx } = session;
+  const split = splitDraftSections(currentBody);
+  const sections = [...split.sections];
+  const acceptedSections: number[] = [];
+  const rejectedSections: SectionRejection[] = [];
+  let failure: ReviseLoopFailure | undefined;
 
-  let body = currentBody;
-  let appliedAnyPass = false;
-
-  for (const instructions of revisionPasses) {
+  for (const [done, plan] of plans.entries()) {
     if (isCancelled()) {
       break;
     }
 
-    const candidate = await aiService.reviseDraft(
-      {
-        body,
-        format: ctx.format,
-        instructions,
-        intent: ctx.intent,
-        facts: ctx.factLines,
-        characterCards: ctx.characterCards,
-      },
-      { providerId: registry.getTaskProvider('draftRevision'), attribution },
-    );
-    const validation = validateDraftCandidate(currentBody, candidate, {
+    onSection?.(done + 1, plans.length);
+
+    const original = sections[plan.section] ?? '';
+    const originalText = original.trim();
+    let candidate: string;
+    try {
+      candidate = await aiService.reviseDraft(
+        {
+          body: originalText,
+          format: ctx.format,
+          instructions: plan.instructions,
+          intent: ctx.intent,
+          facts: ctx.factLines,
+          characterCards: ctx.characterCards,
+        },
+        { providerId: registry.getTaskProvider('draftRevision'), attribution },
+      );
+    } catch (error) {
+      failure = toReviseLoopFailure('revise', error);
+      break;
+    }
+    const sectionTarget =
+      ctx.targetLength === undefined || currentBody.length === 0
+        ? undefined
+        : Math.round((ctx.targetLength * originalText.length) / currentBody.length);
+    const validation = validateDraftCandidate(originalText, candidate, {
       maxCompressionPercent,
-      targetLength: ctx.targetLength,
+      ...(sectionTarget === undefined ? {} : { targetLength: sectionTarget }),
     });
 
     if (!validation.accepted) {
-      return {
-        body: currentBody,
-        appliedAnyPass: false,
-        rejection: {
-          reason: validation.reason ?? 'empty',
-          candidateLength: validation.candidateLength,
-          originalLength: currentBody.length,
-        },
-      };
+      rejectedSections.push({
+        section: plan.section,
+        reason: validation.reason ?? 'empty',
+        originalLength: originalText.length,
+        candidateLength: validation.candidateLength,
+      });
+      continue;
     }
 
-    body = candidate;
-    appliedAnyPass = true;
+    sections[plan.section] = replaceSectionText(original, candidate);
+    acceptedSections.push(plan.section);
   }
 
-  return { body, appliedAnyPass };
+  return {
+    body: joinDraftSections({ sections, breakLines: split.breakLines }),
+    acceptedSections,
+    rejectedSections,
+    ...(failure === undefined ? {} : { failure }),
+  };
+}
+
+function summarizeRejection(
+  rejected: readonly SectionRejection[],
+): NonNullable<ReviseLoopResult['rejection']> {
+  return {
+    reason: rejected[0]?.reason ?? 'empty',
+    originalLength: rejected.reduce((sum, item) => sum + item.originalLength, 0),
+    candidateLength: rejected.reduce((sum, item) => sum + item.candidateLength, 0),
+  };
 }
 
 // NOTE: Both apps share this exact review→revise policy; changing pass/stop semantics here changes
@@ -290,39 +379,39 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
       break;
     }
 
-    options.onProgress?.(`재작성 중 (${revisionCount + 1}/${maxIterations})…`);
+    const round = revisionCount + 1;
+    options.onProgress?.(`재작성 중 (${round}/${maxIterations})…`);
 
-    const revisionPasses = buildRevisionPasses(
-      continuityIssues,
-      critiqueIssues,
-      ctx.characters,
-      lastInstructions,
+    const plans = planSectionRevisions(body, continuityIssues, critiqueIssues, ctx.characters);
+    if (plans.length === 0) {
+      break;
+    }
+
+    const applied = await applySectionRevisions(
+      session,
+      plans,
+      body,
+      isCancelled,
+      options.maxCompressionPercent,
+      (done, total) =>
+        options.onProgress?.(`재작성 중 (${round}/${maxIterations}) · 구간 ${done}/${total}…`),
     );
-    let applied: Awaited<ReturnType<typeof applyRevisionPasses>>;
-    try {
-      applied = await applyRevisionPasses(
-        session,
-        revisionPasses,
-        body,
-        isCancelled,
-        options.maxCompressionPercent,
-      );
-    } catch (error) {
-      failure = toReviseLoopFailure('revise', error);
+    failure = applied.failure;
+
+    if (applied.acceptedSections.length === 0) {
+      if (applied.rejectedSections.length > 0 && failure === undefined) {
+        rejection = summarizeRejection(applied.rejectedSections);
+      }
       break;
     }
+
+    // Sections accepted before a provider failure are kept: they passed the same checks.
     body = applied.body;
-
-    if (applied.rejection) {
-      rejection = applied.rejection;
-      break;
-    }
-
-    if (!applied.appliedAnyPass) {
-      break;
-    }
-
     revisionCount += 1;
+
+    if (failure) {
+      break;
+    }
   }
 
   return {
