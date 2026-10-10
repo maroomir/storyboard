@@ -254,10 +254,11 @@ async function draftSkeletonWithRetries(
     | undefined;
 
   for (let attempt = 0; attempt <= retryLimit; attempt += 1) {
-    const response = await aiService.draftSceneSkeleton(
+    const rawResponse = await aiService.draftSceneSkeleton(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
     );
+    const response = curlDialogueQuotes(rawResponse);
     const skeleton =
       segmentNumbers === undefined
         ? response
@@ -294,6 +295,12 @@ async function draftSkeletonWithRetries(
   }
 
   return { text: best?.text ?? '', violations: best?.violations ?? [] };
+}
+
+// 뼈대가 곧은 큰따옴표로 대사를 쓰면 묶음 호출의 뒤 호출들이 앞 뼈대의 모양을 따라가 초안 전체에 섞인다
+// (실측 8회차: 97줄). 규약은 곡선 큰따옴표이므로 한 줄 안에서 닫히는 짝을 바꾼다.
+function curlDialogueQuotes(text: string): string {
+  return text.replace(/"([^"\n]+)"/g, '“$1”');
 }
 
 const thinBeatListLimit = 6;
