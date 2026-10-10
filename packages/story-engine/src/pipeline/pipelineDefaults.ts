@@ -27,6 +27,10 @@ const pipelineDefaultsSchema = z.object({
     retryLimit: z.number().int().nonnegative(),
     minimumLengthRatio: ratio,
   }),
+  sceneBreak: z.object({
+    // 좌표 비트 사이 시각 차가 이 분 이상이면 장면을 끊는다. 시:분이 읽히지 않으면 시간대 낱말로 본다.
+    timeJumpMinutes: positiveInt,
+  }),
   dialogue: z.object({
     // 살붙임이 뼈대의 대사를 지웠는지 판정하는 유사도 임계.
     preservedRatio: ratio,
@@ -74,6 +78,7 @@ const pipelineDefaultsSchema = z.object({
     repetition: positiveInt,
     'too-long': positiveInt,
     'too-short': positiveInt,
+    'scene-breaks': positiveInt,
   }),
 });
 

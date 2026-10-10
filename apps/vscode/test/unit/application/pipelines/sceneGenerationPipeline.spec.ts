@@ -476,6 +476,71 @@ describe("runSceneGenerationPipeline — 장면 좌표", () => {
   })
 })
 
+describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () => {
+  const plannedScene = (context: SceneContext): SceneContext =>
+    ({
+      ...context,
+      scene: {
+        ...context.scene,
+        card: {
+          type: "scene",
+          id: "01-opening",
+          beats: [
+            { text: "밥을 먹는다", place: "집 식탁", time: "아침 7시" },
+            { text: "설거지를 한다", place: "집 부엌", time: "아침 7시 20분" },
+            { text: "교문을 나선다", place: "학교 교문 앞", time: "오후 4시" }
+          ]
+        }
+      }
+    }) as SceneContext
+
+  it("marks the planned segments for the skeleton and keeps breaks only there", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(
+      ["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "---", "", "엘리아가 설거지를 했다.", "", "⟪대목 2⟫", "엘리아가 교문을 나섰다."].join("\n")
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const skeletonInput = ai.draftSceneSkeleton.mock.calls[0]?.[0] as { narrativeSource: string; plannedBreaks?: boolean }
+    expect(skeletonInput.plannedBreaks).toBe(true)
+    expect(skeletonInput.narrativeSource).toContain("⟪대목 2⟫\n교문을 나선다")
+    expect(result.skeleton.split("\n").filter((line) => line === "---")).toHaveLength(1)
+    expect(result.sceneCoordinates).toEqual([
+      "1. 장소: 집 식탁 → 집 부엌 / 시각: 아침 7시 ~ 아침 7시 20분",
+      "2. 장소: 학교 교문 앞 / 시각: 오후 4시"
+    ])
+  })
+
+  it("retries an expansion that dropped a break and restores it from the skeleton", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(
+      ["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "⟪대목 2⟫", "엘리아가 교문을 나섰다."].join("\n")
+    )
+    ai.expandSceneSection.mockImplementation(async () =>
+      [longProse("엘리아가 밥을 먹었다. 김이 올랐다."), "엘리아가 교문을 나섰다. 바람이 찼다."].join("\n\n")
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const firstRetry = ai.expandSceneSection.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
+    expect(firstRetry.retryReasons.join(" ")).toContain("장면 전환(---) 1개가 0개")
+    expect(result.draftBody.split("\n").filter((line) => line === "---")).toHaveLength(1)
+    expect(result.draftBody.indexOf("---")).toBeLessThan(result.draftBody.indexOf("교문을 나섰다"))
+    expect(result.warnings.join("\n")).toContain("되살렸습니다")
+  })
+})
+
 describe("runSceneGenerationPipeline — 살붙임 단계", () => {
   const longSkeleton = Array.from({ length: 6 }, (_, i) => `문단${i} ${"가".repeat(300)}`).join(
     "\n\n"

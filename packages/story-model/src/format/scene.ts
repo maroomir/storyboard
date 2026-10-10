@@ -36,6 +36,8 @@ export const sceneBeatDetailSchema = z.object({
   cast: z.array(z.string().trim().min(1)).optional(),
   place: z.string().trim().min(1).optional(),
   time: z.string().trim().min(1).optional(),
+  // 이 비트 앞에서 장면을 끊을지(---). 적지 않으면 장소·시각 좌표로 파이프라인이 정한다.
+  break: z.boolean().optional(),
 });
 
 export const sceneBeatSchema = z.union([z.string().trim().min(1), sceneBeatDetailSchema]);
