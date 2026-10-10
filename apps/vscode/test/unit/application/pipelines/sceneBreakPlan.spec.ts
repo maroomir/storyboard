@@ -4,6 +4,8 @@ import type { SceneBeat } from '@storyboard/story-model';
 import {
   applyPlannedSceneBreaks,
   countSceneBreakLines,
+  findThinDialogueBeats,
+  findThinExpansionSpots,
   isTimeJump,
   planSceneBreaks,
   renderPlannedNarrative,
@@ -178,5 +180,37 @@ describe("restoreSceneBreaks", () => {
 
   it("gives up when no paragraph resembles the next segment", () => {
     expect(restoreSceneBreaks(section, "전혀 다른 이야기.")).toBeUndefined()
+  })
+})
+
+describe("findThinDialogueBeats", () => {
+  const beats: SceneBeat[] = [
+    { text: "형과 첫 설전을 벌인다", cast: ["a", "b"], place: "거실", time: "저녁 8시" },
+    { text: "망고를 두고 다툰다", cast: ["a", "b"], place: "거실", time: "저녁 8시 10분" },
+    { text: "혼자 옥상에 오른다", cast: ["a"], place: "옥상", time: "밤 9시" }
+  ]
+  const plan = planSceneBreaks(beats, name, 60)!
+
+  it("names the conversational beats of a segment with too few lines", () => {
+    const skeleton = ["⟪대목 1⟫", "\u201c왔어?\u201d", "\u201c응.\u201d", "", "⟪대목 2⟫", "옥상에 올랐다."].join("\n")
+
+    expect(findThinDialogueBeats(skeleton, plan, beats, 3)).toEqual(["형과 첫 설전을 벌인다", "망고를 두고 다툰다"])
+  })
+
+  it("leaves a segment with enough lines alone", () => {
+    const lines = Array.from({ length: 6 }, (_, index) => `\u201c말 ${index}\u201d`)
+    const skeleton = ["⟪대목 1⟫", ...lines, "⟪대목 2⟫", "옥상."].join("\n")
+
+    expect(findThinDialogueBeats(skeleton, plan, beats, 3)).toEqual([])
+  })
+})
+
+describe("findThinExpansionSpots", () => {
+  it("picks the dialogue after which the expansion added the least", () => {
+    const section = "\u201c하나다.\u201d\n\u201c둘이다.\u201d\n\u201c셋이다.\u201d"
+    const expanded =
+      "\u201c하나다.\u201d 그 말에 나는 한참을 생각했다. 왜 하필 지금인가.\n\u201c둘이다.\u201d\n\u201c셋이다.\u201d"
+
+    expect(findThinExpansionSpots(section, expanded, 2).map((spot) => spot.line)).toEqual(["둘이다.", "하나다."])
   })
 })

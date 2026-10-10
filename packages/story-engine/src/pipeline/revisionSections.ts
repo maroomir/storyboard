@@ -56,9 +56,10 @@ function longestFragment(quote: string): string {
     .map((fragment) => fragment.trim())
     .filter((fragment) => fragment.length > 0);
 
-  return fragments.reduce((longest, fragment) =>
-    fragment.length > longest.length ? fragment : longest,
-  fragments[0] ?? '');
+  return fragments.reduce(
+    (longest, fragment) => (fragment.length > longest.length ? fragment : longest),
+    fragments[0] ?? '',
+  );
 }
 
 // Finds the section a quoted excerpt came from: verbatim first, then ignoring spacing and

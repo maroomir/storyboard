@@ -130,7 +130,9 @@ function buildSectionInstructions(
 
   return [
     ...scoped,
-    ...(routing.global.length > 0 ? buildRevisionInstructions(continuityIssues, critiqueIssues) : []),
+    ...(routing.global.length > 0
+      ? buildRevisionInstructions(continuityIssues, critiqueIssues)
+      : []),
   ];
 }
 

@@ -36,10 +36,22 @@ const dayPeriods = [
 ] as const;
 
 // 날이 바뀌었다고 적힌 시각은 언제나 전환이다.
-const dayChangePattern = /다음\s*날|이튿날|며칠\s*(?:뒤|후)|\d+\s*일\s*(?:뒤|후)|일주일\s*(?:뒤|후)|다음\s*주/;
+const dayChangePattern =
+  /다음\s*날|이튿날|며칠\s*(?:뒤|후)|\d+\s*일\s*(?:뒤|후)|일주일\s*(?:뒤|후)|다음\s*주/;
 
 // 장소에서 같은 곳인지 가리는 데 쓰지 않는 낱말.
-const placeStopWords = new Set(['앞', '뒤', '옆', '안', '밖', '근처', '그리고', '및', '쪽', '사이']);
+const placeStopWords = new Set([
+  '앞',
+  '뒤',
+  '옆',
+  '안',
+  '밖',
+  '근처',
+  '그리고',
+  '및',
+  '쪽',
+  '사이',
+]);
 
 interface ReadTime {
   readonly period: number | undefined;
@@ -102,7 +114,9 @@ export function isTimeJump(previous: string, next: string, jumpMinutes: number):
     return Math.abs(after.minutes - before.minutes) >= jumpMinutes;
   }
 
-  return before.period !== undefined && after.period !== undefined && before.period !== after.period;
+  return (
+    before.period !== undefined && after.period !== undefined && before.period !== after.period
+  );
 }
 
 function placeWords(place: string): string[] {
@@ -220,7 +234,9 @@ export function renderPlannedNarrative(
 ): string {
   return plan.segments
     .map((segment, index) => {
-      const rendered = segment.beats.map((beat) => renderSceneBeat(beats[beat] as SceneBeat, castName));
+      const rendered = segment.beats.map((beat) =>
+        renderSceneBeat(beats[beat] as SceneBeat, castName),
+      );
       return `⟪대목 ${index + 1}⟫\n${rendered.join('\n\n')}`;
     })
     .join('\n\n');
@@ -237,7 +253,10 @@ export interface PlannedBreakResult {
 }
 
 // 모델이 쓴 --- 를 모두 지우고, ⟪대목 n⟫ 표식 앞에만 다시 놓는다. 빠진 표식의 대목은 앞 대목에 붙는다.
-export function applyPlannedSceneBreaks(skeleton: string, plan: SceneBreakPlan): PlannedBreakResult {
+export function applyPlannedSceneBreaks(
+  skeleton: string,
+  plan: SceneBreakPlan,
+): PlannedBreakResult {
   const out: string[] = [];
   const seen = new Set<number>();
   const coordinates: (string | undefined)[] = [];
@@ -282,7 +301,10 @@ export function applyPlannedSceneBreaks(skeleton: string, plan: SceneBreakPlan):
   }
 
   return {
-    text: out.join('\n').replace(/\n{3,}/g, '\n\n').trim(),
+    text: out
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim(),
     coordinates,
     missingMarkers: plan.segments.length - seen.size,
     hasNoMarkers: seen.size === 0,
@@ -302,7 +324,9 @@ function paragraphsOf(text: string): string[] {
 
 function similarity(paragraph: string, reference: string): number {
   const needle = normalizeForMatch(paragraph);
-  return needle.length === 0 ? 0 : countSharedShingles(needle, normalizeForMatch(reference)) / needle.length;
+  return needle.length === 0
+    ? 0
+    : countSharedShingles(needle, normalizeForMatch(reference)) / needle.length;
 }
 
 // 살붙임이 뼈대 조각의 --- 를 지우거나 더했을 때, 뼈대 조각의 대목마다 그 첫 문단과 가장 닮은
@@ -375,4 +399,51 @@ export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): s
     ...blocks,
     ...(trailingBreak ? [SCENE_BREAK_LINE] : []),
   ].join('\n\n');
+}
+
+const quotedLine = /[“"][^”"\n]+[”"]/g;
+
+function beatCastSize(beat: SceneBeat | undefined): number {
+  return detailOf(beat ?? '')?.cast?.length ?? 0;
+}
+
+function shortBeatText(beat: SceneBeat): string {
+  const text = typeof beat === 'string' ? beat : beat.text;
+  return text.length > 24 ? `${text.slice(0, 24)}…` : text;
+}
+
+// NOTE: 미달 뼈대를 «더 쓰라»로만 다시 부르면 비트마다 고르게 조금씩 늘 뿐, 긴 설전이 두세 턴으로
+// 끝나는 비트는 그대로였다(#115: 42비트가 비트당 228자로 수렴). 대목마다 둘 이상이 나오는 사건 수와
+// 대사 수를 세어, 사건당 대사가 thinTurns 에 못 미치는 대목의 그런 사건들을 지목한다.
+export function findThinDialogueBeats(
+  skeleton: string,
+  plan: SceneBreakPlan,
+  beats: readonly SceneBeat[],
+  thinTurns: number,
+): string[] {
+  const textBySegment = new Map<number, string>();
+  let current: number | undefined;
+
+  for (const line of skeleton.split('\n')) {
+    const marker = [...line.matchAll(SEGMENT_MARKER)].at(-1);
+    if (marker) {
+      current = Number(marker[1]);
+    }
+    if (current !== undefined) {
+      textBySegment.set(current, `${textBySegment.get(current) ?? ''}\n${line}`);
+    }
+  }
+
+  return plan.segments.flatMap((segment, index) => {
+    const conversational = segment.beats.filter((beat) => beatCastSize(beats[beat]) >= 2);
+    const text = textBySegment.get(index + 1);
+    if (conversational.length === 0 || text === undefined) {
+      return [];
+    }
+
+    const turns = text.match(quotedLine)?.length ?? 0;
+    return turns < thinTurns * conversational.length
+      ? conversational.map((beat) => shortBeatText(beats[beat] as SceneBeat))
+      : [];
+  });
 }
