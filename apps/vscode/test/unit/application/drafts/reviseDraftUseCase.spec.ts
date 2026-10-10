@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-model';
+import { AiProviderError, type ContinuityIssueLike, type DraftCritiqueIssue } from '@storyboard/story-model';
 
 const checkContinuityMock = vi.fn<[], Promise<ContinuityIssueLike[]>>()
 const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIssue[]> => {
@@ -13,6 +13,8 @@ const reviseDraftMock = vi.fn(async (input: unknown): Promise<string> => {
   return "인물은 창가에서 잠시 숨을 골랐다."
 })
 const writeDraftFileMock = vi.fn(async () => undefined)
+const loggerInfoMock = vi.fn()
+const fileWriteMock = vi.fn<[unknown, Uint8Array], Promise<undefined>>(async () => undefined)
 
 vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-ai")>()),
@@ -58,6 +60,7 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
   formatBibleFactLines: (): unknown[] => []
 }))
 import {
+  describeReviseOutcome,
   ReviseDraftUseCase,
   type ReviseDraftRequest,
   type ReviseDraftUseCaseDependencies,
@@ -77,7 +80,8 @@ function baseOptions(
       getTaskAiConfig: () => ({ providerId: "mock", model: "mock-model" })
     } as never,
     usageRecorder: {} as never,
-    logger: { error: () => undefined } as never,
+    logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
+    fileSystem: { createDirectory: async () => undefined, writeFile: fileWriteMock, exists: async () => false } as never,
     generator: "storyboard@0.0.0-test",
     workspaceUri: vscode.Uri.file("/ws/project"),
     paths: {
@@ -87,7 +91,8 @@ function baseOptions(
       characterDirectory: vscode.Uri.file("/ws/project/character"),
       backgroundDirectory: vscode.Uri.file("/ws/project/background"),
       bibleCanon: vscode.Uri.file("/ws/project/.storyboard/bible/canon.yaml"),
-      projectJson: vscode.Uri.file("/ws/project/.storyboard/project.json")
+      projectJson: vscode.Uri.file("/ws/project/.storyboard/project.json"),
+      revisionRoundsDirectory: vscode.Uri.file("/ws/project/.storyboard/cache/revisions")
     } as never,
     draftUri: vscode.Uri.file("/ws/project/draft/01-scene.md"),
     sceneStem: "01-scene",
@@ -110,6 +115,8 @@ describe("ReviseDraftUseCase", () => {
     critiqueDraftMock.mockReset()
     reviseDraftMock.mockClear()
     writeDraftFileMock.mockClear()
+    loggerInfoMock.mockClear()
+    fileWriteMock.mockClear()
     checkContinuityMock.mockResolvedValue([])
     critiqueDraftMock.mockResolvedValue([])
   })
@@ -157,6 +164,63 @@ describe("ReviseDraftUseCase", () => {
         "장면 좌표 2. 장소: 교문 앞 / 시각: 방과 후"
       ])
     )
+  })
+
+  // #114: 초안은 이미 디스크에 있으므로 감수 중 프로바이더 타임아웃은 던지지 않고 결과로 돌려준다.
+  it("returns a timed-out rewrite as a failure instead of throwing", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    reviseDraftMock.mockRejectedValueOnce(
+      new AiProviderError("cli-timeout", "claude-code", "600초 안에 끝나지 않아 중단했습니다.")
+    )
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.failure).toEqual({
+      stage: "revise",
+      kind: "timeout",
+      message: "600초 안에 끝나지 않아 중단했습니다."
+    })
+    expect(result.revisionCount).toBe(0)
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
+    expect(describeReviseOutcome(result)).toMatchObject({ status: "timeout", revisionCount: 0 })
+    expect(describeReviseOutcome(result).warning).toContain("초안은 생성된 그대로입니다")
+  })
+
+  it("keeps the rewrites already accepted when a later check fails", async () => {
+    checkContinuityMock
+      .mockResolvedValueOnce([blockingContinuity])
+      .mockRejectedValueOnce(new AiProviderError("connection-failed", "claude", "연결 끊김"))
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.failure).toMatchObject({ stage: "check", kind: "provider" })
+    expect(result.revisionCount).toBe(1)
+    expect(writeDraftFileMock).toHaveBeenCalledTimes(1)
+    expect(describeReviseOutcome(result).status).toBe("failed")
+  })
+
+  it("still throws an error that is not a provider failure", async () => {
+    checkContinuityMock.mockRejectedValueOnce(new TypeError("bug"))
+
+    await expect(runReviseDraftWorkflow(baseOptions())).rejects.toThrow("bug")
+  })
+
+  // #113: 앞 회차가 무엇을 잡고 재작성이 무엇을 받았는지 남긴다.
+  it("records every round in the cache and logs one line per round", async () => {
+    checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.rounds.map((round) => round.round)).toEqual([1, 2])
+    expect(result.rounds[0]?.rewrite?.acceptedSections).toEqual([0])
+    const [uri, content] = fileWriteMock.mock.calls.at(-1) ?? []
+    expect(String((uri as { path: string }).path)).toContain(".storyboard/cache/revisions/01-scene.json")
+    const record = JSON.parse(new TextDecoder().decode(content)) as { rounds: unknown[] }
+    expect(record.rounds).toHaveLength(2)
+    expect(loggerInfoMock.mock.calls.map((call) => call[0])).toEqual([
+      "01-scene: 검사 1: 연속성 1건(높음 1) · 비평 0건 · 차단 1 → 재작성 1구간 중 1구간 반영",
+      "01-scene: 검사 2: 연속성 0건(높음 0) · 비평 0건 · 차단 0 → 통과"
+    ])
   })
 
   it("Q4: passes without revising when continuity issues are all low severity", async () => {

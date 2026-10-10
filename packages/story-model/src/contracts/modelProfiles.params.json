@@ -10,5 +10,65 @@
       "auc": 0.325,
       "recalled": 8
     }
+  },
+  "claude-code:claude-opus-5-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "generation.section.outputLimit": 4500,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 6,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2",
+      "notes": "section.outputLimit 4500: 살붙임 구간 출력이 목표 5.8~7k에서도 3.0~5.2k에 멈춤(guerrilla 01 실측 4·6회차, claude-code opus). 호출당 출력 ~5k 상한으로 보고 구간 목표를 그 안에 둠(40k 씬 6구간 → 9구간)"
+    }
+  },
+  "claude-code:claude-sonnet-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "generation.section.outputLimit": 4500,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 6,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2",
+      "notes": "section.outputLimit 4500: 살붙임 구간 출력이 목표 5.8~7k에서도 3.0~5.2k에 멈춤(guerrilla 01 실측 4·6회차, claude-code opus). 호출당 출력 ~5k 상한으로 보고 구간 목표를 그 안에 둠(40k 씬 6구간 → 9구간)"
+    }
+  },
+  "claude:claude-opus-5-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "generation.section.outputLimit": 4500,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 6,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2",
+      "notes": "section.outputLimit 4500: 살붙임 구간 출력이 목표 5.8~7k에서도 3.0~5.2k에 멈춤(guerrilla 01 실측 4·6회차, claude-code opus). 호출당 출력 ~5k 상한으로 보고 구간 목표를 그 안에 둠(40k 씬 6구간 → 9구간)"
+    }
+  },
+  "claude:claude-sonnet-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "generation.section.outputLimit": 4500,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 6,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2",
+      "notes": "section.outputLimit 4500: 살붙임 구간 출력이 목표 5.8~7k에서도 3.0~5.2k에 멈춤(guerrilla 01 실측 4·6회차, claude-code opus). 호출당 출력 ~5k 상한으로 보고 구간 목표를 그 안에 둠(40k 씬 6구간 → 9구간)"
+    }
   }
 }

@@ -5,6 +5,8 @@ export * from './memoryStore';
 export * from './pipelineDefaults';
 export * from './reviewRouting';
 export * from './reviseLoop';
+export * from './revisionSections';
+export * from './sceneBreakPlan';
 export * from './sceneCoordinates';
 export * from './sceneGenerationPipeline';
 export * from './sceneGenerationPolicies';

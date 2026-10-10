@@ -33,6 +33,33 @@ describe("SceneSkeletonPrompt golden", () => {
     expect(SceneSkeletonPrompt.build(full, variant)).toMatchSnapshot()
   })
 
+  it.each(["generic", "xs"] as const)("asks for breaks only at the planned segments for the %s variant", (variant) => {
+    const planned = SceneSkeletonPrompt.build(
+      { ...bare, narrativeSource: "⟪대목 1⟫\n사건 하나\n\n⟪대목 2⟫\n사건 둘", plannedBreaks: true },
+      variant
+    )
+
+    expect(planned).toMatchSnapshot()
+    expect(JSON.stringify(planned)).not.toContain("⟪시각:")
+  })
+
+  it.each(["generic", "xs"] as const)("continues the prior skeleton and stops before the next call for the %s variant", (variant) => {
+    const bundled = SceneSkeletonPrompt.build(
+      {
+        ...bare,
+        narrativeSource: "⟪대목 2⟫\n사건 둘",
+        plannedBreaks: true,
+        priorSkeleton: "⟪대목 1⟫\n하나가 문을 열었다.",
+        nextBeat: "사건 셋",
+        targetLength: 800
+      },
+      variant
+    )
+
+    expect(bundled).toMatchSnapshot()
+    expect(JSON.stringify(bundled)).toContain("[앞 대목까지 쓴 뼈대]")
+  })
+
   it.each(["generic", "xs"] as const)("leaves optional blocks out for the %s variant", (variant) => {
     expect(SceneSkeletonPrompt.build(bare, variant)).toMatchSnapshot()
     expect(

@@ -402,8 +402,11 @@ export function selectCharacterRelations(
 }
 
 // 목격 범위 서술자의 초점 인물. 주면 그 인물이 목격하지 않은 항목을 주입에서 뺀다.
+// witnessedByAll 을 주면 그 인물 모두가 목격한 항목만 남긴다 — 뼈대는 모든 인물의 대사를 쓰므로,
+// 한 인물만 아는 사실이 공용 맥락에 있으면 다른 인물이 그것을 말해 버린다(#104).
 export interface StoryStateFocalFilter {
-  readonly focal: string;
+  readonly focal?: string;
+  readonly witnessedByAll?: readonly string[];
 }
 
 export function selectStoryStateEntries(
@@ -430,11 +433,16 @@ function isWitnessedBy(
   entry: StoryStateEntry,
   focalFilter: StoryStateFocalFilter | undefined,
 ): boolean {
-  if (!focalFilter || !entry.witnesses || entry.witnesses.length === 0) {
+  const witnesses = entry.witnesses;
+  if (!focalFilter || !witnesses || witnesses.length === 0) {
     return true;
   }
 
-  return entry.witnesses.includes(focalFilter.focal);
+  if (focalFilter.focal !== undefined && !witnesses.includes(focalFilter.focal)) {
+    return false;
+  }
+
+  return (focalFilter.witnessedByAll ?? []).every((id) => witnesses.includes(id));
 }
 
 // NOTE: beforeSceneOrder를 주면 그 씬보다 앞에서 확립된 항목만 남긴다. 앞 씬을 다시 생성할 때

@@ -12,7 +12,10 @@ import {
   backgroundCardPath,
   characterCardPath,
   getStoryboardProjectPaths,
+  mergeVoiceSeeds,
   noteCandidateFileSchema,
+  readVoiceSeedsFile,
+  writeVoiceSeedsFile,
   STORYBOARD_RELATIVE_PATHS,
   type NoteBundle,
   type NoteCandidateFile,
@@ -169,6 +172,19 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     }
 
     await this.writeCacheFile(workspaceRoot, 'noteSynopsisCandidate', encodeText(text));
+  }
+
+  public async addVoiceSeeds(
+    workspaceRoot: StoryUri,
+    seeds: Readonly<Record<string, readonly string[]>>,
+  ): Promise<void> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const existing = (await this.fileSystem.exists(paths.voiceSeeds))
+      ? await readVoiceSeedsFile(paths.voiceSeeds, this.fileSystem)
+      : { characters: {} };
+
+    await this.fileSystem.createDirectory(paths.memoryDirectory);
+    await writeVoiceSeedsFile(paths.voiceSeeds, this.fileSystem, mergeVoiceSeeds(existing, seeds));
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {

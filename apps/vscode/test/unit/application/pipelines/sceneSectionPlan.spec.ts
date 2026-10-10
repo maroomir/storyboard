@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { planSectionTargetLengths, splitSkeletonIntoSections } from "@storyboard/story-engine"
+import {
+  findRunAheadDialogue,
+  planSectionTargetLengths,
+  resolveSceneGenerationTuning,
+  splitSkeletonIntoSections,
+  trimRunAheadDialogue
+} from "@storyboard/story-engine"
 
 // #106 실측: 장면 전환(---)이 잦은 뼈대에서 전환마다 예산의 절반만 차도 잘라 앞 구간이 일찍 닫히고,
 // 뼈대의 44~47%가 마지막 구간에 몰렸다. 그 구간의 몫은 출력 상한에 잘려 버려져 구간 목표의 합이
@@ -74,5 +80,53 @@ describe("planSectionTargetLengths — 상한에 잘린 몫의 재분배", () =>
     expect(planSectionTargetLengths(["가".repeat(600), "나".repeat(300), "다".repeat(100)], 10000)).toEqual([
       6000, 3000, 1000
     ])
+  })
+})
+
+// 장면 전환이 드문 긴 대목은 문단 경계에서 잘린다. 대화 한복판에서 자르면 앞 구간이 대화를 마저 써
+// 다음 구간과 겹쳤다.
+describe("splitSkeletonIntoSections — 대화 한복판", () => {
+  it("cuts only between two narration paragraphs once the budget is met", () => {
+    const narration = (label: string): string => `${label} ${"서술".repeat(60)}`
+    const skeleton = [
+      narration("가"),
+      narration("나"),
+      "\u201c너 원래 이런 애였어?\u201d",
+      "\u201c아니, 그거 말고.\u201d",
+      narration("다"),
+      narration("라")
+    ].join("\n\n")
+
+    const sections = splitSkeletonIntoSections(skeleton, 2)
+
+    expect(sections[0]).toContain("\u201c아니, 그거 말고.\u201d")
+    expect(sections[0]?.endsWith("서술")).toBe(true)
+    expect(sections[1]?.startsWith("라 ")).toBe(true)
+  })
+})
+
+describe("findRunAheadDialogue", () => {
+  const tuning = resolveSceneGenerationTuning()
+  const skeleton = [
+    "\u201c망고 먹을래?\u201d",
+    "\u201c맛있네, 고마워.\u201d",
+    "\u201c그때 너는 다 나눠줬잖아.\u201d"
+  ].join("\n\n")
+  const section = "\u201c망고 먹을래?\u201d\n\n\u201c맛있네, 고마워.\u201d"
+
+  it("finds lines only the later skeleton has", () => {
+    const expanded = `${section}\n\n은하가 웃었다.\n\n\u201c그때 너는 다 나눠줬잖아.\u201d`
+
+    expect(findRunAheadDialogue(skeleton, section, expanded, tuning)).toEqual(["그때 너는 다 나눠줬잖아."])
+  })
+
+  it("trims the expansion from the paragraph that ran ahead", () => {
+    const expanded = `${section}\n\n은하가 웃었다.\n\n\u201c그때 너는 다 나눠줬잖아.\u201d 은하가 말했다.`
+
+    expect(trimRunAheadDialogue(expanded, ["그때 너는 다 나눠줬잖아."])).toBe(`${section}\n\n은하가 웃었다.`)
+  })
+
+  it("finds nothing when the expansion stays in its section", () => {
+    expect(findRunAheadDialogue(skeleton, section, `${section}\n\n은하가 웃었다.`, tuning)).toEqual([])
   })
 })

@@ -8,7 +8,13 @@
   "skeleton": {
     "lengthRatio": 0.3333333333333333,
     "retryLimit": 1,
-    "minimumLengthRatio": 0.8
+    "minimumLengthRatio": 0.8,
+    "thinDialogueTurns": 3,
+    "requestedDialogueTurns": 6,
+    "charsPerCall": 3000
+  },
+  "sceneBreak": {
+    "timeJumpMinutes": 60
   },
   "dialogue": {
     "preservedRatio": 0.85,
@@ -45,6 +51,8 @@
     "repeats-previous": 3,
     "repetition": 3,
     "too-long": 1,
-    "too-short": 1
+    "too-short": 1,
+    "scene-breaks": 2,
+    "runs-ahead": 3
   }
 }

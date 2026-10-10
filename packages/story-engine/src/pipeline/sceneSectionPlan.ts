@@ -102,7 +102,16 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
       currentLength >= budget / 2 &&
       (nextBreakLength === undefined ||
         Math.abs(currentLength - budget) <= Math.abs(nextBreakLength - budget));
-    const filled = currentLength >= budget;
+    // 대사가 이어지는 자리에서 자르면 앞 구간의 살붙임이 대화를 마저 써 버려 다음 구간과 겹쳤다
+    // (장면 전환이 드문 긴 대목에서 대사 18개 중복). 이 문단이나 다음 문단이 대사로 시작하면 서술과
+    // 서술 사이가 나올 때까지, 예산의 1.5배까지 미룬다.
+    const nextUnit = units[index + 1];
+    const startsWithDialogue = (text: string): boolean => /^[“"]/.test(text);
+    const continuesExchange =
+      startsWithDialogue(unit.text) ||
+      (nextUnit !== undefined && !nextUnit.endsScene && startsWithDialogue(nextUnit.text));
+    const filled =
+      currentLength >= budget && (!continuesExchange || currentLength >= budget * 1.5);
     const mustClose = remainingUnits === remainingSections;
 
     if (atSceneBreak || filled || mustClose) {
@@ -224,7 +233,8 @@ function isDialoguePreserved(
     let joined = '';
 
     for (let width = 0; width < splitLimit && start + width < candidates.length; width += 1) {
-      joined = width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
+      joined =
+        width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
 
       if (similarityRatio(line, joined) >= preservedRatio) {
         return true;
@@ -376,11 +386,15 @@ export function validateSceneSkeleton(
   ) {
     violations.push({
       kind: 'too-short',
-      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 ${Math.round(resolved.skeletonMinimumLengthRatio * 100)}%에 못 미칩니다 (${skeleton.length.toLocaleString()}자). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
+      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 ${Math.round(resolved.skeletonMinimumLengthRatio * 100)}%에 못 미칩니다 (${skeleton.length.toLocaleString()}자, ${Math.round((skeleton.length / targetLength) * 100)}%). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
     });
   }
 
   return violations;
+}
+
+function countBreakLines(text: string): number {
+  return text.split('\n').filter((line) => line.trim() === SCENE_BREAK_LINE).length;
 }
 
 export function validateExpandedSection(input: {
@@ -441,10 +455,29 @@ export function validateExpandedSection(input: {
     });
   }
 
+  // NOTE: 장면 좌표 장부는 --- 번호로 대목을 센다. 살붙임이 --- 를 지우면 장부와 본문의 대목이
+  // 어긋나므로(#112), 재작성·축소처럼 수가 바뀐 결과는 받지 않는다.
+  const skeletonBreaks = countBreakLines(input.section);
+  const expandedBreaks = countBreakLines(input.expanded);
+  if (skeletonBreaks !== expandedBreaks) {
+    violations.push({
+      kind: 'scene-breaks',
+      detail: `뼈대 조각의 장면 전환(---) ${skeletonBreaks}개가 ${expandedBreaks}개가 됐습니다. 단독 줄 --- 를 뼈대와 같은 자리에 같은 수만큼 두세요`,
+    });
+  }
+
   if (input.expanded.length < input.targetLength * resolved.sectionMinimumLengthRatio) {
     violations.push({
       kind: 'too-short',
       detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자). 사건 사이에 시점 인물의 반응·해석과 행동을 서술자의 목소리로 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요`,
+    });
+  }
+
+  const ranAhead = findRunAheadDialogue(input.skeleton, input.section, input.expanded, resolved);
+  if (ranAhead.length > 0) {
+    violations.push({
+      kind: 'runs-ahead',
+      detail: `다음 구간의 대사를 미리 썼습니다 ("${ranAhead[0] as string}"${ranAhead.length > 1 ? ` 외 ${ranAhead.length - 1}건` : ''}). [이번 구간]의 마지막 문장에서 멈추세요`,
     });
   }
 
@@ -609,7 +642,10 @@ export function validatePolishedSkeleton(input: {
   );
 
   if (added.length > 0) {
-    violations.push({ kind: 'cast', detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})` });
+    violations.push({
+      kind: 'cast',
+      detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})`,
+    });
   }
 
   const foreign = findForeignScriptSpans(input.polished);
@@ -722,4 +758,115 @@ export function findCatchphraseOveruse(input: {
   }
 
   return warnings;
+}
+
+export interface ThinExpansionSpot {
+  readonly line: string;
+  readonly added: number;
+}
+
+const thinSpotLimit = 3;
+
+// NOTE: 미달 구간을 «목표까지 채워라»로만 다시 부르면 모델이 어디를 펼칠지 몰라 이미 두꺼운 곳을 더
+// 늘리거나 그대로 멈췄다(#105-9). 뼈대 조각의 대사를 살붙임 결과에서 찾아, 다음 대사까지 서술이 가장
+// 적게 붙은 자리를 고른다. 살붙임은 대사를 그대로 두므로 대사가 두 글을 잇는 닻이 된다.
+export function findThinExpansionSpots(
+  section: string,
+  expanded: string,
+  minimumQuotedLength: number,
+): ThinExpansionSpot[] {
+  const found: {
+    line: string;
+    skeletonStart: number;
+    skeletonEnd: number;
+    expandedStart: number;
+    expandedEnd: number;
+  }[] = [];
+  let searchFrom = 0;
+
+  for (const match of section.matchAll(quotedDialoguePatternFor(minimumQuotedLength))) {
+    const line = (match[1] ?? '').trim();
+    const at = expanded.indexOf(line, searchFrom);
+    if (line.length === 0 || at < 0 || match.index === undefined) {
+      continue;
+    }
+
+    found.push({
+      line,
+      skeletonStart: match.index,
+      skeletonEnd: match.index + match[0].length,
+      expandedStart: at,
+      expandedEnd: at + line.length,
+    });
+    searchFrom = at + line.length;
+  }
+
+  return found
+    .slice(0, -1)
+    .map((current, index) => {
+      const next = found[index + 1] ?? current;
+      const skeletonGap = next.skeletonStart - current.skeletonEnd;
+      const expandedGap = next.expandedStart - current.expandedEnd;
+      return { line: current.line, added: expandedGap - skeletonGap };
+    })
+    .sort((left, right) => left.added - right.added)
+    .slice(0, thinSpotLimit);
+}
+
+export function describeThinExpansionSpots(
+  spots: readonly ThinExpansionSpot[],
+): string | undefined {
+  if (spots.length === 0) {
+    return undefined;
+  }
+
+  const quoted = spots
+    .map((spot) => `“${spot.line.length > 20 ? `${spot.line.slice(0, 20)}…` : spot.line}”`)
+    .join(', ');
+  return `특히 대사 ${quoted} 다음에는 서술이 거의 붙지 않았습니다. 그 자리부터 시점 인물의 반응·해석·행동을 펼치세요`;
+}
+
+// 이번 구간 뒤의 뼈대에만 있는 대사를 살붙임이 써 버렸는지. 그 대사는 다음 구간이 다시 쓰므로
+// 본문에 두 번 남는다. 이번 구간에도 같은 대사가 있으면 앞당긴 것이 아니다.
+export function findRunAheadDialogue(
+  skeleton: string,
+  section: string,
+  expanded: string,
+  tuning: ResolvedSceneGenerationTuning,
+): string[] {
+  // 분할기는 문단을 다시 이어 붙이므로 구간이 뼈대의 부분 문자열이라는 보장이 없다. 첫 문단과 끝
+  // 문단으로 자리를 찾는다.
+  const paragraphs = section.trim().split(/\n\s*\n+/);
+  const sectionStart = skeleton.indexOf(paragraphs[0] ?? '');
+  const lastParagraph = paragraphs.at(-1) ?? '';
+  const lastStart = sectionStart < 0 ? -1 : skeleton.indexOf(lastParagraph, sectionStart);
+  if (lastStart < 0) {
+    return [];
+  }
+
+  const quoted = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
+  const linesOf = (text: string): string[] =>
+    [...text.matchAll(quoted)]
+      .map((match) => (match[1] ?? '').trim())
+      .filter((line) => line.length >= tuning.dialogueMinimumLineLength);
+  const own = new Set(linesOf(section));
+  const later = linesOf(skeleton.slice(lastStart + lastParagraph.length)).filter(
+    (line) => !own.has(line),
+  );
+
+  return [...new Set(later.filter((line) => expanded.includes(line)))];
+}
+
+// 재시도로도 앞당긴 대사를 못 지우면, 그 대사가 처음 나온 문단부터 잘라 낸다. 다음 구간이 그 사건을
+// 쓰므로 잃는 것이 없다. 잘라 낼 자리가 첫 문단이면 그대로 둔다.
+export function trimRunAheadDialogue(expanded: string, lines: readonly string[]): string {
+  const first = Math.min(
+    ...lines.map((line) => expanded.indexOf(line)).filter((index) => index >= 0),
+  );
+  if (!Number.isFinite(first)) {
+    return expanded;
+  }
+
+  const cut = expanded.lastIndexOf('\n\n', first);
+  return cut <= 0 ? expanded : expanded.slice(0, cut).trimEnd();
 }

@@ -20,6 +20,7 @@ import {
   groupNotesIntoChunks,
   listKnownNoteEntities,
   measureNoteAbsorbWorkload,
+  mergeVoiceSeeds,
   noteChunkCharacterLimit,
   type NoteDocument,
   parseScene,
@@ -1294,5 +1295,31 @@ describe('PlanNoteAbsorbUseCase', () => {
     );
     expect(warnings[1]).toContain('응답에서 정리 결과(JSON)를 찾지 못해');
     expect(savedResponses).toHaveLength(1);
+  });
+});
+
+describe('note voice seeds (#105-14)', () => {
+  it('keeps each character\'s quoted lines by card id, joined across readings', () => {
+    const plan = buildNoteAbsorbPlan({
+      notes: [note('하나.md'), note('하나-2.md')],
+      extractions: [
+        extraction({ entities: [entity({ name: '하나', suggestedId: 'hana', sampleLines: ['바다는 거짓말 안 해.'] })] }),
+        extraction({
+          entities: [entity({ name: '하나', sampleLines: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'] })],
+        }),
+      ],
+      synthesis: emptyNoteSynthesis,
+      cards: [],
+      scenes: [],
+      scenePrefixDigits: 2,
+    });
+
+    expect(plan.voiceSeeds).toEqual({ hana: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'] });
+  });
+
+  it('adds only new lines to the seeds already on disk', () => {
+    expect(
+      mergeVoiceSeeds({ characters: { hana: ['하나'] } }, { hana: ['하나', ' 둘 '], jun: ['셋'] }),
+    ).toEqual({ characters: { hana: ['하나', '둘'], jun: ['셋'] } });
   });
 });

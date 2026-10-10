@@ -94,6 +94,8 @@ const noteEntitySchema = z.object({
   traits: textList(),
   description: textList(),
   voice: textList(),
+  // 노트에 따옴표로 적힌 이 인물의 대사, 고치지 않은 그대로. 첫 씬의 말투 표본이 된다.
+  sampleLines: textList(),
   desire: textList(),
   attributes: recordList(
     z.object({ key: z.string().trim().min(1), value: z.string().trim().min(1) }),

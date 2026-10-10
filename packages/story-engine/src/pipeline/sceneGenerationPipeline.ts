@@ -4,6 +4,7 @@ import type {
   CharacterCard,
   ProjectFormat,
   SceneContext,
+  SceneBeat,
   SceneDialogueRecord,
   EntityRef,
   StyleDirective,
@@ -45,12 +46,16 @@ import {
   withAttribution,
 } from './sceneGenerationStages';
 import {
+  describeThinExpansionSpots,
   findCatchphraseOveruse,
+  findRunAheadDialogue,
+  findThinExpansionSpots,
   findPolishedLineViolations,
   planSectionCount,
   planSectionTargetLengths,
   quotedDialoguePatternFor,
   splitSkeletonIntoSections,
+  trimRunAheadDialogue,
   validateExpandedSection,
   validatePolishedSkeleton,
   validateSceneSkeleton,
@@ -58,6 +63,20 @@ import {
   type SectionViolation,
 } from './sceneSectionPlan';
 import { selectRepresentativeDialogue } from './dialogueCorpus';
+import {
+  applyPlannedSceneBreaks,
+  countMissingSegmentMarkers,
+  countSceneBreakLines,
+  ensureLeadingMarker,
+  findThinDialogueBeats,
+  keepOnlyMarkers,
+  planSceneBreaks,
+  planSkeletonCalls,
+  renderPlannedNarrative,
+  restoreSceneBreaks,
+  type SceneBreakPlan,
+  type SkeletonCall,
+} from './sceneBreakPlan';
 import {
   type DialoguePolishSummary,
   type RunSceneGenerationPipelineInput,
@@ -93,6 +112,7 @@ interface ResolvedExecutionContext {
   readonly shouldCancel?: () => boolean;
   readonly narrativeSource: string;
   readonly design: string;
+  readonly breakPlan: SceneBreakPlan | undefined;
   readonly tuning: ResolvedSceneGenerationTuning;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
@@ -115,6 +135,9 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
   const narrativeParts = splitSceneNarrativeSource(
     renderNarrativeBodyWithCastNames(context) ?? body,
   );
+  const tuning = resolveSceneGenerationTuning(input.tuning);
+  const beats = context.scene.card?.beats ?? [];
+  const breakPlan = planSceneBreaks(beats, castNameOf(context), tuning.sceneBreakTimeJumpMinutes);
 
   if (body.length === 0) {
     throw new Error(
@@ -139,13 +162,17 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     shouldCancel,
     // 작법 블록은 사건 재료와 섞지 않는다 — 섞이면 같은 등장이 두 번 뽑히고 카드 메타가 산문에
     // 실린다 — 대신 뼈대에 «설계»로 따로 넘긴다.
-    narrativeSource: narrativeParts.narrative,
+    narrativeSource:
+      breakPlan === undefined
+        ? narrativeParts.narrative
+        : renderPlannedNarrative(beats, breakPlan, castNameOf(context)),
     design: narrativeParts.design,
-    tuning: resolveSceneGenerationTuning(input.tuning),
+    breakPlan,
+    tuning,
     condensedPreviousContext: condensePreviousContext(
       previousContext,
       input.useContextCondense === true,
-      resolveSceneGenerationTuning(input.tuning).contextCondensedMaxChars,
+      tuning.contextCondensedMaxChars,
     ),
     sceneRef: { kind: 'scene', id: sceneStem },
     detectedCharacters,
@@ -215,6 +242,11 @@ async function draftSkeletonWithRetries(
   options: GenerateTextOptions,
   retryLimit: number,
   tuning: ResolvedSceneGenerationTuning,
+  breakPlan: SceneBreakPlan | undefined,
+  beats: readonly SceneBeat[],
+  // 대목 묶음 호출이면 이 호출 안에서 시작하는 대목 번호(1부터). 표식 검사와 첫 표식 보충이 그 범위로
+  // 좁혀지고, 대목 중간을 잇는 호출은 빈 목록이다.
+  segmentNumbers?: readonly number[],
 ): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
   let best:
@@ -222,11 +254,24 @@ async function draftSkeletonWithRetries(
     | undefined;
 
   for (let attempt = 0; attempt <= retryLimit; attempt += 1) {
-    const skeleton = await aiService.draftSceneSkeleton(
+    const rawResponse = await aiService.draftSceneSkeleton(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
     );
-    const violations = validateSceneSkeleton(skeleton, input.targetLength, tuning);
+    const response = curlDialogueQuotes(rawResponse);
+    const skeleton =
+      segmentNumbers === undefined
+        ? response
+        : keepOnlyMarkers(
+            segmentNumbers[0] === undefined
+              ? response
+              : ensureLeadingMarker(response, segmentNumbers[0]),
+            segmentNumbers,
+          );
+    const violations = [
+      ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
+      ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
+    ];
 
     if (violations.length === 0) {
       return { text: skeleton, violations: [] };
@@ -243,10 +288,71 @@ async function draftSkeletonWithRetries(
       best = { text: skeleton, violations, weight, distance };
     }
 
-    reasons = violations.map((violation) => violation.detail);
+    reasons = [
+      ...violations.map((violation) => violation.detail),
+      ...thinDialogueReasons(skeleton, violations, breakPlan, beats, tuning),
+    ];
   }
 
   return { text: best?.text ?? '', violations: best?.violations ?? [] };
+}
+
+// 뼈대가 곧은 큰따옴표로 대사를 쓰면 묶음 호출의 뒤 호출들이 앞 뼈대의 모양을 따라가 초안 전체에 섞인다
+// (실측 8회차: 97줄). 규약은 곡선 큰따옴표이므로 한 줄 안에서 닫히는 짝을 바꾼다.
+function curlDialogueQuotes(text: string): string {
+  return text.replace(/"([^"\n]+)"/g, '“$1”');
+}
+
+const thinBeatListLimit = 6;
+
+// 미달 뼈대를 다시 부를 때 어느 사건을 더 펼칠지 지목한다(#115). 대목이 없는 씬은 지목할 수 없다.
+function thinDialogueReasons(
+  skeleton: string,
+  violations: readonly SectionViolation[],
+  breakPlan: SceneBreakPlan | undefined,
+  beats: readonly SceneBeat[],
+  tuning: ResolvedSceneGenerationTuning,
+): string[] {
+  if (breakPlan === undefined || !violations.some((violation) => violation.kind === 'too-short')) {
+    return [];
+  }
+
+  const thin = findThinDialogueBeats(skeleton, breakPlan, beats, tuning.skeletonThinDialogueTurns);
+  if (thin.length === 0) {
+    return [];
+  }
+
+  const listed = thin
+    .slice(0, thinBeatListLimit)
+    .map((text) => `«${text}»`)
+    .join('·');
+  return [
+    `사건 ${listed}${thin.length > thinBeatListLimit ? ` 외 ${thin.length - thinBeatListLimit}개` : ''}의 대화가 짧습니다. 이 사건들은 각각 ${tuning.skeletonRequestedDialogueTurns}턴 이상 밀고 당기게 늘리세요`,
+  ];
+}
+
+// 표식을 빠뜨린 뼈대는 그 대목이 앞 대목에 붙어 전환이 사라진다. 다시 부를 이유로 삼는다.
+function validatePlannedSceneBreaks(
+  skeleton: string,
+  breakPlan: SceneBreakPlan | undefined,
+  segmentNumbers?: readonly number[],
+): SectionViolation[] {
+  if (breakPlan === undefined) {
+    return [];
+  }
+
+  const missingMarkers = countMissingSegmentMarkers(
+    skeleton,
+    segmentNumbers ?? breakPlan.segments.map((_, index) => index + 1),
+  );
+  return missingMarkers === 0
+    ? []
+    : [
+        {
+          kind: 'scene-breaks',
+          detail: `⟪대목 n⟫ 표식 ${missingMarkers}개가 빠져 그 대목이 앞 대목에 붙었습니다. 사건 목록의 ⟪대목⟫ 줄을 모두 그 자리에 옮겨 적으세요`,
+        },
+      ];
 }
 
 async function expandSectionWithRetries(input: {
@@ -314,8 +420,16 @@ async function expandSectionWithRetries(input: {
       best = { text: expanded, violations, weight, distance };
     }
 
-    reasons = violations.map((violation) => violation.detail);
     isUnderLengthRetry = violations.some((violation) => violation.kind === 'too-short');
+    const thinSpots = isUnderLengthRetry
+      ? describeThinExpansionSpots(
+          findThinExpansionSpots(input.section, expanded, input.tuning.dialogueMinimumQuotedLength),
+        )
+      : undefined;
+    reasons = [
+      ...violations.map((violation) => violation.detail),
+      ...(thinSpots === undefined ? [] : [thinSpots]),
+    ];
   }
 
   // 재시도로도 못 고치면 가장 가벼운 판을 채택하되, 위반 내역은 원고 헤더로 올려 바로 보게 한다.
@@ -341,6 +455,21 @@ function weighViolations(
 // 실어 다시 부른다. 한 판을 통째로 검증하면 한 인물의 실수가 나머지 인물의 다듬기까지 버리고, 다시
 // 돌릴 때도 문제없던 인물의 호출을 되풀이하게 된다. 한도를 다 쓰고도 위반인 인물은 그 인물만
 // 뼈대 대사로 남는다.
+// 다른 인물마다 카드 voice 의 첫 줄. 페르소나 전문과 아는 것은 그 인물의 호출만 받는다.
+function otherVoices(
+  characters: readonly CharacterCard[],
+  name: string,
+): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    characters.flatMap((character) => {
+      const voice = character.voice?.[0]?.trim();
+      return character.name === name || voice === undefined || voice.length === 0
+        ? []
+        : [[character.name, voice]];
+    }),
+  );
+}
+
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
   readonly skeleton: string;
@@ -412,6 +541,7 @@ async function polishDialogueOrKeepSkeleton(input: {
             relationChanges: input.characterRelations?.get(name) ?? [],
           },
           otherCharacters: speakers.filter((other) => other !== name),
+          otherVoices: otherVoices(input.characters, name),
           ...(retryReasons === undefined ? {} : { retryReasons }),
         },
         input.options,
@@ -554,18 +684,28 @@ async function buildVoiceSamples(
   }
 
   const corpus = await dialogueCorpus.loadCorpus();
+  const seeds = (await dialogueCorpus.loadVoiceSeeds?.())?.characters ?? {};
+  const bounds = {
+    minimumLength: tuning.voiceSampleMinimumLength,
+    maximumLength: tuning.voiceSampleMaximumLength,
+  };
 
   for (const character of characters) {
-    const samples = selectRepresentativeDialogue(
+    const fromDrafts = selectRepresentativeDialogue(
       corpus,
       character.id,
       sceneStem ?? '',
       tuning.voiceSampleLimit,
-      {
-        minimumLength: tuning.voiceSampleMinimumLength,
-        maximumLength: tuning.voiceSampleMaximumLength,
-      },
+      bounds,
     );
+    // 작품의 대사가 쌓일수록 노트의 예시 대사는 자리를 내준다.
+    const fromNotes = (seeds[character.id] ?? []).filter(
+      (line) =>
+        line.length >= bounds.minimumLength &&
+        line.length <= bounds.maximumLength &&
+        !fromDrafts.includes(line),
+    );
+    const samples = [...fromDrafts, ...fromNotes].slice(0, tuning.voiceSampleLimit);
     if (samples.length > 0) {
       voiceSamples.set(character.name, samples);
     }
@@ -728,37 +868,141 @@ const collectVoiceSamplesStage: ISceneStage = {
   },
 };
 
+type SkeletonCallInput = Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0];
+
+// 대목 묶음마다 한 호출(#111). 앞 호출까지의 뼈대를 그대로 보여 주고 이어 쓰게 하며, 다음 호출의 첫
+// 사건을 알려 거기까지 쓰지 않게 한다. 종료 지점은 마지막 호출만 받는다. 호출의 미달·되풀이는 그
+// 호출만 다시 부른다.
+async function draftSkeletonInCalls(input: {
+  readonly ctx: ResolvedExecutionContext;
+  readonly base: SkeletonCallInput;
+  readonly options: GenerateTextOptions;
+  readonly calls: readonly SkeletonCall[];
+  readonly plan: SceneBreakPlan;
+  readonly beats: readonly SceneBeat[];
+  readonly targetLength: number;
+}): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
+  const { ctx, base, options, calls, plan, beats, targetLength } = input;
+  const castName = castNameOf(ctx.context);
+  const totalBeats = calls.reduce((sum, call) => sum + call.beats.length, 0);
+  const endState = ctx.context.scene.card?.endState;
+  const parts: string[] = [];
+  const warnings: string[] = [];
+
+  for (const [index, call] of calls.entries()) {
+    ctx.onProgress?.('draftSkeleton', index + 1, calls.length);
+    const next = calls[index + 1];
+    const nextBeat = next === undefined ? undefined : beatText(beats[next.beats[0] ?? -1]);
+
+    const result = await draftSkeletonWithRetries(
+      ctx.aiService,
+      {
+        ...base,
+        narrativeSource: renderPlannedNarrative(beats, plan, castName, call.beats),
+        targetLength: Math.round((targetLength * call.beats.length) / totalBeats),
+        ...(parts.length > 0 ? { priorSkeleton: parts.join('\n\n') } : {}),
+        ...(nextBeat === undefined ? {} : { nextBeat }),
+        ...(next === undefined && endState !== undefined ? { endState } : {}),
+      },
+      options,
+      ctx.tuning.skeletonRetryLimit,
+      ctx.tuning,
+      plan,
+      beats,
+      call.markers,
+    );
+    parts.push(result.text);
+    warnings.push(
+      ...result.violations.map(
+        (violation) => `뼈대 ${index + 1}/${calls.length}: ${violation.detail}`,
+      ),
+    );
+    assertNotCancelled(ctx.shouldCancel);
+  }
+
+  return { text: parts.join('\n\n'), warnings };
+}
+
+function beatText(beat: SceneBeat | undefined): string | undefined {
+  return beat === undefined ? undefined : typeof beat === 'string' ? beat : beat.text;
+}
+
 // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
+// 대목이 계획된 긴 씬은 호출 하나의 몫이 charsPerCall 을 넘지 않게 대목 묶음으로 나눠 이어 쓴다.
 const draftSkeletonStage: ISceneStage = {
   id: 'draftSkeleton',
   async run(state) {
     const { ctx, input } = state;
-    ctx.onProgress?.('draftSkeleton', 1, 1);
-    const skeleton = await draftSkeletonWithRetries(
-      ctx.aiService,
+    const beats = ctx.context.scene.card?.beats ?? [];
+    const targetLength = skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio);
+    const endState = ctx.context.scene.card?.endState;
+    const base: SkeletonCallInput = {
+      narrativeSource: ctx.narrativeSource,
+      ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
+      personas: state.personasUsed,
+      catchphrases: characterCatchphrases(ctx.context.characters),
+      characterKnowledge: input.characterKnowledge,
+      background: state.background,
+      backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
+      previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
+      grounding: ctx.context.scene.frontmatter.grounding,
+      ...(targetLength === undefined ? {} : { targetLength }),
+      ...(ctx.breakPlan === undefined ? {} : { plannedBreaks: true }),
+    };
+    const options = withAttribution(
       {
-        narrativeSource: ctx.narrativeSource,
-        ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
-        personas: state.personasUsed,
-        catchphrases: characterCatchphrases(ctx.context.characters),
-        characterKnowledge: input.characterKnowledge,
-        background: state.background,
-        backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
-        previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
-        endState: ctx.context.scene.card?.endState,
-        grounding: ctx.context.scene.frontmatter.grounding,
-        targetLength: skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio),
+        ...buildGenerateOptions(ctx.providers, 'sceneSkeleton'),
+        styleDirective: ctx.styleDirective,
       },
-      withAttribution(
-        {
-          ...buildGenerateOptions(ctx.providers, 'sceneSkeleton'),
-          styleDirective: ctx.styleDirective,
-        },
-        { primary: ctx.sceneRef },
-      ),
-      ctx.tuning.skeletonRetryLimit,
-      ctx.tuning,
+      { primary: ctx.sceneRef },
     );
+    const calls =
+      ctx.breakPlan === undefined
+        ? undefined
+        : planSkeletonCalls(ctx.breakPlan, targetLength, ctx.tuning.skeletonCharsPerCall);
+
+    let skeleton: { readonly text: string; readonly warnings: readonly string[] };
+    if (calls === undefined || calls.length === 1 || targetLength === undefined) {
+      ctx.onProgress?.('draftSkeleton', 1, 1);
+      const whole = await draftSkeletonWithRetries(
+        ctx.aiService,
+        { ...base, ...(endState === undefined ? {} : { endState }) },
+        options,
+        ctx.tuning.skeletonRetryLimit,
+        ctx.tuning,
+        ctx.breakPlan,
+        beats,
+      );
+      skeleton = {
+        text: whole.text,
+        warnings: whole.violations.map((violation) => `뼈대: ${violation.detail}`),
+      };
+    } else {
+      skeleton = await draftSkeletonInCalls({
+        ctx,
+        base,
+        options,
+        calls,
+        plan: ctx.breakPlan as SceneBreakPlan,
+        beats,
+        targetLength,
+      });
+    }
+    state.warnings.push(...skeleton.warnings);
+
+    // 전환 자리를 파이프라인이 정한 씬은 장부도 그 대목들이다. 표식이 빠진 대목은 앞 대목에 붙었다.
+    const applied =
+      ctx.breakPlan === undefined
+        ? undefined
+        : applyPlannedSceneBreaks(skeleton.text, ctx.breakPlan);
+    if (applied !== undefined && !applied.hasNoMarkers) {
+      state.skeleton = applied.text;
+      state.sceneCoordinates = { segments: applied.coordinates, isAlignedWithBreaks: true };
+      state.polishedText = state.skeleton;
+      assertNotCancelled(ctx.shouldCancel);
+      return;
+    }
+
     const extracted = extractSceneCoordinates(skeleton.text);
     state.skeleton = extracted.text;
     const missingCoordinates = countMissingSceneCoordinates(extracted.ledger);
@@ -776,7 +1020,6 @@ const draftSkeletonStage: ISceneStage = {
       }
     }
     state.polishedText = state.skeleton;
-    state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
     assertNotCancelled(ctx.shouldCancel);
   },
 };
@@ -826,6 +1069,62 @@ function backgroundFactLines(background: Background): string[] {
   ].filter((line) => line.trim().length > 0);
 }
 
+// 재시도로도 다음 구간의 대사를 앞당겨 쓰면 그 자리부터 잘라 낸다. 다음 구간이 그 사건을 쓴다.
+function trimRunAhead(
+  skeleton: string,
+  section: string,
+  outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
+  tuning: ResolvedSceneGenerationTuning,
+): { readonly text: string; readonly violations: readonly SectionViolation[] } {
+  if (!outcome.violations.some((violation) => violation.kind === 'runs-ahead')) {
+    return outcome;
+  }
+
+  const lines = findRunAheadDialogue(skeleton, section, outcome.text, tuning);
+  const trimmed = trimRunAheadDialogue(outcome.text, lines);
+  if (trimmed === outcome.text) {
+    return outcome;
+  }
+
+  return {
+    text: trimmed,
+    violations: [
+      ...outcome.violations.filter((violation) => violation.kind !== 'runs-ahead'),
+      {
+        kind: 'runs-ahead',
+        detail: `다음 구간의 대사를 앞당겨 쓴 끝부분 ${(outcome.text.length - trimmed.length).toLocaleString()}자를 잘라 냈습니다`,
+      },
+    ],
+  };
+}
+
+// 재시도로도 --- 수가 맞지 않으면 뼈대 조각을 기준으로 되살린다(#112). 자리를 찾으면 그 위반은
+// 경고 한 줄로 바뀌고, 못 찾으면 위반이 그대로 경고로 남는다.
+function restoreSectionBreaks(
+  section: string,
+  outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
+): { readonly text: string; readonly violations: readonly SectionViolation[] } {
+  if (!outcome.violations.some((violation) => violation.kind === 'scene-breaks')) {
+    return outcome;
+  }
+
+  const restored = restoreSceneBreaks(section, outcome.text);
+  if (restored === undefined || countSceneBreakLines(restored) !== countSceneBreakLines(section)) {
+    return outcome;
+  }
+
+  return {
+    text: restored,
+    violations: [
+      ...outcome.violations.filter((violation) => violation.kind !== 'scene-breaks'),
+      {
+        kind: 'scene-breaks',
+        detail: `살붙임이 바꾼 장면 전환(---)을 뼈대 조각의 자리에 맞춰 되살렸습니다`,
+      },
+    ],
+  };
+}
+
 // 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
 const expandSectionStage: ISceneStage = {
   id: 'expandSection',
@@ -863,9 +1162,13 @@ const expandSectionStage: ISceneStage = {
         tuning: ctx.tuning,
       });
 
-      expandedSections.push(outcome.text);
+      const repaired = restoreSectionBreaks(
+        sections[index] as string,
+        trimRunAhead(state.polishedText, sections[index] as string, outcome, ctx.tuning),
+      );
+      expandedSections.push(repaired.text);
       state.warnings.push(
-        ...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
+        ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
       );
       assertNotCancelled(ctx.shouldCancel);
     }

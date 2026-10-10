@@ -14,6 +14,7 @@ import {
   readPersonaMemoryFile,
   parseSceneStem,
   readSceneDialogueFile,
+  readVoiceSeedsFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile,
   writeSceneDialogueFile,
@@ -26,6 +27,7 @@ import type {
   BackgroundCard,
   CharacterCard,
   SceneDialogueRecord,
+  VoiceSeeds,
 } from '@storyboard/story-model';
 import type {
   IBackgroundFactConflictStore,
@@ -214,6 +216,13 @@ export function createSceneDialogueStore(
       });
 
       return records;
+    },
+    async loadVoiceSeeds(): Promise<VoiceSeeds> {
+      if (!(await fs.exists(paths.voiceSeeds))) {
+        return { characters: {} };
+      }
+
+      return await readVoiceSeedsFile(paths.voiceSeeds, fs);
     },
   };
 }

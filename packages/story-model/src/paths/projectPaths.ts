@@ -36,9 +36,13 @@ export interface StoryboardProjectPaths {
   readonly sceneGroundingGaps: StoryUri;
   readonly backgroundFactConflicts: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
+  // 감수 루프가 회차마다 남기는 검사·재작성 기록. 씬 하나에 파일 하나, 다시 돌리면 덮어쓴다.
+  readonly revisionRoundsDirectory: StoryUri;
   readonly storyState: StoryUri;
   readonly chapterSummaries: StoryUri;
   readonly sceneDialogueDirectory: StoryUri;
+  // 노트에서 옮긴 인물별 예시 대사. 줄기와 무관하게 작품에 하나다.
+  readonly voiceSeeds: StoryUri;
   readonly personaMemoryDirectory: StoryUri;
   readonly backgroundMemoryDirectory: StoryUri;
   readonly bibleCacheDirectory: StoryUri;
@@ -96,9 +100,11 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     sceneGroundingGaps: resolve(STORYBOARD_RELATIVE_PATHS.sceneGroundingGaps),
     backgroundFactConflicts: resolve(STORYBOARD_RELATIVE_PATHS.backgroundFactConflicts),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
+    revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
     storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
     chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
+    voiceSeeds: resolve(STORYBOARD_RELATIVE_PATHS.voiceSeeds),
     personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
     backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
     bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),

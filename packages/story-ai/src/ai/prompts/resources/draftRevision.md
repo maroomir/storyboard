@@ -1,6 +1,6 @@
 ---
 temperature: 0.7
-maxTokens: 4000
+maxTokens: 12000
 ---
 ## system
 한국어 장편 소설 초안을 지시에 따라 다시 쓰는 작가다.

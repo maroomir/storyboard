@@ -27,6 +27,9 @@ export interface SceneDialoguePolishInput {
   readonly numberedSkeleton: string;
   readonly character: SceneDialoguePolishCharacter;
   readonly otherCharacters: readonly string[];
+  // 다른 인물 이름 → 그 인물 말투 한 줄(카드 voice 의 첫 줄). 이 인물이 그들을 닮지 않게 하려는 대비
+  // 재료라, 페르소나·아는 것은 싣지 않는다(#104).
+  readonly otherVoices?: Readonly<Record<string, string>>;
   // 이 인물의 지난 응답이 반려된 이유. 재호출에서만 있다.
   readonly retryReasons?: readonly string[];
   readonly style?: StyleDirective;
@@ -70,7 +73,13 @@ export const SceneDialoguePolishPrompt = {
         hasRelationChanges: list(character.relationChanges).length > 0,
         relationChanges: list(character.relationChanges),
         hasOtherCharacters: input.otherCharacters.length > 0,
-        otherCharacters: input.otherCharacters.join(', '),
+        hasOtherVoices: input.otherCharacters.some((name) => input.otherVoices?.[name] !== undefined),
+        otherCharacters: input.otherCharacters
+          .map((name) => {
+            const voice = input.otherVoices?.[name];
+            return voice === undefined ? `- ${name}` : `- ${name}: ${voice}`;
+          })
+          .join('\n'),
         numberedSkeleton: input.numberedSkeleton,
         hasRetryReasons: list(input.retryReasons).length > 0,
         retryReasons: list(input.retryReasons).join(' / '),

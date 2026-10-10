@@ -74,6 +74,30 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: ratioBounds,
   },
   {
+    id: 'generation.skeleton.thinDialogueTurns',
+    label: '짧은 설전으로 보는 사건당 대사 수',
+    kind: 'count',
+    bounds: { min: 1, max: 10 },
+  },
+  {
+    id: 'generation.skeleton.requestedDialogueTurns',
+    label: '짧은 설전에 요구하는 대사 턴 수',
+    kind: 'count',
+    bounds: { min: 2, max: 20 },
+  },
+  {
+    id: 'generation.skeleton.charsPerCall',
+    label: '뼈대 호출 하나의 목표 글자 수 상한',
+    kind: 'chars',
+    bounds: { min: 500, max: 50000 },
+  },
+  {
+    id: 'generation.sceneBreak.timeJumpMinutes',
+    label: '장면 전환으로 보는 시각 차(분)',
+    kind: 'count',
+    bounds: { min: 10, max: 360 },
+  },
+  {
     id: 'generation.dialogue.preservedRatio',
     label: '대사 보존 유사도',
     kind: 'ratio',
