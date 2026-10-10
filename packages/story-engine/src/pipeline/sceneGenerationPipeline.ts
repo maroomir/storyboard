@@ -243,7 +243,8 @@ async function draftSkeletonWithRetries(
   tuning: ResolvedSceneGenerationTuning,
   breakPlan: SceneBreakPlan | undefined,
   beats: readonly SceneBeat[],
-  // 대목 묶음 호출이면 이 호출이 맡은 대목 번호(1부터). 표식 검사와 첫 표식 보충이 그 범위로 좁혀진다.
+  // 대목 묶음 호출이면 이 호출 안에서 시작하는 대목 번호(1부터). 표식 검사와 첫 표식 보충이 그 범위로
+  // 좁혀지고, 대목 중간을 잇는 호출은 빈 목록이다.
   segmentNumbers?: readonly number[],
 ): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
@@ -868,7 +869,7 @@ async function draftSkeletonInCalls(input: {
 }): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
   const { ctx, base, options, calls, plan, beats, targetLength } = input;
   const castName = castNameOf(ctx.context);
-  const totalBeats = calls.reduce((sum, call) => sum + call.beatCount, 0);
+  const totalBeats = calls.reduce((sum, call) => sum + call.beats.length, 0);
   const endState = ctx.context.scene.card?.endState;
   const parts: string[] = [];
   const warnings: string[] = [];
@@ -876,16 +877,14 @@ async function draftSkeletonInCalls(input: {
   for (const [index, call] of calls.entries()) {
     ctx.onProgress?.('draftSkeleton', index + 1, calls.length);
     const next = calls[index + 1];
-    const nextBeat =
-      next === undefined ? undefined : firstBeatText(plan, beats, next.segments[0] as number);
-    const segmentNumbers = call.segments.map((segment) => segment + 1);
+    const nextBeat = next === undefined ? undefined : beatText(beats[next.beats[0] ?? -1]);
 
     const result = await draftSkeletonWithRetries(
       ctx.aiService,
       {
         ...base,
-        narrativeSource: renderPlannedNarrative(beats, plan, castName, call.segments),
-        targetLength: Math.round((targetLength * call.beatCount) / totalBeats),
+        narrativeSource: renderPlannedNarrative(beats, plan, castName, call.beats),
+        targetLength: Math.round((targetLength * call.beats.length) / totalBeats),
         ...(parts.length > 0 ? { priorSkeleton: parts.join('\n\n') } : {}),
         ...(nextBeat === undefined ? {} : { nextBeat }),
         ...(next === undefined && endState !== undefined ? { endState } : {}),
@@ -895,7 +894,7 @@ async function draftSkeletonInCalls(input: {
       ctx.tuning,
       plan,
       beats,
-      segmentNumbers,
+      call.markers,
     );
     parts.push(result.text);
     warnings.push(
@@ -909,12 +908,7 @@ async function draftSkeletonInCalls(input: {
   return { text: parts.join('\n\n'), warnings };
 }
 
-function firstBeatText(
-  plan: SceneBreakPlan,
-  beats: readonly SceneBeat[],
-  segment: number,
-): string | undefined {
-  const beat = beats[plan.segments[segment]?.beats[0] ?? -1];
+function beatText(beat: SceneBeat | undefined): string | undefined {
   return beat === undefined ? undefined : typeof beat === 'string' ? beat : beat.text;
 }
 
