@@ -102,7 +102,16 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
       currentLength >= budget / 2 &&
       (nextBreakLength === undefined ||
         Math.abs(currentLength - budget) <= Math.abs(nextBreakLength - budget));
-    const filled = currentLength >= budget;
+    // 대사가 이어지는 자리에서 자르면 앞 구간의 살붙임이 대화를 마저 써 버려 다음 구간과 겹쳤다
+    // (장면 전환이 드문 긴 대목에서 대사 18개 중복). 이 문단이나 다음 문단이 대사로 시작하면 서술과
+    // 서술 사이가 나올 때까지, 예산의 1.5배까지 미룬다.
+    const nextUnit = units[index + 1];
+    const startsWithDialogue = (text: string): boolean => /^[“"]/.test(text);
+    const continuesExchange =
+      startsWithDialogue(unit.text) ||
+      (nextUnit !== undefined && !nextUnit.endsScene && startsWithDialogue(nextUnit.text));
+    const filled =
+      currentLength >= budget && (!continuesExchange || currentLength >= budget * 1.5);
     const mustClose = remainingUnits === remainingSections;
 
     if (atSceneBreak || filled || mustClose) {
@@ -464,6 +473,14 @@ export function validateExpandedSection(input: {
     });
   }
 
+  const ranAhead = findRunAheadDialogue(input.skeleton, input.section, input.expanded, resolved);
+  if (ranAhead.length > 0) {
+    violations.push({
+      kind: 'runs-ahead',
+      detail: `다음 구간의 대사를 미리 썼습니다 ("${ranAhead[0] as string}"${ranAhead.length > 1 ? ` 외 ${ranAhead.length - 1}건` : ''}). [이번 구간]의 마지막 문장에서 멈추세요`,
+    });
+  }
+
   const repeated = repeatedFromPrevious(
     input.previousSection,
     input.expanded,
@@ -807,4 +824,49 @@ export function describeThinExpansionSpots(
     .map((spot) => `“${spot.line.length > 20 ? `${spot.line.slice(0, 20)}…` : spot.line}”`)
     .join(', ');
   return `특히 대사 ${quoted} 다음에는 서술이 거의 붙지 않았습니다. 그 자리부터 시점 인물의 반응·해석·행동을 펼치세요`;
+}
+
+// 이번 구간 뒤의 뼈대에만 있는 대사를 살붙임이 써 버렸는지. 그 대사는 다음 구간이 다시 쓰므로
+// 본문에 두 번 남는다. 이번 구간에도 같은 대사가 있으면 앞당긴 것이 아니다.
+export function findRunAheadDialogue(
+  skeleton: string,
+  section: string,
+  expanded: string,
+  tuning: ResolvedSceneGenerationTuning,
+): string[] {
+  // 분할기는 문단을 다시 이어 붙이므로 구간이 뼈대의 부분 문자열이라는 보장이 없다. 첫 문단과 끝
+  // 문단으로 자리를 찾는다.
+  const paragraphs = section.trim().split(/\n\s*\n+/);
+  const sectionStart = skeleton.indexOf(paragraphs[0] ?? '');
+  const lastParagraph = paragraphs.at(-1) ?? '';
+  const lastStart = sectionStart < 0 ? -1 : skeleton.indexOf(lastParagraph, sectionStart);
+  if (lastStart < 0) {
+    return [];
+  }
+
+  const quoted = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
+  const linesOf = (text: string): string[] =>
+    [...text.matchAll(quoted)]
+      .map((match) => (match[1] ?? '').trim())
+      .filter((line) => line.length >= tuning.dialogueMinimumLineLength);
+  const own = new Set(linesOf(section));
+  const later = linesOf(skeleton.slice(lastStart + lastParagraph.length)).filter(
+    (line) => !own.has(line),
+  );
+
+  return [...new Set(later.filter((line) => expanded.includes(line)))];
+}
+
+// 재시도로도 앞당긴 대사를 못 지우면, 그 대사가 처음 나온 문단부터 잘라 낸다. 다음 구간이 그 사건을
+// 쓰므로 잃는 것이 없다. 잘라 낼 자리가 첫 문단이면 그대로 둔다.
+export function trimRunAheadDialogue(expanded: string, lines: readonly string[]): string {
+  const first = Math.min(
+    ...lines.map((line) => expanded.indexOf(line)).filter((index) => index >= 0),
+  );
+  if (!Number.isFinite(first)) {
+    return expanded;
+  }
+
+  const cut = expanded.lastIndexOf('\n\n', first);
+  return cut <= 0 ? expanded : expanded.slice(0, cut).trimEnd();
 }

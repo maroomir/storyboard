@@ -48,12 +48,14 @@ import {
 import {
   describeThinExpansionSpots,
   findCatchphraseOveruse,
+  findRunAheadDialogue,
   findThinExpansionSpots,
   findPolishedLineViolations,
   planSectionCount,
   planSectionTargetLengths,
   quotedDialoguePatternFor,
   splitSkeletonIntoSections,
+  trimRunAheadDialogue,
   validateExpandedSection,
   validatePolishedSkeleton,
   validateSceneSkeleton,
@@ -953,6 +955,35 @@ function backgroundFactLines(background: Background): string[] {
   ].filter((line) => line.trim().length > 0);
 }
 
+// 재시도로도 다음 구간의 대사를 앞당겨 쓰면 그 자리부터 잘라 낸다. 다음 구간이 그 사건을 쓴다.
+function trimRunAhead(
+  skeleton: string,
+  section: string,
+  outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
+  tuning: ResolvedSceneGenerationTuning,
+): { readonly text: string; readonly violations: readonly SectionViolation[] } {
+  if (!outcome.violations.some((violation) => violation.kind === 'runs-ahead')) {
+    return outcome;
+  }
+
+  const lines = findRunAheadDialogue(skeleton, section, outcome.text, tuning);
+  const trimmed = trimRunAheadDialogue(outcome.text, lines);
+  if (trimmed === outcome.text) {
+    return outcome;
+  }
+
+  return {
+    text: trimmed,
+    violations: [
+      ...outcome.violations.filter((violation) => violation.kind !== 'runs-ahead'),
+      {
+        kind: 'runs-ahead',
+        detail: `다음 구간의 대사를 앞당겨 쓴 끝부분 ${(outcome.text.length - trimmed.length).toLocaleString()}자를 잘라 냈습니다`,
+      },
+    ],
+  };
+}
+
 // 재시도로도 --- 수가 맞지 않으면 뼈대 조각을 기준으로 되살린다(#112). 자리를 찾으면 그 위반은
 // 경고 한 줄로 바뀌고, 못 찾으면 위반이 그대로 경고로 남는다.
 function restoreSectionBreaks(
@@ -1017,7 +1048,10 @@ const expandSectionStage: ISceneStage = {
         tuning: ctx.tuning,
       });
 
-      const repaired = restoreSectionBreaks(sections[index] as string, outcome);
+      const repaired = restoreSectionBreaks(
+        sections[index] as string,
+        trimRunAhead(state.polishedText, sections[index] as string, outcome, ctx.tuning),
+      );
       expandedSections.push(repaired.text);
       state.warnings.push(
         ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
