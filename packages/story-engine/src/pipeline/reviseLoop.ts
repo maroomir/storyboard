@@ -1,4 +1,5 @@
 import {
+  AiProviderError,
   buildRevisionInstructions,
   countBlockingIssues,
   scoreCritique,
@@ -67,6 +68,14 @@ export interface ReviseLoopOptions {
   readonly seedIssues?: ReviseSeedIssues;
 }
 
+// A provider that fails mid-review (a timeout on a long rewrite, a dropped connection) ends the loop
+// but is not the caller's failure: the draft the loop was handed is already on disk.
+export interface ReviseLoopFailure {
+  readonly stage: 'check' | 'revise';
+  readonly kind: 'timeout' | 'provider';
+  readonly message: string;
+}
+
 export interface ReviseLoopResult {
   readonly body: string;
   readonly passed: boolean;
@@ -79,6 +88,19 @@ export interface ReviseLoopResult {
     readonly reason: DraftCandidateRejectionReason;
     readonly originalLength: number;
     readonly candidateLength: number;
+  };
+  readonly failure?: ReviseLoopFailure;
+}
+
+function toReviseLoopFailure(stage: ReviseLoopFailure['stage'], error: unknown): ReviseLoopFailure {
+  if (!(error instanceof AiProviderError)) {
+    throw error;
+  }
+
+  return {
+    stage,
+    kind: error.code === 'cli-timeout' ? 'timeout' : 'provider',
+    message: error.message,
   };
 }
 
@@ -239,11 +261,19 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
   let passed = false;
   let lastInstructions: string[] = [];
   let rejection: ReviseLoopResult['rejection'];
+  let failure: ReviseLoopFailure | undefined;
 
   while (!isCancelled()) {
     options.onProgress?.(`검사 중 (${revisionCount + 1}/${maxIterations + 1})…`);
 
-    const checked = await runReviewChecks(session, body);
+    let checked: Awaited<ReturnType<typeof runReviewChecks>>;
+    try {
+      checked = await runReviewChecks(session, body);
+    } catch (error) {
+      failure = toReviseLoopFailure('check', error);
+      break;
+    }
+
     const seed = revisionCount === 0 ? options.seedIssues : undefined;
     const continuityIssues = [...checked.continuityIssues, ...(seed?.continuityIssues ?? [])];
     const critiqueIssues = [...checked.critiqueIssues, ...(seed?.critiqueIssues ?? [])];
@@ -268,13 +298,19 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
       ctx.characters,
       lastInstructions,
     );
-    const applied = await applyRevisionPasses(
-      session,
-      revisionPasses,
-      body,
-      isCancelled,
-      options.maxCompressionPercent,
-    );
+    let applied: Awaited<ReturnType<typeof applyRevisionPasses>>;
+    try {
+      applied = await applyRevisionPasses(
+        session,
+        revisionPasses,
+        body,
+        isCancelled,
+        options.maxCompressionPercent,
+      );
+    } catch (error) {
+      failure = toReviseLoopFailure('revise', error);
+      break;
+    }
     body = applied.body;
 
     if (applied.rejection) {
@@ -298,5 +334,6 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
     instructions: lastInstructions,
     preservedOriginal: rejection !== undefined,
     rejection,
+    ...(failure === undefined ? {} : { failure }),
   };
 }

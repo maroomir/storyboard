@@ -11,6 +11,7 @@ import {
   readSceneFile,
 } from '@storyboard/story-model';
 import {
+  describeReviseOutcome,
   readProjectJson,
   type GenerateDraftRequest,
   type NovelApprovalKind,
@@ -354,10 +355,15 @@ export class RunController {
       return { outcome: 'completed', message: translate('log.sceneCached', { title }), snapshotMessage };
     }
 
-    await container.drafts.reviseAfterGenerate(sceneUri, {
+    const revised = await container.drafts.reviseAfterGenerate(sceneUri, {
       onProgress: (message) => this.appendLog(translate('log.sceneRevising', { title, message })),
       shouldCancel,
     });
+    // Engine messages stay Korean in both languages, so the warning goes out as the engine wrote it.
+    const reviseWarning = revised && describeReviseOutcome(revised).warning;
+    if (reviseWarning) {
+      this.appendLog(translate('log.sceneRevising', { title, message: reviseWarning }), 'warn');
+    }
 
     return { outcome: 'completed', message: translate('log.sceneSaved', { title }), snapshotMessage };
   }
