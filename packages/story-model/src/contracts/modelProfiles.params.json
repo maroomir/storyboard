@@ -10,5 +10,57 @@
       "auc": 0.325,
       "recalled": 8
     }
+  },
+  "claude-code:claude-opus-5-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 5,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2"
+    }
+  },
+  "claude-code:claude-sonnet-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 5,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2"
+    }
+  },
+  "claude:claude-opus-5-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 5,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2"
+    }
+  },
+  "claude:claude-sonnet-5": {
+    "generation.skeleton.lengthRatio": 0.45,
+    "measured": {
+      "date": "2026-10-10",
+      "workspace": "guerrilla@c1d157b",
+      "sceneTarget": 40000,
+      "runs": 5,
+      "reach": 0.55,
+      "expansionRatio": 2.3,
+      "sections": 6,
+      "skeletonRatioCandidates": "1/3: 뼈대 목표를 다 채워도 살붙임이 뼈대의 2.1~2.5배에서 멈춰 본문이 목표의 51~57%(#109 3회, #115 실측 2회, claude-code 경로). 0.45 = 1/2.2"
+    }
   }
 }
