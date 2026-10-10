@@ -197,8 +197,8 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
 
   it("redrafts a skeleton that came in under 80% of its target, carrying the reason", async () => {
     const ai = createRecordingAiService()
-    const thin = `엘리아가 문을 열었다. "가자." ${"짧다. ".repeat(20)}`
-    const fuller = `엘리아가 문을 열었다. "가자." ${"밀고 당기는 말이 이어졌다. ".repeat(80)}`
+    const thin = `엘리아가 문을 열었다. “가자.” ${"짧다. ".repeat(20)}`
+    const fuller = `엘리아가 문을 열었다. “가자.” ${"밀고 당기는 말이 이어졌다. ".repeat(80)}`
     ai.draftSceneSkeleton.mockResolvedValueOnce(thin).mockResolvedValueOnce(fuller)
 
     const result = await runSceneGenerationPipeline({
@@ -220,8 +220,8 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
 
   it("keeps the fuller of two short skeletons rather than the last one", async () => {
     const ai = createRecordingAiService()
-    const thin = `"가자." ${"짧다. ".repeat(10)}`
-    const thinner = `"가자." ${"짧다. ".repeat(5)}`
+    const thin = `“가자.” ${"짧다. ".repeat(10)}`
+    const thinner = `“가자.” ${"짧다. ".repeat(5)}`
     ai.draftSceneSkeleton.mockResolvedValueOnce(thin).mockResolvedValueOnce(thinner)
 
     const result = await runSceneGenerationPipeline({
@@ -239,7 +239,7 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
   // #106: 재시도 뒤에도 짧은 뼈대가 경고 없이 통과해 살붙임 미달 경고만 남았다. 원인은 뼈대였다.
   it("warns when the kept skeleton is still under its floor after the retry", async () => {
     const ai = createRecordingAiService()
-    ai.draftSceneSkeleton.mockResolvedValue(`"가자." ${"짧다. ".repeat(10)}`)
+    ai.draftSceneSkeleton.mockResolvedValue(`“가자.” ${"짧다. ".repeat(10)}`)
 
     const result = await runSceneGenerationPipeline({
       sceneStem: "01-opening",
@@ -551,6 +551,21 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(result.skeleton).toBe(["엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다.", "", "---", "", "엘리아가 교문을 나섰다."].join("\n"))
     expect(result.warnings.filter((warning) => warning.startsWith("뼈대 1/2:"))).toHaveLength(1)
     expect(result.warnings.filter((warning) => warning.startsWith("뼈대 2/2:"))).toHaveLength(1)
+  })
+
+  it("curls straight dialogue quotes a skeleton call wrote", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce('엘리아가 말했다.\n\n"밥 먹자." 성재가 "응." 하고 답했다.')
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.skeleton).toContain("“밥 먹자.” 성재가 “응.” 하고 답했다.")
+    expect(result.skeleton).not.toContain('"')
   })
 
   it("names the thin conversations when a planned skeleton comes back short", async () => {
