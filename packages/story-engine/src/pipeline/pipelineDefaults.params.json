@@ -10,6 +10,9 @@
     "retryLimit": 1,
     "minimumLengthRatio": 0.8
   },
+  "sceneBreak": {
+    "timeJumpMinutes": 60
+  },
   "dialogue": {
     "preservedRatio": 0.85,
     "splitLimit": 3,
@@ -45,6 +48,7 @@
     "repeats-previous": 3,
     "repetition": 3,
     "too-long": 1,
-    "too-short": 1
+    "too-short": 1,
+    "scene-breaks": 2
   }
 }

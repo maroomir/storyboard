@@ -74,6 +74,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: ratioBounds,
   },
   {
+    id: 'generation.sceneBreak.timeJumpMinutes',
+    label: '장면 전환으로 보는 시각 차(분)',
+    kind: 'count',
+    bounds: { min: 10, max: 360 },
+  },
+  {
     id: 'generation.dialogue.preservedRatio',
     label: '대사 보존 유사도',
     kind: 'ratio',

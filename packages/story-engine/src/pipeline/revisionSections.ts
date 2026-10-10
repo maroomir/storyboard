@@ -1,3 +1,5 @@
+import { countSharedShingles, normalizeForMatch } from './textMatch';
+
 // A draft is rewritten one scene-break section at a time (#114, #115): one call over a whole 40,000
 // character draft outran the provider timeout, and a single rejected candidate threw every fix
 // away. The review still reads the whole draft once; its issues are attributed to sections here.
@@ -48,10 +50,6 @@ export function replaceSectionText(original: string, rewritten: string): string 
   return `${leading}${rewritten.trim()}${trailing}`;
 }
 
-function normalizeForMatch(text: string): string {
-  return text.replace(/[\s"'“”‘’「」『』.,!?…·~\-—()[\]]/g, '');
-}
-
 function longestFragment(quote: string): string {
   const fragments = quote
     .split(/…|\.\.\./)
@@ -61,21 +59,6 @@ function longestFragment(quote: string): string {
   return fragments.reduce((longest, fragment) =>
     fragment.length > longest.length ? fragment : longest,
   fragments[0] ?? '');
-}
-
-const shingleLength = 4;
-
-function countSharedShingles(needle: string, haystack: string): number {
-  const seen = new Set<string>();
-
-  for (let index = 0; index + shingleLength <= needle.length; index += 1) {
-    const shingle = needle.slice(index, index + shingleLength);
-    if (haystack.includes(shingle)) {
-      seen.add(shingle);
-    }
-  }
-
-  return seen.size;
 }
 
 // Finds the section a quoted excerpt came from: verbatim first, then ignoring spacing and
