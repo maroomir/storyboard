@@ -338,9 +338,16 @@ async function loadSceneContextBundle(
     options.fileSystem,
     {
       previousSceneOrder: thread.previousSceneOrder,
-      ...(narration?.knowledge === 'witnessed' && narration.focal
-        ? { focalFilter: { focal: narration.focal } }
-        : {}),
+      focalFilter: {
+        ...(narration?.knowledge === 'witnessed' && narration.focal
+          ? { focal: narration.focal }
+          : {}),
+        // 전지적 서술이 아니면 공용 맥락에는 씬 인물 모두가 아는 것만 둔다. 한 인물만 아는 것은
+        // 그 인물의 [아는 것]으로만 간다.
+        ...(narration?.knowledge === 'omniscient'
+          ? {}
+          : { witnessedByAll: context.characters.map((character) => character.id) }),
+      },
     },
   );
   const inputHash = computeSceneInputHash({

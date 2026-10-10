@@ -425,6 +425,21 @@ function weighViolations(
 // 실어 다시 부른다. 한 판을 통째로 검증하면 한 인물의 실수가 나머지 인물의 다듬기까지 버리고, 다시
 // 돌릴 때도 문제없던 인물의 호출을 되풀이하게 된다. 한도를 다 쓰고도 위반인 인물은 그 인물만
 // 뼈대 대사로 남는다.
+// 다른 인물마다 카드 voice 의 첫 줄. 페르소나 전문과 아는 것은 그 인물의 호출만 받는다.
+function otherVoices(
+  characters: readonly CharacterCard[],
+  name: string,
+): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    characters.flatMap((character) => {
+      const voice = character.voice?.[0]?.trim();
+      return character.name === name || voice === undefined || voice.length === 0
+        ? []
+        : [[character.name, voice]];
+    }),
+  );
+}
+
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
   readonly skeleton: string;
@@ -496,6 +511,7 @@ async function polishDialogueOrKeepSkeleton(input: {
             relationChanges: input.characterRelations?.get(name) ?? [],
           },
           otherCharacters: speakers.filter((other) => other !== name),
+          otherVoices: otherVoices(input.characters, name),
           ...(retryReasons === undefined ? {} : { retryReasons }),
         },
         input.options,

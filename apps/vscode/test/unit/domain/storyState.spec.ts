@@ -594,6 +594,16 @@ describe("story state witnesses", () => {
     expect(prompt).not.toContain("준이 다리에서 기다렸다")
   })
 
+  // #104: 뼈대의 공용 맥락에는 씬 인물 모두가 아는 것만 둔다.
+  it("keeps only facts every listed character witnessed", () => {
+    const prompt = formatStoryStateForPrompt(witnessedState, 4, undefined, { witnessedByAll: ["hana", "jun"] })
+
+    expect(prompt).toContain("둘이 시장에서 마주쳤다")
+    expect(prompt).toContain("목격자 없는 구 버전 항목")
+    expect(prompt).not.toContain("하나가 등불을 껐다")
+    expect(prompt).not.toContain("준이 다리에서 기다렸다")
+  })
+
   it("keeps entries with no recorded witnesses, which cannot be judged", () => {
     const prompt = formatStoryStateForPrompt(witnessedState, 4, undefined, { focal: "hana" })
 

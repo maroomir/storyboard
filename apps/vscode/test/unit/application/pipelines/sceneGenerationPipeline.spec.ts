@@ -1506,6 +1506,26 @@ describe("대사 화자 귀속 단계", () => {
     expect(polishInput.character.samples).toEqual(["값보다 내력이 먼저입니다."])
   })
 
+  // #104: 다른 인물의 말투 한 줄만 대비로 싣는다. 페르소나 전문과 아는 것은 싣지 않는다.
+  it("shows each polish call the other characters' voice line", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “그래, 가자고.”")
+    const jihoon = { type: "character", id: "jihoon", name: "지훈", role: "main", voice: ["느릿한 사투리"] } as const
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([{ ...eliaCard, voice: ["짧은 존댓말", "단정함"] }, jihoon], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const inputs = ai.polishSceneDialogue.mock.calls.map(
+      (call) => call[0] as { character: { name: string }; otherVoices?: Record<string, string> }
+    )
+    expect(inputs.find((input) => input.character.name === "엘리아")?.otherVoices).toEqual({ 지훈: "느릿한 사투리" })
+    expect(inputs.find((input) => input.character.name === "지훈")?.otherVoices).toEqual({ 엘리아: "짧은 존댓말" })
+  })
+
   // #105-14: 첫 씬은 앞선 초안이 없다. 노트의 예시 대사가 그 자리를 채운다.
   it("fills the first scene's samples from the notes' quoted lines", async () => {
     const ai = createRecordingAiService()

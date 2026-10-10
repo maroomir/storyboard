@@ -53,8 +53,8 @@ describe("MockAiProvider", () => {
         ).text
       ) as { n: number; text: string }[]
 
-    const hana = await polishFor("하나", "준")
-    const jun = await polishFor("준", "하나")
+    const hana = await polishFor("하나", "- 준: 느린 사투리")
+    const jun = await polishFor("준", "- 하나")
 
     // 이름순(준, 하나)으로 번호를 돌아가며 가진다.
     expect(jun).toEqual([{ n: 1, text: "다듬은 가자." }, { n: 3, text: "다듬은 왜?" }])
