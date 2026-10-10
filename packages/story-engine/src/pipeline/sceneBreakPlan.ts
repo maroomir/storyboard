@@ -307,6 +307,21 @@ export function ensureLeadingMarker(text: string, segmentNumber: number): string
   return hasMarker ? text : `⟪대목 ${segmentNumber}⟫\n${text}`;
 }
 
+// 호출이 자기 몫이 아닌 ⟪대목 n⟫ 표식을 지어내면(대목 하나를 나눠 받은 호출이 제 조각에 다음 번호를
+// 붙인 실측) 뒤 호출의 진짜 표식이 이미 본 번호로 무시돼 대목들이 마지막 대목에 뭉친다. 허용 번호 외의
+// 표식은 지우고, 표식만 있던 줄은 없앤다.
+export function keepOnlyMarkers(text: string, allowed: readonly number[]): string {
+  return text
+    .split('\n')
+    .flatMap((line) => {
+      const stripped = line.replace(SEGMENT_MARKER, (marker, number: string) =>
+        allowed.includes(Number(number)) ? marker : '',
+      );
+      return stripped === line || stripped.trim().length > 0 ? [stripped] : [];
+    })
+    .join('\n');
+}
+
 // 본문에 없는 ⟪대목 n⟫ 표식의 수. 번호는 1부터.
 export function countMissingSegmentMarkers(
   text: string,
