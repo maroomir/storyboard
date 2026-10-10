@@ -348,7 +348,7 @@ export class ClaudeCodeProvider implements AiProvider {
       throw new AiProviderError(
         'cli-timeout',
         this.id,
-        `${this.displayName} 호출이 ${Number((this.timeoutMs / 1000).toFixed(1))}초 안에 끝나지 않아 중단했습니다. 구독 한도에 닿았을 수 있습니다. 더 기다리려면 홈 설정의 providers.${this.id}.timeoutMs 를 늘리세요.`,
+        `${this.displayName} 호출(입력 ${prompt.length.toLocaleString('en-US')}자)이 ${Number((this.timeoutMs / 1000).toFixed(1))}초 안에 끝나지 않아 중단했습니다. 입력·출력이 길었거나 구독 한도에 닿았을 수 있습니다. 더 기다리려면 홈 설정의 providers.${this.id}.timeoutMs 를 늘리세요.`,
       );
     }
 

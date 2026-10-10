@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 
-import type { GenerateDraftResult, SceneGenerationPipelineStage } from '@storyboard/story-engine';
+import {
+  describeReviseOutcome,
+  type GenerateDraftResult,
+  type SceneGenerationPipelineStage,
+} from '@storyboard/story-engine';
 import type { DraftManager, RunGate } from '@storyboard/story-app';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -104,9 +108,12 @@ async function runGenerateDraftForWorkspaceScene(
           onProgress: (message) => progress.report({ message }),
           shouldCancel: () => token.isCancellationRequested,
         });
-        if (reviseResult?.preservedOriginal && reviseResult.rejection) {
+        const reviseWarning = reviseResult && describeReviseOutcome(reviseResult).warning;
+        if (reviseWarning) {
           await vscode.window.showWarningMessage(
-            `검수 재작성 결과가 안전 기준을 통과하지 않아 원본을 유지했습니다 (${reviseResult.rejection.candidateLength}자 / 원본 ${reviseResult.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
+            reviseResult?.rejection
+              ? `${reviseWarning} Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`
+              : reviseWarning,
           );
         }
       }

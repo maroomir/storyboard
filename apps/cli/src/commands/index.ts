@@ -14,7 +14,9 @@ import {
   novelStageLabel,
   resolveNovelPipelinePlan,
   sceneStageCatalog,
+  describeReviseOutcome,
   type GenerateAllDraftsProgress,
+  type ReviseOutcome,
 } from '@storyboard/story-engine';
 import {
   draftPath,
@@ -244,18 +246,17 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   const reviseRequested =
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
+  // 초안은 이미 디스크에 있다. 그 뒤의 감수가 멈춰도(재작성 타임아웃 등) 생성은 성공이고, 에이전트가
+  // 종료 코드만 보고 초안을 다시 사는 일이 없도록 경고와 data.revise 로만 알린다.
+  let revise: ReviseOutcome | undefined;
   if (result.kind === 'generated' && reviseRequested) {
     const revised = await container.drafts.reviseScene(container.workspaceRoot, stem, {
       onProgress: (message) => container.progress.update({ line: message, step: message }),
     });
+    revise = revised && describeReviseOutcome(revised);
 
-    // A rejected candidate means the original was kept. Saying nothing would let an unattended run
-    // record a revision that never happened.
-    if (revised?.preservedOriginal === true && revised.rejection !== undefined) {
-      container.logger.warn(
-        `검수 재작성 결과가 안전 기준을 통과하지 않아 원본을 유지했습니다 ` +
-          `(${revised.rejection.candidateLength}자 / 원본 ${revised.rejection.originalLength}자).`,
-      );
+    if (revise?.warning) {
+      container.logger.warn(revise.warning);
     }
   }
 
@@ -263,7 +264,11 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     ok: true,
     message:
       result.kind === 'cache_hit' ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
-    data: { draft: (result.draftUri as StoryUri).fsPath, warnings },
+    data: {
+      draft: (result.draftUri as StoryUri).fsPath,
+      warnings: revise?.warning ? [...warnings, revise.warning] : warnings,
+      ...(revise === undefined ? {} : { revise }),
+    },
   };
 };
 
@@ -354,8 +359,13 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
   }
 
   const result = await container.drafts.reviseScene(container.workspaceRoot, stem);
-  return result === undefined
-    ? { ok: false, message: '초안이 없어 검수를 건너뛰었습니다.' }
+  if (result === undefined) {
+    return { ok: false, message: '초안이 없어 검수를 건너뛰었습니다.' };
+  }
+
+  // 감수만 하는 동사에서는 감수가 멈춘 것이 곧 실패다.
+  return result.failure
+    ? { ok: false, message: describeReviseOutcome(result).warning ?? result.failure.message, data: result }
     : { ok: true, message: '검수와 재작성을 마쳤습니다.', data: result };
 };
 

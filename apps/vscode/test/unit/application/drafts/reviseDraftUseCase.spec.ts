@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-model';
+import { AiProviderError, type ContinuityIssueLike, type DraftCritiqueIssue } from '@storyboard/story-model';
 
 const checkContinuityMock = vi.fn<[], Promise<ContinuityIssueLike[]>>()
 const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIssue[]> => {
@@ -58,6 +58,7 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
   formatBibleFactLines: (): unknown[] => []
 }))
 import {
+  describeReviseOutcome,
   ReviseDraftUseCase,
   type ReviseDraftRequest,
   type ReviseDraftUseCaseDependencies,
@@ -157,6 +158,45 @@ describe("ReviseDraftUseCase", () => {
         "장면 좌표 2. 장소: 교문 앞 / 시각: 방과 후"
       ])
     )
+  })
+
+  // #114: 초안은 이미 디스크에 있으므로 감수 중 프로바이더 타임아웃은 던지지 않고 결과로 돌려준다.
+  it("returns a timed-out rewrite as a failure instead of throwing", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    reviseDraftMock.mockRejectedValueOnce(
+      new AiProviderError("cli-timeout", "claude-code", "600초 안에 끝나지 않아 중단했습니다.")
+    )
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.failure).toEqual({
+      stage: "revise",
+      kind: "timeout",
+      message: "600초 안에 끝나지 않아 중단했습니다."
+    })
+    expect(result.revisionCount).toBe(0)
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
+    expect(describeReviseOutcome(result)).toMatchObject({ status: "timeout", revisionCount: 0 })
+    expect(describeReviseOutcome(result).warning).toContain("초안은 생성된 그대로입니다")
+  })
+
+  it("keeps the rewrites already accepted when a later check fails", async () => {
+    checkContinuityMock
+      .mockResolvedValueOnce([blockingContinuity])
+      .mockRejectedValueOnce(new AiProviderError("connection-failed", "claude", "연결 끊김"))
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.failure).toMatchObject({ stage: "check", kind: "provider" })
+    expect(result.revisionCount).toBe(1)
+    expect(writeDraftFileMock).toHaveBeenCalledTimes(1)
+    expect(describeReviseOutcome(result).status).toBe("failed")
+  })
+
+  it("still throws an error that is not a provider failure", async () => {
+    checkContinuityMock.mockRejectedValueOnce(new TypeError("bug"))
+
+    await expect(runReviseDraftWorkflow(baseOptions())).rejects.toThrow("bug")
   })
 
   it("Q4: passes without revising when continuity issues are all low severity", async () => {
