@@ -51,6 +51,7 @@
     "repetition": 3,
     "too-long": 1,
     "too-short": 1,
-    "scene-breaks": 2
+    "scene-breaks": 2,
+    "runs-ahead": 3
   }
 }
