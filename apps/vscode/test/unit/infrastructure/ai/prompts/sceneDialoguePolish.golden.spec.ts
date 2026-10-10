@@ -15,6 +15,7 @@ describe("SceneDialoguePolishPrompt golden", () => {
       relationChanges: ["하나와 준은 이제 서로 이름을 부른다"]
     },
     otherCharacters: ["하나", "민"],
+    otherVoices: { 하나: "짧고 단호한 반말" },
     retryReasons: ["뼈대에 없는 인물이 등장합니다 (민)"],
     style: {
       narration: { tense: "present", focal: "하나" },

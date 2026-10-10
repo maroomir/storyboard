@@ -215,9 +215,10 @@ function createMockDialoguePolish(prompt: string): string {
     return '[]';
   }
 
-  const others = (/^\[다른 등장 인물\]\n(.+)$/m.exec(prompt)?.[1] ?? '')
-    .split(',')
-    .map((name) => name.trim())
+  // 다른 인물은 한 줄에 하나(«- 이름» 또는 «- 이름: 말투»)다.
+  const others = (/^\[다른 등장 인물\]\n((?:- .+\n?)+)/m.exec(prompt)?.[1] ?? '')
+    .split('\n')
+    .map((line) => line.replace(/^- /, '').split(':')[0]?.trim() ?? '')
     .filter((name) => name.length > 0);
   const cast = [self, ...others].sort();
   const position = cast.indexOf(self);
