@@ -29,6 +29,8 @@ const measurementSchema = z.object({
   auc: z.number().min(0).max(1).optional(),
   recalled: z.number().nonnegative().optional(),
   judge: z.string().optional(),
+  // 다른 손잡이의 근거. 어느 값이 어느 실측에서 왔는지 적는다.
+  notes: z.string().optional(),
 });
 
 export type ModelMeasurement = z.infer<typeof measurementSchema>;
