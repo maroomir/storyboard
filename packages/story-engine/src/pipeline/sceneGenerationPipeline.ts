@@ -4,6 +4,7 @@ import type {
   CharacterCard,
   ProjectFormat,
   SceneContext,
+  SceneBeat,
   SceneDialogueRecord,
   EntityRef,
   StyleDirective,
@@ -45,7 +46,9 @@ import {
   withAttribution,
 } from './sceneGenerationStages';
 import {
+  describeThinExpansionSpots,
   findCatchphraseOveruse,
+  findThinExpansionSpots,
   findPolishedLineViolations,
   planSectionCount,
   planSectionTargetLengths,
@@ -61,6 +64,7 @@ import { selectRepresentativeDialogue } from './dialogueCorpus';
 import {
   applyPlannedSceneBreaks,
   countSceneBreakLines,
+  findThinDialogueBeats,
   planSceneBreaks,
   renderPlannedNarrative,
   restoreSceneBreaks,
@@ -232,6 +236,7 @@ async function draftSkeletonWithRetries(
   retryLimit: number,
   tuning: ResolvedSceneGenerationTuning,
   breakPlan: SceneBreakPlan | undefined,
+  beats: readonly SceneBeat[],
 ): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
   let best:
@@ -263,10 +268,41 @@ async function draftSkeletonWithRetries(
       best = { text: skeleton, violations, weight, distance };
     }
 
-    reasons = violations.map((violation) => violation.detail);
+    reasons = [
+      ...violations.map((violation) => violation.detail),
+      ...thinDialogueReasons(skeleton, violations, breakPlan, beats, tuning),
+    ];
   }
 
   return { text: best?.text ?? '', violations: best?.violations ?? [] };
+}
+
+const thinBeatListLimit = 6;
+
+// 미달 뼈대를 다시 부를 때 어느 사건을 더 펼칠지 지목한다(#115). 대목이 없는 씬은 지목할 수 없다.
+function thinDialogueReasons(
+  skeleton: string,
+  violations: readonly SectionViolation[],
+  breakPlan: SceneBreakPlan | undefined,
+  beats: readonly SceneBeat[],
+  tuning: ResolvedSceneGenerationTuning,
+): string[] {
+  if (breakPlan === undefined || !violations.some((violation) => violation.kind === 'too-short')) {
+    return [];
+  }
+
+  const thin = findThinDialogueBeats(skeleton, breakPlan, beats, tuning.skeletonThinDialogueTurns);
+  if (thin.length === 0) {
+    return [];
+  }
+
+  const listed = thin
+    .slice(0, thinBeatListLimit)
+    .map((text) => `«${text}»`)
+    .join('·');
+  return [
+    `사건 ${listed}${thin.length > thinBeatListLimit ? ` 외 ${thin.length - thinBeatListLimit}개` : ''}의 대화가 짧습니다. 이 사건들은 각각 ${tuning.skeletonRequestedDialogueTurns}턴 이상 밀고 당기게 늘리세요`,
+  ];
 }
 
 // 표식을 빠뜨린 뼈대는 그 대목이 앞 대목에 붙어 전환이 사라진다. 다시 부를 이유로 삼는다.
@@ -354,8 +390,16 @@ async function expandSectionWithRetries(input: {
       best = { text: expanded, violations, weight, distance };
     }
 
-    reasons = violations.map((violation) => violation.detail);
     isUnderLengthRetry = violations.some((violation) => violation.kind === 'too-short');
+    const thinSpots = isUnderLengthRetry
+      ? describeThinExpansionSpots(
+          findThinExpansionSpots(input.section, expanded, input.tuning.dialogueMinimumQuotedLength),
+        )
+      : undefined;
+    reasons = [
+      ...violations.map((violation) => violation.detail),
+      ...(thinSpots === undefined ? [] : [thinSpots]),
+    ];
   }
 
   // 재시도로도 못 고치면 가장 가벼운 판을 채택하되, 위반 내역은 원고 헤더로 올려 바로 보게 한다.
@@ -800,12 +844,15 @@ const draftSkeletonStage: ISceneStage = {
       ctx.tuning.skeletonRetryLimit,
       ctx.tuning,
       ctx.breakPlan,
+      ctx.context.scene.card?.beats ?? [],
     );
     state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
 
     // 전환 자리를 파이프라인이 정한 씬은 장부도 그 대목들이다. 표식이 빠진 대목은 앞 대목에 붙었다.
     const applied =
-      ctx.breakPlan === undefined ? undefined : applyPlannedSceneBreaks(skeleton.text, ctx.breakPlan);
+      ctx.breakPlan === undefined
+        ? undefined
+        : applyPlannedSceneBreaks(skeleton.text, ctx.breakPlan);
     if (applied !== undefined && !applied.hasNoMarkers) {
       state.skeleton = applied.text;
       state.sceneCoordinates = { segments: applied.coordinates, isAlignedWithBreaks: true };

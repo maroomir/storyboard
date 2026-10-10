@@ -26,6 +26,10 @@ const pipelineDefaultsSchema = z.object({
     // 뼈대는 씬에서 가장 비싼 호출이라 기본은 한 번만 다시 부른다.
     retryLimit: z.number().int().nonnegative(),
     minimumLengthRatio: ratio,
+    // 미달 뼈대를 다시 부를 때, 둘 이상이 나오는 사건 하나에 대사가 이 수에 못 미치는 대목을 짧은
+    // 설전으로 보고 그 사건들을 지목한다. 지목한 사건은 requestedDialogueTurns 턴으로 늘리라고 한다.
+    thinDialogueTurns: positiveInt,
+    requestedDialogueTurns: positiveInt,
   }),
   sceneBreak: z.object({
     // 좌표 비트 사이 시각 차가 이 분 이상이면 장면을 끊는다. 시:분이 읽히지 않으면 시간대 낱말로 본다.

@@ -517,6 +517,27 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     ])
   })
 
+  it("names the thin conversations when a planned skeleton comes back short", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValue(["⟪대목 1⟫", "\u201c밥 먹자.\u201d", "⟪대목 2⟫", "교문을 나섰다."].join("\n"))
+    const context = plannedScene(contextFor([eliaCard], "본문"))
+    const beats = (context.scene.card?.beats ?? []).map((beat) =>
+      typeof beat === "string" ? beat : { ...beat, cast: ["elia", "hana"] }
+    )
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: { ...context, scene: { ...context.scene, card: { ...context.scene.card, beats } } } as SceneContext,
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 9000 }
+    })
+
+    const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
+    expect(retry.retryReasons.join(" ")).toContain("«밥을 먹는다»·«설거지를 한다»·«교문을 나선다»의 대화가 짧습니다")
+    expect(retry.retryReasons.join(" ")).toContain("6턴 이상")
+  })
+
   it("retries an expansion that dropped a break and restores it from the skeleton", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce(
