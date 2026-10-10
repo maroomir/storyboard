@@ -32,6 +32,8 @@ export interface SceneSkeletonInput {
   readonly style?: StyleDirective;
   readonly targetLength?: number;
   readonly retryReasons?: readonly string[];
+  // 사건 목록에 ⟪대목 n⟫ 으로 장면 전환 자리가 미리 정해져 있다. 모델은 그 자리에만 --- 를 쓴다.
+  readonly plannedBreaks?: boolean;
 }
 
 // NOTE: 씬의 뼈대를 한 번에 쓴다. 사건 순서·등장·종료 지점 같은 연속성 결정이 전부 이 한 문맥에서
@@ -60,6 +62,7 @@ export const SceneSkeletonPrompt = {
         })),
         previousContext: input.previousContext,
         narrativeSource: input.narrativeSource,
+        plannedBreaks: input.plannedBreaks === true,
       },
       partials: {
         proseConventions: proseConventionLines(style?.narration?.tense).join('\n'),

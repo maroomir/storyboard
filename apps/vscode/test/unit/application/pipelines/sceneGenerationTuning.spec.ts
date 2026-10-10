@@ -31,6 +31,7 @@ describe("resolveSceneGenerationTuning", () => {
       skeletonRatio: pipelineDefaults.skeleton.lengthRatio,
       skeletonRetryLimit: pipelineDefaults.skeleton.retryLimit,
       skeletonMinimumLengthRatio: pipelineDefaults.skeleton.minimumLengthRatio,
+      sceneBreakTimeJumpMinutes: pipelineDefaults.sceneBreak.timeJumpMinutes,
       dialoguePreservedRatio: pipelineDefaults.dialogue.preservedRatio,
       dialogueSplitLimit: pipelineDefaults.dialogue.splitLimit,
       dialogueRepeatedRunLimit: pipelineDefaults.dialogue.repeatedRunLimit,

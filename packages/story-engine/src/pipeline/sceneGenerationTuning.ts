@@ -32,6 +32,7 @@ export interface ResolvedSceneGenerationTuning {
   readonly skeletonRatio: number;
   readonly skeletonRetryLimit: number;
   readonly skeletonMinimumLengthRatio: number;
+  readonly sceneBreakTimeJumpMinutes: number;
   readonly dialoguePreservedRatio: number;
   readonly dialogueSplitLimit: number;
   readonly dialogueRepeatedRunLimit: number;
@@ -103,6 +104,7 @@ export function resolveSceneGenerationTuning(
     skeletonRatio: knob(tuning, 'generation.skeleton.lengthRatio'),
     skeletonRetryLimit: knob(tuning, 'generation.skeleton.retryLimit'),
     skeletonMinimumLengthRatio: knob(tuning, 'generation.skeleton.minimumLengthRatio'),
+    sceneBreakTimeJumpMinutes: knob(tuning, 'generation.sceneBreak.timeJumpMinutes'),
     dialoguePreservedRatio: knob(tuning, 'generation.dialogue.preservedRatio'),
     dialogueSplitLimit: knob(tuning, 'generation.dialogue.splitLimit'),
     dialogueRepeatedRunLimit: knob(tuning, 'generation.dialogue.repeatedRunLimit'),

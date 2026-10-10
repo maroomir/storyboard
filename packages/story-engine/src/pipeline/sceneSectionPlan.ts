@@ -383,6 +383,10 @@ export function validateSceneSkeleton(
   return violations;
 }
 
+function countBreakLines(text: string): number {
+  return text.split('\n').filter((line) => line.trim() === SCENE_BREAK_LINE).length;
+}
+
 export function validateExpandedSection(input: {
   readonly skeleton: string;
   readonly section: string;
@@ -438,6 +442,17 @@ export function validateExpandedSection(input: {
     violations.push({
       kind: 'lost-dialogue',
       detail: `뼈대의 대사가 사라졌습니다 ("${lost[0] as string}"${lost.length > 1 ? ` 외 ${lost.length - 1}건` : ''})`,
+    });
+  }
+
+  // NOTE: 장면 좌표 장부는 --- 번호로 대목을 센다. 살붙임이 --- 를 지우면 장부와 본문의 대목이
+  // 어긋나므로(#112), 재작성·축소처럼 수가 바뀐 결과는 받지 않는다.
+  const skeletonBreaks = countBreakLines(input.section);
+  const expandedBreaks = countBreakLines(input.expanded);
+  if (skeletonBreaks !== expandedBreaks) {
+    violations.push({
+      kind: 'scene-breaks',
+      detail: `뼈대 조각의 장면 전환(---) ${skeletonBreaks}개가 ${expandedBreaks}개가 됐습니다. 단독 줄 --- 를 뼈대와 같은 자리에 같은 수만큼 두세요`,
     });
   }
 

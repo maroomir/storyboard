@@ -59,6 +59,14 @@ import {
 } from './sceneSectionPlan';
 import { selectRepresentativeDialogue } from './dialogueCorpus';
 import {
+  applyPlannedSceneBreaks,
+  countSceneBreakLines,
+  planSceneBreaks,
+  renderPlannedNarrative,
+  restoreSceneBreaks,
+  type SceneBreakPlan,
+} from './sceneBreakPlan';
+import {
   type DialoguePolishSummary,
   type RunSceneGenerationPipelineInput,
   type RunSceneGenerationPipelineResult,
@@ -93,6 +101,7 @@ interface ResolvedExecutionContext {
   readonly shouldCancel?: () => boolean;
   readonly narrativeSource: string;
   readonly design: string;
+  readonly breakPlan: SceneBreakPlan | undefined;
   readonly tuning: ResolvedSceneGenerationTuning;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
@@ -115,6 +124,9 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
   const narrativeParts = splitSceneNarrativeSource(
     renderNarrativeBodyWithCastNames(context) ?? body,
   );
+  const tuning = resolveSceneGenerationTuning(input.tuning);
+  const beats = context.scene.card?.beats ?? [];
+  const breakPlan = planSceneBreaks(beats, castNameOf(context), tuning.sceneBreakTimeJumpMinutes);
 
   if (body.length === 0) {
     throw new Error(
@@ -139,13 +151,17 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     shouldCancel,
     // 작법 블록은 사건 재료와 섞지 않는다 — 섞이면 같은 등장이 두 번 뽑히고 카드 메타가 산문에
     // 실린다 — 대신 뼈대에 «설계»로 따로 넘긴다.
-    narrativeSource: narrativeParts.narrative,
+    narrativeSource:
+      breakPlan === undefined
+        ? narrativeParts.narrative
+        : renderPlannedNarrative(beats, breakPlan, castNameOf(context)),
     design: narrativeParts.design,
-    tuning: resolveSceneGenerationTuning(input.tuning),
+    breakPlan,
+    tuning,
     condensedPreviousContext: condensePreviousContext(
       previousContext,
       input.useContextCondense === true,
-      resolveSceneGenerationTuning(input.tuning).contextCondensedMaxChars,
+      tuning.contextCondensedMaxChars,
     ),
     sceneRef: { kind: 'scene', id: sceneStem },
     detectedCharacters,
@@ -215,6 +231,7 @@ async function draftSkeletonWithRetries(
   options: GenerateTextOptions,
   retryLimit: number,
   tuning: ResolvedSceneGenerationTuning,
+  breakPlan: SceneBreakPlan | undefined,
 ): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
   let best:
@@ -226,7 +243,10 @@ async function draftSkeletonWithRetries(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
     );
-    const violations = validateSceneSkeleton(skeleton, input.targetLength, tuning);
+    const violations = [
+      ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
+      ...validatePlannedSceneBreaks(skeleton, breakPlan),
+    ];
 
     if (violations.length === 0) {
       return { text: skeleton, violations: [] };
@@ -247,6 +267,26 @@ async function draftSkeletonWithRetries(
   }
 
   return { text: best?.text ?? '', violations: best?.violations ?? [] };
+}
+
+// 표식을 빠뜨린 뼈대는 그 대목이 앞 대목에 붙어 전환이 사라진다. 다시 부를 이유로 삼는다.
+function validatePlannedSceneBreaks(
+  skeleton: string,
+  breakPlan: SceneBreakPlan | undefined,
+): SectionViolation[] {
+  if (breakPlan === undefined) {
+    return [];
+  }
+
+  const { missingMarkers } = applyPlannedSceneBreaks(skeleton, breakPlan);
+  return missingMarkers === 0
+    ? []
+    : [
+        {
+          kind: 'scene-breaks',
+          detail: `⟪대목 n⟫ 표식 ${missingMarkers}개가 빠져 그 대목이 앞 대목에 붙었습니다. 사건 목록의 ⟪대목⟫ 줄을 모두 그 자리에 옮겨 적으세요`,
+        },
+      ];
 }
 
 async function expandSectionWithRetries(input: {
@@ -748,6 +788,7 @@ const draftSkeletonStage: ISceneStage = {
         endState: ctx.context.scene.card?.endState,
         grounding: ctx.context.scene.frontmatter.grounding,
         targetLength: skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio),
+        ...(ctx.breakPlan === undefined ? {} : { plannedBreaks: true }),
       },
       withAttribution(
         {
@@ -758,7 +799,21 @@ const draftSkeletonStage: ISceneStage = {
       ),
       ctx.tuning.skeletonRetryLimit,
       ctx.tuning,
+      ctx.breakPlan,
     );
+    state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
+
+    // 전환 자리를 파이프라인이 정한 씬은 장부도 그 대목들이다. 표식이 빠진 대목은 앞 대목에 붙었다.
+    const applied =
+      ctx.breakPlan === undefined ? undefined : applyPlannedSceneBreaks(skeleton.text, ctx.breakPlan);
+    if (applied !== undefined && !applied.hasNoMarkers) {
+      state.skeleton = applied.text;
+      state.sceneCoordinates = { segments: applied.coordinates, isAlignedWithBreaks: true };
+      state.polishedText = state.skeleton;
+      assertNotCancelled(ctx.shouldCancel);
+      return;
+    }
+
     const extracted = extractSceneCoordinates(skeleton.text);
     state.skeleton = extracted.text;
     const missingCoordinates = countMissingSceneCoordinates(extracted.ledger);
@@ -776,7 +831,6 @@ const draftSkeletonStage: ISceneStage = {
       }
     }
     state.polishedText = state.skeleton;
-    state.warnings.push(...skeleton.violations.map((violation) => `뼈대: ${violation.detail}`));
     assertNotCancelled(ctx.shouldCancel);
   },
 };
@@ -826,6 +880,33 @@ function backgroundFactLines(background: Background): string[] {
   ].filter((line) => line.trim().length > 0);
 }
 
+// 재시도로도 --- 수가 맞지 않으면 뼈대 조각을 기준으로 되살린다(#112). 자리를 찾으면 그 위반은
+// 경고 한 줄로 바뀌고, 못 찾으면 위반이 그대로 경고로 남는다.
+function restoreSectionBreaks(
+  section: string,
+  outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
+): { readonly text: string; readonly violations: readonly SectionViolation[] } {
+  if (!outcome.violations.some((violation) => violation.kind === 'scene-breaks')) {
+    return outcome;
+  }
+
+  const restored = restoreSceneBreaks(section, outcome.text);
+  if (restored === undefined || countSceneBreakLines(restored) !== countSceneBreakLines(section)) {
+    return outcome;
+  }
+
+  return {
+    text: restored,
+    violations: [
+      ...outcome.violations.filter((violation) => violation.kind !== 'scene-breaks'),
+      {
+        kind: 'scene-breaks',
+        detail: `살붙임이 바꾼 장면 전환(---)을 뼈대 조각의 자리에 맞춰 되살렸습니다`,
+      },
+    ],
+  };
+}
+
 // 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
 const expandSectionStage: ISceneStage = {
   id: 'expandSection',
@@ -863,9 +944,10 @@ const expandSectionStage: ISceneStage = {
         tuning: ctx.tuning,
       });
 
-      expandedSections.push(outcome.text);
+      const repaired = restoreSectionBreaks(sections[index] as string, outcome);
+      expandedSections.push(repaired.text);
       state.warnings.push(
-        ...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
+        ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
       );
       assertNotCancelled(ctx.shouldCancel);
     }
