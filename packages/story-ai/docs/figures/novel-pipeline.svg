@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="background:#fffdf9;font-family:IBM Plex Sans KR, Apple SD Gothic Neo, system-ui, sans-serif" viewBox="0 0 1240 400" role="img" aria-label="소설 파이프라인 8단계: outline, characters, seeds, chapters(씬 반복), assemble, review, revise-from-review, summaries가 순서대로 이어지고, review 결과가 revise-from-review를 거쳐 다시 review로 돌아온다">
+  <defs>
+    <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#221f1a"/></marker>
+  </defs>
+  <g font-size="12" fill="#221f1a">
+    <!-- row 1 -->
+    <g>
+      <rect x="20" y="40" width="190" height="96" rx="4" fill="#e3eef6" stroke="#2f6f9f" stroke-width="1.5"/>
+      <text x="32" y="60" font-weight="600" font-size="13">① outline 아웃라인</text>
+      <text x="32" y="80" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">outlineSynopsis</text>
+      <text x="32" y="96" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">chapterPlan</text>
+      <text x="32" y="124" font-size="11" fill="#6b655a">→ outline/synopsis.md, chapters.yaml</text>
+    </g>
+    <line x1="210" y1="88" x2="252" y2="88" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <g>
+      <rect x="256" y="40" width="190" height="96" rx="4" fill="#e3eef6" stroke="#2f6f9f" stroke-width="1.5"/>
+      <text x="268" y="60" font-weight="600" font-size="13">② characters 인물 카드</text>
+      <text x="268" y="80" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">outlineCharacters</text>
+      <text x="268" y="110" font-size="11" fill="#6b655a">→ character/*.card</text>
+      <text x="268" y="124" font-size="11" fill="#6b655a">  (있는 카드는 건너뜀)</text>
+    </g>
+    <line x1="446" y1="88" x2="488" y2="88" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <g>
+      <rect x="492" y="40" width="190" height="96" rx="4" fill="#e3eef6" stroke="#2f6f9f" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="504" y="60" font-weight="600" font-size="13">③ seeds 씬 시드</text>
+      <text x="504" y="80" font-size="11">AI 호출 없음 (코드)</text>
+      <text x="504" y="110" font-size="11" fill="#6b655a">chapters.yaml의 씬마다</text>
+      <text x="504" y="124" font-size="11" fill="#6b655a">→ scene/NNN-*.card</text>
+    </g>
+    <line x1="682" y1="88" x2="724" y2="88" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <g>
+      <rect x="728" y="28" width="260" height="120" rx="4" fill="#f8e6dc" stroke="#b4532a" stroke-width="2.5"/>
+      <text x="740" y="50" font-weight="600" font-size="13">④ chapters 장별 초안·검수</text>
+      <text x="740" y="70" font-size="11">장마다, 씬마다 반복:</text>
+      <text x="752" y="88" font-size="11">drafts.generate  → 2층 전체</text>
+      <text x="752" y="104" font-size="11">drafts.revise    → 되먹임 루프</text>
+      <text x="740" y="124" font-size="11" fill="#6b655a">→ draft/NNN-*.md, 기억 갱신(3층)</text>
+      <text x="740" y="140" font-size="11" fill="#6b655a">장 끝마다 승인 게이트·일시정지 지점</text>
+    </g>
+    <line x1="988" y1="88" x2="1030" y2="88" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <g>
+      <rect x="1034" y="40" width="186" height="96" rx="4" fill="#e3eef6" stroke="#2f6f9f" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="1046" y="60" font-weight="600" font-size="13">⑤ assemble 원고 조립</text>
+      <text x="1046" y="80" font-size="11">AI 호출 없음 (코드)</text>
+      <text x="1046" y="110" font-size="11" fill="#6b655a">draft/*.md 번호순 결합</text>
+      <text x="1046" y="124" font-size="11" fill="#6b655a">→ manuscript.md</text>
+    </g>
+    <!-- down from assemble -->
+    <path d="M1127 136 V 200 H 1100" fill="none" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <!-- row 2 (right to left) -->
+    <g>
+      <rect x="860" y="176" width="236" height="110" rx="4" fill="#ede4f5" stroke="#7a4f9d" stroke-width="1.5"/>
+      <text x="872" y="196" font-weight="600" font-size="13">⑥ review 원고 최종 검사</text>
+      <text x="872" y="216" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">continuityCheck  (장 창마다)</text>
+      <text x="872" y="232" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">draftCritique    (장 창마다)</text>
+      <text x="872" y="256" font-size="11" fill="#6b655a">입력: 원고 + 장 요약 + 캐넌</text>
+      <text x="872" y="272" font-size="11" fill="#6b655a">→ review.md, high 지적은 씬별로 묶음</text>
+    </g>
+    <line x1="860" y1="231" x2="818" y2="231" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <text x="760" y="222" font-size="10" fill="#6b655a" text-anchor="middle">high 지적 있는 씬만</text>
+    <g>
+      <rect x="560" y="176" width="256" height="110" rx="4" fill="#ede4f5" stroke="#7a4f9d" stroke-width="1.5"/>
+      <text x="572" y="196" font-weight="600" font-size="13">⑦ revise-from-review 재작성</text>
+      <text x="572" y="216" font-size="11">씬마다 drafts.revise (최대 1회전)</text>
+      <text x="572" y="232" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">draftRevision</text>
+      <text x="572" y="256" font-size="11" fill="#6b655a">review의 지적을 씨앗 이슈로 받아</text>
+      <text x="572" y="272" font-size="11" fill="#6b655a">→ draft/*.md 덮어씀, 다시 ⑥으로</text>
+    </g>
+    <!-- loop back to review -->
+    <path d="M688 286 V 320 H 978 V 290" fill="none" stroke="#7a4f9d" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a1)"/>
+    <text x="833" y="338" font-size="10" fill="#7a4f9d" text-anchor="middle">재작성 뒤 한 번 더 검사해 보고서를 갱신</text>
+    <line x1="560" y1="231" x2="518" y2="231" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
+    <g>
+      <rect x="300" y="176" width="216" height="110" rx="4" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="1.5"/>
+      <text x="312" y="196" font-weight="600" font-size="13">⑧ summaries 장별 요약</text>
+      <text x="312" y="216" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">chapterSummary  (장마다)</text>
+      <text x="312" y="244" font-size="11" fill="#6b655a">→ .storyboard/memory/</text>
+      <text x="312" y="260" font-size="11" fill="#6b655a">   chapter-summaries.md</text>
+      <text x="312" y="276" font-size="11" fill="#6b655a">다음 생성의 "지금까지 이야기"</text>
+    </g>
+    <!-- summaries feeding back to chapters -->
+    <path d="M408 176 V 160 H 858 " fill="none" stroke="#6a7f2f" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="M858 160 V 150" fill="none" stroke="#6a7f2f" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a1)"/>
+    <text x="640" y="172" font-size="10" fill="#6a7f2f" text-anchor="middle">장 요약은 다음 씬 프롬프트의 맥락으로 되돌아감</text>
+    <!-- memory stripe -->
+    <rect x="20" y="360" width="1200" height="28" rx="3" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="1"/>
+    <text x="620" y="378" font-size="11" text-anchor="middle">공유 기억: character/·background/ 카드, bible/canon.md, memory/story-state.md(이야기 상태 원장), chapter-summaries.md — 모든 단계가 읽고, 3층이 씁니다</text>
+  </g>
+</svg>

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="background:#fffdf9;font-family:IBM Plex Sans KR, Apple SD Gothic Neo, system-ui, sans-serif" viewBox="0 0 1240 300" role="img" aria-label="씬 N 초안에서 다섯 추출기가 이야기 상태 원장, 인물 카드 성향, 정전 후보, 카드 후보, 배경 인물을 갱신하고, 그 파일들이 씬 N+1의 입력이 된다">
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#221f1a"/></marker>
+  </defs>
+  <g font-size="12" fill="#221f1a">
+    <rect x="20" y="110" width="150" height="70" rx="4" fill="#fffdf9" stroke="#221f1a" stroke-width="1.5"/>
+    <text x="95" y="140" font-weight="600" font-size="13" text-anchor="middle">씬 N 초안</text>
+    <text x="95" y="158" font-size="11" fill="#6b655a" text-anchor="middle">draft/NNN-*.md</text>
+
+    <!-- fan out -->
+    <g stroke="#221f1a" stroke-width="1.5" fill="none">
+      <path d="M170 145 H 200 V 45 H 232" marker-end="url(#a3)"/>
+      <path d="M200 100 H 232" marker-end="url(#a3)"/>
+      <path d="M200 145 H 232" marker-end="url(#a3)"/>
+      <path d="M200 190 H 232" marker-end="url(#a3)"/>
+      <path d="M200 145 V 245 H 232" marker-end="url(#a3)"/>
+    </g>
+
+    <g>
+      <rect x="236" y="22" width="330" height="46" rx="3" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="2"/>
+      <text x="246" y="40" font-weight="600" font-size="12">storyStateUpdate (0.2) · 동기, 저장 경로에서 기다림</text>
+      <text x="246" y="58" font-size="11" fill="#6b655a">새 사실 · 목격자 · 씬 번호 → <tspan font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">- [12|hana,jun] …</tspan></text>
+    </g>
+    <g>
+      <rect x="236" y="78" width="330" height="44" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
+      <text x="246" y="96" font-weight="600" font-size="12">traitsExtraction (0.3) · 등장 인물마다</text>
+      <text x="246" y="113" font-size="11" fill="#6b655a">초안에서 드러난 성향·버릇을 카드에 바로 덧붙임</text>
+    </g>
+    <g>
+      <rect x="236" y="124" width="330" height="44" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
+      <text x="246" y="142" font-weight="600" font-size="12">factExtraction (0.2) · 등장 인물마다</text>
+      <text x="246" y="159" font-size="11" fill="#6b655a">세계관 사실 → 정전 후보(승격 전까지 캐시)</text>
+    </g>
+    <g>
+      <rect x="236" y="170" width="330" height="44" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
+      <text x="246" y="188" font-weight="600" font-size="12">cardCandidateExtraction (0.2) → cardCandidateVerification (0)</text>
+      <text x="246" y="205" font-size="11" fill="#6b655a">카드 항목 후보 추출, 설정이 켜져 있으면 검증 호출로 거름</text>
+    </g>
+    <g>
+      <rect x="236" y="216" width="330" height="52" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
+      <text x="246" y="234" font-weight="600" font-size="12">backgroundFactExtraction (0.2) · 배경 카드가 있을 때</text>
+      <text x="246" y="251" font-size="11" fill="#6b655a">그 장소에 대해 새로 밝혀진 사실과 그곳 인물</text>
+    </g>
+
+    <!-- targets -->
+    <g stroke="#221f1a" stroke-width="1.5" fill="none">
+      <path d="M566 45 H 630" marker-end="url(#a3)"/>
+      <path d="M566 100 H 630" marker-end="url(#a3)"/>
+      <path d="M566 146 H 630" marker-end="url(#a3)"/>
+      <path d="M566 192 H 630" marker-end="url(#a3)"/>
+      <path d="M566 242 H 630" marker-end="url(#a3)"/>
+    </g>
+    <g font-size="11">
+      <rect x="634" y="28" width="300" height="34" rx="3" fill="#ebf0dc" stroke="#6a7f2f"/>
+      <text x="644" y="49" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">memory/[threads/&lt;id&gt;/]story-state.md</text>
+      <rect x="634" y="84" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
+      <text x="644" y="104">character/*.card 의 traits (직접 갱신)</text>
+      <rect x="634" y="130" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
+      <text x="644" y="150" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">.storyboard/cache/bible/ → canon promote</text>
+      <rect x="634" y="176" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
+      <text x="644" y="196" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">.storyboard/cache/cards/ → card promote</text>
+      <rect x="634" y="226" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
+      <text x="644" y="246">background/*.card (사실·인물 덧붙임)</text>
+    </g>
+
+    <!-- into next scene -->
+    <g stroke="#6a7f2f" stroke-width="1.5" fill="none" stroke-dasharray="4 3">
+      <path d="M934 45 H 980 V 145"/>
+      <path d="M934 100 H 980"/>
+      <path d="M934 146 H 980"/>
+      <path d="M934 192 H 980"/>
+      <path d="M934 242 H 980 V 145"/>
+      <path d="M980 145 H 1030" marker-end="url(#a3)"/>
+    </g>
+    <rect x="1034" y="100" width="186" height="90" rx="4" fill="#f8e6dc" stroke="#b4532a" stroke-width="2"/>
+    <text x="1127" y="128" font-weight="600" font-size="13" text-anchor="middle">씬 N+1 의 입력</text>
+    <text x="1127" y="148" font-size="11" text-anchor="middle">원장은 바로 실리고,</text>
+    <text x="1127" y="164" font-size="11" text-anchor="middle">후보는 사람이 promote 해야</text>
+    <text x="1127" y="180" font-size="11" text-anchor="middle">캐넌·카드로 실림</text>
+  </g>
+</svg>
