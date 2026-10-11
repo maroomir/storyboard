@@ -230,6 +230,7 @@ describe("the whole pipeline is unchanged by an explicit default", () => {
         log.push(`skeleton:${skeletonCalls}:${targetLength ?? "none"}`)
         return `"들어와, 엘리아." 짧은 뼈대 ${skeletonCalls}`
       }),
+      checkSceneCoverage: vi.fn(async () => []),
       polishSceneDialogue: vi.fn(async () => {
         log.push("polish")
         return { rewrites: [], isTruncated: false }

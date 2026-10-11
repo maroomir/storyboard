@@ -76,6 +76,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly describeBackground: ReturnType<typeof vi.fn>
   readonly findBackgroundFactConflicts: ReturnType<typeof vi.fn>
   readonly draftSceneSkeleton: ReturnType<typeof vi.fn>
+  readonly checkSceneCoverage: ReturnType<typeof vi.fn>
   readonly polishSceneDialogue: ReturnType<typeof vi.fn>
   readonly attributeSceneDialogue: ReturnType<typeof vi.fn>
   readonly expandSceneSection: ReturnType<typeof vi.fn>
@@ -85,6 +86,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
     describeBackground: vi.fn(async () => ""),
     findBackgroundFactConflicts: vi.fn(async () => []),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
+    checkSceneCoverage: vi.fn(async () => []),
     polishSceneDialogue: vi.fn(async () => polishResponse([])),
     attributeSceneDialogue: vi.fn(async (input) =>
       (input as { lines: readonly string[] }).lines.map((_, offset) => ({
@@ -566,6 +568,55 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
 
     expect(result.skeleton).toContain("“밥 먹자.” 성재가 “응.” 하고 답했다.")
     expect(result.skeleton).not.toContain('"')
+  })
+
+  it("redrafts a skeleton that dropped a beat, naming the beat, and warns when it stays missing", async () => {
+    const ai = createRecordingAiService()
+    ai.checkSceneCoverage
+      .mockResolvedValueOnce([{ index: 2, status: "missing", note: "" }])
+      .mockResolvedValueOnce([{ index: 2, status: "missing", note: "" }])
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)
+    expect(ai.checkSceneCoverage.mock.calls[0]?.[0]).toEqual(["밥을 먹는다", "설거지를 한다", "교문을 나선다"])
+    const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
+    expect(retry.retryReasons.join(" ")).toContain("사건 «설거지를 한다»이 뼈대에 없습니다")
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대: 사건 «설거지를 한다»"))).toHaveLength(1)
+  })
+
+  it("keeps a skeleton that covers every beat without a retry", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValue(["⟪대목 1⟫", "밥을 먹었다.", "⟪대목 2⟫", "교문을 나섰다."].join("\n"))
+    ai.checkSceneCoverage.mockResolvedValueOnce([{ index: 1, status: "out-of-order", note: "" }])
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(1)
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대:"))).toEqual([])
+  })
+
+  it("skips the coverage check for a scene without beats", async () => {
+    const ai = createRecordingAiService()
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "엘리아가 문을 연다."),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.checkSceneCoverage).not.toHaveBeenCalled()
   })
 
   it("names the thin conversations when a planned skeleton comes back short", async () => {

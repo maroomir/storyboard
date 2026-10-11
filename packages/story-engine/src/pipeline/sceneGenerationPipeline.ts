@@ -237,13 +237,15 @@ function buildSkeletonContext(
 // 더 두꺼운 판이 살붙임의 부담을 덜어 준다.
 
 async function draftSkeletonWithRetries(
-  aiService: Pick<SceneGenerationPipelineAiService, 'draftSceneSkeleton'>,
+  aiService: Pick<SceneGenerationPipelineAiService, 'draftSceneSkeleton' | 'checkSceneCoverage'>,
   input: Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0],
   options: GenerateTextOptions,
   retryLimit: number,
   tuning: ResolvedSceneGenerationTuning,
   breakPlan: SceneBreakPlan | undefined,
   beats: readonly SceneBeat[],
+  // 이 호출이 써야 하는 사건의 본문. 비어 있으면 커버리지를 검사하지 않는다.
+  coverageBeats: readonly string[],
   // 대목 묶음 호출이면 이 호출 안에서 시작하는 대목 번호(1부터). 표식 검사와 첫 표식 보충이 그 범위로
   // 좁혀지고, 대목 중간을 잇는 호출은 빈 목록이다.
   segmentNumbers?: readonly number[],
@@ -271,6 +273,7 @@ async function draftSkeletonWithRetries(
     const violations = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
       ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
+      ...(await findMissingBeats(aiService, coverageBeats, skeleton, options)),
     ];
 
     if (violations.length === 0) {
@@ -301,6 +304,45 @@ async function draftSkeletonWithRetries(
 // (실측 8회차: 97줄). 규약은 곡선 큰따옴표이므로 한 줄 안에서 닫히는 짝을 바꾼다.
 function curlDialogueQuotes(text: string): string {
   return text.replace(/"([^"\n]+)"/g, '“$1”');
+}
+
+// NOTE: 카드의 grounding 이 장면 뒷부분만 적고 비트에 좌표가 없으면 뼈대가 grounding 범위의 사건만
+// 쓰고 나머지 비트를 통째로 버렸다(#117: 11비트 중 3개). 비트와 뼈대의 글자 겹침은 긴 뼈대에서는 우연히
+// 높고 짧은 뼈대에서는 바꿔 쓴 사건도 낮아 판정이 안 되므로, 커버리지 프롬프트(sceneCoverage)에 묻는다.
+// 빠진 사건은 재시도 사유가 되고 끝내 빠지면 경고로 남는다.
+async function findMissingBeats(
+  aiService: Pick<SceneGenerationPipelineAiService, 'checkSceneCoverage'>,
+  beats: readonly string[],
+  skeleton: string,
+  options: GenerateTextOptions,
+): Promise<SectionViolation[]> {
+  if (beats.length === 0) {
+    return [];
+  }
+
+  const issues = await aiService.checkSceneCoverage(beats, skeleton, options);
+  const missing = issues
+    .filter((issue) => issue.status === 'missing')
+    .map((issue) => beats[issue.index - 1])
+    .filter((beat): beat is string => beat !== undefined);
+  if (missing.length === 0) {
+    return [];
+  }
+
+  const listed = missing
+    .slice(0, thinBeatListLimit)
+    .map((text) => `«${shortBeat(text)}»`)
+    .join('·');
+  return [
+    {
+      kind: 'missing-beats',
+      detail: `사건 ${listed}${missing.length > thinBeatListLimit ? ` 외 ${missing.length - thinBeatListLimit}개` : ''}이 뼈대에 없습니다. 사건 목록의 사건을 순서대로 빠짐없이 담으세요`,
+    },
+  ];
+}
+
+function shortBeat(text: string): string {
+  return text.length > 24 ? `${text.slice(0, 24)}…` : text;
 }
 
 const thinBeatListLimit = 6;
@@ -909,6 +951,7 @@ async function draftSkeletonInCalls(input: {
       ctx.tuning,
       plan,
       beats,
+      call.beats.map((beat) => beatText(beats[beat]) ?? ''),
       call.markers,
     );
     parts.push(result.text);
@@ -972,6 +1015,7 @@ const draftSkeletonStage: ISceneStage = {
         ctx.tuning,
         ctx.breakPlan,
         beats,
+        beats.map((beat) => beatText(beat) ?? ''),
       );
       skeleton = {
         text: whole.text,
