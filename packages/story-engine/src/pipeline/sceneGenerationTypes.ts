@@ -21,6 +21,7 @@ export type SceneGenerationPipelineAiService = Pick<
   | 'describeBackground'
   | 'findBackgroundFactConflicts'
   | 'draftSceneSkeleton'
+  | 'checkSceneCoverage'
   | 'polishSceneDialogue'
   | 'attributeSceneDialogue'
   | 'expandSceneSection'

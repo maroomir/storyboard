@@ -87,6 +87,7 @@ const pipelineDefaultsSchema = z.object({
     'too-short': positiveInt,
     'scene-breaks': positiveInt,
     'runs-ahead': positiveInt,
+    'missing-beats': positiveInt,
   }),
 });
 

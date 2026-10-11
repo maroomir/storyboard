@@ -12,6 +12,7 @@ export const sectionViolationKinds = [
   'dialogue-count',
   'scene-breaks',
   'runs-ahead',
+  'missing-beats',
 ] as const;
 
 export type SectionViolationKind = (typeof sectionViolationKinds)[number];
