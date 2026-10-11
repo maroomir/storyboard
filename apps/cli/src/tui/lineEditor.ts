@@ -1,5 +1,5 @@
 import { useInput, type Key } from 'ink';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export interface LineEditorOptions {
   readonly isActive: boolean;
@@ -16,6 +16,11 @@ export interface HistorySearch {
   // Index into the history of the line that matches, if any does.
   readonly matchIndex?: number;
   readonly match?: string;
+}
+
+interface EditorLine {
+  readonly value: string;
+  readonly cursor: number;
 }
 
 export interface LineEditorState {
@@ -48,8 +53,16 @@ export function findHistoryMatch(
 // the history, Tab takes a suggestion, Ctrl+R searches the history, Esc closes the list and then
 // clears the line, Ctrl+C leaves. Enough for a prompt; not a text area.
 export function useLineEditor(options: LineEditorOptions): LineEditorState {
-  const [value, setValue] = useState('');
-  const [cursor, setCursor] = useState(0);
+  const [line, setLine] = useState<EditorLine>({ value: '', cursor: 0 });
+  // NOTE: Keys can arrive faster than React re-renders and re-subscribes the handler (a CI runner
+  // typed `draft show` as `draft how`), so a handler that read the line from its closure would
+  // build on a value the previous key already replaced. The handler reads and writes this ref;
+  // the state only drives rendering.
+  const latestLine = useRef(line);
+  const setLineNow = (next: EditorLine): void => {
+    latestLine.current = next;
+    setLine(next);
+  };
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | undefined>(undefined);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
@@ -83,21 +96,20 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
   };
 
   const replace = (next: string): void => {
-    setValue(next);
-    setCursor(next.length);
+    setLineNow({ value: next, cursor: next.length });
     setSelectedSuggestion(0);
     setIsDismissed(false);
   };
 
   const edit = (next: string, nextCursor: number): void => {
-    setValue(next);
-    setCursor(nextCursor);
+    setLineNow({ value: next, cursor: nextCursor });
     setSelectedSuggestion(0);
     setIsDismissed(false);
   };
 
   useInput(
     (input, key) => {
+      const { value, cursor } = latestLine.current;
       if (key.ctrl && input === 'c') {
         options.onExit();
         return;
@@ -181,12 +193,12 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
       }
 
       if (key.leftArrow) {
-        setCursor((position) => Math.max(0, position - 1));
+        setLineNow({ value, cursor: Math.max(0, cursor - 1) });
         return;
       }
 
       if (key.rightArrow) {
-        setCursor((position) => Math.min(value.length, position + 1));
+        setLineNow({ value, cursor: Math.min(value.length, cursor + 1) });
         return;
       }
 
@@ -206,8 +218,8 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
   );
 
   return {
-    value,
-    cursor,
+    value: line.value,
+    cursor: line.cursor,
     selectedSuggestion,
     isSuggestionOpen,
     ...(search === undefined ? {} : { search }),

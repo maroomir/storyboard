@@ -254,7 +254,7 @@ describe('draft reader', () => {
     expect(isClosed).toBe(true);
   });
 
-  it('opens a shown draft in the reader instead of the log', async () => {
+  async function writeReadableDraft(): Promise<void> {
     await dispatch(['init', '--title', '읽기'], {
       version: '0',
       cwd,
@@ -276,6 +276,10 @@ describe('draft reader', () => {
         body,
       }),
     );
+  }
+
+  it('opens a shown draft in the reader instead of the log', async () => {
+    await writeReadableDraft();
     const { lastFrame, stdin } = render(
       <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
     );
@@ -288,6 +292,24 @@ describe('draft reader', () => {
     expect(lastFrame()).toContain('draft/01-a.md ·');
     expect(lastFrame()).toContain('q 닫기');
     expect(lastFrame()).toContain('"누구세요?"');
+  });
+
+  // Keys can arrive faster than a render (a slow CI runner typed `draft show` as `draft how`): the
+  // editor must not read the line from a closure that a previous key already made stale.
+  it('keeps every key when they arrive faster than a render', async () => {
+    await writeReadableDraft();
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    for (const key of 'draft show 01-a') {
+      stdin.write(key);
+    }
+    stdin.write('\r');
+    await wait(400);
+
+    expect(lastFrame()).toContain('draft/01-a.md ·');
   });
 });
 
