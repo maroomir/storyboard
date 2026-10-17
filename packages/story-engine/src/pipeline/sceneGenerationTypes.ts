@@ -22,6 +22,9 @@ export type SceneGenerationPipelineAiService = Pick<
   | 'findBackgroundFactConflicts'
   | 'draftSceneSkeleton'
   | 'checkSceneCoverage'
+  | 'proposeBeatAction'
+  | 'arbitrateBeat'
+  | 'judgeBeat'
   | 'polishSceneDialogue'
   | 'attributeSceneDialogue'
   | 'expandSceneSection'
@@ -30,6 +33,7 @@ export type SceneGenerationPipelineAiService = Pick<
 export type SceneGenerationPipelineStage =
   | 'buildPersonas'
   | 'draftSkeleton'
+  | 'actBeats'
   | 'polishDialogue'
   | 'attributeDialogue'
   | 'expandSection';
@@ -37,6 +41,9 @@ export type SceneGenerationPipelineStage =
 export interface SceneGenerationPipelineTaskProviders {
   readonly personaGeneration?: AiProviderId;
   readonly sceneSkeleton?: AiProviderId;
+  readonly sceneBeatActor?: AiProviderId;
+  readonly sceneBeatArbiter?: AiProviderId;
+  readonly sceneBeatJudge?: AiProviderId;
   readonly sceneDialoguePolish?: AiProviderId;
   readonly sceneDialogueAttribution?: AiProviderId;
   readonly sceneSectionExpansion?: AiProviderId;

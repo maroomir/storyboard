@@ -30,6 +30,11 @@
   "catchphrase": {
     "perBeatLimit": 1
   },
+  "actors": {
+    "retryLimit": 1,
+    "lineMaxChars": 80,
+    "lineMaxSentences": 2
+  },
   "padding": {
     "paragraphRatio": 0.8,
     "paragraphMinimumLength": 40

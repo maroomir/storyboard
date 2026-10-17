@@ -44,6 +44,9 @@ export interface ResolvedSceneGenerationTuning {
   readonly polishLengthLimitRatio: number;
   readonly polishRetryLimit: number;
   readonly catchphrasePerBeatLimit: number;
+  readonly actorRetryLimit: number;
+  readonly actorLineMaxChars: number;
+  readonly actorLineMaxSentences: number;
   readonly paddingParagraphRatio: number;
   readonly paddingParagraphMinimumLength: number;
   readonly voiceSampleLimit: number;
@@ -119,6 +122,9 @@ export function resolveSceneGenerationTuning(
     polishLengthLimitRatio: knob(tuning, 'generation.polish.lengthLimitRatio'),
     polishRetryLimit: knob(tuning, 'generation.polish.retryLimit'),
     catchphrasePerBeatLimit: knob(tuning, 'generation.catchphrase.perBeatLimit'),
+    actorRetryLimit: knob(tuning, 'generation.actors.retryLimit'),
+    actorLineMaxChars: knob(tuning, 'generation.actors.lineMaxChars'),
+    actorLineMaxSentences: knob(tuning, 'generation.actors.lineMaxSentences'),
     paddingParagraphRatio: knob(tuning, 'generation.padding.paragraphRatio'),
     paddingParagraphMinimumLength: knob(tuning, 'generation.padding.paragraphMinimumLength'),
     voiceSampleLimit: knob(tuning, 'generation.voiceSamples.limit'),

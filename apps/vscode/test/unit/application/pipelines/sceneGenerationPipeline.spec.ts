@@ -77,6 +77,9 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly findBackgroundFactConflicts: ReturnType<typeof vi.fn>
   readonly draftSceneSkeleton: ReturnType<typeof vi.fn>
   readonly checkSceneCoverage: ReturnType<typeof vi.fn>
+  readonly proposeBeatAction: ReturnType<typeof vi.fn>
+  readonly arbitrateBeat: ReturnType<typeof vi.fn>
+  readonly judgeBeat: ReturnType<typeof vi.fn>
   readonly polishSceneDialogue: ReturnType<typeof vi.fn>
   readonly attributeSceneDialogue: ReturnType<typeof vi.fn>
   readonly expandSceneSection: ReturnType<typeof vi.fn>
@@ -87,6 +90,12 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
     findBackgroundFactConflicts: vi.fn(async () => []),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
     checkSceneCoverage: vi.fn(async () => []),
+    proposeBeatAction: vi.fn(async (input) => proposalFor((input as { character: { name: string } }).character.name)),
+    arbitrateBeat: vi.fn(async (input) => ({
+      choice: "[선택]",
+      passage: `대목 ${(input as { beat: { number: number } }).beat.number} 본문 “대사 ${(input as { beat: { number: number } }).beat.number}입니다.”`
+    })),
+    judgeBeat: vi.fn(async (input) => verdictFor((input as { characters: readonly { name: string }[] }).characters.map((c) => c.name))),
     polishSceneDialogue: vi.fn(async () => polishResponse([])),
     attributeSceneDialogue: vi.fn(async (input) =>
       (input as { lines: readonly string[] }).lines.map((_, offset) => ({
@@ -95,6 +104,35 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
       }))
     ),
     expandSceneSection: vi.fn(async () => longProse("살붙인 본문"))
+  }
+}
+
+function proposalFor(name: string): { inner: string; options: readonly { strategy: string; action: string; lines: readonly string[] }[] } {
+  return {
+    inner: `${name}의 속마음`,
+    options: [
+      { strategy: "밀기", action: `${name}이 다가선다`, lines: [`${name}의 대사.`] },
+      { strategy: "물러서기", action: `${name}이 물러선다`, lines: [] }
+    ]
+  }
+}
+
+function verdictFor(
+  names: readonly string[],
+  score = 5
+): {
+  scores: readonly { name: string; score: number; reason: string; avoid: string }[]
+  isBeatCovered: boolean
+  beatMissing: string
+  earlyMaterial: string
+  repeats: string
+} {
+  return {
+    scores: names.map((name) => ({ name, score, reason: "", avoid: "" })),
+    isBeatCovered: true,
+    beatMissing: "",
+    earlyMaterial: "",
+    repeats: ""
   }
 }
 
@@ -1870,6 +1908,172 @@ describe("출연진은 씬 전체 기준으로 판정한다", () => {
     })
 
     expect(violations.map((violation) => violation.kind)).toContain("cast")
+  })
+})
+
+describe("runSceneGenerationPipeline — 배우 뼈대 단계", () => {
+  const actedStages = ["buildPersonas", "describeBackground", "actBeats", "expandSection"] as const
+  const beats = [
+    { text: "엘리아가 창고 문을 연다", cast: ["elia"], place: "창고", time: "밤 9시" },
+    { text: "지훈이 편지를 내민다", cast: ["elia", "jihoon"], place: "창고", time: "밤 9시 5분" },
+    { text: "지훈이 부두로 나간다", cast: ["jihoon"], place: "부두", time: "밤 9시 20분" }
+  ]
+
+  // 모의 살붙임은 뼈대의 대사를 옮기지 않아 구간 경고가 따라붙는다. 이 단계의 경고만 본다.
+  const stageWarnings = (warnings: readonly string[]): string[] =>
+    warnings.filter((warning) => warning.startsWith("배우 뼈대"))
+
+  function actedContext(cardBeats: typeof beats | null = beats): SceneContext {
+    const scene = {
+      ...sceneFile("엘리아와 지훈이 창고에 있다."),
+      card: { type: "scene", id: "01-opening", endState: "지훈이 사라진다.", ...(cardBeats ? { beats: cardBeats } : {}) }
+    } as SceneFile
+    return { scene, characters: [eliaCard, jihoonCard] }
+  }
+
+  it("asks each cast member, then the arbiter and the judge, once per beat, and assembles a marked skeleton", async () => {
+    const progress: [SceneGenerationPipelineStage, number, number][] = []
+    const ai = createRecordingAiService()
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: actedContext(),
+      aiService: ai,
+      format: "novel",
+      characterKnowledge: new Map([["지훈", ["엘리아가 편지를 기다린다"]]]),
+      styleDirective: { narration: { person: "first", focal: "엘리아" } },
+      onProgress: (stage, current, total) => progress.push([stage, current, total]),
+      stages: actedStages
+    })
+
+    expect(progress.filter(([stage]) => stage === "actBeats")).toEqual([["actBeats", 1, 3], ["actBeats", 2, 3], ["actBeats", 3, 3]])
+    expect(ai.draftSceneSkeleton).not.toHaveBeenCalled()
+    expect(ai.proposeBeatAction).toHaveBeenCalledTimes(4)
+    expect(ai.arbitrateBeat).toHaveBeenCalledTimes(3)
+    expect(ai.judgeBeat).toHaveBeenCalledTimes(3)
+
+    const secondBeatActors = ai.proposeBeatAction.mock.calls
+      .map((call) => call[0] as { character: { name: string; knowledge: readonly string[]; witnessed?: string }; beat: { number: number; coordinates?: string }; nextBeats: readonly { number: number }[] })
+      .filter((input) => input.beat.number === 2)
+    expect(secondBeatActors.map((input) => input.character.name)).toEqual(["엘리아", "지훈"])
+    expect(secondBeatActors[1]?.character.knowledge).toEqual(["엘리아가 편지를 기다린다"])
+    expect(secondBeatActors[1]?.character.witnessed).toBe("")
+    expect(secondBeatActors[0]?.character.witnessed).toContain("대목 1 본문")
+    expect(secondBeatActors[0]?.beat.coordinates).toBe("출연: 엘리아, 지훈 / 장소: 창고 / 시각: 밤 9시 5분")
+    expect(secondBeatActors[0]?.nextBeats.map((beat) => beat.number)).toEqual([3])
+
+    const arbiterInputs = ai.arbitrateBeat.mock.calls.map((call) => call[0] as { innerCharacter?: string; endState?: string; priorPassages?: string; proposals: readonly { name: string }[] })
+    expect(arbiterInputs[0]).toMatchObject({ innerCharacter: "엘리아" })
+    expect(arbiterInputs[2]?.innerCharacter).toBeUndefined()
+    expect(arbiterInputs[2]).toMatchObject({ endState: "지훈이 사라진다." })
+    expect(arbiterInputs[1]?.proposals.map((proposal) => proposal.name)).toEqual(["엘리아", "지훈"])
+    expect(arbiterInputs[1]?.priorPassages).toContain("[대목 1]")
+
+    expect(result.skeleton).toBe(["대목 1 본문 “대사 1입니다.”", "대목 2 본문 “대사 2입니다.”", "---", "대목 3 본문 “대사 3입니다.”"].join("\n\n"))
+    expect(result.sceneCoordinates).toEqual([
+      "1. 시각: 밤 9시 / 장소: 창고 / 있는 사람: 엘리아",
+      "2. 시각: 밤 9시 20분 / 장소: 부두 / 있는 사람: 지훈"
+    ])
+    expect(stageWarnings(result.warnings)).toEqual([])
+    expect(result.draftBody).toContain("살붙인 본문")
+  })
+
+  it("re-arbitrates once with the judge's reasons and warns when they remain", async () => {
+    const ai = createRecordingAiService()
+    ai.judgeBeat.mockImplementation(async (input) => {
+      const names = (input as { characters: readonly { name: string }[] }).characters.map((c) => c.name)
+      return (input as { beat: { number: number } }).beat.number === 2
+        ? { ...verdictFor(names, 2), scores: [{ name: "지훈", score: 2, reason: "모르는 사실을 말함", avoid: "먼저 밝히기" }] }
+        : verdictFor(names)
+    })
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: actedContext(),
+      aiService: ai,
+      format: "novel",
+      stages: actedStages
+    })
+
+    expect(ai.arbitrateBeat).toHaveBeenCalledTimes(4)
+    expect((ai.arbitrateBeat.mock.calls[2]?.[0] as { retryReasons?: readonly string[] }).retryReasons).toEqual([
+      "지훈: 모르는 사실을 말함 → 피할 것: 먼저 밝히기"
+    ])
+    expect(stageWarnings(result.warnings)).toEqual(["배우 뼈대 2번 대목: 지훈: 모르는 사실을 말함 → 피할 것: 먼저 밝히기"])
+
+    const thirdBeatActor = ai.proposeBeatAction.mock.calls
+      .map((call) => call[0] as { character: { name: string; notes?: readonly string[] }; beat: { number: number } })
+      .find((input) => input.beat.number === 3)
+    expect(thirdBeatActor?.character.notes).toEqual(["먼저 밝히기"])
+  })
+
+  it("re-arbitrates when a character's catchphrases exceed the per-beat cap, unless the beat quotes them", async () => {
+    const ai = createRecordingAiService()
+    ai.arbitrateBeat.mockImplementation(async () => ({ choice: "", passage: "“뭐 별거는 아닌데.” “뭐 별거는 아닌데, 진짜.”" }))
+    const talkative: CharacterCard = { ...eliaCard, catchphrases: ["뭐 별거는 아닌데"] }
+    const context = { ...actedContext([
+      { text: "엘리아가 말을 돌린다", cast: ["elia"], place: "창고", time: "밤" },
+      { text: '엘리아가 "뭐 별거는 아닌데"를 두 번 되뇐다', cast: ["elia"], place: "창고", time: "밤" }
+    ]), characters: [talkative, jihoonCard] }
+
+    const result = await runSceneGenerationPipeline({ sceneStem: "01-opening", context, aiService: ai, format: "novel", stages: actedStages })
+
+    expect(ai.arbitrateBeat).toHaveBeenCalledTimes(3)
+    expect(stageWarnings(result.warnings)).toHaveLength(1)
+    expect(stageWarnings(result.warnings)[0]).toContain("배우 뼈대 1번 대목")
+    expect(stageWarnings(result.warnings)[0]).toContain("입버릇")
+  })
+
+  it("asks an actor again when a proposed line breaks the length cap", async () => {
+    const ai = createRecordingAiService()
+    ai.proposeBeatAction.mockImplementationOnce(async () => ({
+      inner: "",
+      options: [{ strategy: "연설", action: "", lines: ["가".repeat(81)] }]
+    }))
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: actedContext([{ text: "엘리아가 입을 연다", cast: ["elia"], place: "창고" }]),
+      aiService: ai,
+      format: "novel",
+      stages: actedStages
+    })
+
+    expect(ai.proposeBeatAction).toHaveBeenCalledTimes(2)
+    expect((ai.proposeBeatAction.mock.calls[1]?.[0] as { overlongLines?: readonly string[] }).overlongLines).toEqual([
+      `선택지 1: "${"가".repeat(81)}" (81자)`
+    ])
+  })
+
+  it("falls back to the skeleton call, with a warning, when the card has no beats", async () => {
+    const ai = createRecordingAiService()
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: actedContext(null),
+      aiService: ai,
+      format: "novel",
+      stages: actedStages
+    })
+
+    expect(ai.proposeBeatAction).not.toHaveBeenCalled()
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(1)
+    expect(result.skeleton).toBe("뼈대 본문")
+    expect(stageWarnings(result.warnings)).toEqual(["배우 뼈대: 씬 카드에 비트가 없어 뼈대 단계로 대신 썼습니다."])
+  })
+
+  it("stays out of the bundled plan but stands in for the skeleton when a spec names it", () => {
+    expect(sceneDefaultStageIds).not.toContain("actBeats")
+    try {
+      expect(
+        overrideScenePipelinePlan({
+          version: 1,
+          stages: ["buildPersonas", "describeBackground", "actBeats", "polishDialogue", "expandSection"]
+        })
+      ).toEqual(["buildPersonas", "describeBackground", "actBeats", "polishDialogue", "expandSection"])
+    } finally {
+      resetScenePipelinePlan()
+    }
   })
 })
 

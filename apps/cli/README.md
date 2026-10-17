@@ -289,6 +289,20 @@ storyboard config set tasks.sceneSkeleton.model claude-opus-5-5
 storyboard config set tasks.sceneSectionExpansion.model claude-opus-5-5
 ```
 
+The skeleton can also be acted instead of drafted: put `actBeats` in place of `draftSkeleton` in
+`.storyboard/pipelines/scene.yaml` and each beat is played by its cast (one proposal call per
+character), merged by an arbiter and scored by a character judge. It reads better on dialogue-heavy
+scenes and costs several times the calls, so route its three tasks like the skeleton:
+
+```yaml
+version: 1
+stages: [buildPersonas, describeBackground, checkBackgroundFacts, collectVoiceSamples, actBeats, polishDialogue, expandSection, attributeDialogue]
+```
+
+```bash
+storyboard config set tasks.sceneBeatArbiter.model claude-opus-5-5
+```
+
 Every provider Storyboard speaks to is reached with an API key (or runs locally, for `ollama`).
 Subscription CLI providers were removed in 0.9.2: Anthropic, OpenAI and Google all limit a
 subscription or account login to interactive personal use and direct programmatic and bulk

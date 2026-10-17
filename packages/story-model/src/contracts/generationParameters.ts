@@ -148,6 +148,24 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 1, max: 5 },
   },
   {
+    id: 'generation.actors.retryLimit',
+    label: '배우 뼈대 재합침 횟수',
+    kind: 'count',
+    bounds: { min: 0, max: 3 },
+  },
+  {
+    id: 'generation.actors.lineMaxChars',
+    label: '배우 대사 한 줄 글자 상한',
+    kind: 'chars',
+    bounds: { min: 30, max: 300 },
+  },
+  {
+    id: 'generation.actors.lineMaxSentences',
+    label: '배우 대사 한 줄 문장 상한',
+    kind: 'count',
+    bounds: { min: 1, max: 5 },
+  },
+  {
     id: 'generation.padding.paragraphRatio',
     label: '문단 되풀이 유사도',
     kind: 'ratio',

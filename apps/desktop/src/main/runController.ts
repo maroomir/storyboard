@@ -379,6 +379,8 @@ export class RunController {
         return translate(`sceneStage.${stage}`);
       case 'expandSection':
         return translate('sceneStage.expandSection', { current, total });
+      case 'actBeats':
+        return translate('sceneStage.actBeats', { current, total });
       default:
         return translate('sceneStage.other');
     }
