@@ -64,6 +64,12 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       return createMockSceneSkeleton(promptSummary);
     case 'sceneDialoguePolish':
       return createMockDialoguePolish(promptSummary);
+    case 'sceneBeatActor':
+      return createMockBeatProposal(promptSummary);
+    case 'sceneBeatArbiter':
+      return createMockBeatPassage(promptSummary);
+    case 'sceneBeatJudge':
+      return createMockBeatVerdict(promptSummary);
     case 'traitsExtraction':
       return ['- 상황을 관찰하고 차분하게 반응함', '- 대화 속에서 감정을 분명하게 드러냄'].join(
         '\n',
@@ -230,6 +236,46 @@ function createMockDialoguePolish(prompt: string): string {
   });
 
   return JSON.stringify(rewrites);
+}
+
+// 배우 뼈대의 모의 응답. 배우는 전략이 다른 선택지 둘을, 감독은 선택 줄 뒤에 지시문을 되풀이한 대목을,
+// 심판은 이름마다 만점을 돌려주므로 모의 작품은 재합침 없이 한 바퀴를 돈다.
+function createMockBeatProposal(prompt: string): string {
+  const name = /^\[인물\] (.+)$/m.exec(prompt)?.[1]?.trim() ?? '인물';
+
+  return JSON.stringify({
+    inner: `${name}의 모의 속마음입니다.`,
+    options: [
+      { strategy: '밀어붙이기', action: `${name}이(가) 한 발 다가선다.`, lines: ['모의 대사 하나입니다.'] },
+      { strategy: '물러서기', action: `${name}이(가) 시선을 피한다.`, lines: ['모의 대사 둘입니다.'] },
+    ],
+  });
+}
+
+function createMockBeatPassage(prompt: string): string {
+  const directive = /^\[감독 지시 — 대목 (\d+)\]\n(.+)$/m.exec(prompt);
+  const names = [...prompt.matchAll(/^\[배우 제안 — (.+)\]$/gm)].map((match) => match[1]?.trim());
+
+  return [
+    `[선택: ${names.map((name) => `${name}=1`).join(', ')}]`,
+    `[Mock AI: sceneBeatArbiter] ${directive?.[2] ?? prompt}`,
+    '“모의 대사 하나입니다.”',
+  ].join('\n');
+}
+
+function createMockBeatVerdict(prompt: string): string {
+  const names = (/^인물 이름: (.+)$/m.exec(prompt)?.[1] ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+
+  return JSON.stringify({
+    scores: names.map((name) => ({ name, score: 5, reason: '모의 채점', avoid: '' })),
+    beatCovered: true,
+    beatMissing: '',
+    earlyMaterial: '',
+    repeats: '',
+  });
 }
 
 function extractDraftInput(prompt: string): string {

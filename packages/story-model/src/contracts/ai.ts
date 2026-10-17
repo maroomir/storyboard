@@ -44,6 +44,10 @@ export const aiTaskCatalog = [
   { name: 'sceneDialoguePolish', label: '대사 다듬기' },
   { name: 'sceneDialogueAttribution', label: '대사 화자 귀속' },
   { name: 'sceneSectionExpansion', label: '구간 살붙임' },
+  // 배우 뼈대(actBeats): 비트마다 출연 인물이 제안하고, 감독이 엮고, 인물 심판이 채점한다.
+  { name: 'sceneBeatActor', label: '비트 배우 제안' },
+  { name: 'sceneBeatArbiter', label: '비트 감독 합침' },
+  { name: 'sceneBeatJudge', label: '비트 인물 심판' },
   { name: 'traitsExtraction', label: '특성 추출' },
   { name: 'factExtraction', label: '설정 사실 추출' },
   { name: 'cardFactExtraction', label: '카드 후보 추출' },
