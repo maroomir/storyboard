@@ -213,6 +213,27 @@ export class StoryboardAiService {
     return this.sceneAiService.polishSceneDialogue(input, options);
   }
 
+  public async proposeBeatAction(
+    input: Parameters<SceneAiService['proposeBeatAction']>[0],
+    options: GenerateTextOptions = {},
+  ): ReturnType<SceneAiService['proposeBeatAction']> {
+    return this.sceneAiService.proposeBeatAction(input, options);
+  }
+
+  public async arbitrateBeat(
+    input: Parameters<SceneAiService['arbitrateBeat']>[0],
+    options: GenerateTextOptions = {},
+  ): ReturnType<SceneAiService['arbitrateBeat']> {
+    return this.sceneAiService.arbitrateBeat(input, options);
+  }
+
+  public async judgeBeat(
+    input: Parameters<SceneAiService['judgeBeat']>[0],
+    options: GenerateTextOptions = {},
+  ): ReturnType<SceneAiService['judgeBeat']> {
+    return this.sceneAiService.judgeBeat(input, options);
+  }
+
   public async attributeSceneDialogue(
     input: Parameters<SceneAiService['attributeSceneDialogue']>[0],
     options: GenerateTextOptions = {},

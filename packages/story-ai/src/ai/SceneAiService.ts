@@ -14,6 +14,25 @@ import { SceneBeatsPrompt } from './prompts/sceneBeats';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
 import { SceneSkeletonPrompt, type SceneSkeletonInput } from './prompts/sceneSkeleton';
 import {
+  coerceBeatProposal,
+  SceneBeatActorPrompt,
+  type SceneBeatActorInput,
+  type SceneBeatProposal,
+} from './prompts/sceneBeatActor';
+import {
+  SceneBeatArbiterPrompt,
+  splitBeatPassage,
+  type SceneBeatArbiterInput,
+  type SceneBeatPassage,
+} from './prompts/sceneBeatArbiter';
+import { parseBeatJsonObject } from './prompts/sceneBeatBlocks';
+import {
+  coerceBeatVerdict,
+  SceneBeatJudgePrompt,
+  type SceneBeatJudgeInput,
+  type SceneBeatVerdict,
+} from './prompts/sceneBeatJudge';
+import {
   SceneDialogueAttributionPrompt,
   type SceneDialogueAttributionInput,
 } from './prompts/sceneDialogueAttribution';
@@ -249,6 +268,52 @@ export class SceneAiService {
       rewrites: coerceDialogueRewrites(parseJsonArray(response.text)),
       isTruncated: response.isTruncated === true,
     };
+  }
+
+  // 배우 뼈대의 세 호출. 배우와 심판은 JSON 하나를, 감독은 «[선택: …]» 한 줄 뒤 뼈대 본문을 돌려준다.
+  public async proposeBeatAction(
+    input: SceneBeatActorInput,
+    options: GenerateTextOptions = {},
+  ): Promise<SceneBeatProposal | undefined> {
+    const variant = this.gateway.resolvePromptVariant('sceneBeatActor', options);
+    const prompt = SceneBeatActorPrompt.build(input, variant);
+    const response = await this.gateway.generate('sceneBeatActor', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneBeatActorPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneBeatActorPrompt.config.maxTokens,
+    });
+
+    return coerceBeatProposal(parseBeatJsonObject(response.text));
+  }
+
+  public async arbitrateBeat(
+    input: SceneBeatArbiterInput,
+    options: GenerateTextOptions = {},
+  ): Promise<SceneBeatPassage> {
+    const variant = this.gateway.resolvePromptVariant('sceneBeatArbiter', options);
+    const prompt = SceneBeatArbiterPrompt.build({ ...input, style: options.styleDirective }, variant);
+    const response = await this.gateway.generate('sceneBeatArbiter', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneBeatArbiterPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneBeatArbiterPrompt.config.maxTokens,
+    });
+
+    return splitBeatPassage(response.text);
+  }
+
+  public async judgeBeat(
+    input: SceneBeatJudgeInput,
+    options: GenerateTextOptions = {},
+  ): Promise<SceneBeatVerdict | undefined> {
+    const variant = this.gateway.resolvePromptVariant('sceneBeatJudge', options);
+    const prompt = SceneBeatJudgePrompt.build(input, variant);
+    const response = await this.gateway.generate('sceneBeatJudge', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneBeatJudgePrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneBeatJudgePrompt.config.maxTokens,
+    });
+
+    return coerceBeatVerdict(parseBeatJsonObject(response.text));
   }
 
   public async attributeSceneDialogue(
