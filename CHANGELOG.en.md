@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **A pipeline stage can stand in for another.** A required stage named by a catalog row's `replaces` may be left out while that row is enabled, and the order check of a stage that needs the replaced one passes through it; enabling both makes `pipelines/scene.yaml` refuse. An `isOptIn` row stays out of the bundled plan and runs only when a spec names it.
+
 ## [0.13.0] - 2026-10-11
 
 ### Added (structure track)

@@ -13,7 +13,7 @@ import {
   overrideScenePipelinePlan,
   resetScenePipelinePlan,
   resolveScenePipelinePlan,
-  sceneStageIds,
+  sceneDefaultStageIds,
   runSceneGenerationPipeline,
   planSectionCount,
   planSectionTargetLengths,
@@ -1875,7 +1875,7 @@ describe("출연진은 씬 전체 기준으로 판정한다", () => {
 
 describe("runSceneGenerationPipeline — 단계 계획", () => {
   it("runs the bundled stage order when nothing is laid over it", () => {
-    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds)
+    expect(resolveScenePipelinePlan()).toEqual(sceneDefaultStageIds)
   })
 
   it("skips a stage the plan leaves out and hands the skeleton straight to expansion", async () => {
@@ -1930,6 +1930,6 @@ describe("runSceneGenerationPipeline — 단계 계획", () => {
       resetScenePipelinePlan()
     }
 
-    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds)
+    expect(resolveScenePipelinePlan()).toEqual(sceneDefaultStageIds)
   })
 })

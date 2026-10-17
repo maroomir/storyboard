@@ -818,7 +818,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 | `craftContract.json` | 모든 생성 프롬프트에 붙는 작법 계약 기본값(적은 항목만 덮임; `project.json`의 `setting.craftContract`가 그 위에 마지막으로 적용) | `packages/story-model/src/format/craftContract.params.json` |
 | `promptVariants.json` | xs·rich 변형 선택 규칙(압축 프로바이더·모델 패턴·작업, 출력 하한·장문 작업·상위 모델 키워드) | `packages/story-ai/src/ai/prompts/promptVariants.params.json` |
 | `compositionPresets.json` | 구성 프리셋이 만드는 줄기 이름·편 수 | `packages/story-model/src/format/compositionPresets.params.json` |
-| `pipelines/scene.yaml` | 씬 초안 파이프라인의 단계 순서(`version: 1` + `stages` 목록, `{id, enabled: false}` 로 끄기) — 필수 단계는 뺄 수 없고 앞선 단계가 있어야 하는 단계는 순서를 검사 | `sceneStageCatalog`(`packages/story-engine/src/pipeline/sceneStageCatalog.ts`)의 순서 |
+| `pipelines/scene.yaml` | 씬 초안 파이프라인의 단계 순서(`version: 1` + `stages` 목록, `{id, enabled: false}` 로 끄기) — 필수 단계는 뺄 수 없고 앞선 단계가 있어야 하는 단계는 순서를 검사. 카탈로그 행이 `replaces`로 가리키는 필수 단계는 그 행이 켜져 있으면 빠져도 되며(둘을 함께 켜면 거부), `isOptIn` 행은 명세가 이름할 때만 돈다 | `sceneStageCatalog`(`packages/story-engine/src/pipeline/sceneStageCatalog.ts`)의 순서(opt-in 행 제외) |
 | `pipelines/novel.yaml` | 장편 파이프라인의 단계 순서 | `novelStageCatalog`(`packages/story-engine/src/application/novel/novelStageCatalog.ts`)의 순서 |
 
 프롬프트 문구는 Mustache 부분집합(`{{name}}`·`{{#name}}…{{/name}}`·`{{^name}}`·`{{> partial}}`·`{{! }}`)으로 쓰고,

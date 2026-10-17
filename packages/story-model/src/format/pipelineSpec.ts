@@ -30,6 +30,11 @@ export interface PipelineStageDefinition {
   readonly required?: boolean;
   // Stages whose output this one reads; each must be enabled and come earlier.
   readonly requires?: readonly string[];
+  // A stage this one stands in for. With this one enabled, the other's `required` and the
+  // `requires` that name it count as met, and a spec may not enable both.
+  readonly replaces?: string;
+  // Left out of the bundled plan; runs only when a spec names it.
+  readonly isOptIn?: boolean;
 }
 
 export class PipelineSpecError extends Error {
@@ -40,7 +45,8 @@ export class PipelineSpecError extends Error {
       | 'unknown-stage'
       | 'duplicate-stage'
       | 'missing-stage'
-      | 'stage-order',
+      | 'stage-order'
+      | 'stage-conflict',
     message: string,
   ) {
     super(message);
@@ -84,7 +90,12 @@ export function pipelineStageEntries(spec: PipelineSpec): PipelineStageEntry[] {
 }
 
 export function defaultPipelineSpec(catalog: readonly PipelineStageDefinition[]): PipelineSpec {
-  return { version: 1, stages: catalog.map((definition) => definition.id) };
+  return {
+    version: 1,
+    stages: catalog
+      .filter((definition) => definition.isOptIn !== true)
+      .map((definition) => definition.id),
+  };
 }
 
 // The enabled stage ids in run order, or the first reason the spec cannot drive this pipeline.
@@ -112,8 +123,28 @@ export function resolvePipelinePlan(
     }
   }
 
+  // replaced stage id → the enabled stage standing in for it.
+  const standIns = new Map<string, string>();
+
+  for (const id of plan) {
+    const replaces = known.get(id)?.replaces;
+
+    if (replaces === undefined) {
+      continue;
+    }
+
+    if (plan.includes(replaces)) {
+      throw new PipelineSpecError(
+        'stage-conflict',
+        `${id} 단계는 ${replaces} 단계를 대신하므로 둘을 함께 켤 수 없습니다.`,
+      );
+    }
+
+    standIns.set(replaces, id);
+  }
+
   for (const definition of catalog) {
-    if (definition.required && !plan.includes(definition.id)) {
+    if (definition.required && !plan.includes(definition.id) && !standIns.has(definition.id)) {
       throw new PipelineSpecError(
         'missing-stage',
         `빠뜨릴 수 없는 단계입니다: ${definition.id} (${definition.label})`,
@@ -123,7 +154,7 @@ export function resolvePipelinePlan(
 
   for (const [index, id] of plan.entries()) {
     for (const dependency of known.get(id)?.requires ?? []) {
-      const position = plan.indexOf(dependency);
+      const position = plan.indexOf(standIns.get(dependency) ?? dependency);
 
       if (position === -1 || position > index) {
         throw new PipelineSpecError(
