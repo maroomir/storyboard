@@ -246,6 +246,9 @@ async function runAndPersistDraft(
   const pipelineProviders = {
     personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
     sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
+    sceneBeatActor: options.aiGateway.getTaskProvider('sceneBeatActor'),
+    sceneBeatArbiter: options.aiGateway.getTaskProvider('sceneBeatArbiter'),
+    sceneBeatJudge: options.aiGateway.getTaskProvider('sceneBeatJudge'),
     sceneDialoguePolish: options.aiGateway.getTaskProvider('sceneDialoguePolish'),
     sceneDialogueAttribution: options.aiGateway.getTaskProvider('sceneDialogueAttribution'),
     sceneSectionExpansion: options.aiGateway.getTaskProvider('sceneSectionExpansion'),

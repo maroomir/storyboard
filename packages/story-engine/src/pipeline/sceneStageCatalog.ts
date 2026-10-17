@@ -18,6 +18,14 @@ export const sceneStageCatalog = [
     required: true,
     requires: ['buildPersonas', 'describeBackground'],
   },
+  // 뼈대를 비트마다 배우(출연 인물)·감독·인물 심판의 루프로 쓰는 대안. 명세가 이름할 때만 돈다.
+  {
+    id: 'actBeats',
+    label: '배우 뼈대',
+    requires: ['buildPersonas', 'describeBackground'],
+    replaces: 'draftSkeleton',
+    isOptIn: true,
+  },
   { id: 'polishDialogue', label: '대사 다듬기', requires: ['draftSkeleton'] },
   { id: 'expandSection', label: '살붙임', required: true, requires: ['draftSkeleton'] },
   { id: 'attributeDialogue', label: '화자 붙이기', requires: ['expandSection'] },

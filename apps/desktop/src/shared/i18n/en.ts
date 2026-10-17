@@ -172,6 +172,7 @@ export const enMessages: Readonly<Record<MessageKey, string>> = {
   'sceneStage.draftSkeleton': 'drafting the skeleton',
   'sceneStage.polishDialogue': 'polishing dialogue',
   'sceneStage.attributeDialogue': 'attributing dialogue',
+  'sceneStage.actBeats': 'acting beats {current}/{total}',
   'sceneStage.expandSection': 'expanding {current}/{total}',
   'sceneStage.other': 'working',
 

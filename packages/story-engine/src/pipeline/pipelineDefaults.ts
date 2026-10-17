@@ -59,6 +59,15 @@ const pipelineDefaultsSchema = z.object({
     // 인물 하나의 입버릇이 비트 하나에 나와도 되는 횟수. 넘으면 초안 경고만 낸다.
     perBeatLimit: positiveInt,
   }),
+  // 배우 뼈대(actBeats). 값은 2026-10 guerrilla 01 실측 3회에서 정했다 — 재합침은 한 번이면 미해결이 0
+  // 이었고, 대사 80자·2문장 상한이 연설형 턴을 없앴다.
+  actors: z.object({
+    // 심판·입버릇 계수가 반려한 대목을 감독이 다시 엮는 횟수.
+    retryLimit: z.number().int().nonnegative(),
+    // 배우가 내는 대사 한 줄의 글자·문장 상한. 넘기면 그 배우에게 한 번 다시 묻는다.
+    lineMaxChars: positiveInt,
+    lineMaxSentences: positiveInt,
+  }),
   padding: z.object({
     // 같은 문단을 되풀이한 것으로 보는 유사도 임계와, 그 판정에 넣을 최소 문단 길이.
     paragraphRatio: ratio,

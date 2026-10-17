@@ -1,3 +1,4 @@
+export * from './beatActors';
 export * from './dialogueCorpus';
 export * from './dialogueRewrites';
 export * from './draftCandidateValidation';

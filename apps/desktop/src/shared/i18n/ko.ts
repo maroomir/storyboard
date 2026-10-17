@@ -173,6 +173,7 @@ export const koMessages = {
   'sceneStage.draftSkeleton': '뼈대 잡기',
   'sceneStage.polishDialogue': '대사 다듬기',
   'sceneStage.attributeDialogue': '대사 화자 정리',
+  'sceneStage.actBeats': '배우 뼈대 {current}/{total}',
   'sceneStage.expandSection': '살붙이기 {current}/{total}',
   'sceneStage.other': '처리 중',
 

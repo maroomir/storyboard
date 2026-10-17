@@ -9,7 +9,7 @@ import {
   buildCompositionPreset,
   resolveNovelPipelinePlan,
   resolveScenePipelinePlan,
-  sceneStageIds,
+  sceneDefaultStageIds,
 } from '@storyboard/story-engine';
 import {
   novelStageNames,
@@ -280,7 +280,7 @@ describe('loadResourceOverrides', () => {
 
     await loadResourceOverrides(new NodeFileSystem(), []);
 
-    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds);
+    expect(resolveScenePipelinePlan()).toEqual(sceneDefaultStageIds);
     expect(resolveNovelPipelinePlan()).toEqual(novelStageNames);
   });
 
@@ -313,7 +313,7 @@ describe('loadResourceOverrides', () => {
       expect.stringContaining('buildPersonas'),
       expect.stringContaining('YAML'),
     ]);
-    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds);
+    expect(resolveScenePipelinePlan()).toEqual(sceneDefaultStageIds);
   });
 
   it('lists nothing when the directories do not exist', async () => {

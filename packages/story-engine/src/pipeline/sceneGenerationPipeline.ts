@@ -12,8 +12,28 @@ import type {
 import {
   characterCatchphrases,
   type GenerateTextOptions,
+  type SceneBeatCharacter,
+  type SceneBeatDirective,
+  type SceneBeatProposal,
   type SceneDialogueRewrite,
 } from '@storyboard/story-ai';
+import {
+  addBeatNote,
+  assembleActedSkeleton,
+  beatRetryReasons,
+  findBeatCatchphraseOveruse,
+  findOverlongLines,
+  liveBeatNotes,
+  nextActedBeats,
+  planActedBeats,
+  previousPassagesForJudge,
+  priorPassages,
+  shouldNoteScore,
+  toBeatDirective,
+  witnessedPassages,
+  type ActedBeat,
+  type BeatNote,
+} from './beatActors';
 import {
   claimableRewriteText,
   mergeDialogueRewrites,
@@ -1033,38 +1053,205 @@ const draftSkeletonStage: ISceneStage = {
       });
     }
     state.warnings.push(...skeleton.warnings);
+    adoptSkeleton(state, skeleton.text);
+    assertNotCancelled(ctx.shouldCancel);
+  },
+};
 
-    // 전환 자리를 파이프라인이 정한 씬은 장부도 그 대목들이다. 표식이 빠진 대목은 앞 대목에 붙었다.
-    const applied =
-      ctx.breakPlan === undefined
-        ? undefined
-        : applyPlannedSceneBreaks(skeleton.text, ctx.breakPlan);
-    if (applied !== undefined && !applied.hasNoMarkers) {
-      state.skeleton = applied.text;
-      state.sceneCoordinates = { segments: applied.coordinates, isAlignedWithBreaks: true };
-      state.polishedText = state.skeleton;
-      assertNotCancelled(ctx.shouldCancel);
+// 뼈대 본문을 받아 ⟪⟫ 표식을 장부로 옮기고, 다듬기·살붙임이 읽을 자리에 둔다.
+function adoptSkeleton(state: SceneRunState, skeletonText: string): void {
+  const { ctx } = state;
+  // 전환 자리를 파이프라인이 정한 씬은 장부도 그 대목들이다. 표식이 빠진 대목은 앞 대목에 붙었다.
+  const applied =
+    ctx.breakPlan === undefined
+      ? undefined
+      : applyPlannedSceneBreaks(skeletonText, ctx.breakPlan);
+  if (applied !== undefined && !applied.hasNoMarkers) {
+    state.skeleton = applied.text;
+    state.sceneCoordinates = { segments: applied.coordinates, isAlignedWithBreaks: true };
+    state.polishedText = state.skeleton;
+    return;
+  }
+
+  const extracted = extractSceneCoordinates(skeletonText);
+  state.skeleton = extracted.text;
+  const missingCoordinates = countMissingSceneCoordinates(extracted.ledger);
+  if (hasSceneCoordinates(extracted.ledger) && missingCoordinates === 0) {
+    state.sceneCoordinates = extracted.ledger;
+  } else {
+    state.sceneCoordinates = sceneCoordinatesFromBeats(
+      ctx.context.scene.card?.beats,
+      castNameOf(ctx.context),
+    );
+    if (hasSceneCoordinates(extracted.ledger)) {
+      state.warnings.push(
+        `뼈대: 장면 표식이 ${missingCoordinates}곳 빠져 비트의 좌표를 대신 씁니다.`,
+      );
+    }
+  }
+  state.polishedText = state.skeleton;
+}
+
+// NOTE: 뼈대를 한 호출로 쓰는 대신 비트마다 출연 인물(배우)이 자기 페르소나·아는 것·자기가 본
+// 대목만 보고 선택지 둘을 내고, 감독이 하나씩 골라 대목을 엮고, 인물 심판이 채점한다. 낮은 점수·
+// 지시 누락·뒤 대목 선점·입버릇 초과는 감독이 사유를 받아 다시 엮고, 남은 지적은 그 인물의 다음
+// 대목에 «피할 것»으로만 넘어간다. 2026-10 guerrilla 01 실측 3회에서 기존 뼈대를 블라인드로
+// 이겼고(28 vs 19, 29 vs 16 /30) 호출 수는 약 5배다. 비트가 없는 씬은 뼈대 단계로 대신 쓴다.
+const actBeatsStage: ISceneStage = {
+  id: 'actBeats',
+  async run(state) {
+    const { ctx, input } = state;
+    const sourceBeats = ctx.context.scene.card?.beats ?? [];
+    const beats = planActedBeats(sourceBeats, ctx.context.characters);
+
+    if (beats.length === 0) {
+      state.warnings.push('배우 뼈대: 씬 카드에 비트가 없어 뼈대 단계로 대신 썼습니다.');
+      await draftSkeletonStage.run(state);
       return;
     }
 
-    const extracted = extractSceneCoordinates(skeleton.text);
-    state.skeleton = extracted.text;
-    const missingCoordinates = countMissingSceneCoordinates(extracted.ledger);
-    if (hasSceneCoordinates(extracted.ledger) && missingCoordinates === 0) {
-      state.sceneCoordinates = extracted.ledger;
-    } else {
-      state.sceneCoordinates = sceneCoordinatesFromBeats(
-        ctx.context.scene.card?.beats,
-        castNameOf(ctx.context),
+    const optionsFor = (task: keyof SceneGenerationPipelineTaskProviders): GenerateTextOptions =>
+      withAttribution(
+        { ...buildGenerateOptions(ctx.providers, task), styleDirective: ctx.styleDirective },
+        { primary: ctx.sceneRef },
       );
-      if (hasSceneCoordinates(extracted.ledger)) {
-        state.warnings.push(
-          `뼈대: 장면 표식이 ${missingCoordinates}곳 빠져 비트의 좌표를 대신 씁니다.`,
-        );
+    const castName = castNameOf(ctx.context);
+    const catchphrases = characterCatchphrases(ctx.context.characters);
+    const speechToOthers = characterSpeechToOthers(ctx.context.characters);
+    const notes = new Map<string, readonly BeatNote[]>();
+    const passages = new Map<number, string>();
+    const focal = ctx.styleDirective?.narration?.focal;
+
+    const characterFor = (name: string, beat: ActedBeat): SceneBeatCharacter => ({
+      name,
+      persona: state.personasUsed.get(name) ?? '',
+      catchphrases: catchphrases.get(name) ?? [],
+      knowledge: input.characterKnowledge?.get(name) ?? [],
+      speechToOthers: speechToOthers.get(name) ?? [],
+      relationChanges: input.characterRelations?.get(name) ?? [],
+      notes: liveBeatNotes(notes.get(name) ?? [], beat.number),
+      witnessed: witnessedPassages(beats, passages, name),
+    });
+
+    const propose = async (
+      name: string,
+      beat: ActedBeat,
+      directive: SceneBeatDirective,
+      nextBeats: readonly SceneBeatDirective[],
+    ): Promise<SceneBeatProposal | undefined> => {
+      const request = { character: characterFor(name, beat), beat: directive, nextBeats };
+      const caps = {
+        lineMaxChars: ctx.tuning.actorLineMaxChars,
+        lineMaxSentences: ctx.tuning.actorLineMaxSentences,
+      };
+      const first = await ctx.aiService.proposeBeatAction(
+        { ...request, ...caps },
+        optionsFor('sceneBeatActor'),
+      );
+      const overlongLines =
+        first === undefined
+          ? []
+          : findOverlongLines(first, caps.lineMaxChars, caps.lineMaxSentences);
+
+      if (first !== undefined && overlongLines.length === 0) {
+        return first;
       }
+
+      // 못 읽은 제안도, 상한을 넘긴 대사도 한 번만 다시 묻는다. 그래도 넘기면 감독이 자르게 둔다.
+      const second = await ctx.aiService.proposeBeatAction(
+        { ...request, ...caps, overlongLines },
+        optionsFor('sceneBeatActor'),
+      );
+      return second ?? first;
+    };
+
+    for (const [index, beat] of beats.entries()) {
+      ctx.onProgress?.('actBeats', index + 1, beats.length);
+      const directive = toBeatDirective(beat, sourceBeats[index], castName);
+      const nextBeats = nextActedBeats(beats, index).map((next) =>
+        toBeatDirective(next, sourceBeats[next.number - 1], castName),
+      );
+      const isLast = index === beats.length - 1;
+
+      const proposals = await Promise.all(
+        beat.cast.map(async (name) => ({
+          name,
+          proposal: await propose(name, beat, directive, nextBeats),
+        })),
+      );
+      const arbitrate = (retryReasons?: readonly string[]) =>
+        ctx.aiService.arbitrateBeat(
+          {
+            beat: directive,
+            nextBeats,
+            proposals,
+            priorPassages: priorPassages(beats, passages),
+            grounding: ctx.context.scene.frontmatter.grounding,
+            ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
+            previousContext: buildSkeletonContext(
+              ctx.condensedPreviousContext,
+              input.canonFactLines,
+            ),
+            ...(focal !== undefined && beat.cast.includes(focal) ? { innerCharacter: focal } : {}),
+            catchphraseLimit: ctx.tuning.catchphrasePerBeatLimit,
+            ...(isLast ? { endState: ctx.context.scene.card?.endState } : {}),
+            ...(retryReasons === undefined ? {} : { retryReasons }),
+          },
+          optionsFor('sceneBeatArbiter'),
+        );
+      const judge = (passage: string) =>
+        ctx.aiService.judgeBeat(
+          {
+            characters: beat.cast.map((name) => characterFor(name, beat)),
+            beat: directive,
+            nextBeats,
+            previousPassages: previousPassagesForJudge(beats, passages, beat.number),
+            passage,
+          },
+          optionsFor('sceneBeatJudge'),
+        );
+      const review = async (passage: string) => {
+        const verdict = await judge(passage);
+        return {
+          verdict,
+          reasons: beatRetryReasons({
+            verdict,
+            catchphraseOveruse: findBeatCatchphraseOveruse({
+              beat,
+              passage,
+              catchphrases,
+              limit: ctx.tuning.catchphrasePerBeatLimit,
+            }),
+          }),
+        };
+      };
+
+      let merged = await arbitrate();
+      let reviewed = await review(merged.passage);
+
+      for (
+        let attempt = 0;
+        attempt < ctx.tuning.actorRetryLimit && reviewed.reasons.length > 0;
+        attempt += 1
+      ) {
+        merged = await arbitrate(reviewed.reasons);
+        reviewed = await review(merged.passage);
+      }
+
+      if (reviewed.reasons.length > 0) {
+        state.warnings.push(`배우 뼈대 ${beat.number}번 대목: ${reviewed.reasons.join(' / ')}`);
+      }
+      for (const score of reviewed.verdict?.scores ?? []) {
+        if (shouldNoteScore(score.score) && beat.cast.includes(score.name)) {
+          notes.set(score.name, addBeatNote(notes.get(score.name) ?? [], beat.number, score.avoid));
+        }
+      }
+
+      passages.set(beat.number, merged.passage);
+      assertNotCancelled(ctx.shouldCancel);
     }
-    state.polishedText = state.skeleton;
-    assertNotCancelled(ctx.shouldCancel);
+
+    adoptSkeleton(state, assembleActedSkeleton(beats, passages));
   },
 };
 
@@ -1255,6 +1442,7 @@ export const sceneStages: Readonly<Record<SceneStageId, ISceneStage>> = {
   checkBackgroundFacts: checkBackgroundFactsStage,
   collectVoiceSamples: collectVoiceSamplesStage,
   draftSkeleton: draftSkeletonStage,
+  actBeats: actBeatsStage,
   polishDialogue: polishDialogueStage,
   expandSection: expandSectionStage,
   attributeDialogue: attributeDialogueStage,
