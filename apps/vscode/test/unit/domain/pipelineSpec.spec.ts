@@ -12,7 +12,8 @@ const catalog: readonly PipelineStageDefinition[] = [
   { id: "prepare", label: "준비", required: true },
   { id: "draft", label: "초안", required: true, requires: ["prepare"] },
   { id: "polish", label: "다듬기", requires: ["draft"] },
-  { id: "record", label: "기록", requires: ["draft"] }
+  { id: "record", label: "기록", requires: ["draft"] },
+  { id: "act", label: "연기", requires: ["prepare"], replaces: "draft", isOptIn: true }
 ]
 
 describe("pipeline spec", () => {
@@ -58,5 +59,26 @@ describe("pipeline spec", () => {
     expect(() =>
       resolvePipelinePlan({ version: 1, stages: ["prepare", "polish", "draft"] }, catalog)
     ).toThrow("polish 단계는 draft 단계가 먼저")
+  })
+
+  it("leaves an opt-in stage out of the default spec", () => {
+    expect(defaultPipelineSpec(catalog).stages).toEqual(["prepare", "draft", "polish", "record"])
+  })
+
+  it("lets a stage stand in for the required one it replaces, for the stages that need it too", () => {
+    expect(resolvePipelinePlan({ version: 1, stages: ["prepare", "act", "polish"] }, catalog)).toEqual([
+      "prepare",
+      "act",
+      "polish"
+    ])
+    expect(() =>
+      resolvePipelinePlan({ version: 1, stages: ["prepare", "polish", "act"] }, catalog)
+    ).toThrow("polish 단계는 draft 단계가 먼저")
+  })
+
+  it("refuses a stage next to the one it replaces", () => {
+    expect(() =>
+      resolvePipelinePlan({ version: 1, stages: ["prepare", "draft", "act"] }, catalog)
+    ).toThrow("act 단계는 draft 단계를 대신하므로")
   })
 })

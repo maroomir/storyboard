@@ -29,12 +29,19 @@ export const sceneStageIds: readonly SceneStageId[] = sceneStageCatalog.map(
   (definition) => definition.id,
 );
 
+// The bundled plan: every stage but the opt-in ones, which run only when a spec names them.
+export const sceneDefaultStageIds: readonly SceneStageId[] = (
+  sceneStageCatalog as readonly PipelineStageDefinition[]
+)
+  .filter((definition) => definition.isOptIn !== true)
+  .map((definition) => definition.id as SceneStageId);
+
 export function sceneStageLabel(id: SceneStageId): string {
   return sceneStageCatalog.find((definition) => definition.id === id)?.label ?? id;
 }
 
 // The plan in force: the bundled order until an author's spec is laid over it.
-let currentScenePipelinePlan: readonly SceneStageId[] = sceneStageIds;
+let currentScenePipelinePlan: readonly SceneStageId[] = sceneDefaultStageIds;
 
 export function overrideScenePipelinePlan(spec: PipelineSpec): readonly SceneStageId[] {
   currentScenePipelinePlan = resolvePipelinePlan(spec, sceneStageCatalog) as SceneStageId[];
@@ -43,7 +50,7 @@ export function overrideScenePipelinePlan(spec: PipelineSpec): readonly SceneSta
 }
 
 export function resetScenePipelinePlan(): void {
-  currentScenePipelinePlan = sceneStageIds;
+  currentScenePipelinePlan = sceneDefaultStageIds;
 }
 
 export function resolveScenePipelinePlan(): readonly SceneStageId[] {
