@@ -26,6 +26,7 @@ import {
   GenerateDraftUseCase,
   GenerateOutlineUseCase,
   GenerateSceneBeatsUseCase,
+  GenerateStoryStateUseCase,
   ManuscriptAssemblyRepository,
   NarratorCardRepository,
   NoteAbsorbRepository,
@@ -149,6 +150,7 @@ interface EngineGraph {
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
+  readonly generateStoryStateUseCase: GenerateStoryStateUseCase;
   readonly novelPipeline: NovelPipeline;
   readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
@@ -292,19 +294,22 @@ function buildServices(
     logger,
     repository: manuscriptAssemblyRepository,
   });
-  const generateDraftUseCase = new GenerateDraftUseCase({
+  const draftUseCaseDependencies = {
     aiGateway,
     configBridge,
     draftRepository,
     fileSystem,
     generator,
     logger,
-    ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
     projectRepository,
     sceneCacheRepository,
     sceneGroundingGapRepository: new SceneGroundingGapRepository(fileSystem),
     sceneRepository,
     workspaceLocator,
+  };
+  const generateDraftUseCase = new GenerateDraftUseCase({
+    ...draftUseCaseDependencies,
+    ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
   });
   const reviseDraftUseCase = new ReviseDraftUseCase({
     aiProviderRegistry,
@@ -398,6 +403,7 @@ function buildServices(
       logger,
       sceneRepository,
     }),
+    generateStoryStateUseCase: new GenerateStoryStateUseCase(draftUseCaseDependencies),
     novelPipeline: new NovelPipeline({
       aiGateway,
       aiProviderRegistry,

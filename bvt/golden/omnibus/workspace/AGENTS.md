@@ -41,7 +41,8 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
    `storyboard manuscript export`
 
 카드를 고친 뒤에는 `storyboard doctor`가 낡은 씬을 알려 준다. 초안이 여전히 맞으면
-`storyboard state reseal`, 아니면 `storyboard draft generate <stem> --force`.
+`storyboard state reseal`, 아니면 `storyboard draft generate <stem> --force`. 초안은 있는데
+원장이 비어 있으면(원장 이전에 쓴 작품) `storyboard state generate`로 초안에서 세운다.
 
 ## 실행 규칙
 

@@ -641,6 +641,16 @@ export const commandCatalog: readonly CommandSpec[] = [
     ],
   },
   {
+    verb: 'state generate',
+    writesWorkspace: true,
+    group: '초안',
+    usage: 'state generate [<씬 범위>]',
+    summary:
+      '기존 초안에서 이야기 상태 원장을 세웁니다 (원장에 없는 씬만, --force 로 적은 씬을 다시)',
+    flags: ['force'],
+    examples: ['storyboard state generate', 'storyboard state generate 1-12 --force'],
+  },
+  {
     verb: 'state reseal',
     writesWorkspace: true,
     group: '초안',

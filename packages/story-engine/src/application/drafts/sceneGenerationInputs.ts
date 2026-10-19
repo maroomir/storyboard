@@ -287,7 +287,9 @@ async function loadSceneContextBundle(
   }
 
   // 비트는 확정된 사실 시트를 재료로 삼으므로 그 뒤에 뽑는다. 본문에 들어가 inputHash 에도 반영된다.
-  const scene = await resolveSceneBeats(sceneUri, grounded.scene, characterNames, options);
+  const scene = options.skipSceneBeats
+    ? grounded.scene
+    : await resolveSceneBeats(sceneUri, grounded.scene, characterNames, options);
   const context = { ...builtContext, scene };
 
   const chapterDefaults = await readChapterNarrationDefaults(

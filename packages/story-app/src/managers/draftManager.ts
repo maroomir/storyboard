@@ -27,6 +27,9 @@ import type {
   GenerateSceneBeatsRequest,
   GenerateSceneBeatsResult,
   GenerateSceneBeatsUseCase,
+  GenerateStoryStateRequest,
+  GenerateStoryStateResult,
+  GenerateStoryStateUseCase,
   IFileSystem,
   ISceneSidebarRepository,
   ReviseAfterGenerateGate,
@@ -65,6 +68,7 @@ export interface DraftManagerDependencies {
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
+  readonly generateStoryStateUseCase: GenerateStoryStateUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
@@ -195,6 +199,12 @@ export class DraftManager {
   // Records "the cards changed but these drafts stand" in the story-state ledger: the stale entries
   // of the given scenes (all stale ones when left out) are sealed against today's cards and scenes.
   // Returns the scene numbers it resealed.
+  // Builds the story-state ledger from the drafts a work already has: every scene with a draft the
+  // ledger does not know, in number order, or the given scenes again with `force`.
+  public generateStoryState(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
+    return this.deps.generateStoryStateUseCase.execute(request);
+  }
+
   public async resealStoryState(
     workspaceRoot: StoryUri,
     sceneOrders?: readonly number[],
