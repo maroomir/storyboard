@@ -103,37 +103,48 @@ export async function updateStoryStateAfterGeneration(
   aiService: StoryboardAiService,
   draftBody: string,
 ): Promise<void> {
-  const { threadPaths, scene, context, inputHash } = inputs;
-
   try {
-    const previous = await readStoryState(threadPaths.storyState, options.fileSystem);
-    const items = await aiService.updateStoryState(
-      {
-        sceneTitle: scene.stem,
-        draftBody,
-        previousState: formatStoryStateForPrompt(previous, scene.order, draftBody),
-        characterNames: witnessNameLabels(context.characters),
-      },
-      {
-        providerId: options.aiGateway.getTaskProvider('storyStateUpdate'),
-        attribution: { primary: { kind: 'scene', id: scene.stem } },
-      },
-    );
-
-    const mapping = toStoryStateEntries(items, context.characters);
-    if (mapping.unknownWitnesses.length > 0) {
-      options.logger.warn(
-        `${scene.stem}: 이야기 상태의 목격자 이름 ${mapping.unknownWitnesses.join(', ')}이(가) 등장인물 카드와 맞지 않아 그 항목은 씬의 모든 인물이 아는 것으로 기록했습니다. 가명·호칭이면 그 카드의 aliases 에 적어 주세요`,
-      );
-    }
-
-    const merged =
-      items.length === 0
-        ? recordStoryStateScene(previous, scene.order, inputHash)
-        : mergeStoryState(previous, mapping.entries, scene.order, inputHash);
-
-    await writeStoryState(threadPaths.storyState, merged, options.fileSystem);
+    await recordStoryStateFromDraft(inputs, options, aiService, draftBody);
   } catch (error) {
     options.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);
   }
+}
+
+// 초안 본문에서 이 씬의 상태 변화를 뽑아 원장에 합친다. 생성 직후와 기존 초안에서 원장을 세우는
+// 명령이 같은 길을 쓴다. 실패는 던진다 — 어떻게 받을지는 부르는 쪽이 정한다.
+export async function recordStoryStateFromDraft(
+  inputs: SceneGenerationInputs,
+  options: GenerateDraftWorkflowOptions,
+  aiService: StoryboardAiService,
+  draftBody: string,
+): Promise<void> {
+  const { threadPaths, scene, context, inputHash } = inputs;
+
+  const previous = await readStoryState(threadPaths.storyState, options.fileSystem);
+  const items = await aiService.updateStoryState(
+    {
+      sceneTitle: scene.stem,
+      draftBody,
+      previousState: formatStoryStateForPrompt(previous, scene.order, draftBody),
+      characterNames: witnessNameLabels(context.characters),
+    },
+    {
+      providerId: options.aiGateway.getTaskProvider('storyStateUpdate'),
+      attribution: { primary: { kind: 'scene', id: scene.stem } },
+    },
+  );
+
+  const mapping = toStoryStateEntries(items, context.characters);
+  if (mapping.unknownWitnesses.length > 0) {
+    options.logger.warn(
+      `${scene.stem}: 이야기 상태의 목격자 이름 ${mapping.unknownWitnesses.join(', ')}이(가) 등장인물 카드와 맞지 않아 그 항목은 씬의 모든 인물이 아는 것으로 기록했습니다. 가명·호칭이면 그 카드의 aliases 에 적어 주세요`,
+    );
+  }
+
+  const merged =
+    items.length === 0
+      ? recordStoryStateScene(previous, scene.order, inputHash)
+      : mergeStoryState(previous, mapping.entries, scene.order, inputHash);
+
+  await writeStoryState(threadPaths.storyState, merged, options.fileSystem);
 }

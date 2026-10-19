@@ -1411,6 +1411,59 @@ function parseSceneOrders(raw: string): readonly number[] | undefined {
   return [...orders];
 }
 
+// 원장은 생성이 쌓는다. 초안만 있는 작품(원장 이전에 쓴 것, 밖에서 들여온 것)은 그 초안에서 세운다.
+// 씬 하나에 호출 하나이고, 이미 원장에 있는 씬은 --force 없이는 건드리지 않는다.
+const generateState: CommandHandler = async ({ container, args }) => {
+  const rawOrders = args.positionals[0];
+  const sceneOrders = rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
+
+  if (rawOrders !== undefined && sceneOrders === undefined) {
+    return {
+      ok: false,
+      message: `씬 범위를 알아볼 수 없습니다: ${rawOrders}\n  5 · 5-8 · 5,7,9 처럼 적어 주세요.`,
+    };
+  }
+
+  const result = await container.drafts.generateStoryState({
+    workspaceRoot: container.workspaceRoot,
+    ...(sceneOrders === undefined ? {} : { sceneOrders }),
+    force: flagBoolean(args.flags, 'force'),
+    shouldPause: container.pauseRequests.watch(),
+    onProgress: (progress) => {
+      container.progress.update({
+        line: `${progress.current}/${progress.total} ${progress.stem} · 원장 기록`,
+        unit: { current: progress.current, total: progress.total, label: progress.stem },
+        step: '원장 기록',
+      });
+    },
+  });
+
+  const { recorded, kept, withoutDraft, failures, pausedWithRemaining } = result;
+  const summary =
+    `원장에 씬 ${recorded.length}개를 기록했습니다` +
+    (kept.length > 0 ? `, ${kept.length}개는 이미 있어 그대로 둡니다` : '') +
+    (withoutDraft.length > 0 ? `, 초안 없는 씬 ${withoutDraft.length}개는 건너뜁니다` : '') +
+    '.';
+
+  if (pausedWithRemaining !== undefined) {
+    return {
+      ok: false,
+      message: `멈췄습니다: 기록 ${recorded.length}건, 남은 씬 ${pausedWithRemaining}개. 다시 실행하면 이어서 기록합니다.`,
+      data: result,
+    };
+  }
+
+  if (failures.length > 0) {
+    return {
+      ok: false,
+      message: `${failures.length}건 실패 (기록 ${recorded.length}건): ${failures.map((failure) => `${failure.stem} — ${failure.message}`).join(', ')}`,
+      data: result,
+    };
+  }
+
+  return { ok: true, message: summary, data: result };
+};
+
 // 낡음 판정은 옳다. 사람이 "카드는 고쳤지만 이 초안이 맞다"고 판단했을 때 그 판단을 원장에 남기는
 // 유일한 통로이므로, 자동으로 도는 곳이 없고 이 명령만 덮어쓴다.
 const resealState: CommandHandler = async ({ container, args }) => {
@@ -2001,6 +2054,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'draft expand': expandDraft,
   'draft format': applyDraftFormat,
   'draft check': checkDraft,
+  'state generate': generateState,
   'state reseal': resealState,
   'card list': listCards,
   'card show': showCard,

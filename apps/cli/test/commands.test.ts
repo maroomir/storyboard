@@ -728,6 +728,65 @@ describe('git repository', () => {
   });
 });
 
+describe('state generate', () => {
+  function writeScene(stem: string): void {
+    writeFileSync(
+      join(workspace, 'scene', `${stem}.card`),
+      ['type: scene', `id: ${stem}`, 'purpose: 첫 방송', ''].join('\n'),
+    );
+  }
+
+  function writeDraft(stem: string, text: string): void {
+    writeFileSync(join(workspace, 'draft', `${stem}.md`), text);
+  }
+
+  function ledger(): string {
+    return readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8');
+  }
+
+  it('records every scene with a draft in order, and keeps them on a second run', async () => {
+    writeScene('01-first');
+    writeScene('02-second');
+    writeScene('03-third');
+    writeDraft('01-first', '첫 장면.\n');
+    writeDraft('02-second', '둘째 장면.\n');
+
+    const outcome = await run('state generate', args(['state', 'generate']));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.data).toMatchObject({
+      recorded: ['01-first', '02-second'],
+      kept: [],
+      withoutDraft: ['03-third'],
+      failures: [],
+    });
+    expect(ledger()).toContain('<!-- through-scene: 2 -->');
+    expect(ledger()).toMatch(/<!-- scene-input: 1 sha256:[0-9a-f]{64} -->/);
+    expect(ledger()).toMatch(/<!-- scene-input: 2 sha256:[0-9a-f]{64} -->/);
+
+    // 에이전트가 반복 실행해도 안전해야 한다: 이미 있는 씬은 호출 없이 그대로 둔다.
+    const again = await run('state generate', args(['state', 'generate']));
+    expect(again.ok).toBe(true);
+    expect(again.data).toMatchObject({ recorded: [], kept: ['01-first', '02-second'] });
+  });
+
+  it('re-records only the named scenes with --force and refuses a range it cannot read', async () => {
+    writeScene('01-first');
+    writeScene('02-second');
+    writeDraft('01-first', '첫 장면.\n');
+    writeDraft('02-second', '둘째 장면.\n');
+    await run('state generate', args(['state', 'generate']));
+
+    const forced = await run('state generate', args(['state', 'generate'], { force: true }, ['1']));
+    expect(forced.ok).toBe(true);
+    expect(forced.data).toMatchObject({ recorded: ['01-first'], kept: [] });
+
+    const refused = await run('state generate', args(['state', 'generate'], {}, ['8-3']));
+    expect(refused.ok).toBe(false);
+    expect(refused.message).toContain('씬 범위');
+  });
+});
+
 describe('scene plot', () => {
   function writeScene(stem: string, extra: string[] = []): void {
     writeFileSync(
