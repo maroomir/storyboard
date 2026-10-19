@@ -5,7 +5,7 @@ import {
   SceneParseError,
   sceneContextPaths,
   getStoryboardProjectPaths,
-  sceneBeatTexts,
+  type SceneBeat,
 } from '@storyboard/story-model';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -33,10 +33,10 @@ export type GenerateSceneBeatsResult =
   | {
       readonly ok: true;
       readonly kind: 'proposed';
-      readonly beats: readonly string[];
+      readonly beats: readonly SceneBeat[];
       readonly written: boolean;
     }
-  | { readonly ok: true; readonly kind: 'kept'; readonly beats: readonly string[] }
+  | { readonly ok: true; readonly kind: 'kept'; readonly beats: readonly SceneBeat[] }
   | { readonly ok: false; readonly kind: 'failed'; readonly message: string };
 
 // `draft generate` 가 비트 없는 씬에 자동으로 하는 일을 명시적 verb 로 노출한다. 기존 비트는
@@ -56,16 +56,15 @@ export class GenerateSceneBeatsUseCase {
     }
 
     if (hasSceneBeats(scene) && request.force !== true) {
-      return { ok: true, kind: 'kept', beats: sceneBeatTexts(scene.card.beats) };
+      return { ok: true, kind: 'kept', beats: scene.card.beats ?? [] };
     }
 
     const paths = getStoryboardProjectPaths(request.workspaceRoot);
     const context = await buildSceneContext(sceneContextPaths(paths), scene, this.deps.fileSystem);
-    const characterNames = context.characters.map((character) => character.name);
 
-    let beats: string[];
+    let beats: SceneBeat[];
     try {
-      beats = await proposeSceneBeats(request.sceneUri, scene, characterNames, this.deps);
+      beats = await proposeSceneBeats(request.sceneUri, scene, context.characters, this.deps);
     } catch (error) {
       this.deps.logger.error('Failed to propose scene beats', error);
       return { ok: false, kind: 'failed', message: `씬 비트를 전개하지 못했습니다: ${String(error)}` };

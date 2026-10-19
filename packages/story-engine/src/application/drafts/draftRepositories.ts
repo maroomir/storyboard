@@ -2,6 +2,7 @@
 import type {
   StoryUri,
   Draft,
+  SceneBeat,
   SceneFile,
   SceneGrounding,
   StoryboardProject,
@@ -15,7 +16,7 @@ export interface IProjectRepository {
 export interface ISceneRepository {
   read(uri: StoryUri, fileName: string): Promise<SceneFile>;
   writeGrounding(uri: StoryUri, grounding: SceneGrounding): Promise<void>;
-  writeBeats(uri: StoryUri, beats: readonly string[]): Promise<void>;
+  writeBeats(uri: StoryUri, beats: readonly SceneBeat[]): Promise<void>;
 }
 
 export interface IDraftRepository {

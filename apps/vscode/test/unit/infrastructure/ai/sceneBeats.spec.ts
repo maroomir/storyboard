@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { SceneBeatsPrompt } from '@storyboard/story-ai';
+import { coerceExpandedSceneBeats } from '@storyboard/story-model';
 
 describe("SceneBeatsPrompt", () => {
   const base = {
@@ -19,6 +20,14 @@ describe("SceneBeatsPrompt", () => {
     expect(artifact.user).toContain("- 장소: 방송실")
     expect(artifact.user).toContain("[씬 카드]\n[목적]")
     expect(artifact.user).not.toContain("[창작자 요약]")
+  })
+
+  it("asks for a cast, place and time on every beat", () => {
+    const artifact = SceneBeatsPrompt.build(base)
+
+    expect(artifact.system).toContain("비트마다 좌표를 달아라")
+    expect(artifact.system).toContain('[{"text":"…","cast":["이름"],"place":"…","time":"…"}')
+    expect(SceneBeatsPrompt.build(base, "xs").system).toContain("cast")
   })
 
   it("confines beats to the author summary when one exists", () => {
@@ -46,5 +55,22 @@ describe("mock scene beats", () => {
     })
 
     expect(JSON.parse(response.text)).toEqual(["모의 비트 하나", "모의 비트 둘", "모의 비트 셋"])
+  })
+})
+
+describe("coerceExpandedSceneBeats", () => {
+  it("reads object beats with their coordinates and keeps string beats as text only", () => {
+    expect(
+      coerceExpandedSceneBeats(
+        '[{"text":" 문을 연다 ","cast":[" 진아 ", 3, ""],"place":" 방송실 ","time":""}, "둘째", {"cast":["x"]}, {"text":"  "}]'
+      )
+    ).toEqual([
+      { text: "문을 연다", cast: ["진아"], place: "방송실" },
+      { text: "둘째", cast: [] }
+    ])
+  })
+
+  it("returns nothing for a response that is not an array", () => {
+    expect(coerceExpandedSceneBeats("비트를 못 뽑겠다")).toEqual([])
   })
 })

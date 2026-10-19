@@ -16,6 +16,7 @@ export * from './contracts/sceneDialogueAttribution';
 export * from './contracts/sectionViolationKinds';
 export * from './contracts/settingCatalog';
 export * from './contracts/storyStateUpdate';
+export * from './contracts/expandedSceneBeat';
 export * from './contracts/studioAgent';
 export * from './contracts/studioCardSeed';
 export * from './contracts/studioValidation';

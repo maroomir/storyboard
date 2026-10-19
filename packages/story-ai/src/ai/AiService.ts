@@ -27,6 +27,7 @@ import {
   type NoteExtractionResult,
   type NoteExtractionKnownCard,
   type NoteExtractionNote,
+  type ExpandedSceneBeat,
 } from '@storyboard/story-model';
 import { AiTextGateway } from './AiTextGateway';
 import {
@@ -164,7 +165,7 @@ export class StoryboardAiService {
   public async proposeSceneBeats(
     input: Parameters<SceneAiService['proposeSceneBeats']>[0],
     options: GenerateTextOptions = {},
-  ): Promise<string[]> {
+  ): Promise<ExpandedSceneBeat[]> {
     return this.sceneAiService.proposeSceneBeats(input, options);
   }
 

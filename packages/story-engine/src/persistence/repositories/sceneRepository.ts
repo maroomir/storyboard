@@ -1,4 +1,4 @@
-import type { StoryUri, SceneFile, SceneGrounding } from '@storyboard/story-model';
+import type { StoryUri, SceneBeat, SceneFile, SceneGrounding } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
 import { applySceneBeats, applySceneGrounding, readSceneFile } from '@storyboard/story-model';
@@ -13,7 +13,7 @@ export class SceneRepository implements ISceneRepository {
     await this.rewriteScene(uri, (rawScene) => applySceneGrounding(rawScene, grounding));
   }
 
-  public async writeBeats(uri: StoryUri, beats: readonly string[]): Promise<void> {
+  public async writeBeats(uri: StoryUri, beats: readonly SceneBeat[]): Promise<void> {
     await this.rewriteScene(uri, (rawScene) => applySceneBeats(rawScene, beats));
   }
 

@@ -94,7 +94,10 @@ const sceneBackgroundCard = {
 const aiServiceStub = {
   marker: "ai-service",
   proposeSceneGrounding: vi.fn(async () => ({ incident: "제안된 사건" })),
-  proposeSceneBeats: vi.fn(async () => ["첫 비트", "둘째 비트"])
+  proposeSceneBeats: vi.fn(async () => [
+    { text: "첫 비트", cast: [] },
+    { text: "둘째 비트", cast: [] }
+  ])
 }
 
 const pipelineSuccessResult = {
