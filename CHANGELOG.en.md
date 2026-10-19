@@ -18,6 +18,7 @@ after the first public release.
 
 ### Changed
 
+- **Machine-made beats carry coordinates.** The automatic beat step of `draft generate` and `scene plot` now receive, for every beat, who is present (`cast`, as card ids), the `place` and the `time`, and write them to the card. As with hand-written coordinate beats, the skeleton keeps only those people in that place, the pipeline decides the scene breaks (`---`) from the coordinates, and the witness boundary has somewhere to stand. A cast name that matches no card stays as written and is reported by the generation warning and by `doctor`. A beat with no coordinate at all stays a string. The mock provider keeps returning string beats.
 - **The story-state ledger tags witnesses by card names.** `storyStateUpdate` receives the scene's cast with aliases as `[등장인물]` and tags witnesses in that spelling, and the engine accepts one word of a spaced name («카일런» for «카일런 베인») when exactly one card carries it. Facts about a character the prose calls by an alias or a bare given name fall back to "known by everyone" less often, and the remaining mismatch warning says to add that name to the card's `aliases`.
 
 ## [0.13.0] - 2026-10-11

@@ -47,6 +47,8 @@ import {
   type DialogueAttribution,
   listBackgroundFactLines,
   parseJsonArray,
+  coerceExpandedSceneBeats,
+  type ExpandedSceneBeat,
   parseJsonObject,
   readBackgroundFactConflictResponse,
   type BackgroundFactConflict,
@@ -124,7 +126,7 @@ export class SceneAiService {
       readonly beatCount: number;
     },
     options: GenerateTextOptions = {},
-  ): Promise<string[]> {
+  ): Promise<ExpandedSceneBeat[]> {
     const variant = this.gateway.resolvePromptVariant('sceneBeats', options);
     const prompt = SceneBeatsPrompt.build(
       {
@@ -142,7 +144,7 @@ export class SceneAiService {
       maxTokens: options.maxTokens ?? SceneBeatsPrompt.config.maxTokens,
     });
 
-    return toStringList(parseJsonArray(response.text));
+    return coerceExpandedSceneBeats(response.text);
   }
 
   // summary(자유 산문)에서 비어 있는 구조 필드만 제안받는다. 이미 작성된 필드는 모순 방지용
@@ -429,13 +431,6 @@ function toSceneStructureProposal(
   }
 
   return proposal;
-}
-
-function toStringList(parsed: unknown[] | null): string[] {
-  return (parsed ?? [])
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
 }
 
 function toSceneGrounding(

@@ -232,7 +232,10 @@ them to the card before drafting. `scene plot <stem> | --all` runs that step on 
 read the beats before spending a generation: `--dry-run` only prints the proposal, `--all` picks the
 scenes without beats, and existing beats are regenerated only with `--force`. The count is
 `max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))` (defaults 5 and 1,500);
-`generation.beats.auto: false` turns the automatic step off.
+`generation.beats.auto: false` turns the automatic step off. Each proposed beat carries its
+coordinates — who is present (`cast`, written as card ids), `place` and `time` — so the skeleton
+keeps the right people in the right place and the pipeline can decide the scene breaks (`---`)
+from them; a name the model uses that matches no card stays as written and `doctor` reports it.
 
 `draft generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
 `--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it

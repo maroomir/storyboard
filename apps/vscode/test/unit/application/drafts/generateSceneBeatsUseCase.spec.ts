@@ -33,7 +33,11 @@ function createUseCase(sceneFile: unknown): {
   writeBeats: ReturnType<typeof vi.fn>
   useCase: GenerateSceneBeatsUseCase
 } {
-  const proposeSceneBeats = vi.fn(async () => ["첫 비트", "둘째 비트", "셋째 비트"])
+  const proposeSceneBeats = vi.fn(async () => [
+    { text: "첫 비트", cast: [] },
+    { text: "둘째 비트", cast: [] },
+    { text: "셋째 비트", cast: [] }
+  ])
   const writeBeats = vi.fn(async () => undefined)
   const read = vi.fn(async () => {
     if (sceneFile instanceof Error) {
@@ -74,8 +78,29 @@ describe("planSceneBeatCount", () => {
 describe("GenerateSceneBeatsUseCase", () => {
   beforeEach(() => {
     buildSceneContextMock.mockReset().mockResolvedValue({
-      characters: [{ name: "준서" }, { name: "하나" }]
+      characters: [{ id: "junseo", name: "준서" }, { id: "hana", name: "하나", aliases: ["한아"] }]
     })
+  })
+
+  // 좌표가 달린 제안은 객체 비트가 되고 출연 이름은 카드 id 로 바뀐다. 카드와 맞지 않는 이름은 그대로
+  // 남아 생성·doctor 의 «비트 출연» 경고가 잡는다. 좌표 없는 제안은 종전대로 문자열 비트다.
+  it("writes coordinate beats with the cast moved to card ids", async () => {
+    const { useCase, proposeSceneBeats, writeBeats } = createUseCase(scene())
+    proposeSceneBeats.mockResolvedValueOnce([
+      { text: "준서가 문을 연다.", cast: ["준서"], place: "방송실", time: "아침" },
+      { text: "한아가 들어선다.", cast: ["한아", "낯선 이"], place: "방송실" },
+      { text: "좌표 없는 사건.", cast: [] }
+    ])
+
+    const result = await useCase.execute({ workspaceRoot, sceneUri, fileName: "01-intro.card" })
+
+    const beats = [
+      { text: "준서가 문을 연다.", cast: ["junseo"], place: "방송실", time: "아침" },
+      { text: "한아가 들어선다.", cast: ["hana", "낯선 이"], place: "방송실" },
+      "좌표 없는 사건."
+    ]
+    expect(result).toEqual({ ok: true, kind: "proposed", beats, written: true })
+    expect(writeBeats).toHaveBeenCalledWith(sceneUri, beats)
   })
 
   it("proposes beats sized to the target length and writes them to the card", async () => {
