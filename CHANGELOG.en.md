@@ -15,6 +15,10 @@ after the first public release.
 - **An acted-skeleton stage (`actBeats`).** Instead of one skeleton call, every beat is played by its cast: each character proposes two options from its own knowledge and the beats it witnessed, an arbiter picks one per character and writes the passage, and a character judge scores it. Low scores, a missed beat, material pulled from later beats and catchphrases over the per-beat cap send the arbiter back with the reasons, and what remains becomes a draft warning. It is opt-in: `pipelines/scene.yaml` names `actBeats` in place of `draftSkeleton`. Task names are `sceneBeatActor`, `sceneBeatArbiter` and `sceneBeatJudge`; knobs are `generation.actors.*`. The call count is about cast size + 2 per beat instead of one skeleton call.
 - **A pipeline stage can stand in for another.** A required stage named by a catalog row's `replaces` may be left out while that row is enabled, and the order check of a stage that needs the replaced one passes through it; enabling both makes `pipelines/scene.yaml` refuse. An `isOptIn` row stays out of the bundled plan and runs only when a spec names it.
 
+### Changed
+
+- **The story-state ledger tags witnesses by card names.** `storyStateUpdate` receives the scene's cast with aliases as `[등장인물]` and tags witnesses in that spelling, and the engine accepts one word of a spaced name («카일런» for «카일런 베인») when exactly one card carries it. Facts about a character the prose calls by an alias or a bare given name fall back to "known by everyone" less often, and the remaining mismatch warning says to add that name to the card's `aliases`.
+
 ## [0.13.0] - 2026-10-11
 
 ### Added (structure track)

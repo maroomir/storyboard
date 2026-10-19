@@ -6,7 +6,8 @@ describe("StoryStateUpdatePrompt golden", () => {
   const full: StoryStateUpdateInput = {
     sceneTitle: "3. 항구의 밤",
     draftBody: "엘리아가 항구에 도착했다.\n준이 그녀를 맞았다.",
-    previousState: "- facts: 엘리아는 의사다\n- relations: 엘리아와 준은 존댓말"
+    previousState: "- facts: 엘리아는 의사다\n- relations: 엘리아와 준은 존댓말",
+    characterNames: ["엘리아 (별칭: 엘리)", "준"]
   }
   const bare: StoryStateUpdateInput = { sceneTitle: "1. 시작", draftBody: "본문만." }
   const emptyPrevious: StoryStateUpdateInput = { ...bare, previousState: "" }

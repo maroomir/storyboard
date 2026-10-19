@@ -434,6 +434,45 @@ describe("ledger updates after generation", () => {
     expect(mapping.unknownWitnesses).toEqual(["준"])
   })
 
+  // 띄어 쓴 이름의 한 낱말은 그 낱말이 꼭 한 카드만 가리킬 때 그 카드다. 두 카드가 같은 낱말(같은 성)을
+  // 나눠 가지면 어느 쪽인지 알 수 없으므로 종전대로 전원이다.
+  it("matches one word of a spaced name when only one card carries it", () => {
+    const characters = [
+      { id: "kaelen", name: "카일런 베인" },
+      { id: "mira", name: "미라 베인" },
+      { id: "sol", name: "솔" }
+    ]
+
+    const matched = toStoryStateEntries(
+      [{ section: "facts", text: "둘이 본 일", witnesses: ["카일런", "솔"] }],
+      characters
+    )
+    expect(matched.entries[0]?.witnesses).toEqual(["kaelen", "sol"])
+    expect(matched.unknownWitnesses).toEqual([])
+
+    const ambiguous = toStoryStateEntries(
+      [{ section: "facts", text: "성만 적힌 일", witnesses: ["베인"] }],
+      characters
+    )
+    expect(ambiguous.entries[0]?.witnesses).toEqual(["kaelen", "mira", "sol"])
+    expect(ambiguous.unknownWitnesses).toEqual(["베인"])
+  })
+
+  it("hands the model the cast names, with aliases, to tag witnesses by", async () => {
+    const fileSystem = new MemoryWorkspace()
+    const service = aiService([]) as { updateStoryState: ReturnType<typeof vi.fn> }
+    const inputs = {
+      ...(generationInputs(1, hashA) as object),
+      context: { characters: [{ id: "hana", name: "서한아", aliases: ["한서"] }, { id: "jun", name: "준" }] }
+    } as never
+
+    await updateStoryStateAfterGeneration(inputs, generationOptions(fileSystem), service as never, "본문")
+
+    expect(service.updateStoryState.mock.calls[0]?.[0]).toMatchObject({
+      characterNames: ["서한아 (별칭: 한서)", "준"]
+    })
+  })
+
   it("rewinds the later scenes when an earlier one is regenerated", async () => {
     const fileSystem = new MemoryWorkspace()
     fileSystem.write(
