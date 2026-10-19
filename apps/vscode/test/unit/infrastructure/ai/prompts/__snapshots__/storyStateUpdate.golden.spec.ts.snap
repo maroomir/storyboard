@@ -46,7 +46,7 @@ facts 와 revealed 의 항목은 {"text":"…","witnesses":["이름",…]} 꼴�
 
 exports[`StoryStateUpdatePrompt golden > leaves the previous state out for the xs variant 1`] = `
 {
-  "system": "장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략). 본문 근거만, 한국어. 대사 원문 인용 금지.",
+  "system": "장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략, [등장인물]이 있으면 그 표기로). 본문 근거만, 한국어. 대사 원문 인용 금지.",
   "user": "[장면]
 1. 시작
 
@@ -57,7 +57,7 @@ exports[`StoryStateUpdatePrompt golden > leaves the previous state out for the x
 
 exports[`StoryStateUpdatePrompt golden > leaves the previous state out for the xs variant 2`] = `
 {
-  "system": "장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략). 본문 근거만, 한국어. 대사 원문 인용 금지.",
+  "system": "장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략, [등장인물]이 있으면 그 표기로). 본문 근거만, 한국어. 대사 원문 인용 금지.",
   "user": "[장면]
 1. 시작
 
@@ -78,9 +78,13 @@ exports[`StoryStateUpdatePrompt golden > renders every block for the generic var
 본문에 실제로 쓰인 것만 담고 추측하지 마라. 이전 상태에 이미 있는 항목은 다시 쓰지 마라.
 각 항목은 한 문장으로 짧게 쓰고, 항목 수는 종류당 최대 5개로 제한하라.
 facts 와 revealed 의 항목은 {"text":"…","witnesses":["이름",…]} 꼴로 적어라. witnesses 는 그 일이 벌어지는 자리에 있었거나 그것을 알게 된 인물의 이름이다. 그 자리에 없던 인물은 넣지 마라. 장면의 모든 인물이 아는 일이면 witnesses 를 생략해도 된다.
+witnesses 의 이름은 [등장인물]에 적힌 이름 그대로 써라. 본문이 가명·호칭·성을 뺀 이름으로 부르더라도 그 인물의 적힌 이름으로 옮겨라. [등장인물]에 없는 인물은 witnesses 에 넣지 마라.
 설명 없이 JSON 객체만 출력하라.
 {"facts":[{"text":"","witnesses":[""]}],"relations":string[],"revealed":[{"text":"","witnesses":[""]}],"motifs":string[]}",
-  "user": "[이전 상태]
+  "user": "[등장인물]
+엘리아 (별칭: 엘리), 준
+
+[이전 상태]
 - facts: 엘리아는 의사다
 - relations: 엘리아와 준은 존댓말
 
@@ -105,9 +109,13 @@ exports[`StoryStateUpdatePrompt golden > renders every block for the rich varian
 본문에 실제로 쓰인 것만 담고 추측하지 마라. 이전 상태에 이미 있는 항목은 다시 쓰지 마라.
 각 항목은 한 문장으로 짧게 쓰고, 항목 수는 종류당 최대 5개로 제한하라.
 facts 와 revealed 의 항목은 {"text":"…","witnesses":["이름",…]} 꼴로 적어라. witnesses 는 그 일이 벌어지는 자리에 있었거나 그것을 알게 된 인물의 이름이다. 그 자리에 없던 인물은 넣지 마라. 장면의 모든 인물이 아는 일이면 witnesses 를 생략해도 된다.
+witnesses 의 이름은 [등장인물]에 적힌 이름 그대로 써라. 본문이 가명·호칭·성을 뺀 이름으로 부르더라도 그 인물의 적힌 이름으로 옮겨라. [등장인물]에 없는 인물은 witnesses 에 넣지 마라.
 설명 없이 JSON 객체만 출력하라.
 {"facts":[{"text":"","witnesses":[""]}],"relations":string[],"revealed":[{"text":"","witnesses":[""]}],"motifs":string[]}",
-  "user": "[이전 상태]
+  "user": "[등장인물]
+엘리아 (별칭: 엘리), 준
+
+[이전 상태]
 - facts: 엘리아는 의사다
 - relations: 엘리아와 준은 존댓말
 
@@ -122,8 +130,11 @@ facts 와 revealed 의 항목은 {"text":"…","witnesses":["이름",…]} 꼴�
 
 exports[`StoryStateUpdatePrompt golden > renders every block for the xs variant 1`] = `
 {
-  "system": "장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략). 본문 근거만, 한국어. 대사 원문 인용 금지.",
-  "user": "[이전 상태]
+  "system": "장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략, [등장인물]이 있으면 그 표기로). 본문 근거만, 한국어. 대사 원문 인용 금지.",
+  "user": "[등장인물]
+엘리아 (별칭: 엘리), 준
+
+[이전 상태]
 - facts: 엘리아는 의사다
 - relations: 엘리아와 준은 존댓말
 
