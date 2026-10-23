@@ -84,6 +84,7 @@ const fixedExtraction = coerceNoteExtraction({
       sampleLines: ['만조엔 문이 열려. 난 봤어.'],
       attributes: [{ key: 'age', value: '19' }],
       relations: [{ target: '준', type: '소꿉친구' }],
+      canonFacts: [{ key: 'origin', value: '등대지기 집안에서 자랐다' }],
       sourceNotes: ['달의 문/인물/하나.md'],
     },
     {
@@ -312,6 +313,17 @@ describe('notes absorb', () => {
       JSON.parse(readFileSync(join(workspace, '.storyboard', 'memory', 'voiceSeeds.json'), 'utf8')),
     ).toEqual({ characters: { hana: ['만조엔 문이 열려. 난 봤어.'] } });
     expect(outcome.message).toContain('노트의 예시 대사를 말투 표본으로 두었습니다');
+
+    // #55: 노트의 설정 사실은 캐넌에 바로 쓰지 않고 후보로 둔다. canon diff 가 초안 후보와 함께 보인다.
+    expect(outcome.message).toContain('노트의 설정 사실 1건을 정전 후보로 두었습니다');
+    const bibleCache = readdirSync(join(workspace, '.storyboard', 'cache', 'bible'));
+    expect(bibleCache.filter((name) => name.startsWith('notes-'))).toHaveLength(1);
+    const diff = await run('canon diff', args(['canon', 'diff']));
+    expect(diff.data).toEqual([
+      expect.objectContaining({ subject: { kind: 'character', id: 'hana' }, key: 'origin', value: '등대지기 집안에서 자랐다', status: 'candidate' }),
+    ]);
+    const canonPath = join(workspace, '.storyboard', 'bible', 'canon.yaml');
+    expect(existsSync(canonPath) && readFileSync(canonPath, 'utf8').includes('등대지기 집안')).toBe(false);
   });
 
   it('turns notes about an existing card into candidates that card promote applies', async () => {

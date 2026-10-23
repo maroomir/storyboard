@@ -13,6 +13,7 @@ after the first public release.
 ### Added
 
 - **`notes absorb` reads a Notion export zip.** Without an integration token, hand Notion's «Markdown & CSV» export zip to `storyboard notes absorb <zip>` or `init --from-notes <zip>`: the 32-hex ids Notion appends to file and folder names are stripped from titles and paths, and the sub-page tree is read as is. A database CSV is skipped when its rows are pages of their own and otherwise becomes one note listing each row's properties. The zip is read with Node's zlib alone, so no dependency was added. (#56)
+- **Setting facts in the notes become canon candidates.** `notes absorb` now extracts the facts a note states about a character or place that must hold for the whole work (origin, history, the limits of a power, the rules of a place — `canonFacts`), writes them as candidates to `.storyboard/cache/bible/notes-<hash>.json`, lists them in `canon diff`, and lets `canon promote` confirm only what the author picks. A note that holds only world rules is classified as `setting` instead of being reported as unclassified. The canon file itself is never touched by an absorb. (#55)
 
 ### Changed
 

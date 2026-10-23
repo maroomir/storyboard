@@ -9,7 +9,7 @@ reasoningEffort: low
 한 노트에 여러 종류가 섞여 있으면 각각 따로 뽑는다.
 
 notes: 받은 노트마다 한 항목. kinds 에는 그 노트에서 찾은 것을 모두 적는다.
-  "character"(인물), "background"(장소·배경), "scene"(장면·사건 메모), "premise"(작품 전체의 장르·콘셉트·줄거리·분위기), "draft"(이미 소설 문장으로 써 둔 원고·본문), "other"(어디에도 해당 없음).
+  "character"(인물), "background"(장소·배경), "scene"(장면·사건 메모), "premise"(작품 전체의 장르·콘셉트·줄거리·분위기), "setting"(세계관·규칙·내력처럼 작품 내내 지켜야 할 설정 사실), "draft"(이미 소설 문장으로 써 둔 원고·본문), "other"(어디에도 해당 없음).
 entities: 인물과 배경. 같은 대상이 여러 노트에 나오면 하나로 합친다.
   type: "character" 또는 "background".
   name: 노트에 적힌 이름 그대로.
@@ -27,6 +27,8 @@ entities: 인물과 배경. 같은 대상이 여러 노트에 나오면 하나�
     sampleLines: 노트에 따옴표로 적힌 이 인물의 대사. 고치거나 요약하지 말고 한 줄에 하나씩 그대로 옮기되 따옴표는 뺀다. 노트에 없으면 비워 둔다.
     attributes: 나이·성별·직업처럼 키와 값으로 적히는 사실.
     relations: 다른 인물과의 관계. target 은 상대의 이름.
+  인물과 배경 모두에 적는 것:
+    canonFacts: 작품 내내 참이어야 하고 다른 장면이 어기면 안 되는 이 대상의 설정 사실 — 출신·내력·능력의 한계·장소의 규칙. key 는 짧은 이름, value 는 한 문장. 노트에 그런 규칙이 있을 때만 적고, attributes 와 겹치는 것은 되풀이하지 마라.
   배경(background)에만 적는 것:
     배경은 장면의 무대가 되는 장소 하나에 카드 하나다. 그 안의 가게·방·시설은 따로 만들지 말고 그 장소의 description 에 적는다.
     거실·교실·운동장처럼 [기존 카드]에 있는 장소의 한 부분이면 새 배경을 만들지 말고 그 장소의 existingId 로 적는다.
@@ -46,7 +48,7 @@ scenes: 장면 메모 노트 하나당 장면 하나. 노트를 받은 순서대
 premise: 작품 전체에 관한 문장을 노트에서 옮긴 목록 (장르, 독자, 시점, 콘셉트, 줄거리, 결말, 주제, 분위기, 문체 규칙).
 
 모르는 값은 생략하거나 빈 배열로 둔다. 설명 없이 JSON 객체 하나만 출력하라.
-{"notes":[{"id":"","kinds":["other"]}],"entities":[{"type":"character","name":"","suggestedId":"","role":"extra","aliases":[],"description":[],"traits":[],"tags":[],"voice":[],"sampleLines":[],"desire":[],"attributes":[{"key":"","value":""}],"relations":[{"target":"","type":""}],"sourceNotes":[]},{"type":"background","name":"","suggestedId":"","aliases":[],"description":[],"tags":[],"senses":[],"time":"","weather":"","characterNames":[],"sourceNotes":[]}],"scenes":[{"title":"","slug":"","summary":"","beats":[],"characterNames":[],"locationName":"","sourceNote":""}],"premise":[]}
+{"notes":[{"id":"","kinds":["other"]}],"entities":[{"type":"character","name":"","suggestedId":"","role":"extra","aliases":[],"description":[],"traits":[],"tags":[],"voice":[],"sampleLines":[],"desire":[],"attributes":[{"key":"","value":""}],"relations":[{"target":"","type":""}],"canonFacts":[{"key":"","value":""}],"sourceNotes":[]},{"type":"background","name":"","suggestedId":"","aliases":[],"description":[],"tags":[],"senses":[],"time":"","weather":"","characterNames":[],"canonFacts":[],"sourceNotes":[]}],"scenes":[{"title":"","slug":"","summary":"","beats":[],"characterNames":[],"locationName":"","sourceNote":""}],"premise":[]}
 
 ## user
 {{#hasKnownCards}}

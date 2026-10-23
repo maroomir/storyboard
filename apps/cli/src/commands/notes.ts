@@ -155,6 +155,12 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     );
   }
 
+  if (outcome.canonCandidates > 0) {
+    lines.push(
+      `노트의 설정 사실 ${outcome.canonCandidates}건을 정전 후보로 두었습니다 (.storyboard/cache/bible/): storyboard canon diff · canon promote`,
+    );
+  }
+
   if (outcome.filledSettingKeys.length > 0) {
     lines.push(
       `작품 계약의 빈 칸을 채웠습니다: ${outcome.filledSettingKeys.map((key) => settingLabels[key] ?? key).join(', ')}`,

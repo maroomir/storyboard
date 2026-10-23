@@ -4,7 +4,16 @@ import { characterRoles } from '#model/format/card';
 
 // What a note may hold. `other` alone means nothing in the note belongs in the workspace; `draft` is
 // prose already written, which gives cards and premise but never a scene.
-export const noteKinds = ['character', 'background', 'scene', 'premise', 'draft', 'other'] as const;
+// 'setting' 은 세계관·규칙만 적힌 노트다 — 그 사실은 카드가 아니라 정전 후보로 간다(#55).
+export const noteKinds = [
+  'character',
+  'background',
+  'scene',
+  'premise',
+  'setting',
+  'draft',
+  'other',
+] as const;
 
 export type NoteKind = (typeof noteKinds)[number];
 
@@ -102,6 +111,10 @@ const noteEntitySchema = z.object({
   ),
   relations: recordList(
     z.object({ target: z.string().trim().min(1), type: z.string().trim().min(1) }),
+  ),
+  // 작품 내내 참이어야 하는 이 대상의 설정 사실. 카드 필드가 아니라 정전(canon) 후보가 된다.
+  canonFacts: recordList(
+    z.object({ key: z.string().trim().min(1), value: z.string().trim().min(1) }),
   ),
   senses: textList(),
   time: optionalText,

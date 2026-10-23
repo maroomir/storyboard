@@ -207,6 +207,9 @@ first and asks before writing; an agent passes `--yes`, and `--dry-run` stops at
 that already exist are never overwritten — what the notes add to them waits for `card promote`,
 and absorbing more notes adds to what is waiting rather than replacing it. Where two notes give one
 slot different values, `card promote` holds it back and `card discard <id> --change <ref>` keeps one.
+Setting facts the notes state about a character or a place (origin, history, the limits of a power,
+the rules of a place) are never written to the canon: they wait as candidates for `canon promote`,
+listed by `canon diff` beside the facts the drafts proposed.
 A Notion page needs an integration token once (`notes connect notion`) and the page shared with
 that integration. Without a token, export the page from Notion as «Markdown & CSV» and hand the
 zip to the same verb: page and folder names lose their trailing ids, sub-pages keep their tree, and

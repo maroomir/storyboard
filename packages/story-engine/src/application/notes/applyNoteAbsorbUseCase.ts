@@ -12,6 +12,7 @@ import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/applicat
 import {
   addNoteCandidateSource,
   applyCardCollectProposals,
+  buildCandidateFact,
   emptyNoteCandidateFile,
   mergeNoteCandidateSources,
   mergeNoteSynopsisCandidate,
@@ -45,6 +46,8 @@ export interface ApplyNoteAbsorbOutcome {
   readonly settingProposals: NoteSynthesisSetting;
   // Characters whose quoted lines from the notes became voice samples.
   readonly seededCharacters: readonly string[];
+  // Setting facts offered to `canon promote`; never written to the canon here.
+  readonly canonCandidates: number;
 }
 
 export type ApplyNoteAbsorbResult = ApplyNoteAbsorbOutcome | UseCaseFailure;
@@ -75,9 +78,33 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       if (seededCharacters.length > 0) {
         await this.deps.noteRepository.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
       }
+      const canonCandidates = await this.applyCanonCandidates(request);
 
-      return { ok: true as const, ...cards, ...scenes, synopsis, ...setting, seededCharacters };
+      return {
+        ok: true as const,
+        ...cards,
+        ...scenes,
+        synopsis,
+        ...setting,
+        seededCharacters,
+        canonCandidates,
+      };
     });
+  }
+
+  // The notes' setting facts become one candidate record for this location (#55). Re-absorbing the
+  // location replaces it; a plan with none clears it.
+  private async applyCanonCandidates(request: ApplyNoteAbsorbRequest): Promise<number> {
+    const facts = request.plan.canonCandidates.map((candidate) =>
+      buildCandidateFact(candidate.subject, candidate.key, candidate.value),
+    );
+    await this.deps.noteRepository.saveCanonCandidates(
+      request.workspaceRoot,
+      request.location,
+      facts,
+    );
+
+    return facts.length;
   }
 
   private async applyCards(request: ApplyNoteAbsorbRequest): Promise<{

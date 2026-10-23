@@ -5,6 +5,7 @@ import type {
   NoteExtractionScene,
 } from '#model/contracts/noteExtraction';
 import type { NoteSynthesis, NoteSynthesisSetting } from '#model/contracts/noteSynthesis';
+import type { BibleFactSubject } from '#model/format/bible';
 import { cardIdPattern, type StoryboardCard } from '#model/format/card';
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
 import { sceneFileNamePattern, type SceneCard, type SceneFile } from '#model/format/scene';
@@ -49,6 +50,15 @@ export interface UnclassifiedNote {
   readonly title: string;
 }
 
+// A setting fact the notes state about a card: never written to the canon, only offered as a
+// candidate for `canon promote` to confirm (#55). The subject is the card the entity became.
+export interface NoteCanonCandidate {
+  readonly subject: BibleFactSubject;
+  readonly key: string;
+  readonly value: string;
+  readonly sourceNotes: readonly string[];
+}
+
 export interface NoteAbsorbPlan {
   readonly cards: readonly NoteCardPlan[];
   readonly scenes: readonly NoteScenePlan[];
@@ -61,6 +71,7 @@ export interface NoteAbsorbPlan {
   readonly draftNotes: readonly UnclassifiedNote[];
   // Each character's lines quoted in the notes, by card id: the voice samples of the first scene.
   readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
+  readonly canonCandidates: readonly NoteCanonCandidate[];
   readonly warnings: readonly string[];
 }
 
@@ -111,6 +122,7 @@ function mergeEntity(
   const firstRank = first.role === undefined ? 0 : roleRank[first.role];
   const secondRank = second.role === undefined ? 0 : roleRank[second.role];
   const knownAttributeKeys = new Set(first.attributes.map((attribute) => attribute.key));
+  const knownCanonKeys = new Set(first.canonFacts.map((fact) => fact.key));
   const knownRelationTargets = new Set(
     first.relations.map((relation) => normalizeName(relation.target)),
   );
@@ -138,6 +150,10 @@ function mergeEntity(
       ...second.relations.filter(
         (relation) => !knownRelationTargets.has(normalizeName(relation.target)),
       ),
+    ],
+    canonFacts: [
+      ...first.canonFacts,
+      ...second.canonFacts.filter((fact) => !knownCanonKeys.has(fact.key)),
     ],
     senses: unionText(first.senses, second.senses),
     time: first.time ?? second.time,
@@ -447,6 +463,7 @@ function planCards(
   readonly characters: CardNameIndex;
   readonly backgrounds: CardNameIndex;
   readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
+  readonly canonCandidates: NoteCanonCandidate[];
 } {
   const characters = new CardNameIndex('character');
   const backgrounds = new CardNameIndex('background');
@@ -512,8 +529,16 @@ function planCards(
       .filter((entry) => entry.entity.type === 'character' && entry.entity.sampleLines.length > 0)
       .map((entry) => [entry.card.id, entry.entity.sampleLines]),
   );
+  const canonCandidates = resolved.flatMap((entry) =>
+    entry.entity.canonFacts.map((fact) => ({
+      subject: { kind: entry.entity.type, id: entry.card.id },
+      key: fact.key,
+      value: fact.value,
+      sourceNotes: entry.entity.sourceNotes,
+    })),
+  );
 
-  return { plans, characters, backgrounds, voiceSeeds };
+  return { plans, characters, backgrounds, voiceSeeds, canonCandidates };
 }
 
 function findDraftNoteIds(extractions: readonly NoteExtraction[]): Set<string> {
@@ -734,6 +759,7 @@ export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan 
     unclassifiedNotes: findUnclassifiedNotes(input),
     draftNotes: findDraftNotes(input),
     voiceSeeds: cards.voiceSeeds,
+    canonCandidates: cards.canonCandidates,
     warnings: scenes.warnings,
   };
 }

@@ -16,7 +16,9 @@ import {
   noteCandidateFileSchema,
   readVoiceSeedsFile,
   writeVoiceSeedsFile,
+  writeBibleCandidateFile,
   STORYBOARD_RELATIVE_PATHS,
+  type BibleFact,
   type NoteBundle,
   type NoteCandidateFile,
   type NoteExtractionResponse,
@@ -37,6 +39,15 @@ function encodeText(text: string): Uint8Array {
 
 function encodeJson(value: unknown): Uint8Array {
   return encodeText(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+// A location is a path or a URL; the record file needs a short stable name for it.
+function hashLocation(location: string): string {
+  let hash = 5381;
+  for (const char of location) {
+    hash = (hash * 33 + (char.codePointAt(0) ?? 0)) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
 }
 
 function unreadableCandidateFile(cause: unknown): NoteCandidateFileError {
@@ -200,6 +211,29 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
       getStoryboardProjectPaths(workspaceRoot).projectJson,
       project,
     );
+  }
+
+  public async saveCanonCandidates(
+    workspaceRoot: StoryUri,
+    location: string,
+    facts: readonly BibleFact[],
+  ): Promise<void> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const uri = joinStoryPath(paths.bibleCacheDirectory, `notes-${hashLocation(location)}.json`);
+
+    if (facts.length === 0) {
+      if (await this.fileSystem.exists(uri)) {
+        await this.fileSystem.delete(uri);
+      }
+      return;
+    }
+
+    await this.fileSystem.createDirectory(paths.bibleCacheDirectory);
+    await writeBibleCandidateFile(uri, this.fileSystem, {
+      sceneStem: `notes:${location}`,
+      generatedAt: new Date().toISOString(),
+      facts: [...facts],
+    });
   }
 
   private sceneUri(workspaceRoot: StoryUri, fileName: string): StoryUri {

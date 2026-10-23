@@ -1,4 +1,5 @@
 import type {
+  BibleFact,
   OutlineSynopsis,
   SceneCard,
   StoryUri,
@@ -63,4 +64,11 @@ export interface INoteAbsorbRepository {
   ): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void>;
+  // The notes' setting facts as one candidate record per location, beside the drafts' records, so
+  // `canon promote` offers them the same way. An empty list removes the location's record.
+  saveCanonCandidates(
+    workspaceRoot: StoryUri,
+    location: string,
+    facts: readonly BibleFact[],
+  ): Promise<void>;
 }

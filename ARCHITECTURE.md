@@ -658,6 +658,7 @@ zip(`notion-export`: 파일·폴더 이름 끝의 32자리 id 를 떼고, 행 �
 - `responses.json`: 마지막 정리에서 묶음마다 모델이 돌려준 원문 응답과 그 묶음의 노트 id. 출력 한도에서 잘렸거나(`truncated`) 정리 결과를 찾지 못한(`unparsed`) 묶음은 `failure`로 표시되고, 그 묶음은 경고로 보고된다. 모든 묶음이 실패하면 흡수는 실패(exit 1)로 끝난다.
 - 인물의 성격(`traits`)·태그(`tags`)가 두 묶음 이상에서 읽혔거나 기존 카드에 이미 있으면, 계획을 저장하기 전에 요청 하나로 같은 뜻의 항목을 하나로 줄인다. 모델은 후보 중에서 고르기만 하고 문구를 고치지 못하며, 이 요청이 실패하면 합친 목록 그대로 두고 경고한다. 띄어쓰기·문장부호만 다른 항목은 요청 없이 하나로 본다.
 - `candidates.json`: 이미 있던 카드에 대한 노트의 변경. 흡수 한 번이 출처(`sources[]`: `id`·`location`·`absorbedAt`·`candidates`) 하나이고, 같은 위치를 다시 흡수하면 그 출처만 바뀐다(`--replace-candidates`면 전부). Notion 페이지의 위치는 링크 표기와 관계없이 `https://www.notion.so/<페이지 id>`로 적는다. 이 파일을 읽을 수 없으면 흡수는 AI 요청 전에 파일 경로를 알리며 실패한다. `card promote`는 카드마다 출처를 합쳐 초안 후보(§4.8a)와 함께 반영하고 반영한 항목을 지운다. 노트끼리 값이 다른 칸은 반영하지 않고 남기며, `card discard <id> --change <출처 id>:<변경 id>`로 하나를 버린다. 0.12 형식(최상위 `location`)은 읽지 않는다.
+- 노트가 인물·배경에 대해 적은 설정 사실(`canonFacts`: 출신·내력·능력의 한계·장소의 규칙)은 카드가 아니라 정전 후보로 간다 — 위치마다 `.storyboard/cache/bible/notes-<해시>.json` 한 장(`sceneStem: notes:<위치>`)이고, `canon diff`·`canon promote`가 초안 후보와 함께 다룬다. 같은 위치를 다시 흡수하면 그 장만 바뀐다. 세계관만 적힌 노트는 `setting` 으로 분류되어 «분류 못함»에서 빠진다.
 - `synopsis.candidate.md`: `outline/synopsis.md`가 이미 있을 때 노트에서 만든 시놉시스. `<!-- note-source: <위치> -->` 표시 아래 위치마다 한 단락이고, 같은 위치는 그 단락만 바뀐다.
 
 ### 4.9 `.storyboard/memory/personas/`·`backgrounds/` (에이전트 영속 메모리)
