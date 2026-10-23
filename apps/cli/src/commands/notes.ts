@@ -291,6 +291,28 @@ export const absorbNotes: CommandHandler = async ({ container, args }) => {
   });
 };
 
+// Writes outside the workspace, so it takes no run lock; the target folder is the author's.
+export const exportNotes: CommandHandler = async ({ container, args }) => {
+  const rawTarget = args.positionals[0];
+
+  if (rawTarget === undefined) {
+    return { ok: false, message: '내보낼 폴더를 지정해 주세요: storyboard notes export <folder>' };
+  }
+
+  const target = NodeUri.file(resolve(rawTarget));
+  const result = await container.notes.export({ workspaceRoot: container.workspaceRoot, target });
+
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
+  return {
+    ok: true,
+    message: `${target.fsPath} 에 노트 ${result.written.length}장을 썼습니다. Obsidian 에서 폴더를 열거나 Notion 의 가져오기(Markdown)에 넣으세요. 다시 흡수하면 같은 카드로 이어집니다.`,
+    data: { target: target.fsPath, written: result.written },
+  };
+};
+
 // SECURITY: the token is read without echo (or from stdin for an agent) and goes only to the 0600
 // secrets file; it is never printed.
 export const connectNotes: CommandHandler = async ({ container, args }) => {

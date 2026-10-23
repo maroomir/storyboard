@@ -3,6 +3,7 @@ import {
   ApplyDraftFormatUseCase,
   ApplyStoryProposals,
   ApplyNoteAbsorbUseCase,
+  ExportNotesUseCase,
   AssembleManuscriptUseCase,
   AugmentDraftUseCase,
   BibleCandidateRepository,
@@ -133,6 +134,7 @@ interface EngineGraph {
   readonly sceneSidebarRepository: SceneSidebarRepository;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
+  readonly exportNotesUseCase: ExportNotesUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
@@ -352,6 +354,12 @@ function buildServices(
       logger,
       noteRepository: noteAbsorbRepository,
       cardWriter: cardWriterRepository,
+    }),
+    exportNotesUseCase: new ExportNotesUseCase({
+      logger,
+      fileSystem,
+      storyRepository: storyFeatureRepository,
+      synopsis: outlineRepository,
     }),
     applyStoryProposals: new ApplyStoryProposals({ fileSystem }),
     assembleManuscriptUseCase,

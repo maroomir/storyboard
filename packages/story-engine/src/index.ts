@@ -41,6 +41,7 @@ export * from './application/drafts/saveDraftEditUseCase';
 export * from './application/project/compositionPresets';
 export * from './application/notes/applyNoteAbsorbUseCase';
 export * from './application/notes/collectNotesUseCase';
+export * from './application/notes/exportNotesUseCase';
 export * from './application/notes/noteAbsorbRepository';
 export * from './application/notes/noteSource';
 export * from './application/notes/planNoteAbsorbUseCase';

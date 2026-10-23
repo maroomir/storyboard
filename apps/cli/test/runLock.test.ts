@@ -150,6 +150,7 @@ describe('CLI verbs and the run lock', () => {
       'apikey set',
       'apikey show',
       'notes connect',
+      'notes export',
       'doctor',
       'status',
       'config show',

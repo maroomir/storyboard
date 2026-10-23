@@ -13,6 +13,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 - **Notion 내보내기 zip 을 `notes absorb` 가 읽습니다.** 통합 토큰 없이 Notion 의 «Markdown & CSV» 내보내기 zip 을 `storyboard notes absorb <zip>`·`init --from-notes <zip>` 에 주면, 파일·폴더 이름 끝의 32자리 id 를 떼어 제목·경로로 쓰고 하위 페이지 폴더 구조를 그대로 읽습니다. 데이터베이스 CSV 는 행 페이지가 따로 있으면 건너뛰고, 없으면 행마다 속성을 적은 노트 하나가 됩니다. zip 읽기는 Node 의 zlib 만 써서 새 의존성이 없습니다. (#56)
 - **노트의 설정 사실이 정전 후보가 됩니다.** `notes absorb` 가 인물·배경에 대해 노트가 적은 작품 내내 참인 사실(출신·내력·능력의 한계·장소의 규칙, `canonFacts`)을 뽑아 `.storyboard/cache/bible/notes-<해시>.json` 에 후보로 두고, `canon diff` 가 보여 주며 `canon promote` 로 작가가 고른 것만 정전에 들어갑니다. 세계관·규칙만 적힌 노트는 `setting` 으로 분류되어 «분류 못함»으로 보고되지 않습니다. 캐넌 파일은 흡수가 직접 건드리지 않습니다. (#55)
+- **`notes export <folder>` 가 카드·씬·시놉시스를 노트앱 형식으로 내보냅니다.** 인물·배경·씬 카드와 시놉시스를 `인물/`·`배경/`·`씬/`·`시놉시스.md` 의 Markdown 폴더로 씁니다 — 프런트매터에 `storyboard-id`·`storyboard-type`, 관계·등장 인물·장소는 `[[위키링크]]`. Obsidian 에서 바로 열리고 Notion 의 Markdown 가져오기에도 그대로 넣을 수 있으며, AI 는 쓰지 않습니다. 내보낸 폴더를 다시 `notes absorb` 하면 이름·id 로 같은 카드에 이어집니다. 원고 본문은 내보내지 않습니다. (#54)
 
 ### 변경
 

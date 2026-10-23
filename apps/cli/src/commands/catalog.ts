@@ -769,6 +769,14 @@ export const commandCatalog: readonly CommandSpec[] = [
     ],
   },
   {
+    verb: 'notes export',
+    group: '노트',
+    usage: 'notes export <folder>',
+    summary:
+      '인물·배경·씬 카드와 시놉시스를 Obsidian 형식 Markdown 폴더로 내보냅니다 (AI 없음, Notion 가져오기에도 그대로 쓸 수 있음)',
+    examples: ['storyboard notes export ~/Vault/달의문-내보내기'],
+  },
+  {
     verb: 'manuscript assemble',
     writesWorkspace: true,
     group: '원고',

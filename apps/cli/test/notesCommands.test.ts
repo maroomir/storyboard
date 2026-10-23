@@ -326,6 +326,30 @@ describe('notes absorb', () => {
     expect(existsSync(canonPath) && readFileSync(canonPath, 'utf8').includes('등대지기 집안')).toBe(false);
   });
 
+  // #54: 반대 방향. 카드·씬·시놉시스를 Obsidian 형식 폴더로 내보내고, 프런트매터의 id 로 다시 이어진다.
+  it('exports cards, scenes and the synopsis as a Markdown folder with ids and wiki links', async () => {
+    await run('notes absorb', absorbArgs({ yes: true }), withFixedModel(container()));
+    const target = join(workspace, '..', `${workspace.split('/').at(-1) ?? 'ws'}-export`);
+
+    const outcome = await run('notes export', args(['notes', 'export'], {}, [target]));
+
+    expect(outcome.ok).toBe(true);
+    expect((outcome.data as { written: string[] }).written).toEqual(
+      expect.arrayContaining(['인물/하나.md', '인물/준.md', '배경/항구.md', '씬/01-high-tide.md', '시놉시스.md']),
+    );
+    const hana = readFileSync(join(target, '인물', '하나.md'), 'utf8');
+    expect(hana).toContain('storyboard-id: hana');
+    expect(hana).toContain('# 하나');
+    expect(hana).toContain('- [[준]]: 소꿉친구');
+    const scene = readFileSync(join(target, '씬', '01-high-tide.md'), 'utf8');
+    expect(scene).toContain('storyboard-type: scene');
+    expect(scene).toContain('location: "[[항구]]"');
+    expect(scene).toContain('- "[[하나]]"');
+    expect(scene).toContain('만조의 밤, 하나가 항구에서 문이 열리는 것을 본다.');
+    expect(readFileSync(join(target, '시놉시스.md'), 'utf8')).toContain('만조에만 열리는 문을 둘러싼 이야기.');
+    rmSync(target, { recursive: true, force: true });
+  });
+
   it('turns notes about an existing card into candidates that card promote applies', async () => {
     const hanaPath = join(workspace, 'character', 'hana.card');
     writeFileSync(

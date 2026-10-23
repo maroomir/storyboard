@@ -209,7 +209,10 @@ and absorbing more notes adds to what is waiting rather than replacing it. Where
 slot different values, `card promote` holds it back and `card discard <id> --change <ref>` keeps one.
 Setting facts the notes state about a character or a place (origin, history, the limits of a power,
 the rules of a place) are never written to the canon: they wait as candidates for `canon promote`,
-listed by `canon diff` beside the facts the drafts proposed.
+listed by `canon diff` beside the facts the drafts proposed. The other direction is `notes export
+<folder>`: cards, scenes and the synopsis as a Markdown folder (`인물/`, `배경/`, `씬/`,
+`시놉시스.md`) with front matter ids and `[[wiki links]]`, for Obsidian or a Notion Markdown import;
+no AI is involved, and absorbing the folder again maps back to the same cards.
 A Notion page needs an integration token once (`notes connect notion`) and the page shared with
 that integration. Without a token, export the page from Notion as «Markdown & CSV» and hand the
 zip to the same verb: page and folder names lose their trailing ids, sub-pages keep their tree, and

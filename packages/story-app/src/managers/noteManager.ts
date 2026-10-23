@@ -7,6 +7,9 @@ import type {
   CollectNotesUseCase,
   DiscardNoteCandidatesRequest,
   DiscardNoteCandidatesResult,
+  ExportNotesRequest,
+  ExportNotesResult,
+  ExportNotesUseCase,
   NoteAbsorbEstimate,
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult,
@@ -23,6 +26,7 @@ export interface NoteManagerDependencies {
   readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
   readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
+  readonly exportNotesUseCase: ExportNotesUseCase;
   readonly secretStore: SecretStore;
 }
 
@@ -64,6 +68,12 @@ export class NoteManager {
     candidates: readonly MergedNoteCardCandidate[],
   ): Promise<PromoteNoteCandidatesResult> {
     return this.deps.promoteNoteCandidatesUseCase.promote(workspaceRoot, candidates);
+  }
+
+  // The other direction: cards, scenes and the synopsis as a Markdown folder for Obsidian or a
+  // Notion import. No AI; re-absorbing the folder maps back to the same cards.
+  public export(request: ExportNotesRequest): Promise<ExportNotesResult> {
+    return this.deps.exportNotesUseCase.execute(request);
   }
 
   public discardCandidates(

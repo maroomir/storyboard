@@ -52,7 +52,7 @@ import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import { cardCategories, draftCheckKinds, type CardCategory } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
-import { absorbNotes, connectNotes, runNoteAbsorb } from './notes';
+import { absorbNotes, connectNotes, runNoteAbsorb, exportNotes } from './notes';
 import { askLine, askSecret, readStdin } from './prompt';
 import {
   createNarrator,
@@ -2072,6 +2072,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'canon promote': promoteBible,
   'notes connect': connectNotes,
   'notes absorb': absorbNotes,
+  'notes export': exportNotes,
   'manuscript assemble': assembleManuscript,
   'manuscript review': reviewManuscript,
   'manuscript summarize': summarizeChapters,
