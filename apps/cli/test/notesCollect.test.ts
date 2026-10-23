@@ -1,11 +1,13 @@
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { deflateRawSync } from 'node:zlib';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   NoteSourceError,
+  NotionExportNoteSource,
   NotionNoteSource,
   ObsidianNoteSource,
   type NoteHttpFetch,
@@ -16,6 +18,7 @@ import {
   isNotionUrl,
   listNotionLinkedPageIds,
   parseNotionPageId,
+  stripNotionIdSuffix,
   NodeUri,
 } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
@@ -438,3 +441,106 @@ describe('NotionNoteSource', () => {
     await expect(malformed.collect()).rejects.toMatchObject({ code: 'invalid-location' });
   });
 });
+
+// #56: Notion 의 «Markdown & CSV» 내보내기 zip 을 통합 토큰 없이 읽는다. 파일·폴더 이름 끝의 32자리
+// id 를 떼고, 데이터베이스 CSV 는 행 페이지가 따로 있으면 건너뛰고 없으면 노트 하나로 만든다.
+describe('NotionExportNoteSource', () => {
+  const fileSystem = new NodeFileSystem();
+  let directory: string;
+
+  beforeEach(async () => {
+    directory = await mkdtemp(join(tmpdir(), 'storyboard-notion-export-'));
+  });
+
+  afterEach(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  const pageId = '1429989fe8ac4effbc8f57f56486db54';
+  const rowId = '2a2b3c4d5e6f47a8b9c0d1e2f3a4b5c6';
+
+  it('reads pages, strips ids from titles and paths, and turns a lone database into one note', async () => {
+    const archive = join(directory, 'Export.zip');
+    await writeFile(
+      archive,
+      buildZip([
+        { name: `Export-abc/달의 문 ${pageId}.md`, text: '# 달의 문\n\n컨셉 메모.', isDeflated: true },
+        { name: `Export-abc/달의 문 ${pageId}/인물 ${rowId}/하나 ${pageId}.md`, text: '# 하나\n\n등대지기.' },
+        { name: `Export-abc/달의 문 ${pageId}/장소 ${rowId}.csv`, text: '﻿이름,분위기\n등대,"바람, 소금기"\n' },
+        { name: `Export-abc/달의 문 ${pageId}/인물 ${rowId}.csv`, text: '이름,나이\n하나,19\n' },
+        { name: `Export-abc/달의 문 ${pageId}/인물 ${rowId}_all.csv`, text: '이름,나이\n하나,19\n' },
+        { name: `__MACOSX/Export-abc/._달의 문 ${pageId}.md`, text: 'junk' },
+        { name: `Export-abc/지도 ${pageId}.png`, text: 'binary' },
+      ]),
+    );
+
+    const { notes, skipped } = await new NotionExportNoteSource({ fileSystem, archive: NodeUri.file(archive) }).collect();
+
+    expect(notes.map((note) => [note.id, note.title, note.path])).toEqual([
+      ['Export-abc/달의 문.md', '달의 문', ['Export-abc']],
+      ['Export-abc/달의 문/인물/하나.md', '하나', ['Export-abc', '달의 문', '인물']],
+      ['Export-abc/달의 문/장소.csv', '장소', ['Export-abc', '달의 문']],
+    ]);
+    expect(notes[0]?.body).toBe('# 달의 문\n\n컨셉 메모.');
+    expect(notes[2]?.body).toBe('# 장소\n\n## 등대\n- 분위기: 바람, 소금기\n');
+    expect(skipped).toEqual([{ label: 'Export-abc/지도.png', reason: '노트가 아닌 파일이라 읽지 않았습니다' }]);
+  });
+
+  it('refuses a file that is not a zip', async () => {
+    const archive = join(directory, 'notes.zip');
+    await writeFile(archive, 'not a zip at all, just text that is long enough to scan');
+
+    await expect(new NotionExportNoteSource({ fileSystem, archive: NodeUri.file(archive) }).collect()).rejects.toMatchObject({
+      code: 'invalid-location',
+    });
+  });
+
+  it('strips the id Notion appends to a title', () => {
+    expect(stripNotionIdSuffix(`달의 문 ${pageId}`)).toBe('달의 문');
+    expect(stripNotionIdSuffix('달의 문')).toBe('달의 문');
+  });
+});
+
+// A zip with stored (or, when asked, deflated) entries — the shape Notion's export has.
+function buildZip(files: readonly { name: string; text: string; isDeflated?: boolean }[]): Buffer {
+  const locals: Buffer[] = [];
+  const centrals: Buffer[] = [];
+  let offset = 0;
+
+  for (const file of files) {
+    const name = Buffer.from(file.name, 'utf8');
+    const data = Buffer.from(file.text, 'utf8');
+    const stored = file.isDeflated === true ? deflateRawSync(data) : data;
+    const method = file.isDeflated === true ? 8 : 0;
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0x0800, 6);
+    local.writeUInt16LE(method, 8);
+    local.writeUInt32LE(stored.length, 18);
+    local.writeUInt32LE(data.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0x0800, 8);
+    central.writeUInt16LE(method, 10);
+    central.writeUInt32LE(stored.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, name, stored);
+    centrals.push(central, name);
+    offset += local.length + name.length + stored.length;
+  }
+
+  const centralDirectory = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(centralDirectory.length, 12);
+  end.writeUInt32LE(offset, 16);
+
+  return Buffer.concat([...locals, centralDirectory, end]);
+}

@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **`notes absorb` reads a Notion export zip.** Without an integration token, hand Notion's «Markdown & CSV» export zip to `storyboard notes absorb <zip>` or `init --from-notes <zip>`: the 32-hex ids Notion appends to file and folder names are stripped from titles and paths, and the sub-page tree is read as is. A database CSV is skipped when its rows are pages of their own and otherwise becomes one note listing each row's properties. The zip is read with Node's zlib alone, so no dependency was added. (#56)
+
 ### Changed
 
 - **Scene-pipeline prompts are split into a shared prefix and a per-call tail so the prompt cache takes hold.** A prompt resource may carry a `## prefix` section: the material repeated across a scene goes out first as a user message with a cache boundary, and what changes per call follows. Dialogue polish and section expansion put the skeleton there (front-matter `prefixCacheTtl: 1h`, since it is read more than ten times); critique and revision put the card and setting preamble there. The expansion's target length, retry reasons and recap guard and the polish's retry reasons moved from the system prompt into the tail, so the system prompt is now identical between calls too. The story-state update is one call per scene and is unchanged. Usage totals now carry the cache share (`cache.promptTokens`, `cachedTokens`, `savedUsd`), shown as «캐시 n%» on the CLI rail, in the `novel generate` result line, in the desktop run drawer and in the extension's cost badge tooltip. (#107)

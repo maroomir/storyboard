@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 import { cardCollectProposalSchema } from './cardCollect';
 
-export const noteSourceKinds = ['obsidian', 'notion'] as const;
+// 'notion-export' 는 Notion 의 «Markdown & CSV» 내보내기 zip — 통합 토큰 없이 읽는 길이다.
+export const noteSourceKinds = ['obsidian', 'notion', 'notion-export'] as const;
 
 export type NoteSourceKind = (typeof noteSourceKinds)[number];
 

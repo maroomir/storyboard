@@ -18,6 +18,14 @@ export function stripMarkdownExtension(fileName: string): string {
   return fileName.replace(/\.md$/i, '');
 }
 
+// Notion's export names every page and folder `Title 1a2b…(32 hex)`. The id is noise in a title
+// and in a path; the title is what the author wrote.
+const notionIdSuffixPattern = /\s+[0-9a-f]{32}$/i;
+
+export function stripNotionIdSuffix(name: string): string {
+  return name.replace(notionIdSuffixPattern, '');
+}
+
 export function extractNoteTitle(body: string, fallbackTitle: string): string {
   const heading = firstHeadingPattern.exec(body)?.[1]?.trim();
 

@@ -19,9 +19,15 @@ import { noteSources } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
 import { askSecret, readStdin } from './prompt';
 
+// A Notion address is read over the API, a `.zip` as Notion's Markdown export, anything else as an
+// Obsidian folder or note.
 export function parseNoteLocation(raw: string): NoteLocation {
-  return isNotionUrl(raw)
-    ? { kind: 'notion', pageUrl: raw }
+  if (isNotionUrl(raw)) {
+    return { kind: 'notion', pageUrl: raw };
+  }
+
+  return /\.zip$/i.test(raw)
+    ? { kind: 'notion-export', archive: NodeUri.file(resolve(raw)) }
     : { kind: 'obsidian', root: NodeUri.file(resolve(raw)) };
 }
 
@@ -269,7 +275,7 @@ export const absorbNotes: CommandHandler = async ({ container, args }) => {
     return {
       ok: false,
       message:
-        '노트 위치를 지정해 주세요: storyboard notes absorb <Obsidian 폴더·노트 | Notion 페이지 주소>',
+        '노트 위치를 지정해 주세요: storyboard notes absorb <Obsidian 폴더·노트 | Notion 페이지 주소 | Notion 내보내기 zip>',
     };
   }
 

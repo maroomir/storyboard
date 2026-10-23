@@ -7,6 +7,7 @@ import {
   type NoteLocation,
 } from '#engine/application/notes/noteSource';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import { NotionExportNoteSource } from './notionExportNoteSource';
 import { NotionNoteSource, type NoteHttpFetch } from './notionNoteSource';
 import { ObsidianNoteSource } from './obsidianNoteSource';
 
@@ -22,6 +23,13 @@ export class NoteSourceProvider implements INoteSourceProvider {
   public async open(location: NoteLocation): Promise<INoteSource> {
     if (location.kind === 'obsidian') {
       return new ObsidianNoteSource({ fileSystem: this.deps.fileSystem, root: location.root });
+    }
+
+    if (location.kind === 'notion-export') {
+      return new NotionExportNoteSource({
+        fileSystem: this.deps.fileSystem,
+        archive: location.archive,
+      });
     }
 
     const token = await this.deps.secretStore.getNotionToken();

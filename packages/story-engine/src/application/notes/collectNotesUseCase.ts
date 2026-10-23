@@ -39,7 +39,9 @@ export class CollectNotesUseCase implements IUseCase<CollectNotesRequest, Collec
         location:
           location.kind === 'obsidian'
             ? location.root.fsPath
-            : canonicalNotionPageUrl(location.pageUrl),
+            : location.kind === 'notion-export'
+              ? location.archive.fsPath
+              : canonicalNotionPageUrl(location.pageUrl),
         collectedAt: new Date().toISOString(),
         notes: [...collected.notes],
         skipped: [...collected.skipped],

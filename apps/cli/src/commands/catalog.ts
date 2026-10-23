@@ -160,7 +160,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'from-notes',
     valueLabel: '<path|url>',
-    summary: 'init: 만든 워크스페이스에 노트를 흡수합니다 (Obsidian 폴더·노트 또는 Notion 주소)',
+    summary: 'init: 만든 워크스페이스에 노트를 흡수합니다 (Obsidian 폴더·노트, Notion 주소, Notion 내보내기 zip)',
   },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
@@ -757,12 +757,13 @@ export const commandCatalog: readonly CommandSpec[] = [
     verb: 'notes absorb',
     writesWorkspace: true,
     group: '노트',
-    usage: 'notes absorb <path|url>',
+    usage: 'notes absorb <path|url|zip>',
     summary:
-      'Obsidian 폴더·노트나 Notion 페이지를 하위 페이지까지 읽어 인물·배경·씬 카드와 시놉시스로 옮깁니다 (견적을 먼저 보여 줍니다, 기존 카드는 후보로만)',
+      'Obsidian 폴더·노트, Notion 페이지, Notion 내보내기 zip 을 하위 페이지까지 읽어 인물·배경·씬 카드와 시놉시스로 옮깁니다 (견적을 먼저 보여 줍니다, 기존 카드는 후보로만)',
     flags: ['yes', 'dry-run', 'replace-candidates'],
     examples: [
       'storyboard notes absorb ~/Vault/달의문',
+      'storyboard notes absorb ~/Downloads/Export-달의문.zip',
       'storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes',
       'storyboard notes absorb ~/Vault/달의문 --yes --dry-run',
     ],

@@ -5,7 +5,9 @@ import type { StoryUri, NoteDocument, NoteSourceKind, SkippedNote } from '@story
 // reached over the network with the integration token from the secret store.
 export type NoteLocation =
   | { readonly kind: 'obsidian'; readonly root: StoryUri }
-  | { readonly kind: 'notion'; readonly pageUrl: string };
+  | { readonly kind: 'notion'; readonly pageUrl: string }
+  // A Notion «Markdown & CSV» export zip on disk.
+  | { readonly kind: 'notion-export'; readonly archive: StoryUri };
 
 export interface CollectedNotes {
   readonly notes: readonly NoteDocument[];

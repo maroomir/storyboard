@@ -649,8 +649,9 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 
 ### 4.8b `.storyboard/cache/notes/` (노트 흡수)
 
-`storyboard notes absorb`·`init --from-notes`가 Obsidian 볼트나 Notion 페이지에서 읽은 것을 둔다. 모두 git 밖의
-캐시이며, 워크스페이스에 들어가는 것은 카드·씬·시놉시스뿐이다.
+`storyboard notes absorb`·`init --from-notes`가 Obsidian 볼트, Notion 페이지, Notion «Markdown & CSV» 내보내기
+zip(`notion-export`: 파일·폴더 이름 끝의 32자리 id 를 떼고, 행 페이지가 따로 있는 데이터베이스 CSV 는 건너뛴다)에서
+읽은 것을 둔다. 모두 git 밖의 캐시이며, 워크스페이스에 들어가는 것은 카드·씬·시놉시스뿐이다.
 
 - `source.json`: 수집한 노트 원문과 출처(트리에서 읽었는지 링크로 따라왔는지), 읽지 못한 노트.
 - `plan.json`: 마지막 정리 계획 — 새 카드, 기존 카드에 대한 변경, 번호를 붙인 씬, 계약·시놉시스 제안, 분류 못한 노트, 원고로 분류된 노트. 씬은 노트 한 장에 하나이고 노트 속 사건은 그 씬의 `beats`가 된다. 이미 문장으로 쓴 원고(`draft`)에서는 인물·배경·작품 정보만 옮기고 씬은 만들지 않는다.

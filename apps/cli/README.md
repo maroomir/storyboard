@@ -208,11 +208,15 @@ that already exist are never overwritten — what the notes add to them waits fo
 and absorbing more notes adds to what is waiting rather than replacing it. Where two notes give one
 slot different values, `card promote` holds it back and `card discard <id> --change <ref>` keeps one.
 A Notion page needs an integration token once (`notes connect notion`) and the page shared with
-that integration. A new work can start from notes in one step:
+that integration. Without a token, export the page from Notion as «Markdown & CSV» and hand the
+zip to the same verb: page and folder names lose their trailing ids, sub-pages keep their tree, and
+a database CSV becomes one note unless its rows are pages of their own. A new work can start from
+notes in one step:
 
 ```bash
 storyboard init --title "달의 문" --from-notes ~/Vault/달의문
 storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes
+storyboard notes absorb ~/Downloads/Export-달의문.zip --yes
 ```
 
 `card build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal

@@ -74,6 +74,7 @@ export * from './persistence/backgroundExcerpt';
 export * from './persistence/bibleCacheWorkspace';
 export * from './persistence/cardCacheWorkspace';
 export * from './persistence/notes/noteSourceProvider';
+export * from './persistence/notes/notionExportNoteSource';
 export * from './persistence/notes/notionNoteSource';
 export * from './persistence/notes/obsidianNoteSource';
 export * from './persistence/repositories/noteAbsorbRepository';
