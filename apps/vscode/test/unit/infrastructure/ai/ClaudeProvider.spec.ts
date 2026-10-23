@@ -130,6 +130,38 @@ describe("ClaudeProvider", () => {
     ])
   })
 
+  it("passes a boundary's cache ttl through to cache_control (#107)", async () => {
+    let capturedMessages: Parameters<ClaudeClientLike["messages"]["create"]>[0]["messages"] = []
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model: "claude-sonnet-4-6",
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          onCreateMessage: (request): void => {
+            capturedMessages = request.messages
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "sceneSectionExpansion",
+      messages: [
+        { role: "user", content: "뼈대 전체", cacheBoundary: true, cacheTtl: "1h" },
+        { role: "user", content: "이번 구간" }
+      ]
+    })
+
+    expect(capturedMessages).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "뼈대 전체", cache_control: { type: "ephemeral", ttl: "1h" } },
+          { type: "text", text: "이번 구간" }
+        ]
+      }
+    ])
+  })
+
   it("generates text and separates system prompts from conversation messages", async () => {
     let capturedSystem: Parameters<ClaudeClientLike["messages"]["create"]>[0]["system"]
     const usage = { inputTokens: 80, outputTokens: 40, cacheReadInputTokens: 10, cacheCreationInputTokens: 5 }

@@ -160,7 +160,8 @@ behaviour it changes.
 | `packages/story-engine/src/pipeline/pipelineDefaults.params.json` | story-engine | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights |
 | `packages/story-sim/src/simDefaults.params.json` | story-sim | Measurement-side knobs: reader-panel size, repeat count, and the reference token prices the cost axis converts with |
 
-A prompt's `temperature`, `maxTokens` and optional `reasoningEffort` are not a params file: they sit
+A prompt's `temperature`, `maxTokens`, optional `reasoningEffort` and optional `prefixCacheTtl` (the
+cache life of its `## prefix` section, `5m` or `1h`) are not a params file: they sit
 in the front-matter of its resource file (`packages/story-ai/src/ai/prompts/resources/<key>.md`), so an
 author's override file may carry its own. `reasoningEffort` reaches only a model whose catalog row says
 `acceptsReasoningEffort`. After editing a resource, run `npm run build:prompts --workspace

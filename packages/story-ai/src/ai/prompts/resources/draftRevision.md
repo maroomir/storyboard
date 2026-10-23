@@ -14,15 +14,7 @@ maxTokens: 12000
 ## system:xs
 아래 지시를 반영하되 [캐릭터 카드]의 말투·보이스를 최우선으로 보존하라. 설명 없이 수정된 본문 전체만 출력하라.
 
-## user
-[지시]
-{{#instructions}}
-- {{.}}
-{{/instructions}}
-{{^instructions}}
-
-{{/instructions}}
-
+## prefix
 {{#intent}}
 [장면 의도]
 {{intent}}
@@ -36,7 +28,16 @@ maxTokens: 12000
 {{#characterCards}}
 [캐릭터 카드]
 {{characterCards}}
-
 {{/characterCards}}
+
+## user
+[지시]
+{{#instructions}}
+- {{.}}
+{{/instructions}}
+{{^instructions}}
+
+{{/instructions}}
+
 [본문]
 {{body}}

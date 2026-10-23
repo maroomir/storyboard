@@ -208,7 +208,14 @@ function toClaudeConversationMessage(
       (message): TextBlockParam => ({
         type: 'text',
         text: message.content,
-        ...(message.cacheBoundary === true ? { cache_control: { type: 'ephemeral' } } : {}),
+        ...(message.cacheBoundary === true
+          ? {
+              cache_control: {
+                type: 'ephemeral',
+                ...(message.cacheTtl === undefined ? {} : { ttl: message.cacheTtl }),
+              },
+            }
+          : {}),
       }),
     ),
   };

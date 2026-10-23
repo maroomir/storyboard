@@ -20,7 +20,7 @@ category는 voice|purpose|repetition, severity는 high|low. comment에는 무엇
 초안의 voice/purpose/repetition 문제만 JSON 배열로 반환하라. 캐릭터 보이스는 [캐릭터 카드]를 최우선으로 따른다: [{"category":"voice","severity":"high","excerpt":"","comment":""}] (없으면 []).{{#hasSceneMarkers}}
 본문에는 `<!-- scene: <stem> -->` 주석이 장면마다 있다. 각 이슈의 "sceneStem"에 그 구간 직전 주석의 stem을 그대로 적어라.{{/hasSceneMarkers}}
 
-## user
+## prefix
 {{#intent}}
 [장면 의도]
 {{intent}}
@@ -69,7 +69,8 @@ category는 voice|purpose|repetition, severity는 high|low. comment에는 무엇
 {{#characterCards}}
 [캐릭터 카드]
 {{characterCards}}
-
 {{/characterCards}}
+
+## user
 [본문]
 {{body}}

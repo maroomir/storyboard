@@ -1,4 +1,4 @@
-import type { Severity, UsageAttribution } from '@storyboard/story-model';
+import type { AiMessage, Severity, UsageAttribution } from '@storyboard/story-model';
 import type { PromptArtifact } from './prompts/types';
 
 export interface SituationWithCharacters {
@@ -161,11 +161,20 @@ export function toContinuityIssue(value: unknown): ContinuityIssue[] {
   ];
 }
 
-export function toPromptMessages(
-  artifact: PromptArtifact,
-): ReadonlyArray<{ readonly role: 'system' | 'user'; readonly content: string }> {
-  return [
-    { role: 'system', content: artifact.system },
-    { role: 'user', content: artifact.user },
-  ];
+// 접두가 있으면 user 메시지 둘로 나간다: 접두에 캐시 경계를 달고, 꼬리는 그 뒤에. Claude 는 경계
+// 블록에 cache_control 을 달고, 접두 캐시가 자동인 프로바이더는 순서만으로 같은 효과를 본다.
+export function toPromptMessages(artifact: PromptArtifact): readonly AiMessage[] {
+  const prefix: AiMessage[] =
+    artifact.userPrefix === undefined || artifact.userPrefix.trim().length === 0
+      ? []
+      : [
+          {
+            role: 'user',
+            content: artifact.userPrefix,
+            cacheBoundary: true,
+            ...(artifact.prefixCacheTtl === undefined ? {} : { cacheTtl: artifact.prefixCacheTtl }),
+          },
+        ];
+
+  return [{ role: 'system', content: artifact.system }, ...prefix, { role: 'user', content: artifact.user }];
 }

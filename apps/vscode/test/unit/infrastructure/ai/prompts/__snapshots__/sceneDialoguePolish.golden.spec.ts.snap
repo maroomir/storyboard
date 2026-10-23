@@ -2,6 +2,7 @@
 
 exports[`SceneDialoguePolishPrompt golden > leaves optional blocks out for the generic variant 1`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "장면의 뼈대에서 한 인물의 대사만 손본다. 사건·행동·서술과 다른 인물의 대사는 건드리지 않는다.
 뼈대의 따옴표 대사마다 앞에 ⟨n⟩ 번호가 있다. [이 인물]이 말한 대사만 골라, 그 번호와 함께 고친 문장을 돌려줘라. 누가 말했는지는 앞뒤 서술과 호칭으로 판단하고, 확실하지 않은 대사는 건드리지 마라.
 페르소나에 적힌 말투·어휘·호칭을 대사에 그대로 반영하라. 이름을 지우고 읽어도 이 인물의 말이라고 알 수 있을 만큼 뚜렷하게 써라.
@@ -19,14 +20,15 @@ exports[`SceneDialoguePolishPrompt golden > leaves optional blocks out for the g
 대사는 곡선 큰따옴표(“ ”)로 감싸라. 직선 따옴표나 다른 기호로 대신하지 마라.",
   "user": "[이 인물]
 하나
-
-[뼈대]
+",
+  "userPrefix": "[뼈대]
 빈 장면",
 }
 `;
 
 exports[`SceneDialoguePolishPrompt golden > leaves optional blocks out for the generic variant 2`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "장면의 뼈대에서 한 인물의 대사만 손본다. 사건·행동·서술과 다른 인물의 대사는 건드리지 않는다.
 뼈대의 따옴표 대사마다 앞에 ⟨n⟩ 번호가 있다. [이 인물]이 말한 대사만 골라, 그 번호와 함께 고친 문장을 돌려줘라. 누가 말했는지는 앞뒤 서술과 호칭으로 판단하고, 확실하지 않은 대사는 건드리지 마라.
 페르소나에 적힌 말투·어휘·호칭을 대사에 그대로 반영하라. 이름을 지우고 읽어도 이 인물의 말이라고 알 수 있을 만큼 뚜렷하게 써라.
@@ -45,37 +47,40 @@ exports[`SceneDialoguePolishPrompt golden > leaves optional blocks out for the g
   "user": "[이 인물]
 하나
 말투: 단호
-
-[뼈대]
+",
+  "userPrefix": "[뼈대]
 빈 장면",
 }
 `;
 
 exports[`SceneDialoguePolishPrompt golden > leaves optional blocks out for the xs variant 1`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "뼈대에서 [이 인물]의 대사만 골라 그 인물 말투로 고쳐라. 번호와 문장만 JSON 배열로: [{"n":1,"text":"…"}]. 대사 개수·사건·다른 인물 대사는 그대로. 새 정보 금지. 입버릇은 되풀이하되 사건 하나에 한 번까지. 없으면 [].",
   "user": "[이 인물]
 하나
-
-[뼈대]
+",
+  "userPrefix": "[뼈대]
 빈 장면",
 }
 `;
 
 exports[`SceneDialoguePolishPrompt golden > leaves optional blocks out for the xs variant 2`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "뼈대에서 [이 인물]의 대사만 골라 그 인물 말투로 고쳐라. 번호와 문장만 JSON 배열로: [{"n":1,"text":"…"}]. 대사 개수·사건·다른 인물 대사는 그대로. 새 정보 금지. 입버릇은 되풀이하되 사건 하나에 한 번까지. 없으면 [].",
   "user": "[이 인물]
 하나
 말투: 단호
-
-[뼈대]
+",
+  "userPrefix": "[뼈대]
 빈 장면",
 }
 `;
 
 exports[`SceneDialoguePolishPrompt golden > renders every block for the generic variant 1`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "장면의 뼈대에서 한 인물의 대사만 손본다. 사건·행동·서술과 다른 인물의 대사는 건드리지 않는다.
 뼈대의 따옴표 대사마다 앞에 ⟨n⟩ 번호가 있다. [이 인물]이 말한 대사만 골라, 그 번호와 함께 고친 문장을 돌려줘라. 누가 말했는지는 앞뒤 서술과 호칭으로 판단하고, 확실하지 않은 대사는 건드리지 마라.
 페르소나에 적힌 말투·어휘·호칭을 대사에 그대로 반영하라. 이름을 지우고 읽어도 이 인물의 말이라고 알 수 있을 만큼 뚜렷하게 써라.
@@ -90,7 +95,6 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the generic 
 설명 없이 JSON 배열만 출력하라. 고친 대사는 따옴표 없이 문장만 적는다.
 [{"n":3,"text":"고친 대사"}]
 고칠 대사가 없으면 빈 배열 []을 출력하라.
-앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: 뼈대에 없는 인물이 등장합니다 (민)
 서술은 현재형으로 쓰고 한 장면 안에서 시제를 섞지 마라. 대사 안의 시제는 인물의 말이므로 예외다.
 대사는 곡선 큰따옴표(“ ”)로 감싸라. 직선 따옴표나 다른 기호로 대신하지 마라.
 장르·톤: 무협
@@ -117,7 +121,9 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the generic 
 - 하나: 짧고 단호한 반말
 - 민
 
-[뼈대]
+앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: 뼈대에 없는 인물이 등장합니다 (민)
+",
+  "userPrefix": "[뼈대]
 하나가 말했다. ⟨1⟩“가자.”
 ---
 준이 고개를 저었다. ⟨2⟩“싫어.”",
@@ -126,6 +132,7 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the generic 
 
 exports[`SceneDialoguePolishPrompt golden > renders every block for the rich variant 1`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "장면의 뼈대에서 한 인물의 대사만 손본다. 사건·행동·서술과 다른 인물의 대사는 건드리지 않는다.
 뼈대의 따옴표 대사마다 앞에 ⟨n⟩ 번호가 있다. [이 인물]이 말한 대사만 골라, 그 번호와 함께 고친 문장을 돌려줘라. 누가 말했는지는 앞뒤 서술과 호칭으로 판단하고, 확실하지 않은 대사는 건드리지 마라.
 페르소나에 적힌 말투·어휘·호칭을 대사에 그대로 반영하라. 이름을 지우고 읽어도 이 인물의 말이라고 알 수 있을 만큼 뚜렷하게 써라.
@@ -140,7 +147,6 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the rich var
 설명 없이 JSON 배열만 출력하라. 고친 대사는 따옴표 없이 문장만 적는다.
 [{"n":3,"text":"고친 대사"}]
 고칠 대사가 없으면 빈 배열 []을 출력하라.
-앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: 뼈대에 없는 인물이 등장합니다 (민)
 서술은 현재형으로 쓰고 한 장면 안에서 시제를 섞지 마라. 대사 안의 시제는 인물의 말이므로 예외다.
 대사는 곡선 큰따옴표(“ ”)로 감싸라. 직선 따옴표나 다른 기호로 대신하지 마라.
 장르·톤: 무협
@@ -167,7 +173,9 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the rich var
 - 하나: 짧고 단호한 반말
 - 민
 
-[뼈대]
+앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: 뼈대에 없는 인물이 등장합니다 (민)
+",
+  "userPrefix": "[뼈대]
 하나가 말했다. ⟨1⟩“가자.”
 ---
 준이 고개를 저었다. ⟨2⟩“싫어.”",
@@ -176,6 +184,7 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the rich var
 
 exports[`SceneDialoguePolishPrompt golden > renders every block for the xs variant 1`] = `
 {
+  "prefixCacheTtl": "1h",
   "system": "뼈대에서 [이 인물]의 대사만 골라 그 인물 말투로 고쳐라. 번호와 문장만 JSON 배열로: [{"n":1,"text":"…"}]. 대사 개수·사건·다른 인물 대사는 그대로. 새 정보 금지. 입버릇은 되풀이하되 사건 하나에 한 번까지. 없으면 [].",
   "user": "[이 인물]
 준
@@ -196,7 +205,9 @@ exports[`SceneDialoguePolishPrompt golden > renders every block for the xs varia
 - 하나: 짧고 단호한 반말
 - 민
 
-[뼈대]
+앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: 뼈대에 없는 인물이 등장합니다 (민)
+",
+  "userPrefix": "[뼈대]
 하나가 말했다. ⟨1⟩“가자.”
 ---
 준이 고개를 저었다. ⟨2⟩“싫어.”",

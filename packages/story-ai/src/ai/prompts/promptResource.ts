@@ -1,17 +1,19 @@
 import { z } from 'zod';
 
-import { reasoningEfforts } from '@storyboard/story-model';
+import { cacheTtls, reasoningEfforts } from '@storyboard/story-model';
 
 import { promptResourceSources } from './resources.generated';
 import { renderTemplate, type TemplatePartials, type TemplateView } from './template';
 import type { PromptArtifact, PromptConfig, PromptVariantId } from './types';
 
 // A prompt resource is one Markdown file per prompt. A front-matter block between `---` lines
-// carries the sampling config (`temperature`, `maxTokens`, optionally `reasoningEffort`); `## system` and `## user` hold the
-// generic variant; `## system:xs`, `## user:rich` and so on hold a variant's text, and a variant
+// carries the sampling config (`temperature`, `maxTokens`, optionally `reasoningEffort` and
+// `prefixCacheTtl`); `## system` and `## user` hold the generic variant, and an optional `## prefix`
+// holds the user text that is the same for every call of a scene and goes out ahead of `## user` as
+// a cached prefix; `## system:xs`, `## user:rich` and so on hold a variant's text, and a variant
 // without its own section falls back to the generic one. The body of a section is the text up to
 // the next `## ` heading with the trailing blank lines dropped.
-export type PromptSectionName = 'system' | 'user';
+export type PromptSectionName = 'system' | 'prefix' | 'user';
 
 export interface PromptResource {
   readonly key: string;
@@ -34,7 +36,7 @@ export class PromptResourceError extends Error {
   }
 }
 
-const headingPattern = /^## (system|user)(?::(generic|xs|rich))?\s*$/;
+const headingPattern = /^## (system|prefix|user)(?::(generic|xs|rich))?\s*$/;
 
 // 온도는 검사류를 낮게, 창작류를 높게 두는 결이 있어 프롬프트마다 다르고, 출력 상한은 한 번에
 // 낼 분량이다. 모델을 가리지 않는 값이며, 한 모델에서만 관찰한 값은 modelProfiles.params.json 에 적는다.
@@ -42,6 +44,7 @@ const promptConfigSchema = z.strictObject({
   temperature: z.number().min(0).max(2),
   maxTokens: z.number().int().positive(),
   reasoningEffort: z.enum(reasoningEfforts).optional(),
+  prefixCacheTtl: z.enum(cacheTtls).optional(),
 });
 
 const frontMatterLinePattern = /^([A-Za-z]+):\s*(\S+)\s*$/;
@@ -217,12 +220,20 @@ export function promptResourceKeys(): readonly string[] {
   return Object.keys(promptResourceSources);
 }
 
+function optionalSectionText(
+  resource: PromptResource,
+  name: PromptSectionName,
+  variant: PromptVariantId,
+): string | undefined {
+  return resource.sections.get(`${name}:${variant}`) ?? resource.sections.get(name);
+}
+
 function sectionText(
   resource: PromptResource,
   name: PromptSectionName,
   variant: PromptVariantId,
 ): string {
-  const text = resource.sections.get(`${name}:${variant}`) ?? resource.sections.get(name);
+  const text = optionalSectionText(resource, name, variant);
 
   if (text === undefined) {
     throw new PromptResourceError(
@@ -247,9 +258,13 @@ export function renderPrompt(
 ): PromptArtifact {
   const resource = promptResources.get(key);
   const partials = options.partials ?? {};
+  const prefix = optionalSectionText(resource, 'prefix', variant);
+  const prefixCacheTtl = prefix === undefined ? undefined : promptResources.config(key).prefixCacheTtl;
 
   return {
     system: renderTemplate(sectionText(resource, 'system', variant), options.view, partials),
+    ...(prefix === undefined ? {} : { userPrefix: renderTemplate(prefix, options.view, partials) }),
+    ...(prefixCacheTtl === undefined ? {} : { prefixCacheTtl }),
     user: renderTemplate(sectionText(resource, 'user', variant), options.view, partials),
   };
 }

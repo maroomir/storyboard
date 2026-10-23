@@ -1,6 +1,7 @@
 import type { AiProviderRegistry } from './providerRegistry';
 import type {
   AiGenerateResponse,
+  AiMessage,
   AiStreamChunk,
   UsageAttribution,
   UsageRecord,
@@ -20,10 +21,7 @@ export class AiTextGateway {
 
   public async generate(
     taskName: AiTaskName,
-    messages: ReadonlyArray<{
-      readonly role: 'system' | 'user' | 'assistant';
-      readonly content: string;
-    }>,
+    messages: readonly AiMessage[],
     options: GenerateTextOptions,
   ): Promise<AiGenerateResponse> {
     const response = options.providerId
@@ -48,10 +46,7 @@ export class AiTextGateway {
 
   public async *generateStream(
     taskName: AiTaskName,
-    messages: ReadonlyArray<{
-      readonly role: 'system' | 'user' | 'assistant';
-      readonly content: string;
-    }>,
+    messages: readonly AiMessage[],
     options: GenerateTextOptions,
   ): AsyncIterable<AiStreamChunk> {
     const stream = options.providerId

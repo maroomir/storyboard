@@ -1,6 +1,7 @@
 ---
 temperature: 0.8
 maxTokens: 4000
+prefixCacheTtl: 1h
 ---
 ## system
 장면의 뼈대에서 한 인물의 대사만 손본다. 사건·행동·서술과 다른 인물의 대사는 건드리지 않는다.
@@ -19,14 +20,15 @@ maxTokens: 4000
 설명 없이 JSON 배열만 출력하라. 고친 대사는 따옴표 없이 문장만 적는다.
 [{"n":3,"text":"고친 대사"}]
 고칠 대사가 없으면 빈 배열 []을 출력하라.
-{{#hasRetryReasons}}
-앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: {{retryReasons}}
-{{/hasRetryReasons}}
 {{> proseConventions}}{{#hasVoiceStyle}}
 {{> voiceStyle}}{{/hasVoiceStyle}}
 
 ## system:xs
 뼈대에서 [이 인물]의 대사만 골라 그 인물 말투로 고쳐라. 번호와 문장만 JSON 배열로: [{"n":1,"text":"…"}]. 대사 개수·사건·다른 인물 대사는 그대로. 새 정보 금지. 입버릇은 되풀이하되 사건 하나에 한 번까지. 없으면 [].
+
+## prefix
+[뼈대]
+{{numberedSkeleton}}
 
 ## user
 [이 인물]
@@ -69,6 +71,7 @@ maxTokens: 4000
 [다른 등장 인물]
 {{otherCharacters}}
 {{/hasOtherCharacters}}
+{{#hasRetryReasons}}
 
-[뼈대]
-{{numberedSkeleton}}
+앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: {{retryReasons}}
+{{/hasRetryReasons}}

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
 import { DraftCritiquePrompt, DraftRevisionPrompt } from '@storyboard/story-ai';
+
+// 접두(캐시되는 공유 재료)와 꼬리(호출마다 다른 것)를 합친 user 전문(#107).
+const userText = (artifact: { userPrefix?: string; user: string }): string => [artifact.userPrefix ?? "", artifact.user].join("\n")
+
 describe("DraftCritiquePrompt", () => {
   const input = {
     body: "엘리아가 교실로 들어왔다.",
@@ -14,12 +18,12 @@ describe("DraftCritiquePrompt", () => {
     const artifact = DraftCritiquePrompt.build(input, "generic")
 
     expect(artifact.system.length).toBeGreaterThan(0)
-    expect(artifact.user).toContain("엘리아가 교실로 들어왔다.")
-    expect(artifact.user).toContain("주인공 소개")
-    expect(artifact.user).toContain("지훈")
-    expect(artifact.user).toContain("[캐릭터 카드]")
-    expect(artifact.user).toContain("짧은 존댓말")
-    expect(artifact.user).toContain("눈동자 색")
+    expect(userText(artifact)).toContain("엘리아가 교실로 들어왔다.")
+    expect(userText(artifact)).toContain("주인공 소개")
+    expect(userText(artifact)).toContain("지훈")
+    expect(userText(artifact)).toContain("[캐릭터 카드]")
+    expect(userText(artifact)).toContain("짧은 존댓말")
+    expect(userText(artifact)).toContain("눈동자 색")
     expect(artifact.system).toContain("최우선 기준")
   })
 
@@ -29,8 +33,8 @@ describe("DraftCritiquePrompt", () => {
       "generic"
     )
 
-    expect(artifact.user).toContain("단문 위주")
-    expect(artifact.user).toContain("복선 회수")
+    expect(userText(artifact)).toContain("단문 위주")
+    expect(userText(artifact)).toContain("복선 회수")
   })
 
   it("places the character card after a conflicting voice quality criterion", () => {
@@ -43,10 +47,10 @@ describe("DraftCritiquePrompt", () => {
     )
 
     expect(artifact.system).toContain("[품질 기준]과 충돌하면 캐릭터 카드를")
-    expect(artifact.user.indexOf("[캐릭터 카드]")).toBeGreaterThan(
-      artifact.user.indexOf("[품질 기준]")
+    expect(userText(artifact).indexOf("[캐릭터 카드]")).toBeGreaterThan(
+      userText(artifact).indexOf("[품질 기준]")
     )
-    expect(artifact.user).toContain("말투: 짧은 존댓말")
+    expect(userText(artifact)).toContain("말투: 짧은 존댓말")
   })
 
   it("includes narration and relation stage from the style directive", () => {
@@ -62,12 +66,12 @@ describe("DraftCritiquePrompt", () => {
       "generic"
     )
 
-    expect(artifact.user).toContain("[시점]")
-    expect(artifact.user).toContain("1인칭 · 목격 범위")
-    expect(artifact.user).toContain("[서술자 목소리]")
-    expect(artifact.user).toContain("건조한 단문")
-    expect(artifact.user).toContain("[관계 단계]")
-    expect(artifact.user).toContain("적대적 첫 만남")
+    expect(userText(artifact)).toContain("[시점]")
+    expect(userText(artifact)).toContain("1인칭 · 목격 범위")
+    expect(userText(artifact)).toContain("[서술자 목소리]")
+    expect(userText(artifact)).toContain("건조한 단문")
+    expect(userText(artifact)).toContain("[관계 단계]")
+    expect(userText(artifact)).toContain("적대적 첫 만남")
     expect(artifact.system).toContain("관계 단계")
   })
 
@@ -92,11 +96,11 @@ describe("DraftRevisionPrompt", () => {
     const artifact = DraftRevisionPrompt.build(input, "generic")
 
     expect(artifact.system.length).toBeGreaterThan(0)
-    expect(artifact.user).toContain("- 설정 모순: 눈동자 색을 녹색으로")
-    expect(artifact.user).toContain("- 반복 줄이기")
-    expect(artifact.user).toContain("[캐릭터 카드]")
-    expect(artifact.user).toContain("짧은 존댓말")
-    expect(artifact.user).toContain("엘리아가 교실로 들어왔다.")
+    expect(userText(artifact)).toContain("- 설정 모순: 눈동자 색을 녹색으로")
+    expect(userText(artifact)).toContain("- 반복 줄이기")
+    expect(userText(artifact)).toContain("[캐릭터 카드]")
+    expect(userText(artifact)).toContain("짧은 존댓말")
+    expect(userText(artifact)).toContain("엘리아가 교실로 들어왔다.")
     expect(artifact.system).toContain("최우선 불변 조건")
   })
 

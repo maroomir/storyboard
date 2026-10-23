@@ -13,7 +13,13 @@ exports[`DraftRevisionPrompt golden > defaults to the generic variant 1`] = `
 - 설정 모순: 눈동자 색을 녹색으로
 - 반복 줄이기
 
-[장면 의도]
+[본문]
+엘리아가 교실로 들어왔다.
+
+---
+
+준이 따라왔다.",
+  "userPrefix": "[장면 의도]
 주인공 소개
 
 [설정]
@@ -25,13 +31,7 @@ exports[`DraftRevisionPrompt golden > defaults to the generic variant 1`] = `
 말투: 짧은 존댓말
 
 [준] 역할: side
-
-[본문]
-엘리아가 교실로 들어왔다.
-
----
-
-준이 따라왔다.",
+",
 }
 `;
 
@@ -49,6 +49,7 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the generic
 
 [본문]
 본문만.",
+  "userPrefix": "",
 }
 `;
 
@@ -66,6 +67,7 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the generic
 
 [본문]
 본문만.",
+  "userPrefix": "",
 }
 `;
 
@@ -81,11 +83,12 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the generic
   "user": "[지시]
 - 한 가지 지시
 
-[설정]
-사실 하나
-
 [본문]
 본문만.",
+  "userPrefix": "[설정]
+사실 하나
+
+",
 }
 `;
 
@@ -101,11 +104,11 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the generic
   "user": "[지시]
 - 한 가지 지시
 
-[캐릭터 카드]
-[준] 역할: side
-
 [본문]
 본문만.",
+  "userPrefix": "[캐릭터 카드]
+[준] 역할: side
+",
 }
 `;
 
@@ -117,6 +120,7 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the xs vari
 
 [본문]
 본문만.",
+  "userPrefix": "",
 }
 `;
 
@@ -128,6 +132,7 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the xs vari
 
 [본문]
 본문만.",
+  "userPrefix": "",
 }
 `;
 
@@ -137,11 +142,12 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the xs vari
   "user": "[지시]
 - 한 가지 지시
 
-[설정]
-사실 하나
-
 [본문]
 본문만.",
+  "userPrefix": "[설정]
+사실 하나
+
+",
 }
 `;
 
@@ -151,11 +157,11 @@ exports[`DraftRevisionPrompt golden > leaves optional blocks out for the xs vari
   "user": "[지시]
 - 한 가지 지시
 
-[캐릭터 카드]
-[준] 역할: side
-
 [본문]
 본문만.",
+  "userPrefix": "[캐릭터 카드]
+[준] 역할: side
+",
 }
 `;
 
@@ -171,7 +177,13 @@ exports[`DraftRevisionPrompt golden > renders an empty instruction list 1`] = `
   "user": "[지시]
 
 
-[장면 의도]
+[본문]
+엘리아가 교실로 들어왔다.
+
+---
+
+준이 따라왔다.",
+  "userPrefix": "[장면 의도]
 주인공 소개
 
 [설정]
@@ -183,13 +195,7 @@ exports[`DraftRevisionPrompt golden > renders an empty instruction list 1`] = `
 말투: 짧은 존댓말
 
 [준] 역할: side
-
-[본문]
-엘리아가 교실로 들어왔다.
-
----
-
-준이 따라왔다.",
+",
 }
 `;
 
@@ -207,6 +213,7 @@ exports[`DraftRevisionPrompt golden > renders an empty instruction list 2`] = `
 
 [본문]
 본문만.",
+  "userPrefix": "",
 }
 `;
 
@@ -223,7 +230,13 @@ exports[`DraftRevisionPrompt golden > renders every block for the generic varian
 - 설정 모순: 눈동자 색을 녹색으로
 - 반복 줄이기
 
-[장면 의도]
+[본문]
+엘리아가 교실로 들어왔다.
+
+---
+
+준이 따라왔다.",
+  "userPrefix": "[장면 의도]
 주인공 소개
 
 [설정]
@@ -235,13 +248,7 @@ exports[`DraftRevisionPrompt golden > renders every block for the generic varian
 말투: 짧은 존댓말
 
 [준] 역할: side
-
-[본문]
-엘리아가 교실로 들어왔다.
-
----
-
-준이 따라왔다.",
+",
 }
 `;
 
@@ -258,7 +265,13 @@ exports[`DraftRevisionPrompt golden > renders every block for the rich variant 1
 - 설정 모순: 눈동자 색을 녹색으로
 - 반복 줄이기
 
-[장면 의도]
+[본문]
+엘리아가 교실로 들어왔다.
+
+---
+
+준이 따라왔다.",
+  "userPrefix": "[장면 의도]
 주인공 소개
 
 [설정]
@@ -270,13 +283,7 @@ exports[`DraftRevisionPrompt golden > renders every block for the rich variant 1
 말투: 짧은 존댓말
 
 [준] 역할: side
-
-[본문]
-엘리아가 교실로 들어왔다.
-
----
-
-준이 따라왔다.",
+",
 }
 `;
 
@@ -287,7 +294,13 @@ exports[`DraftRevisionPrompt golden > renders every block for the xs variant 1`]
 - 설정 모순: 눈동자 색을 녹색으로
 - 반복 줄이기
 
-[장면 의도]
+[본문]
+엘리아가 교실로 들어왔다.
+
+---
+
+준이 따라왔다.",
+  "userPrefix": "[장면 의도]
 주인공 소개
 
 [설정]
@@ -299,12 +312,6 @@ exports[`DraftRevisionPrompt golden > renders every block for the xs variant 1`]
 말투: 짧은 존댓말
 
 [준] 역할: side
-
-[본문]
-엘리아가 교실로 들어왔다.
-
----
-
-준이 따라왔다.",
+",
 }
 `;
