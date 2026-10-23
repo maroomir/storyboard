@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-10-24
+
 ### Added
 
 - **An acted-skeleton stage (`actBeats`).** Instead of one skeleton call, every beat is played by its cast: each character proposes two options from its own knowledge and the beats it witnessed, an arbiter picks one per character and writes the passage, and a character judge scores it. Low scores, a missed beat, material pulled from later beats and catchphrases over the per-beat cap send the arbiter back with the reasons, and what remains becomes a draft warning. It is opt-in: `pipelines/scene.yaml` names `actBeats` in place of `draftSkeleton`. Task names are `sceneBeatActor`, `sceneBeatArbiter` and `sceneBeatJudge`; knobs are `generation.actors.*`. The call count is about cast size + 2 per beat instead of one skeleton call.

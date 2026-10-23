@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-10-24
+
 ### 추가
 
 - **배우 뼈대 단계(`actBeats`)가 생겼습니다.** 뼈대를 한 호출로 쓰는 대신 비트마다 출연 인물이 배우가 되어 자기가 아는 것과 본 대목만 보고 선택지 둘을 내고, 감독이 하나씩 골라 대목을 엮고, 인물 심판이 채점합니다. 낮은 점수·지시 누락·뒤 대목 소재 선점·비트당 입버릇 초과는 감독이 사유를 받아 다시 엮고, 남으면 초안 경고로 올립니다. 선택 단계라 `pipelines/scene.yaml`에서 `draftSkeleton` 자리에 `actBeats`를 적어야 돌며, 작업 이름은 `sceneBeatActor`·`sceneBeatArbiter`·`sceneBeatJudge`, 손잡이는 `generation.actors.*`입니다. 호출 수는 뼈대 한 번 대신 비트마다 출연 수 + 2 안팎입니다.
