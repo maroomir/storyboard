@@ -289,7 +289,7 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
       styleDirective: { targetWordCount: 3000 }
     })
 
-    const skeletonWarnings = result.warnings.filter((warning) => warning.startsWith("뼈대:"))
+    const skeletonWarnings = result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판):"))
     expect(skeletonWarnings).toHaveLength(1)
     expect(skeletonWarnings[0]).toContain("목표 1,000자의 80%")
   })
@@ -653,7 +653,56 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(ai.checkSceneCoverage.mock.calls[0]?.[0]).toEqual(["밥을 먹는다", "설거지를 한다", "교문을 나선다"])
     const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
     expect(retry.retryReasons.join(" ")).toContain("사건 «설거지를 한다»이 뼈대에 없습니다")
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대: 사건 «설거지를 한다»"))).toHaveLength(1)
+    // 남은 경고는 채택한 판의 것이라고 읽혀야 한다(#118).
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»"))).toHaveLength(1)
+  })
+
+  it("drops a missing-beat warning when the beat turns up elsewhere in the whole skeleton (#118)", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton
+      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다."].join("\n"))
+      .mockResolvedValueOnce(["⟪대목 2⟫", "엘리아가 설거지를 하고 교문을 나섰다."].join("\n"))
+    ai.checkSceneCoverage
+      .mockResolvedValueOnce([{ index: 2, status: "missing", note: "" }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 9000 },
+      tuning: { "generation.skeleton.charsPerCall": 2000, "generation.skeleton.retryLimit": 0 }
+    })
+
+    expect(ai.checkSceneCoverage).toHaveBeenCalledTimes(3)
+    const recheck = ai.checkSceneCoverage.mock.calls[2] as [readonly string[], string]
+    expect(recheck[0]).toEqual(["설거지를 한다"])
+    expect(recheck[1]).toContain("설거지를 하고 교문을 나섰다")
+    expect(result.warnings.filter((warning) => warning.includes("뼈대에 없습니다"))).toEqual([])
+  })
+
+  it("keeps a missing-beat warning the whole-skeleton recheck confirms", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton
+      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다."].join("\n"))
+      .mockResolvedValueOnce(["⟪대목 2⟫", "엘리아가 교문을 나섰다."].join("\n"))
+    ai.checkSceneCoverage
+      .mockResolvedValueOnce([{ index: 2, status: "missing", note: "" }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ index: 1, status: "missing", note: "" }])
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 9000 },
+      tuning: { "generation.skeleton.charsPerCall": 2000, "generation.skeleton.retryLimit": 0 }
+    })
+
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 1/2: 사건 «설거지를 한다»이 뼈대에 없습니다"))).toHaveLength(1)
   })
 
   it("keeps a skeleton that covers every beat without a retry", async () => {

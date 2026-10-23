@@ -272,13 +272,21 @@ async function draftSkeletonWithRetries(
   // 대목 묶음 호출이면 이 호출 안에서 시작하는 대목 번호(1부터). 표식 검사와 첫 표식 보충이 그 범위로
   // 좁혀지고, 대목 중간을 잇는 호출은 빈 목록이다.
   segmentNumbers?: readonly number[],
-): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
+): Promise<SkeletonDraft> {
   let reasons: string[] = [];
   let best:
-    | { text: string; violations: readonly SectionViolation[]; weight: number; distance: number }
+    | {
+        text: string;
+        violations: readonly SectionViolation[];
+        missingBeats: readonly string[];
+        weight: number;
+        distance: number;
+      }
     | undefined;
+  let retries = 0;
 
   for (let attempt = 0; attempt <= retryLimit; attempt += 1) {
+    retries = attempt;
     const rawResponse = await aiService.draftSceneSkeleton(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
@@ -293,14 +301,15 @@ async function draftSkeletonWithRetries(
               : ensureLeadingMarker(response, segmentNumbers[0]),
             segmentNumbers,
           );
+    const missingBeats = await findMissingBeats(aiService, coverageBeats, skeleton, options);
     const violations = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
       ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
-      ...(await findMissingBeats(aiService, coverageBeats, skeleton, options)),
+      ...missingBeatsViolation(missingBeats),
     ];
 
     if (violations.length === 0) {
-      return { text: skeleton, violations: [] };
+      return { text: skeleton, violations: [], missingBeats: [], retries };
     }
 
     const weight = weighViolations(violations, tuning.violationWeights);
@@ -311,7 +320,7 @@ async function draftSkeletonWithRetries(
       weight < best.weight ||
       (weight === best.weight && distance < best.distance)
     ) {
-      best = { text: skeleton, violations, weight, distance };
+      best = { text: skeleton, violations, missingBeats, weight, distance };
     }
 
     reasons = [
@@ -320,7 +329,22 @@ async function draftSkeletonWithRetries(
     ];
   }
 
-  return { text: best?.text ?? '', violations: best?.violations ?? [] };
+  return {
+    text: best?.text ?? '',
+    violations: best?.violations ?? [],
+    missingBeats: best?.missingBeats ?? [],
+    retries,
+  };
+}
+
+interface SkeletonDraft {
+  readonly text: string;
+  // 채택한 판에 남은 위반. 재시도가 해소한 사유는 들어 있지 않다.
+  readonly violations: readonly SectionViolation[];
+  // 채택한 판의 커버리지 검사가 없다고 한 사건.
+  readonly missingBeats: readonly string[];
+  // 채택한 판 앞에 반려된 시도의 수.
+  readonly retries: number;
 }
 
 // 뼈대가 곧은 큰따옴표로 대사를 쓰면 묶음 호출의 뒤 호출들이 앞 뼈대의 모양을 따라가 초안 전체에 섞인다
@@ -338,16 +362,19 @@ async function findMissingBeats(
   beats: readonly string[],
   skeleton: string,
   options: GenerateTextOptions,
-): Promise<SectionViolation[]> {
+): Promise<string[]> {
   if (beats.length === 0) {
     return [];
   }
 
   const issues = await aiService.checkSceneCoverage(beats, skeleton, options);
-  const missing = issues
+  return issues
     .filter((issue) => issue.status === 'missing')
     .map((issue) => beats[issue.index - 1])
     .filter((beat): beat is string => beat !== undefined);
+}
+
+function missingBeatsViolation(missing: readonly string[]): SectionViolation[] {
   if (missing.length === 0) {
     return [];
   }
@@ -362,6 +389,12 @@ async function findMissingBeats(
       detail: `사건 ${listed}${missing.length > thinBeatListLimit ? ` 외 ${missing.length - thinBeatListLimit}개` : ''}이 뼈대에 없습니다. 사건 목록의 사건을 순서대로 빠짐없이 담으세요`,
     },
   ];
+}
+
+// 재시도가 남긴 경고는 채택한 판의 것이라고 읽혀야 한다(#118). 첫 시도의 사유가 남은 것처럼 보이면
+// 작가는 없는 누락을 본문에서 찾는다.
+function skeletonWarningLabel(call: string, retries: number): string {
+  return retries > 0 ? `${call} (재시도 ${retries}회 뒤 채택한 판)` : call;
 }
 
 function shortBeat(text: string): string {
@@ -955,7 +988,7 @@ async function draftSkeletonInCalls(input: {
   const totalBeats = calls.reduce((sum, call) => sum + call.beats.length, 0);
   const endState = ctx.context.scene.card?.endState;
   const parts: string[] = [];
-  const warnings: string[] = [];
+  const drafts: SkeletonDraft[] = [];
 
   for (const [index, call] of calls.entries()) {
     ctx.onProgress?.('draftSkeleton', index + 1, calls.length);
@@ -981,15 +1014,27 @@ async function draftSkeletonInCalls(input: {
       call.markers,
     );
     parts.push(result.text);
-    warnings.push(
-      ...result.violations.map(
-        (violation) => `뼈대 ${index + 1}/${calls.length}: ${violation.detail}`,
-      ),
-    );
+    drafts.push(result);
     assertNotCancelled(ctx.shouldCancel);
   }
 
-  return { text: parts.join('\n\n'), warnings };
+  const text = parts.join('\n\n');
+  // 호출은 자기 몫만 검사하므로, 다른 호출이 쓴 사건은 그 호출에서 «없다»로 남는다(#118). 전체 뼈대로
+  // 한 번 다시 보고, 어디에든 있는 사건의 경고는 거둔다.
+  const reported = drafts.flatMap((draft) => draft.missingBeats);
+  const stillMissing = new Set(
+    reported.length === 0 ? [] : await findMissingBeats(ctx.aiService, reported, text, options),
+  );
+  const warnings = drafts.flatMap((draft, index) => {
+    const label = skeletonWarningLabel(`뼈대 ${index + 1}/${calls.length}`, draft.retries);
+    const kept = [
+      ...draft.violations.filter((violation) => violation.kind !== 'missing-beats'),
+      ...missingBeatsViolation(draft.missingBeats.filter((beat) => stillMissing.has(beat))),
+    ];
+    return kept.map((violation) => `${label}: ${violation.detail}`);
+  });
+
+  return { text, warnings };
 }
 
 function beatText(beat: SceneBeat | undefined): string | undefined {
@@ -1045,7 +1090,9 @@ const draftSkeletonStage: ISceneStage = {
       );
       skeleton = {
         text: whole.text,
-        warnings: whole.violations.map((violation) => `뼈대: ${violation.detail}`),
+        warnings: whole.violations.map(
+          (violation) => `${skeletonWarningLabel('뼈대', whole.retries)}: ${violation.detail}`,
+        ),
       };
     } else {
       skeleton = await draftSkeletonInCalls({
