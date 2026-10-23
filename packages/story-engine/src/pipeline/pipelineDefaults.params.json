@@ -50,6 +50,7 @@
   },
   "violationWeights": {
     "cast": 3,
+    "place": 2,
     "foreign-script": 3,
     "dialogue-count": 2,
     "lost-dialogue": 2,

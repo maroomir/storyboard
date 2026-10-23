@@ -4,9 +4,12 @@ import {
   countMissingSceneCoordinates,
   extractSceneCoordinates,
   listSceneCoordinates,
+  placeWordSet,
   sceneCoordinatesFromBeats,
+  sectionPlaces,
   sectionSceneCoordinates,
 } from '@storyboard/story-engine';
+import type { SceneBeat } from '@storyboard/story-model';
 
 const morning = '시각: 아침 / 장소: 거실 / 있는 사람: 나, 은하';
 const afternoon = '시각: 방과 후 / 장소: 교문 앞 / 있는 사람: 나';
@@ -98,5 +101,54 @@ describe('section scene coordinates', () => {
     expect(
       sectionSceneCoordinates({ segments: [], isAlignedWithBreaks: true }, ['a', 'b']),
     ).toEqual([[], []]);
+  });
+});
+
+// #122: 한 대목이 여러 비트에 걸치면 구간 쓰기는 비트별 장소를 알아야 인물을 좌표 밖의 방으로 옮기지 않는다.
+describe('section beat coordinates', () => {
+  const beats: SceneBeat[] = [
+    { text: '소파에서 성재와 말한다', place: '집 거실', time: '저녁 8시', cast: ['mj', 'sj'] },
+    { text: '동생이 캐묻는다', place: '집 거실', time: '저녁 8시 20분' },
+    { text: '엄마와 은하가 돌아온다', place: '집 현관과 거실', time: '저녁 8시 45분' },
+    '문자열 비트',
+    { text: '옥상에 오른다', place: '옥상 발코니', time: '밤 9시' },
+  ];
+  const ledger = {
+    segments: ['장소: 집 거실 → 집 현관과 거실 / 시각: 저녁 8시 ~ 저녁 8시 45분', '장소: 옥상 발코니 / 시각: 밤 9시'],
+    isAlignedWithBreaks: true,
+    beats: [[0, 1, 2, 3], [4]],
+  };
+  const sections = ['거실 대목\n\n---', '옥상 대목'];
+
+  it('lists the beats of the segments this section covers under their segment line', () => {
+    expect(sectionSceneCoordinates(ledger, sections, beats, (ref) => (ref === 'mj' ? '만재' : '성재'))).toEqual([
+      [
+        '1. 장소: 집 거실 → 집 현관과 거실 / 시각: 저녁 8시 ~ 저녁 8시 45분 ← 이번 구간',
+        '  1-1. 출연: 만재, 성재 / 장소: 집 거실 / 시각: 저녁 8시 — 소파에서 성재와 말한다',
+        '  1-2. 장소: 집 거실 / 시각: 저녁 8시 20분 — 동생이 캐묻는다',
+        '  1-3. 장소: 집 현관과 거실 / 시각: 저녁 8시 45분 — 엄마와 은하가 돌아온다',
+        '2. 장소: 옥상 발코니 / 시각: 밤 9시',
+      ],
+      [
+        '1. 장소: 집 거실 → 집 현관과 거실 / 시각: 저녁 8시 ~ 저녁 8시 45분',
+        '2. 장소: 옥상 발코니 / 시각: 밤 9시 ← 이번 구간',
+        '  2-5. 장소: 옥상 발코니 / 시각: 밤 9시 — 옥상에 오른다',
+      ],
+    ]);
+  });
+
+  it('keeps the segment lines alone when the ledger does not know its beats', () => {
+    const withoutBeats = { segments: ledger.segments, isAlignedWithBreaks: true };
+
+    expect(sectionSceneCoordinates(withoutBeats, sections, beats)).toEqual([
+      ['1. 장소: 집 거실 → 집 현관과 거실 / 시각: 저녁 8시 ~ 저녁 8시 45분 ← 이번 구간', '2. 장소: 옥상 발코니 / 시각: 밤 9시'],
+      ['1. 장소: 집 거실 → 집 현관과 거실 / 시각: 저녁 8시 ~ 저녁 8시 45분', '2. 장소: 옥상 발코니 / 시각: 밤 9시 ← 이번 구간'],
+    ]);
+    expect(sectionPlaces(withoutBeats, sections, beats)).toEqual([[], []]);
+  });
+
+  it('names the distinct places of each section and their matching words', () => {
+    expect(sectionPlaces(ledger, sections, beats)).toEqual([['집 거실', '집 현관과 거실'], ['옥상 발코니']]);
+    expect([...placeWordSet(['집 현관과 거실', '옥상 발코니 앞'])]).toEqual(['현관', '거실', '옥상', '발코니']);
   });
 });

@@ -555,6 +555,15 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
       "1. 장소: 집 식탁 → 집 부엌 / 시각: 아침 7시 ~ 아침 7시 20분",
       "2. 장소: 학교 교문 앞 / 시각: 오후 4시"
     ])
+    // 구간 쓰기는 대목 범위 한 줄만으로는 비트별 장소를 모른다(#122). 이번 구간의 대목 아래 비트 좌표가 간다.
+    const expansion = ai.expandSceneSection.mock.calls[0]?.[0] as { sceneCoordinates: readonly string[] }
+    expect(expansion.sceneCoordinates).toEqual([
+      "1. 장소: 집 식탁 → 집 부엌 / 시각: 아침 7시 ~ 아침 7시 20분 ← 이번 구간",
+      "  1-1. 장소: 집 식탁 / 시각: 아침 7시 — 밥을 먹는다",
+      "  1-2. 장소: 집 부엌 / 시각: 아침 7시 20분 — 설거지를 한다",
+      "2. 장소: 학교 교문 앞 / 시각: 오후 4시 ← 이번 구간",
+      "  2-3. 장소: 학교 교문 앞 / 시각: 오후 4시 — 교문을 나선다"
+    ])
   })
 
   it("drafts a long planned scene in bundled calls that continue each other", async () => {

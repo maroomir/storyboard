@@ -13,6 +13,7 @@ after the first public release.
 ### Fixed
 
 - **A beat whose time is a span now ends its segment.** When a beat's `time` says time passed inside the beat ("오전부터 오후까지", "수업 동안", "경과"), the break plan cuts before the next beat. Before, only the period words were compared, so "오후" followed "오후" and the school day ran into the walk home. The author's `break: true|false` still wins. (#121)
+- **Section expansion receives the beat coordinates of its own segments and is retried when it sets up a place outside them.** Under each «← 이번 구간» line of `[장면 좌표]` every beat of that segment gets its own `place / time — event` line, so a segment spanning several beats or sections no longer hides where each beat happens. Section validation gains a `place` violation when the prose names a space (a study, an attic — common rooms of a house or street) that no coordinate, background fact or skeleton line mentions, with the retry weight `generation.violationWeights.place` (default 2). Only scenes whose breaks the pipeline planned are affected; model-cut scenes behave as before. (#122)
 
 ## [0.13.1] - 2026-10-24
 

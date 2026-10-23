@@ -54,6 +54,7 @@ import {
   hasSceneCoordinates,
   listSceneCoordinates,
   sceneCoordinatesFromBeats,
+  sectionPlaces,
   sectionSceneCoordinates,
   type SceneCoordinateLedger,
 } from './sceneCoordinates';
@@ -426,6 +427,7 @@ async function expandSectionWithRetries(input: {
   readonly backgroundFacts: readonly string[];
   readonly backgroundConflicts: readonly string[];
   readonly sceneCoordinates: readonly string[];
+  readonly sectionPlaces: readonly string[];
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
@@ -467,6 +469,8 @@ async function expandSectionWithRetries(input: {
       characters: input.characters,
       targetLength: input.targetLength,
       ...(input.previousSection === undefined ? {} : { previousSection: input.previousSection }),
+      sectionPlaces: input.sectionPlaces,
+      backgroundFacts: input.backgroundFacts,
       tuning: input.tuning,
     });
 
@@ -1068,7 +1072,11 @@ function adoptSkeleton(state: SceneRunState, skeletonText: string): void {
       : applyPlannedSceneBreaks(skeletonText, ctx.breakPlan);
   if (applied !== undefined && !applied.hasNoMarkers) {
     state.skeleton = applied.text;
-    state.sceneCoordinates = { segments: applied.coordinates, isAlignedWithBreaks: true };
+    state.sceneCoordinates = {
+      segments: applied.coordinates,
+      isAlignedWithBreaks: true,
+      beats: applied.beats,
+    };
     state.polishedText = state.skeleton;
     return;
   }
@@ -1367,7 +1375,14 @@ const expandSectionStage: ISceneStage = {
       planSectionCount(ctx.styleDirective?.targetWordCount ?? 0, outputLimit),
     );
     const targetLengths = sectionTargetLengths(ctx.styleDirective, sections, outputLimit);
-    const coordinatesBySection = sectionSceneCoordinates(state.sceneCoordinates, sections);
+    const beats = ctx.context.scene.card?.beats ?? [];
+    const coordinatesBySection = sectionSceneCoordinates(
+      state.sceneCoordinates,
+      sections,
+      beats,
+      castNameOf(ctx.context),
+    );
+    const placesBySection = sectionPlaces(state.sceneCoordinates, sections, beats);
     const expandedSections: string[] = [];
 
     for (let index = 0; index < sections.length; index += 1) {
@@ -1382,6 +1397,7 @@ const expandSectionStage: ISceneStage = {
         backgroundFacts: backgroundFactLines(state.background),
         backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
         sceneCoordinates: coordinatesBySection[index] ?? [],
+        sectionPlaces: placesBySection[index] ?? [],
         characters: ctx.context.characters,
         options: withAttribution(
           {

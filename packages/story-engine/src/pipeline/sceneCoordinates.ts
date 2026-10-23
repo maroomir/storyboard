@@ -1,4 +1,10 @@
-import { formatSceneBeatCoordinates, type SceneBeat } from '@storyboard/story-model';
+import {
+  formatSceneBeatCoordinates,
+  sceneBeatText,
+  type SceneBeat,
+} from '@storyboard/story-model';
+
+import { placeWords } from './sceneBreakPlan';
 
 // NOTE: 뼈대는 장면 첫 줄과 --- 다음 줄에 그 대목의 좌표(시각·장소·있는 사람)를 ⟪…⟫ 한 줄로 남긴다.
 // 단계 사이에 «지금 몇 시, 어디, 누가 있나»를 넘기는 장부가 없어 살붙임이 앞 대목의 시각을 이어 쓰고
@@ -11,6 +17,8 @@ export interface SceneCoordinateLedger {
   readonly segments: readonly (string | undefined)[];
   // 뼈대 표식에서 왔으면 대목 번호가 본문의 --- 와 맞는다. 비트에서 왔으면 순서만 맞는다.
   readonly isAlignedWithBreaks: boolean;
+  // 파이프라인이 끊은 씬이면 대목마다 그 대목에 든 비트 번호(0부터). 모델이 끊은 씬에는 없다.
+  readonly beats?: readonly (readonly number[])[];
 }
 
 export function extractSceneCoordinates(skeleton: string): {
@@ -87,11 +95,45 @@ export function listSceneCoordinates(ledger: SceneCoordinateLedger): string[] {
   );
 }
 
-// 구간마다 장부 전체를 주되, 이 구간이 덮는 대목에 표시를 단다. 구간은 뼈대를 앞에서부터 자른
-// 조각이므로 앞 구간들의 --- 수가 이 구간의 첫 대목 번호다.
+interface SegmentRange {
+  readonly first: number;
+  readonly last: number;
+}
+
+// 구간은 뼈대를 앞에서부터 자른 조각이므로 앞 구간들의 --- 수가 이 구간의 첫 대목 번호(0부터)다.
+function sectionSegmentRanges(sections: readonly string[]): SegmentRange[] {
+  let firstSegment = 0;
+
+  return sections.map((section) => {
+    const lines = section.split('\n').map((line) => line.trim());
+    const breakCount = lines.filter((line) => line === SCENE_BREAK_LINE).length;
+    // 분할기는 --- 뒤에서 자르기도 한다. 그 --- 다음 대목은 다음 구간에서 시작한다.
+    const endsWithBreak = lines.filter((line) => line.length > 0).at(-1) === SCENE_BREAK_LINE;
+    const range = { first: firstSegment, last: firstSegment + breakCount - (endsWithBreak ? 1 : 0) };
+    firstSegment += breakCount;
+    return range;
+  });
+}
+
+function sectionBeats(
+  ledger: SceneCoordinateLedger,
+  range: SegmentRange,
+  beats: readonly SceneBeat[],
+): { readonly index: number; readonly beat: SceneBeat }[] {
+  return (ledger.beats ?? [])
+    .slice(range.first, range.last + 1)
+    .flatMap((numbers) => numbers.map((index) => ({ index, beat: beats[index] as SceneBeat })))
+    .filter((entry) => entry.beat !== undefined);
+}
+
+// 구간마다 장부 전체를 주되, 이 구간이 덮는 대목에 표시를 단다. 비트를 아는 장부면 그 대목 아래에
+// 비트마다 좌표를 한 줄씩 더한다 — 한 대목이 여러 비트·구간에 걸칠 때 구간 쓰기가 비트별 장소를
+// 모르면 인물을 좌표 밖의 방으로 옮긴다(#122).
 export function sectionSceneCoordinates(
   ledger: SceneCoordinateLedger,
   sections: readonly string[],
+  beats: readonly SceneBeat[] = [],
+  castName: (ref: string) => string = (ref) => ref,
 ): string[][] {
   if (!hasSceneCoordinates(ledger)) {
     return sections.map(() => []);
@@ -100,22 +142,48 @@ export function sectionSceneCoordinates(
     return sections.map(() => listSceneCoordinates(ledger));
   }
 
-  let firstSegment = 0;
-
-  return sections.map((section) => {
-    const lines = section.split('\n').map((line) => line.trim());
-    const breakCount = lines.filter((line) => line === SCENE_BREAK_LINE).length;
-    // 분할기는 --- 뒤에서 자르기도 한다. 그 --- 다음 대목은 다음 구간에서 시작한다.
-    const endsWithBreak = lines.filter((line) => line.length > 0).at(-1) === SCENE_BREAK_LINE;
-    const lastSegment = firstSegment + breakCount - (endsWithBreak ? 1 : 0);
-    const coordinates = ledger.segments.flatMap((segment, index) => {
+  return sectionSegmentRanges(sections).map((range) =>
+    ledger.segments.flatMap((segment, index) => {
       if (segment === undefined) {
         return [];
       }
-      const isInSection = index >= firstSegment && index <= lastSegment;
-      return [`${index + 1}. ${segment}${isInSection ? ' ← 이번 구간' : ''}`];
-    });
-    firstSegment += breakCount;
-    return coordinates;
-  });
+      const isInSection = index >= range.first && index <= range.last;
+      if (!isInSection) {
+        return [`${index + 1}. ${segment}`];
+      }
+      const beatLines = sectionBeats(ledger, { first: index, last: index }, beats).flatMap(
+        ({ index: beatIndex, beat }) => {
+          const coordinate = formatSceneBeatCoordinates(beat, castName);
+          return coordinate === undefined
+            ? []
+            : [`  ${index + 1}-${beatIndex + 1}. ${coordinate} — ${sceneBeatText(beat)}`];
+        },
+      );
+      return [`${index + 1}. ${segment} ← 이번 구간`, ...beatLines];
+    }),
+  );
+}
+
+// 구간마다 그 구간의 비트가 선 장소들. 비트를 모르는 장부면 빈 목록이다.
+export function sectionPlaces(
+  ledger: SceneCoordinateLedger,
+  sections: readonly string[],
+  beats: readonly SceneBeat[],
+): string[][] {
+  if (ledger.beats === undefined || !ledger.isAlignedWithBreaks) {
+    return sections.map(() => []);
+  }
+
+  return sectionSegmentRanges(sections).map((range) => [
+    ...new Set(
+      sectionBeats(ledger, range, beats).flatMap(({ beat }) =>
+        typeof beat === 'string' || beat.place === undefined ? [] : [beat.place],
+      ),
+    ),
+  ]);
+}
+
+// 장소 문자열들을 같은 곳인지 가리는 낱말 집합으로. 한 글자 낱말은 어디에나 섞여 들어 버린다.
+export function placeWordSet(places: readonly string[]): Set<string> {
+  return new Set(places.flatMap(placeWords).filter((word) => word.length >= 2));
 }

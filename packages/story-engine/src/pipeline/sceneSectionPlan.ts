@@ -193,6 +193,60 @@ export interface SectionViolation {
   readonly detail: string;
 }
 
+// 살붙임이 좌표에도 공간 사실에도 없는 자리를 세울 때 쓰는 공간 낱말. 실측에서 모델은 비트 사이에서
+// 인물을 «서재»나 각자의 방으로 옮겼다가 다음 비트에서 되돌렸다(#122). 집·거리의 흔한 공간만 둔다 —
+// 뼈대와 좌표·공간 사실 어디에도 없는 낱말만 위반이므로, 작품이 쓰는 공간은 저절로 허용된다.
+const spaceNouns = [
+  '서재',
+  '침실',
+  '안방',
+  '작은방',
+  '거실',
+  '부엌',
+  '주방',
+  '식당',
+  '욕실',
+  '화장실',
+  '현관',
+  '베란다',
+  '발코니',
+  '테라스',
+  '옥상',
+  '마당',
+  '정원',
+  '복도',
+  '계단',
+  '다락',
+  '창고',
+  '지하',
+  '차고',
+  '엘리베이터',
+  '사무실',
+  '교실',
+  '카페',
+  '편의점',
+  '골목',
+] as const;
+
+// 구간 본문이 세운 공간 가운데 이번 구간의 뼈대·비트 장소·공간 사실 어디에도 없는 것. 장소 좌표가
+// 없는 구간은 판정할 근거가 없으므로 비어 있다.
+export function findPlacesOffCoordinates(input: {
+  readonly expanded: string;
+  readonly section: string;
+  readonly sectionPlaces: readonly string[];
+  readonly backgroundFacts?: readonly string[];
+}): string[] {
+  if (input.sectionPlaces.length === 0) {
+    return [];
+  }
+
+  const allowed = [input.section, ...input.sectionPlaces, ...(input.backgroundFacts ?? [])].join(
+    '\n',
+  );
+
+  return spaceNouns.filter((noun) => input.expanded.includes(noun) && !allowed.includes(noun));
+}
+
 // NOTE: 따옴표 최소 길이가 손잡이라 정규식을 미리 컴파일해 둘 수 없다. dialogueLinesOf 가 O(n²)
 // 비교 안에서 불리므로 호출마다 새로 만들면 실측 가능한 성능 저하가 된다 — 길이별로 하나만 만든다.
 const quotedDialoguePatterns = new Map<number, RegExp>();
@@ -404,6 +458,9 @@ export function validateExpandedSection(input: {
   readonly characters: readonly CharacterCard[];
   readonly targetLength: number;
   readonly previousSection?: string;
+  // 이 구간의 비트가 선 장소들과 배경 카드의 공간 사실. 있으면 좌표 밖의 공간을 세웠는지 본다.
+  readonly sectionPlaces?: readonly string[];
+  readonly backgroundFacts?: readonly string[];
   // 모델 문체에 따라 같은 대사를 옮겨 적는 방식이 달라 임계가 고정이면 오탐이 난다.
   // NOTE: 아래 두 필드는 tuning 이 생기기 전의 이름이다. 둘 다 주면 개별 필드가 이긴다.
   readonly dialoguePreservedRatio?: number;
@@ -425,6 +482,19 @@ export function validateExpandedSection(input: {
     violations.push({
       kind: 'cast',
       detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})`,
+    });
+  }
+
+  const offPlaces = findPlacesOffCoordinates({
+    expanded: input.expanded,
+    section: input.section,
+    sectionPlaces: input.sectionPlaces ?? [],
+    ...(input.backgroundFacts === undefined ? {} : { backgroundFacts: input.backgroundFacts }),
+  });
+  if (offPlaces.length > 0) {
+    violations.push({
+      kind: 'place',
+      detail: `좌표와 공간 사실에 없는 공간을 세웠습니다 (${offPlaces.join(', ')}). 이번 구간의 비트 좌표가 가리키는 자리 안에서 쓰세요`,
     });
   }
 

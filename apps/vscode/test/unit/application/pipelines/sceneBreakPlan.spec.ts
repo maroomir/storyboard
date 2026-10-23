@@ -207,6 +207,7 @@ describe("applyPlannedSceneBreaks", () => {
 
     expect(applied.text).toBe(["밥을 먹었다.", "양치를 했다.", "", "---", "", "수업을 들었다.", "", "---", "", "공원에 갔다."].join("\n"))
     expect(applied.coordinates).toEqual(["장소: 집 / 시각: 아침", "장소: 학교 / 시각: 오후", "장소: 공원 / 시각: 저녁"])
+    expect(applied.beats).toEqual([[0], [1], [2]])
     expect(applied.missingMarkers).toBe(0)
   })
 
@@ -215,6 +216,7 @@ describe("applyPlannedSceneBreaks", () => {
 
     expect(countSceneBreakLines(applied.text)).toBe(1)
     expect(applied.coordinates).toEqual(["장소: 집 / 시각: 아침", "장소: 공원 / 시각: 저녁"])
+    expect(applied.beats).toEqual([[0, 1], [2]])
     expect(applied.missingMarkers).toBe(1)
   })
 

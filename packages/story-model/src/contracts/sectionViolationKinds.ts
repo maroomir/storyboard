@@ -3,6 +3,7 @@
 // so they live below both.
 export const sectionViolationKinds = [
   'cast',
+  'place',
   'foreign-script',
   'lost-dialogue',
   'too-short',

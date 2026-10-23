@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  findPlacesOffCoordinates,
   findRunAheadDialogue,
   planSectionTargetLengths,
   resolveSceneGenerationTuning,
@@ -128,5 +129,30 @@ describe("findRunAheadDialogue", () => {
 
   it("finds nothing when the expansion stays in its section", () => {
     expect(findRunAheadDialogue(skeleton, section, `${section}\n\n은하가 웃었다.`, tuning)).toEqual([])
+  })
+})
+
+// #122: 구간 쓰기가 비트 사이에서 인물을 좌표에 없는 서재나 각자의 방으로 옮겼다. 좌표·공간 사실·뼈대
+// 어디에도 없는 공간 낱말만 위반이므로 작품이 쓰는 공간은 저절로 허용된다.
+describe("findPlacesOffCoordinates", () => {
+  const section = "성재가 소파에 앉았다.\n\n“형은 누나한테 왜 그래.”"
+  const sectionPlaces = ["집 거실", "집 현관과 거실"]
+
+  it("names a space the section sets up that no coordinate, fact or skeleton line mentions", () => {
+    const expanded = "나는 서재로 걸음을 옮겼다. 성재가 방문을 열고 들어와 소파 얘기를 꺼냈다. 거실은 조용했다."
+
+    expect(findPlacesOffCoordinates({ expanded, section, sectionPlaces })).toEqual(["서재"])
+  })
+
+  it("allows a space the background facts or the beat places name", () => {
+    const expanded = "서재 쪽 복도를 지나 거실로 왔다. 현관문이 열렸다."
+
+    expect(
+      findPlacesOffCoordinates({ expanded, section, sectionPlaces, backgroundFacts: ["서재는 현관 옆 복도 끝에 있다"] })
+    ).toEqual([])
+  })
+
+  it("judges nothing when the section has no place coordinates", () => {
+    expect(findPlacesOffCoordinates({ expanded: "서재와 다락과 창고를 돌았다.", section, sectionPlaces: [] })).toEqual([])
   })
 })

@@ -128,7 +128,8 @@ export function isTimeJump(previous: string, next: string, jumpMinutes: number):
   );
 }
 
-function placeWords(place: string): string[] {
+// 장소 문자열을 같은 곳인지 가리는 낱말로 나눈다. 조사를 떼고 방향 낱말은 버린다.
+export function placeWords(place: string): string[] {
   return place
     .split(/[\s,·、/()]+/)
     .map((word) => word.replace(/(?:과|와|의|에서|으로|로)$/, ''))
@@ -344,6 +345,9 @@ export interface PlannedBreakResult {
   readonly text: string;
   // 결과 본문의 대목 순서대로 그 좌표. --- 수 + 1 과 같다.
   readonly coordinates: readonly (string | undefined)[];
+  // 결과 본문의 대목 순서대로, 그 대목에 든 비트 번호(0부터). 표식이 빠져 앞 대목에 붙은 계획 대목의
+  // 비트는 그 앞 대목의 몫이다.
+  readonly beats: readonly (readonly number[])[];
   readonly missingMarkers: number;
   // 표식을 하나도 옮겨 적지 않았다. 그때 --- 를 모두 지우면 전환이 다 사라지므로 호출자는 모델의
   // --- 를 그대로 쓴다.
@@ -358,7 +362,13 @@ export function applyPlannedSceneBreaks(
   const out: string[] = [];
   const seen = new Set<number>();
   const coordinates: (string | undefined)[] = [];
+  // 결과 대목마다 그 대목을 여는 계획 대목 번호(1부터).
+  const openingNumbers: number[] = [];
   const hasContent = (): boolean => out.some((line) => line.trim().length > 0);
+  const openSegment = (segmentNumber: number): void => {
+    coordinates.push(plan.segments[segmentNumber - 1]?.coordinate);
+    openingNumbers.push(segmentNumber);
+  };
 
   for (const line of skeleton.split('\n')) {
     if (line.trim() === SCENE_BREAK_LINE) {
@@ -374,16 +384,16 @@ export function applyPlannedSceneBreaks(
       seen.add(segmentNumber);
       if (segmentNumber === 1 || !hasContent()) {
         if (coordinates.length === 0) {
-          coordinates.push(plan.segments[segmentNumber - 1]?.coordinate);
+          openSegment(segmentNumber);
         }
         continue;
       }
 
       if (coordinates.length === 0) {
-        coordinates.push(plan.segments[0]?.coordinate);
+        openSegment(1);
       }
       out.push('', SCENE_BREAK_LINE, '');
-      coordinates.push(plan.segments[segmentNumber - 1]?.coordinate);
+      openSegment(segmentNumber);
     }
 
     const rest = line.replace(ANY_MARKER, '');
@@ -395,8 +405,15 @@ export function applyPlannedSceneBreaks(
   }
 
   if (coordinates.length === 0) {
-    coordinates.push(plan.segments[0]?.coordinate);
+    openSegment(1);
   }
+
+  // 결과 대목 i는 자기를 연 계획 대목부터 다음 결과 대목이 열리기 전까지의 비트를 모두 가진다.
+  const beats = openingNumbers.map((opening, index) => {
+    const next = openingNumbers[index + 1] ?? plan.segments.length + 1;
+    const from = index === 0 ? 1 : opening;
+    return plan.segments.slice(from - 1, next - 1).flatMap((segment) => segment.beats);
+  });
 
   return {
     text: out
@@ -404,6 +421,7 @@ export function applyPlannedSceneBreaks(
       .replace(/\n{3,}/g, '\n\n')
       .trim(),
     coordinates,
+    beats,
     missingMarkers: plan.segments.length - seen.size,
     hasNoMarkers: seen.size === 0,
   };

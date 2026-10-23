@@ -87,6 +87,7 @@ const pipelineDefaultsSchema = z.object({
   // 재시도 후보 중 어느 판을 남길지 재는 저울. 원고를 못 쓰게 만드는 위반이 무겁다.
   violationWeights: z.object({
     cast: positiveInt,
+    place: positiveInt,
     'foreign-script': positiveInt,
     'dialogue-count': positiveInt,
     'lost-dialogue': positiveInt,
