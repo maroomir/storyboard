@@ -35,6 +35,9 @@ const dayPeriods = [
   { words: ['밤', '자정', '심야'], pm: true },
 ] as const;
 
+// 한 비트 안에서 시간이 흐른 시각(«오전부터 오후까지», «수업 동안», «경과»). 그 비트가 끝나면 전환이다.
+const timeSpanPattern = /까지|경과|동안|내내/;
+
 // 날이 바뀌었다고 적힌 시각은 언제나 전환이다.
 const dayChangePattern =
   /다음\s*날|이튿날|며칠\s*(?:뒤|후)|\d+\s*일\s*(?:뒤|후)|일주일\s*(?:뒤|후)|다음\s*주/;
@@ -57,6 +60,7 @@ interface ReadTime {
   readonly period: number | undefined;
   readonly minutes: number | undefined;
   readonly isNextDay: boolean;
+  readonly isSpan: boolean;
 }
 
 // 문자열에서 마지막으로 언급된 시간대. «오전부터 오후까지»는 끝난 때인 오후다.
@@ -99,14 +103,19 @@ function readMinutes(time: string, period: number | undefined): number | undefin
 
 function readTime(time: string): ReadTime {
   const period = readPeriod(time);
-  return { period, minutes: readMinutes(time, period), isNextDay: dayChangePattern.test(time) };
+  return {
+    period,
+    minutes: readMinutes(time, period),
+    isNextDay: dayChangePattern.test(time),
+    isSpan: timeSpanPattern.test(time),
+  };
 }
 
 export function isTimeJump(previous: string, next: string, jumpMinutes: number): boolean {
   const before = readTime(previous);
   const after = readTime(next);
 
-  if (after.isNextDay) {
+  if (after.isNextDay || before.isSpan) {
     return true;
   }
 

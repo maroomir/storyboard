@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A beat whose time is a span now ends its segment.** When a beat's `time` says time passed inside the beat ("오전부터 오후까지", "수업 동안", "경과"), the break plan cuts before the next beat. Before, only the period words were compared, so "오후" followed "오후" and the school day ran into the walk home. The author's `break: true|false` still wins. (#121)
+
 ## [0.13.1] - 2026-10-24
 
 ### Added

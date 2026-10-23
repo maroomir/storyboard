@@ -64,7 +64,14 @@ describe("isTimeJump", () => {
 
   it("compares day periods when no clock time is given", () => {
     expect(isTimeJump("아침", "방과 후", 60)).toBe(true)
-    expect(isTimeJump("오전부터 오후까지", "오후 4시, 방과 후", 60)).toBe(false)
+    expect(isTimeJump("오후", "오후 4시, 방과 후", 60)).toBe(false)
+  })
+
+  it("breaks after a beat whose time is a span (#121)", () => {
+    expect(isTimeJump("오전부터 오후까지, 경과", "오후 4시, 방과 후", 60)).toBe(true)
+    expect(isTimeJump("수업 동안", "오후 4시", 60)).toBe(true)
+    expect(isTimeJump("하루 내내", "저녁", 60)).toBe(true)
+    expect(isTimeJump("오후 4시", "오후 4시 15분, 경과", 60)).toBe(false)
   })
 
   it("always breaks on the next day", () => {
@@ -80,7 +87,8 @@ describe("planSceneBreaks", () => {
       [0, 1],
       [2],
       [3, 4],
-      [5, 6],
+      [5],
+      [6],
       [7, 8, 9, 10, 11, 12, 13, 14],
       [15, 16, 17],
       [18, 19, 20],
@@ -149,8 +157,8 @@ describe("planSkeletonCalls", () => {
   const plan = planSceneBreaks(dayBeats, name, 60)!
 
   it("bundles consecutive segments until a call's share of the target would pass the cap", () => {
-    // 25비트·목표 10,000자 → 비트당 400자. 대목 비트 수 [2,1,2,2,8,3,3,4].
-    expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.markers)).toEqual([[1, 2, 3, 4], [5], [6, 7], [8]])
+    // 25비트·목표 10,000자 → 비트당 400자. 대목 비트 수 [2,1,2,1,1,8,3,3,4].
+    expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.markers)).toEqual([[1, 2, 3, 4, 5], [6], [7, 8], [9]])
     expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.beats.length)).toEqual([7, 8, 6, 4])
   })
 
@@ -159,13 +167,13 @@ describe("planSkeletonCalls", () => {
     const fifth = calls.filter((call) => call.beats.every((beat) => beat >= 7 && beat <= 14))
 
     expect(fifth.map((call) => call.beats)).toEqual([[7, 8, 9], [10, 11, 12], [13, 14]])
-    expect(fifth.map((call) => call.markers)).toEqual([[5], [], []])
+    expect(fifth.map((call) => call.markers)).toEqual([[6], [], []])
     expect(calls.flatMap((call) => call.beats)).toEqual(Array.from({ length: 25 }, (_, index) => index))
   })
 
   it("makes one call when the cap covers the scene or there is no target", () => {
     expect(planSkeletonCalls(plan, 10_000, 10_000)).toEqual([
-      { beats: Array.from({ length: 25 }, (_, index) => index), markers: [1, 2, 3, 4, 5, 6, 7, 8] }
+      { beats: Array.from({ length: 25 }, (_, index) => index), markers: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
     ])
     expect(planSkeletonCalls(plan, undefined, 1_000)).toHaveLength(1)
   })
