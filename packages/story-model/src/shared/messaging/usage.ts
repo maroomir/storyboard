@@ -4,6 +4,9 @@ const usageAmountSchema = z.object({
   costUsd: z.number(),
   tokens: z.number(),
   hasUnpricedUsage: z.boolean(),
+  cache: z
+    .object({ promptTokens: z.number(), cachedTokens: z.number(), savedUsd: z.number() })
+    .optional(),
 });
 
 const usageSummaryByEntitySchema = z.object({

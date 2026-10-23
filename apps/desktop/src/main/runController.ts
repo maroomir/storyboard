@@ -9,6 +9,7 @@ import {
   type NovelStageName,
   contractFieldLabels,
   readSceneFile,
+  usageCacheHitRate,
 } from '@storyboard/story-model';
 import {
   describeReviseOutcome,
@@ -109,6 +110,9 @@ export class RunController {
       spentUsd: reading?.costUsd ?? 0,
       spentTokens: reading?.tokens ?? 0,
       hasUnpricedUsage: reading?.hasUnpricedUsage ?? false,
+      ...(reading?.cache === undefined || usageCacheHitRate(reading) === undefined
+        ? {}
+        : { cache: { hitRate: usageCacheHitRate(reading) as number, savedUsd: reading.cache.savedUsd } }),
       budgetUsd: this.dependencies.container.configBridge.getRunBudgetUsd(),
       projectSpentUsd: this.projectSpentUsd + (reading?.costUsd ?? 0),
       ...(this.lastOutcome === undefined ? {} : { lastOutcome: this.lastOutcome }),

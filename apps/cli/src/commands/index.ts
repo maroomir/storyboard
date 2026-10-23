@@ -489,13 +489,17 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     result.outcome === 'paused' && spending.isOverBudget
       ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 $${spending.costUsd.toFixed(2)}).`
       : '';
+  const cacheNote =
+    spending.cache !== undefined && spending.cache.cachedTokens > 0
+      ? ` 프롬프트 캐시 적중 ${Math.round((spending.cache.cachedTokens / spending.cache.promptTokens) * 100)}%, 절약 $${spending.cache.savedUsd.toFixed(2)}.`
+      : '';
 
   return {
     ok: result.outcome === 'completed',
     message:
       result.outcome === 'failed'
         ? `장편 생성에 실패했습니다: ${result.message}`
-        : `${result.message}${budgetNote}`,
+        : `${result.message}${budgetNote}${cacheNote}`,
     data: { ...result, costUsd: spending.costUsd },
     ...(result.outcome === 'paused' || result.outcome === 'cancelled'
       ? { stop: result.outcome }

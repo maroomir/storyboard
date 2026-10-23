@@ -60,6 +60,17 @@ describe("formatUsageBadgeTooltip", () => {
       formatUsageBadgeTooltip({ costUsd: 0.0123456, tokens: 1_234, hasUnpricedUsage: true })
     ).toBe("USD 0.012346 · 입력+출력 1,234 토큰 · 구독형 프로바이더 사용분은 달러로 환산되지 않습니다")
   })
+
+  it("adds the prompt-cache hit rate and saving when the summary carries them (#107)", () => {
+    expect(
+      formatUsageBadgeTooltip({
+        costUsd: 1.5,
+        tokens: 10_000,
+        hasUnpricedUsage: false,
+        cache: { promptTokens: 8_000, cachedTokens: 6_000, savedUsd: 0.0162 }
+      })
+    ).toBe("USD 1.500000 · 입력+출력 10,000 토큰 · 프롬프트 캐시 적중 75% · 절약 $0.02")
+  })
 })
 
 describe("isEmptyUsageDisplay", () => {

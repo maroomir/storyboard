@@ -6,7 +6,8 @@ import {
   mergeUsageLedgerEntryIntoSummary,
   parseUsageLedgerBytes,
   serializeUsageLedger,
-  type UsageLedgerEntry
+  type UsageLedgerEntry,
+  storyboardModelPricing
 } from "@storyboard/story-model"
 
 function entry(partial: Omit<UsageLedgerEntry, "id" | "recordedAt"> & { readonly id?: string; readonly recordedAt?: string }): UsageLedgerEntry {
@@ -85,6 +86,38 @@ describe("usageLedger", () => {
 
     expect(summary.total).toEqual({ costUsd: 0.25, tokens: 1_700, hasUnpricedUsage: true })
     expect(summary.scenes["s1"]).toEqual({ costUsd: 0.25, tokens: 1_700, hasUnpricedUsage: true })
+  })
+
+  // #107: 캐시 적중은 원장에 토큰 수로만 있었고 어디에도 비율·절약액이 없었다. 합계가 프롬프트 토큰(입력+캐시
+  // 읽기+캐시 쓰기)과 캐시 읽기, 입력 단가 대비 절약액을 갖는다.
+  it("sums the prompt-cache share and what it saved against the input price", () => {
+    const row = storyboardModelPricing.claude["claude-sonnet-5"]
+    const summary = computeUsageSummaryFromEntries([
+      entry({
+        taskName: "sceneSectionExpansion",
+        providerId: "claude",
+        model: "claude-sonnet-5",
+        usage: { inputTokens: 1_000, outputTokens: 500, cacheReadInputTokens: 3_000, cacheCreationInputTokens: 1_000 },
+        costUsd: 0.1,
+        attribution: { primary: { kind: "scene", id: "s1" } }
+      }),
+      entry({
+        id: "id-2",
+        taskName: "sceneSectionExpansion",
+        providerId: "claude",
+        model: "claude-sonnet-5",
+        usage: { inputTokens: 1_000, outputTokens: 500 },
+        costUsd: 0.1,
+        attribution: { primary: { kind: "scene", id: "s1" } }
+      })
+    ])
+
+    expect(summary.total.cache).toEqual({
+      promptTokens: 5_000,
+      cachedTokens: 3_000,
+      savedUsd: (3_000 / 1_000_000) * (row.inputPricePerMillion - row.cacheReadPricePerMillion)
+    })
+    expect(summary.scenes["s1"]?.cache).toEqual(summary.total.cache)
   })
 
   it("parses legacy ledger entries that still carry costUsd 0 as priced", () => {

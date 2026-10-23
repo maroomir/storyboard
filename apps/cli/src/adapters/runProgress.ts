@@ -60,6 +60,9 @@ export interface RailRunProgressDependencies {
   // Tokens this run spent that have no price (a subscription login). Shown in place of dollars, so
   // such a run reads as «this many tokens» rather than as nothing or as $0.
   readonly readUnpricedTokens?: () => number;
+  // Share of this run's prompt tokens read from the prompt cache, 0 to 1; undefined before any
+  // call reported cache counts (#107).
+  readonly readCacheHitRate?: () => number | undefined;
   readonly now?: () => number;
 }
 
@@ -132,11 +135,15 @@ export class RailRunProgress implements IRunProgress {
     const what = [item, this.step].filter((part) => part.length > 0).join(paint('muted', ' · '));
     const cost = this.deps.readCostUsd();
     const unpricedTokens = this.deps.readUnpricedTokens?.() ?? 0;
+    const cacheHitRate = this.deps.readCacheHitRate?.();
     const meta = [
       formatElapsed(this.now() - (this.startedAt ?? this.now())),
       ...(cost > 0 ? [`$${cost.toFixed(2)}`] : []),
       ...(cost <= 0 && unpricedTokens > 0
         ? [`${Math.round(unpricedTokens).toLocaleString('en-US')} 토큰`]
+        : []),
+      ...(cacheHitRate !== undefined && cacheHitRate > 0
+        ? [`캐시 ${Math.round(cacheHitRate * 100)}%`]
         : []),
     ].join(' · ');
     const elapsed = this.now() - (this.startedAt ?? this.now());

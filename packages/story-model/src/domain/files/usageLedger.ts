@@ -1,10 +1,19 @@
 import type { StoryUri } from '#model/format/storyUri';
 import type { AiProviderId } from '#model/contracts/providerCatalog';
-import type { AiTaskName, UsageAmount, UsageSummaryByEntity } from '#model/contracts/ai';
+import type {
+  AiTaskName,
+  UsageAmount,
+  UsageCacheAmount,
+  UsageSummaryByEntity,
+} from '#model/contracts/ai';
 import type { AiUsage, EntityKind, UsageAttribution, UsageRecord } from '#model/contracts/aiTypes';
 import { z } from 'zod';
 
-import { aiProviderIds } from '#model/contracts/providerCatalog';
+import {
+  aiProviderIds,
+  storyboardModelPricing,
+  type ModelPricePerMillion,
+} from '#model/contracts/providerCatalog';
 import { aiTaskNames } from '#model/contracts/ai';
 const usageLedgerVersion = 1 as const;
 
@@ -67,35 +76,98 @@ export function emptyUsageSummary(): UsageSummaryByEntity {
   };
 }
 
+function addUsageCache(
+  base: UsageCacheAmount | undefined,
+  delta: UsageCacheAmount | undefined,
+): UsageCacheAmount | undefined {
+  if (base === undefined || delta === undefined) {
+    return base ?? delta;
+  }
+
+  return {
+    promptTokens: base.promptTokens + delta.promptTokens,
+    cachedTokens: base.cachedTokens + delta.cachedTokens,
+    savedUsd: base.savedUsd + delta.savedUsd,
+  };
+}
+
 export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
+  const cache = addUsageCache(base.cache, delta.cache);
+
   return {
     costUsd: base.costUsd + delta.costUsd,
     tokens: base.tokens + delta.tokens,
     hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
+    ...(cache === undefined ? {} : { cache }),
+  };
+}
+
+// Claude counts cached and cache-written tokens outside input_tokens; the prompt the model saw is
+// the three together. The saving is what the cached share would have cost at the input price.
+function usageCacheOfEntry(
+  entry: Pick<UsageLedgerEntry, 'usage' | 'providerId' | 'model'>,
+): UsageCacheAmount | undefined {
+  const usage = entry.usage;
+  if (
+    usage === undefined ||
+    (usage.cacheReadInputTokens === undefined && usage.cacheCreationInputTokens === undefined)
+  ) {
+    return undefined;
+  }
+
+  const cachedTokens = usage.cacheReadInputTokens ?? 0;
+  const table = storyboardModelPricing[entry.providerId] as Readonly<
+    Record<string, ModelPricePerMillion>
+  >;
+  const row = entry.model === undefined ? undefined : table[entry.model];
+  const savedPerMillion =
+    row === undefined || row.cacheReadPricePerMillion === undefined
+      ? 0
+      : row.inputPricePerMillion - row.cacheReadPricePerMillion;
+
+  return {
+    promptTokens: usage.inputTokens + cachedTokens + (usage.cacheCreationInputTokens ?? 0),
+    cachedTokens,
+    savedUsd: (cachedTokens / 1_000_000) * savedPerMillion,
   };
 }
 
 // NOTE: an entry with no price is still spend the author made, so its tokens count and the
 // summary flags it instead of pretending the call was free.
 export function usageAmountOfEntry(
-  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage'>,
+  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'providerId' | 'model'>,
 ): UsageAmount {
   const tokens = entry.usage ? entry.usage.inputTokens + entry.usage.outputTokens : 0;
+  const cache = usageCacheOfEntry(entry);
 
   return {
     costUsd: entry.costUsd ?? 0,
     tokens,
     hasUnpricedUsage: entry.costUsd === undefined && tokens > 0,
+    ...(cache === undefined ? {} : { cache }),
   };
 }
 
 function scaleUsageAmount(amount: UsageAmount, factor: number): UsageAmount {
-  return { ...amount, costUsd: amount.costUsd * factor, tokens: amount.tokens * factor };
+  return {
+    ...amount,
+    costUsd: amount.costUsd * factor,
+    tokens: amount.tokens * factor,
+    ...(amount.cache === undefined
+      ? {}
+      : {
+          cache: {
+            promptTokens: amount.cache.promptTokens * factor,
+            cachedTokens: amount.cache.cachedTokens * factor,
+            savedUsd: amount.cache.savedUsd * factor,
+          },
+        }),
+  };
 }
 
 export function mergeUsageLedgerEntryIntoSummary(
   summary: UsageSummaryByEntity,
-  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'attribution'>,
+  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'attribution' | 'providerId' | 'model'>,
 ): UsageSummaryByEntity {
   const nextScenes = { ...summary.scenes };
   const nextCharacters = { ...summary.characters };

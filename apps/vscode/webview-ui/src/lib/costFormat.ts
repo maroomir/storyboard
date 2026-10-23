@@ -65,5 +65,10 @@ export function formatUsageBadgeTooltip(usage: UsageAmount): string {
     parts.push('구독형 프로바이더 사용분은 달러로 환산되지 않습니다');
   }
 
+  if (usage.cache !== undefined && usage.cache.promptTokens > 0 && usage.cache.cachedTokens > 0) {
+    const rate = Math.round((usage.cache.cachedTokens / usage.cache.promptTokens) * 100);
+    parts.push(`프롬프트 캐시 적중 ${rate}% · 절약 ${formatUsd(usage.cache.savedUsd)}`);
+  }
+
   return parts.join(' · ');
 }

@@ -6,6 +6,7 @@ import {
   type AiProviderId,
   STORYBOARD_RELATIVE_PATHS,
   getStoryboardProjectPaths,
+  usageCacheHitRate,
 } from '@storyboard/story-model';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
 import { migrateLegacyMemory, type IStoryboardLogger } from '@storyboard/story-engine';
@@ -334,7 +335,11 @@ export async function dispatch(
     terminal.stderr.theme,
     flagBoolean(args.flags, 'verbose'),
   );
-  const usageSession = { readCostUsd: (): number => 0, readUnpricedTokens: (): number => 0 };
+  const usageSession = {
+    readCostUsd: (): number => 0,
+    readUnpricedTokens: (): number => 0,
+    readCacheHitRate: (): number | undefined => undefined,
+  };
   const progress: IRunProgress =
     deps.liveArea !== undefined && showProgress && terminal.stderr.isTty && !mode.json
       ? new RailRunProgress({
@@ -342,6 +347,7 @@ export async function dispatch(
           theme: terminal.stderr.theme,
           readCostUsd: () => usageSession.readCostUsd(),
           readUnpricedTokens: () => usageSession.readUnpricedTokens(),
+          readCacheHitRate: () => usageSession.readCacheHitRate(),
         })
       : new LineRunProgress(logger);
   const container = createCliContainer({
@@ -393,6 +399,7 @@ export async function dispatch(
   usageSession.readCostUsd = () => meter.reading().costUsd;
   usageSession.readUnpricedTokens = () =>
     meter.reading().hasUnpricedUsage ? meter.reading().tokens : 0;
+  usageSession.readCacheHitRate = () => usageCacheHitRate(meter.reading());
 
   const outcome = await runReportingProgress(progress, () =>
     spec?.writesWorkspace === true

@@ -88,6 +88,22 @@ describe('run progress', () => {
     expect(bar).toBe(`  ${'█'.repeat(7)}${'░'.repeat(13)}`);
   });
 
+  it('adds the prompt-cache hit rate to the rail once a call reported one (#107)', () => {
+    const rail = new RailRunProgress({
+      liveArea: new LiveArea(recordingStream(), () => 80),
+      theme: createTheme(false),
+      readCostUsd: () => 0.18,
+      readCacheHitRate: () => 0.42,
+      now: () => 0,
+    });
+
+    rail.update({ line: '살붙임 3/5', step: '살붙임 3/5' });
+    const [status] = rail.describeLines();
+    rail.finish();
+
+    expect(status).toContain('$0.18 · 캐시 42%');
+  });
+
   it('formats elapsed time as minutes and seconds', () => {
     expect(formatElapsed(0)).toBe('00:00');
     expect(formatElapsed(3_725_000)).toBe('62:05');

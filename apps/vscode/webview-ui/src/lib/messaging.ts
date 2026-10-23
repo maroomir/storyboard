@@ -382,10 +382,20 @@ export function parseUsageChangedPayload(payload: unknown): UsageSummaryByEntity
 }
 
 export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
+  const cache =
+    base.cache === undefined || delta.cache === undefined
+      ? (base.cache ?? delta.cache)
+      : {
+          promptTokens: base.cache.promptTokens + delta.cache.promptTokens,
+          cachedTokens: base.cache.cachedTokens + delta.cache.cachedTokens,
+          savedUsd: base.cache.savedUsd + delta.cache.savedUsd,
+        };
+
   return {
     costUsd: base.costUsd + delta.costUsd,
     tokens: base.tokens + delta.tokens,
     hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
+    ...(cache === undefined ? {} : { cache }),
   };
 }
 
@@ -411,10 +421,26 @@ function normalizeUsageAmount(value: unknown): UsageAmount | undefined {
     return undefined;
   }
 
+  const cache = amount.cache;
+  const hasCache =
+    cache !== undefined &&
+    Number.isFinite(cache.promptTokens) &&
+    Number.isFinite(cache.cachedTokens) &&
+    Number.isFinite(cache.savedUsd);
+
   return {
     costUsd: amount.costUsd as number,
     tokens: amount.tokens as number,
     hasUnpricedUsage: amount.hasUnpricedUsage === true,
+    ...(hasCache
+      ? {
+          cache: {
+            promptTokens: cache.promptTokens,
+            cachedTokens: cache.cachedTokens,
+            savedUsd: cache.savedUsd,
+          },
+        }
+      : {}),
   };
 }
 

@@ -32,6 +32,7 @@ import {
   type StoryboardProject,
   type StoryUri,
   type UsageAmount,
+  type UsageCacheAmount,
 } from '@storyboard/story-model';
 
 export interface NovelManagerDependencies {
@@ -61,6 +62,7 @@ export interface NovelRunSpending {
   readonly costUsd: number;
   readonly budgetUsd: number;
   readonly isOverBudget: boolean;
+  readonly cache?: UsageCacheAmount;
 }
 
 export interface NovelRunResult extends NovelPipelineResult {
@@ -104,7 +106,12 @@ export class NovelManager {
 
       return {
         ...result,
-        spending: { costUsd: spending.reading().costUsd, budgetUsd, isOverBudget: isOverBudget() },
+        spending: {
+          costUsd: spending.reading().costUsd,
+          budgetUsd,
+          isOverBudget: isOverBudget(),
+          ...(spending.reading().cache === undefined ? {} : { cache: spending.reading().cache }),
+        },
       };
     } finally {
       spending.stop();

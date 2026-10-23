@@ -151,6 +151,8 @@ export interface RunSnapshot {
   readonly spentUsd: number;
   readonly spentTokens: number;
   readonly hasUnpricedUsage: boolean;
+  // Prompt-cache share of this run; absent until a call reports cache counts.
+  readonly cache?: { readonly hitRate: number; readonly savedUsd: number };
   readonly budgetUsd: number;
   readonly projectSpentUsd: number;
   readonly lastOutcome?: { readonly outcome: RunOutcome; readonly message: string };

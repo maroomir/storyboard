@@ -151,6 +151,7 @@ export const enMessages: Readonly<Record<MessageKey, string>> = {
   'run.budgetHint': '0 means no limit. Past the limit the run finishes the scene in progress and pauses.',
   'run.unpriced': 'Includes calls with no price.',
   'run.tokens': '{count} tokens',
+  'run.cache': 'Prompt cache hits {rate}% · saved {saved}',
   'run.resumable': 'A run stopped partway — {done} of {total} stages done',
   'run.contractMissing': 'Fill in the story contract before starting: {fields}',
   'run.outcome.completed': 'The novel is done.',

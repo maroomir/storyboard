@@ -88,10 +88,26 @@ export const aiTaskLabels = Object.fromEntries(
   aiTaskCatalog.map((task) => [task.name, task.label]),
 ) as Readonly<Record<AiTaskName, string>>;
 
+// What the prompt cache did for this spend: of the prompt tokens the model saw, how many it read
+// from cache and what that saved against the uncached input price. Absent when no call reported
+// cache counts (#107).
+export interface UsageCacheAmount {
+  readonly promptTokens: number;
+  readonly cachedTokens: number;
+  readonly savedUsd: number;
+}
+
 export interface UsageAmount {
   readonly costUsd: number;
   readonly tokens: number;
   readonly hasUnpricedUsage: boolean;
+  readonly cache?: UsageCacheAmount;
+}
+
+// Cache hits as a share of the prompt tokens, 0 to 1; undefined when nothing was reported.
+export function usageCacheHitRate(amount: UsageAmount): number | undefined {
+  const cache = amount.cache;
+  return cache === undefined || cache.promptTokens <= 0 ? undefined : cache.cachedTokens / cache.promptTokens;
 }
 
 export interface UsageSummaryByEntity {

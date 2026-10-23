@@ -212,6 +212,11 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
               <div className="muted small">{t('run.thisRun')}</div>
               <div className="big-number">{formatUsd(run.spentUsd)}</div>
               <div className="muted small">{t('run.tokens', { count: run.spentTokens.toLocaleString(language) })}</div>
+              {run.cache === undefined || run.cache.hitRate <= 0 ? null : (
+                <div className="muted small">
+                  {t('run.cache', { rate: String(Math.round(run.cache.hitRate * 100)), saved: formatUsd(run.cache.savedUsd) })}
+                </div>
+              )}
             </div>
             {progress === undefined ? null : (
               <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>

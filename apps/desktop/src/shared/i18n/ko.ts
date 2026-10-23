@@ -152,6 +152,7 @@ export const koMessages = {
   'run.budgetHint': '0이면 제한하지 않습니다. 넘으면 진행 중인 씬까지 마치고 멈춥니다.',
   'run.unpriced': '요금이 없는 호출이 포함되어 있습니다.',
   'run.tokens': '{count} 토큰',
+  'run.cache': '프롬프트 캐시 적중 {rate}% · 절약 {saved}',
   'run.resumable': '멈춘 실행이 있습니다 — {done} / {total} 단계 완료',
   'run.contractMissing': '시작하려면 작품 계약을 채워야 합니다: {fields}',
   'run.outcome.completed': '장편 생성을 마쳤습니다.',

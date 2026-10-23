@@ -154,10 +154,17 @@ export interface CardEditorInitialData {
 // 여기서 다시 적으면 웹뷰만 아는 명령이 생겨 그 검사를 지나칠 수 있다.
 export type { SidebarRunnableCommand } from '@storyboard/story-model/contracts';
 
+export interface UsageCacheAmount {
+  readonly promptTokens: number;
+  readonly cachedTokens: number;
+  readonly savedUsd: number;
+}
+
 export interface UsageAmount {
   readonly costUsd: number;
   readonly tokens: number;
   readonly hasUnpricedUsage: boolean;
+  readonly cache?: UsageCacheAmount;
 }
 
 export interface UsageSummaryByEntity {
