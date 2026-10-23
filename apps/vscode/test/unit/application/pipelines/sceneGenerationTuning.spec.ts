@@ -27,6 +27,7 @@ describe("resolveSceneGenerationTuning", () => {
       sectionRetryLimit: pipelineDefaults.section.retryLimit,
       sectionMinimumLengthRatio: pipelineDefaults.section.minimumLengthRatio,
       sectionRepeatedRunWindow: pipelineDefaults.section.repeatedRunWindow,
+      sectionRecapPhraseLimit: pipelineDefaults.section.recapPhraseLimit,
       sectionRepeatedRunLimit: pipelineDefaults.section.repeatedRunLimit,
       skeletonRatio: pipelineDefaults.skeleton.lengthRatio,
       skeletonRetryLimit: pipelineDefaults.skeleton.retryLimit,

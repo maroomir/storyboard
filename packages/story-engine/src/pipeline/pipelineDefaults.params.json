@@ -3,7 +3,8 @@
     "retryLimit": 2,
     "minimumLengthRatio": 0.85,
     "repeatedRunWindow": 100,
-    "repeatedRunLimit": 300
+    "repeatedRunLimit": 300,
+    "recapPhraseLimit": 3
   },
   "skeleton": {
     "lengthRatio": 0.3333333333333333,

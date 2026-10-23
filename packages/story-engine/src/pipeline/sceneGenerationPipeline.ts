@@ -68,6 +68,7 @@ import {
   withAttribution,
 } from './sceneGenerationStages';
 import {
+  countRecapPhrases,
   describeThinExpansionSpots,
   findCatchphraseOveruse,
   findRunAheadDialogue,
@@ -1426,6 +1427,12 @@ const expandSectionStage: ISceneStage = {
       state.warnings.push(
         ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
       );
+      const recaps = countRecapPhrases(repaired.text);
+      if (recaps > ctx.tuning.sectionRecapPhraseLimit) {
+        state.warnings.push(
+          `${index + 1}구간: 앞 장면을 «아까 …»로 되짚는 표현이 ${recaps}회입니다 (허용 ${ctx.tuning.sectionRecapPhraseLimit}회). 새 반응·논평·대사로 채우는 쪽이 낫습니다`,
+        );
+      }
       assertNotCancelled(ctx.shouldCancel);
     }
 

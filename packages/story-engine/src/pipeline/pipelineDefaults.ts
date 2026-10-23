@@ -19,6 +19,9 @@ const pipelineDefaultsSchema = z.object({
     // 앞 구간을 그대로 옮겨 적었는지 볼 때 비교하는 창의 크기와, 위반으로 보는 누적 글자 수.
     repeatedRunWindow: positiveInt,
     repeatedRunLimit: positiveInt,
+    // 한 구간이 앞 장면을 «아까 …»로 되짚어도 경고하지 않는 횟수. 실측 42비트 씬에서 구간별 0~11회,
+    // 뒤로 갈수록 늘었다(#120).
+    recapPhraseLimit: z.number().int().nonnegative(),
   }),
   skeleton: z.object({
     // 최종 목표 중 뼈대에 배분할 비율. 뼈대가 얇으면 살붙임이 감당 못 할 배율을 요구받는다.

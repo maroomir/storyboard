@@ -357,6 +357,25 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
   })
 })
 
+describe("runSceneGenerationPipeline — 되짚기 경고 (#120)", () => {
+  it("warns when a section recaps the earlier scene more often than the limit allows", async () => {
+    const ai = createRecordingAiService()
+    ai.expandSceneSection.mockResolvedValue(
+      longProse("아까 거실에서의 정적과는 달랐다. 아까 식탁에서의 표정도, 아까 그 말도, 아까 그 눈빛도 멀었다. ")
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.warnings.filter((warning) => warning.includes("되짚는 표현"))).toHaveLength(1)
+    expect(result.warnings.find((warning) => warning.includes("되짚는 표현"))).toMatch(/^1구간: 앞 장면을 «아까 …»로 되짚는 표현이 \d+회입니다 \(허용 3회\)/)
+  })
+})
+
 describe("runSceneGenerationPipeline — 배경 사실 점검", () => {
   const guestRoom: BackgroundCard = {
     type: "location",

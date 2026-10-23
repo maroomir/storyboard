@@ -228,6 +228,14 @@ const spaceNouns = [
   '골목',
 ] as const;
 
+// 앞 장면을 되짚는 표현. 채울 재료가 바닥나면 모델은 직전 구간을 «아까 …»로 다시 말하는 쪽으로
+// 수렴한다(#120). 재시도 사유가 아니라 경고다 — 되짚기 자체가 틀린 것은 아니고 잦은 것이 문제다.
+const recapPhrasePattern = /아까/g;
+
+export function countRecapPhrases(text: string): number {
+  return [...text.matchAll(recapPhrasePattern)].length;
+}
+
 // 구간 본문이 세운 공간 가운데 이번 구간의 뼈대·비트 장소·공간 사실 어디에도 없는 것. 장소 좌표가
 // 없는 구간은 판정할 근거가 없으므로 비어 있다.
 export function findPlacesOffCoordinates(input: {

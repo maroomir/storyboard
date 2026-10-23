@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  countRecapPhrases,
   findPlacesOffCoordinates,
   findRunAheadDialogue,
   planSectionTargetLengths,
@@ -154,5 +155,13 @@ describe("findPlacesOffCoordinates", () => {
 
   it("judges nothing when the section has no place coordinates", () => {
     expect(findPlacesOffCoordinates({ expanded: "서재와 다락과 창고를 돌았다.", section, sectionPlaces: [] })).toEqual([])
+  })
+})
+
+// #120: 채울 재료가 바닥나면 모델은 직전 구간을 «아까 …»로 되짚는 쪽으로 수렴한다. 구간마다 세어 경고한다.
+describe("countRecapPhrases", () => {
+  it("counts every recap phrase in the section", () => {
+    expect(countRecapPhrases("아까 거실에서의 정적과는 달랐다. 아까 식탁에서 나를 몰아붙이던 표정과는…")).toBe(2)
+    expect(countRecapPhrases("나는 망고를 깎았다.")).toBe(0)
   })
 })

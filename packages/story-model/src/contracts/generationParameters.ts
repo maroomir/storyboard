@@ -56,6 +56,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 50, max: 1200 },
   },
   {
+    id: 'generation.section.recapPhraseLimit',
+    label: '구간 되짚기 표현 허용 횟수',
+    kind: 'count',
+    bounds: { min: 0, max: 20 },
+  },
+  {
     id: 'generation.skeleton.lengthRatio',
     label: '뼈대 분량 비율',
     kind: 'ratio',

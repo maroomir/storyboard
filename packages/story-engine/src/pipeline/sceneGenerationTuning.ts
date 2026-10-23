@@ -28,6 +28,7 @@ export interface ResolvedSceneGenerationTuning {
   readonly sectionRetryLimit: number;
   readonly sectionMinimumLengthRatio: number;
   readonly sectionRepeatedRunWindow: number;
+  readonly sectionRecapPhraseLimit: number;
   readonly sectionRepeatedRunLimit: number;
   readonly skeletonRatio: number;
   readonly skeletonRetryLimit: number;
@@ -106,6 +107,7 @@ export function resolveSceneGenerationTuning(
     sectionRetryLimit: knob(tuning, 'generation.section.retryLimit'),
     sectionMinimumLengthRatio: knob(tuning, 'generation.section.minimumLengthRatio'),
     sectionRepeatedRunWindow: knob(tuning, 'generation.section.repeatedRunWindow'),
+    sectionRecapPhraseLimit: knob(tuning, 'generation.section.recapPhraseLimit'),
     sectionRepeatedRunLimit: knob(tuning, 'generation.section.repeatedRunLimit'),
     skeletonRatio: knob(tuning, 'generation.skeleton.lengthRatio'),
     skeletonRetryLimit: knob(tuning, 'generation.skeleton.retryLimit'),
