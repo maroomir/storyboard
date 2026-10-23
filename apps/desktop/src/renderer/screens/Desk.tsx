@@ -21,6 +21,7 @@ interface DeskProps {
   readonly requestedStem: string | undefined;
   readonly onError: (message: string) => void;
   readonly onOpenDrawer: () => void;
+  readonly onAbsorbNotes: () => void;
 }
 
 function allScenes(overview: WorkspaceOverview): TocScene[] {
@@ -124,6 +125,9 @@ export function Desk(props: DeskProps): JSX.Element {
                 .join(' · ')}
             </span>
             <span className="row">
+              <button type="button" className="button button-quiet" disabled={isReadOnly} onClick={props.onAbsorbNotes}>
+                {t('desk.absorbNotes')}
+              </button>
               <button type="button" className="button button-quiet" disabled={isReadOnly} onClick={() => setRenaming(true)}>
                 {t('desk.renameScene')}
               </button>

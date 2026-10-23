@@ -31,6 +31,7 @@ let notices: string[];
 let confirmQuestions: string[];
 let confirmAnswer: boolean;
 let runEvents: RunSnapshot[];
+let chosenDirectory: string | undefined;
 
 const createRequest: WorkspaceCreateRequest = {
   title: '겨울 항구의 편지',
@@ -94,13 +95,15 @@ beforeEach(() => {
   confirmQuestions = [];
   confirmAnswer = false;
   runEvents = [];
+  chosenDirectory = undefined;
   app = new DesktopApp({
     homePaths: resolveStoryboardHomePaths({ STORYBOARD_HOME: home }),
     logFile: join(home, 'logs', 'desktop.log'),
     version: '0.0.0-test',
     systemLocale: 'ko-KR',
     documentsDirectory: documents,
-    chooseDirectory: async () => undefined,
+    chooseDirectory: async () => chosenDirectory,
+    chooseFile: async () => undefined,
     emit: (event, payload) => {
       if (event === 'run.changed') {
         runEvents.push(payload as RunSnapshot);
@@ -420,6 +423,48 @@ describe('with a work open', () => {
     expect(existsSync(join(workspacePath(), 'draft', '01-harbor.md'))).toBe(false);
     // The edit session was already its own version, so nothing was left to save before the restore.
     expect(gitSubjects().slice(0, 2)).toEqual(['되돌림: 새 작품: 겨울 항구의 편지', '직접 고침: 밤의 방파제']);
+  });
+});
+
+// #53: the note import over IPC. Paths are accepted only when main's own dialog offered them, the
+// token stays in the secrets file, and each step refuses when the one before it has not run.
+describe('absorbing notes', () => {
+  const vault = join(__dirname, '..', '..', 'cli', 'test', 'fixtures', 'notes', 'obsidianVault', '달의 문');
+
+  beforeEach(async () => {
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
+    await expectOk('workspace.create', { parentDirectory: join(documents, 'Storyboard'), request: createRequest });
+  });
+
+  it('keeps the Notion token out of the renderer and reports only that one is stored', async () => {
+    expect((await expectOk('settings.read', {})).hasNotionToken).toBe(false);
+
+    const settings = await expectOk('notes.connectNotion', { token: 'ntn_test_token_1234' });
+
+    expect(settings.hasNotionToken).toBe(true);
+    expect(JSON.stringify(settings)).not.toContain('ntn_test_token_1234');
+    expect(readFileSync(join(home, 'secrets.json'), 'utf8')).toContain('ntn_test_token_1234');
+  });
+
+  it('reads a folder only after main offered it, and estimates before any request', async () => {
+    const refused = await invoke('notes.collect', { location: { kind: 'path', path: vault } });
+    expect(refused.ok).toBe(false);
+
+    chosenDirectory = vault;
+    const chosen = await expectOk('notes.chooseLocation', { kind: 'folder' });
+    expect(chosen.path).toBe(vault);
+
+    const estimate = await expectOk('notes.collect', { location: { kind: 'path', path: vault } });
+    expect(estimate.noteCount).toBeGreaterThan(0);
+    expect(estimate.requestCount).toBeGreaterThan(0);
+    expect(estimate.location).toBe(vault);
+  });
+
+  it('refuses to plan or apply before the notes were read', async () => {
+    const planned = await invoke('notes.plan', {});
+    expect(planned.ok).toBe(false);
+    const applied = await invoke('notes.apply', { fillContract: false });
+    expect(applied.ok).toBe(false);
   });
 });
 

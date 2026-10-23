@@ -35,6 +35,7 @@ export function Settings(props: SettingsProps): JSX.Element {
   const [showAdvancedProviders, setShowAdvancedProviders] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [keyMessage, setKeyMessage] = useState<string>();
+  const [notionToken, setNotionToken] = useState('');
 
   useEffect(() => {
     void call('settings.read', {}).then(setSettings);
@@ -147,6 +148,41 @@ export function Settings(props: SettingsProps): JSX.Element {
               )}
             </>
           )}
+        </section>
+
+        <section className="section">
+          <h2>{t('settings.notion')}</h2>
+          <div className="field">
+            <span className="field-label">
+              {t('settings.notion')} — {settings.hasNotionToken ? t('settings.keyStored') : t('settings.keyMissing')}
+            </span>
+            <div className="row">
+              <input
+                className="input"
+                type="password"
+                autoComplete="off"
+                aria-label={t('settings.notion')}
+                value={notionToken}
+                placeholder={t('settings.notionPlaceholder')}
+                onChange={(event) => setNotionToken(event.target.value)}
+              />
+              <button
+                type="button"
+                className="button"
+                disabled={notionToken.trim().length === 0}
+                onClick={() =>
+                  void update(async () => {
+                    const next = await call('notes.connectNotion', { token: notionToken.trim() });
+                    setNotionToken('');
+                    return next;
+                  })
+                }
+              >
+                {t('settings.saveToken')}
+              </button>
+            </div>
+            <span className="field-hint">{t('settings.notionHint')}</span>
+          </div>
         </section>
 
         <section className="section">

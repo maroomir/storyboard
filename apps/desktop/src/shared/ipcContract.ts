@@ -18,6 +18,9 @@ import type {
   CanonFact,
   DesktopSettings,
   DraftDocument,
+  NotesApplyView,
+  NotesEstimateView,
+  NotesPlanView,
   RunSnapshot,
   SceneNotes,
   SnapshotEntry,
@@ -115,6 +118,19 @@ export const invokeRequestSchemas = {
 
   'history.list': empty,
   'history.restore': z.object({ id: z.string().regex(/^[0-9a-f]{40}$/) }),
+
+  // SECURITY: a notes path is accepted only when main's own dialog offered it (notes.chooseLocation);
+  // a Notion address is a URL main validates again before any request.
+  'notes.chooseLocation': z.object({ kind: z.enum(['folder', 'zip']) }),
+  'notes.collect': z.object({
+    location: z.union([
+      z.object({ kind: z.literal('path'), path: z.string().min(1) }),
+      z.object({ kind: z.literal('notion'), pageUrl: z.string().url() }),
+    ]),
+  }),
+  'notes.plan': empty,
+  'notes.apply': z.object({ fillContract: z.boolean() }),
+  'notes.connectNotion': z.object({ token: z.string().trim().min(8).max(500) }),
 } as const;
 
 export type InvokeChannel = keyof typeof invokeRequestSchemas;
@@ -160,6 +176,11 @@ export interface InvokeResponses {
   'settings.setOllamaBaseUrl': DesktopSettings;
   'history.list': readonly SnapshotEntry[];
   'history.restore': readonly SnapshotEntry[];
+  'notes.chooseLocation': { readonly path?: string };
+  'notes.collect': NotesEstimateView;
+  'notes.plan': NotesPlanView;
+  'notes.apply': NotesApplyView;
+  'notes.connectNotion': DesktopSettings;
 }
 
 export type DesktopErrorCode =

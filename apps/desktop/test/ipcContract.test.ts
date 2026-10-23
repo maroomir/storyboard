@@ -19,6 +19,7 @@ const app = new DesktopApp({
   systemLocale: 'en-US',
   documentsDirectory: home,
   chooseDirectory: async () => undefined,
+  chooseFile: async () => undefined,
   emit: () => undefined,
   notify: () => undefined,
   confirm: async () => false,

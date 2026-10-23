@@ -23,6 +23,8 @@ export interface DesktopAppPorts {
   readonly systemLocale: string;
   readonly documentsDirectory: string;
   readonly chooseDirectory: (title: string, defaultPath?: string) => Promise<string | undefined>;
+  // One file of the given extensions, through main's own dialog.
+  readonly chooseFile: (title: string, extensions: readonly string[]) => Promise<string | undefined>;
   readonly emit: <E extends DesktopEventName>(event: E, payload: DesktopEvents[E]) => void;
   // A non-blocking notice for problems the author should know about but that stop nothing.
   readonly notify: (message: string) => void;
@@ -45,6 +47,7 @@ export class DesktopApp {
   private readonly state: DesktopStateStore;
   private readonly homeStores: SettingsStores;
   private readonly offeredParentDirectories = new Set<string>();
+  private readonly offeredNoteLocations = new Set<string>();
   private readonly reportedConfigFiles = new Set<string>();
   private current: WorkspaceSession | undefined;
 
@@ -128,6 +131,25 @@ export class DesktopApp {
     }
 
     return directory === undefined ? {} : { directory };
+  }
+
+  // The author picks a notes folder or a Notion export zip in main's dialog; only a path offered this
+  // way is later accepted by notes.collect.
+  public async chooseNotesLocation(kind: 'folder' | 'zip'): Promise<{ readonly path?: string }> {
+    const path =
+      kind === 'folder'
+        ? await this.ports.chooseDirectory(this.t('dialog.chooseNotesFolder'))
+        : await this.ports.chooseFile(this.t('dialog.chooseNotesZip'), ['zip']);
+
+    if (path !== undefined) {
+      this.offeredNoteLocations.add(resolve(path));
+    }
+
+    return path === undefined ? {} : { path };
+  }
+
+  public isOfferedNoteLocation(path: string): boolean {
+    return this.offeredNoteLocations.has(resolve(path));
   }
 
   public async createWorkspace(

@@ -116,6 +116,7 @@ export class SettingsService {
       entries,
       language: this.dependencies.language(),
       ollamaBaseUrl: configBridge.getProviderConfig('ollama').baseUrl ?? '',
+      hasNotionToken: (await secretStore.getNotionToken()) !== undefined,
     };
   }
 
@@ -137,6 +138,12 @@ export class SettingsService {
   // Stores the key, then calls the service once, so a mistyped key shows up now rather than on
   // the first paid call. The first key also becomes the service in use. SECURITY: the key is
   // never logged or sent back; only whether one is stored is.
+  // SECURITY: the token goes to the 0600 secrets file only and is never sent back to the renderer.
+  public async connectNotion(token: string): Promise<DesktopSettings> {
+    await this.dependencies.stores().secretStore.setNotionToken(token);
+    return await this.read();
+  }
+
   public async setApiKey(providerId: AiProviderId, apiKey: string): Promise<ServiceResult<DesktopSettings>> {
     const { configBridge, secretStore, aiProviderRegistry } = this.dependencies.stores();
 

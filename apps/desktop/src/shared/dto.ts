@@ -190,6 +190,44 @@ export interface DesktopSettings {
   readonly entries: readonly SettingEntry[];
   readonly language: UiLanguage;
   readonly ollamaBaseUrl: string;
+  // Whether a Notion integration token is in the secrets file (the token itself never leaves main).
+  readonly hasNotionToken: boolean;
+}
+
+// The note import (#53), step by step: what was read and what it would cost, what the model made of
+// it, and what was written. Each step is its own channel so the author confirms before paying and
+// before writing.
+export interface NotesEstimateView {
+  readonly location: string;
+  readonly noteCount: number;
+  readonly linkedNoteCount: number;
+  readonly characterCount: number;
+  readonly skippedCount: number;
+  readonly requestCount: number;
+  readonly providerId: AiProviderId;
+  readonly model: string;
+  readonly costCeilingUsd?: number;
+}
+
+export interface NotesPlanView {
+  readonly newCards: readonly string[];
+  readonly changedCards: readonly string[];
+  readonly sceneCount: number;
+  readonly skippedSceneCount: number;
+  readonly hasSynopsis: boolean;
+  readonly canonCandidateCount: number;
+  readonly unclassifiedNotes: readonly string[];
+  readonly warnings: readonly string[];
+}
+
+export interface NotesApplyView {
+  readonly createdCards: readonly string[];
+  readonly createdScenes: readonly string[];
+  readonly pendingCandidateCards: readonly string[];
+  readonly canonCandidateCount: number;
+  readonly synopsis: 'written' | 'candidate' | 'none';
+  readonly filledSettingKeys: readonly string[];
+  readonly settingProposals: Readonly<Record<string, string>>;
 }
 
 export type BibleCardKind = 'character' | 'background' | 'narrator';

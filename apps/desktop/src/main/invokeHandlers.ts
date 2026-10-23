@@ -134,6 +134,27 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
     'settings.setValue': async ({ key, value }) => await app.settings.setValue(key, value),
     'settings.setOllamaBaseUrl': async ({ baseUrl }) => succeed(await app.settings.setOllamaBaseUrl(baseUrl)),
 
+    'notes.chooseLocation': async ({ kind }) => succeed(await app.chooseNotesLocation(kind)),
+    'notes.collect': async ({ location }) =>
+      await withSession(app, async (session) =>
+        location.kind === 'path' && !app.isOfferedNoteLocation(location.path)
+          ? fail('invalid-request', app.t('error.invalidRequest'))
+          : await session.notesImport.collect(location),
+      ),
+    'notes.plan': async () => await withSession(app, async (session) => await session.notesImport.planAbsorb()),
+    'notes.apply': async ({ fillContract }) =>
+      await withWritableSession(app, async (session) => {
+        const applied = await session.notesImport.apply(fillContract);
+        if (applied.ok) {
+          await session.snapshot('snapshot.notesAbsorbed', {
+            cards: String(applied.data.createdCards.length),
+            scenes: String(applied.data.createdScenes.length),
+          });
+        }
+        return applied;
+      }),
+    'notes.connectNotion': async ({ token }) => succeed(await app.settings.connectNotion(token)),
+
     'history.list': async () => await withSession(app, async (session) => succeed(await session.snapshots.list())),
     'history.restore': async ({ id }) =>
       await withWritableSession(app, async (session) => {

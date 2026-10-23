@@ -13,7 +13,7 @@ import { initialWizardForm, isStepComplete, lengthHint, wizardSteps, type Wizard
 interface WizardProps {
   readonly defaultParentDirectory: string;
   readonly onCancel: () => void;
-  readonly onCreated: (overview: WorkspaceOverview) => void;
+  readonly onCreated: (overview: WorkspaceOverview, shouldAbsorbNotes: boolean) => void;
 }
 
 export function Wizard(props: WizardProps): JSX.Element {
@@ -22,6 +22,7 @@ export function Wizard(props: WizardProps): JSX.Element {
   const [form, setForm] = useState<WorkspaceCreateRequest>(initialWizardForm);
   const [parentDirectory, setParentDirectory] = useState(props.defaultParentDirectory);
   const [isCreating, setCreating] = useState(false);
+  const [shouldAbsorbNotes, setAbsorbNotes] = useState(false);
   const [error, setError] = useState<string>();
 
   const step: WizardStep = wizardSteps[stepIndex] ?? 'story';
@@ -52,7 +53,7 @@ export function Wizard(props: WizardProps): JSX.Element {
 
     setCreating(true);
     try {
-      props.onCreated(await call('workspace.create', { parentDirectory, request: form }));
+      props.onCreated(await call('workspace.create', { parentDirectory, request: form }), shouldAbsorbNotes);
     } catch (failure) {
       setError(messageOf(failure));
       setCreating(false);
@@ -151,6 +152,10 @@ export function Wizard(props: WizardProps): JSX.Element {
                 onChange={(event) => update('concept', event.target.value)}
                 autoFocus
               />
+            </label>
+            <label className="row small">
+              <input type="checkbox" checked={shouldAbsorbNotes} onChange={(event) => setAbsorbNotes(event.target.checked)} />
+              {t('wizard.fromNotes')}
             </label>
             <div className="field">
               <span className="field-label">{t('wizard.locationLabel')}</span>

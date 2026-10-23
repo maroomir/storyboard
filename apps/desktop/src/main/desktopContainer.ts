@@ -24,6 +24,7 @@ export interface DesktopContainer extends Pick<
   | 'drafts'
   | 'manuscript'
   | 'cards'
+  | 'notes'
   | 'novel'
   | 'studio'
   | 'runGate'
@@ -95,6 +96,7 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     drafts: application.drafts,
     manuscript: application.manuscript,
     cards: application.cards,
+    notes: application.notes,
     novel: application.novel,
     studio: application.studio,
     runGate: application.runGate,

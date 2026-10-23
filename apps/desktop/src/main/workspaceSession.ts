@@ -30,6 +30,7 @@ import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 import type { DesktopErrorCode, WorkspaceCreateRequest } from '@/shared/ipcContract';
 
 import { BibleService } from './bibleService';
+import { NotesService } from './notesService';
 import { createDesktopContainer, type DesktopContainer } from './desktopContainer';
 import type { DesktopLogger } from './desktopLogger';
 import { RunController } from './runController';
@@ -107,6 +108,7 @@ export class WorkspaceSession {
     public readonly snapshots: SnapshotService,
     public readonly runs: RunController,
     public readonly bible: BibleService,
+    public readonly notesImport: NotesService,
   ) {
     this.watcher = watchWorkspace(container.workspaceRoot.fsPath, options.onWorkspaceChanged);
   }
@@ -149,7 +151,14 @@ export class WorkspaceSession {
     const bible = new BibleService(container.fileSystem, container.workspaceRoot, (message) =>
       options.translate('error.invalidCard', { message }),
     );
-    const session = new WorkspaceSession(options, container, snapshots, runs, bible);
+    const session = new WorkspaceSession(
+      options,
+      container,
+      snapshots,
+      runs,
+      bible,
+      new NotesService(container, options.translate),
+    );
 
     // Whatever changed while the work was closed (the CLI, the extension, a text editor) becomes its
     // own version, so a later restore can tell the app's changes from those.

@@ -41,6 +41,17 @@ Every step must work in order on both platforms.
 - **Change a scene's number or name** — on the desk, "Change number or name" on scene 1 → number 3:
   the contents move it, its draft opens under the new number, and History shows the change as its
   own version. A number another scene uses is refused with a message, and nothing moves.
+- **Start from notes** — in the wizard's last step tick "Start from notes after creating": after the
+  work is created the notes panel opens. Pick an Obsidian folder (main's dialog), read: the estimate
+  shows note count, request count and the cost ceiling; "Sort with AI" shows the plan (new cards,
+  candidates, scenes, synopsis, canon candidates); "Apply" writes them, History shows "Notes
+  absorbed", and the empty contract fields are filled.
+- **Absorb notes into an open work** — on the desk, "Absorb notes": the same panel, but the contract
+  is left alone and existing cards only get candidates. Cancel at the estimate: nothing is spent.
+  Cancel at the plan: nothing is written. The Notion address button stays disabled until Settings has
+  a Notion token; "Pick a Notion export zip" opens a file dialog filtered to `.zip`.
+- **Notion token** — Settings → Notion integration token: after saving, the field reads "Stored" and
+  the token appears only in `~/.storyboard/secrets.json`.
 - **Language** — Settings → English: every screen switches; engine messages stay Korean.
 - **Dark mode** — switch the OS appearance: the app follows and stays readable.
 - **Update (packaged builds only)** — install the previous release, publish a newer one: the banner

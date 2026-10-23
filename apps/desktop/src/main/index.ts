@@ -38,6 +38,15 @@ function startDesktopApp(): DesktopApp {
       const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
       return result.canceled ? undefined : result.filePaths[0];
     },
+    chooseFile: async (title, extensions) => {
+      const options = {
+        title,
+        properties: ['openFile'] as 'openFile'[],
+        filters: [{ name: extensions.join(', '), extensions: [...extensions] }],
+      };
+      const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
+      return result.canceled ? undefined : result.filePaths[0];
+    },
     emit: (event, payload) => mainWindow?.webContents.send(ipcEventChannelName(event), payload),
     notify: (message) => {
       void dialog.showMessageBox({ type: 'warning', message });

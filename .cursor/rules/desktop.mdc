@@ -49,6 +49,7 @@ extension; only its host adapters and screens are its own.
 | `src/main/desktopContainer.ts` | Builds the desktop's host adapters for one open workspace and hands them to `StoryboardApplication` |
 | `src/main/workspaceSession.ts` | One open work: container, snapshots, run controller, bible, edit sessions |
 | `src/main/runController.ts` | The one run at a time: novel or scene, lock, budget, approvals, pause |
+| `src/main/notesService.ts` | The note import for one open work: collect → estimate, plan, apply, each refusing until the step before ran |
 | `src/main/invokeHandlers.ts` | Channel → service table |
 | `src/renderer/` | React screens: Welcome, Wizard, Desk, Bible, Settings, History; the run drawer |
 

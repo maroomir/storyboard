@@ -15,6 +15,7 @@ import { History } from './screens/History';
 import { Settings } from './screens/Settings';
 import { Welcome } from './screens/Welcome';
 import { Wizard } from './screens/Wizard';
+import { NotesAbsorb } from './components/NotesAbsorb';
 
 export function App(): JSX.Element {
   const [bootstrap, setBootstrap] = useState<AppBootstrap>();
@@ -60,6 +61,12 @@ function Workbench(props: WorkbenchProps): JSX.Element {
   const [error, setError] = useState<string>();
   const [updateVersion, setUpdateVersion] = useState<string>();
   const [requestedStem, setRequestedStem] = useState<string>();
+  const [notesAbsorb, setNotesAbsorb] = useState<{ readonly fillContract: boolean; readonly hasNotionToken: boolean }>();
+
+  const openNotesAbsorb = async (fillContract: boolean): Promise<void> => {
+    const settings = await call('settings.read', {});
+    setNotesAbsorb({ fillContract, hasNotionToken: settings.hasNotionToken });
+  };
 
   const refreshBootstrap = useCallback(async () => {
     props.onBootstrapChange(await call('app.bootstrap', {}));
@@ -171,12 +178,15 @@ function Workbench(props: WorkbenchProps): JSX.Element {
           <Wizard
             defaultParentDirectory={props.bootstrap.defaultParentDirectory}
             onCancel={() => setWizardOpen(false)}
-            onCreated={(created) => {
+            onCreated={(created, shouldAbsorbNotes) => {
               setWizardOpen(false);
               setOverview(created);
               setView('desk');
               void call('run.status', {}).then(setRun);
               void refreshBootstrap();
+              if (shouldAbsorbNotes) {
+                void openNotesAbsorb(true);
+              }
             }}
           />
         ) : (
@@ -210,8 +220,20 @@ function Workbench(props: WorkbenchProps): JSX.Element {
           requestedStem={requestedStem}
           onError={setError}
           onOpenDrawer={() => setDrawerOpen(true)}
+          onAbsorbNotes={() => void openNotesAbsorb(false)}
         />
       ) : null}
+      {notesAbsorb === undefined ? null : (
+        <NotesAbsorb
+          fillContract={notesAbsorb.fillContract}
+          hasNotionToken={notesAbsorb.hasNotionToken}
+          onDone={() => {
+            setNotesAbsorb(undefined);
+            void refreshOverview();
+          }}
+          onCancel={() => setNotesAbsorb(undefined)}
+        />
+      )}
       {view === 'bible' ? <Bible run={run} change={change} onError={setError} /> : null}
       {view === 'settings' ? (
         <Settings onError={setError} onLanguageChange={(language) => void changeLanguage(language)} />
