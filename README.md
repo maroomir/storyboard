@@ -8,6 +8,7 @@ Storyboard는 장편 소설 한 권을 **검증 가능한 작은 단계**로 나
 프롬프트 한 번이 아니라, 이전 본문·정전(canon)·이야기 상태 원장을 주입받는 씬 단위 생성이 핵심입니다.
 
 세 앱이 같은 엔진을 씁니다. 작품 저장소는 git 저장소이고, AI 키는 사용자 본인의 것(`~/.storyboard/secrets.json`)입니다.
+Claude Max 구독자는 구독에 포함된 월 API 크레딧으로 키를 만들 수 있습니다: [`API_KEY_GUIDE.md`](API_KEY_GUIDE.md).
 
 
 | 앱                    | 이런 분께                    | 특징                         |

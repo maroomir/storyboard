@@ -10,7 +10,8 @@ rerun. The core is not one giant prompt but scene-by-scene generation that is fe
 prose, the canon, and a story-state ledger.
 
 Three apps share one engine. A work is a git repository, and the AI key is the writer's own
-(`~/.storyboard/secrets.json`).
+(`~/.storyboard/secrets.json`). Claude Max subscribers can create that key with the monthly API
+credits their plan includes: [`API_KEY_GUIDE.md`](API_KEY_GUIDE.md) (Korean).
 
 | App | For | What it offers |
 |---|---|---|
