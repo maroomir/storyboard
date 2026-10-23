@@ -22,8 +22,15 @@ export class CardModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    const { aiGateway, aiProviderRegistry, cards, logger, proposalReviewService, usageRecorder } =
-      this.platform;
+    const {
+      aiGateway,
+      aiProviderRegistry,
+      cards,
+      notes,
+      logger,
+      proposalReviewService,
+      usageRecorder,
+    } = this.platform;
 
     this.disposables.add(
       registerCreateCardCommands({ cards }),
@@ -32,7 +39,7 @@ export class CardModule implements IApplicationModule {
       registerRenameCardCommands(),
       registerCardRenameParticipant({ logger }),
       registerPromoteBibleCandidatesCommand({ logger, cards }),
-      registerPromoteCardCandidatesCommand({ logger, cards }),
+      registerPromoteCardCandidatesCommand({ logger, cards, notes }),
       registerCanonDiffCommand({ logger }),
       registerCardDiagnosticsProvider({ logger }),
       registerCardCustomEditorProvider(context, {

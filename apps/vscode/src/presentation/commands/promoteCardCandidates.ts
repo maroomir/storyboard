@@ -1,15 +1,19 @@
 import * as vscode from 'vscode';
 
-import type { CardManager } from '@storyboard/story-app';
+import type { CardManager, NoteManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import type { CardCandidateItem } from '@storyboard/story-model';
+import type { CardCandidateItem, MergedNoteCardCandidate } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 
 const promoteCommand = 'storyboard.cards.promoteCandidates';
 
-interface CandidateQuickPickItem extends vscode.QuickPickItem {
-  readonly item: CardCandidateItem;
-}
+type CandidateQuickPickItem = vscode.QuickPickItem &
+  (
+    | { readonly origin: 'draft'; readonly item: CardCandidateItem }
+    | { readonly origin: 'note'; readonly candidate: MergedNoteCardCandidate }
+  );
+
+type NoteCandidateManager = Pick<NoteManager, 'prepareCandidatePromotion' | 'promoteCandidates'>;
 
 function describeItem(item: CardCandidateItem): string {
   switch (item.kind) {
@@ -22,9 +26,12 @@ function describeItem(item: CardCandidateItem): string {
   }
 }
 
+// NOTE: the CLI's `card promote` reads both the drafts' and the notes' candidates; this command does
+// the same so the note import (#52) has nowhere its candidates are invisible.
 async function runPromote(
   logger: IStoryboardLogger,
   cards: Pick<CardManager, 'prepareCandidatePromotion' | 'promoteCandidates'>,
+  notes: NoteCandidateManager,
 ): Promise<void> {
   const folder = await getTargetWorkspaceFolder();
 
@@ -39,26 +46,40 @@ async function runPromote(
   }
 
   const preparation = await cards.prepareCandidatePromotion(folder.uri);
+  const notePreparation = await notes.prepareCandidatePromotion(folder.uri);
 
-  if (preparation.kind === 'no_candidates') {
+  if (preparation.kind !== 'ready' && notePreparation.kind !== 'ready') {
     await vscode.window.showInformationMessage(
-      '승격할 카드 후보가 없습니다. 먼저 초안을 생성해 주세요.',
+      preparation.kind === 'no_candidates' && notePreparation.kind === 'no_candidates'
+        ? '승격할 카드 후보가 없습니다. 먼저 초안을 생성하거나 노트를 흡수해 주세요.'
+        : '새로 승격할 후보가 없습니다. 이미 모두 카드에 반영되어 있습니다.',
     );
     return;
   }
 
-  if (preparation.kind === 'no_new_candidates') {
-    await vscode.window.showInformationMessage(
-      '새로 승격할 후보가 없습니다. 이미 모두 카드에 반영되어 있습니다.',
-    );
-    return;
-  }
-
-  const quickPickItems: CandidateQuickPickItem[] = preparation.items.map((item) => ({
-    label: describeItem(item),
-    description: `후보 · ${item.sceneStem}`,
-    item,
-  }));
+  const draftItems: CandidateQuickPickItem[] =
+    preparation.kind === 'ready'
+      ? preparation.items.map((item) => ({
+          origin: 'draft',
+          label: describeItem(item),
+          description: `후보 · ${item.sceneStem}`,
+          item,
+        }))
+      : [];
+  const noteItems: CandidateQuickPickItem[] =
+    notePreparation.kind === 'ready'
+      ? notePreparation.candidates.map((candidate) => ({
+          origin: 'note',
+          label: `${candidate.cardId} (${candidate.name}) — 노트의 변경 ${candidate.changes.length}건`,
+          description: `노트 · ${candidate.locations.join(', ')}${
+            candidate.conflicts.length > 0
+              ? ` · 값이 갈리는 칸 ${candidate.conflicts.length}개는 남습니다`
+              : ''
+          }`,
+          candidate,
+        }))
+      : [];
+  const quickPickItems = [...draftItems, ...noteItems];
 
   const picked = await vscode.window.showQuickPick(quickPickItems, {
     canPickMany: true,
@@ -70,31 +91,41 @@ async function runPromote(
     return;
   }
 
-  const result = await vscode.window.withProgress(
+  const pickedDrafts = picked.flatMap((entry) => (entry.origin === 'draft' ? [entry.item] : []));
+  const pickedNotes = picked.flatMap((entry) => (entry.origin === 'note' ? [entry.candidate] : []));
+  const outcome = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '카드에 반영 중…' },
-    () =>
-      cards.promoteCandidates(
-        folder.uri,
-        picked.map((entry) => entry.item),
-      ),
+    async () => {
+      const drafts =
+        pickedDrafts.length > 0
+          ? await cards.promoteCandidates(folder.uri, pickedDrafts)
+          : undefined;
+      const noteResult =
+        pickedNotes.length > 0 ? await notes.promoteCandidates(folder.uri, pickedNotes) : undefined;
+      return { drafts, noteResult };
+    },
   );
 
-  if (result.kind === 'save_failed') {
+  if (outcome.drafts !== undefined && outcome.drafts.kind === 'save_failed') {
     logger.show();
     await vscode.window.showErrorMessage('카드 저장에 실패했습니다. Output 패널을 확인해 주세요.');
     return;
   }
 
+  const updatedCardCount =
+    (outcome.drafts?.kind === 'promoted' ? outcome.drafts.updatedCardCount : 0) +
+    (outcome.noteResult?.updatedCardIds.length ?? 0);
   await vscode.window.showInformationMessage(
-    `후보 ${picked.length}개를 카드 ${result.updatedCardCount}개에 반영했습니다.`,
+    `후보 ${picked.length}개를 카드 ${updatedCardCount}개에 반영했습니다.`,
   );
 }
 
 export function registerPromoteCardCandidatesCommand(dependencies: {
   readonly logger: IStoryboardLogger;
   readonly cards: Pick<CardManager, 'prepareCandidatePromotion' | 'promoteCandidates'>;
+  readonly notes: NoteCandidateManager;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(promoteCommand, () =>
-    runPromote(dependencies.logger, dependencies.cards),
+    runPromote(dependencies.logger, dependencies.cards, dependencies.notes),
   );
 }

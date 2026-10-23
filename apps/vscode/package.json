@@ -27,6 +27,10 @@
         "title": "%storyboard.init.title%"
       },
       {
+        "command": "storyboard.notes.absorb",
+        "title": "%storyboard.notes.absorb.title%"
+      },
+      {
         "command": "storyboard.character.create",
         "title": "%storyboard.character.create.title%",
         "icon": "$(add)"

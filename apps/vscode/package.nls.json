@@ -3,6 +3,7 @@
   "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
   "storyboard.novel.generate.title": "Storyboard: Generate Novel",
   "storyboard.init.title": "Storyboard: Initialize Project",
+  "storyboard.notes.absorb.title": "Storyboard: Absorb Notes (Obsidian, Notion)...",
   "storyboard.character.create.title": "Storyboard: Create Character",
   "storyboard.background.create.title": "Storyboard: Create Background",
   "storyboard.character.recommend.title": "Storyboard: Recommend Characters",

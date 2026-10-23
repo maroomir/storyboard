@@ -206,8 +206,12 @@ export interface StatusBarItemLike {
 
 export const createdStatusBarItems: StatusBarItemLike[] = []
 
+export const ProgressLocation = { Notification: 15 } as const
+
 export const window: {
   showInputBox: (options?: unknown) => Promise<string | undefined>
+  showOpenDialog: (options?: unknown) => Promise<unknown[] | undefined>
+  withProgress: <T>(options: unknown, task: () => Promise<T>) => Promise<T>
   showWarningMessage: (message: string) => Promise<void>
   showErrorMessage: (message: string) => Promise<void>
   showInformationMessage: (message: string, ...items: string[]) => Promise<string | undefined>
@@ -217,6 +221,8 @@ export const window: {
   createStatusBarItem: (alignment?: StatusBarAlignment, priority?: number) => StatusBarItemLike
 } = {
   showInputBox: async () => undefined,
+  showOpenDialog: async () => undefined,
+  withProgress: async (_options, task) => await task(),
   showWarningMessage: async () => undefined,
   showErrorMessage: async () => undefined,
   showInformationMessage: async () => undefined,

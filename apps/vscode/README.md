@@ -30,6 +30,7 @@ English README: [`README.en.md`](README.en.md)
 - 장면 전환 구분자 삽입(`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
+- **노트 흡수** (`Storyboard: Absorb Notes…`): Obsidian 폴더·노트, Notion 내보내기 zip, Notion 페이지 주소를 골라 읽고, 견적 → AI 정리 → 계획 확인 뒤 인물·배경·씬 카드와 시놉시스로 옮깁니다(CLI `notes absorb`와 같은 동작). 기존 카드에 대한 내용은 후보로 남고 `Promote Card Candidates`가 초안 후보와 함께 보여 줍니다.
 - 초안에서 카드 필드 자동 갱신(`updateCardsAfterGenerate`): 배경 등장 인물 직접 기록 + 관계·아크·속성 후보 추출 후 `Promote Card Candidates`로 카드 승격
 - 카드 에디터의 **수집** 탭: 카드가 등장하는 draft에서 LLM으로 항목을 추출해 git diff처럼 보여주고, 선택 수락 시 캐릭터/배경 카드에 추가(기존 값 보존)
 - Characters / Backgrounds 사이드바의 **추천** 버튼: `scene/*.card`·`draft/*.md` 전체를 LLM으로 훑어 본문에 등장하지만 카드가 없는 인물·배경을 찾아 QuickPick으로 제안하고, 선택분을 신규 카드로 생성

@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import { migrateLegacyMemory } from '@storyboard/story-engine';
 
+import { registerAbsorbNotesCommand } from '@/presentation/commands/absorbNotes';
 import { registerInitCommand } from '@/presentation/commands/init';
 import { registerSetApiKeyCommand } from '@/presentation/commands/setApiKey';
 import { registerStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
@@ -20,6 +21,11 @@ export class ProjectModule implements IApplicationModule {
     this.disposables.add(
       registerStoryboardWorkspaceContext(context),
       registerInitCommand({ logger: this.platform.logger }),
+      registerAbsorbNotesCommand({
+        logger: this.platform.logger,
+        notes: this.platform.notes,
+        runGate: this.platform.runGate,
+      }),
       registerSetApiKeyCommand({ secretStore: this.platform.secretStore }),
     );
 

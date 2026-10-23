@@ -32,6 +32,7 @@ export interface IPlatformServices extends Pick<
   | 'drafts'
   | 'manuscript'
   | 'cards'
+  | 'notes'
   | 'novel'
   | 'studio'
   | 'runGate'
@@ -110,6 +111,7 @@ export class PlatformModule implements IApplicationModule {
       drafts: application.drafts,
       manuscript: application.manuscript,
       cards: application.cards,
+      notes: application.notes,
       novel: application.novel,
       studio: application.studio,
       runGate: application.runGate,

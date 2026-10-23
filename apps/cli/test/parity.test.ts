@@ -44,6 +44,7 @@ const commandToVerb: Readonly<Record<string, string>> = {
   'storyboard.draft.augment': 'draft augment',
   'storyboard.draft.export': 'manuscript export',
   'storyboard.init': 'init',
+  'storyboard.notes.absorb': 'notes absorb',
   'storyboard.draft.grammarCheck': 'draft check',
   'storyboard.draft.continuityCheck': 'draft check',
   'storyboard.draft.slopCheck': 'draft check',
