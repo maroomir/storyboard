@@ -16,3 +16,4 @@ export * from './sceneGenerationTuning';
 export * from './sceneGenerationTypes';
 export * from './sceneSectionPlan';
 export * from './sceneStageCatalog';
+export * from './sectionBackgroundFacts';

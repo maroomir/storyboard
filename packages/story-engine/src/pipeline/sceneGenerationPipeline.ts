@@ -48,6 +48,7 @@ import {
   unknownDialogueSpeaker,
 } from '@storyboard/story-model';
 import { condensePreviousContext } from './sceneGenerationPolicies';
+import { scopeBackgroundFacts } from './sectionBackgroundFacts';
 import {
   countMissingSceneCoordinates,
   extractSceneCoordinates,
@@ -1383,6 +1384,10 @@ const expandSectionStage: ISceneStage = {
       castNameOf(ctx.context),
     );
     const placesBySection = sectionPlaces(state.sceneCoordinates, sections, beats);
+    const scenePlaces = beats.flatMap((beat) =>
+      typeof beat === 'string' || beat.place === undefined ? [] : [beat.place],
+    );
+    const backgroundFacts = backgroundFactLines(state.background);
     const expandedSections: string[] = [];
 
     for (let index = 0; index < sections.length; index += 1) {
@@ -1394,7 +1399,11 @@ const expandSectionStage: ISceneStage = {
         skeleton: state.polishedText,
         previousSection: expandedSections.at(-1),
         targetLength: targetLengths[index] as number,
-        backgroundFacts: backgroundFactLines(state.background),
+        backgroundFacts: scopeBackgroundFacts(
+          backgroundFacts,
+          placesBySection[index] ?? [],
+          scenePlaces,
+        ),
         backgroundConflicts: state.backgroundFactConflicts.map(formatBackgroundFactConflict),
         sceneCoordinates: coordinatesBySection[index] ?? [],
         sectionPlaces: placesBySection[index] ?? [],
