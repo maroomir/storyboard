@@ -1,4 +1,33 @@
 import { type AiProviderId } from '@storyboard/story-model';
+import { z } from 'zod';
+
+// What a browser login leaves behind. The registration (the issued client id and the account it is
+// bound to) and this machine's host id outlive a sign-out, so a later login is a reauthorization of
+// the same client; only the tokens are cleared.
+const oauthRegistrationSchema = z.object({
+  clientId: z.string().min(1),
+  subject: z.string().min(1),
+  email: z.string().min(1).optional(),
+});
+
+const oauthTokensSchema = z.object({
+  accessToken: z.string().min(1),
+  refreshToken: z.string().min(1),
+  idToken: z.string().min(1).optional(),
+  // ISO 8601, the instant the access token stops working.
+  expiresAt: z.string().min(1),
+  scopes: z.array(z.string()),
+});
+
+const oauthConnectionSchema = z.object({
+  hostId: z.string().min(1),
+  registration: oauthRegistrationSchema.optional(),
+  tokens: oauthTokensSchema.optional(),
+});
+
+export type OAuthRegistration = z.infer<typeof oauthRegistrationSchema>;
+export type OAuthTokens = z.infer<typeof oauthTokensSchema>;
+export type OAuthConnection = z.infer<typeof oauthConnectionSchema>;
 
 export interface StoryboardSecretStorageChangeEvent {
   readonly key: string;
@@ -37,6 +66,33 @@ export class SecretStore {
 
   public async hasApiKey(providerId: AiProviderId): Promise<boolean> {
     return (await this.getApiKey(providerId)) !== undefined;
+  }
+
+  // SECURITY: the whole connection — tokens included — lives in the same 0600 file as the API keys.
+  // A record that no longer parses reads as «not connected»; the next login rewrites it.
+  public async getOAuthConnection(providerId: AiProviderId): Promise<OAuthConnection | undefined> {
+    const raw = await this.secretStorage.get(createOAuthSecretKey(providerId));
+
+    if (raw === undefined) {
+      return undefined;
+    }
+
+    try {
+      return oauthConnectionSchema.parse(JSON.parse(raw));
+    } catch {
+      return undefined;
+    }
+  }
+
+  public async setOAuthConnection(
+    providerId: AiProviderId,
+    connection: OAuthConnection,
+  ): Promise<void> {
+    await this.secretStorage.store(createOAuthSecretKey(providerId), JSON.stringify(connection));
+  }
+
+  public async deleteOAuthConnection(providerId: AiProviderId): Promise<void> {
+    await this.secretStorage.delete(createOAuthSecretKey(providerId));
   }
 
   public async setNotionToken(token: string): Promise<void> {
@@ -78,4 +134,8 @@ export const notionTokenSecretKey = 'storyboard.integration.notion';
 
 export function createApiKeySecretKey(providerId: AiProviderId): string {
   return `storyboard.apiKey.${providerId}`;
+}
+
+export function createOAuthSecretKey(providerId: AiProviderId): string {
+  return `storyboard.oauth.${providerId}`;
 }

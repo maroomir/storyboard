@@ -69,10 +69,10 @@ describe("providerCatalog internal consistency", () => {
     }
   })
 
-  // The one program-run provider exists only behind a home-file switch.
-  it("hides every provider that runs a program on this machine", () => {
+  // The program-run provider and the browser-login provider exist only behind a home-file switch.
+  it("hides every provider that spends a subscription", () => {
     for (const providerId of aiProviderIds) {
-      if (providerCatalog[providerId].transport === "cli") {
+      if (["cli", "oauth"].includes(providerCatalog[providerId].transport)) {
         expect(isHiddenProvider(providerId), `${providerId} is not hidden`).toBe(true)
       }
     }
@@ -87,7 +87,7 @@ describe("providerCatalog internal consistency", () => {
       expect(new Set(ids).size, `${providerId} repeats a model id`).toBe(ids.length)
 
       // A subscription login has no price: its usage must read as unpriced, never as free.
-      if (entry.transport === "cli") {
+      if (entry.transport === "cli" || entry.transport === "oauth") {
         expect(storyboardModelPricing[providerId]).toEqual({})
         continue
       }

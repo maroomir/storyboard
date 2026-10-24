@@ -9,10 +9,12 @@ import {
   type AiProviderId,
   type AiProviderStatus,
   type AiTaskName,
+  getProviderTransport,
+  hiddenProviderRunWarning,
   isHiddenProvider,
   requiresApiKey,
+  requiresSubscriptionRiskNotice,
   riskNotAcknowledgedMessage,
-  subscriptionRiskWarning,
   unknownProviderMessage,
 } from '@storyboard/story-model';
 import './providers';
@@ -161,7 +163,10 @@ export class AiProviderRegistry {
       );
     }
 
-    if (!configBridge.isHiddenProviderRiskAcknowledged(providerId)) {
+    if (
+      requiresSubscriptionRiskNotice(providerId) &&
+      !configBridge.isHiddenProviderRiskAcknowledged(providerId)
+    ) {
       throw new AiProviderError(
         'risk-not-acknowledged',
         providerId,
@@ -171,15 +176,26 @@ export class AiProviderRegistry {
 
     if (!this.warnedProviderIds.has(providerId)) {
       this.warnedProviderIds.add(providerId);
-      onRiskWarning?.(subscriptionRiskWarning);
+      onRiskWarning?.(hiddenProviderRunWarning(providerId));
     }
+  }
+
+  // «Has a credential»: the key for an API provider, a login for a browser-login provider.
+  private async hasCredential(providerId: AiProviderId): Promise<boolean> {
+    if (requiresApiKey(providerId)) {
+      return await this.options.secretStore.hasApiKey(providerId);
+    }
+
+    if (getProviderTransport(providerId) === 'oauth') {
+      return (await this.options.secretStore.getOAuthConnection(providerId))?.tokens !== undefined;
+    }
+
+    return true;
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {
     const config = this.options.configBridge.getProviderConfig(providerId);
-    const hasApiKey = requiresApiKey(providerId)
-      ? await this.options.secretStore.hasApiKey(providerId)
-      : true;
+    const hasApiKey = await this.hasCredential(providerId);
 
     return {
       providerId,

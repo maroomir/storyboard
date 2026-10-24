@@ -1,5 +1,6 @@
 import {
   formatSubscriptionRiskNotice,
+  requiresSubscriptionRiskNotice,
   subscriptionRiskNoticeQuestion,
   subscriptionRiskNoticeTitle,
   type AiProviderId,
@@ -22,7 +23,10 @@ export async function requestHiddenProviderConsent(
   ask: (question: HiddenProviderConsentQuestion) => Promise<boolean>,
 ): Promise<void> {
   for (const providerId of configBridge.getEnabledHiddenProviderIds()) {
-    if (configBridge.isHiddenProviderRiskAcknowledged(providerId)) {
+    if (
+      !requiresSubscriptionRiskNotice(providerId) ||
+      configBridge.isHiddenProviderRiskAcknowledged(providerId)
+    ) {
       continue;
     }
 

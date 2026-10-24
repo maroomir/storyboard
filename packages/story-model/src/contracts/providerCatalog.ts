@@ -1,12 +1,14 @@
 // 프로바이더 한 곳. 표시명·기본 모델·모델 목록·요금이 provider 마다 한 행이며,
 // 아래의 파생 표들은 전부 이 행에서 나온다. 프로바이더를 추가할 때 고쳐야 하는 파일은 여기 하나다.
 
-export type ProviderTransport = 'http' | 'cli' | 'mock';
+// 'cli' 는 사용자가 설치한 실행 파일을, 'oauth' 는 사용자가 브라우저로 로그인한 구독 세션을 쓴다.
+export type ProviderTransport = 'http' | 'cli' | 'oauth' | 'mock';
 
 export interface ProviderModelEntry {
   readonly id: string;
   readonly displayName: string;
-  // 구독 로그인으로 부르는 모델(transport 'cli')만 비운다. 요금이 없는 호출은 0 이 아니라 «모름» 이다.
+  // 구독 로그인으로 부르는 모델(transport 'cli'·'oauth')만 비운다. 요금이 없는 호출은 0 이 아니라
+  // «모름» 이다.
   readonly inputPricePerMillion?: number;
   readonly outputPricePerMillion?: number;
   // 접두 캐시 요금. 프로바이더가 캐시 토큰을 입력과 따로 세는 경우에만 적는다(Claude).
@@ -17,6 +19,8 @@ export interface ProviderModelEntry {
   // 생략하면 false. 사고 강도(Claude output_config.effort, OpenAI reasoning_effort)의 low·medium·high
   // 를 받는다고 공식 문서가 밝힌 모델만 true 로 적는다. 받지 않는 모델은 400 을 낸다.
   readonly acceptsReasoningEffort?: boolean;
+  // 생략하면 true. 출력 상한(max_output_tokens)을 400 으로 거부하는 경로만 false 로 적는다.
+  readonly acceptsMaxTokens?: boolean;
 }
 
 // Claude 접두 캐시: 쓰기는 입력 요금의 1.25배, 읽기는 0.1배(5분 캐시 기준). Opus 5.5(0.05배)와
@@ -359,6 +363,63 @@ export const providerCatalog = {
       { id: 'claude-haiku-4-5', displayName: 'Claude Haiku 4.5', acceptsTemperature: false },
     ],
   },
+  // NOTE: OpenAI 의 «Sign in with ChatGPT — ChatGPT plan usage»(2026-09-29 미리보기). 사용자가
+  // 브라우저로 로그인해 준 토큰으로 공개 Responses API 를 부르고, 사용량은 그 사람의 ChatGPT 구독
+  // 한도에서 나간다. 미리보기 제약으로 temperature·top_p·max_output_tokens 를 받지 않는다. 모델
+  // 목록은 계정마다 다르므로 이 행은 openai 행의 최신 세대를 옮겨 적은 제안이고, 실제 목록은
+  // 로그인한 계정이 갖고 있다(doctor 가 대조한다). 실계정으로 검증하지 못한 경로다(2026-10-24).
+  chatgpt: {
+    displayName: 'ChatGPT (구독 로그인, 미리보기)',
+    transport: 'oauth',
+    requiresApiKey: false,
+    isHidden: true,
+    defaultModel: 'gpt-6-sol',
+    defaultBaseUrl: 'https://api.openai.com/v1',
+    models: [
+      {
+        id: 'gpt-6-sol',
+        displayName: 'GPT-6 Sol',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+        acceptsMaxTokens: false,
+      },
+      {
+        id: 'gpt-6-astra',
+        displayName: 'GPT-6 Astra',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+        acceptsMaxTokens: false,
+      },
+      {
+        id: 'gpt-6-luna',
+        displayName: 'GPT-6 Luna',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+        acceptsMaxTokens: false,
+      },
+      {
+        id: 'gpt-5.6-terra',
+        displayName: 'GPT-5.6 Terra',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+        acceptsMaxTokens: false,
+      },
+      {
+        id: 'gpt-5.6-sol',
+        displayName: 'GPT-5.6 Sol',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+        acceptsMaxTokens: false,
+      },
+      {
+        id: 'gpt-5.6-luna',
+        displayName: 'GPT-5.6 Luna',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+        acceptsMaxTokens: false,
+      },
+    ],
+  },
   mock: {
     displayName: 'Mock AI',
     transport: 'mock',
@@ -501,6 +562,21 @@ export function acceptsReasoningEffort(providerId: AiProviderId, modelId: string
   return model?.acceptsReasoningEffort === true;
 }
 
+export function acceptsMaxTokens(providerId: AiProviderId, modelId: string): boolean {
+  const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
+  return model?.acceptsMaxTokens !== false;
+}
+
+export function getProviderTransport(providerId: AiProviderId): ProviderTransport {
+  return catalogRows[providerId].transport;
+}
+
+// 위험 고지는 실행 파일 경로의 것이다: 그 경로만 제공자 약관 밖에서 구독을 쓴다. 브라우저 로그인
+// 경로는 제공자가 공식으로 열어 둔 것이라 동의를 받지 않고, 미리보기라는 안내만 한다.
+export function requiresSubscriptionRiskNotice(providerId: AiProviderId): boolean {
+  return isHiddenProvider(providerId) && catalogRows[providerId].transport === 'cli';
+}
+
 // 프로바이더가 내는 네 가지 실패 문구. 여섯 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
 // 호스트가 «키가 없다»를 알아보려고 문구 조각을 손으로 베껴 두게 된다.
 export const missingApiKeyMarker = 'API 키가 설정되어 있지 않습니다';
@@ -577,6 +653,28 @@ export function formatSubscriptionRiskNotice(): string {
 
 export const subscriptionRiskWarning =
   '구독 로그인으로 생성합니다 — 구독 한도를 쓰고, 실행 예산이 적용되지 않으며, 예고 없이 멈출 수 있습니다.';
+
+export const planUsagePreviewWarning =
+  '구독 로그인(미리보기)으로 생성합니다 — 사용량은 ChatGPT 구독 한도에서 나가고, 금액이 계산되지 않아 실행 예산이 적용되지 않습니다. 한도에 닿으면 씬 경계에서 멈춥니다.';
+
+// 숨은 프로바이더를 처음 부를 때 한 번 알리는 문장. 경로마다 위험이 다르다.
+export function hiddenProviderRunWarning(providerId: AiProviderId): string {
+  return requiresSubscriptionRiskNotice(providerId)
+    ? subscriptionRiskWarning
+    : planUsagePreviewWarning;
+}
+
+export const planUsageSettingsUrl = 'https://chatgpt.com/settings/usage';
+
+export function loginRequiredMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 에 로그인돼 있지 않습니다. \`storyboard login ${providerId}\` 로 로그인하세요.`;
+}
+
+// 한도는 앱별 상한일 수도, 구독 전체일 수도 있다. 어느 쪽인지는 이 코드만으로 알 수 없으므로 확인할
+// 곳을 알려 주고, 재개 가능하다는 말은 러너가 덧붙인다.
+export function usageLimitMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 사용 한도에 닿아 멈췄습니다. ChatGPT 설정 › Usage(${planUsageSettingsUrl})에서 이 앱의 한도와 남은 양을 확인하세요.`;
+}
 
 export function unknownProviderMessage(providerId: string): string {
   return `알 수 없는 프로바이더: ${providerId}`;
