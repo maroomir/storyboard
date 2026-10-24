@@ -87,17 +87,23 @@ for schema-first types and the error-class template. Generic readability and ver
   loaded and `AiProviderRegistry` only looks the id up (`story-ai/src/ai/providerFactory.ts`).
   Adding a provider is its catalog row plus its module, imported from `providers/index.ts`; the
   registry is not edited.
-- **Hidden providers**: a catalog row with `isHidden` (today only `claude-code`, `transport: 'cli'`)
-  is a name only when the **home** config file sets `providers.<id>.enabled`; a workspace file is
-  never asked, for that key or for `command`, `timeoutMs` and `riskAcknowledged`. Anything that
-  shows or accepts a provider name uses the available list (`ConfigBridge.getAvailableProviderIds`,
-  `listAvailableProviderIds`, the CLI's `availableProviderIds()`), never `aiProviderIds` — that one
-  is for types and for schemas that must still read old records. `AiProviderRegistry` is the last
-  gate: off is an unknown provider, on without the accepted risk notice is refused. The keys stay
-  out of the setting catalog, help, completion, README and the changelogs. A program-run provider
-  goes through `ICliRunner`, hands the child no `ANTHROPIC_*` variable, starts it in an empty
-  directory (so it discovers no `CLAUDE.md` an API provider would not see), and reads no credential
-  itself.
+- **Hidden providers**: a catalog row with `isHidden` (`claude-code`, `transport: 'cli'`, and
+  `chatgpt`, `transport: 'oauth'`) is a name only when the **home** config file sets
+  `providers.<id>.enabled`; a workspace file is never asked, for that key or for `command`,
+  `timeoutMs` and `riskAcknowledged`. Anything that shows or accepts a provider name uses the
+  available list (`ConfigBridge.getAvailableProviderIds`, `listAvailableProviderIds`, the CLI's
+  `availableProviderIds()`), never `aiProviderIds` — that one is for types and for schemas that
+  must still read old records. `AiProviderRegistry` is the last gate: off is an unknown provider,
+  and the program-run path on without the accepted risk notice is refused
+  (`requiresSubscriptionRiskNotice`); the browser-login path has no notice, only a preview warning.
+  The keys stay out of the setting catalog, help, completion, README and the changelogs. A
+  program-run provider goes through `ICliRunner`, hands the child no `ANTHROPIC_*` variable, starts
+  it in an empty directory (so it discovers no `CLAUDE.md` an API provider would not see), and
+  reads no credential itself. A browser-login provider keeps its session (`OAuthConnection`: host
+  id, issued client id, tokens) in the same 0600 `secrets.json` through `SecretStore`, refreshes
+  it itself, and turns the provider's usage limit into `AiProviderError('usage-limit')`, which the
+  draft use case returns as `reason: 'usage-limit'` and the novel runner and the batch turn into a
+  scene-boundary pause.
 - Process contract (cli): exit 0/non-0 is the API; stdout carries only the result, progress and
   warnings go to stderr.
 - State: story content lives in the git workspace only. Engine settings live in the shared
