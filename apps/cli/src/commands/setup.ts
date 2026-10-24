@@ -973,7 +973,14 @@ const parameterOriginLabels: Record<ParameterEntry['origin'], string> = {
   user: '공통',
   model: '모델 실측',
   default: '기본값',
+  'provider-unsupported': '프로바이더 미지원',
 };
+
+// The bundled value is worth noting beside a value someone set; not beside one that is never sent.
+const originsWithoutDefaultNote = new Set<ParameterEntry['origin']>([
+  'default',
+  'provider-unsupported',
+]);
 
 // 작가가 움직일 수 있는 값 전부를 한 목록으로: 어떤 값이 지금 어디서 오는지 한눈에 보인다.
 export async function runParamsShow({ container }: CommandContext): Promise<CommandOutcome> {
@@ -988,7 +995,9 @@ export async function runParamsShow({ container }: CommandContext): Promise<Comm
     for (const entry of entries) {
       const shown = String(entry.value).padEnd(12);
       const origin = parameterOriginLabels[entry.origin];
-      const note = entry.origin === 'default' ? '' : `  (기본값 ${String(entry.defaultValue)})`;
+      const note = originsWithoutDefaultNote.has(entry.origin)
+        ? ''
+        : `  (기본값 ${String(entry.defaultValue)})`;
       lines.push(`${entry.id.padEnd(width)}  ${shown}  ${origin}${note}`);
     }
 

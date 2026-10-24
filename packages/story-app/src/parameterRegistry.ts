@@ -1,4 +1,9 @@
-import { generationParameterCatalog, storyboardSettingCatalog } from '@storyboard/story-model';
+import {
+  acceptsMaxTokens,
+  acceptsTemperature,
+  generationParameterCatalog,
+  storyboardSettingCatalog,
+} from '@storyboard/story-model';
 import { promptResourceKeys, promptResources, type ConfigBridge } from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-engine';
 import type { StoryUri } from '@storyboard/story-model';
@@ -11,8 +16,9 @@ import type { ResourceOverrideReport } from './resourceOverrides';
 export type ParameterKind = 'setting' | 'generation' | 'prompt';
 
 // Where the value in force was set. `user` is the home layer, `workspace` the work's own, `model`
-// a measured model profile, `default` the bundled value.
-export type ParameterOrigin = 'workspace' | 'user' | 'model' | 'default';
+// a measured model profile, `default` the bundled value. `provider-unsupported` means the value is
+// set but the default provider's model does not take it, so it is dropped from every call.
+export type ParameterOrigin = 'workspace' | 'user' | 'model' | 'default' | 'provider-unsupported';
 
 export interface ParameterEntry {
   readonly kind: ParameterKind;
@@ -40,7 +46,7 @@ export function describeParameters(input: DescribeParametersInput): ParameterRep
     parameters: [
       ...settingEntries(input.configBridge),
       ...generationEntries(input.configBridge),
-      ...promptEntries(input.resources, input.roots),
+      ...promptEntries(input.resources, input.roots, input.configBridge),
     ],
     resources: input.resources,
   };
@@ -80,10 +86,28 @@ function generationEntries(configBridge: ConfigBridge): ParameterEntry[] {
   });
 }
 
+// Which sampling values the default provider's model takes. A knob it refuses is shown as such,
+// whatever file set it, so a person does not tune a number that never leaves the machine.
+function unsupportedSamplingKnobs(configBridge: ConfigBridge): {
+  readonly temperature: boolean;
+  readonly maxTokens: boolean;
+} {
+  const providerId = configBridge.getDefaultProvider();
+  const model = configBridge.getProviderConfig(providerId).model ?? '';
+
+  return {
+    temperature: !acceptsTemperature(providerId, model),
+    maxTokens: !acceptsMaxTokens(providerId, model),
+  };
+}
+
 function promptEntries(
   resources: ResourceOverrideReport,
   roots: readonly StoryUri[],
+  configBridge: ConfigBridge,
 ): ParameterEntry[] {
+  const unsupported = unsupportedSamplingKnobs(configBridge);
+
   return promptResourceKeys().flatMap((key) => {
     const config = promptResources.config(key);
     const bundled = promptResources.bundledConfig(key);
@@ -96,7 +120,11 @@ function promptEntries(
         label: `${key} 온도`,
         value: config.temperature,
         defaultValue: bundled.temperature,
-        origin: config.temperature === bundled.temperature ? 'default' : origin,
+        origin: unsupported.temperature
+          ? 'provider-unsupported'
+          : config.temperature === bundled.temperature
+            ? 'default'
+            : origin,
       },
       {
         kind: 'prompt' as const,
@@ -104,7 +132,11 @@ function promptEntries(
         label: `${key} 출력 상한`,
         value: config.maxTokens,
         defaultValue: bundled.maxTokens,
-        origin: config.maxTokens === bundled.maxTokens ? 'default' : origin,
+        origin: unsupported.maxTokens
+          ? 'provider-unsupported'
+          : config.maxTokens === bundled.maxTokens
+            ? 'default'
+            : origin,
       },
       ...(config.reasoningEffort === undefined && bundled.reasoningEffort === undefined
         ? []
