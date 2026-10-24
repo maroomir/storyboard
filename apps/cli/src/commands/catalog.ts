@@ -160,7 +160,8 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'from-notes',
     valueLabel: '<path|url>',
-    summary: 'init: 만든 워크스페이스에 노트를 흡수합니다 (Obsidian 폴더·노트, Notion 주소, Notion 내보내기 zip)',
+    summary:
+      'init: 만든 워크스페이스에 노트를 흡수합니다 (Obsidian 폴더·노트, Notion 주소, Notion 내보내기 zip)',
   },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
@@ -337,6 +338,21 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'login',
+    group: '시작하기',
+    usage: 'login <provider>',
+    summary:
+      'API 키 대신 로그인으로 연결하는 프로바이더에 로그인합니다. 브라우저를 열고(열 수 없으면 주소를 출력), 로그인이 끝나면 세션을 ~/.storyboard/secrets.json 에 저장합니다',
+    needsWorkspace: false,
+  },
+  {
+    verb: 'logout',
+    group: '시작하기',
+    usage: 'logout <provider>',
+    summary: '로그인으로 연결한 프로바이더의 세션을 끝내고 저장된 로그인 정보를 지웁니다',
+    needsWorkspace: false,
+  },
+  {
     verb: 'config show',
     group: '시작하기',
     usage: 'config show',
@@ -505,7 +521,10 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '씬',
     usage: 'scene list',
     summary: '씬 카드를 번호순으로, 초안이 있는지와 함께 봅니다',
-    examples: ['storyboard scene list', 'storyboard scene list --json | jq -r ".data.scenes[].stem"'],
+    examples: [
+      'storyboard scene list',
+      'storyboard scene list --json | jq -r ".data.scenes[].stem"',
+    ],
   },
   {
     verb: 'scene show',

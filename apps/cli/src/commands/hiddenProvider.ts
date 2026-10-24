@@ -1,15 +1,21 @@
 import {
+  AiProviderError,
+  getProviderTransport,
   hiddenProviderEnabledKey,
   hiddenProviderIds,
+  hiddenProviderRunWarning,
+  requiresSubscriptionRiskNotice,
   subscriptionRiskNoticeItems,
   subscriptionRiskNoticeQuestion,
   subscriptionRiskNoticeTitle,
-  subscriptionRiskWarning,
   unknownProviderMessage,
   type AiProviderId,
 } from '@storyboard/story-model';
+import type { ChatGptProvider, FetchLike } from '@storyboard/story-ai';
 
 import type { CliContainer } from '@/container';
+
+import { createChatGptProvider } from './login';
 
 import type { CommandOutcome } from './outcome';
 
@@ -24,12 +30,25 @@ function riskNoticeLines(): string[] {
 
 // The one question a one-shot command asks: nobody but the person whose subscription it is can
 // accept these risks, so there is no flag that answers for them and no answer without a terminal.
+// The browser-login path has no such notice: the provider opened it officially, so the switch
+// turns on at once and the next step is the login.
 async function switchOn(
   container: CliContainer,
   providerId: AiProviderId,
 ): Promise<CommandOutcome> {
   const { configBridge, prompter } = container;
   const key = hiddenProviderEnabledKey(providerId);
+
+  if (!requiresSubscriptionRiskNotice(providerId)) {
+    await configBridge.enableHiddenProvider(providerId);
+    container.logger.warn(hiddenProviderRunWarning(providerId));
+
+    return {
+      ok: true,
+      message: `${key} = true 저장했습니다: ${container.homePaths.configFile}\n다음: storyboard login ${providerId}`,
+      data: { key, value: true },
+    };
+  }
 
   if (!configBridge.isHiddenProviderRiskAcknowledged(providerId)) {
     if (prompter === undefined) {
@@ -57,7 +76,7 @@ async function switchOn(
   }
 
   await configBridge.enableHiddenProvider(providerId);
-  container.logger.warn(subscriptionRiskWarning);
+  container.logger.warn(hiddenProviderRunWarning(providerId));
 
   return {
     ok: true,
@@ -112,6 +131,11 @@ export async function setHiddenProviderKey(
     return { ok: false, message: unknownProviderMessage(providerId) };
   }
 
+  // The executable keys belong to the program-run path; any other provider's go the common way.
+  if (getProviderTransport(providerId) !== 'cli') {
+    return undefined;
+  }
+
   if (field === 'command') {
     const command = raw.trim();
 
@@ -143,18 +167,25 @@ export async function setHiddenProviderKey(
 }
 
 export interface HiddenProviderCheck {
-  readonly status: 'ok' | 'fail';
+  readonly status: 'ok' | 'warn' | 'fail' | 'info';
   readonly label: string;
   readonly detail: string;
   readonly fix?: string;
 }
 
-// What `doctor` adds when the default provider is a hidden one: whether its risks were accepted,
-// and whether the executable is there and signed in — asked of the executable itself.
+// What `doctor` adds when the default provider is a hidden one: for the program-run path whether
+// its risks were accepted and the executable is signed in — asked of the executable itself; for
+// the browser-login path whether a session is there and the configured model is one the account
+// may call.
 export async function collectHiddenProviderChecks(
   container: CliContainer,
   providerId: AiProviderId,
+  fetchImpl?: FetchLike,
 ): Promise<HiddenProviderCheck[]> {
+  if (!requiresSubscriptionRiskNotice(providerId)) {
+    return collectLoginProviderChecks(container, providerId, fetchImpl);
+  }
+
   if (!container.configBridge.isHiddenProviderRiskAcknowledged(providerId)) {
     return [
       {
@@ -178,4 +209,81 @@ export async function collectHiddenProviderChecks(
       },
     ];
   }
+}
+
+const previewCheck: HiddenProviderCheck = {
+  status: 'info',
+  label: '미리보기',
+  detail:
+    '제공자가 미리보기로 연 경로입니다. 받는 파라미터와 한도 정책이 바뀔 수 있고, 금액이 계산되지 않아 실행 예산(budget.run.limitUsd)이 적용되지 않습니다.',
+};
+
+// The model list is the account's, not the catalog's, so the configured model is checked against
+// what the account actually offers — a warning, since the list may change under us.
+async function collectLoginProviderChecks(
+  container: CliContainer,
+  providerId: AiProviderId,
+  fetchImpl: FetchLike | undefined,
+): Promise<HiddenProviderCheck[]> {
+  const { configBridge, secretStore } = container;
+  const connection = await secretStore.getOAuthConnection(providerId);
+  const model = configBridge.getProviderConfig(providerId).model;
+  const loginFix = `storyboard login ${providerId}`;
+
+  let provider: ChatGptProvider;
+  try {
+    provider = await createChatGptProvider(container, fetchImpl);
+  } catch (error) {
+    return [
+      previewCheck,
+      {
+        status: 'fail',
+        label: '로그인',
+        detail:
+          error instanceof AiProviderError && error.code === 'login-required'
+            ? '로그인돼 있지 않습니다. 생성 명령이 거부됩니다.'
+            : error instanceof Error
+              ? error.message
+              : String(error),
+        fix: loginFix,
+      },
+    ];
+  }
+
+  let models: readonly { readonly slug: string }[];
+  try {
+    models = await provider.listModels();
+  } catch (error) {
+    return [
+      previewCheck,
+      {
+        status: 'fail',
+        label: '로그인',
+        detail: error instanceof Error ? error.message : String(error),
+        fix: loginFix,
+      },
+    ];
+  }
+
+  const account = connection?.registration?.email;
+  const slugs = models.map((entry) => entry.slug);
+
+  return [
+    previewCheck,
+    {
+      status: 'ok',
+      label: '로그인',
+      detail: `${account === undefined ? '계정' : account} 으로 로그인돼 있습니다.`,
+    },
+    ...(model !== undefined && slugs.length > 0 && !slugs.includes(model)
+      ? [
+          {
+            status: 'warn' as const,
+            label: '모델',
+            detail: `${model} 이 이 계정의 모델 목록에 없습니다 (${slugs.slice(0, 6).join(', ')}${slugs.length > 6 ? ', …' : ''}). 호출이 거부될 수 있습니다.`,
+            fix: `storyboard config set providers.${providerId}.model <model> --global`,
+          },
+        ]
+      : []),
+  ];
 }

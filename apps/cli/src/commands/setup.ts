@@ -3,6 +3,7 @@ import { basename } from 'node:path';
 
 import {
   aiTaskNames,
+  getProviderTransport,
   listSelectableProviderIds,
   isHiddenProvider,
   isModelInCatalogForProvider,
@@ -50,6 +51,7 @@ import { measureWidth } from '@/terminal/width';
 import type { ParameterEntry } from '@storyboard/story-app';
 import type { CommandContext, CommandOutcome } from './outcome';
 import { collectHiddenProviderChecks, setHiddenProviderKey } from './hiddenProvider';
+import { signIn } from './login';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
 import { displayedProviderKeys, settableProviderKeys, type SettableProviderKey } from './catalog';
@@ -153,13 +155,19 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
   }
 
   const home = container.homePaths;
+  const loginNote = await signInIfNeeded(container, providerId);
+
+  if (loginNote !== undefined && !loginNote.ok) {
+    return loginNote;
+  }
 
   return {
     ok: true,
     // NOTE: API 키는 --global 여부와 상관없이 0600 홈 파일 하나에만 산다. 설정 파일만 갈린다.
     message:
       `기본 프로바이더를 ${providerId} 로 저장했습니다: ${container.configWriteFile}` +
-      (keyStored ? `\nAPI 키를 저장했습니다: ${home.secretsFile}` : ''),
+      (keyStored ? `\nAPI 키를 저장했습니다: ${home.secretsFile}` : '') +
+      (loginNote === undefined ? '' : `\n${loginNote.message}`),
     data: {
       providerId,
       model: configBridge.getProviderConfig(providerId).model,
@@ -167,6 +175,25 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
       file: container.configWriteFile,
     },
   };
+}
+
+// A browser-login provider with no session: sign in now when a person is there, otherwise say
+// which command does it. Undefined when there is nothing to do.
+async function signInIfNeeded(
+  container: CliContainer,
+  providerId: AiProviderId,
+): Promise<CommandOutcome | undefined> {
+  if (getProviderTransport(providerId) !== 'oauth') {
+    return undefined;
+  }
+
+  if ((await container.secretStore.getOAuthConnection(providerId))?.tokens !== undefined) {
+    return undefined;
+  }
+
+  return container.canPrompt
+    ? signIn(container, providerId)
+    : { ok: true, message: `${providerId} 는 로그인이 필요합니다: storyboard login ${providerId}` };
 }
 
 interface DoctorCheck {
