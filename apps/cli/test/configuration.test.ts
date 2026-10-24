@@ -46,7 +46,10 @@ describe('CLI configuration precedence', () => {
   });
 
   it('lets the workspace file win key by key', () => {
-    const user = write('user.json', { 'ai.provider.default': 'openai', editor: { draft: { keepHistory: true } } });
+    const user = write('user.json', {
+      'ai.provider.default': 'openai',
+      editor: { draft: { keepHistory: true } },
+    });
     const workspace = write('workspace.json', { 'ai.provider.default': 'mock' });
 
     const configuration = createFileConfiguration({
@@ -131,7 +134,10 @@ describe('CLI configuration validation', () => {
   });
 
   it('refuses an unknown provider or a flat key with the wrong type', () => {
-    const user = write('user.json', { 'ai.provider.default': 'codex', 'generation.beats.minimum': 'three' });
+    const user = write('user.json', {
+      'ai.provider.default': 'codex',
+      'generation.beats.minimum': 'three',
+    });
 
     expect(() =>
       createFileConfiguration({ userConfigFile: user }).get('ai.provider.default', 'x'),
@@ -154,6 +160,31 @@ describe('CLI configuration validation', () => {
     expect(configuration.get('providers.claude.model', '')).toBe('claude-sonnet-5');
     configuration.get('ai.provider.default', 'x');
     expect(unknown).toEqual(['providers.claude.color', 'experiment']);
+  });
+
+  // The browser-login provider has a switch and nothing else: no executable to name, no risk
+  // notice to acknowledge. Those keys stay the program-run provider's own.
+  it('accepts only the switch for the browser-login provider', () => {
+    const user = write('user.json', {
+      providers: {
+        chatgpt: { enabled: true, model: 'gpt-6-sol', command: '/tmp/x', riskAcknowledged: true },
+        'claude-code': { enabled: true, command: '/opt/claude', riskAcknowledged: true },
+      },
+    });
+    const unknown: string[] = [];
+    const configuration = createFileConfiguration({
+      userConfigFile: user,
+      onUnknownKey: (warning) => unknown.push(warning.key),
+    });
+
+    expect(configuration.get('providers.chatgpt.enabled', false)).toBe(true);
+    expect(configuration.get('providers.chatgpt.model', '')).toBe('gpt-6-sol');
+    expect(unknown).toEqual(['providers.chatgpt.command', 'providers.chatgpt.riskAcknowledged']);
+    expect(() =>
+      createFileConfiguration({
+        userConfigFile: write('bad.json', { providers: { chatgpt: { enabled: 'yes' } } }),
+      }).get('providers.chatgpt.enabled', false),
+    ).toThrow(ConfigFileError);
   });
 
   it('lets a tolerant host fall back to defaults for a file with a bad value', () => {
@@ -188,7 +219,9 @@ describe('CLI configuration updates', () => {
       providers: { openai: { model: 'gpt-5-mini' } },
       revise: { loop: { maxIterations: 3 } },
     });
-    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({ ai: { provider: { default: 'openai' } } });
+    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({
+      ai: { provider: { default: 'openai' } },
+    });
     expect(configuration.get('providers.openai.model', undefined)).toBe('gpt-5-mini');
     expect(configuration.get('ai.provider.default', undefined)).toBe('openai');
   });
@@ -205,11 +238,7 @@ describe('CLI configuration updates', () => {
 });
 
 describe('task routing across the two config files', () => {
-  function bridgeOver(
-    userFile: string,
-    workspaceFile: string,
-    writeTarget?: number,
-  ): ConfigBridge {
+  function bridgeOver(userFile: string, workspaceFile: string, writeTarget?: number): ConfigBridge {
     const configuration = createFileConfiguration({
       userConfigFile: userFile,
       workspaceConfigFile: workspaceFile,
@@ -223,7 +252,9 @@ describe('task routing across the two config files', () => {
   // Writing the merged map would copy every home route into the work's file, and a route removed
   // from the work would come back from the home file.
   it('writes one task into the chosen file without copying the other layer', async () => {
-    const user = write('user.json', { tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } } });
+    const user = write('user.json', {
+      tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } },
+    });
     const workspace = write('workspace.json', {});
     const configBridge = bridgeOver(user, workspace, configurationTargets.workspace);
 

@@ -4,12 +4,14 @@ import {
   aiProviderIds,
   aiTaskNames,
   decimalSettingStep,
+  getProviderTransport,
   hiddenProviderEnabledKey,
   hiddenProviderIds,
   hiddenProviderRiskAcknowledgedKey,
   isHiddenProvider,
   isOnDecimalStep,
   listAvailableProviderIds,
+  requiresSubscriptionRiskNotice,
   unknownProviderMessage,
   type AiProviderId,
   storyboardSettingCatalog,
@@ -80,11 +82,18 @@ function buildKnownKeySchemas(): ReadonlyMap<string, z.ZodType> {
   }
 
   // The hidden providers' keys are not in the setting catalog, so no list or completion shows them.
+  // The risk acknowledgement and the executable keys belong to the program-run path alone.
   for (const providerId of hiddenProviderIds) {
     schemas.set(hiddenProviderEnabledKey(providerId), z.boolean());
-    schemas.set(hiddenProviderRiskAcknowledgedKey(providerId), z.boolean());
-    schemas.set(`providers.${providerId}.command`, nonEmptyString);
-    schemas.set(`providers.${providerId}.timeoutMs`, z.number().int().positive());
+
+    if (requiresSubscriptionRiskNotice(providerId)) {
+      schemas.set(hiddenProviderRiskAcknowledgedKey(providerId), z.boolean());
+    }
+
+    if (getProviderTransport(providerId) === 'cli') {
+      schemas.set(`providers.${providerId}.command`, nonEmptyString);
+      schemas.set(`providers.${providerId}.timeoutMs`, z.number().int().positive());
+    }
   }
 
   for (const taskName of aiTaskNames) {
