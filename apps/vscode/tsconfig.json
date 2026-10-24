@@ -11,13 +11,12 @@
       "node",
       "vscode"
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@webview/*": [
-        "webview-ui/src/*"
+        "./webview-ui/src/*"
       ],
       "@storyboard/story-app": [
         "../../packages/story-app/src/index.ts"

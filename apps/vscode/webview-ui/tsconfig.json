@@ -14,10 +14,9 @@
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
     "types": [],
-    "baseUrl": ".",
     "paths": {
       "@webview/*": [
-        "src/*"
+        "./src/*"
       ],
       "@storyboard/story-model/contracts": [
         "../../../packages/story-model/src/contracts.ts"

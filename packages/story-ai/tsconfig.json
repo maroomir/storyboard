@@ -4,7 +4,6 @@
     "types": [
       "node"
     ],
-    "baseUrl": ".",
     "paths": {
       "@storyboard/story-model": [
         "../story-model/src/index.ts"

@@ -4,10 +4,9 @@
     "types": [
       "node"
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@storyboard/story-app": [
         "../../packages/story-app/src/index.ts"

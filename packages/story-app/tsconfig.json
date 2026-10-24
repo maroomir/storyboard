@@ -4,7 +4,6 @@
     "types": [
       "node"
     ],
-    "baseUrl": ".",
     "paths": {
       "@storyboard/story-engine": [
         "../story-engine/src/index.ts"
