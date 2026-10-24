@@ -121,6 +121,44 @@ describe('params show', () => {
     expect(report.resources.applied.map((entry) => entry.kind)).toEqual(['prompt']);
   });
 
+  // A knob the default provider's model refuses is dropped before every call, whatever file set it.
+  it('marks the sampling knobs the default provider does not take', async () => {
+    writeFile(
+      home,
+      'config.json',
+      '{ "ai": { "provider": { "default": "openai" } }, "providers": { "openai": { "model": "gpt-6-sol" }, "chatgpt": { "enabled": true } } }',
+    );
+    writeFile(
+      join(cwd, '.storyboard', 'prompts'),
+      'grammarCheck.md',
+      '---\ntemperature: 0.7\nmaxTokens: 2500\n---\n## system\nx\n\n## user\n{{body}}\n',
+    );
+
+    const withApiKey = new Map((await parameters()).parameters.map((row) => [row.id, row]));
+    expect(withApiKey.get('prompt.grammarCheck.temperature')).toMatchObject({
+      value: 0.7,
+      origin: 'provider-unsupported',
+    });
+    expect(withApiKey.get('prompt.grammarCheck.maxTokens')).toMatchObject({
+      value: 2500,
+      origin: 'workspace',
+    });
+
+    writeFile(
+      home,
+      'config.json',
+      '{ "ai": { "provider": { "default": "chatgpt" } }, "providers": { "chatgpt": { "enabled": true } } }',
+    );
+
+    const withPlanUsage = new Map((await parameters()).parameters.map((row) => [row.id, row]));
+    expect(withPlanUsage.get('prompt.grammarCheck.maxTokens')).toMatchObject({
+      origin: 'provider-unsupported',
+    });
+
+    const text = await dispatch(['params', 'show'], deps());
+    expect(text.stdout).toMatch(/prompt\.grammarCheck\.maxTokens +2500 +프로바이더 미지원\n/);
+  });
+
   it('prints the sections and the resource files as text', async () => {
     writeFile(home, 'craftContract.json', '{ "motifRepeatLimit": 5 }');
 
