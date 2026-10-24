@@ -623,8 +623,16 @@ describe('the ChatGPT plan provider: the registry gate', () => {
     home: Record<string, unknown>,
     fetchImpl: FetchLike,
     warnings: string[] = [],
+    // NOTE: The registry builds the provider on the real clock, so the token must outlive it.
     secretStorage = memorySecretStorage({
-      'storyboard.oauth.chatgpt': JSON.stringify(connection()),
+      'storyboard.oauth.chatgpt': JSON.stringify(
+        connection({
+          tokens: {
+            ...connection().tokens,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          },
+        }),
+      ),
     }),
   ) {
     const directory = mkdtempSync(join(tmpdir(), 'storyboard-chatgpt-'));
