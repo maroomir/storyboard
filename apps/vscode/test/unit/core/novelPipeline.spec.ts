@@ -514,6 +514,26 @@ describe("NovelPipeline", () => {
     expect(failed.message).toContain("인물 카드를 하나도 만들지 못했습니다: hero")
   })
 
+  // The subscription limit is the person's plan, not the scene: the run pauses in the provider's
+  // words, the chapter stays unfinished, and a rerun writes the scene that was not written.
+  it("pauses at the plan limit instead of failing, with the provider's message", async () => {
+    generateDraftMock.mockResolvedValueOnce({
+      ok: false,
+      kind: "failed",
+      reason: "usage-limit",
+      message: "ChatGPT 사용 한도에 닿아 멈췄습니다."
+    } as never)
+    const harness = createHarness()
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("paused")
+    expect(result.message).toBe("ChatGPT 사용 한도에 닿아 멈췄습니다. 다시 실행하면 이어서 진행합니다.")
+    expect(generateDraftMock).toHaveBeenCalledTimes(1)
+    expect(summarizeChaptersMock).not.toHaveBeenCalled()
+    expect(harness.persistedStates.at(-1)).toMatchObject({ status: "paused", nextChapterIndex: 0 })
+  })
+
   it("returns failed and records lastError when a draft fails", async () => {
     generateDraftMock.mockResolvedValueOnce({
       ok: false,

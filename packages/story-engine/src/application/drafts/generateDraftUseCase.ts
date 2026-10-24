@@ -1,5 +1,6 @@
 import type { StoryUri, BackgroundCard, AiProviderId, AiTaskName } from '@storyboard/story-model';
 import {
+  AiProviderError,
   draftHistorySceneDirectory,
   joinUri,
   computeDraftBodyHash,
@@ -305,6 +306,11 @@ async function runAndPersistDraft(
       return { ok: false, kind: 'cancelled' };
     }
 
+    // The limit is the person's plan, not this scene: the message already says where to look.
+    if (error instanceof AiProviderError && error.code === 'usage-limit') {
+      return { ok: false, kind: 'failed', reason: 'usage-limit', message: error.message };
+    }
+
     const message = error instanceof Error ? error.message : String(error);
     return reportWorkflowFailure(
       options,
@@ -326,10 +332,7 @@ async function generateDraftForWorkspaceSceneWorkflow(
 
   const inputs = loaded.inputs;
 
-  if (
-    !options.force &&
-    (await isCacheHit(inputs, options))
-  ) {
+  if (!options.force && (await isCacheHit(inputs, options))) {
     return await openCachedDraft(inputs.draftUri);
   }
 

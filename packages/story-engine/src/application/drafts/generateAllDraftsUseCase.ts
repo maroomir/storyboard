@@ -136,6 +136,12 @@ export class GenerateAllDraftsUseCase implements IUseCase<
       }
 
       if (result.kind === 'cancelled') break;
+      // The plan limit is not this scene's failure: the batch stops here and a rerun continues.
+      if (result.reason === 'usage-limit') {
+        this.deps.logger.warn(`${label}: ${result.message}`);
+        pausedWithRemaining = total - index;
+        break;
+      }
       failures += 1;
       if (failureLabels.length < 5) failureLabels.push(`${label}: ${result.message}`);
       this.deps.logger.error(`Draft generation failed for ${label}`, new Error(result.message));

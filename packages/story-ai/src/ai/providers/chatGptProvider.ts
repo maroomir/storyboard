@@ -108,8 +108,17 @@ async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIte
   const decoder = new TextDecoder();
   let buffered = '';
 
-  for await (const chunk of body) {
-    buffered += decoder.decode(chunk, { stream: true });
+  // Read through the reader rather than async iteration: the browser-typed hosts' lib does not
+  // declare the stream iterable, and the bytes are the same either way.
+  const reader = body.getReader();
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffered += decoder.decode(value, { stream: true });
     const lines = buffered.split('\n');
     buffered = lines.pop() ?? '';
 
