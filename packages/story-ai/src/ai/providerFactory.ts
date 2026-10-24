@@ -2,6 +2,7 @@ import type { AiProvider, AiProviderId } from '@storyboard/story-model';
 import type { ConfigBridge } from '#ai/ports/ConfigBridge';
 import type { ICliRunner } from '#ai/ports/cliRunner';
 import type { SecretStore } from '#ai/ports/SecretStore';
+import type { FetchLike } from './providers/chatGptOAuth';
 import type { ClaudeClientLike } from './providers/ClaudeProvider';
 import type { GoogleClientLike } from './providers/GoogleProvider';
 import type { OllamaClientLike } from './providers/OllamaProvider';
@@ -11,6 +12,7 @@ import type { OpenAiClientLike } from './providers/OpenAiProvider';
 // the real SDK. Each is optional; a provider without one builds its own.
 export interface ProviderClientFactories {
   readonly createCliRunner?: () => ICliRunner;
+  readonly createChatGptFetch?: () => FetchLike;
   readonly createClaudeClient?: (apiKey: string) => ClaudeClientLike;
   readonly createGoogleClient?: (apiKey: string) => GoogleClientLike;
   readonly createGrokClient?: (apiKey: string) => OpenAiClientLike;
