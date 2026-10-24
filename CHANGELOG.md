@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-10-24
+
 ### 추가
 
 - **Notion 내보내기 zip 을 `notes absorb` 가 읽습니다.** 통합 토큰 없이 Notion 의 «Markdown & CSV» 내보내기 zip 을 `storyboard notes absorb <zip>`·`init --from-notes <zip>` 에 주면, 파일·폴더 이름 끝의 32자리 id 를 떼어 제목·경로로 쓰고 하위 페이지 폴더 구조를 그대로 읽습니다. 데이터베이스 CSV 는 행 페이지가 따로 있으면 건너뛰고, 없으면 행마다 속성을 적은 노트 하나가 됩니다. zip 읽기는 Node 의 zlib 만 써서 새 의존성이 없습니다. (#56)

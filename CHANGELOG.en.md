@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-10-24
+
 ### Added
 
 - **`notes absorb` reads a Notion export zip.** Without an integration token, hand Notion's «Markdown & CSV» export zip to `storyboard notes absorb <zip>` or `init --from-notes <zip>`: the 32-hex ids Notion appends to file and folder names are stripped from titles and paths, and the sub-page tree is read as is. A database CSV is skipped when its rows are pages of their own and otherwise becomes one note listing each row's properties. The zip is read with Node's zlib alone, so no dependency was added. (#56)
