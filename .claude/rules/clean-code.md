@@ -31,8 +31,7 @@ Use three lenses:
 - Let the project formatter handle mechanical formatting.
 - Keep strongly related code close together.
 - Use blank lines to separate distinct semantic steps.
-- Use comments only for intent, constraints, tradeoffs, or non-obvious context.
-- Remove comments that merely repeat what the code says.
+- Write no comments; carry intent, constraints and tradeoffs in names (see `comments.md`).
 - Avoid large uninterrupted blocks; split when a reader cannot see the meaningful unit at once.
 
 ## Good Structure
@@ -62,19 +61,24 @@ Names are the fastest documentation. Make them specific enough to reveal role an
 - Make the type or shape reasonably inferable.
 - Avoid unclear abbreviations.
 - Use more specific names for wider scopes.
-- Boolean names should usually begin with `is`, `has`, `can`, or `should`.
+- Boolean names should usually begin with `is`, `has`, `can`, or `should`, and read positively (never `!isNotX`).
+- Pull a condition or intermediate value out of an expression into a named variable.
+- Replace magic numbers with named constants, and put units in names (`timeoutMs`, `elapsedMs`).
 
 Examples:
 
 ```ts
-const selectedUserId = "user-1"
-const isPanelVisible = true
-const workspaceFolders = vscode.workspace.workspaceFolders ?? []
+const selectedUserId: string = "user-1"
+const isPanelVisible: boolean = true
+const hasNoFlag: boolean = firstFlagIndex === -1
+const exitCodeOnInterrupt: number = 130
 ```
 
 ### Functions
 
-Function names should communicate action, target, condition, and context when useful.
+Function names should communicate action, target, condition, and context when useful, in plain
+words a reader understands without opening the function (`describeRun` → `extractRunName`). Pass an
+options object instead of a bare boolean argument (`generate(scene, { shouldOverwrite: true })`).
 
 Prefer names like:
 
@@ -107,7 +111,7 @@ When writing or reviewing code, verify:
 - Does each function/class have a focused responsibility?
 - Are related pieces close together and unrelated pieces separated?
 - Do blank lines separate meaningful phases?
-- Do comments explain intent/context rather than repeat implementation?
+- Is the code free of comments, with every local and return explicitly typed?
 - Are patterns consistent with the surrounding project?
 - Is the code split into units that are easy to test?
 - Would a future maintainer know where to change behavior for a new requirement?

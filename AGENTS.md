@@ -27,7 +27,7 @@ Apply this priority when instructions conflict:
 - `.claude/rules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
 - `.claude/rules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
 - `.claude/rules/coding-standards.md` (and `.cursor/rules/coding-standards.mdc`) define the monorepo-wide structure, naming, typing, and error-handling standards; the reference module is `apps/cli`, with `packages/story-model` as the package-side reference.
-- `.claude/rules/comments.md` defines allowed comment markers (`TODO(<issue>)`, `FIXME(<issue>)`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
+- `.claude/rules/comments.md` forbids comments in TypeScript/TSX (only tool directives such as `eslint-disable` and `@ts-expect-error` stay): intent goes into names and explicit types; Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
 
 If documents conflict in a way that could change behavior, investigate and ask before editing.
 
@@ -204,7 +204,8 @@ Code should be easy for another person to understand quickly and modify safely.
 - Prefer clear names that reveal role and intent.
 - Keep related state, derived values, and behavior close together.
 - Split large functions/classes when the meaningful unit no longer fits in one readable view.
-- Use comments for intent, constraints, and tradeoffs; avoid comments that repeat implementation.
+- Write no comments; carry intent, constraints, and tradeoffs in names (named constants, booleans, extracted functions).
+- Annotate every local, class field and function return explicitly, even when inferable.
 - Keep code testable by separating pure logic from VSCode API and webview runtime dependencies.
 
 For the full agent-facing checklist, read `.claude/rules/clean-code.md`.
@@ -327,4 +328,4 @@ Important rule files:
 - `.claude/rules/agent-workflow.md`
 - `.claude/rules/public-posts.md`
 
-When writing or reviewing code, always apply the clean code standards summarized in `.claude/rules/clean-code.md` and the comment markers in `.claude/rules/comments.md` when adding or editing comments.
+When writing or reviewing code, always apply the clean code standards summarized in `.claude/rules/clean-code.md` and the no-comment rule in `.claude/rules/comments.md`.

@@ -47,6 +47,9 @@ for schema-first types and the error-class template. Generic readability and ver
 
 ## Interfaces and Data Definitions
 
+- **Explicit types everywhere**: every local, class field and function return is annotated, even
+  when inferable; each project's eslint enforces it (`typedef`, `explicit-function-return-type`,
+  `no-inferrable-types` off). A long anonymous inferred shape gets a named `interface`/`type`.
 - **Schema-first at boundaries**: config files, RPC payloads, and workspace files (`.card` etc.)
   are defined by zod schemas; types derive via `z.infer`, unions via `z.discriminatedUnion`.
 - `interface` = record shape (all fields `readonly`); `type` = union/alias. State machines are
@@ -75,8 +78,8 @@ for schema-first types and the error-class template. Generic readability and ver
      `class XError extends Error` with a `code` string-literal union, optional `cause`, and
      `this.name` set. Codes are English kebab-case; messages are Korean.
 - Catch-alls live only at the outermost isolation ring (the CLI's `index.ts`: log to stderr, set
-  the exit code). A deliberately swallowed side-effect failure carries a comment
-  saying why (usageSink: accounting must never fail a paid generation). No silent mid-layer
+  the exit code). A deliberately swallowed side-effect failure says why in a name
+  (usageSink: accounting must never fail a paid generation). No silent mid-layer
   catches — a corrupt config file must fail loudly as a typed `ConfigError`, never fall back to
   `{}`. `config.json` is validated against `story-config/src/configSchema.ts` on every read: a value
   its schema rejects is `ConfigFileError('invalid-value')`, a key nothing reads is reported through

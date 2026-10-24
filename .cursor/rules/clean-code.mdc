@@ -14,7 +14,7 @@ Readable, maintainable, extensible, robust (edge cases and failures handled), te
 ## Readability
 
 - Let the formatter handle layout; use blank lines to separate **semantic steps**.
-- Comments: **intent, constraints, tradeoffs** only—not narration of what the code says.
+- **No comments**: intent, constraints and tradeoffs go into names (see `comments-policy.mdc`).
 - Split when one screen no longer shows the **meaningful unit** (function/class).
 
 ## Structure
@@ -27,15 +27,16 @@ Before finishing, ask: traceability of values? obvious change location? testable
 
 ## Naming
 
-- Variables: role clear; wider scope → more specific; booleans: `is` / `has` / `can` / `should`.
-- Functions: action + target + context when useful (e.g. `getActiveUsersByGroup`). Avoid vague `process`, `handle`, `data`, `temp` at non-trivial scope.
+- Variables: role clear; wider scope → more specific; booleans: `is` / `has` / `can` / `should`, positive. Conditions and intermediate values get named variables; magic numbers get named constants; units go in names (`timeoutMs`).
+- Functions: action + target + context in plain words (e.g. `getActiveUsersByGroup`, `describeRun` → `extractRunName`). Avoid vague `process`, `handle`, `data`, `temp` at non-trivial scope. Options object instead of a bare boolean argument.
+- Types: every local, field and return explicitly typed.
 - Nuance: `create` vs `add` vs `insert`; `fetch` vs `load` vs `get`; `validate` vs `update`; `current` vs `selected`.
 
 ## Review checklist
 
 - Names reveal role; single responsibility per unit.
 - Related code grouped; unrelated separated.
-- Phases separated by blank lines; comments add context.
+- Phases separated by blank lines; no comments, every local and return typed.
 - Patterns match surroundings; logic is testable; future change location is obvious.
 
 ## Adoption

@@ -1,46 +1,27 @@
 # Comments (TypeScript / TSX)
 
-Applies to `apps/vscode/src/`, `apps/vscode/webview-ui/src/`, and `apps/vscode/test/` unless a task says otherwise.
+Applies to every app and package: `apps/*/src/`, `apps/vscode/webview-ui/src/`, `packages/*/src/`
+and their tests.
 
-## Project preference: minimal comments
+## No comments
 
-- **Default: add no new comments.** This project strongly prefers almost no comments—only what is truly necessary.
-- Do not add explanatory narration, decorative section comments, or JSDoc that duplicates types or good names.
-- If code is hard to follow, prefer **refactors (names, structure, types)** over comments.
-- When unsure, **leave the comment out**.
+- **Write no comments.** Names, types and structure carry the intent.
+- A comment that would hold a real constraint (security, a cross-boundary contract, a workaround)
+  moves into a name instead: a named constant (`exitCodeOnTermination`), a named boolean
+  (`isPathOfferedByMain`), or an extracted function (`exitNormallySoChildProcessesStop()`).
+- A block that needs explaining becomes a function whose name explains it.
+- No JSDoc, no section banners, no `TODO`/`FIXME` — planned work lives in a GitHub issue.
 
-## Default
-
-- Prefer clear names and explicit types over comments.
-- Do not add comments that only repeat what the code already expresses.
-
-## When to add a comment
-
-Only when skipping it would likely mislead someone or hide a real constraint (e.g. security, host ↔ webview contract, temporary workaround). Keep to intent, constraints, or tradeoffs that the code cannot express. Prefer one tagged line (`// NOTE: …`, etc.).
-
-## Allowed markers
-
-Prefix line comments with one of:
-
-- `TODO(<issue>):` — planned work or known gap linked to a tracked issue
-- `FIXME(<issue>):` — wrong or incomplete behavior linked to a tracked issue
-- `NOTE` — non-obvious contract, coupling, or cross-boundary behavior (e.g. host ↔ webview messaging)
-- `SECURITY` — trust boundaries, CSP, secrets, paths; never suggest logging secrets
-
-Do not add untracked `TODO` or `FIXME` comments.
-
-Example: `// NOTE: Payload shape matches settings.read response.`
-
-## Do not remove
+## Keep (tool directives only)
 
 - TypeScript directives such as `/// <reference types="…" />`
-- `@ts-expect-error` / `@ts-ignore` and compiler-required explanations
-- `eslint-disable*` comments when they are still needed; keep the narrowest scope
+- `@ts-expect-error` / `@ts-ignore`, with the reason in the directive's own text
+- `eslint-disable*` when still needed; keep the narrowest scope
 
-## ESLint
+## Types instead of explanation
 
-See the header comment in `apps/vscode/.eslintrc.cjs` for the same policy. `no-warning-comments` is configured to warn on ambiguous `xxx`-style markers.
-
-## Webview and security
-
-Use `NOTE` or `SECURITY` for CSP, nonces, `asWebviewUri`, and validation at the extension boundary.
+Every local variable, class field and function return carries an explicit type, even when it could
+be inferred. Each app's eslint enforces it (`@typescript-eslint/typedef` with
+`variableDeclaration` and `memberVariableDeclaration`, `explicit-function-return-type`, and
+`no-inferrable-types` off). When the inferred type is a long anonymous shape, give it a name
+(`interface`/`type`) rather than spelling the shape inline.

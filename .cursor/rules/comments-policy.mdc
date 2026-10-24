@@ -1,49 +1,32 @@
 ---
-description: Allowed comment markers and when agents may add comments in TS/TSX
+description: No comments in TS/TSX; intent goes into names and explicit types
 alwaysApply: true
 ---
 
 # Comments (TypeScript / TSX)
 
-## Project preference: minimal comments
+Applies to every app and package: `apps/*/src/`, `apps/vscode/webview-ui/src/`, `packages/*/src/`
+and their tests.
 
-- **Default to no new comments.** The maintainers prefer almost no comments; add them only when truly necessary.
-- Do **not** add “helpful” narration, section headers, or JSDoc for code that is already clear from names and types.
-- If something feels unclear, first try **renaming, extracting a function, or tightening types** before adding a comment.
-- When in doubt, **omit the comment**.
+## No comments
 
-## Default
+- **Write no comments.** Names, types and structure carry the intent.
+- A comment that would hold a real constraint (security, a cross-boundary contract, a workaround)
+  moves into a name instead: a named constant (`exitCodeOnTermination`), a named boolean
+  (`isPathOfferedByMain`), or an extracted function (`exitNormallySoChildProcessesStop()`).
+- A block that needs explaining becomes a function whose name explains it.
+- No JSDoc, no section banners, no `TODO`/`FIXME` — planned work lives in a GitHub issue.
 
-- Prefer **clear names and types** over comments.
-- Do **not** add comments that restate what the code already says.
+## Keep (tool directives only)
 
-## When an agent may add a comment
+- TypeScript directives such as `/// <reference types="…" />`
+- `@ts-expect-error` / `@ts-ignore`, with the reason in the directive's own text
+- `eslint-disable*` when still needed; keep the narrowest scope
 
-Only when omitting it would likely **mislead a maintainer** or hide a **real constraint** (security, protocol shape, unavoidable workaround). Limit to **intent, constraints, or tradeoffs** that are not obvious from types or names. Prefer a **single** tagged line (`// NOTE: …`, etc.).
+## Types instead of explanation
 
-## Allowed markers (prefix with `//`)
-
-| Tag               | Use                                                                         |
-| ----------------- | --------------------------------------------------------------------------- |
-| `TODO(<issue>):`  | Planned work, missing behavior, or follow-up linked to a tracked issue      |
-| `FIXME(<issue>):` | Incorrect or incomplete behavior linked to a tracked issue                  |
-| `NOTE`            | Non-obvious contract, data flow, or coupling (e.g. extension ↔ webview)     |
-| `SECURITY`        | Trust boundaries, CSP, secrets, path handling — never log or expose secrets |
-
-**Format:** `// NOTE: …` (one space after the colon is fine.)
-
-Do not add untracked `TODO` or `FIXME` comments.
-
-## Always preserve (do not remove or “clean up”)
-
-- `/// <reference …>` and other TypeScript file-level directives
-- `@ts-expect-error` / `@ts-ignore` and any **required** adjacent explanation
-- `eslint-disable` / `eslint-disable-next-line` when needed; keep scope minimal
-
-## Tooling
-
-- ESLint policy is duplicated at the top of `apps/vscode/.eslintrc.cjs`; `no-warning-comments` discourages ambiguous `xxx`-style markers.
-
-## Webview / extension boundaries
-
-- Prefer `NOTE` or `SECURITY` for message contracts, CSP, and anything that would be unsafe if mishandled.
+Every local variable, class field and function return carries an explicit type, even when it could
+be inferred. Each app's eslint enforces it (`@typescript-eslint/typedef` with
+`variableDeclaration` and `memberVariableDeclaration`, `explicit-function-return-type`, and
+`no-inferrable-types` off). When the inferred type is a long anonymous shape, give it a name
+(`interface`/`type`) rather than spelling the shape inline.
