@@ -53,7 +53,12 @@ function lockOptions(now?: () => Date): Parameters<typeof acquireWorkspaceRunLoc
 }
 
 function deps(): DispatchDependencies {
-  return { version: '0.0.0', cwd: workspace, isInteractive: false, createLogger: () => silentLogger };
+  return {
+    version: '0.0.0',
+    cwd: workspace,
+    isInteractive: false,
+    createLogger: () => silentLogger,
+  };
 }
 
 beforeEach(async () => {
@@ -148,6 +153,8 @@ describe('CLI verbs and the run lock', () => {
       'init',
       'setup',
       'apikey set',
+      'login',
+      'logout',
       'apikey show',
       'notes connect',
       'notes export',

@@ -39,6 +39,7 @@ import {
   createEmptyBackground,
   createEmptyCharacter,
   parseSceneFileName,
+  getProviderTransport,
   requiresApiKey,
   type AiProviderId,
   type MergedNoteCardCandidate,
@@ -70,6 +71,7 @@ import {
   runParamsShow,
   runSetup,
 } from './setup';
+import { runLogin, runLogout } from './login';
 import { showStatus } from './status';
 import { listCards, listScenes, showCard, showDraft, showProject } from './views';
 import { availableProviderIds } from '@/adapters/availableProviders';
@@ -365,7 +367,11 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
 
   // 감수만 하는 동사에서는 감수가 멈춘 것이 곧 실패다.
   return result.failure
-    ? { ok: false, message: describeReviseOutcome(result).warning ?? result.failure.message, data: result }
+    ? {
+        ok: false,
+        message: describeReviseOutcome(result).warning ?? result.failure.message,
+        data: result,
+      }
     : { ok: true, message: '검수와 재작성을 마쳤습니다.', data: result };
 };
 
@@ -1970,16 +1976,38 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
   }
 };
 
-// 어느 키가 들어 있는지만 보여 준다. 값은 절대 찍지 않는다.
+// 어느 키가 들어 있는지만 보여 준다. 값은 절대 찍지 않는다. 로그인으로 연결하는 프로바이더는 같은
+// 파일의 세션을 «로그인됨/안 됨» 으로 보여 준다.
 const showApiKeys: CommandHandler = async ({ container }) => {
   const rows: { readonly providerId: AiProviderId; readonly stored: boolean }[] = [];
+  const logins: {
+    readonly providerId: AiProviderId;
+    readonly isLoggedIn: boolean;
+    readonly accountLabel: string | null;
+    readonly expiresAt: string | null;
+  }[] = [];
 
   for (const providerId of availableProviderIds()) {
-    if (!requiresApiKey(providerId)) {
-      continue;
+    if (requiresApiKey(providerId)) {
+      rows.push({ providerId, stored: await container.secretStore.hasApiKey(providerId) });
+    } else if (getProviderTransport(providerId) === 'oauth') {
+      const connection = await container.secretStore.getOAuthConnection(providerId);
+      logins.push({
+        providerId,
+        isLoggedIn: connection?.tokens !== undefined,
+        accountLabel: connection?.registration?.email ?? null,
+        expiresAt: connection?.tokens?.expiresAt ?? null,
+      });
     }
-    rows.push({ providerId, stored: await container.secretStore.hasApiKey(providerId) });
   }
+
+  const describeLogin = (login: (typeof logins)[number]): string => {
+    if (!login.isLoggedIn) {
+      return `     ${login.providerId}  로그인 안 됨`;
+    }
+    const account = login.accountLabel === null ? '' : ` (${login.accountLabel})`;
+    return `  ✅ ${login.providerId}  로그인됨${account}`;
+  };
 
   return {
     ok: true,
@@ -1989,8 +2017,9 @@ const showApiKeys: CommandHandler = async ({ container }) => {
         (row) =>
           `  ${row.stored ? '✅' : '  '} ${row.providerId}${row.stored ? '  저장됨' : '  없음'}`,
       ),
+      ...(logins.length === 0 ? [] : ['', '로그인', ...logins.map(describeLogin)]),
     ].join('\n'),
-    data: { keys: rows },
+    data: { keys: rows, logins },
   };
 };
 
@@ -2028,6 +2057,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   setup: runSetup,
   'apikey set': setApiKey,
   'apikey show': showApiKeys,
+  login: runLogin,
+  logout: runLogout,
   'config show': runConfigShow,
   'config set': runConfigSet,
   'config unset': runConfigUnset,
