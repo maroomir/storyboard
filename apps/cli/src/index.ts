@@ -12,7 +12,7 @@ import {
 } from './terminal/signals';
 import { runTui } from './tui/index';
 
-const version = '0.13.3';
+const version = '0.13.4';
 
 // Shell completion runs inside the shell's own prompt and `completion` is `eval`ed; neither may
 // touch the window. `help` and `tui` are not runs.

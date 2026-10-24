@@ -10,13 +10,15 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.13.4] - 2026-10-24
+
 ### Added
 
-- **`login <provider>` and `logout <provider>` for providers that connect through a browser login.** The login opens the browser (or prints the address when it cannot), waits on this machine's loopback port for the return, and stores the session in `~/.storyboard/secrets.json` beside the API keys. `setup --provider` continues into the login when there is no session, `apikey show` lists whether you are logged in (never the token), and `doctor` reports the login state and whether the configured model is in the account's model list. The first such provider is the ChatGPT plan-usage path (preview) OpenAI opened to open-source and local apps: it calls the Responses API against the user's ChatGPT subscription. No price is known, so the run budget does not apply, and the preview rejects temperature and the output limit, so neither is sent. Not yet verified against a real account.
+- **`login <provider>` and `logout <provider>` for providers that connect through a browser login.** The login opens the browser (or prints the address when it cannot), waits on this machine's loopback port for the return, and stores the session in `~/.storyboard/secrets.json` beside the API keys. `setup --provider` continues into the login when there is no session, `apikey show` lists whether you are logged in (never the token), and `doctor` reports the login state and whether the configured model is in the account's model list.
 
 ### Changed
 
-- **Reaching a subscription limit pauses a run at the scene boundary instead of failing it.** When the provider reports its usage limit (429), `novel generate` leaves that scene unwritten and stops with the provider's own guidance; running again continues from that scene. `draft generate --all` stops the same way, reporting the scenes it did not reach, and does not count the scene as failed.
+- **Reaching a usage limit pauses a run at the scene boundary instead of failing it.** When the provider reports its usage limit (429), `novel generate` leaves that scene unwritten and stops with the provider's own guidance; running again continues from that scene. `draft generate --all` stops the same way, reporting the scenes it did not reach, and does not count the scene as failed.
 - **`params show` marks values the provider does not take as «프로바이더 미지원».** When the default provider's model rejects temperature (the GPT-6 generation) or the output limit, a prompt file's value for it never reaches a call; the origin column now says so.
 
 ## [0.13.3] - 2026-10-24
