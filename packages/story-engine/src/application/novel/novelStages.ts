@@ -55,12 +55,10 @@ export async function cancel(
 
 async function pause(
   persist: (patch: Partial<NovelRunState>) => Promise<void>,
+  reason = '진행 중이던 씬까지 마치고 멈췄습니다.',
 ): Promise<NovelPipelineResult> {
   await persist({ status: 'paused' });
-  return {
-    outcome: 'paused',
-    message: '진행 중이던 씬까지 마치고 멈췄습니다. 다시 실행하면 이어서 진행합니다.',
-  };
+  return { outcome: 'paused', message: `${reason} 다시 실행하면 이어서 진행합니다.` };
 }
 
 export async function pauseIfRequested(
@@ -187,11 +185,14 @@ export async function runSeedsStage(
   await sceneSeedRepository.saveMissingSeeds(workspaceUri, buildSceneSeeds(plan, digitCount));
 }
 
+// A pause with a reason of its own: the provider's subscription limit, in the provider's words.
+type ChapterDraftsOutcome = 'finished' | 'paused' | { readonly limitReached: string };
+
 async function runChapterDraftsAndRevise(
   group: ChapterGroup,
   paths: StoryboardProjectPaths,
   options: NovelPipelineOptions,
-): Promise<'finished' | 'paused'> {
+): Promise<ChapterDraftsOutcome> {
   for (const stem of group.stems) {
     if (options.shouldCancel()) {
       return 'finished';
@@ -213,6 +214,10 @@ async function runChapterDraftsAndRevise(
       if (draftResult.kind === 'cancelled') {
         return 'finished';
       }
+      // The scene was not written, so a resume starts it over; nothing is counted as failed.
+      if (draftResult.reason === 'usage-limit') {
+        return { limitReached: draftResult.message };
+      }
       throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`);
     }
 
@@ -222,7 +227,9 @@ async function runChapterDraftsAndRevise(
       draftUri: draftPath(options.workspaceUri, stem),
       sceneStem: stem,
       maxIterations: options.reviseMaxIterations,
-      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('revise.length.maxCompressionPercent'),
+      maxCompressionPercent:
+        options.deps.configBridge.getMaxCompressionPercent?.() ??
+        integerSettingDefault('revise.length.maxCompressionPercent'),
       reviseScoreThreshold: 0,
       shouldCancel: options.shouldCancel,
     });
@@ -270,8 +277,12 @@ export async function runChapterStages(
 
     // NOTE: 장 도중에 멈추면 nextChapterIndex 를 올리지 않는다. 재개가 같은 장을 다시 돌면 끝난 씬은
     // 캐시로 건너뛰고 남은 씬부터 이어 쓴다.
-    if ((await runChapterDraftsAndRevise(group, paths, options)) === 'paused') {
+    const draftsOutcome = await runChapterDraftsAndRevise(group, paths, options);
+    if (draftsOutcome === 'paused') {
       return await pause(persist);
+    }
+    if (draftsOutcome !== 'finished') {
+      return await pause(persist, draftsOutcome.limitReached);
     }
 
     await refreshChapterSummary(options, chapterIndex);
@@ -495,7 +506,9 @@ export async function runReviseFromReviewStage(
       draftUri: draftPath(options.workspaceUri, target.sceneStem),
       sceneStem: target.sceneStem,
       maxIterations: 1,
-      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('revise.length.maxCompressionPercent'),
+      maxCompressionPercent:
+        options.deps.configBridge.getMaxCompressionPercent?.() ??
+        integerSettingDefault('revise.length.maxCompressionPercent'),
       reviseScoreThreshold: 0,
       seedIssues: target.seedIssues,
       shouldCancel: options.shouldCancel,

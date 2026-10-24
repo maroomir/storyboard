@@ -99,6 +99,39 @@ describe("GenerateAllDraftsUseCase", () => {
     expect(generateDraftUseCase.execute).toHaveBeenCalledOnce()
   })
 
+  it("stops at the plan limit as a pause, not a failure, and says why", async () => {
+    const generateDraftUseCase = {
+      execute: vi
+        .fn()
+        .mockResolvedValueOnce({ kind: "cache_hit", ok: true, draftUri: firstScene })
+        .mockResolvedValueOnce({ kind: "failed", ok: false, reason: "usage-limit", message: "한도에 닿았습니다." })
+    }
+    const currentLogger = logger() as { error: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> }
+
+    const result = await new GenerateAllDraftsUseCase({
+      generateDraftUseCase: generateDraftUseCase as never,
+      logger: currentLogger as never,
+      reviseAfterGenerateGate: {} as never,
+      sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
+    }).execute()
+
+    expect(generateDraftUseCase.execute).toHaveBeenCalledTimes(2)
+    expect(currentLogger.warn).toHaveBeenCalledWith("02-conflict.txt: 한도에 닿았습니다.")
+    expect(currentLogger.error).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      kind: "completed",
+      ok: true,
+      summary: {
+        cacheHits: 1,
+        failureLabels: [],
+        failures: 0,
+        generated: 0,
+        sceneCount: 3,
+        pausedWithRemaining: 2
+      }
+    })
+  })
+
   it("pauses between scenes and reports the scenes it did not reach", async () => {
     let isPauseRequested = false
     const generateDraftUseCase = {

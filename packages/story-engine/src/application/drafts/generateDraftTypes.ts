@@ -72,7 +72,14 @@ export type GenerateDraftResult =
       readonly warnings: readonly string[];
     }
   | { readonly ok: true; readonly kind: 'cache_hit'; readonly draftUri: StoryUri }
-  | { readonly ok: false; readonly kind: 'failed'; readonly message: string }
+  | {
+      readonly ok: false;
+      readonly kind: 'failed';
+      readonly message: string;
+      // The provider's subscription limit was reached: a batch stops here and continues later
+      // instead of counting the scene as failed.
+      readonly reason?: 'usage-limit';
+    }
   | { readonly ok: false; readonly kind: 'cancelled' };
 
 export type GenerateDraftWorkflowOptions = GenerateDraftUseCaseDependencies & GenerateDraftRequest;
