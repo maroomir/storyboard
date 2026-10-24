@@ -1,7 +1,3 @@
-/**
- * Comment policy matches the extension: minimize comments—prefer names/types; add only what is
- * truly necessary. When needed, use tracked TODO/FIXME markers, NOTE, or SECURITY only.
- */
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
