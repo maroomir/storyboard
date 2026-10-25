@@ -1,6 +1,5 @@
 import type { DesktopEventName } from './ipcContract';
 
-// The preload bundle reads only this file, so it must stay free of values from anything heavier.
 export const ipcInvokeChannelName: string = 'storyboard:invoke';
 
 export const desktopEventNames: readonly DesktopEventName[] = [

@@ -17,8 +17,6 @@ export interface DraftEditor {
   loadDisk(): Promise<void>;
 }
 
-// One scene's draft in the editor. Switching scenes flushes the pending save and ends the editing
-// session, which is what turns a stretch of typing into one version in the history.
 export function useDraftEditor(
   stem: string | undefined,
   changeSequence: number,

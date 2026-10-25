@@ -15,7 +15,6 @@ export class BridgeError extends Error {
   }
 }
 
-// Screens await data and show a failure's message; main has already worded it for the author.
 export async function call<C extends InvokeChannel>(
   channel: C,
   request: InvokeRequest<C>,

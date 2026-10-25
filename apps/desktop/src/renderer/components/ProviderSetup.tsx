@@ -7,8 +7,6 @@ import type { ProviderOption } from '@/shared/dto';
 import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 
-// The first run asks for one key and nothing else. Local models and the rest of the provider
-// settings wait in Settings.
 export function ProviderSetup(props: { readonly onDone: () => void }): JSX.Element {
   const { t } = useI18n();
   const [providers, setProviders] = useState<readonly ProviderOption[]>([]);

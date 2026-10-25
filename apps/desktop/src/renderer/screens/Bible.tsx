@@ -432,7 +432,6 @@ function TextInput(props: { readonly label: string; readonly value: string; read
   );
 }
 
-// A list field edits as plain lines, which is how a writer lists traits in a notebook.
 function ListInput(props: {
   readonly label: string;
   readonly value: readonly string[] | undefined;

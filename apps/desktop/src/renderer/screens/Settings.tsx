@@ -7,8 +7,6 @@ import type { DesktopSettings, ProviderOption, SettingEntry, UiLanguage } from '
 import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 
-// The catalog names its settings in Korean. The few on the basic list are translated here; the rest
-// say in the advanced section that they are Korean only.
 const englishBasicSettings: Readonly<Record<string, { readonly label: string; readonly description: string }>> = {
   'budget.run.limitUsd': {
     label: 'Budget per novel run (USD)',

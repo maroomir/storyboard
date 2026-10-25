@@ -5,12 +5,9 @@ import { BrowserWindow, shell } from 'electron';
 export interface MainWindowOptions {
   readonly preloadFile: string;
   readonly rendererFile: string;
-  // Set by `npm run dev` so the page comes from the Vite server with hot reload.
   readonly devServerUrl?: string;
 }
 
-// SECURITY: the page runs sandboxed with context isolation and no Node. It may not navigate away or
-// open windows; an https link opens in the system browser instead.
 export function createMainWindow(options: MainWindowOptions): BrowserWindow {
   const window: BrowserWindow = new BrowserWindow({
     width: 1280,

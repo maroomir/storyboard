@@ -77,7 +77,6 @@ async function readChapterPlanIfAny(
   paths: StoryboardProjectPaths,
   fileSystem: IFileSystem,
 ): Promise<ChapterPlan | undefined> {
-  // A workspace has no outline until the first run writes one; that is not an error.
   if (!(await fileSystem.exists(paths.outlineChapters))) {
     return undefined;
   }
@@ -165,8 +164,6 @@ export async function readWorkspaceOverview(
   };
 }
 
-// Scenes the outline places are grouped by its chapters; scenes it does not know (added by hand)
-// follow in one untitled group, so nothing on disk is hidden from the table of contents.
 function groupScenesIntoChapters(
   plan: ChapterPlan | undefined,
   project: StoryboardProject,
@@ -217,7 +214,6 @@ async function readNoteCard(
     const summary: string | undefined = joinCardText(card.description).split('\n')[0]?.trim();
     return { id: card.id, name: card.name, ...(summary ? { summary } : {}) };
   } catch {
-    // A scene may name someone who has no card yet; the margin still shows the name it used.
     return { id: fallbackId, name: fallbackId };
   }
 }
@@ -303,7 +299,6 @@ async function summarizeNarration(
       ...(narratorName === undefined ? {} : { narratorName }),
     };
   } catch (error) {
-    // An unknown narrator card stops generation with the same message, so the margin says it first.
     warnings.push(error instanceof Error ? error.message : String(error));
     return undefined;
   }

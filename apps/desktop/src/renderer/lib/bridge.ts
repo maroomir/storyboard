@@ -6,7 +6,6 @@ declare global {
   }
 }
 
-// The one way the page talks to main. Tests replace `window.storyboard` with a fake.
 export function desktopBridge(): DesktopBridge {
   return window.storyboard;
 }

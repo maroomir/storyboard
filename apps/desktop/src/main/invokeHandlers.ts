@@ -13,7 +13,6 @@ async function withSession<T>(
   return session.ok ? await run(session.data) : session;
 }
 
-// For writes: refused while a run of any app holds the work.
 async function withWritableSession<T>(
   app: DesktopApp,
   run: (session: WorkspaceSession) => Promise<ServiceResult<T>>,

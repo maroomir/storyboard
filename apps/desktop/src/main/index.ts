@@ -17,9 +17,6 @@ import type { InvokeChannel, InvokeResult } from '@/shared/ipcContract';
 let mainWindow: BrowserWindow | undefined;
 let isQuitting: boolean = false;
 
-// NOTE: the release workflow starts the packaged app with STORYBOARD_DESKTOP_SMOKE=1 and reads
-// only the exit code: 0 once the renderer has mounted its first screen, 1 on a load failure, a
-// renderer crash or the time limit. Nothing is written and no update check runs.
 const isSmokeRun: boolean = process.env.STORYBOARD_DESKTOP_SMOKE === '1';
 const smokeLimitMs: number = 30_000;
 
@@ -78,7 +75,6 @@ function startDesktopApp(): DesktopApp {
     internal: (message) => desktop.t('error.internal', { message }),
   });
 
-  // SECURITY: only our own window may call main. Another frame (there should be none) is refused.
   ipcMain.handle(ipcInvokeChannelName, async (event, message: unknown) =>
     event.sender === mainWindow?.webContents ? await route(message) : undefined,
   );
@@ -86,8 +82,6 @@ function startDesktopApp(): DesktopApp {
   return desktop;
 }
 
-// Closing mid-run asks whether to let the scene in progress finish. Either way the run resumes the
-// next time the work opens; closing is never the reason a paid scene is thrown away unasked.
 async function confirmClose(desktop: DesktopApp): Promise<'finish-scene' | 'now' | 'stay'> {
   if (!desktop.session?.runs.isBusy) {
     return 'now';
@@ -164,7 +158,6 @@ function runSmoke(window: BrowserWindow): void {
 }
 
 function checkForUpdates(desktop: DesktopApp): void {
-  // An unpackaged build has no update feed; a failed check must never stop the app.
   if (!app.isPackaged) {
     return;
   }
@@ -204,8 +197,6 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('window-all-closed', () => app.quit());
 
-  // NOTE: 창을 닫든 신호로 끝나든, 생성 중인 구독 CLI 자식은 앱과 함께 끝난다. 신호는 종료 확인을
-  // 묻지 않는다 — 물어볼 사람이 없을 수 있다.
   app.on('will-quit', killRunningCliChildren);
   for (const [signal, exitCode] of [
     ['SIGTERM', 143],

@@ -27,10 +27,6 @@ function isInvokeChannel(channel: string): channel is InvokeChannel {
   return Object.prototype.hasOwnProperty.call(invokeRequestSchemas, channel);
 }
 
-// SECURITY: every message from the renderer is parsed against the channel's schema before a
-// handler sees it, and nothing the renderer sends reaches a handler unvalidated.
-// This is also the outermost ring on the main side: an unexpected throw becomes an `internal`
-// error for the renderer and a log line, never a crashed main process.
 export function createIpcRouter(
   handlers: InvokeHandlers,
   logger: IStoryboardLogger,

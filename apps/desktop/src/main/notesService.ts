@@ -12,8 +12,6 @@ export type NotesLocationRequest =
   | { readonly kind: 'path'; readonly path: string }
   | { readonly kind: 'notion'; readonly pageUrl: string };
 
-// The note import for one open work, held across its three channels: collect keeps the bundle,
-// plan keeps the plan, apply writes it. Each step refuses when the one before it has not run.
 export class NotesService {
   private bundle: NoteBundle | undefined;
   private plan: NoteAbsorbPlan | undefined;
@@ -39,7 +37,6 @@ export class NotesService {
     this.bundle = collected.bundle;
     this.plan = undefined;
 
-    // The estimate needs a provider to price against; without one the author is told which setting.
     let estimate: ReturnType<typeof this.container.notes.estimate>;
     try {
       estimate = this.container.notes.estimate(collected.bundle);

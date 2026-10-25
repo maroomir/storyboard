@@ -36,7 +36,6 @@ describe('IPC contract', () => {
     expect(Object.keys(createInvokeHandlers(app)).sort()).toEqual([...invokeChannels].sort());
   });
 
-  // The preload forwards only the events on its list; one missing from it would never arrive.
   it('lets the preload forward every event main sends', () => {
     const events: Record<keyof DesktopEvents, true> = {
       'run.changed': true,

@@ -7,9 +7,6 @@ export function hasSelection(selection: TextSelection | undefined): selection is
   return selection !== undefined && selection.end > selection.start;
 }
 
-// Applies an accepted AI proposal to the draft. The selection is re-found by its text when the body
-// moved under it (an autosave echo, a reload), and the edit is refused when the text is gone, so a
-// proposal never lands on the wrong sentence.
 export function replaceSelection(
   body: string,
   selection: TextSelection,
