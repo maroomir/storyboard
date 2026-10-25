@@ -41,14 +41,17 @@ for (const app of apps) {
 // The CLI hard-codes the version it prints, so it is part of the same invariant.
 const cliEntry = path.join(repoRoot, 'apps/cli/src/index.ts');
 const cliSource = fs.readFileSync(cliEntry, 'utf8');
-const cliMatch = /const version = '([^']+)'/.exec(cliSource);
+const cliMatch = /const version: string = '([^']+)'/.exec(cliSource);
 
-if (cliMatch && cliMatch[1] !== version) {
+if (cliMatch === null) {
+  console.error("apps/cli/src/index.ts has no `const version: string = '…'` line to sync");
+  drifted = true;
+} else if (cliMatch[1] !== version) {
   if (checkOnly) {
     console.error(`apps/cli/src/index.ts prints ${cliMatch[1]}, expected ${version}`);
     drifted = true;
   } else {
-    fs.writeFileSync(cliEntry, cliSource.replace(cliMatch[0], `const version = '${version}'`));
+    fs.writeFileSync(cliEntry, cliSource.replace(cliMatch[0], `const version: string = '${version}'`));
     console.log(`apps/cli/src/index.ts: ${cliMatch[1]} -> ${version}`);
   }
 }
