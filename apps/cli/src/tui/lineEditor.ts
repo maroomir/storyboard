@@ -40,7 +40,7 @@ export function findHistoryMatch(
   query: string,
   beforeIndex: number = history.length,
 ): number | undefined {
-  for (let index = Math.min(beforeIndex, history.length) - 1; index >= 0; index -= 1) {
+  for (let index: number = Math.min(beforeIndex, history.length) - 1; index >= 0; index -= 1) {
     if ((history[index] ?? '').includes(query)) {
       return index;
     }
@@ -58,7 +58,7 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
   // typed `draft show` as `draft how`), so a handler that read the line from its closure would
   // build on a value the previous key already replaced. The handler reads and writes this ref;
   // the state only drives rendering.
-  const latestLine = useRef(line);
+  const latestLine: React.MutableRefObject<EditorLine> = useRef(line);
   const setLineNow = (next: EditorLine): void => {
     latestLine.current = next;
     setLine(next);
@@ -68,10 +68,11 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [search, setSearch] = useState<HistorySearch | undefined>(undefined);
-  const isSuggestionOpen = options.suggestions.length > 0 && !isDismissed && search === undefined;
+  const isSuggestionOpen: boolean =
+    options.suggestions.length > 0 && !isDismissed && search === undefined;
 
   const searchFor = (query: string, beforeIndex?: number): void => {
-    const matchIndex = findHistoryMatch(history, query, beforeIndex);
+    const matchIndex: number | undefined = findHistoryMatch(history, query, beforeIndex);
     setSearch(
       matchIndex === undefined ? { query } : { query, matchIndex, match: history[matchIndex] },
     );
@@ -155,7 +156,7 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
         if (history.length === 0) {
           return;
         }
-        const nextIndex =
+        const nextIndex: number =
           historyIndex === undefined ? history.length - 1 : Math.max(0, historyIndex - 1);
         setHistoryIndex(nextIndex);
         replace(history[nextIndex] ?? '');
@@ -170,7 +171,7 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
         if (historyIndex === undefined) {
           return;
         }
-        const nextIndex = historyIndex + 1;
+        const nextIndex: number = historyIndex + 1;
         if (nextIndex >= history.length) {
           setHistoryIndex(undefined);
           replace('');
@@ -182,7 +183,7 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
       }
 
       if (key.return) {
-        const line = value;
+        const line: string = value;
         if (line.trim().length > 0) {
           setHistory((previous) => [...previous, line]);
         }

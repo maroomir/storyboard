@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import type { WorkspaceView } from './workspaceView';
-import { useTuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface StatusBarProps {
   readonly view: WorkspaceView;
@@ -13,7 +13,7 @@ export interface StatusBarProps {
 }
 
 // Below this the full key list would push the status onto a second line.
-const fullKeyHintColumns = 72;
+const fullKeyHintColumns: number = 72;
 
 function describeKeyHint(props: StatusBarProps): string {
   if (props.isBusy) {
@@ -28,9 +28,9 @@ function describeKeyHint(props: StatusBarProps): string {
 // keys that matter, on one line: the left side is cut before the keys are. Another app holding the
 // run lock is the one state worth a color.
 export function StatusBar(props: StatusBarProps): React.ReactElement {
-  const theme = useTuiTheme();
+  const theme: TuiTheme = useTuiTheme();
   const { header, lockHolder } = props.view;
-  const keyHint = describeKeyHint(props);
+  const keyHint: string = describeKeyHint(props);
 
   return (
     <Box paddingX={1} justifyContent="space-between">

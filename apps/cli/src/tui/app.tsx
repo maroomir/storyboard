@@ -1,7 +1,7 @@
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useLineEditor } from './lineEditor';
+import { useLineEditor, type LineEditorState } from './lineEditor';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 
 import { Banner } from './banner';
@@ -24,6 +24,7 @@ export type { TuiHeaderInfo };
 import {
   createTuiSession,
   suggestForInput,
+  type InputSuggestion,
   type LogEntry,
   type LogTone,
   type TuiSession,
@@ -57,7 +58,7 @@ const tonePrefix: Record<LogTone, string> = {
 
 // A result longer than this is folded to its head so one long listing does not push the dashboard
 // and the earlier commands off the screen.
-const foldedLineLimit = 12;
+const foldedLineLimit: number = 12;
 
 export function foldLines(lines: readonly string[], isExpanded: boolean): string[] {
   if (isExpanded || lines.length <= foldedLineLimit + 2) {
@@ -77,9 +78,9 @@ function LogLine({
   readonly entry: LogEntry;
   readonly isExpanded: boolean;
 }): React.ReactElement {
-  const theme = useTuiTheme();
-  const lines = foldLines(entry.text.split('\n'), isExpanded);
-  const role = toneRole[entry.tone];
+  const theme: TuiTheme = useTuiTheme();
+  const lines: string[] = foldLines(entry.text.split('\n'), isExpanded);
+  const role: keyof TuiTheme | undefined = toneRole[entry.tone];
 
   return (
     <Box flexDirection="column">
@@ -109,30 +110,33 @@ type PendingQuestion =
 export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const columns = stdout.columns > 0 ? stdout.columns : 80;
+  const columns: number = stdout.columns > 0 ? stdout.columns : 80;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [escapeHint, setEscapeHint] = useState<string | undefined>(undefined);
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
   const [themeName, setThemeName] = useState<TuiThemeName>(props.themeName ?? 'default');
-  const theme = tuiThemes[themeName];
+  const theme: TuiTheme = tuiThemes[themeName];
   const [reader, setReader] = useState<
     { readonly title: string; readonly body: string } | undefined
   >(undefined);
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | undefined>(undefined);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
-  const nextId = useRef(1);
+  const nextId: React.MutableRefObject<number> = useRef(1);
   const { loadWorkspaceView } = props;
 
-  const refreshView = useCallback((): void => {
+  const refreshView: () => void = useCallback((): void => {
     void loadWorkspaceView?.().then(setView);
   }, [loadWorkspaceView]);
 
   useEffect(refreshView, [refreshView]);
 
-  const append = useCallback((tone: LogTone, text: string): void => {
-    setEntries((previous) => [...previous, { id: nextId.current++, tone, text }]);
-  }, []);
+  const append: (tone: LogTone, text: string) => void = useCallback(
+    (tone: LogTone, text: string): void => {
+      setEntries((previous) => [...previous, { id: nextId.current++, tone, text }]);
+    },
+    [],
+  );
 
   const session: TuiSession = useMemo(
     () =>
@@ -173,12 +177,12 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   }, [append, props.header.hint]);
 
   const [inputValue, setInputValue] = useState('');
-  const suggestions = useMemo(
+  const suggestions: InputSuggestion[] = useMemo(
     () => suggestForInput(inputValue, props.cwd),
     [inputValue, props.cwd],
   );
 
-  const editor = useLineEditor({
+  const editor: LineEditorState = useLineEditor({
     isActive: !isBusy && reader === undefined,
     suggestions: suggestions.map((suggestion) => suggestion.line),
     onSubmit: (line) => {
@@ -227,7 +231,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
     pendingQuestion.resolve(answer);
   };
 
-  const visibleEntries = entries.slice(-(props.maxLogLines ?? 200));
+  const visibleEntries: LogEntry[] = entries.slice(-(props.maxLogLines ?? 200));
 
   return (
     <TuiThemeContext.Provider value={theme}>

@@ -1,4 +1,4 @@
-import { resolveStoryboardHomePaths } from '@storyboard/story-config';
+import { resolveStoryboardHomePaths, type StoryboardHomePaths } from '@storyboard/story-config';
 
 export interface CliPaths {
   readonly home: string;
@@ -8,7 +8,7 @@ export interface CliPaths {
 
 // The extension and the CLI share one config and one secrets file under the Storyboard home.
 export function resolveCliPaths(env: NodeJS.ProcessEnv = process.env): CliPaths {
-  const shared = resolveStoryboardHomePaths(env);
+  const shared: StoryboardHomePaths = resolveStoryboardHomePaths(env);
 
   return {
     home: shared.home,

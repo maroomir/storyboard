@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 
 import { measureWidth, wrapToWidth } from '@/terminal/width';
 
-import { useTuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface DraftReaderProps {
   readonly title: string;
@@ -17,7 +17,7 @@ export type ReaderLineKind = 'dialogue' | 'separator' | 'prose' | 'blank';
 
 // Spoken lines open with a quote; a scene break is a line of only *, - or ~ marks.
 export function classifyReaderLine(line: string): ReaderLineKind {
-  const trimmed = line.trim();
+  const trimmed: string = line.trim();
 
   if (trimmed.length === 0) {
     return 'blank';
@@ -41,7 +41,7 @@ export interface ReaderLine {
 // Paragraphs wrapped to the reader's width, each wrapped line keeping its paragraph's kind.
 export function layoutReaderLines(body: string, width: number): ReaderLine[] {
   return body.split('\n').flatMap((paragraph): ReaderLine[] => {
-    const kind = classifyReaderLine(paragraph);
+    const kind: ReaderLineKind = classifyReaderLine(paragraph);
     return kind === 'blank'
       ? [{ text: '', kind }]
       : wrapToWidth(paragraph, width).map((text) => ({ text, kind }));
@@ -49,16 +49,16 @@ export function layoutReaderLines(body: string, width: number): ReaderLine[] {
 }
 
 // The rows the reader keeps for its frame, title and key line.
-const readerChromeRows = 5;
+const readerChromeRows: number = 5;
 
 export function DraftReader(props: DraftReaderProps): React.ReactElement {
-  const theme = useTuiTheme();
-  const pageRows = Math.max(5, props.rows - readerChromeRows);
-  const lines = useMemo(
+  const theme: TuiTheme = useTuiTheme();
+  const pageRows: number = Math.max(5, props.rows - readerChromeRows);
+  const lines: ReaderLine[] = useMemo(
     () => layoutReaderLines(props.body, Math.max(20, props.columns - 4)),
     [props.body, props.columns],
   );
-  const lastTop = Math.max(0, lines.length - pageRows);
+  const lastTop: number = Math.max(0, lines.length - pageRows);
   const [top, setTop] = useState(0);
   const scrollTo = (next: number): void => setTop(Math.min(lastTop, Math.max(0, next)));
 
@@ -82,7 +82,8 @@ export function DraftReader(props: DraftReaderProps): React.ReactElement {
 
   const colorOf = (kind: ReaderLineKind): string | undefined =>
     kind === 'dialogue' ? theme.accent : kind === 'separator' ? theme.muted : undefined;
-  const position = lines.length <= pageRows ? '전체' : `${Math.round((top / lastTop) * 100)}%`;
+  const position: string =
+    lines.length <= pageRows ? '전체' : `${Math.round((top / lastTop) * 100)}%`;
 
   return (
     <Box flexDirection="column" borderStyle="round" borderColor={theme.muted} paddingX={1}>

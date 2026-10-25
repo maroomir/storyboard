@@ -10,6 +10,7 @@ import {
   sharedFlagNames,
   type CommandGroup,
   type CommandSpec,
+  type FlagSpec,
 } from './commands/catalog';
 import { renderColumns, type ColumnRow } from './terminal/layout';
 import { plainTerminalStream, type TerminalStream } from './terminal/profile';
@@ -19,7 +20,7 @@ import { wrapToWidth } from './terminal/width';
 // 60 개가 넘는 명령을 한 화면에 쏟으면 처음 온 사람은 어디서 시작할지 찾지 못한다.
 
 // Lines longer than this are hard to read even on a wide terminal.
-const maximumHelpWidth = 100;
+const maximumHelpWidth: number = 100;
 
 function helpWidth(stream: TerminalStream): number {
   return Math.min(stream.columns, maximumHelpWidth);
@@ -37,14 +38,14 @@ function describeCommand(spec: CommandSpec, stream: TerminalStream): ColumnRow {
 }
 
 function describeFlag(name: string, stream: TerminalStream): ColumnRow {
-  const flag = findFlagSpec(name);
+  const flag: FlagSpec | undefined = findFlagSpec(name);
   const { paint } = stream.theme;
 
   if (!flag) {
     return { label: paint('accent', `--${name}`), description: '' };
   }
 
-  const value = flag.valueLabel === undefined ? '' : paint('muted', ` ${flag.valueLabel}`);
+  const value: string = flag.valueLabel === undefined ? '' : paint('muted', ` ${flag.valueLabel}`);
   return { label: `${paint('accent', `--${flag.name}`)}${value}`, description: flag.summary };
 }
 
@@ -68,7 +69,7 @@ function commandsInGroup(group: CommandGroup): CommandSpec[] {
 }
 
 // Wide enough for the init line, so the six steps read as one aligned column.
-const gettingStartedLabelWidth = 40;
+const gettingStartedLabelWidth: number = 40;
 
 // The first screen a new install sees, so the commands that make the CLI usable come first.
 function renderGettingStarted(stream: TerminalStream): string[] {
@@ -80,7 +81,7 @@ function renderGettingStarted(stream: TerminalStream): string[] {
     { label: 'draft generate --all', description: '초안 생성 (검수·수정 포함)' },
     { label: 'manuscript assemble', description: '원고 조립' },
   ];
-  const numbered = steps.map((step, index) => ({
+  const numbered: ColumnRow[] = steps.map((step, index) => ({
     label: `${stream.theme.paint('muted', `${index + 1}`)} ${stream.theme.paint('accent', `storyboard ${step.label}`)}`,
     description: step.description,
   }));
@@ -122,16 +123,16 @@ function renderFooter(stream: TerminalStream): string[] {
 // What a reader scans a group for: its nouns (`card · canon`), or for a one-noun group its actions
 // (`list · show · create`), since repeating `scene` beside the scene group says nothing.
 function summarizeGroup(group: CommandGroup): string {
-  const specs = commandsInGroup(group);
-  const nouns = [...new Set(specs.map((spec) => spec.verb.split(' ')[0] ?? spec.verb))];
-  const names =
+  const specs: CommandSpec[] = commandsInGroup(group);
+  const nouns: string[] = [...new Set(specs.map((spec) => spec.verb.split(' ')[0] ?? spec.verb))];
+  const names: string[] =
     nouns.length === 1 ? specs.map((spec) => spec.verb.split(' ').slice(1).join(' ')) : nouns;
   return names.join(' · ');
 }
 
 export function renderGroupList(stream: TerminalStream = plainTerminalStream): string[] {
   const { paint } = stream.theme;
-  const groupRows = commandGroups
+  const groupRows: ColumnRow[] = commandGroups
     .filter((group) => commandsInGroup(group).length > 0)
     .map((group) => ({
       label: `${paint('accent', commandGroupIds[group].padEnd(10))} ${group}`,
@@ -184,7 +185,7 @@ export function renderFullUsage(
   ];
 
   for (const group of commandGroups) {
-    const specs = commandsInGroup(group);
+    const specs: CommandSpec[] = commandsInGroup(group);
 
     if (specs.length > 0) {
       sections.push(
@@ -217,7 +218,7 @@ export function renderGroupHelp(
   topic: string,
   stream: TerminalStream = plainTerminalStream,
 ): string | undefined {
-  const group = findCommandGroup(topic);
+  const group: CommandGroup | undefined = findCommandGroup(topic);
 
   if (group === undefined) {
     return undefined;
@@ -240,13 +241,13 @@ export function renderCommandHelp(
   verb: string,
   stream: TerminalStream = plainTerminalStream,
 ): string | undefined {
-  const spec = findCommandSpec(verb);
+  const spec: CommandSpec | undefined = findCommandSpec(verb);
 
   if (!spec) {
     return undefined;
   }
 
-  const lines = [
+  const lines: string[] = [
     `storyboard ${paintUsage(spec.usage, spec.verb, stream)}`,
     '',
     ...renderColumns([{ label: '', description: spec.summary }], {
@@ -299,7 +300,12 @@ export function renderHelpTopic(
 // NOTE: The rename table of the changelog's «CLI 명령 이름을 한 규칙으로» entry. Old names are not
 // aliases; an agent following an old AGENTS.md is told the one new name, never a near miss that
 // costs money (`scene generate` reads closest to `outline generate`).
-export const renamedCommands: Readonly<Record<string, { verb: string; kind?: string }>> = {
+interface RenamedCommand {
+  readonly verb: string;
+  readonly kind?: string;
+}
+
+export const renamedCommands: Readonly<Record<string, RenamedCommand>> = {
   'scene generate': { verb: 'draft generate' },
   'scene revise': { verb: 'draft revise' },
   'scene draft': { verb: 'draft show' },
@@ -322,10 +328,13 @@ interface RenamedCommandMatch {
 // The old name is the longest run of leading words found in the table; whatever follows it
 // (arguments, flags and their values) stays in the order it was typed.
 function findRenamedCommand(tokens: readonly string[]): RenamedCommandMatch | undefined {
-  const words = tokens.flatMap((token) => token.trim().split(/\s+/)).filter((word) => word !== '');
+  const words: string[] = tokens
+    .flatMap((token) => token.trim().split(/\s+/))
+    .filter((word) => word !== '');
 
-  for (let length = words.length; length > 0; length -= 1) {
-    const renamed = renamedCommands[words.slice(0, length).join(' ').toLowerCase()];
+  for (let length: number = words.length; length > 0; length -= 1) {
+    const renamed: RenamedCommand | undefined =
+      renamedCommands[words.slice(0, length).join(' ').toLowerCase()];
 
     if (renamed !== undefined) {
       return {
@@ -341,14 +350,14 @@ function findRenamedCommand(tokens: readonly string[]): RenamedCommandMatch | un
 // A wrong verb is usually a near miss on a real one; naming the closest ones beats dumping the
 // whole usage screen the author already scrolled past. A renamed command leads with its new name.
 export function suggestVerbs(input: string, limit = 3): string[] {
-  const needle = input.trim().toLowerCase();
+  const needle: string = input.trim().toLowerCase();
 
   if (needle.length === 0) {
     return [];
   }
 
-  const renamedVerb = findRenamedCommand([needle])?.newWords[0];
-  const scored = commandCatalog
+  const renamedVerb: string | undefined = findRenamedCommand([needle])?.newWords[0];
+  const scored: string[] = commandCatalog
     .map((spec) => ({ verb: spec.verb, score: similarity(needle, spec.verb.toLowerCase()) }))
     .filter((entry) => entry.score > 0 && entry.verb !== renamedVerb)
     .sort((a, b) => b.score - a.score)
@@ -357,11 +366,11 @@ export function suggestVerbs(input: string, limit = 3): string[] {
   return (renamedVerb === undefined ? scored : [renamedVerb, ...scored]).slice(0, limit);
 }
 
-const prefixScore = 10;
-const sameActionScore = 4;
-const sharedWordScore = 2;
-const nearWordScore = 1;
-const nearWordDistance = 2;
+const prefixScore: number = 10;
+const sameActionScore: number = 4;
+const sharedWordScore: number = 2;
+const nearWordScore: number = 1;
+const nearWordDistance: number = 2;
 
 // The action counts for more than the noun: a command that moved to another noun
 // (`scene generate` → `draft generate`) is found by what it does, not by the noun it left.
@@ -370,10 +379,10 @@ function similarity(input: string, verb: string): number {
     return prefixScore;
   }
 
-  const inputWords = input.split(/\s+/);
-  const verbWords = verb.split(/\s+/);
-  const inputAction = inputWords[inputWords.length - 1];
-  const verbAction = verbWords[verbWords.length - 1];
+  const inputWords: string[] = input.split(/\s+/);
+  const verbWords: string[] = verb.split(/\s+/);
+  const inputAction: string | undefined = inputWords[inputWords.length - 1];
+  const verbAction: string | undefined = verbWords[verbWords.length - 1];
 
   return inputWords.reduce((score, word) => {
     // The action decides what a command does, so a one-letter slip on it (`generat`) still counts.
@@ -393,14 +402,14 @@ function similarity(input: string, verb: string): number {
 }
 
 function levenshtein(a: string, b: string): number {
-  const rows = Array.from({ length: a.length + 1 }, (_, i) => i);
+  const rows: number[] = Array.from({ length: a.length + 1 }, (_, i) => i);
 
-  for (let j = 1; j <= b.length; j += 1) {
-    let previous = rows[0] ?? 0;
+  for (let j: number = 1; j <= b.length; j += 1) {
+    let previous: number = rows[0] ?? 0;
     rows[0] = j;
 
-    for (let i = 1; i <= a.length; i += 1) {
-      const current = rows[i] ?? 0;
+    for (let i: number = 1; i <= a.length; i += 1) {
+      const current: number = rows[i] ?? 0;
       rows[i] = Math.min(
         current + 1,
         (rows[i - 1] ?? 0) + 1,
@@ -427,10 +436,10 @@ function renderSuggestions(
 
 // `rest` is what followed the verb on the command line, flags included, in the order it was typed.
 export function renderUnknownCommand(verb: string, rest: readonly string[] = []): string {
-  const renamed = findRenamedCommand([verb, ...rest]);
+  const renamed: RenamedCommandMatch | undefined = findRenamedCommand([verb, ...rest]);
 
   if (renamed !== undefined) {
-    const words = [...renamed.newWords, ...renamed.rest];
+    const words: string[] = [...renamed.newWords, ...renamed.rest];
     return [
       `알 수 없는 명령: ${verb}`,
       `  이름이 바뀌었습니다 →  storyboard ${words.join(' ')}`,
@@ -447,7 +456,7 @@ export function renderUnknownCommand(verb: string, rest: readonly string[] = [])
 
 // A flag typo is a letter or two off (`--titel`, `--dryrun`), so only near names are offered.
 export function suggestFlags(name: string, limit = 2): string[] {
-  const needle = name.toLowerCase();
+  const needle: string = name.toLowerCase();
 
   return flagCatalog
     .map((flag) => ({

@@ -28,7 +28,7 @@ export interface TerminalProfile {
 }
 
 // A pipe has no width; 80 is what a reader of the piped text most likely has.
-export const defaultColumns = 80;
+export const defaultColumns: number = 80;
 
 // Tests and the TUI call dispatch without real streams, and get exactly the pre-color output.
 export const plainTerminalFacts: TerminalFacts = {
@@ -48,7 +48,7 @@ export function createTerminalProfile(
 ): TerminalProfile {
   // A dumb terminal cannot move the cursor or follow an escape sequence, so it is read like a
   // pipe: no rail, no links, no panels.
-  const isDumb = facts.env.TERM === 'dumb';
+  const isDumb: boolean = facts.env.TERM === 'dumb';
   const describeStream = (stream: TerminalStreamFacts): TerminalStream => ({
     isTty: stream.isTty && !isDumb,
     // Some pseudo terminals report 0 columns; that is "unknown", not a zero-width screen.

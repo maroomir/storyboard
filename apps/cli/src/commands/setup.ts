@@ -32,8 +32,19 @@ import {
   getStoryboardProjectPaths,
   isOnDecimalStep,
   resolveThreadPaths,
+  type StoryboardProjectPaths,
+  type StoryUri,
+  type SceneRename,
+  type SidebarCardSummary,
+  type NarratorCard,
+  type ModelMeasurement,
 } from '@storyboard/story-model';
-import { type ConfigBridge } from '@storyboard/story-ai';
+import {
+  type ConfigBridge,
+  type ConfigValueOrigin,
+  type ProviderModelConfig,
+  type TaskAiConfigOverride,
+} from '@storyboard/story-ai';
 import {
   auditChapterMemory,
   auditStoryMemory,
@@ -48,7 +59,13 @@ import { renderBox, renderColumns, type ColumnRow } from '@/terminal/layout';
 import type { TerminalStream } from '@/terminal/profile';
 import type { ThemeRole } from '@/terminal/theme';
 import { measureWidth } from '@/terminal/width';
-import type { ParameterEntry } from '@storyboard/story-app';
+import type {
+  CardReading,
+  ParameterEntry,
+  ParameterOrigin,
+  ParameterReport,
+  ResourceOverrideReport,
+} from '@storyboard/story-app';
 import type { CommandContext, CommandOutcome } from './outcome';
 import { collectHiddenProviderChecks, setHiddenProviderKey } from './hiddenProvider';
 import { signIn } from './login';
@@ -56,6 +73,8 @@ import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
 import { displayedProviderKeys, settableProviderKeys, type SettableProviderKey } from './catalog';
 import { availableProviderIds, enabledHiddenProviderIds } from '@/adapters/availableProviders';
+import type { StoryboardHomePaths } from '@storyboard/story-config';
+import type { BackgroundFactConflictReport } from '../../../../packages/story-app/src/managers/cardManager';
 
 function isProviderId(value: string): value is AiProviderId {
   return availableProviderIds().includes(value as AiProviderId);
@@ -77,23 +96,26 @@ function describeProvider(providerId: AiProviderId): string {
 async function chooseProviderInteractively(
   current: AiProviderId | undefined,
 ): Promise<AiProviderId | undefined> {
-  const selectableProviderIds = listSelectableProviderIds(current, enabledHiddenProviderIds());
+  const selectableProviderIds: AiProviderId[] = listSelectableProviderIds(
+    current,
+    enabledHiddenProviderIds(),
+  );
 
   process.stderr.write('Storyboard 가 기본으로 쓸 AI 프로바이더를 고르세요.\n');
   selectableProviderIds.forEach((providerId, index) => {
-    const marker = providerId === current ? ' (현재)' : '';
+    const marker: '' | ' (현재)' = providerId === current ? ' (현재)' : '';
     process.stderr.write(
       `  ${index + 1}. ${providerId.padEnd(12)} ${describeProvider(providerId)}${marker}\n`,
     );
   });
 
-  const answer = await askLine('번호 또는 이름 (엔터로 취소): ');
+  const answer: string = await askLine('번호 또는 이름 (엔터로 취소): ');
 
   if (answer.length === 0) {
     return undefined;
   }
 
-  const byIndex = selectableProviderIds[Number(answer) - 1];
+  const byIndex: AiProviderId | undefined = selectableProviderIds[Number(answer) - 1];
 
   if (byIndex !== undefined) {
     return byIndex;
@@ -106,8 +128,8 @@ async function chooseProviderInteractively(
 // when there is a person at the keyboard; an agent passes `--provider` instead.
 export async function runSetup({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge, secretStore } = container;
-  const flagProvider = flagString(args.flags, 'provider');
-  const current = configBridge.isDefaultProviderConfigured()
+  const flagProvider: string | undefined = flagString(args.flags, 'provider');
+  const current: AiProviderId | undefined = configBridge.isDefaultProviderConfigured()
     ? configBridge.getDefaultProvider()
     : undefined;
 
@@ -131,17 +153,19 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
 
   await configBridge.setDefaultProvider(providerId);
 
-  const model = flagString(args.flags, 'model');
+  const model: string | undefined = flagString(args.flags, 'model');
 
   if (model !== undefined) {
     await configBridge.setProviderModel(providerId, model);
   }
 
-  let keyStored = false;
+  let keyStored: boolean = false;
 
   if (requiresApiKey(providerId) && !(await secretStore.hasApiKey(providerId))) {
     if (container.canPrompt) {
-      const key = await askSecret(`${providerId} API 키 (비워 두면 나중에 apikey set 으로): `);
+      const key: string = await askSecret(
+        `${providerId} API 키 (비워 두면 나중에 apikey set 으로): `,
+      );
 
       if (key.trim().length > 0) {
         await secretStore.setApiKey(providerId, key);
@@ -154,8 +178,8 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
     }
   }
 
-  const home = container.homePaths;
-  const loginNote = await signInIfNeeded(container, providerId);
+  const home: StoryboardHomePaths = container.homePaths;
+  const loginNote: CommandOutcome | undefined = await signInIfNeeded(container, providerId);
 
   if (loginNote !== undefined && !loginNote.ok) {
     return loginNote;
@@ -230,9 +254,9 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
     ];
   }
 
-  const providerId = configBridge.getDefaultProvider();
-  const runtime = configBridge.getProviderConfig(providerId);
-  const origin =
+  const providerId: AiProviderId = configBridge.getDefaultProvider();
+  const runtime: ProviderModelConfig = configBridge.getProviderConfig(providerId);
+  const origin: '이 작품' | '공통' =
     configBridge.getValueOrigin('ai.provider.default') === 'workspace' ? '이 작품' : '공통';
   const checks: DoctorCheck[] = [
     {
@@ -272,8 +296,8 @@ interface SceneCardCensus {
 
 // 3,000자에서는 sonnet 도 85%를 냈고 15,000자에서 51%로 떨어졌다. 그 사이 어딘가가 경계이므로
 // 두 실측점 중간을 기준으로 삼는다.
-const largeSceneTarget = 8_000;
-const acceptableReach = 0.8;
+const largeSceneTarget: number = 8_000;
+const acceptableReach: number = 0.8;
 
 // NOTE: 모델이 목표를 못 채우면 사용자는 원인을 파이프라인에서 찾는다. 생성 수십 분을 쓰기 전에
 // 목표와 모델의 조합부터 알려 준다.
@@ -287,16 +311,16 @@ function collectSceneLengthReachChecks(
     return [];
   }
 
-  const providerId = configBridge.getDefaultProvider();
-  const model = configBridge.getProviderConfig(providerId).model;
+  const providerId: AiProviderId = configBridge.getDefaultProvider();
+  const model: string | undefined = configBridge.getProviderConfig(providerId).model;
   // 실측표는 모델 프로필 하나에 모여 있다. 재보지 않은 조합은 프로필이 없고, 그러면 말하지 않는다.
-  const measured = configBridge.getModelProfile()?.measured;
+  const measured: ModelMeasurement | undefined = configBridge.getModelProfile()?.measured;
 
   if (measured === undefined || measured.reach >= acceptableReach) {
     return [];
   }
 
-  const reach = measured.reach;
+  const reach: number = measured.reach;
 
   return [
     {
@@ -316,14 +340,14 @@ async function surveySceneCards(
   container: CliContainer,
   sceneFileNames: readonly string[],
 ): Promise<SceneCardCensus> {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
   const { cards, unreadable } = await readSceneCards(
     container,
     paths.sceneDirectory,
     sceneFileNames,
   );
-  const withoutBeats = cards.filter(({ card }) => (card.beats?.length ?? 0) === 0).length;
-  const largestSceneTarget = cards.reduce(
+  const withoutBeats: number = cards.filter(({ card }) => (card.beats?.length ?? 0) === 0).length;
+  const largestSceneTarget: number = cards.reduce(
     (largest, { card }) => Math.max(largest, card.targetWordCount ?? 0),
     0,
   );
@@ -337,21 +361,28 @@ async function collectNarrationChecks(
   container: CliContainer,
   sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
 ): Promise<DoctorCheck[]> {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const narrators = await loadNarratorCards(paths, container.fileSystem);
-  const project = await readProjectJson(container.fileSystem, paths.projectJson).catch(
-    () => undefined,
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
+  const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
+    paths,
+    container.fileSystem,
   );
-  const declaredThreads = new Set([...Object.keys(project?.setting?.threads ?? {}), mainThreadId]);
+  const project: StoryboardProject | undefined = await readProjectJson(
+    container.fileSystem,
+    paths.projectJson,
+  ).catch(() => undefined);
+  const declaredThreads: Set<string> = new Set([
+    ...Object.keys(project?.setting?.threads ?? {}),
+    mainThreadId,
+  ]);
 
-  const referencedNarrators = new Set(
+  const referencedNarrators: Set<string> = new Set(
     [
       ...sceneCards.map(({ card }) => card.narrator),
       project?.setting?.narration?.defaultNarrator,
     ].filter((id): id is string => id !== undefined),
   );
-  const missingNarrators = [...referencedNarrators].filter((id) => !narrators.has(id));
-  const unknownThreads = [
+  const missingNarrators: string[] = [...referencedNarrators].filter((id) => !narrators.has(id));
+  const unknownThreads: string[] = [
     ...new Set(
       sceneCards
         .map(({ card }) => card.thread)
@@ -359,12 +390,16 @@ async function collectNarrationChecks(
         .filter((thread) => !declaredThreads.has(thread)),
     ),
   ];
-  const focallessNarrators = [...narrators.values()].filter(
+  const focallessNarrators: NarratorCard[] = [...narrators.values()].filter(
     (narrator) =>
       narrator.focal === undefined && (narrator.person === 'first' || narrator.person === 'second'),
   );
-  const unreadableLedgerLines = await findUnreadableLedgerLines(container, project);
-  const narrationlessScenes = await findNarrationlessScenes(container, sceneCards, project);
+  const unreadableLedgerLines: string[] = await findUnreadableLedgerLines(container, project);
+  const narrationlessScenes: string[] = await findNarrationlessScenes(
+    container,
+    sceneCards,
+    project,
+  );
 
   return [
     ...(narrators.size > 0
@@ -440,15 +475,18 @@ async function findNarrationlessScenes(
     return [];
   }
 
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const chapterNarrators = await readChapterPlanFile(paths.outlineChapters, container.fileSystem)
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
+  const chapterNarrators: (string | undefined)[] = await readChapterPlanFile(
+    paths.outlineChapters,
+    container.fileSystem,
+  )
     .then((plan) => flattenChapterPlan(plan).map((placement) => placement.chapterNarrator))
     .catch(() => [] as (string | undefined)[]);
 
   return sceneCards
     .filter(({ card }) => card.povCharacter !== undefined && card.narrator === undefined)
     .filter(({ card }) => {
-      const order = parseSceneStem(card.id)?.order;
+      const order: number | undefined = parseSceneStem(card.id)?.order;
       return order === undefined || chapterNarrators[order - 1] === undefined;
     })
     .map(({ card }) => card.id);
@@ -459,9 +497,9 @@ async function findUnreadableLedgerLines(
   container: CliContainer,
   project: StoryboardProject | undefined,
 ): Promise<string[]> {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const threadIds = Object.keys(project?.setting?.threads ?? {});
-  const ledgerPaths = [
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
+  const threadIds: string[] = Object.keys(project?.setting?.threads ?? {});
+  const ledgerPaths: StoryUri[] = [
     paths.storyState,
     ...threadIds.map((threadId) => resolveThreadPaths(paths, threadId).storyState),
   ];
@@ -469,7 +507,9 @@ async function findUnreadableLedgerLines(
   const lines: string[] = [];
   for (const ledgerPath of ledgerPaths) {
     try {
-      const content = new TextDecoder().decode(await container.fileSystem.readFile(ledgerPath));
+      const content: string = new TextDecoder().decode(
+        await container.fileSystem.readFile(ledgerPath),
+      );
       lines.push(...findUnreadableStoryStateLines(content));
     } catch {
       continue;
@@ -489,9 +529,10 @@ async function collectStoryStateChecks(
     return [];
   }
 
-  const project = await readProjectJson(container.fileSystem, paths.projectJson).catch(
-    () => undefined,
-  );
+  const project: StoryboardProject | undefined = await readProjectJson(
+    container.fileSystem,
+    paths.projectJson,
+  ).catch(() => undefined);
 
   if (project === undefined) {
     return [];
@@ -579,16 +620,16 @@ function collectInterruptedRenameChecks(
   sceneFileNames: readonly string[],
   draftFileNames: readonly string[],
 ): DoctorCheck[] {
-  const cardStems = new Set(
+  const cardStems: Set<string> = new Set(
     sceneFileNames.flatMap((fileName) => parseSceneFileName(fileName)?.stem ?? []),
   );
-  const journal = existsSync(paths.sceneRenameJournal.fsPath)
+  const journal: SceneRename | undefined = existsSync(paths.sceneRenameJournal.fsPath)
     ? parseSceneRenameJournal(readFileSync(paths.sceneRenameJournal.fsPath, 'utf8'))
     : undefined;
-  const cutOffRename =
+  const cutOffRename: SceneRename | undefined =
     journal !== undefined && cardStems.has(journal.from.stem) ? journal : undefined;
 
-  const orphanFiles = [
+  const orphanFiles: string[] = [
     ...draftFileNames
       .map((fileName) => fileName.replace(/\.md$/, ''))
       .filter((stem) => parseSceneStem(stem) !== undefined && !cardStems.has(stem))
@@ -624,8 +665,8 @@ function collectInterruptedRenameChecks(
 }
 
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
-  const root = container.workspaceRoot;
-  const paths = getStoryboardProjectPaths(root);
+  const root: StoryUri = container.workspaceRoot;
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
 
   if (!existsSync(paths.projectJson.fsPath)) {
     return [
@@ -639,24 +680,24 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
   }
 
   // 0.8 이전 워크스페이스나 손으로 지운 디렉터리는 진단 대상이지 예외가 아니다.
-  const sceneFileNames = await container.fileSystem
+  const sceneFileNames: readonly string[] | never[] = await container.fileSystem
     .listFileNames(paths.sceneDirectory)
     .catch(() => []);
-  const scenes = sceneFileNames.filter((name) => name.endsWith('.card'));
-  const drafts = (
+  const scenes: string[] = sceneFileNames.filter((name) => name.endsWith('.card'));
+  const drafts: string[] = (
     await container.fileSystem.listFileNames(paths.draftDirectory).catch(() => [])
   ).filter((name) => name.endsWith('.md'));
-  const missingDirectories = [paths.sceneDirectory, paths.draftDirectory]
+  const missingDirectories: string[] = [paths.sceneDirectory, paths.draftDirectory]
     .filter((uri) => !existsSync(uri.fsPath))
     .map((uri) => `${basename(uri.fsPath)}/`);
-  const hasOutline = existsSync(paths.outlineChapters.fsPath);
+  const hasOutline: boolean = existsSync(paths.outlineChapters.fsPath);
   const {
     withoutBeats,
     unreadable,
     cards: sceneCards,
     largestSceneTarget,
   } = await surveySceneCards(container, scenes);
-  const missingIgnoreEntries = readMissingGitignoreEntries(
+  const missingIgnoreEntries: readonly string[] = readMissingGitignoreEntries(
     existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
   );
 
@@ -739,22 +780,29 @@ async function collectBeatCastChecks(
   container: CliContainer,
   sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
 ): Promise<DoctorCheck[]> {
-  const hasCast = sceneCards.some(({ card }) =>
+  const hasCast: boolean = sceneCards.some(({ card }) =>
     (card.beats ?? []).some((beat) => typeof beat !== 'string' && (beat.cast?.length ?? 0) > 0),
   );
   if (!hasCast) {
     return [];
   }
 
-  const summaries = await container.cards.list(container.workspaceRoot, 'character');
+  const summaries: SidebarCardSummary[] = await container.cards.list(
+    container.workspaceRoot,
+    'character',
+  );
   const characters: { id: string; name: string; aliases: readonly string[] }[] = [];
   for (const summary of summaries) {
-    const reading = await container.cards.read(container.workspaceRoot, summary.id);
-    const aliases = reading?.card.type === 'character' ? (reading.card.aliases ?? []) : [];
+    const reading: CardReading | undefined = await container.cards.read(
+      container.workspaceRoot,
+      summary.id,
+    );
+    const aliases: string[] =
+      reading?.card.type === 'character' ? (reading.card.aliases ?? []) : [];
     characters.push({ id: summary.id, name: summary.name, aliases });
   }
 
-  const unknown = sceneCards.flatMap(({ fileName, card }) =>
+  const unknown: string[] = sceneCards.flatMap(({ fileName, card }) =>
     findUnknownBeatCast(card.beats, characters).map(
       ({ beat, ref }) => `${fileName.replace(/\.card$/, '')} 비트 ${beat}: ${ref}`,
     ),
@@ -775,7 +823,9 @@ async function collectBeatCastChecks(
 // NOTE: 상충 판정은 AI 호출이라 doctor 는 하지 않는다. 생성이 카드마다 한 번 판정해 남긴 캐시만 읽으므로,
 // 아직 생성에 쓰이지 않았거나 판정 뒤 고친 카드는 여기 나오지 않는다.
 async function collectBackgroundConflictChecks(container: CliContainer): Promise<DoctorCheck[]> {
-  const reports = await container.cards.listBackgroundFactConflicts(container.workspaceRoot);
+  const reports: BackgroundFactConflictReport[] = await container.cards.listBackgroundFactConflicts(
+    container.workspaceRoot,
+  );
 
   return reports.map((report) => ({
     status: 'warn' as const,
@@ -789,7 +839,7 @@ async function collectBackgroundConflictChecks(container: CliContainer): Promise
 // workspace run; a file that cannot be used is reported here with the reason, so a typo in a
 // pipeline spec is caught before a paid run rather than by it.
 async function collectResourceChecks(container: CliContainer): Promise<DoctorCheck[]> {
-  const report = await container.loadResourceOverrides();
+  const report: ResourceOverrideReport = await container.loadResourceOverrides();
 
   return [
     ...report.applied.map((entry) => ({
@@ -812,9 +862,9 @@ interface DoctorSection {
 }
 
 export async function runDoctor({ container, stdout }: CommandContext): Promise<CommandOutcome> {
-  const home = container.homePaths;
-  const hasUserConfig = existsSync(home.configFile);
-  const workspaceConfig = container.workspaceConfigFile;
+  const home: StoryboardHomePaths = container.homePaths;
+  const hasUserConfig: boolean = existsSync(home.configFile);
+  const workspaceConfig: string | undefined = container.workspaceConfigFile;
   const homeChecks: DoctorCheck[] = [
     { status: 'info', label: 'Storyboard 홈', detail: home.home },
     {
@@ -840,20 +890,21 @@ export async function runDoctor({ container, stdout }: CommandContext): Promise<
     nodeCheck,
   ];
 
-  const isDrawn = stdout?.isTty === true;
+  const isDrawn: boolean = stdout?.isTty === true;
 
   return {
     ok: !checks.some((check) => check.status === 'fail'),
-    message: isDrawn
-      ? renderDoctorPanels(sections, stdout).join('\n')
-      : checks.map(renderDoctorLine).join('\n'),
+    message:
+      isDrawn && stdout !== undefined
+        ? renderDoctorPanels(sections, stdout).join('\n')
+        : checks.map(renderDoctorLine).join('\n'),
     data: { checks },
     isDrawn,
   };
 }
 
 function renderDoctorLine(check: DoctorCheck): string {
-  const fix = check.fix ? `\n     → ${check.fix}` : '';
+  const fix: string = check.fix ? `\n     → ${check.fix}` : '';
   return `${statusIcon(check.status)} ${check.label}: ${check.detail}${fix}`;
 }
 
@@ -867,24 +918,24 @@ const doctorMarks: Readonly<
 };
 
 // Wide enough for a workspace path, narrow enough to read as a panel rather than a log.
-const doctorPanelWidth = 100;
+const doctorPanelWidth: number = 100;
 
 // One box per section, a count line, and the first fix to try — what a person at a terminal needs
 // to act on without reading every line.
 function renderDoctorPanels(sections: readonly DoctorSection[], stream: TerminalStream): string[] {
   const { paint } = stream.theme;
-  const visibleSections = sections.filter((section) => section.checks.length > 0);
-  const allChecks = visibleSections.flatMap((section) => section.checks);
-  const innerWidth = Math.min(stream.columns, doctorPanelWidth) - 4;
-  const labelWidth = Math.max(...allChecks.map((check) => measureWidth(check.label))) + 2;
+  const visibleSections: DoctorSection[] = sections.filter((section) => section.checks.length > 0);
+  const allChecks: DoctorCheck[] = visibleSections.flatMap((section) => section.checks);
+  const innerWidth: number = Math.min(stream.columns, doctorPanelWidth) - 4;
+  const labelWidth: number = Math.max(...allChecks.map((check) => measureWidth(check.label))) + 2;
 
   const describeCheck = (check: DoctorCheck): ColumnRow => {
     const [mark, role] = doctorMarks[check.status];
-    const fix = check.fix === undefined ? '' : `\n${paint('muted', `→ ${check.fix}`)}`;
+    const fix: string = check.fix === undefined ? '' : `\n${paint('muted', `→ ${check.fix}`)}`;
     return { label: `${paint(role, mark)} ${check.label}`, description: `${check.detail}${fix}` };
   };
 
-  const panels = visibleSections.flatMap((section) =>
+  const panels: string[] = visibleSections.flatMap((section) =>
     renderBox(
       renderColumns(section.checks.map(describeCheck), {
         availableWidth: innerWidth,
@@ -903,12 +954,12 @@ function renderDoctorPanels(sections: readonly DoctorSection[], stream: Terminal
 
   const count = (status: DoctorCheck['status']): number =>
     allChecks.filter((check) => check.status === status).length;
-  const summary = [
+  const summary: string = [
     paint('success', `통과 ${count('ok')}`),
     paint('warning', `경고 ${count('warn')}`),
     paint('danger', `실패 ${count('fail')}`),
   ].join(paint('muted', ' · '));
-  const firstFix =
+  const firstFix: DoctorCheck | undefined =
     allChecks.find((check) => check.status === 'fail' && check.fix !== undefined) ??
     allChecks.find((check) => check.status === 'warn' && check.fix !== undefined);
 
@@ -943,11 +994,11 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
   ];
 
   for (const providerId of availableProviderIds()) {
-    const runtime = configBridge.getProviderConfig(providerId);
+    const runtime: ProviderModelConfig = configBridge.getProviderConfig(providerId);
     for (const key of displayedProviderKeys) {
-      const value = runtime[key];
+      const value: string | number | undefined = runtime[key];
       if (value !== undefined) {
-        const settingKey = `providers.${providerId}.${key}`;
+        const settingKey: string = `providers.${providerId}.${key}`;
         rows.push({ key: settingKey, value, origin: describeOrigin(configBridge, settingKey) });
       }
     }
@@ -955,15 +1006,18 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
 
   // 라우팅이 없는 작업은 기본 프로바이더를 따른다. 작업이 서른 개가 넘어 정한 것만 보인다.
   for (const taskName of aiTaskNames) {
-    const route = configBridge.getTaskAiConfigOverride(taskName);
+    const route: TaskAiConfigOverride | null = configBridge.getTaskAiConfigOverride(taskName);
     if (route === null) {
       continue;
     }
 
-    const routeValues = { provider: route.providerId, model: route.model };
+    const routeValues: Readonly<Record<string, string | null>> = {
+      provider: route.providerId,
+      model: route.model,
+    };
     for (const [field, value] of Object.entries(routeValues)) {
       if (value !== null) {
-        const settingKey = `tasks.${taskName}.${field}`;
+        const settingKey: string = `tasks.${taskName}.${field}`;
         rows.push({ key: settingKey, value, origin: describeOrigin(configBridge, settingKey) });
       }
     }
@@ -977,11 +1031,11 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
     });
   }
 
-  const width = Math.max(...rows.map((row) => row.key.length));
-  const lines = rows.map(
+  const width: number = Math.max(...rows.map((row) => row.key.length));
+  const lines: string[] = rows.map(
     (row) => `${row.key.padEnd(width)}  ${String(row.value ?? '(없음)').padEnd(24)}  ${row.origin}`,
   );
-  const files = [
+  const files: string[] = [
     `공통 설정: ${container.homePaths.configFile}`,
     ...(container.workspaceConfigFile ? [`이 작품 설정: ${container.workspaceConfigFile}`] : []),
   ];
@@ -1004,25 +1058,25 @@ const parameterOriginLabels: Record<ParameterEntry['origin'], string> = {
 };
 
 // The bundled value is worth noting beside a value someone set; not beside one that is never sent.
-const originsWithoutDefaultNote = new Set<ParameterEntry['origin']>([
+const originsWithoutDefaultNote: Set<ParameterOrigin> = new Set<ParameterEntry['origin']>([
   'default',
   'provider-unsupported',
 ]);
 
 // 작가가 움직일 수 있는 값 전부를 한 목록으로: 어떤 값이 지금 어디서 오는지 한눈에 보인다.
 export async function runParamsShow({ container }: CommandContext): Promise<CommandOutcome> {
-  const report = await container.describeParameters();
-  const width = Math.max(...report.parameters.map((entry) => entry.id.length));
+  const report: ParameterReport = await container.describeParameters();
+  const width: number = Math.max(...report.parameters.map((entry) => entry.id.length));
   const lines: string[] = [];
 
   for (const kind of Object.keys(parameterKindLabels) as ParameterEntry['kind'][]) {
-    const entries = report.parameters.filter((entry) => entry.kind === kind);
+    const entries: ParameterEntry[] = report.parameters.filter((entry) => entry.kind === kind);
     lines.push(`[${parameterKindLabels[kind]}]`);
 
     for (const entry of entries) {
-      const shown = String(entry.value).padEnd(12);
-      const origin = parameterOriginLabels[entry.origin];
-      const note = originsWithoutDefaultNote.has(entry.origin)
+      const shown: string = String(entry.value).padEnd(12);
+      const origin: string = parameterOriginLabels[entry.origin];
+      const note: string = originsWithoutDefaultNote.has(entry.origin)
         ? ''
         : `  (기본값 ${String(entry.defaultValue)})`;
       lines.push(`${entry.id.padEnd(width)}  ${shown}  ${origin}${note}`);
@@ -1051,18 +1105,18 @@ function describeOutOfRange(
   value: boolean | number | string,
 ): string | undefined {
   const { minimum, maximum } = definition;
-  const isBelow = typeof value === 'number' && minimum !== undefined && value < minimum;
-  const isAbove = typeof value === 'number' && maximum !== undefined && value > maximum;
+  const isBelow: boolean = typeof value === 'number' && minimum !== undefined && value < minimum;
+  const isAbove: boolean = typeof value === 'number' && maximum !== undefined && value > maximum;
 
   if (!isBelow && !isAbove) {
     return undefined;
   }
 
-  const range = [
+  const range: string = [
     ...(minimum === undefined ? [] : [`${minimum} 이상`]),
     ...(maximum === undefined ? [] : [`${maximum} 이하`]),
   ].join(' ');
-  const ending = maximum === undefined ? '이어야' : '여야';
+  const ending: '이어야' | '여야' = maximum === undefined ? '이어야' : '여야';
   return `${definition.label}(${definition.key}) 값은 ${range}${ending} 합니다: ${value}`;
 }
 
@@ -1074,11 +1128,11 @@ function parseSettingValue(
     case 'boolean':
       return raw === 'true' ? true : raw === 'false' ? false : undefined;
     case 'integer': {
-      const parsed = Number.parseInt(raw, 10);
+      const parsed: number = Number.parseInt(raw, 10);
       return Number.isNaN(parsed) ? undefined : parsed;
     }
     case 'decimal': {
-      const parsed = Number(raw);
+      const parsed: number = Number(raw);
       return raw.trim().length === 0 || !Number.isFinite(parsed) ? undefined : parsed;
     }
     case 'string':
@@ -1092,11 +1146,11 @@ function describeSaved(
   value: unknown,
   notes: readonly string[] = [],
 ): CommandOutcome {
-  const file = container.configWriteFile;
-  const origin = container.configBridge.getValueOrigin(key);
+  const file: string = container.configWriteFile;
+  const origin: ConfigValueOrigin = container.configBridge.getValueOrigin(key);
   // NOTE: 작품 파일이 공통을 덮는다. --global 로 썼는데 이 작품에 같은 키가 있으면 방금 쓴 값은
   // 여기서 가려지므로, 조용히 넘어가면 "고쳤는데 안 바뀐다"가 된다.
-  const isShadowed = file === container.homePaths.configFile && origin === 'workspace';
+  const isShadowed: boolean = file === container.homePaths.configFile && origin === 'workspace';
 
   return {
     ok: true,
@@ -1133,7 +1187,7 @@ async function setProviderField(
   const { configBridge } = container;
 
   if (field === 'model') {
-    const modelProblem = findProviderModelProblem(providerId, raw);
+    const modelProblem: string | undefined = findProviderModelProblem(providerId, raw);
     if (modelProblem !== undefined) {
       return { ok: false, message: modelProblem };
     }
@@ -1148,7 +1202,7 @@ async function setProviderField(
       return { ok: false, message: 'contextTokens 는 ollama 에만 있습니다.' };
     }
 
-    const tokens = Number(raw);
+    const tokens: number = Number(raw);
     if (!Number.isInteger(tokens) || tokens <= 0) {
       return { ok: false, message: `contextTokens 는 양의 정수여야 합니다: ${raw}` };
     }
@@ -1167,7 +1221,7 @@ function describeUnknownKey(key: string): string {
   );
 }
 
-const taskKeyPattern = /^tasks\.([^.]+)\.(provider|model)$/;
+const taskKeyPattern: RegExp = /^tasks\.([^.]+)\.(provider|model)$/;
 
 function isTaskName(value: string): value is AiTaskName {
   return (aiTaskNames as readonly string[]).includes(value);
@@ -1183,7 +1237,7 @@ async function setTaskRoute(
   modelFlag: string | undefined,
 ): Promise<CommandOutcome> {
   const { configBridge } = container;
-  const key = `tasks.${taskName}.${field}`;
+  const key: string = `tasks.${taskName}.${field}`;
 
   if (!isTaskName(taskName)) {
     return {
@@ -1192,7 +1246,7 @@ async function setTaskRoute(
     };
   }
 
-  const current = configBridge.getTaskAiConfigOverride(taskName);
+  const current: TaskAiConfigOverride | null = configBridge.getTaskAiConfigOverride(taskName);
 
   if (field === 'model') {
     if (modelFlag !== undefined) {
@@ -1202,7 +1256,7 @@ async function setTaskRoute(
       };
     }
 
-    const isFilledFromDefault = current === null;
+    const isFilledFromDefault: boolean = current === null;
 
     if (isFilledFromDefault && !configBridge.isDefaultProviderConfigured()) {
       return {
@@ -1213,7 +1267,7 @@ async function setTaskRoute(
       };
     }
 
-    const providerId = current?.providerId ?? configBridge.getDefaultProvider();
+    const providerId: AiProviderId = current?.providerId ?? configBridge.getDefaultProvider();
 
     if (!isModelInCatalogForProvider(providerId, raw)) {
       return { ok: false, message: describeModelOutsideCatalog(providerId, raw) };
@@ -1241,9 +1295,10 @@ async function setTaskRoute(
     return { ok: false, message: describeModelOutsideCatalog(raw, modelFlag) };
   }
 
-  const keptModel = current?.model ?? null;
-  const isKeptModelUsable = keptModel !== null && isModelInCatalogForProvider(raw, keptModel);
-  const model = modelFlag ?? (isKeptModelUsable ? keptModel : null);
+  const keptModel: string | null = current?.model ?? null;
+  const isKeptModelUsable: boolean =
+    keptModel !== null && isModelInCatalogForProvider(raw, keptModel);
+  const model: string | null = modelFlag ?? (isKeptModelUsable ? keptModel : null);
 
   if (modelFlag === undefined && keptModel !== null && !isKeptModelUsable) {
     container.logger.warn(
@@ -1265,9 +1320,9 @@ async function setTaskRoute(
 // the same catalog the panel renders.
 export async function runConfigSet({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge } = container;
-  const key = flagString(args.flags, 'key') ?? args.positionals[0];
-  const raw = flagString(args.flags, 'value') ?? args.positionals[1];
-  const modelFlag = flagString(args.flags, 'model');
+  const key: string | undefined = flagString(args.flags, 'key') ?? args.positionals[0];
+  const raw: string | undefined = flagString(args.flags, 'value') ?? args.positionals[1];
+  const modelFlag: string | undefined = flagString(args.flags, 'model');
 
   if (key === undefined || raw === undefined) {
     return { ok: false, message: '사용법: storyboard config set <key> <value>' };
@@ -1281,7 +1336,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
       };
     }
 
-    const modelProblem =
+    const modelProblem: string | undefined =
       modelFlag === undefined ? undefined : findProviderModelProblem(raw, modelFlag);
     if (modelProblem !== undefined) {
       return { ok: false, message: modelProblem };
@@ -1296,7 +1351,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return describeSaved(container, key, raw, [`providers.${raw}.model = ${modelFlag}`]);
   }
 
-  const taskMatch = taskKeyPattern.exec(key);
+  const taskMatch: RegExpExecArray | null = taskKeyPattern.exec(key);
 
   if (taskMatch) {
     return setTaskRoute(
@@ -1315,19 +1370,23 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     };
   }
 
-  const hiddenProviderOutcome = await setHiddenProviderKey(container, key, raw);
+  const hiddenProviderOutcome: CommandOutcome | undefined = await setHiddenProviderKey(
+    container,
+    key,
+    raw,
+  );
 
   if (hiddenProviderOutcome !== undefined) {
     return hiddenProviderOutcome;
   }
 
-  const providerMatch = new RegExp(
+  const providerMatch: RegExpExecArray | null = new RegExp(
     `^providers\\.([a-z-]+)\\.(${settableProviderKeys.join('|')})$`,
   ).exec(key);
 
   if (providerMatch) {
-    const providerId = providerMatch[1] ?? '';
-    const field = providerMatch[2] as SettableProviderKey;
+    const providerId: string = providerMatch[1] ?? '';
+    const field: SettableProviderKey = providerMatch[2] as SettableProviderKey;
 
     if (!isProviderId(providerId)) {
       return { ok: false, message: `알 수 없는 프로바이더: ${providerId}` };
@@ -1336,13 +1395,15 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return setProviderField(container, providerId, field, raw);
   }
 
-  const definition = storyboardSettingCatalog.find((entry) => entry.key === key);
+  const definition: StoryboardSettingDefinition | undefined = storyboardSettingCatalog.find(
+    (entry) => entry.key === key,
+  );
 
   if (!definition) {
     return { ok: false, message: describeUnknownKey(key) };
   }
 
-  const value = parseSettingValue(definition.kind, raw);
+  const value: string | number | boolean | undefined = parseSettingValue(definition.kind, raw);
 
   if (value === undefined) {
     return { ok: false, message: `${key} 는 ${definition.kind} 값이어야 합니다.` };
@@ -1355,7 +1416,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     };
   }
 
-  const rangeProblem = describeOutOfRange(definition, value);
+  const rangeProblem: string | undefined = describeOutOfRange(definition, value);
 
   if (rangeProblem !== undefined) {
     return { ok: false, message: rangeProblem };
@@ -1373,19 +1434,19 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
 // The keys `config set` writes, minus the hidden providers' own: those are switched off through
 // `config set … false`, which also clears the routes that name the provider.
 function findUnsettableKeyProblem(key: string): string | undefined {
-  const taskMatch = taskKeyPattern.exec(key);
+  const taskMatch: RegExpExecArray | null = taskKeyPattern.exec(key);
 
   if (taskMatch) {
-    const taskName = taskMatch[1] ?? '';
+    const taskName: string = taskMatch[1] ?? '';
     return isTaskName(taskName)
       ? undefined
       : `알 수 없는 작업: ${taskName}\n쓸 수 있는 값: ${aiTaskNames.join(', ')}`;
   }
 
-  const providerMatch = new RegExp(
+  const providerMatch: RegExpExecArray | null = new RegExp(
     `^providers\\.([a-z-]+)\\.(${settableProviderKeys.join('|')})$`,
   ).exec(key);
-  const isKnownKey =
+  const isKnownKey: boolean =
     key === 'ai.provider.default' ||
     (providerMatch !== null && isProviderId(providerMatch[1] ?? '')) ||
     storyboardSettingCatalog.some((entry) => entry.key === key);
@@ -1397,31 +1458,31 @@ function findUnsettableKeyProblem(key: string): string | undefined {
 // comes back into force — said out loud, or the author would think the key is gone everywhere.
 export async function runConfigUnset({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge } = container;
-  const key = flagString(args.flags, 'key') ?? args.positionals[0];
+  const key: string | undefined = flagString(args.flags, 'key') ?? args.positionals[0];
 
   if (key === undefined) {
     return { ok: false, message: '사용법: storyboard config unset <key>' };
   }
 
-  const keyProblem = findUnsettableKeyProblem(key);
+  const keyProblem: string | undefined = findUnsettableKeyProblem(key);
 
   if (keyProblem !== undefined) {
     return { ok: false, message: keyProblem };
   }
 
-  const taskMatch = taskKeyPattern.exec(key);
-  const taskName = taskMatch?.[1];
-  const isTaskProviderKey = taskMatch?.[2] === 'provider' && taskName !== undefined;
+  const taskMatch: RegExpExecArray | null = taskKeyPattern.exec(key);
+  const taskName: string | undefined = taskMatch?.[1];
+  const isTaskProviderKey: boolean = taskMatch?.[2] === 'provider';
 
-  if (isTaskProviderKey && isTaskName(taskName)) {
+  if (isTaskProviderKey && taskName !== undefined && isTaskName(taskName)) {
     await configBridge.clearTaskAiConfig(taskName);
   } else {
     await configBridge.clearValue(key);
   }
 
-  const file = container.configWriteFile;
-  const origin = configBridge.getValueOrigin(key);
-  const value = configBridge.getConfiguredValue(key);
+  const file: string = container.configWriteFile;
+  const origin: ConfigValueOrigin = configBridge.getValueOrigin(key);
+  const value: unknown = configBridge.getConfiguredValue(key);
 
   return {
     ok: true,

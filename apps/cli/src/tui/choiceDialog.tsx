@@ -2,7 +2,7 @@ import { Box, Text, useInput } from 'ink';
 import React, { useState } from 'react';
 
 import type { ChoiceRequest } from '@/adapters/prompter';
-import { useTuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface ChoiceDialogProps {
   readonly request: ChoiceRequest<unknown>;
@@ -13,19 +13,19 @@ export interface ChoiceDialogProps {
 // The interactive screen's form of a prompter question: the details, numbered options, and the
 // same keys the one-shot prompt reads.
 export function ChoiceDialog(props: ChoiceDialogProps): React.ReactElement {
-  const theme = useTuiTheme();
+  const theme: TuiTheme = useTuiTheme();
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const optionCount = props.request.options.length;
+  const optionCount: number = props.request.options.length;
 
   useInput((input, key) => {
-    const digit = Number.parseInt(input, 10);
+    const digit: number = Number.parseInt(input, 10);
 
     if (key.escape) {
       props.onAnswer(undefined);
     } else if (key.return) {
       props.onAnswer(selectedIndex);
     } else if (key.upArrow || key.downArrow) {
-      const step = key.upArrow ? -1 : 1;
+      const step: 1 | -1 = key.upArrow ? -1 : 1;
       setSelectedIndex((index) => (index + step + optionCount) % optionCount);
     } else if (digit >= 1 && digit <= optionCount) {
       props.onAnswer(digit - 1);

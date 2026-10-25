@@ -22,8 +22,8 @@ export async function readSceneCards(
   const unreadable: string[] = [];
 
   for (const fileName of fileNames.filter((name) => name.endsWith('.card'))) {
-    const uri = joinStoryPath(sceneDirectory, fileName);
-    const text = new TextDecoder().decode(await container.fileSystem.readFile(uri));
+    const uri: StoryUri = joinStoryPath(sceneDirectory, fileName);
+    const text: string = new TextDecoder().decode(await container.fileSystem.readFile(uri));
 
     try {
       cards.push({ fileName, card: parseSceneCard(text) });

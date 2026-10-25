@@ -2,7 +2,7 @@ import { Box, Text, useInput } from 'ink';
 import React, { useState } from 'react';
 
 import type { TextRequest } from '@/adapters/prompter';
-import { useTuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface TextDialogProps {
   readonly request: TextRequest;
@@ -11,7 +11,7 @@ export interface TextDialogProps {
 }
 
 export function TextDialog(props: TextDialogProps): React.ReactElement {
-  const theme = useTuiTheme();
+  const theme: TuiTheme = useTuiTheme();
   const [value, setValue] = useState('');
 
   useInput((input, key) => {

@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 
 // Hands a URL to the system browser without waiting for it. False when the launcher is missing
 // (a container, a headless server); the caller shows the URL either way.
@@ -11,7 +11,7 @@ export function openBrowser(url: string): Promise<boolean> {
         : ['xdg-open', [url]];
 
   return new Promise((resolve) => {
-    const child = spawn(command, args, { detached: true, stdio: 'ignore' });
+    const child: ChildProcess = spawn(command, args, { detached: true, stdio: 'ignore' });
 
     child.on('error', () => resolve(false));
     child.on('spawn', () => {

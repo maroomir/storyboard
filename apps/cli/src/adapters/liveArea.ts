@@ -18,7 +18,7 @@ export class LiveArea {
 
   public show(lines: readonly string[]): void {
     this.erase();
-    const columns = this.readColumns();
+    const columns: number = this.readColumns();
     // A line as wide as the screen would wrap and the erase would miss its second row.
     this.lines = lines.map((line) =>
       measureWidth(line) < columns ? line : truncateToWidth(line, columns - 1),
@@ -51,8 +51,8 @@ export class LiveArea {
       return;
     }
 
-    const columns = Math.max(1, this.readColumns());
-    const rows = this.lines.reduce(
+    const columns: number = Math.max(1, this.readColumns());
+    const rows: number = this.lines.reduce(
       (total, line) => total + Math.max(1, Math.ceil(measureWidth(line) / columns)),
       0,
     );

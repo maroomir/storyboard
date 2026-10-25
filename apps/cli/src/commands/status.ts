@@ -41,7 +41,7 @@ function describeMissingContract(status: WorkspaceStatus): string {
 }
 
 function describeDrafts({ drafts }: WorkspaceStatus): string {
-  const notes = [
+  const notes: string[] = [
     ...(drafts.stale > 0 ? [`카드보다 오래됨 ${drafts.stale}`] : []),
     ...(drafts.missing > 0 ? [`없음 ${drafts.missing}`] : []),
     ...(drafts.withWarnings > 0 ? [`경고 남음 ${drafts.withWarnings}`] : []),
@@ -62,9 +62,9 @@ function describeManuscript({ manuscript }: WorkspaceStatus): string {
 }
 
 export const showStatus: CommandHandler = async ({ container }) => {
-  const status = await container.describeWorkspace();
-  const command = nextStepCommands[status.nextStep];
-  const reason = describeNextStep(status);
+  const status: WorkspaceStatus = await container.describeWorkspace();
+  const command: string | undefined = nextStepCommands[status.nextStep];
+  const reason: string = describeNextStep(status);
 
   return {
     ok: true,

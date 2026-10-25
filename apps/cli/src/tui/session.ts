@@ -2,14 +2,21 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
   storyboardModelCatalog,
   storyboardSettingCatalog,
+  type AiProviderId,
+  type ProviderModelOptions,
+  type StoryboardSettingDefinition,
 } from '@storyboard/story-model';
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { PauseRequests } from '@/adapters/pauseRequests';
-import { runShellCommand, type ShellCommandResult } from '@/adapters/shellCommand';
+import {
+  runShellCommand,
+  type ShellCommandResult,
+  type ShellCommandRun,
+} from '@/adapters/shellCommand';
 import { isScreenDrawing, keepTextAndColors } from '@/terminal/controlCodes';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
-import { computeCompletions, listWorkspaceMentions } from '@/commands/completion';
+import { computeCompletions, listWorkspaceMentions, type Completion } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
@@ -51,9 +58,9 @@ export const slashCommands: readonly SlashCommand[] = [
 // `init --title "밤의 항해"` reaches the parser as one title.
 export function splitCommandLine(line: string): string[] {
   const argv: string[] = [];
-  let current = '';
+  let current: string = '';
   let quote: '"' | "'" | undefined;
-  let hasToken = false;
+  let hasToken: boolean = false;
 
   for (const char of line) {
     if (quote !== undefined) {
@@ -107,7 +114,7 @@ function isVerbOrVerbStart(words: string): boolean {
 // what shell completion would offer for the last word (verb words, flags, scene stems, card ids),
 // and for a verb nothing starts with, the verbs it most resembles.
 export function suggestForInput(input: string, cwd: string = process.cwd()): InputSuggestion[] {
-  const trimmed = input.trimStart();
+  const trimmed: string = input.trimStart();
 
   if (trimmed.length === 0) {
     return [];
@@ -123,16 +130,16 @@ export function suggestForInput(input: string, cwd: string = process.cwd()): Inp
       }));
   }
 
-  const words = splitCommandLine(trimmed);
+  const words: string[] = splitCommandLine(trimmed);
   if (/\s$/.test(trimmed)) {
     words.push('');
   }
 
-  const current = words[words.length - 1] ?? '';
-  const head = trimmed.slice(0, trimmed.length - current.length);
+  const current: string = words[words.length - 1] ?? '';
+  const head: string = trimmed.slice(0, trimmed.length - current.length);
 
   if (current.startsWith('@')) {
-    const prefix = current.slice(1);
+    const prefix: string = current.slice(1);
     return listWorkspaceMentions(cwd)
       .filter((mention) => mention.text.startsWith(prefix))
       .map((mention) => ({
@@ -141,17 +148,17 @@ export function suggestForInput(input: string, cwd: string = process.cwd()): Inp
         line: `${head}${mention.text} `,
       }));
   }
-  const completions = computeCompletions(words, { cwd });
+  const completions: Completion[] = computeCompletions(words, { cwd });
 
   if (completions.length > 0) {
     return completions.map((completion) => {
-      const line = `${head}${completion.text}`;
-      const text = isVerbOrVerbStart(line.trim()) ? line.trim() : completion.text;
+      const line: string = `${head}${completion.text}`;
+      const text: string = isVerbOrVerbStart(line.trim()) ? line.trim() : completion.text;
       return { text, summary: completion.description, line: `${line} ` };
     });
   }
 
-  const isTypingVerb = words.length <= 3 && !current.startsWith('-');
+  const isTypingVerb: boolean = words.length <= 3 && !current.startsWith('-');
   return isTypingVerb
     ? suggestVerbs(trimmed.toLowerCase(), 5).map((verb) => ({
         text: verb,
@@ -186,7 +193,7 @@ export function describeSpending(spending: readonly SpendingEntry[]): string {
     return '이 화면에서 아직 비용이 든 명령이 없습니다.';
   }
 
-  const total = spending.reduce((sum, entry) => sum + entry.costUsd, 0);
+  const total: number = spending.reduce((sum, entry) => sum + entry.costUsd, 0);
   return [
     ...spending.map((entry) => `$${entry.costUsd.toFixed(2).padStart(7)}  ${entry.line}`),
     `$${total.toFixed(2).padStart(7)}  합계`,
@@ -225,7 +232,7 @@ function describeShellOutput(result: ShellCommandResult): string {
     );
   }
 
-  const output = keepTextAndColors(result.output).trimEnd();
+  const output: string = keepTextAndColors(result.output).trimEnd();
   return output.length > 0 ? output : `종료 코드 ${result.exitCode}`;
 }
 
@@ -248,7 +255,7 @@ export interface TuiSession {
 // only decides how to show what comes back.
 export function createTuiSession(options: TuiSessionOptions, sink: SessionSink): TuiSession {
   // One per command, so a pause asked for one run never carries into the next.
-  let pauseRequests = new PauseRequests();
+  let pauseRequests: PauseRequests = new PauseRequests();
   let stopShellCommand: (() => void) | undefined;
 
   const runArgv = async (argv: readonly string[]): Promise<DispatchResult> => {
@@ -274,12 +281,12 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   // Settings go through `config set`, so the screen writes exactly what the shell would: this
   // work's file inside a workspace, the shared home file outside one.
   const setConfig = async (key: string, value: string): Promise<void> => {
-    const scope = isWorkspace(options.cwd) ? [] : ['--global'];
+    const scope: string[] = isWorkspace(options.cwd) ? [] : ['--global'];
     show(await runArgv(['config', 'set', key, value, ...scope]));
   };
 
   const chooseModel = async (): Promise<void> => {
-    const provider = await sink.ask({
+    const provider: AiProviderId | undefined = await sink.ask({
       title: '프로바이더',
       details: [],
       options: availableProviderIds().map((id) => ({ label: id, value: id })),
@@ -288,8 +295,8 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       return;
     }
 
-    const models = storyboardModelCatalog[provider];
-    const model =
+    const models: ProviderModelOptions = storyboardModelCatalog[provider];
+    const model: string | undefined =
       models.length > 0
         ? await sink.ask({
             title: `${provider} 모델`,
@@ -306,7 +313,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   };
 
   const chooseSetting = async (): Promise<void> => {
-    const definition = await sink.ask({
+    const definition: StoryboardSettingDefinition | undefined = await sink.ask({
       title: '설정',
       details: ['값을 바꿀 설정을 고르세요'],
       options: storyboardSettingCatalog.map((entry) => ({
@@ -318,7 +325,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       return;
     }
 
-    const value =
+    const value: string | undefined =
       definition.kind === 'boolean'
         ? await sink.ask({
             title: definition.label,
@@ -340,7 +347,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   };
 
   const chooseTheme = async (): Promise<void> => {
-    const theme = await sink.ask({
+    const theme: TuiThemeName | undefined = await sink.ask({
       title: '색 테마',
       details: [],
       options: tuiThemeNames.map((themeName) => ({
@@ -358,7 +365,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   };
 
   const show = (result: DispatchResult): void => {
-    const text = (result.stdout + result.stderr).trimEnd();
+    const text: string = (result.stdout + result.stderr).trimEnd();
 
     if (text.length > 0) {
       sink.append(describeResultTone(result), text);
@@ -366,7 +373,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   };
 
   return {
-    interrupt: () => {
+    interrupt: (): string => {
       if (stopShellCommand !== undefined) {
         stopShellCommand();
         return '셸 명령을 멈췄습니다.';
@@ -377,7 +384,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.';
     },
     run: async (line: string): Promise<void> => {
-      const trimmed = line.trim();
+      const trimmed: string = line.trim();
 
       if (trimmed.length === 0) {
         return;
@@ -386,10 +393,10 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       sink.append('input', trimmed);
 
       if (trimmed.startsWith('!')) {
-        const shellRun = runShellCommand(trimmed.slice(1), options.cwd);
+        const shellRun: ShellCommandRun = runShellCommand(trimmed.slice(1), options.cwd);
         stopShellCommand = shellRun.stop;
         sink.setEscapeHint('Esc 명령 중단');
-        const result = await shellRun.result.finally(() => {
+        const result: ShellCommandResult = await shellRun.result.finally(() => {
           stopShellCommand = undefined;
         });
         sink.append(result.exitCode === 0 ? 'result' : 'error', describeShellOutput(result));
@@ -408,7 +415,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
             sink.clear();
             return;
           case '/help': {
-            const topic = rest.join(' ');
+            const topic: string = rest.join(' ');
             sink.append(
               'result',
               topic.length > 0
@@ -443,11 +450,11 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         }
       }
 
-      const argv = splitCommandLine(trimmed);
+      const argv: string[] = splitCommandLine(trimmed);
 
       try {
         // `@01-a` names the scene 01-a; the mark only told the composer what to suggest.
-        const result = await runArgv(
+        const result: DispatchResult = await runArgv(
           argv.map((token) => (token.startsWith('@') ? token.slice(1) : token)),
         );
         if ((result.costUsd ?? 0) > 0) {
@@ -455,7 +462,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         }
 
         // A draft is read, not scanned: it opens in the reader rather than folding into the log.
-        const isDraftShown =
+        const isDraftShown: boolean =
           argv[0] === 'draft' &&
           argv[1] === 'show' &&
           result.exitCode === 0 &&

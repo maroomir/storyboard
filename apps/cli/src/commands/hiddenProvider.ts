@@ -11,7 +11,7 @@ import {
   unknownProviderMessage,
   type AiProviderId,
 } from '@storyboard/story-model';
-import type { ChatGptProvider, FetchLike } from '@storyboard/story-ai';
+import type { ChatGptProvider, FetchLike, OAuthConnection } from '@storyboard/story-ai';
 
 import type { CliContainer } from '@/container';
 
@@ -37,7 +37,7 @@ async function switchOn(
   providerId: AiProviderId,
 ): Promise<CommandOutcome> {
   const { configBridge, prompter } = container;
-  const key = hiddenProviderEnabledKey(providerId);
+  const key: string = hiddenProviderEnabledKey(providerId);
 
   if (!requiresSubscriptionRiskNotice(providerId)) {
     await configBridge.enableHiddenProvider(providerId);
@@ -59,7 +59,7 @@ async function switchOn(
       };
     }
 
-    const isAccepted = await prompter.choose({
+    const isAccepted: boolean | undefined = await prompter.choose({
       title: subscriptionRiskNoticeTitle,
       details: riskNoticeLines(),
       options: [
@@ -92,17 +92,19 @@ export async function setHiddenProviderKey(
   key: string,
   raw: string,
 ): Promise<CommandOutcome | undefined> {
-  const providerId = hiddenProviderIds.find((id) => key.startsWith(`providers.${id}.`));
+  const providerId: AiProviderId | undefined = hiddenProviderIds.find((id) =>
+    key.startsWith(`providers.${id}.`),
+  );
 
   if (providerId === undefined) {
     return undefined;
   }
 
   const { configBridge } = container;
-  const field = key.slice(`providers.${providerId}.`.length);
+  const field: string = key.slice(`providers.${providerId}.`.length);
 
   if (field === 'enabled') {
-    const isEnabled = booleanWords[raw];
+    const isEnabled: boolean | undefined = booleanWords[raw];
 
     if (isEnabled === undefined) {
       return { ok: false, message: `${key} 는 true 또는 false 여야 합니다.` };
@@ -112,7 +114,7 @@ export async function setHiddenProviderKey(
       return switchOn(container, providerId);
     }
 
-    const clearedKeys = await configBridge.disableHiddenProvider(providerId);
+    const clearedKeys: readonly string[] = await configBridge.disableHiddenProvider(providerId);
     return {
       ok: true,
       message: [
@@ -137,7 +139,7 @@ export async function setHiddenProviderKey(
   }
 
   if (field === 'command') {
-    const command = raw.trim();
+    const command: string = raw.trim();
 
     // The config schema rejects a blank command, and a file it rejects stops every later command —
     // including the one that would put it right.
@@ -147,7 +149,7 @@ export async function setHiddenProviderKey(
 
     await configBridge.setCliProviderConfig(providerId, { command });
   } else if (field === 'timeoutMs') {
-    const timeoutMs = Number(raw);
+    const timeoutMs: number = Number(raw);
 
     if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
       return { ok: false, message: `${key} 는 0보다 큰 정수(밀리초)여야 합니다.` };
@@ -226,9 +228,9 @@ async function collectLoginProviderChecks(
   fetchImpl: FetchLike | undefined,
 ): Promise<HiddenProviderCheck[]> {
   const { configBridge, secretStore } = container;
-  const connection = await secretStore.getOAuthConnection(providerId);
-  const model = configBridge.getProviderConfig(providerId).model;
-  const loginFix = `storyboard login ${providerId}`;
+  const connection: OAuthConnection | undefined = await secretStore.getOAuthConnection(providerId);
+  const model: string | undefined = configBridge.getProviderConfig(providerId).model;
+  const loginFix: string = `storyboard login ${providerId}`;
 
   let provider: ChatGptProvider;
   try {
@@ -265,8 +267,8 @@ async function collectLoginProviderChecks(
     ];
   }
 
-  const account = connection?.registration?.email;
-  const slugs = models.map((entry) => entry.slug);
+  const account: string | undefined = connection?.registration?.email;
+  const slugs: string[] = models.map((entry) => entry.slug);
 
   return [
     previewCheck,

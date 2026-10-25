@@ -4,10 +4,10 @@ import wrapAnsi from 'wrap-ansi';
 // 터미널 칸 수는 글자 수가 아니다. 한글·한자는 2칸, 결합 문자는 0칸, 색 코드는 0칸이라
 // `String.length`·`padEnd` 로 맞춘 열은 한글이 섞이는 순간 어긋난다.
 
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-const ellipsis = '…';
+const graphemes: Intl.Segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+const ellipsis: string = '…';
 // eslint-disable-next-line no-control-regex -- a color code starts with ESC.
-const colorCodePattern = /(\u001b\[[0-9;]*m)/;
+const colorCodePattern: RegExp = /(\u001b\[[0-9;]*m)/;
 
 export function measureWidth(text: string): number {
   return stringWidth(text);
@@ -24,10 +24,10 @@ export function truncateToWidth(text: string, width: number): string {
     return text;
   }
 
-  const room = width - measureWidth(ellipsis);
-  let kept = '';
-  let keptWidth = 0;
-  let isFull = false;
+  const room: number = width - measureWidth(ellipsis);
+  let kept: string = '';
+  let keptWidth: number = 0;
+  let isFull: boolean = false;
 
   for (const part of text.split(colorCodePattern)) {
     if (colorCodePattern.test(part)) {
@@ -36,7 +36,7 @@ export function truncateToWidth(text: string, width: number): string {
     }
 
     for (const { segment } of graphemes.segment(part)) {
-      const segmentWidth = measureWidth(segment);
+      const segmentWidth: number = measureWidth(segment);
 
       if (isFull || keptWidth + segmentWidth > room) {
         isFull = true;

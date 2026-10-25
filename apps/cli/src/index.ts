@@ -2,7 +2,7 @@ import { ConsoleLogger } from './adapters/consoleLogger';
 import { LiveArea } from './adapters/liveArea';
 import { PauseRequests } from './adapters/pauseRequests';
 import { TerminalPrompter } from './adapters/prompter';
-import { dispatch } from './commands/dispatch';
+import { dispatch, type DispatchResult } from './commands/dispatch';
 import {
   bellSignal,
   createWindowTitle,
@@ -12,17 +12,14 @@ import {
 } from './terminal/signals';
 import { runTui } from './tui/index';
 
-const version = '0.13.4';
+const version: string = '0.13.4';
 
-// Shell completion runs inside the shell's own prompt and `completion` is `eval`ed; neither may
-// touch the window. `help` and `tui` are not runs.
-const verbsWithoutSignals = new Set(['__complete', 'completion', 'help', 'tui']);
+const verbsWithoutSignals: Set<string> = new Set(['__complete', 'completion', 'help', 'tui']);
 
-// The words before the first flag name the run: `draft generate`.
-function describeRun(argv: readonly string[]): string | undefined {
-  const firstFlag = argv.findIndex((token) => token.startsWith('-'));
-  const words = (firstFlag === -1 ? argv : argv.slice(0, firstFlag)).slice(0, 2);
-  const isSignalled =
+function extractRunName(argv: readonly string[]): string | undefined {
+  const firstFlag: number = argv.findIndex((token) => token.startsWith('-'));
+  const words: string[] = (firstFlag === -1 ? argv : argv.slice(0, firstFlag)).slice(0, 2);
+  const isSignalled: boolean =
     words.length > 0 &&
     !verbsWithoutSignals.has(words[0] ?? '') &&
     process.stderr.isTTY === true &&
@@ -33,26 +30,22 @@ function describeRun(argv: readonly string[]): string | undefined {
 }
 
 async function main(argv: readonly string[]): Promise<number> {
-  const runName = describeRun(argv);
-  const startedAt = Date.now();
+  const runName: string | undefined = extractRunName(argv);
+  const startedAt: number = Date.now();
 
   if (runName !== undefined) {
     process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
   }
 
-  // NOTE: Ctrl+C 는 파이프의 받는 쪽(`| head`, `| cat`)도 끝낸다. 읽는 쪽이 없는 결과는 버릴 뿐
-  // 실패가 아니므로, 종료 코드는 실행 결과대로 둔다.
   process.stdout.on('error', (error: NodeJS.ErrnoException) => {
     if (error.code !== 'EPIPE') {
       throw error;
     }
   });
 
-  const liveArea = new LiveArea(process.stderr, () => process.stderr.columns || 80);
-  const pauseRequests = new PauseRequests();
+  const liveArea: LiveArea = new LiveArea(process.stderr, () => process.stderr.columns || 80);
+  const pauseRequests: PauseRequests = new PauseRequests();
 
-  // NOTE: 첫 Ctrl+C 는 씬 경계 정지를 예약하고(이미 쓴 토큰을 버리지 않게), 두 번째는 바로
-  // 끝낸다. 멈출 수 있는 실행이 없으면 첫 번째부터 바로 끝낸다.
   process.on('SIGINT', () => {
     if (!pauseRequests.request()) {
       process.exit(130);
@@ -60,13 +53,11 @@ async function main(argv: readonly string[]): Promise<number> {
     liveArea.writeAbove('지금 씬을 마치고 멈춥니다. 바로 끝내려면 Ctrl+C 를 한 번 더 누르세요.\n');
   });
 
-  // NOTE: Node 는 처리기가 없는 SIGTERM·SIGHUP 에 exit 이벤트 없이 죽는다. 그러면 생성 중인 자식
-  // 프로세스가 고아로 남아 구독을 계속 쓰므로, 두 신호를 정상 종료로 바꿔 exit 훅이 돌게 한다.
   process.on('SIGTERM', () => process.exit(143));
   process.on('SIGHUP', () => process.exit(129));
 
-  const isInteractive = process.stdin.isTTY === true && process.stderr.isTTY === true;
-  const result = await dispatch(argv, {
+  const isInteractive: boolean = process.stdin.isTTY === true && process.stderr.isTTY === true;
+  const result: DispatchResult = await dispatch(argv, {
     version,
     cwd: process.cwd(),
     isInteractive,
@@ -97,7 +88,7 @@ async function main(argv: readonly string[]): Promise<number> {
   process.stderr.write(result.stderr);
 
   if (runName !== undefined) {
-    const hasRunLong = Date.now() - startedAt >= longRunMilliseconds;
+    const hasRunLong: boolean = Date.now() - startedAt >= longRunMilliseconds;
     process.stderr.write(`${popWindowTitle}${hasRunLong ? bellSignal : ''}`);
   }
 
@@ -109,7 +100,7 @@ void main(process.argv.slice(2))
     process.exitCode = code;
   })
   .catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error);
+    const message: string = error instanceof Error ? error.message : String(error);
 
     if (process.argv.includes('--json')) {
       process.stdout.write(`${JSON.stringify({ ok: false, message, data: null })}\n`);

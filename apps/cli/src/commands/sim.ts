@@ -6,8 +6,8 @@ import {
   parseSceneCard,
   parseSceneFileName,
 } from '@storyboard/story-model';
-import type { AiProviderId } from '@storyboard/story-model';
-import type { AiProviderRegistry } from '@storyboard/story-ai';
+import type { AiProviderId, SceneCard, SceneFileNameParts } from '@storyboard/story-model';
+import type { AiProviderRegistry, PromptVariantId } from '@storyboard/story-ai';
 import {
   appendRun,
   applyOverlay,
@@ -62,6 +62,21 @@ import {
   type SimPromptVariant,
   type SimJudge,
   type TokenTotals,
+  type BudgetEstimate,
+  type TrackRef,
+  type ISimWorkspaceFactory,
+  type TrackRunResult,
+  type AxisVerdict,
+  type PanelVerdict,
+  type FactRecallReport,
+  type KnobSpec,
+  type RegressionRow,
+  type CostAxis,
+  type ScoredPoint,
+  type RejudgeSource,
+  type ProfileMeasurement,
+  type ProfileWriteResult,
+  type Overlay,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -69,6 +84,7 @@ import { createSimWorkspaceFactory } from '@/adapters/simWorkspaceFactory';
 import { createCliContainer } from '@/container';
 import type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 import { availableProviderIds } from '@/adapters/availableProviders';
+import type { ZodSafeParseResult } from 'zod';
 
 // NOTE: 시뮬레이터는 트랙 저장소를 대상으로 돌고 제품 워크스페이스를 요구하지 않는다. 그래서
 // 다섯 동사 모두 needsWorkspace: false 이고, 대상은 --track 이 가리킨다.
@@ -99,13 +115,15 @@ function refuse(message: string): CommandOutcome {
 
 // 씬 목록과 목표 분량은 카드가 갖는다. 따로 적은 목록은 카드와 어긋나는 순간 다른 것을 잰다.
 async function readTrackScenes(genreRoot: string): Promise<readonly TrackScene[]> {
-  const sceneDirectory = join(genreRoot, 'scene');
-  const names = (await readdir(sceneDirectory)).filter((name) => parseSceneFileName(name));
+  const sceneDirectory: string = join(genreRoot, 'scene');
+  const names: string[] = (await readdir(sceneDirectory)).filter((name) =>
+    parseSceneFileName(name),
+  );
   const scenes: TrackScene[] = [];
 
   for (const name of names.sort()) {
-    const parts = parseSceneFileName(name);
-    const card = parseSceneCard(await readFile(join(sceneDirectory, name), 'utf8'));
+    const parts: SceneFileNameParts | undefined = parseSceneFileName(name);
+    const card: SceneCard = parseSceneCard(await readFile(join(sceneDirectory, name), 'utf8'));
 
     if (parts === undefined) {
       continue;
@@ -137,7 +155,7 @@ async function readAxisFloors(
   genreRoot: string,
   scenes: readonly TrackScene[],
 ): Promise<ReadonlyMap<string, string>> {
-  const floors = new Map<string, string>();
+  const floors: Map<string, string> = new Map<string, string>();
   for (const scene of scenes) {
     try {
       floors.set(
@@ -153,7 +171,7 @@ async function readAxisFloors(
 
 // 훼손본은 인물 이름을 뒤바꿔 만든다. 카드의 name 한 줄이면 충분하다.
 async function readCharacterNames(genreRoot: string): Promise<readonly string[]> {
-  const directory = join(genreRoot, 'character');
+  const directory: string = join(genreRoot, 'character');
   let files: string[];
 
   try {
@@ -164,8 +182,8 @@ async function readCharacterNames(genreRoot: string): Promise<readonly string[]>
 
   const names: string[] = [];
   for (const file of files) {
-    const text = await readFile(join(directory, file), 'utf8');
-    const match = /^name:\s*(.+)$/mu.exec(text);
+    const text: string = await readFile(join(directory, file), 'utf8');
+    const match: RegExpExecArray | null = /^name:\s*(.+)$/mu.exec(text);
     if (match !== null) {
       names.push((match[1] as string).trim());
     }
@@ -180,7 +198,7 @@ async function readJudgeMaterials(
   scenes: readonly TrackScene[],
 ): Promise<JudgeMaterials | string> {
   if (genre === axisGenre) {
-    const floors = await readAxisFloors(genreRoot, scenes);
+    const floors: ReadonlyMap<string, string> = await readAxisFloors(genreRoot, scenes);
     if (floors.size !== scenes.length) {
       return `${join(genreRoot, 'floor')} 에 씬마다 훼손 원고가 있어야 합니다 (${floors.size}/${scenes.length}).`;
     }
@@ -197,7 +215,10 @@ async function readJudgeMaterials(
 
   for (const scene of scenes) {
     try {
-      const text = await readFile(join(genreRoot, 'floor', `${scene.sceneStem}.md`), 'utf8');
+      const text: string = await readFile(
+        join(genreRoot, 'floor', `${scene.sceneStem}.md`),
+        'utf8',
+      );
       floorDraft = { sceneStem: scene.sceneStem, text };
       break;
     } catch {
@@ -209,7 +230,7 @@ async function readJudgeMaterials(
     return `${join(genreRoot, 'floor')} 에 훼손 원고가 없습니다. 하한선 관문 없이는 심판을 믿을 수 없어 시작하지 않습니다.`;
   }
 
-  const characterNames = await readCharacterNames(genreRoot);
+  const characterNames: readonly string[] = await readCharacterNames(genreRoot);
 
   let ledger: JudgeMaterials['ledger'];
   try {
@@ -222,7 +243,7 @@ async function readJudgeMaterials(
 }
 
 // 축 트랙은 장르가 아니라 진단표라 chain/ 아래가 아니다. 결과도 성능으로 보고하지 않는다.
-const axisGenre = 'axis';
+const axisGenre: string = 'axis';
 
 function resolveGenreRoot(trackRoot: string, genre: string | undefined): string {
   if (genre === axisGenre) {
@@ -231,19 +252,21 @@ function resolveGenreRoot(trackRoot: string, genre: string | undefined): string 
   return genre === undefined ? trackRoot : join(trackRoot, 'track', 'chain', genre);
 }
 
-async function loadOverlayPoint(
-  overlayPath: string | undefined,
-  provider: AiProviderId,
-): Promise<{
+interface OverlayPoint {
   readonly label: string;
   readonly knobs: Record<string, number>;
   readonly refusals: readonly string[];
-}> {
+}
+
+async function loadOverlayPoint(
+  overlayPath: string | undefined,
+  provider: AiProviderId,
+): Promise<OverlayPoint> {
   if (overlayPath === undefined) {
     return { label: 'point', knobs: {}, refusals: [] };
   }
 
-  const overlay = parseOverlay(JSON.parse(await readFile(overlayPath, 'utf8')));
+  const overlay: Overlay = parseOverlay(JSON.parse(await readFile(overlayPath, 'utf8')));
   const { refusals } = applyOverlay(overlay, provider);
 
   return { label: overlay.label ?? 'point', knobs: overlay.knobs, refusals };
@@ -277,10 +300,12 @@ function isProviderId(value: string): value is AiProviderId {
 // 명령줄 > 트랙 저장소의 sim.config.json > 워크스페이스 자체 설정. 기계 프로필은 파일에 두고,
 // 한 번만 바꿔 볼 값은 플래그로 준다.
 function generationSelection(context: CommandContext, config: SimConfig): Selection | string {
-  const flagProvider = requireFlag(context, 'provider');
-  const flagModel = requireFlag(context, 'model');
-  const rawVariant = requireFlag(context, 'prompt-variant') ?? config.generation?.promptVariant;
-  const variant = rawVariant === undefined ? undefined : promptVariantSchema.safeParse(rawVariant);
+  const flagProvider: string | undefined = requireFlag(context, 'provider');
+  const flagModel: string | undefined = requireFlag(context, 'model');
+  const rawVariant: string | undefined =
+    requireFlag(context, 'prompt-variant') ?? config.generation?.promptVariant;
+  const variant: ZodSafeParseResult<PromptVariantId> | undefined =
+    rawVariant === undefined ? undefined : promptVariantSchema.safeParse(rawVariant);
 
   if (variant !== undefined && !variant.success) {
     return `프롬프트 변형을 모릅니다: ${rawVariant}\n쓸 수 있는 값: ${promptVariantSchema.options.join(', ')}`;
@@ -295,7 +320,7 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
     if (!isProviderId(flagProvider)) {
       return `알 수 없는 프로바이더: ${flagProvider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
     }
-    const model = flagModel ?? storyboardModelCatalog[flagProvider][0]?.id;
+    const model: string = flagModel ?? storyboardModelCatalog[flagProvider][0]?.id;
     return model === undefined
       ? `${flagProvider} 에 쓸 모델을 --model 로 주세요.`
       : withVariant({ providerId: flagProvider, model });
@@ -311,14 +336,14 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
     });
   }
 
-  const providerId = context.container.configBridge.getTaskProvider('sceneDraft');
+  const providerId: AiProviderId = context.container.configBridge.getTaskProvider('sceneDraft');
   return withVariant({
     providerId,
     model: flagModel ?? context.container.configBridge.getTaskAiConfig('sceneDraft').model,
   });
 }
 
-const noJudge = 'none';
+const noJudge: string = 'none';
 
 function judgeDisabled(context: CommandContext): boolean {
   return requireFlag(context, 'judge') === noJudge;
@@ -329,7 +354,7 @@ function judgeSelection(
   config: SimConfig,
   generation: Selection,
 ): Selection | string {
-  const rawProvider = requireFlag(context, 'judge') ?? config.judge?.provider;
+  const rawProvider: string | undefined = requireFlag(context, 'judge') ?? config.judge?.provider;
 
   if (rawProvider === undefined) {
     return `--judge 로 심판을 정하거나 ${simConfigFileName} 에 judge 를 적어 주세요. 생성과 같은 모델이면 자기 글을 자기가 채점하게 됩니다.`;
@@ -339,7 +364,7 @@ function judgeSelection(
     return `알 수 없는 심판 프로바이더: ${rawProvider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
   }
 
-  const model =
+  const model: string =
     requireFlag(context, 'judge-model') ??
     (rawProvider === config.judge?.provider ? config.judge.model : undefined) ??
     storyboardModelCatalog[rawProvider][0]?.id;
@@ -357,7 +382,7 @@ function judgeSelection(
 }
 
 function repeatsOf(context: CommandContext, config: SimConfig): number {
-  const flag = requireFlag(context, 'repeats');
+  const flag: string | undefined = requireFlag(context, 'repeats');
   return flag === undefined ? (config.repeats ?? simDefaults.run.repeats) : Number(flag);
 }
 
@@ -370,9 +395,9 @@ function reportEstimate(
   sceneCount: number,
   repeats: number,
 ): CommandOutcome | undefined {
-  const maxRuns = requireFlag(context, 'max-runs');
+  const maxRuns: string | undefined = requireFlag(context, 'max-runs');
 
-  const estimate = estimateBudget({
+  const estimate: BudgetEstimate = estimateBudget({
     points: points.length,
     repeats,
     sceneCount,
@@ -399,7 +424,7 @@ function reportEstimate(
     return undefined;
   }
 
-  const cost =
+  const cost: string =
     estimate.estimatedUsd === undefined ? '금액 불명' : `$${estimate.estimatedUsd.toFixed(2)}`;
 
   return {
@@ -433,7 +458,7 @@ async function executePoints(
     readonly genre: string;
   },
 ): Promise<CommandOutcome> {
-  const track = await describeTrack(input.trackRoot);
+  const track: TrackRef = await describeTrack(input.trackRoot);
 
   if (track.dirty) {
     return refuse(
@@ -441,27 +466,29 @@ async function executePoints(
     );
   }
 
-  const localRefusal = await refuseMissingLocalModels(input);
+  const localRefusal: string | undefined = await refuseMissingLocalModels(input);
   if (localRefusal !== undefined) {
     return refuse(localRefusal);
   }
 
   // NOTE: 패키지 버전은 릴리스 사이의 엔진 빌드를 가르지 못한다. 하루에 다섯 빌드로 잰 기록이 전부
   // «0.9.3» 으로 남았다. 저장소 안에서 돌면 git 해시를, 아니면 버전을 적는다.
-  const engineVersion = context.container.version;
+  const engineVersion: string = context.container.version;
   // 번들은 CommonJS 로 형검사되어 import.meta 를 못 쓴다. 실행 파일의 자리(dist/index.mjs)에서 찾는다.
-  const engineCommit = await describeEngine(
+  const engineCommit: string = await describeEngine(
     dirname(process.argv[1] ?? process.cwd()),
     engineVersion,
   );
   const { repeats } = input;
-  const done = await completedKeys(input.outPath, {
+  const done: ReadonlySet<string> = await completedKeys(input.outPath, {
     engineCommit,
     trackCommit: track.commit,
     generation: generationRecord(input.generation, input.localRuntime),
-    ...(input.judge === undefined ? {} : { judge: { providerId: input.judge.providerId, model: input.judge.model } }),
+    ...(input.judge === undefined
+      ? {}
+      : { judge: { providerId: input.judge.providerId, model: input.judge.model } }),
   });
-  const factory = createSimWorkspaceFactory({
+  const factory: ISimWorkspaceFactory = createSimWorkspaceFactory({
     logger: context.container.logger,
     version: context.container.version,
     provider: input.generation.providerId,
@@ -477,7 +504,7 @@ async function executePoints(
   // 죽지만, 주소가 같은 기계에서는 num_ctx 없이 조용히 판정한다 — 8화 누적이 모델 기본 문맥을
   // 넘기면 뒤 독자가 앞을 못 읽은 채 점수를 낸다. 조용히 틀리는 쪽이 위험하므로 심판 레지스트리도
   // 같은 프로필로 세운다.
-  const judgeRegistry =
+  const judgeRegistry: AiProviderRegistry =
     input.localRuntime === undefined
       ? context.container.aiProviderRegistry
       : createCliContainer({
@@ -487,18 +514,20 @@ async function executePoints(
           version: context.container.version,
           // 생각 켜기/끄기는 생성 쪽 실험 변수다. 심판 모델이 생각을 지원하지 않으면 ollama 가 거부한다.
           localRuntime: {
-            ...(input.localRuntime.baseUrl === undefined ? {} : { baseUrl: input.localRuntime.baseUrl }),
+            ...(input.localRuntime.baseUrl === undefined
+              ? {}
+              : { baseUrl: input.localRuntime.baseUrl }),
             ...(input.localRuntime.contextTokens === undefined
               ? {}
               : { contextTokens: input.localRuntime.contextTokens }),
           },
         }).aiProviderRegistry;
 
-  let ran = 0;
-  let skipped = 0;
+  let ran: number = 0;
+  let skipped: number = 0;
 
   for (const point of input.points) {
-    for (let repeat = 1; repeat <= repeats; repeat += 1) {
+    for (let repeat: number = 1; repeat <= repeats; repeat += 1) {
       if (done.has(runKey(input.genre, point.label, repeat))) {
         skipped += 1;
         continue;
@@ -514,11 +543,11 @@ async function executePoints(
       }
 
       // 생성이 씬 카드를 되쓰므로 회차마다 사본에서 돈다.
-      const scratch = await copyToScratch(input.genreRoot);
+      const scratch: string = await copyToScratch(input.genreRoot);
 
       try {
-        const started = new Date().toISOString();
-        const result = await runTrack({
+        const started: string = new Date().toISOString();
+        const result: TrackRunResult = await runTrack({
           factory,
           workspacePath: scratch,
           scenes: input.scenes,
@@ -533,7 +562,7 @@ async function executePoints(
 
         // 사본은 회차가 끝나면 지워진다. 심판이 회차를 버려도 무엇을 읽고 버렸는지 되짚을 수 있도록
         // 심판을 부르기 전에 원고부터 결과 곁에 남긴다.
-        const draftsDir = await keepDrafts(
+        const draftsDir: string = await keepDrafts(
           input.outPath,
           { genre: input.genre, pointLabel: point.label, repeat },
           result.drafts,
@@ -545,17 +574,17 @@ async function executePoints(
         // NOTE: 심판이 죽어도 생성 결과는 남긴다. 이미 돈을 쓴 회차를 심판 탓에 잃으면 안 된다.
         try {
           if (input.judge !== undefined && input.materials?.axisFloors !== undefined) {
-            const judge = createSimJudge({
+            const judge: SimJudge = createSimJudge({
               registry: judgeRegistry,
               judge: input.judge,
               generation: input.generation,
             });
-            const axisFloors = input.materials.axisFloors;
-            const verdicts = await judgeAxis({
+            const axisFloors: ReadonlyMap<string, string> = input.materials.axisFloors;
+            const verdicts: readonly AxisVerdict[] = await judgeAxis({
               judge,
               scenes: input.scenes.flatMap((scene) => {
-                const draft = result.drafts.get(scene.sceneStem);
-                const floorDraft = axisFloors.get(scene.sceneStem);
+                const draft: string | undefined = result.drafts.get(scene.sceneStem);
+                const floorDraft: string | undefined = axisFloors.get(scene.sceneStem);
                 return draft === undefined
                   ? []
                   : [
@@ -588,7 +617,7 @@ async function executePoints(
             });
           }
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message: string = error instanceof Error ? error.message : String(error);
           context.container.logger.warn(
             `${point.label} ${repeat}회 · 심판 실패, 생성 결과만 남깁니다: ${message}`,
           );
@@ -645,7 +674,7 @@ async function refuseMissingLocalModels(input: {
   readonly judge?: Selection;
   readonly localRuntime: SimConfig['ollama'];
 }): Promise<string | undefined> {
-  const wanted = [input.generation, input.judge]
+  const wanted: string[] = [input.generation, input.judge]
     .filter((selection): selection is Selection => selection?.providerId === 'ollama')
     .map((selection) => selection.model);
 
@@ -653,7 +682,7 @@ async function refuseMissingLocalModels(input: {
     return undefined;
   }
 
-  const baseUrl = input.localRuntime?.baseUrl ?? 'http://127.0.0.1:11434';
+  const baseUrl: string = input.localRuntime?.baseUrl ?? 'http://127.0.0.1:11434';
   let available: readonly string[];
 
   try {
@@ -662,13 +691,12 @@ async function refuseMissingLocalModels(input: {
     return `ollama 에 닿지 못했습니다 (${baseUrl}): ${error instanceof Error ? error.message : String(error)}`;
   }
 
-  const missing = missingLocalModels(available, wanted);
+  const missing: readonly string[] = missingLocalModels(available, wanted);
 
   return missing.length === 0
     ? undefined
     : `ollama 에 없는 모델입니다: ${missing.join(', ')} (있는 것: ${available.join(', ') || '없음'}). ollama pull 로 받거나 sim.config 의 모델을 고치세요.`;
 }
-
 
 // 연쇄 트랙의 심판 한 벌: 하한선 관문 → 독자 패널 → 비평가 → 사실 회수. 새로 생성한 원고와
 // 저장된 원고를 다시 채점할 때(sim rejudge) 같은 길을 쓴다. 심판 사용량은 judgeTokens 로 따로 남긴다.
@@ -685,17 +713,19 @@ async function judgeChainDrafts(
     readonly draftsDir: string;
   },
 ): Promise<Partial<RunRecord>> {
-  const judge = createSimJudge({
+  const judge: SimJudge = createSimJudge({
     registry: input.judgeRegistry,
     judge: input.judge,
     generation: input.generation,
   });
-  const orderedDrafts = input.scenes
+  const orderedDrafts: SceneDraft[] = input.scenes
     .map((scene) => ({ sceneStem: scene.sceneStem, draft: input.drafts.get(scene.sceneStem) }))
-    .filter((scene): scene is { sceneStem: string; draft: string } => scene.draft !== undefined);
-  const generatedForFloor = input.drafts.get(input.materials.floorDraft.sceneStem);
+    .filter((scene): scene is SceneDraft => scene.draft !== undefined);
+  const generatedForFloor: string | undefined = input.drafts.get(
+    input.materials.floorDraft.sceneStem,
+  );
 
-  const verdict = await judgeChain({
+  const verdict: PanelVerdict = await judgeChain({
     judge,
     scenes: orderedDrafts,
     genre: input.materials.genre,
@@ -742,7 +772,7 @@ async function judgeChainDrafts(
   }
 
   if (input.materials.ledger !== undefined && !verdict.discarded) {
-    const recall = await scoreFactRecall({
+    const recall: FactRecallReport = await scoreFactRecall({
       ledger: input.materials.ledger,
       draftsByScene: input.drafts,
       judge: createFactRecallJudge(judge),
@@ -790,32 +820,36 @@ function judgeUsageTotals(judge: SimJudge): TokenTotals {
   );
 }
 
-async function prepare(context: CommandContext): Promise<
-  | string
-  | {
-      readonly trackRoot: string;
-      readonly genreRoot: string;
-      readonly scenes: readonly TrackScene[];
-      readonly generation: Selection;
-      readonly outPath: string;
-      readonly config: SimConfig;
-      readonly repeats: number;
-      readonly localRuntime: SimConfig['ollama'];
-      readonly genre: string;
-    }
-> {
-  const trackRoot = requireFlag(context, 'track');
+interface SceneDraft {
+  readonly sceneStem: string;
+  readonly draft: string;
+}
+
+interface PreparedSim {
+  readonly trackRoot: string;
+  readonly genreRoot: string;
+  readonly scenes: readonly TrackScene[];
+  readonly generation: Selection;
+  readonly outPath: string;
+  readonly config: SimConfig;
+  readonly repeats: number;
+  readonly localRuntime: SimConfig['ollama'];
+  readonly genre: string;
+}
+
+async function prepare(context: CommandContext): Promise<string | PreparedSim> {
+  const trackRoot: string | undefined = requireFlag(context, 'track');
 
   if (trackRoot === undefined) {
     return '--track 으로 트랙 저장소를 지정해 주세요.';
   }
 
-  const config = await readSimConfig(
+  const config: SimConfig = await readSimConfig(
     requireFlag(context, 'config') ?? join(trackRoot, simConfigFileName),
   );
-  const genreRoot = resolveGenreRoot(trackRoot, requireFlag(context, 'genre'));
-  const scenes = await readTrackScenes(genreRoot);
-  const generation = generationSelection(context, config);
+  const genreRoot: string = resolveGenreRoot(trackRoot, requireFlag(context, 'genre'));
+  const scenes: readonly TrackScene[] = await readTrackScenes(genreRoot);
+  const generation: string | Selection = generationSelection(context, config);
 
   if (typeof generation === 'string') {
     return generation;
@@ -835,12 +869,12 @@ async function prepare(context: CommandContext): Promise<
 }
 
 export const runSim: CommandHandler = async (context) => {
-  const prepared = await prepare(context);
+  const prepared: string | PreparedSim = await prepare(context);
   if (typeof prepared === 'string') {
     return refuse(prepared);
   }
 
-  const overlay = await loadOverlayPoint(
+  const overlay: OverlayPoint = await loadOverlayPoint(
     requireFlag(context, 'overlay'),
     prepared.generation.providerId,
   );
@@ -849,19 +883,23 @@ export const runSim: CommandHandler = async (context) => {
   }
 
   const points: readonly DesignedPoint[] = [{ label: overlay.label, knobs: overlay.knobs }];
-  const wantsJudge =
+  const wantsJudge: boolean =
     !judgeDisabled(context) &&
     (requireFlag(context, 'judge') !== undefined || prepared.config.judge !== undefined);
   let judge: Selection | undefined;
   let materials: JudgeMaterials | undefined;
-  let judgeCallsPerRun = 0;
+  let judgeCallsPerRun: number = 0;
 
   if (wantsJudge) {
-    const selected = judgeSelection(context, prepared.config, prepared.generation);
+    const selected: string | Selection = judgeSelection(
+      context,
+      prepared.config,
+      prepared.generation,
+    );
     if (typeof selected === 'string') {
       return refuse(selected);
     }
-    const loaded = await readJudgeMaterials(
+    const loaded: string | JudgeMaterials = await readJudgeMaterials(
       prepared.genreRoot,
       requireFlag(context, 'genre') ?? 'unknown',
       prepared.scenes,
@@ -874,7 +912,7 @@ export const runSim: CommandHandler = async (context) => {
     judgeCallsPerRun = simDefaults.panel.commonReaderCount * (prepared.scenes.length + 1);
   }
 
-  const estimate = reportEstimate(
+  const estimate: CommandOutcome | undefined = reportEstimate(
     context,
     points,
     judgeCallsPerRun,
@@ -895,22 +933,23 @@ export const runSim: CommandHandler = async (context) => {
 };
 
 export const screenSim: CommandHandler = async (context) => {
-  const prepared = await prepare(context);
+  const prepared: string | PreparedSim = await prepare(context);
   if (typeof prepared === 'string') {
     return refuse(prepared);
   }
 
-  const names = requireFlag(context, 'knobs')
+  const names: string[] | undefined = requireFlag(context, 'knobs')
     ?.split(',')
     .map((name) => name.trim());
-  const selected = names === undefined ? knobRegistry : names.map(findKnob);
+  const selected: readonly KnobSpec[] | (KnobSpec | undefined)[] =
+    names === undefined ? knobRegistry : names.map(findKnob);
 
   if (selected.some((knob) => knob === undefined)) {
     return refuse(`모르는 손잡이가 있습니다: ${names?.join(', ')}`);
   }
 
-  const points = planScreening(selected as typeof knobRegistry);
-  const estimate = reportEstimate(
+  const points: readonly DesignedPoint[] = planScreening(selected as typeof knobRegistry);
+  const estimate: CommandOutcome | undefined = reportEstimate(
     context,
     points,
     0,
@@ -926,12 +965,12 @@ export const screenSim: CommandHandler = async (context) => {
 };
 
 export const sweepSim: CommandHandler = async (context) => {
-  const prepared = await prepare(context);
+  const prepared: string | PreparedSim = await prepare(context);
   if (typeof prepared === 'string') {
     return refuse(prepared);
   }
 
-  const names = requireFlag(context, 'knobs')
+  const names: string[] | undefined = requireFlag(context, 'knobs')
     ?.split(',')
     .map((name) => name.trim());
 
@@ -939,14 +978,16 @@ export const sweepSim: CommandHandler = async (context) => {
     return refuse('--knobs 로 손잡이 넷을 정해 주세요. L9 격자는 넷을 요구합니다.');
   }
 
-  const selected = names.map(findKnob);
+  const selected: (KnobSpec | undefined)[] = names.map(findKnob);
   if (selected.some((knob) => knob === undefined)) {
     return refuse(`모르는 손잡이가 있습니다: ${names.join(', ')}`);
   }
 
-  const knobs = selected as typeof knobRegistry;
-  const levels = new Map(knobs.map((knob) => [knob.id, defaultGridLevels(knob)]));
-  const points = planFractionalGrid(knobs, levels);
+  const knobs: readonly KnobSpec[] = selected as typeof knobRegistry;
+  const levels: Map<string, readonly number[]> = new Map(
+    knobs.map((knob) => [knob.id, defaultGridLevels(knob)]),
+  );
+  const points: readonly DesignedPoint[] = planFractionalGrid(knobs, levels);
 
   if (judgeDisabled(context)) {
     return refuse(
@@ -954,12 +995,12 @@ export const sweepSim: CommandHandler = async (context) => {
     );
   }
 
-  const judge = judgeSelection(context, prepared.config, prepared.generation);
+  const judge: string | Selection = judgeSelection(context, prepared.config, prepared.generation);
   if (typeof judge === 'string') {
     return refuse(judge);
   }
 
-  const materials = await readJudgeMaterials(
+  const materials: string | JudgeMaterials = await readJudgeMaterials(
     prepared.genreRoot,
     requireFlag(context, 'genre') ?? 'unknown',
     prepared.scenes,
@@ -968,8 +1009,9 @@ export const sweepSim: CommandHandler = async (context) => {
     return refuse(materials);
   }
 
-  const judgeCallsPerRun = simDefaults.panel.commonReaderCount * (prepared.scenes.length + 1);
-  const estimate = reportEstimate(
+  const judgeCallsPerRun: number =
+    simDefaults.panel.commonReaderCount * (prepared.scenes.length + 1);
+  const estimate: CommandOutcome | undefined = reportEstimate(
     context,
     points,
     judgeCallsPerRun,
@@ -986,7 +1028,7 @@ export const sweepSim: CommandHandler = async (context) => {
 
 // 같은 지점·같은 생성을 두 엔진 이상으로 돌렸으면 앞 엔진 대비 움직임을 잡음 폭과 함께 보인다.
 function regressionLines(runs: readonly RunRecord[]): readonly string[] {
-  const rows = regressionRows(runs);
+  const rows: readonly RegressionRow[] = regressionRows(runs);
 
   return rows.length === 0
     ? []
@@ -998,67 +1040,73 @@ function scoreKey(point: PointScore): string {
 }
 
 export const reportSim: CommandHandler = async (context) => {
-  const outPath = requireFlag(context, 'out');
+  const outPath: string | undefined = requireFlag(context, 'out');
 
   if (outPath === undefined) {
     return refuse('--out 으로 결과 파일을 지정해 주세요.');
   }
 
-  const runs = await readRuns(outPath);
+  const runs: readonly RunRecord[] = await readRuns(outPath);
 
   if (runs.length === 0) {
     return { ok: true, message: '아직 기록된 실행이 없습니다.', data: { runs: [] } };
   }
 
   // 요금이 0인 모델로 돌았으면 금액으로는 지점을 가를 수 없다. 그때는 토큰이 x축이 된다.
-  const totalUsd = runs.reduce<number | undefined>(
+  const totalUsd: number | undefined = runs.reduce<number | undefined>(
     (total, run) =>
       total === undefined || run.tokens.costUsd === undefined
         ? undefined
         : total + run.tokens.costUsd,
     0,
   );
-  const axis = chooseCostAxis(totalUsd);
-  const scored = scoreRuns(runs, axis);
+  const axis: CostAxis = chooseCostAxis(totalUsd);
+  const scored: readonly PointScore[] = scoreRuns(runs, axis);
   // 유효 회차가 없는 지점은 품질을 모른다. 경계에 올리면 AUC 0 인 지점으로 읽힌다.
-  const frontier = paretoFrontier(scored.filter((point) => point.judged > 0));
-  const frontierKeys = new Set(frontier.map((point) => scoreKey(point as PointScore)));
-  const judgedRuns = scored.reduce((total, point) => total + point.judged, 0);
+  const frontier: readonly ScoredPoint[] = paretoFrontier(
+    scored.filter((point) => point.judged > 0),
+  );
+  const frontierKeys: Set<string> = new Set(frontier.map((point) => scoreKey(point as PointScore)));
+  const judgedRuns: number = scored.reduce((total, point) => total + point.judged, 0);
 
   // 엔진이나 트랙이 다른 기록이 한 파일에 섞이면 같은 지점 이름이 여러 줄 나온다. 어느 것인지 밝힌다.
-  const fingerprints = new Set(scored.map((point) => `${point.engineCommit}@${point.trackCommit}`));
-  const mixed = fingerprints.size > 1;
-  const generations = new Set(scored.map((point) => point.generation));
-  const mixedGeneration = generations.size > 1;
-  const judges = new Set(scored.map((point) => point.judge));
-  const mixedJudge = judges.size > 1;
+  const fingerprints: Set<string> = new Set(
+    scored.map((point) => `${point.engineCommit}@${point.trackCommit}`),
+  );
+  const mixed: boolean = fingerprints.size > 1;
+  const generations: Set<string> = new Set(scored.map((point) => point.generation));
+  const mixedGeneration: boolean = generations.size > 1;
+  const judges: Set<string> = new Set(scored.map((point) => point.judge));
+  const mixedJudge: boolean = judges.size > 1;
 
   // 시험체마다 따로 줄을 세운다. 장르를 섞으면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
-  const genres = [...new Set(scored.map((point) => point.genre))].sort();
-  const lines = genres.flatMap((genre) => [
+  const genres: string[] = [...new Set(scored.map((point) => point.genre))].sort();
+  const lines: string[] = genres.flatMap((genre) => [
     '',
     `[${genre}]`,
     ...scored
       .filter((point) => point.genre === genre)
       .map((point) => {
-        const mark = frontierKeys.has(scoreKey(point)) ? '*' : ' ';
-        const cost = axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
-        const name =
+        const mark: ' ' | '*' = frontierKeys.has(scoreKey(point)) ? '*' : ' ';
+        const cost: string =
+          axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
+        const name: string =
           (mixed
             ? `${point.pointLabel} @${point.engineCommit.slice(0, 7)}/${point.trackCommit.slice(0, 7)}`
             : point.pointLabel) +
           (mixedGeneration ? ` [${point.generation}]` : '') +
           (mixedJudge && point.judge.length > 0 ? ` 심판:${point.judge}` : '');
-        const engagement = point.engagement === undefined ? '' : ` 몰입 ${point.engagement.toFixed(2)}`;
-        const quality =
+        const engagement: string =
+          point.engagement === undefined ? '' : ` 몰입 ${point.engagement.toFixed(2)}`;
+        const quality: string =
           point.judged === 0
             ? `AUC n/a\t${cost}\t회수 n/a`
             : `AUC ${point.auc.toFixed(3)}${engagement}\t${cost}\t회수 ${point.recalled}`;
-        const critic =
+        const critic: string =
           point.critic === undefined
             ? ''
             : `\t비평 ${point.critic.grounded}/20 의견 ${point.critic.opinion}/10 비평관문 ${point.critic.gatePassed}/${point.critic.runs}`;
-        const judgeCost =
+        const judgeCost: string =
           point.judgeCostUsd === undefined || point.judgeCostUsd === 0
             ? ''
             : `\t심판 $${point.judgeCostUsd.toFixed(2)}`;
@@ -1086,21 +1134,28 @@ export const reportSim: CommandHandler = async (context) => {
   };
 };
 
-
 // 저장된 원고를 다른 심판으로 다시 채점한다. 생성은 다시 돌리지 않는다.
 export const rejudgeSim: CommandHandler = async (context) => {
-  const prepared = await prepare(context);
+  const prepared: string | PreparedSim = await prepare(context);
   if (typeof prepared === 'string') {
     return refuse(prepared);
   }
 
-  const point = requireFlag(context, 'point') ?? 'point';
-  const selected = judgeSelection(context, prepared.config, prepared.generation);
+  const point: string = requireFlag(context, 'point') ?? 'point';
+  const selected: string | Selection = judgeSelection(
+    context,
+    prepared.config,
+    prepared.generation,
+  );
   if (typeof selected === 'string') {
     return refuse(selected);
   }
 
-  const materials = await readJudgeMaterials(prepared.genreRoot, prepared.genre, prepared.scenes);
+  const materials: string | JudgeMaterials = await readJudgeMaterials(
+    prepared.genreRoot,
+    prepared.genre,
+    prepared.scenes,
+  );
   if (typeof materials === 'string') {
     return refuse(materials);
   }
@@ -1108,22 +1163,29 @@ export const rejudgeSim: CommandHandler = async (context) => {
     return refuse('축 트랙은 다시 채점하지 않습니다. 연쇄 트랙의 장르를 주세요.');
   }
 
-  const runs = await readRuns(prepared.outPath);
-  const judge = { providerId: selected.providerId, model: selected.model };
-  const engineVersion = context.container.version;
-  const engineCommit = await describeEngine(dirname(process.argv[1] ?? process.cwd()), engineVersion);
-  const sources = rejudgeSources(runs, {
+  const runs: readonly RunRecord[] = await readRuns(prepared.outPath);
+  const judge: Selection = { providerId: selected.providerId, model: selected.model };
+  const engineVersion: string = context.container.version;
+  const engineCommit: string = await describeEngine(
+    dirname(process.argv[1] ?? process.cwd()),
+    engineVersion,
+  );
+  const sources: readonly RejudgeSource[] = rejudgeSources(runs, {
     pointLabel: point,
     engineCommit,
-    ...(requireFlag(context, 'source') === undefined ? {} : { enginePrefix: requireFlag(context, 'source') }),
+    ...(requireFlag(context, 'source') === undefined
+      ? {}
+      : { enginePrefix: requireFlag(context, 'source') }),
     judge,
   });
 
   if (sources.length === 0) {
-    return refuse(`${point} 에 다시 채점할 기록이 없습니다 (원고 자리가 있고 이 심판으로 아직 안 본 것).`);
+    return refuse(
+      `${point} 에 다시 채점할 기록이 없습니다 (원고 자리가 있고 이 심판으로 아직 안 본 것).`,
+    );
   }
 
-  const localRefusal = await refuseMissingLocalModels({
+  const localRefusal: string | undefined = await refuseMissingLocalModels({
     generation: selected,
     localRuntime: prepared.localRuntime,
   });
@@ -1131,18 +1193,26 @@ export const rejudgeSim: CommandHandler = async (context) => {
     return refuse(localRefusal);
   }
 
-  const judgeCalls = sources.length * (simDefaults.panel.commonReaderCount + 1) * (prepared.scenes.length + 2);
-  const plan = [
+  const judgeCalls: number =
+    sources.length * (simDefaults.panel.commonReaderCount + 1) * (prepared.scenes.length + 2);
+  const plan: string[] = [
     `${point} 의 ${sources.length}회를 ${judge.providerId}:${judge.model} 으로 다시 채점합니다.`,
-    ...sources.map((source) => `  ${source.run.runId} (${source.run.engineCommit.slice(0, 7)}, 원고 ${source.draftsDir})`),
+    ...sources.map(
+      (source) =>
+        `  ${source.run.runId} (${source.run.engineCommit.slice(0, 7)}, 원고 ${source.draftsDir})`,
+    ),
     `심판 호출 약 ${judgeCalls.toLocaleString()}회. 생성은 하지 않습니다.`,
   ];
 
   if (!flagBoolean(context.args.flags, 'yes')) {
-    return { ok: true, message: [...plan, '이대로 돌리려면 --yes 를 붙이세요.'].join('\n'), data: { point, sources: sources.length } };
+    return {
+      ok: true,
+      message: [...plan, '이대로 돌리려면 --yes 를 붙이세요.'].join('\n'),
+      data: { point, sources: sources.length },
+    };
   }
 
-  const judgeRegistry =
+  const judgeRegistry: AiProviderRegistry =
     prepared.localRuntime === undefined
       ? context.container.aiProviderRegistry
       : createCliContainer({
@@ -1151,18 +1221,25 @@ export const rejudgeSim: CommandHandler = async (context) => {
           canPrompt: false,
           version: context.container.version,
           localRuntime: {
-            ...(prepared.localRuntime.baseUrl === undefined ? {} : { baseUrl: prepared.localRuntime.baseUrl }),
+            ...(prepared.localRuntime.baseUrl === undefined
+              ? {}
+              : { baseUrl: prepared.localRuntime.baseUrl }),
             ...(prepared.localRuntime.contextTokens === undefined
               ? {}
               : { contextTokens: prepared.localRuntime.contextTokens }),
           },
         }).aiProviderRegistry;
 
-  let done = 0;
+  let done: number = 0;
   for (const source of sources) {
-    const drafts = await readKeptDrafts(join(dirname(prepared.outPath), source.draftsDir), prepared.scenes);
+    const drafts: Map<string, string> = await readKeptDrafts(
+      join(dirname(prepared.outPath), source.draftsDir),
+      prepared.scenes,
+    );
     if (drafts.size === 0) {
-      context.container.logger.warn(`${source.run.runId} · 원고를 찾지 못했습니다: ${source.draftsDir}`);
+      context.container.logger.warn(
+        `${source.run.runId} · 원고를 찾지 못했습니다: ${source.draftsDir}`,
+      );
       continue;
     }
 
@@ -1183,12 +1260,12 @@ export const rejudgeSim: CommandHandler = async (context) => {
         draftsDir: source.draftsDir,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message: string = error instanceof Error ? error.message : String(error);
       context.container.logger.warn(`${source.run.runId} · 심판 실패: ${message}`);
       verdict = { discarded: true, discardReasons: [`심판 실패: ${message}`] };
     }
 
-    const record = rejudgedRecord(source.run, {
+    const record: RunRecord = rejudgedRecord(source.run, {
       engineCommit,
       engineVersion,
       judge,
@@ -1201,7 +1278,9 @@ export const rejudgeSim: CommandHandler = async (context) => {
       `${record.runId}` +
         (record.auc === undefined ? ' · 폐기' : ` · AUC ${record.auc.toFixed(3)}`) +
         (record.recalled === undefined ? '' : ` · 회수 ${record.recalled}/${record.recallTotal}`) +
-        (record.judgeTokens?.costUsd === undefined ? '' : ` · 심판 $${record.judgeTokens.costUsd.toFixed(2)}`),
+        (record.judgeTokens?.costUsd === undefined
+          ? ''
+          : ` · 심판 $${record.judgeTokens.costUsd.toFixed(2)}`),
     );
   }
 
@@ -1217,7 +1296,7 @@ async function readKeptDrafts(
   directory: string,
   scenes: readonly TrackScene[],
 ): Promise<Map<string, string>> {
-  const drafts = new Map<string, string>();
+  const drafts: Map<string, string> = new Map<string, string>();
   for (const scene of scenes) {
     try {
       drafts.set(scene.sceneStem, await readFile(join(directory, `${scene.sceneStem}.md`), 'utf8'));
@@ -1229,15 +1308,15 @@ async function readKeptDrafts(
 }
 
 export const applySim: CommandHandler = async (context) => {
-  const outPath = requireFlag(context, 'out');
-  const point = requireFlag(context, 'point');
+  const outPath: string | undefined = requireFlag(context, 'out');
+  const point: string | undefined = requireFlag(context, 'point');
 
   if (outPath === undefined || point === undefined) {
     return refuse('--out 과 --point 를 모두 지정해 주세요.');
   }
 
-  const runs = (await readRuns(outPath)).filter((run) => run.pointLabel === point);
-  const judged = runs.filter(isJudged);
+  const runs: RunRecord[] = (await readRuns(outPath)).filter((run) => run.pointLabel === point);
+  const judged: RunRecord[] = runs.filter(isJudged);
 
   if (runs.length === 0) {
     return refuse(`${point} 의 실행 기록이 없습니다.`);
@@ -1250,8 +1329,8 @@ export const applySim: CommandHandler = async (context) => {
     );
   }
 
-  const knobs = runs[0]?.knobs ?? {};
-  const wrongTarget = Object.keys(knobs).filter(
+  const knobs: Readonly<Record<string, number>> = runs[0]?.knobs ?? {};
+  const wrongTarget: string[] = Object.keys(knobs).filter(
     (id) => findKnob(id)?.applyTarget !== 'modelProfile',
   );
 
@@ -1271,14 +1350,14 @@ export const applySim: CommandHandler = async (context) => {
     return refuse(`프로필 칸으로 옮길 수 없는 손잡이가 있습니다: ${unsupported.join(', ')}`);
   }
 
-  const generation = runs[0]?.generation as RunRecord['generation'];
-  const key = `${generation.providerId}:${generation.model}`;
-  const judge = judged[0]?.judge;
-  const measured = measurementFor(judged, {
+  const generation: RunRecord['generation'] = runs[0]?.generation as RunRecord['generation'];
+  const key: string = `${generation.providerId}:${generation.model}`;
+  const judge: RunRecord['judge'] = judged[0]?.judge;
+  const measured: ProfileMeasurement = measurementFor(judged, {
     date: new Date().toISOString().slice(0, 10),
     ...(judge === undefined ? {} : { judge: `${judge.providerId}:${judge.model}` }),
   });
-  const plan = [
+  const plan: string[] = [
     `${point} 를 ${key} 프로필에 적습니다.`,
     ...Object.entries(fields).map(([id, value]) => `  ${id} = ${JSON.stringify(value)}`),
     `  measured = ${JSON.stringify(measured)}`,
@@ -1292,7 +1371,8 @@ export const applySim: CommandHandler = async (context) => {
     };
   }
 
-  const profilesPath = requireFlag(context, 'profiles') ?? (await findModelProfilesFile());
+  const profilesPath: string | undefined =
+    requireFlag(context, 'profiles') ?? (await findModelProfilesFile());
 
   if (profilesPath === undefined) {
     return refuse(
@@ -1300,7 +1380,7 @@ export const applySim: CommandHandler = async (context) => {
     );
   }
 
-  const result = await writeModelProfile(profilesPath, key, fields, measured, {
+  const result: ProfileWriteResult = await writeModelProfile(profilesPath, key, fields, measured, {
     force: flagBoolean(context.args.flags, 'force'),
   });
 
@@ -1315,17 +1395,36 @@ export const applySim: CommandHandler = async (context) => {
 
   return {
     ok: true,
-    message: [...plan, `적었습니다: ${profilesPath}`, '검토 후 커밋하세요. 이 파일은 엔진 소스입니다.'].join('\n'),
-    data: { point, key, fields, measured, file: profilesPath, runs: runs.length, judged: judged.length },
+    message: [
+      ...plan,
+      `적었습니다: ${profilesPath}`,
+      '검토 후 커밋하세요. 이 파일은 엔진 소스입니다.',
+    ].join('\n'),
+    data: {
+      point,
+      key,
+      fields,
+      measured,
+      file: profilesPath,
+      runs: runs.length,
+      judged: judged.length,
+    },
   };
 };
 
 // 실행 파일(dist/index.mjs) 자리에서 위로 올라가며 엔진 저장소의 프로필 파일을 찾는다.
 async function findModelProfilesFile(): Promise<string | undefined> {
-  let directory = dirname(process.argv[1] ?? process.cwd());
+  let directory: string = dirname(process.argv[1] ?? process.cwd());
 
-  for (let depth = 0; depth < 6; depth += 1) {
-    const candidate = join(directory, 'packages', 'story-ai', 'src', 'contracts', 'modelProfiles.params.json');
+  for (let depth: number = 0; depth < 6; depth += 1) {
+    const candidate: string = join(
+      directory,
+      'packages',
+      'story-ai',
+      'src',
+      'contracts',
+      'modelProfiles.params.json',
+    );
     try {
       await readFile(candidate, 'utf8');
       return candidate;

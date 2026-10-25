@@ -4,12 +4,16 @@ import {
   pointOfViewLabels,
   serializeCard,
   validateGenerationContract,
+  type CharacterRole,
+  type ProjectSetting,
   type SceneListItem,
+  type StoryboardProject,
   type StoryUri,
 } from '@storyboard/story-model';
 
 import { cardCategories, type CardCategory } from './catalog';
 import type { CommandHandler } from './outcome';
+import type { CardReading, DraftReading } from '@storyboard/story-app';
 
 const draftStatusLabels: Readonly<Record<SceneListItem['status'], string>> = {
   missing: '초안 없음',
@@ -23,7 +27,7 @@ const cardCategoryLabels: Readonly<Record<CardCategory, string>> = {
 };
 
 export const listScenes: CommandHandler = async ({ container }) => {
-  const scenes = await container.drafts.listScenes(container.workspaceRoot);
+  const scenes: SceneListItem[] = await container.drafts.listScenes(container.workspaceRoot);
 
   if (scenes.length === 0) {
     return { ok: true, message: '씬 카드가 없습니다.', data: { scenes: [] } };
@@ -45,9 +49,17 @@ export const listScenes: CommandHandler = async ({ container }) => {
   };
 };
 
+interface CardListRow {
+  readonly category: CardCategory;
+  readonly id: string;
+  readonly name: string | null;
+  readonly role: CharacterRole | null;
+  readonly error: string | null;
+}
+
 export const listCards: CommandHandler = async ({ container, args }) => {
-  const requested = args.positionals[0];
-  const categories = cardCategories.filter(
+  const requested: string | undefined = args.positionals[0];
+  const categories: CardCategory[] = cardCategories.filter(
     (category) => requested === undefined || category === requested,
   );
 
@@ -58,7 +70,7 @@ export const listCards: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const cards = (
+  const cards: CardListRow[] = (
     await Promise.all(
       categories.map(async (category) =>
         (await container.cards.list(container.workspaceRoot, category)).map((summary) => ({
@@ -90,13 +102,13 @@ export const listCards: CommandHandler = async ({ container, args }) => {
 };
 
 export const showCard: CommandHandler = async ({ container, args }) => {
-  const id = args.positionals[0];
+  const id: string | undefined = args.positionals[0];
 
   if (id === undefined) {
     return { ok: false, message: '카드 id 를 지정해 주세요: storyboard card show <id>' };
   }
 
-  const reading = await container.cards.read(container.workspaceRoot, id);
+  const reading: CardReading | undefined = await container.cards.read(container.workspaceRoot, id);
 
   if (reading === undefined) {
     return { ok: false, message: `카드를 찾을 수 없습니다: ${id}` };
@@ -120,13 +132,16 @@ export const showCard: CommandHandler = async ({ container, args }) => {
 
 // 본문만 stdout 으로 낸다 — 다른 도구로 바로 넘길 수 있게. 경로와 생성 정보는 --json 에 있다.
 export const showDraft: CommandHandler = async ({ container, args }) => {
-  const stem = args.positionals[0]?.replace(/\.card$/, '');
+  const stem: string | undefined = args.positionals[0]?.replace(/\.card$/, '');
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요: storyboard draft show <stem>' };
   }
 
-  const reading = await container.drafts.readDraft(container.workspaceRoot, stem);
+  const reading: DraftReading | undefined = await container.drafts.readDraft(
+    container.workspaceRoot,
+    stem,
+  );
 
   if (reading === undefined) {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
@@ -151,8 +166,8 @@ export const showDraft: CommandHandler = async ({ container, args }) => {
 };
 
 export const showProject: CommandHandler = async ({ container }) => {
-  const project = await container.novel.readProject(container.workspaceRoot);
-  const setting = project.setting;
+  const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
+  const setting: ProjectSetting | undefined = project.setting;
   const { missing } = validateGenerationContract(setting);
   const rows: readonly (readonly [string, string | number | undefined])[] = [
     [contractFieldLabels.genre, setting?.genre],

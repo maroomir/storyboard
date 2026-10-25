@@ -7,9 +7,14 @@ import {
   STORYBOARD_RELATIVE_PATHS,
   getStoryboardProjectPaths,
   usageCacheHitRate,
+  type ProviderModelOptions,
 } from '@storyboard/story-model';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
-import { migrateLegacyMemory, type IStoryboardLogger } from '@storyboard/story-engine';
+import {
+  migrateLegacyMemory,
+  type IStoryboardLogger,
+  type UsageMeterSession,
+} from '@storyboard/story-engine';
 
 import {
   flagBoolean,
@@ -17,16 +22,20 @@ import {
   isParseFailure,
   parseArguments,
   resolveVerb,
+  type ParsedArguments,
+  type ParseFailure,
+  type RawArguments,
 } from '@/cliArguments';
 import type { LiveArea } from '@/adapters/liveArea';
 import type { PauseRequests } from '@/adapters/pauseRequests';
 import type { IPrompter } from '@/adapters/prompter';
 import { LineRunProgress, RailRunProgress, type IRunProgress } from '@/adapters/runProgress';
-import { createCliContainer } from '@/container';
+import { createCliContainer, type CliContainer } from '@/container';
 import {
   createTerminalProfile,
   plainTerminalFacts,
   type TerminalFacts,
+  type TerminalProfile,
   type TerminalStream,
 } from '@/terminal/profile';
 import { diffSentences, renderSentenceDiff } from '@/terminal/diff';
@@ -40,20 +49,22 @@ import {
   renderUnknownFlag,
   renderUsage,
 } from '@/help';
-import { findCommandSpec } from './catalog';
+import { findCommandSpec, type CommandSpec } from './catalog';
 import {
   completionShells,
   computeCompletions,
   formatCompletions,
   renderCompletionScript,
+  type Completion,
 } from './completion';
 import { commands } from './index';
-import type { CommandOutcome } from './outcome';
+import type { CommandHandler, CommandOutcome } from './outcome';
 import { markOutcome, renderNextStep } from './outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
+import type { ResourceOverrideReport, WorkspaceHoldResult } from '@storyboard/story-app';
 
 // 설정 파일을 쓰는 verb 는 이 셋뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
-const configWritingVerbs = new Set(['setup', 'config set', 'config unset']);
+const configWritingVerbs: Set<string> = new Set(['setup', 'config set', 'config unset']);
 
 function resolveConfigWriteTarget(
   isGlobal: boolean,
@@ -96,6 +107,12 @@ export interface DispatchResult {
   readonly launchTui?: boolean;
   // Dollars the run spent, for the interactive screen's /cost.
   readonly costUsd?: number;
+}
+
+interface RunUsageReaders {
+  readCostUsd: () => number;
+  readUnpricedTokens: () => number;
+  readCacheHitRate: () => number | undefined;
 }
 
 interface OutputMode {
@@ -143,7 +160,7 @@ function validateProvider(
     return `알 수 없는 프로바이더: ${provider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
   }
 
-  const catalog = storyboardModelCatalog[provider as AiProviderId];
+  const catalog: ProviderModelOptions = storyboardModelCatalog[provider as AiProviderId];
 
   // 로컬 런타임의 모델 목록은 기계마다 다르다. 카탈로그는 제안이고 진짜 목록은 ollama 가 갖는다.
   if (
@@ -163,10 +180,10 @@ function validateProvider(
 // The command line as typed, minus the verb's words: arguments and flags with their values keep
 // their order, which the parsed form (flags in a map) has lost.
 function removeVerbWords(argv: readonly string[], verbWords: readonly string[]): string[] {
-  const rest = [...argv];
+  const rest: string[] = [...argv];
 
   for (const word of verbWords) {
-    const index = rest.indexOf(word);
+    const index: number = rest.indexOf(word);
     if (index !== -1) {
       rest.splice(index, 1);
     }
@@ -183,14 +200,14 @@ export async function dispatch(
   // The shell hands over the half-typed line verbatim, so it must not go through the parser,
   // which would reject the partial flag the author is in the middle of typing.
   if (argv[0] === '__complete') {
-    const completions = computeCompletions(argv.slice(1), { cwd: deps.cwd });
-    const text = formatCompletions(completions);
+    const completions: Completion[] = computeCompletions(argv.slice(1), { cwd: deps.cwd });
+    const text: string = formatCompletions(completions);
     return { exitCode: 0, stdout: text.length > 0 ? `${text}\n` : '', stderr: '' };
   }
 
-  const parsed = parseArguments(argv);
+  const parsed: RawArguments | ParseFailure = parseArguments(argv);
   const mode: OutputMode = { json: argv.includes('--json') };
-  const terminal = createTerminalProfile(deps.terminal ?? plainTerminalFacts, {
+  const terminal: TerminalProfile = createTerminalProfile(deps.terminal ?? plainTerminalFacts, {
     hasNoColorFlag: argv.includes('--no-color'),
     isJsonOutput: mode.json,
   });
@@ -206,13 +223,18 @@ export async function dispatch(
   }
 
   // `help <verb>` and `tui` are not handlers, but they must resolve as verbs.
-  const args = resolveVerb(parsed, [...Object.keys(commands), 'help', 'tui', 'completion']);
+  const args: ParsedArguments = resolveVerb(parsed, [
+    ...Object.keys(commands),
+    'help',
+    'tui',
+    'completion',
+  ]);
 
   if (flagBoolean(args.flags, 'version')) {
     return { exitCode: 0, stdout: `${deps.version}\n`, stderr: '' };
   }
 
-  const verb = args.path.join(' ');
+  const verb: string = args.path.join(' ');
 
   if (
     verb === 'tui' ||
@@ -223,16 +245,16 @@ export async function dispatch(
 
   // Bare `storyboard` and `--help` are entry points, not mistakes: usage goes to stdout, exit 0.
   if (args.path.length === 0 || verb === 'help') {
-    const topic = verb === 'help' ? args.positionals.join(' ') : '';
+    const topic: string = verb === 'help' ? args.positionals.join(' ') : '';
 
     if (topic.length > 0) {
-      const topicHelp = renderHelpTopic(topic, terminal.stdout);
+      const topicHelp: string | undefined = renderHelpTopic(topic, terminal.stdout);
       return topicHelp === undefined
         ? failure(renderUnknownCommand(topic), mode, terminal.stderr)
         : { exitCode: 0, stdout: topicHelp, stderr: '' };
     }
 
-    const usage = flagBoolean(args.flags, 'all')
+    const usage: string = flagBoolean(args.flags, 'all')
       ? renderFullUsage(deps.version, terminal.stdout)
       : renderUsage(deps.version, terminal.stdout);
     return { exitCode: 0, stdout: usage, stderr: '' };
@@ -241,7 +263,7 @@ export async function dispatch(
   // `eval "$(storyboard completion zsh)"` runs on every shell start, so it must stay a pure
   // print: no container, no config read, nothing on stderr.
   if (verb === 'completion') {
-    const script = renderCompletionScript(args.positionals[0] ?? '');
+    const script: string | undefined = renderCompletionScript(args.positionals[0] ?? '');
     return script === undefined
       ? failure(
           `셸을 지정해 주세요: storyboard completion <${completionShells.join('|')}>`,
@@ -251,7 +273,7 @@ export async function dispatch(
       : { exitCode: 0, stdout: script, stderr: '' };
   }
 
-  const handler = commands[verb];
+  const handler: CommandHandler | undefined = commands[verb];
 
   if (!handler) {
     return failure(
@@ -272,7 +294,7 @@ export async function dispatch(
 
   // `config set` names its provider in the key, so its --model is the value it saves, which the
   // verb checks itself — not a model for this run.
-  const providerFailure =
+  const providerFailure: string | undefined =
     verb === 'config set'
       ? undefined
       : validateProvider(flagString(args.flags, 'provider'), flagString(args.flags, 'model'));
@@ -295,14 +317,16 @@ export async function dispatch(
     return failure(providerFailure, mode, terminal.stderr);
   }
 
-  const workspacePath = resolve(deps.cwd, flagString(args.flags, 'workspace') ?? '.');
-  const spec = findCommandSpec(verb);
-  const needsWorkspace = spec?.needsWorkspace !== false;
-  const isWorkspace = existsSync(join(workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson));
+  const workspacePath: string = resolve(deps.cwd, flagString(args.flags, 'workspace') ?? '.');
+  const spec: CommandSpec | undefined = findCommandSpec(verb);
+  const needsWorkspace: boolean = spec?.needsWorkspace !== false;
+  const isWorkspace: boolean = existsSync(
+    join(workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson),
+  );
 
   // NOTE: git 과 같은 규칙 — 설정은 지금 있는 작품에 저장하고, 모든 작품에 걸려면 --global 을
   // 명시한다. 작품 밖에서 플래그 없이 부르면 어디에 쓰는지 모호하므로 거부한다.
-  const configWriteTarget = configWritingVerbs.has(verb)
+  const configWriteTarget: ConfigurationTarget | undefined = configWritingVerbs.has(verb)
     ? resolveConfigWriteTarget(flagBoolean(args.flags, 'global'), isWorkspace)
     : undefined;
 
@@ -326,16 +350,16 @@ export async function dispatch(
     );
   }
 
-  const reviseIterations = flagString(args.flags, 'revise-iterations');
-  const showProgress =
+  const reviseIterations: string | undefined = flagString(args.flags, 'revise-iterations');
+  const showProgress: boolean =
     flagBoolean(args.flags, 'verbose') ||
     (deps.isInteractive && !mode.json && !flagBoolean(args.flags, 'quiet'));
-  const logger = deps.createLogger(
+  const logger: IStoryboardLogger = deps.createLogger(
     showProgress,
     terminal.stderr.theme,
     flagBoolean(args.flags, 'verbose'),
   );
-  const usageSession = {
+  const usageSession: RunUsageReaders = {
     readCostUsd: (): number => 0,
     readUnpricedTokens: (): number => 0,
     readCacheHitRate: (): number | undefined => undefined,
@@ -350,7 +374,7 @@ export async function dispatch(
           readCacheHitRate: () => usageSession.readCacheHitRate(),
         })
       : new LineRunProgress(logger);
-  const container = createCliContainer({
+  const container: CliContainer = createCliContainer({
     workspacePath,
     logger,
     progress,
@@ -376,32 +400,34 @@ export async function dispatch(
       getStoryboardProjectPaths(container.workspaceRoot),
     );
 
-    const resources = await container.loadResourceOverrides();
+    const resources: ResourceOverrideReport = await container.loadResourceOverrides();
     for (const problem of resources.problems) {
       container.logger.warn(problem.message);
     }
   }
 
   // Only a person reads a diff; it is skipped for pipes, --json and --quiet.
-  const shouldShowDraftChanges =
+  const shouldShowDraftChanges: boolean =
     spec?.rewritesDraft === true &&
     terminal.stderr.isTty &&
     !mode.json &&
     !flagBoolean(args.flags, 'quiet');
-  const draftStem = args.positionals[0]?.replace(/\.card$/, '');
+  const draftStem: string | undefined = args.positionals[0]?.replace(/\.card$/, '');
   const readDraftBody = async (): Promise<string | undefined> =>
     draftStem === undefined
       ? undefined
       : (await container.drafts.readDraft(container.workspaceRoot, draftStem))?.draft.body;
-  const draftBefore = shouldShowDraftChanges ? await readDraftBody() : undefined;
+  const draftBefore: string | undefined = shouldShowDraftChanges
+    ? await readDraftBody()
+    : undefined;
 
-  const meter = container.usageMeter.startSession();
-  usageSession.readCostUsd = () => meter.reading().costUsd;
-  usageSession.readUnpricedTokens = () =>
+  const meter: UsageMeterSession = container.usageMeter.startSession();
+  usageSession.readCostUsd = (): number => meter.reading().costUsd;
+  usageSession.readUnpricedTokens = (): number =>
     meter.reading().hasUnpricedUsage ? meter.reading().tokens : 0;
-  usageSession.readCacheHitRate = () => usageCacheHitRate(meter.reading());
+  usageSession.readCacheHitRate = (): number | undefined => usageCacheHitRate(meter.reading());
 
-  const outcome = await runReportingProgress(progress, () =>
+  const outcome: CommandOutcome = await runReportingProgress(progress, () =>
     spec?.writesWorkspace === true
       ? runHoldingWorkspaceLock(container, verb, () =>
           handler({ container, args, stdout: terminal.stdout }),
@@ -411,8 +437,8 @@ export async function dispatch(
   meter.stop();
 
   // `init` makes the workspace rather than writing one under the lock, but it is the first action.
-  const isAction = spec?.writesWorkspace === true || verb === 'init';
-  const markedMessage = markOutcome(
+  const isAction: boolean = spec?.writesWorkspace === true || verb === 'init';
+  const markedMessage: string = markOutcome(
     outcome.message,
     {
       ok: outcome.ok,
@@ -422,10 +448,10 @@ export async function dispatch(
     },
     terminal.stdout,
   );
-  const stdout = mode.json
+  const stdout: string = mode.json
     ? reportText(outcome, mode)
     : `${terminal.stdout.isTty ? linkFilePaths(markedMessage, existsSync) : markedMessage}\n`;
-  const shouldSuggestNextStep =
+  const shouldSuggestNextStep: boolean =
     outcome.ok &&
     outcome.stop === undefined &&
     isAction &&
@@ -433,7 +459,7 @@ export async function dispatch(
     terminal.stderr.isTty &&
     !flagBoolean(args.flags, 'quiet');
 
-  const draftChanges =
+  const draftChanges: string =
     outcome.ok && draftBefore !== undefined && draftStem !== undefined
       ? renderDraftChanges(draftStem, draftBefore, await readDraftBody(), terminal.stderr)
       : '';
@@ -490,7 +516,11 @@ async function runHoldingWorkspaceLock(
   verb: string,
   run: () => Promise<CommandOutcome>,
 ): Promise<CommandOutcome> {
-  const held = await container.runGate.hold(container.workspaceRoot, `storyboard ${verb}`, run);
+  const held: WorkspaceHoldResult<CommandOutcome> = await container.runGate.hold(
+    container.workspaceRoot,
+    `storyboard ${verb}`,
+    run,
+  );
 
   if (!held.ok) {
     return {

@@ -16,8 +16,8 @@ export interface RawArguments {
 // Which flags take a value comes from the catalog, so `--help` and the parser can never disagree.
 // Without the boolean list a boolean flag would swallow the token after it — `draft generate
 // --json 01-a` would lose the scene and silently leave JSON mode off.
-const booleanFlags = booleanFlagNames;
-const valueFlags = valueFlagNames;
+const booleanFlags: ReadonlySet<string> = booleanFlagNames;
+const valueFlags: ReadonlySet<string> = valueFlagNames;
 
 // The two short forms every CLI is expected to honour.
 const shortFlags: Readonly<Record<string, string>> = { '-h': '--help', '-v': '--version' };
@@ -35,8 +35,8 @@ export function parseArguments(argv: readonly string[]): RawArguments | ParseFai
   const words: string[] = [];
   const flags: Record<string, string | boolean> = {};
 
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = shortFlags[argv[index] ?? ''] ?? argv[index] ?? '';
+  for (let index: number = 0; index < argv.length; index += 1) {
+    const token: string = shortFlags[argv[index] ?? ''] ?? argv[index] ?? '';
 
     if (!token.startsWith('--')) {
       words.push(token);
@@ -62,7 +62,7 @@ export function parseArguments(argv: readonly string[]): RawArguments | ParseFai
       continue;
     }
 
-    const next = argv[index + 1];
+    const next: string | undefined = argv[index + 1];
 
     if (next === undefined || next.startsWith('--')) {
       return { message: `--${name} 에 값이 필요합니다.` };
@@ -78,8 +78,8 @@ export function parseArguments(argv: readonly string[]): RawArguments | ParseFai
 // Longest verb wins: `draft check grammar 01-a` resolves to the two-word verb and leaves the kind
 // and the stem as positionals.
 export function resolveVerb(raw: RawArguments, verbs: readonly string[]): ParsedArguments {
-  for (let length = Math.min(3, raw.words.length); length > 0; length -= 1) {
-    const candidate = raw.words.slice(0, length).join(' ');
+  for (let length: number = Math.min(3, raw.words.length); length > 0; length -= 1) {
+    const candidate: string = raw.words.slice(0, length).join(' ');
 
     if (verbs.includes(candidate)) {
       return {
@@ -103,7 +103,7 @@ export function isParseFailure(parsed: RawArguments | ParseFailure): parsed is P
 }
 
 function splitFlag(token: string): [string, string | undefined] {
-  const separator = token.indexOf('=');
+  const separator: number = token.indexOf('=');
   return separator === -1
     ? [token, undefined]
     : [token.slice(0, separator), token.slice(separator + 1)];
@@ -113,7 +113,7 @@ export function flagString(
   flags: Readonly<Record<string, string | boolean>>,
   name: string,
 ): string | undefined {
-  const value = flags[name];
+  const value: string | boolean | undefined = flags[name];
   return typeof value === 'string' ? value : undefined;
 }
 

@@ -3,23 +3,25 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { describeNextStep, nextStepCommands } from '@/commands/status';
-import { useTuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
-const progressBarWidth = 24;
+const progressBarWidth: number = 24;
 
 export interface DashboardProps {
   readonly status: WorkspaceStatus;
 }
 
 // Fresh drafts over scenes: a draft older than its card does not count as done.
-export function describeDraftProgress(status: WorkspaceStatus): {
+export interface DraftProgress {
   readonly done: number;
   readonly total: number;
   readonly bar: string;
-} {
-  const total = status.scenes.total;
-  const done = Math.min(status.drafts.ready, total);
-  const filled = total === 0 ? 0 : Math.round((done / total) * progressBarWidth);
+}
+
+export function describeDraftProgress(status: WorkspaceStatus): DraftProgress {
+  const total: number = status.scenes.total;
+  const done: number = Math.min(status.drafts.ready, total);
+  const filled: number = total === 0 ? 0 : Math.round((done / total) * progressBarWidth);
 
   return { done, total, bar: `${'█'.repeat(filled)}${'░'.repeat(progressBarWidth - filled)}` };
 }
@@ -39,10 +41,11 @@ function describeManuscript({ manuscript }: WorkspaceStatus): string {
 // The home screen: how far the work is, and the one command that moves it forward — the same step
 // `storyboard status` names, written as it is typed at this prompt.
 export function Dashboard({ status }: DashboardProps): React.ReactElement {
-  const theme = useTuiTheme();
-  const progress = describeDraftProgress(status);
-  const command = nextStepCommands[status.nextStep];
-  const percent = progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100);
+  const theme: TuiTheme = useTuiTheme();
+  const progress: DraftProgress = describeDraftProgress(status);
+  const command: string | undefined = nextStepCommands[status.nextStep];
+  const percent: number =
+    progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100);
 
   return (
     <Box flexDirection="column" borderStyle="round" borderColor={theme.muted} paddingX={1}>

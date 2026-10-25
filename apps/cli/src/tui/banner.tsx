@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { canShowWordmark, storyboardTagline, storyboardWordmark } from '@/terminal/banner';
-import { useTuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface BannerProps {
   readonly version: string;
@@ -11,7 +11,7 @@ export interface BannerProps {
 
 // The wordmark when it fits, otherwise one bold line: a narrow terminal still knows what it opened.
 export function Banner(props: BannerProps): React.ReactElement {
-  const theme = useTuiTheme();
+  const theme: TuiTheme = useTuiTheme();
   if (!canShowWordmark(props.columns)) {
     return (
       <Box paddingX={1}>

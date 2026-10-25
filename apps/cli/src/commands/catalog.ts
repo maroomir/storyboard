@@ -20,7 +20,18 @@ export type CommandGroup =
 
 // 어느 verb 에나 붙는 옵션. 최상위 도움말·verb 도움말·자동완성이 같은 목록을 봐야 «있다고 적혀
 // 있는데 완성되지 않는» 옵션이 생기지 않는다.
-export const globalFlagNames = [
+export type GlobalFlagName =
+  | 'workspace'
+  | 'provider'
+  | 'model'
+  | 'json'
+  | 'quiet'
+  | 'verbose'
+  | 'no-color'
+  | 'help'
+  | 'version';
+
+export const globalFlagNames: readonly GlobalFlagName[] = [
   'workspace',
   'provider',
   'model',
@@ -30,34 +41,46 @@ export const globalFlagNames = [
   'no-color',
   'help',
   'version',
-] as const;
+];
 
 // verb 도움말 아래에 늘 붙는 짧은 목록.
-export const sharedFlagNames = ['workspace', 'json', 'quiet', 'verbose'] as const;
+export const sharedFlagNames: readonly GlobalFlagName[] = ['workspace', 'json', 'quiet', 'verbose'];
 
-export const completionShells = ['zsh', 'bash', 'fish'] as const;
+export type CompletionShell = 'zsh' | 'bash' | 'fish';
 
-export type CompletionShell = (typeof completionShells)[number];
+export const completionShells: readonly CompletionShell[] = ['zsh', 'bash', 'fish'];
 
-export const initLanguages = ['ko', 'en', 'ja'] as const;
+export type InitLanguage = 'ko' | 'en' | 'ja';
+
+export const initLanguages: readonly InitLanguage[] = ['ko', 'en', 'ja'];
 
 // 종류는 명령 이름이 아니라 첫 인자다. usage 의 <type>·<kind> 칸, 핸들러의 검사, 자동완성이 같은
 // 목록을 본다.
-export const cardCategories = ['character', 'background'] as const;
+export type CardCategory = 'character' | 'background';
 
-export type CardCategory = (typeof cardCategories)[number];
+export const cardCategories: readonly CardCategory[] = ['character', 'background'];
 
 export { draftCheckKinds, type DraftCheckKind } from '@storyboard/story-engine';
 
-export const noteSources = ['notion'] as const;
+export type NoteSource = 'notion';
+
+export const noteSources: readonly NoteSource[] = ['notion'];
+
+export const defaultNoteSource: NoteSource = 'notion';
 
 // `config show` 가 프로바이더마다 보여 주는 칸과, `config set` 이 실제로 쓸 수 있는 칸. 두 목록이
 // 다른 것은 뜻이 있어서다 — 보여 주기만 하는 값이 있다.
-export const displayedProviderKeys = ['model', 'baseUrl', 'contextTokens'] as const;
+export type ProviderKey = 'model' | 'baseUrl' | 'contextTokens';
 
-export const settableProviderKeys = ['model', 'baseUrl', 'contextTokens'] as const;
+export type SettableProviderKey = ProviderKey;
 
-export type SettableProviderKey = (typeof settableProviderKeys)[number];
+export const displayedProviderKeys: readonly ProviderKey[] = ['model', 'baseUrl', 'contextTokens'];
+
+export const settableProviderKeys: readonly SettableProviderKey[] = [
+  'model',
+  'baseUrl',
+  'contextTokens',
+];
 
 export const commandGroups: readonly CommandGroup[] = [
   '시작하기',
@@ -83,7 +106,7 @@ export const commandGroupIds: Readonly<Record<CommandGroup, string>> = {
 };
 
 export function findCommandGroup(topic: string): CommandGroup | undefined {
-  const needle = topic.trim().toLowerCase();
+  const needle: string = topic.trim().toLowerCase();
   return commandGroups.find((group) => group === needle || commandGroupIds[group] === needle);
 }
 
