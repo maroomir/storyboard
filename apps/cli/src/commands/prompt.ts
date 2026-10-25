@@ -32,7 +32,7 @@ export async function askSecret(prompt: string): Promise<string> {
   stdin.setEncoding('utf8');
 
   return new Promise((resolve) => {
-    let value: string = '';
+    let typedSecret: string = '';
 
     const cleanup = (): void => {
       stdin.off('data', onData);
@@ -50,14 +50,14 @@ export async function askSecret(prompt: string): Promise<string> {
         if (char === '\r' || char === '\n') {
           cleanup();
           process.stderr.write('\n');
-          resolve(value);
+          resolve(typedSecret);
           return;
         }
         if (char === deleteChar || char === '\b') {
-          value = value.slice(0, -1);
+          typedSecret = typedSecret.slice(0, -1);
           continue;
         }
-        value += char;
+        typedSecret += char;
       }
     };
 

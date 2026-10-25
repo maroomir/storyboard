@@ -212,7 +212,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
       return cancelledBeforeRun;
     }
 
-    const result: GenerateAllDraftsResult = await container.drafts.generateAll({
+    const batchGeneration: GenerateAllDraftsResult = await container.drafts.generateAll({
       shouldPause: container.pauseRequests.watch(),
       onProgress: (progress) => {
         const step: string = describeBatchStep(progress);
@@ -224,11 +224,16 @@ const generateScene: CommandHandler = async ({ container, args }) => {
       },
     });
 
-    if (!result.ok) {
-      return { ok: false, message: describeBatchFailure(result.kind), data: result };
+    if (!batchGeneration.ok) {
+      return {
+        ok: false,
+        message: describeBatchFailure(batchGeneration.kind),
+        data: batchGeneration,
+      };
     }
 
-    const { cacheHits, failureLabels, failures, generated, pausedWithRemaining } = result.summary;
+    const { cacheHits, failureLabels, failures, generated, pausedWithRemaining } =
+      batchGeneration.summary;
 
     if (pausedWithRemaining !== undefined) {
       return {
@@ -236,7 +241,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
         message:
           `멈췄습니다: 생성 ${generated}건, 남은 씬 ${pausedWithRemaining}개. ` +
           '다시 실행하면 남은 씬부터 이어 갑니다.',
-        data: result.summary,
+        data: batchGeneration.summary,
         stop: 'paused',
       };
     }
@@ -247,7 +252,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
         failures === 0
           ? `초안 ${generated}건 생성, ${cacheHits}건은 입력이 같아 그대로 둡니다.`
           : `${failures}건 실패 (생성 ${generated}건, 캐시 ${cacheHits}건): ${failureLabels.join(', ')}`,
-      data: result.summary,
+      data: batchGeneration.summary,
     };
   }
 
@@ -259,7 +264,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result: GenerateDraftResult = await container.drafts.generate({
+  const draftGeneration: GenerateDraftResult = await container.drafts.generate({
     sceneUri: sceneUriFor(container.workspaceRoot, stem),
     force: flagBoolean(args.flags, 'force'),
     onPipelineProgress: (stage, current, total) => {
@@ -268,11 +273,15 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     },
   });
 
-  if (!result.ok) {
-    return { ok: false, message: result.kind === 'failed' ? result.message : '취소했습니다.' };
+  if (!draftGeneration.ok) {
+    return {
+      ok: false,
+      message: draftGeneration.kind === 'failed' ? draftGeneration.message : '취소했습니다.',
+    };
   }
 
-  const warnings: readonly string[] = result.kind === 'generated' ? result.warnings : [];
+  const warnings: readonly string[] =
+    draftGeneration.kind === 'generated' ? draftGeneration.warnings : [];
   for (const warning of warnings) {
     container.logger.warn(warning);
   }
@@ -281,7 +290,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
   let revise: ReviseOutcome | undefined;
-  if (result.kind === 'generated' && reviseRequested) {
+  if (draftGeneration.kind === 'generated' && reviseRequested) {
     const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
       container.workspaceRoot,
       stem,
@@ -299,9 +308,11 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   return {
     ok: true,
     message:
-      result.kind === 'cache_hit' ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
+      draftGeneration.kind === 'cache_hit'
+        ? '입력이 같아 기존 초안을 씁니다.'
+        : '초안을 생성했습니다.',
     data: {
-      draft: (result.draftUri as StoryUri).fsPath,
+      draft: (draftGeneration.draftUri as StoryUri).fsPath,
       warnings: revise?.warning ? [...warnings, revise.warning] : warnings,
       ...(revise === undefined ? {} : { revise }),
     },
@@ -316,18 +327,23 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
     const stems: string[] = (await container.drafts.listScenes(container.workspaceRoot)).map(
       (scene) => scene.stem,
     );
-    const results: Record<string, unknown> = {};
+    const beatsByStem: Record<string, unknown> = {};
     const failures: string[] = [];
     let proposed: number = 0;
 
     for (const stem of stems) {
-      const result: GenerateSceneBeatsResult = await runSceneBeats(container, stem, force, dryRun);
-      results[stem] = result;
-      if (!result.ok) {
+      const beatGeneration: GenerateSceneBeatsResult = await runSceneBeats(
+        container,
+        stem,
+        force,
+        dryRun,
+      );
+      beatsByStem[stem] = beatGeneration;
+      if (!beatGeneration.ok) {
         failures.push(stem);
-      } else if (result.kind === 'proposed') {
+      } else if (beatGeneration.kind === 'proposed') {
         proposed += 1;
-        container.logger.info(`${stem}: 비트 ${result.beats.length}개`);
+        container.logger.info(`${stem}: 비트 ${beatGeneration.beats.length}개`);
       }
     }
 
@@ -337,7 +353,7 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
         failures.length === 0
           ? `씬 ${proposed}개의 비트를 ${dryRun ? '제안했습니다 (적용하지 않음)' : '썼습니다'}, ${stems.length - proposed}개는 그대로 둡니다.`
           : `${failures.length}건 실패 (비트 ${proposed}개 처리): ${failures.join(', ')}`,
-      data: { proposed, failures, results },
+      data: { proposed, failures, results: beatsByStem },
     };
   }
 
@@ -349,25 +365,30 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result: GenerateSceneBeatsResult = await runSceneBeats(container, stem, force, dryRun);
-  if (!result.ok) {
-    return { ok: false, message: result.message };
+  const beatGeneration: GenerateSceneBeatsResult = await runSceneBeats(
+    container,
+    stem,
+    force,
+    dryRun,
+  );
+  if (!beatGeneration.ok) {
+    return { ok: false, message: beatGeneration.message };
   }
 
-  if (result.kind === 'kept') {
+  if (beatGeneration.kind === 'kept') {
     return {
       ok: true,
-      message: `이미 비트 ${result.beats.length}개가 있습니다 (--force 로 다시 뽑습니다).`,
-      data: { stem, beats: result.beats, written: false },
+      message: `이미 비트 ${beatGeneration.beats.length}개가 있습니다 (--force 로 다시 뽑습니다).`,
+      data: { stem, beats: beatGeneration.beats, written: false },
     };
   }
 
   return {
     ok: true,
-    message: result.written
-      ? `비트 ${result.beats.length}개를 카드에 썼습니다.`
-      : `비트 ${result.beats.length}개를 제안했습니다 (적용하지 않음).`,
-    data: { stem, beats: result.beats, written: result.written },
+    message: beatGeneration.written
+      ? `비트 ${beatGeneration.beats.length}개를 카드에 썼습니다.`
+      : `비트 ${beatGeneration.beats.length}개를 제안했습니다 (적용하지 않음).`,
+    data: { stem, beats: beatGeneration.beats, written: beatGeneration.written },
   };
 };
 
@@ -392,31 +413,35 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem을 지정해 주세요.' };
   }
 
-  const result: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
+  const revision: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
     container.workspaceRoot,
     stem,
   );
-  if (result === undefined) {
+  if (revision === undefined) {
     return { ok: false, message: '초안이 없어 검수를 건너뛰었습니다.' };
   }
 
-  return result.failure
+  return revision.failure
     ? {
         ok: false,
-        message: describeReviseOutcome(result).warning ?? result.failure.message,
-        data: result,
+        message: describeReviseOutcome(revision).warning ?? revision.failure.message,
+        data: revision,
       }
-    : { ok: true, message: '검수와 재작성을 마쳤습니다.', data: result };
+    : { ok: true, message: '검수와 재작성을 마쳤습니다.', data: revision };
 };
 
 const generateOutline: CommandHandler = async ({ container, args }) => {
-  const result: GenerateOutlineResult = await container.novel.generateOutline({
+  const outlineGeneration: GenerateOutlineResult = await container.novel.generateOutline({
     workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
     onProgress: (message: string) => container.progress.update({ line: message, step: message }),
   });
 
-  return { ok: result.ok, message: describeOutlineResult(result.kind), data: result };
+  return {
+    ok: outlineGeneration.ok,
+    message: describeOutlineResult(outlineGeneration.kind),
+    data: outlineGeneration,
+  };
 };
 
 function describeBatchFailure(kind: 'no_projects' | 'no_scenes'): string {
@@ -439,35 +464,35 @@ function describeOutlineResult(kind: string): string {
 }
 
 const assembleManuscript: CommandHandler = async ({ container }) => {
-  const result: AssembleManuscriptResult = await container.manuscript.assemble({
+  const assembly: AssembleManuscriptResult = await container.manuscript.assemble({
     workspaceRoot: container.workspaceRoot,
   });
   return {
-    ok: result.ok,
-    message: result.ok ? '원고를 조립했습니다.' : '조립하지 못했습니다.',
-    data: result,
+    ok: assembly.ok,
+    message: assembly.ok ? '원고를 조립했습니다.' : '조립하지 못했습니다.',
+    data: assembly,
   };
 };
 
 const reviewManuscript: CommandHandler = async ({ container }) => {
-  const result: ReviewManuscriptResult = await container.manuscript.review({
+  const manuscriptReview: ReviewManuscriptResult = await container.manuscript.review({
     workspaceRoot: container.workspaceRoot,
   });
   return {
-    ok: result.ok,
-    message: result.ok ? '원고 검사를 마쳤습니다.' : '검사하지 못했습니다.',
-    data: result,
+    ok: manuscriptReview.ok,
+    message: manuscriptReview.ok ? '원고 검사를 마쳤습니다.' : '검사하지 못했습니다.',
+    data: manuscriptReview,
   };
 };
 
 const summarizeChapters: CommandHandler = async ({ container }) => {
-  const result: SummarizeChaptersResult = await container.manuscript.summarizeChapters({
+  const chapterSummaries: SummarizeChaptersResult = await container.manuscript.summarizeChapters({
     workspaceRoot: container.workspaceRoot,
   });
   return {
-    ok: result.ok,
-    message: result.ok ? '장별 요약을 만들었습니다.' : '요약하지 못했습니다.',
-    data: result,
+    ok: chapterSummaries.ok,
+    message: chapterSummaries.ok ? '장별 요약을 만들었습니다.' : '요약하지 못했습니다.',
+    data: chapterSummaries,
   };
 };
 
@@ -503,7 +528,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
   const novelPlan: readonly NovelStageName[] = resolveNovelPipelinePlan();
   const reviseIterations: string | undefined = flagString(args.flags, 'revise-iterations');
-  const result: NovelRunResult = await container.novel.run({
+  const novelRun: NovelRunResult = await container.novel.run({
     workspaceUri: container.workspaceRoot,
     project,
     runMode: unattendedRunApprovesEveryGate,
@@ -525,9 +550,9 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     shouldPause: container.pauseRequests.watch(),
   });
 
-  const { spending } = result;
+  const { spending } = novelRun;
   const budgetNote: string =
-    result.outcome === 'paused' && spending.isOverBudget
+    novelRun.outcome === 'paused' && spending.isOverBudget
       ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 $${spending.costUsd.toFixed(2)}).`
       : '';
   const cacheNote: string =
@@ -536,14 +561,14 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
       : '';
 
   return {
-    ok: result.outcome === 'completed',
+    ok: novelRun.outcome === 'completed',
     message:
-      result.outcome === 'failed'
-        ? `장편 생성에 실패했습니다: ${result.message}`
-        : `${result.message}${budgetNote}${cacheNote}`,
-    data: { ...result, costUsd: spending.costUsd },
-    ...(result.outcome === 'paused' || result.outcome === 'cancelled'
-      ? { stop: result.outcome }
+      novelRun.outcome === 'failed'
+        ? `장편 생성에 실패했습니다: ${novelRun.message}`
+        : `${novelRun.message}${budgetNote}${cacheNote}`,
+    data: { ...novelRun, costUsd: spending.costUsd },
+    ...(novelRun.outcome === 'paused' || novelRun.outcome === 'cancelled'
+      ? { stop: novelRun.outcome }
       : {}),
   };
 };
@@ -669,7 +694,7 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result: PromoteCardCandidatesResult | undefined =
+  const promotion: PromoteCardCandidatesResult | undefined =
     draftItems.length > 0
       ? await container.cards.promoteCandidates(container.workspaceRoot, draftItems)
       : undefined;
@@ -677,9 +702,9 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     noteCandidates.length > 0
       ? await container.notes.promoteCandidates(container.workspaceRoot, noteCandidates)
       : undefined;
-  const isDraftSaveFailed: boolean = result !== undefined && result.kind !== 'promoted';
+  const isDraftSaveFailed: boolean = promotion !== undefined && promotion.kind !== 'promoted';
   const updatedCardCount: number =
-    (result?.kind === 'promoted' ? result.updatedCardCount : 0) +
+    (promotion?.kind === 'promoted' ? promotion.updatedCardCount : 0) +
     (noteResult?.updatedCardIds.length ?? 0);
 
   return {
@@ -687,7 +712,7 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     message: isDraftSaveFailed
       ? '카드를 저장하지 못했습니다.'
       : [`카드 ${updatedCardCount}개를 갱신했습니다.`, ...conflictLines].join('\n'),
-    data: { drafts: result ?? null, notes: noteResult ?? null, conflicts: conflictedCards },
+    data: { drafts: promotion ?? null, notes: noteResult ?? null, conflicts: conflictedCards },
   };
 };
 
@@ -710,7 +735,7 @@ const discardCardCandidates: CommandHandler = async ({ container, args }) => {
       };
     }
 
-    const result: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
+    const discard: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
       container.workspaceRoot,
       {
         kind: 'change',
@@ -719,12 +744,12 @@ const discardCardCandidates: CommandHandler = async ({ container, args }) => {
       },
     );
 
-    return result.kind === 'change_not_found'
+    return discard.kind === 'change_not_found'
       ? {
           ok: false,
           message: `${cardId} 의 노트 후보에 ${changeRef} 가 없습니다. card promote --dry-run 으로 확인하세요.`,
         }
-      : { ok: true, message: `${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, data: result };
+      : { ok: true, message: `${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, data: discard };
   }
 
   const cardIds: Set<string> | undefined =
@@ -784,25 +809,25 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: describeMissingCardCategory('card recommend') };
   }
 
-  const result: RecommendCardsResult = await container.cards.recommend({
+  const recommendation: RecommendCardsResult = await container.cards.recommend({
     category,
     workspaceRoot: container.workspaceRoot,
   });
 
-  if (!result.ok) {
+  if (!recommendation.ok) {
     return {
       ok: false,
-      message: result.kind === 'cancelled' ? '취소했습니다.' : result.message,
-      data: result,
+      message: recommendation.kind === 'cancelled' ? '취소했습니다.' : recommendation.message,
+      data: recommendation,
     };
   }
 
-  return result.kind === 'no_sources'
+  return recommendation.kind === 'no_sources'
     ? { ok: true, message: '훑을 씬이나 초안이 없습니다.', data: [] }
     : {
         ok: true,
-        message: `카드가 없는 ${category} ${result.recommendations.length}건`,
-        data: result.recommendations,
+        message: `카드가 없는 ${category} ${recommendation.recommendations.length}건`,
+        data: recommendation.recommendations,
       };
 };
 
@@ -829,25 +854,25 @@ const renameCard: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '바꿀 id 와 --to <새 id> 를 지정해 주세요.' };
   }
 
-  const result: RenameCardResult = await container.cards.rename({
+  const cardRename: RenameCardResult = await container.cards.rename({
     workspaceRoot: container.workspaceRoot,
     category,
     fromId,
     toId,
   });
 
-  if (!result.ok) {
-    return { ok: false, message: result.message };
+  if (!cardRename.ok) {
+    return { ok: false, message: cardRename.message };
   }
 
-  for (const path of result.unreadableFiles) {
+  for (const path of cardRename.unreadableFiles) {
     container.logger.warn(`참조를 갱신하지 못했습니다: ${path}`);
   }
 
   return {
     ok: true,
-    message: `${fromId} → ${toId}${result.rewrittenCount > 0 ? ` (참조 ${result.rewrittenCount}건 갱신)` : ''}`,
-    data: { oldId: fromId, newId: toId, rewritten: result.rewrittenCount },
+    message: `${fromId} → ${toId}${cardRename.rewrittenCount > 0 ? ` (참조 ${cardRename.rewrittenCount}건 갱신)` : ''}`,
+    data: { oldId: fromId, newId: toId, rewritten: cardRename.rewrittenCount },
   };
 };
 
@@ -939,16 +964,16 @@ async function rewriteDraft(
   }
 
   const { body, target } = loaded;
-  const result: TransformedDraft = await transform(target);
+  const transformed: TransformedDraft = await transform(target);
 
-  if (!result.ok || result.text === undefined) {
-    return { ok: false, message: result.message };
+  if (!transformed.ok || transformed.text === undefined) {
+    return { ok: false, message: transformed.message };
   }
 
   const saved: SaveDraftEditResult = await container.drafts.saveEdit({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
-    body: replaceLines(body, range, result.text),
+    body: replaceLines(body, range, transformed.text),
     archivePrevious: container.configBridge.isKeepDraftHistoryEnabled(),
   });
 
@@ -958,7 +983,7 @@ async function rewriteDraft(
 
   const draftUri: StoryUri = draftPath(container.workspaceRoot, stem);
 
-  return { ok: true, message: result.message, data: { draft: draftUri.fsPath } };
+  return { ok: true, message: transformed.message, data: { draft: draftUri.fsPath } };
 }
 
 function rangeFrom(args: ParsedArguments): LineRange | undefined | 'invalid' {
@@ -980,7 +1005,7 @@ const condenseDraft: CommandHandler = async ({ container, args }) => {
   const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const result: CondenseDraftResult = await container.drafts.condense({
+    const condensed: CondenseDraftResult = await container.drafts.condense({
       workspaceRoot: container.workspaceRoot,
       sceneStem: stem,
       format: project.format,
@@ -988,9 +1013,9 @@ const condenseDraft: CommandHandler = async ({ container, args }) => {
       maxCompressionPercent: container.configBridge.getMaxCompressionPercent(),
     });
 
-    return result.ok
-      ? { ok: true, text: result.text, message: '초안을 압축했습니다.' }
-      : { ok: false, message: `압축하지 못했습니다 (${result.kind}).` };
+    return condensed.ok
+      ? { ok: true, text: condensed.text, message: '초안을 압축했습니다.' }
+      : { ok: false, message: `압축하지 못했습니다 (${condensed.kind}).` };
   });
 };
 
@@ -1007,30 +1032,30 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
   }
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const result: ExpandDraftResult = await container.drafts.expand({
+    const expanded: ExpandDraftResult = await container.drafts.expand({
       workspaceRoot: container.workspaceRoot,
       sceneStem: stem,
       selectedText: target,
     });
 
-    return result.ok
-      ? { ok: true, text: result.text, message: '구간을 늘렸습니다.' }
-      : { ok: false, message: `늘리지 못했습니다 (${result.kind}).` };
+    return expanded.ok
+      ? { ok: true, text: expanded.text, message: '구간을 늘렸습니다.' }
+      : { ok: false, message: `늘리지 못했습니다 (${expanded.kind}).` };
   });
 };
 
 const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
-  const result: SeedScenesResult = await container.novel.seedScenes({
+  const seeding: SeedScenesResult = await container.novel.seedScenes({
     workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
   });
 
-  switch (result.kind) {
+  switch (seeding.kind) {
     case 'seeded':
       return {
         ok: true,
-        message: `씬 시드 ${result.fileNames.length}개를 생성했습니다.`,
-        data: result.fileNames,
+        message: `씬 시드 ${seeding.fileNames.length}개를 생성했습니다.`,
+        data: seeding.fileNames,
       };
     case 'empty_plan':
       return { ok: true, message: '아웃라인에 생성할 씬이 없습니다.', data: [] };
@@ -1042,10 +1067,10 @@ const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
     case 'existing_scenes':
       return {
         ok: false,
-        message: `씬 파일이 이미 ${result.existingCount}개 있습니다. 덮어쓰려면 --force 를 주세요.`,
+        message: `씬 파일이 이미 ${seeding.existingCount}개 있습니다. 덮어쓰려면 --force 를 주세요.`,
       };
     case 'failed':
-      return { ok: false, message: result.message };
+      return { ok: false, message: seeding.message };
   }
 };
 
@@ -1191,19 +1216,19 @@ const createScene: CommandHandler = async ({ container, args }) => {
   }
 
   const slug: string | undefined = slugify(name);
-  const result: CreateSceneResult = await container.drafts.createScene({
+  const sceneCreation: CreateSceneResult = await container.drafts.createScene({
     workspaceRoot: container.workspaceRoot,
     ...(slug === undefined ? {} : { slug }),
   });
 
-  if (!result.ok) {
-    return { ok: false, message: result.message };
+  if (!sceneCreation.ok) {
+    return { ok: false, message: sceneCreation.message };
   }
 
   return {
     ok: true,
-    message: `${result.stem}.card 를 만들었습니다.`,
-    data: { stem: result.stem, path: (result.uri as StoryUri).fsPath },
+    message: `${sceneCreation.stem}.card 를 만들었습니다.`,
+    data: { stem: sceneCreation.stem, path: (sceneCreation.uri as StoryUri).fsPath },
   };
 };
 
@@ -1215,25 +1240,25 @@ const renameScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '바꿀 씬과 --to <새 이름> 을 지정해 주세요.' };
   }
 
-  const result: RenameSceneResult = await container.drafts.renameScene({
+  const sceneRename: RenameSceneResult = await container.drafts.renameScene({
     workspaceRoot: container.workspaceRoot,
     fromStem,
     toStem,
   });
 
-  if (!result.ok) {
-    return { ok: false, message: result.message };
+  if (!sceneRename.ok) {
+    return { ok: false, message: sceneRename.message };
   }
 
   const orderNote: '' | ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.' =
-    result.hasOrderChanged
+    sceneRename.hasOrderChanged
       ? ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
       : '';
 
   return {
     ok: true,
-    message: `${result.fromStem} → ${result.toStem} (옮긴 파일 ${result.movedFiles.length}개, 고친 파일 ${result.rewrittenFiles.length}개).${orderNote}`,
-    data: result,
+    message: `${sceneRename.fromStem} → ${sceneRename.toStem} (옮긴 파일 ${sceneRename.movedFiles.length}개, 고친 파일 ${sceneRename.rewrittenFiles.length}개).${orderNote}`,
+    data: sceneRename,
   };
 };
 
@@ -1254,17 +1279,17 @@ const applyDraftFormat: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const result: ApplyDraftFormatResult = await container.drafts.applyFormat({
+  const formatting: ApplyDraftFormatResult = await container.drafts.applyFormat({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
   });
 
   return {
-    ok: result.ok,
-    message: result.ok
+    ok: formatting.ok,
+    message: formatting.ok
       ? '초안 형식을 다시 적용했습니다.'
-      : `형식을 적용하지 못했습니다 (${result.kind}).`,
-    data: result,
+      : `형식을 적용하지 못했습니다 (${formatting.kind}).`,
+    data: formatting,
   };
 };
 
@@ -1457,7 +1482,7 @@ const generateState: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result: GenerateStoryStateResult = await container.drafts.generateStoryState({
+  const storyStateGeneration: GenerateStoryStateResult = await container.drafts.generateStoryState({
     workspaceRoot: container.workspaceRoot,
     ...(sceneOrders === undefined ? {} : { sceneOrders }),
     force: flagBoolean(args.flags, 'force'),
@@ -1471,7 +1496,7 @@ const generateState: CommandHandler = async ({ container, args }) => {
     },
   });
 
-  const { recorded, kept, withoutDraft, failures, pausedWithRemaining } = result;
+  const { recorded, kept, withoutDraft, failures, pausedWithRemaining } = storyStateGeneration;
   const summary: string =
     `원장에 씬 ${recorded.length}개를 기록했습니다` +
     (kept.length > 0 ? `, ${kept.length}개는 이미 있어 그대로 둡니다` : '') +
@@ -1482,7 +1507,7 @@ const generateState: CommandHandler = async ({ container, args }) => {
     return {
       ok: false,
       message: `멈췄습니다: 기록 ${recorded.length}건, 남은 씬 ${pausedWithRemaining}개. 다시 실행하면 이어서 기록합니다.`,
-      data: result,
+      data: storyStateGeneration,
     };
   }
 
@@ -1490,11 +1515,11 @@ const generateState: CommandHandler = async ({ container, args }) => {
     return {
       ok: false,
       message: `${failures.length}건 실패 (기록 ${recorded.length}건): ${failures.map((failure) => `${failure.stem} — ${failure.message}`).join(', ')}`,
-      data: result,
+      data: storyStateGeneration,
     };
   }
 
-  return { ok: true, message: summary, data: result };
+  return { ok: true, message: summary, data: storyStateGeneration };
 };
 
 const resealState: CommandHandler = async ({ container, args }) => {
@@ -1806,13 +1831,13 @@ async function readContractInput(
       continue;
     }
 
-    const value: number = Number(raw);
+    const parsedNumber: number = Number(raw);
 
-    if (!Number.isInteger(value) || value <= 0) {
+    if (!Number.isInteger(parsedNumber) || parsedNumber <= 0) {
       return { message: `--${flag} 는 양의 정수여야 합니다: ${raw}` };
     }
 
-    parsedNumbers[key] = value;
+    parsedNumbers[key] = parsedNumber;
   }
 
   const composition: string | undefined = flagString(args.flags, 'composition');
@@ -1901,44 +1926,46 @@ const checkDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
-  const result: CheckDraftResult = await container.drafts.check({
+  const draftCheck: CheckDraftResult = await container.drafts.check({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
     kind,
     text: body,
   });
 
-  switch (result.kind) {
+  switch (draftCheck.kind) {
     case 'failed':
-      return { ok: false, message: result.message };
+      return { ok: false, message: draftCheck.message };
     case 'slop':
       return {
-        ok: result.findings.length === 0,
+        ok: draftCheck.findings.length === 0,
         message:
-          result.findings.length === 0
+          draftCheck.findings.length === 0
             ? '상투 표현을 찾지 못했습니다.'
-            : `${result.findings.length}건`,
-        data: result.findings,
+            : `${draftCheck.findings.length}건`,
+        data: draftCheck.findings,
       };
     case 'grammar':
       return {
-        ok: result.issues.length === 0,
+        ok: draftCheck.issues.length === 0,
         message:
-          result.issues.length === 0 ? '문법 문제를 찾지 못했습니다.' : `${result.issues.length}건`,
-        data: result.issues,
+          draftCheck.issues.length === 0
+            ? '문법 문제를 찾지 못했습니다.'
+            : `${draftCheck.issues.length}건`,
+        data: draftCheck.issues,
       };
     case 'continuity':
-      if (!result.hasFacts) {
+      if (!draftCheck.hasFacts) {
         return { ok: true, message: '대조할 정전 사실이 없습니다.', data: [] };
       }
 
       return {
-        ok: result.issues.length === 0,
+        ok: draftCheck.issues.length === 0,
         message:
-          result.issues.length === 0
+          draftCheck.issues.length === 0
             ? '연속성 문제를 찾지 못했습니다.'
-            : `${result.issues.length}건`,
-        data: result.issues,
+            : `${draftCheck.issues.length}건`,
+        data: draftCheck.issues,
       };
   }
 };

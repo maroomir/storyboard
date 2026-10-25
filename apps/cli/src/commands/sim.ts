@@ -526,7 +526,7 @@ async function executePoints(
 
       try {
         const started: string = new Date().toISOString();
-        const result: TrackRunResult = await runTrack({
+        const trackRun: TrackRunResult = await runTrack({
           factory,
           workspacePath: scratch,
           scenes: input.scenes,
@@ -542,7 +542,7 @@ async function executePoints(
         const draftsDir: string = await keepDrafts(
           input.outPath,
           { genre: input.genre, pointLabel: point.label, repeat },
-          result.drafts,
+          trackRun.drafts,
         );
 
         let verdictFields: Partial<RunRecord> = {};
@@ -558,7 +558,7 @@ async function executePoints(
             const verdicts: readonly AxisVerdict[] = await judgeAxis({
               judge,
               scenes: input.scenes.flatMap((scene) => {
-                const draft: string | undefined = result.drafts.get(scene.sceneStem);
+                const draft: string | undefined = trackRun.drafts.get(scene.sceneStem);
                 const floorDraft: string | undefined = axisFloors.get(scene.sceneStem);
                 return draft === undefined
                   ? []
@@ -586,7 +586,7 @@ async function executePoints(
               generation: input.generation,
               materials: input.materials,
               scenes: input.scenes,
-              drafts: result.drafts,
+              drafts: trackRun.drafts,
               label: `${point.label} ${repeat}회`,
               draftsDir,
             });
@@ -613,18 +613,18 @@ async function executePoints(
           ...(input.judge === undefined
             ? {}
             : { judge: { providerId: input.judge.providerId, model: input.judge.model } }),
-          scenes: result.metrics.scenes,
-          tokens: result.tokens,
+          scenes: trackRun.metrics.scenes,
+          tokens: trackRun.tokens,
           ...verdictFields,
           draftsDir,
           startedAt: started,
-          wallClockMs: result.wallClockMs,
+          wallClockMs: trackRun.wallClockMs,
         };
 
         await appendRun(input.outPath, record);
         ran += 1;
         context.container.logger.info(
-          `${point.label} ${repeat}회 · 도달률 ${result.metrics.meanReach.toFixed(3)} · ${describeCost(result.tokens)}` +
+          `${point.label} ${repeat}회 · 도달률 ${trackRun.metrics.meanReach.toFixed(3)} · ${describeCost(trackRun.tokens)}` +
             (record.auc === undefined ? '' : ` · AUC ${record.auc.toFixed(3)}`) +
             (record.recalled === undefined
               ? ''
@@ -1340,15 +1340,21 @@ export const applySim: CommandHandler = async (context) => {
     );
   }
 
-  const result: ProfileWriteResult = await writeModelProfile(profilesPath, key, fields, measured, {
-    force: flagBoolean(context.args.flags, 'force'),
-  });
+  const profileWrite: ProfileWriteResult = await writeModelProfile(
+    profilesPath,
+    key,
+    fields,
+    measured,
+    {
+      force: flagBoolean(context.args.flags, 'force'),
+    },
+  );
 
-  if (!result.written) {
+  if (!profileWrite.written) {
     return refuse(
       [
         `${key} 프로필이 이미 있습니다. 덮어쓰려면 --force 를 붙이세요.`,
-        `  지금 값: ${JSON.stringify(result.previous)}`,
+        `  지금 값: ${JSON.stringify(profileWrite.previous)}`,
       ].join('\n'),
     );
   }

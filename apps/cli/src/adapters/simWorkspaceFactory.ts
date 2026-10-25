@@ -51,24 +51,24 @@ export function createSimWorkspaceFactory(
       return {
         workspacePath: input.workspacePath,
         generate: async (sceneStem: string): Promise<SceneGenerationOutcome> => {
-          const result: GenerateDraftResult = await container.drafts.generate({
+          const draftGeneration: GenerateDraftResult = await container.drafts.generate({
             sceneUri: scenePath(container.workspaceRoot, sceneStem),
             force: shouldBypassDraftCacheSoEveryRunCallsAi,
           });
 
-          if (!result.ok) {
+          if (!draftGeneration.ok) {
             return {
               ok: false,
-              kind: result.kind,
-              ...(result.kind === 'failed' ? { message: result.message } : {}),
+              kind: draftGeneration.kind,
+              ...(draftGeneration.kind === 'failed' ? { message: draftGeneration.message } : {}),
               warnings: [],
             };
           }
 
           return {
             ok: true,
-            kind: result.kind,
-            warnings: result.kind === 'generated' ? result.warnings : [],
+            kind: draftGeneration.kind,
+            warnings: draftGeneration.kind === 'generated' ? draftGeneration.warnings : [],
           };
         },
         drainUsage: (): readonly UsageRecord[] => {
