@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { parseCard, serializeCard } from '@storyboard/story-model';
-import type { CardFileSystem, CharacterCard } from '@storyboard/story-model';
+import type { ReadWriteFileSystem, CharacterCard } from '@storyboard/story-model';
 import {
   applyTraitsFromExtractedBullets,
   extractQuotedUtterancesForCharacter
@@ -91,7 +91,7 @@ describe("applyTraitsFromExtractedBullets", () => {
   })
 })
 
-class MemoryCardFileSystem implements CardFileSystem {
+class MemoryCardFileSystem implements ReadWriteFileSystem {
   public constructor(public readonly files: Map<string, string>) {}
 
   public async readFile(uri: unknown): Promise<Uint8Array> {

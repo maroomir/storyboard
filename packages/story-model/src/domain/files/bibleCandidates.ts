@@ -3,6 +3,7 @@ import type { BibleFact } from '#model/format/bible';
 import { z } from 'zod';
 
 import { bibleFactSchema } from '#model/format/bible';
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 export interface BibleCandidateRecord {
   readonly sceneStem: string;
@@ -10,18 +11,7 @@ export interface BibleCandidateRecord {
   readonly facts: readonly BibleFact[];
 }
 
-export interface BibleCandidateFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
-}
-
-interface BibleCandidateRecordPayload {
-  sceneStem: string;
-  generatedAt: string;
-  facts: BibleFact[];
-}
-
-const bibleCandidateRecordSchema: z.ZodType<BibleCandidateRecordPayload> = z.object({
+const bibleCandidateRecordSchema: z.ZodType<BibleCandidateRecord> = z.object({
   sceneStem: z.string().trim().min(1),
   generatedAt: z.string().datetime(),
   facts: z.array(bibleFactSchema),
@@ -37,7 +27,7 @@ export function parseBibleCandidates(rawCandidates: string): BibleCandidateRecor
 
 export async function readBibleCandidateFile(
   uri: StoryUri,
-  fileSystem: BibleCandidateFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<BibleCandidateRecord> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseBibleCandidates(new TextDecoder().decode(bytes));
@@ -45,7 +35,7 @@ export async function readBibleCandidateFile(
 
 export async function writeBibleCandidateFile(
   uri: StoryUri,
-  fileSystem: BibleCandidateFileSystem,
+  fileSystem: ReadWriteFileSystem,
   record: BibleCandidateRecord,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeBibleCandidates(record)));

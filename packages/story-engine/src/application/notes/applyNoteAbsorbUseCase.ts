@@ -3,7 +3,7 @@ import type {
   StoryUri,
   NoteSynthesisSetting,
   NoteAbsorbPlan,
-  NoteLeftOut,
+  SkippedNote,
   NoteCardCandidate,
 NoteCandidateFile,
 StoryboardProject,
@@ -39,7 +39,7 @@ export interface ApplyNoteAbsorbOutcome {
   readonly candidateCards: readonly string[];
   readonly pendingCandidateCards: readonly string[];
   readonly createdScenes: readonly string[];
-  readonly skippedScenes: readonly NoteLeftOut[];
+  readonly skippedScenes: readonly SkippedNote[];
   readonly synopsis: 'written' | 'candidate' | 'none';
   readonly filledSettingKeys: readonly string[];
   readonly settingProposals: NoteSynthesisSetting;
@@ -66,7 +66,7 @@ export interface AppliedNoteSetting {
 
 export interface AppliedNoteScenes {
   readonly createdScenes: string[];
-  readonly skippedScenes: NoteLeftOut[];
+  readonly skippedScenes: SkippedNote[];
 }
 
 export interface AppliedNoteCards {
@@ -174,7 +174,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   private async applyScenes(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteScenes> {
     const { workspaceRoot, plan } = request;
     const createdScenes: string[] = [];
-    const skippedScenes: NoteLeftOut[] = [...plan.skippedScenes];
+    const skippedScenes: SkippedNote[] = [...plan.skippedScenes];
 
     for (const scene of plan.scenes) {
       if (await this.deps.noteRepository.sceneExists(workspaceRoot, scene.fileName)) {

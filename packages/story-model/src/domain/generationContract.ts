@@ -1,15 +1,10 @@
 import { contractFieldKeys, mainThreadId } from '#model/format/project';
 import { resolveCompositionPresetDefaults } from '#model/format/compositionPresets';
 import type { ContractFieldKey, ProjectSetting, StoryThread } from '#model/format/project';
+import type { GenerationContractReadiness } from '#model/shared/messaging/project';
 
 const minReasonableTargetWordCount: number = 1_000;
 const maxReasonableTargetWordCount: number = 2_000_000;
-
-export interface GenerationContractReadiness {
-  readonly isReady: boolean;
-  readonly missing: ContractFieldKey[];
-  readonly warnings: string[];
-}
 
 export function validateGenerationContract(
   setting: ProjectSetting | undefined,

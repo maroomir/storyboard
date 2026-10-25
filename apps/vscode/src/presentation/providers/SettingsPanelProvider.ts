@@ -1,4 +1,4 @@
-import type { DisposableHandle } from '@storyboard/story-model';
+import type { DisposableHandle, SettingsConfigFiles } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
@@ -9,7 +9,6 @@ import { createContractRpcHandlers } from '@/presentation/messaging/contractRpcH
 import {
   createSettingsRpcHandlers,
   getSettingsReadSnapshot,
-  type SettingsConfigFiles,
 } from '@/presentation/messaging/settingsRpcHandlers';
 import type { StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

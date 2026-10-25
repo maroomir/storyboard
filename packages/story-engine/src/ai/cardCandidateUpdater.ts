@@ -3,19 +3,16 @@ import type {
   CharacterCard,
   UsageAttribution,
   CardArcCandidate,
-  CardAttributeCandidate,
+  AttributeCandidate,
   CardCandidateCharacter,
-  CardRelationCandidate,
+  RelationLink,
+CharacterRef,
 } from '@storyboard/story-model';
 import {
-  type CardCandidateFileSystem,
+  type ReadWriteFileSystem,
   writeCardCandidateFile,
 } from '@storyboard/story-model';
 import type { CardCandidateExtraction, StoryboardAiService } from '@storyboard/story-ai';
-interface CardCandidateRosterEntry {
-  readonly id: string;
-  readonly name: string;
-}
 
 interface CardCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
@@ -30,20 +27,20 @@ export interface UpdateCardCandidatesFromDraftInput {
   readonly sceneStem: string;
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
-  readonly characterRoster: readonly CardCandidateRosterEntry[];
+  readonly characterRoster: readonly CharacterRef[];
   readonly aiService: Pick<
     StoryboardAiService,
     'extractCardCandidatesByCharacter' | 'verifyCardCandidatesByCharacter'
   >;
   readonly verify?: boolean;
-  readonly fileSystem: CardCandidateFileSystem;
+  readonly fileSystem: ReadWriteFileSystem;
   readonly resolveCandidateUri: (sceneStem: string) => StoryUri;
   readonly ensureDirectory?: () => Promise<void>;
   readonly logger?: CardCandidateUpdateLogger;
 }
 
 export function buildTargetResolver(
-  roster: readonly CardCandidateRosterEntry[],
+  roster: readonly CharacterRef[],
 ): (rawTarget: string) => string | undefined {
   const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
   const ids: Set<string> = new Set(roster.map((entry) => entry.id));
@@ -57,16 +54,16 @@ export function buildTargetResolver(
   };
 }
 
-function dedupeRelations(relations: readonly CardRelationCandidate[]): CardRelationCandidate[] {
-  const byKey: Map<string, CardRelationCandidate> = new Map<string, CardRelationCandidate>();
+function dedupeRelations(relations: readonly RelationLink[]): RelationLink[] {
+  const byKey: Map<string, RelationLink> = new Map<string, RelationLink>();
   for (const relation of relations) {
     byKey.set(`${relation.target}:${relation.type}`, relation);
   }
   return [...byKey.values()];
 }
 
-function dedupeAttributes(attributes: readonly CardAttributeCandidate[]): CardAttributeCandidate[] {
-  const byKey: Map<string, CardAttributeCandidate> = new Map<string, CardAttributeCandidate>();
+function dedupeAttributes(attributes: readonly AttributeCandidate[]): AttributeCandidate[] {
+  const byKey: Map<string, AttributeCandidate> = new Map<string, AttributeCandidate>();
   for (const attribute of attributes) {
     byKey.set(attribute.key, attribute);
   }
@@ -78,8 +75,8 @@ function countCandidates(character: CardCandidateCharacter): number {
 }
 
 interface VerifiableCandidates {
-  readonly attributes: readonly CardAttributeCandidate[];
-  readonly relations: readonly CardRelationCandidate[];
+  readonly attributes: readonly AttributeCandidate[];
+  readonly relations: readonly RelationLink[];
   readonly arc: readonly CardArcCandidate[];
 }
 
@@ -192,16 +189,16 @@ export async function updateCardCandidatesFromDraft(
       continue;
     }
 
-    const relations: CardRelationCandidate[] = dedupeRelations(
+    const relations: RelationLink[] = dedupeRelations(
       candidate.relations
         .map((relation) => {
           const target: string | undefined = resolveTarget(relation.target);
           return target && target !== card.id ? { target, type: relation.type } : undefined;
         })
-        .filter((relation): relation is CardRelationCandidate => relation !== undefined),
+        .filter((relation): relation is RelationLink => relation !== undefined),
     );
 
-    const attributes: CardAttributeCandidate[] = dedupeAttributes(
+    const attributes: AttributeCandidate[] = dedupeAttributes(
       candidate.attributes.map((attribute) => ({ ...attribute })),
     );
 

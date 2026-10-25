@@ -1,6 +1,6 @@
 import type {
   StoryUri,
-  OutlineFileSystem,
+  ReadWriteFileSystem,
   StoryboardProjectPaths,
   StoryboardProject,
   ChapterPlan,
@@ -24,7 +24,7 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 
 const generateSceneSeedsCommand: string = 'storyboard.scene.generateAllSeeds';
 
-const outlineFileSystem: OutlineFileSystem = {
+const outlineFileSystem: ReadWriteFileSystem = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
     vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri: StoryUri, content: Uint8Array): PromiseLike<void> =>

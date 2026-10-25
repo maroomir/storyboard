@@ -1,3 +1,4 @@
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 import type { StoryUri } from './storyUri';
 
 export type StoryStateSection = 'facts' | 'relations' | 'revealed' | 'motifs';
@@ -21,11 +22,6 @@ export interface StoryState {
   readonly throughSceneOrder: number;
   readonly sceneInputHashes: ReadonlyMap<number, string>;
   readonly entries: readonly StoryStateEntry[];
-}
-
-export interface StoryStateFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const throughLinePattern: RegExp = /^<!--\s*through-scene:\s*(\d+)\s*-->$/;
@@ -177,7 +173,7 @@ function formatEntryTag(entry: StoryStateEntry): string {
 
 export async function readStoryState(
   uri: StoryUri,
-  fileSystem: Pick<StoryStateFileSystem, 'readFile'>,
+  fileSystem: Pick<ReadWriteFileSystem, 'readFile'>,
 ): Promise<StoryState> {
   try {
     const content: string = new TextDecoder().decode(await fileSystem.readFile(uri));
@@ -190,7 +186,7 @@ export async function readStoryState(
 export async function writeStoryState(
   uri: StoryUri,
   state: StoryState,
-  fileSystem: Pick<StoryStateFileSystem, 'writeFile'>,
+  fileSystem: Pick<ReadWriteFileSystem, 'writeFile'>,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeStoryState(state)));
 }

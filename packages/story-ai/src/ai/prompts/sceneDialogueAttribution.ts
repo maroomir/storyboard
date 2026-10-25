@@ -1,16 +1,12 @@
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
-
-export interface DialogueAttributionCandidate {
-  readonly id: string;
-  readonly name: string;
-}
+import type { CharacterRef } from '@storyboard/story-model';
 
 export interface SceneDialogueAttributionInput {
   readonly skeleton: string;
   readonly lines: readonly string[];
-  readonly candidates: readonly DialogueAttributionCandidate[];
+  readonly candidates: readonly CharacterRef[];
 }
 
 export const SceneDialogueAttributionPrompt: PromptModule<

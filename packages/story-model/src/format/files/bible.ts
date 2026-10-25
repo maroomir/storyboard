@@ -3,13 +3,9 @@ import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
 import { storyBibleSchema, type StoryBible } from '#model/format/bible';
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 export type BibleParseErrorCode = 'invalid-yaml' | 'invalid-bible-schema';
-
-export interface BibleFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
-}
 
 export class BibleParseError extends Error {
   public constructor(
@@ -54,7 +50,7 @@ export function serializeBible(bible: StoryBible): string {
 
 export async function readBibleFile(
   uri: StoryUri,
-  fileSystem: BibleFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<StoryBible> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseBible(new TextDecoder().decode(bytes));
@@ -62,7 +58,7 @@ export async function readBibleFile(
 
 export async function writeBibleFile(
   uri: StoryUri,
-  fileSystem: BibleFileSystem,
+  fileSystem: ReadWriteFileSystem,
   bible: StoryBible,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeBible(bible)));

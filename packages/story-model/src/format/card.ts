@@ -58,6 +58,21 @@ const cardAttributeValueSchema: z.ZodType<string | number | boolean | null> = z.
   z.null(),
 ]);
 
+export interface CharacterRef {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface RelationLink {
+  readonly target: string;
+  readonly type: string;
+}
+
+export interface AttributeCandidate {
+  readonly key: string;
+  readonly value: string;
+}
+
 export interface CharacterRelation {
   target: string;
   type: string;

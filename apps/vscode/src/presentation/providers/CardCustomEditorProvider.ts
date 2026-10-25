@@ -2,7 +2,7 @@ import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import { uriExists } from '@/infrastructure/vscode/workspace';
 import * as vscode from 'vscode';
 
-import type { AiGateway, CharacterRosterEntry } from '@storyboard/story-engine';
+import type { AiGateway } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
 import {
   CardParseError,
@@ -30,8 +30,10 @@ import type {
   NarratorCard,
   SceneStructureFieldKey,
   SceneStructureTextField,
+  NarratorSummary,
+  CharacterRosterEntry,
+  SceneStructureProposal,
 } from '@storyboard/story-model';
-import type { SceneStructureProposal } from '@storyboard/story-ai';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { loadCharacterRoster, loadNarratorCards } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
@@ -279,13 +281,7 @@ function createCardEditorHandlers(
   };
 }
 
-interface NarratorRosterEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly summary: string;
-}
-
-async function loadNarratorRoster(workspaceRoot: vscode.Uri): Promise<NarratorRosterEntry[]> {
+async function loadNarratorRoster(workspaceRoot: vscode.Uri): Promise<NarratorSummary[]> {
   const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
     getStoryboardProjectPaths(workspaceRoot),
     vscodeFileSystem,
@@ -316,7 +312,7 @@ async function createInitialData(
       card.type === 'character'
         ? await loadCharacterRoster(vscodeFileSystem, workspaceRoot)
         : undefined;
-    const narratorRoster: NarratorRosterEntry[] | undefined =
+    const narratorRoster: NarratorSummary[] | undefined =
       card.type === 'scene' ? await loadNarratorRoster(workspaceRoot) : undefined;
 
     return {

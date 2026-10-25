@@ -2,7 +2,13 @@ import {
   aiProviderIds,
   isAiProviderId,
   type AiProviderId,
+  type AiProviderStatus,
+  type AiTaskCatalogEntry,
   type ConfigValueOrigin,
+  type ProviderModelOption,
+  type ProviderRuntimeConfig,
+  type SettingsConfigFiles,
+  type SettingsMutationOkResponsePayload,
   type StoryboardSettingKind,
 } from '@storyboard/story-model/contracts';
 
@@ -24,32 +30,9 @@ export type AiTaskName = string;
 
 export type ConnectionTestState = 'idle' | 'loading' | 'ok' | 'error';
 
-export interface AiProviderStatus {
-  readonly providerId: AiProviderId;
-  readonly displayName: string;
-  readonly model?: string;
-  readonly hasApiKey: boolean;
-  readonly isAvailable: boolean;
-}
-
-interface ProviderModelOption {
-  readonly id: string;
-  readonly displayName: string;
-}
-
-export interface ProviderRuntimeConfig {
-  readonly model: string;
-  readonly baseUrl?: string;
-}
-
 export interface TaskAiAssignment {
   readonly providerId: AiProviderId | null;
   readonly model: string | null;
-}
-
-export interface TaskCatalogItem {
-  readonly name: AiTaskName;
-  readonly label: string;
 }
 
 export type SettingValue = boolean | number | string;
@@ -65,11 +48,6 @@ export interface SettingDefinition {
   readonly group: string;
 }
 
-export interface SettingsConfigFiles {
-  readonly user: string;
-  readonly workspace?: string;
-}
-
 export interface SettingsReadSnapshot {
   readonly defaultProvider: AiProviderId;
   readonly isDefaultProviderConfigured: boolean;
@@ -77,19 +55,14 @@ export interface SettingsReadSnapshot {
   readonly providerConfigs: Readonly<Record<AiProviderId, ProviderRuntimeConfig>>;
   readonly taskAssignments: Readonly<Record<string, TaskAiAssignment>>;
   readonly modelCatalog: Readonly<Record<AiProviderId, readonly ProviderModelOption[]>>;
-  readonly taskCatalog: readonly TaskCatalogItem[];
+  readonly taskCatalog: readonly AiTaskCatalogEntry[];
   readonly origins: Readonly<Record<string, ConfigValueOrigin>>;
   readonly configFiles: SettingsConfigFiles;
   readonly settingCatalog: readonly SettingDefinition[];
   readonly settingValues: Readonly<Record<string, SettingValue>>;
 }
 
-export interface SaveTarget {
-  readonly origin?: ConfigValueOrigin;
-  readonly file?: string;
-}
-
-export function parseSaveTarget(value: unknown): SaveTarget {
+export function parseSaveTarget(value: unknown): SettingsMutationOkResponsePayload {
   if (!value || typeof value !== 'object') {
     return {};
   }

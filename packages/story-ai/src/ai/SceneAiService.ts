@@ -4,6 +4,7 @@ import type {
   Character,
   ProjectFormat,
   SceneStructureFieldKey,
+SceneStructureProposal,
 } from '@storyboard/story-model';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
@@ -389,15 +390,6 @@ function describeKnownGrounding(grounding: SceneGrounding | undefined): string[]
     const value: string | undefined = grounding[key]?.trim();
     return value ? [`- ${sceneGroundingFieldLabels[key]}: ${value}`] : [];
   });
-}
-
-export interface SceneStructureProposal {
-  readonly purpose?: string;
-  readonly conflict?: string;
-  readonly twist?: string;
-  readonly emotionalShift?: string;
-  readonly foreshadowing?: string[];
-  readonly neededCanon?: string[];
 }
 
 function toSceneStructureProposal(

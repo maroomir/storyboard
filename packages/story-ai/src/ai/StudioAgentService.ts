@@ -3,7 +3,10 @@ import { toPromptMessages } from './aiResponseCoercion';
 import { StudioAgentPrompt, type StudioAgentPromptInput } from './prompts/studioAgent';
 import { StudioCardAuditPrompt, type StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import { StudioCardSeedPrompt } from './prompts/studioCardSeed';
-import { StudioValidationPrompt } from './prompts/studioValidation';
+import {
+  StudioValidationPrompt,
+  type StudioValidationPromptInput,
+} from './prompts/studioValidation';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   coerceStudioAgentAction,
@@ -44,13 +47,6 @@ export interface StudioAgentRunInput {
   readonly pinnedTool?: StudioAgentToolName;
   readonly resolveLookup?: StudioLookupResolver;
   readonly resolveInvoke?: StudioInvokeResolver;
-}
-
-export interface StudioValidationInput {
-  readonly entityLabel: string;
-  readonly context: string;
-  readonly summary: string;
-  readonly diff: string;
 }
 
 export type StudioAgentStage = 'thinking' | 'looking-up' | 'invoking';
@@ -121,7 +117,7 @@ export class StudioAgentService {
   }
 
   public async validate(
-    input: StudioValidationInput,
+    input: StudioValidationPromptInput,
     options: GenerateTextOptions = {},
   ): Promise<StudioValidationVerdict> {
     const prompt: PromptArtifact = StudioValidationPrompt.build(input);

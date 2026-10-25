@@ -8,7 +8,7 @@ import {
 import { storyboardModelCatalog, type ProviderModelOption } from '#model/contracts/providerCatalog';
 import { aiProviderStatusSchema } from './ai';
 import { aiTaskNameSchema, providerIdSchema, type ProviderId } from './atoms';
-import type { AiProviderId, AiTaskName } from '#model/contracts/ai';
+import type { AiProviderId, AiTaskCatalogEntry, AiTaskName } from '#model/contracts/ai';
 import type { StoryboardSettingKind } from '#model/contracts/settingCatalog';
 import type { AiProviderStatus } from '#model/contracts/aiTypes';
 
@@ -24,9 +24,14 @@ const storyboardModelCatalogPayloadSchema: z.ZodType<StoryboardModelCatalogPaylo
   z.array(providerModelOptionSchema).min(1),
 );
 
-interface ProviderRuntimeConfig {
-  model: string;
-  baseUrl?: string;
+export interface ProviderRuntimeConfig {
+  readonly model: string;
+  readonly baseUrl?: string;
+}
+
+export interface SettingsConfigFiles {
+  readonly user: string;
+  readonly workspace?: string;
 }
 
 const providerRuntimeConfigSchema: z.ZodType<ProviderRuntimeConfig> = z.object({
@@ -66,12 +71,8 @@ const taskAssignmentsPayloadSchema: z.ZodType<TaskAssignmentsPayload> = z.record
   aiTaskNameSchema,
   taskAssignmentReadSchema,
 );
-interface TaskCatalogEntry {
-  name: AiTaskName;
-  label: string;
-}
 
-const taskCatalogEntrySchema: z.ZodType<TaskCatalogEntry> = z.object({
+const taskCatalogEntrySchema: z.ZodType<AiTaskCatalogEntry> = z.object({
   name: aiTaskNameSchema,
   label: z.string().trim().min(1),
 });
@@ -119,9 +120,9 @@ export interface SettingsReadResponsePayload {
   providerConfigs: ProviderConfigsPayload;
   taskAssignments: TaskAssignmentsPayload;
   modelCatalog: StoryboardModelCatalogPayload;
-  taskCatalog: TaskCatalogEntry[];
+  taskCatalog: AiTaskCatalogEntry[];
   origins: Record<string, ConfigValueOrigin>;
-  configFiles: { user: string; workspace?: string };
+  configFiles: SettingsConfigFiles;
   settingCatalog: SettingDefinitionPayload[];
   settingValues: Record<string, string | number | false | true>;
 }

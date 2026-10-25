@@ -12,6 +12,7 @@ import type {
   SceneGenerationTuningInput,
   SectionViolationKind,
 } from './sceneGenerationTuning';
+import type { CatchphraseCount } from '#engine/pipeline/beatActors';
 
 interface LineSpan {
   line: string;
@@ -19,11 +20,6 @@ interface LineSpan {
   skeletonEnd: number;
   expandedStart: number;
   expandedEnd: number;
-}
-
-interface PhraseCount {
-  readonly phrase: string;
-  readonly count: number;
 }
 
 export const SECTION_OUTPUT_LIMIT: number = integerSettingDefault('generation.section.outputLimit');
@@ -761,7 +757,7 @@ export function findCatchphraseOveruse(input: {
   const warnings: string[] = [];
 
   for (const character of input.characters) {
-    const counts: PhraseCount[] = (character.catchphrases ?? [])
+    const counts: CatchphraseCount[] = (character.catchphrases ?? [])
       .map((phrase) => ({ phrase, count: input.text.split(phrase).length - 1 }))
       .filter((entry) => entry.phrase.length > 0 && entry.count > 0);
     const total: number = counts.reduce((sum, entry) => sum + entry.count, 0);

@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { formatCardAttributes, joinCardText } from '#model/format/card';
 import { aiProviderIds } from '#model/contracts/providerCatalog';
 import { aiTaskCatalog } from '#model/contracts/ai';
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 interface SceneCacheBackgroundSnapshot {
   readonly id: string;
@@ -31,11 +32,6 @@ export interface SceneCacheRecord {
   readonly backgroundSnapshot?: SceneCacheBackgroundSnapshot;
   readonly previousContext?: string;
   readonly providers: Partial<Record<AiTaskName, AiProviderId>>;
-}
-
-export interface SceneCacheFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export interface SceneInputHashInput {
@@ -168,7 +164,7 @@ export function parseSceneCache(rawCache: string): SceneCacheRecord {
 
 export async function readSceneCacheFile(
   uri: StoryUri,
-  fileSystem: SceneCacheFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<SceneCacheRecord> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseSceneCache(new TextDecoder().decode(bytes));
@@ -176,7 +172,7 @@ export async function readSceneCacheFile(
 
 export async function writeSceneCacheFile(
   uri: StoryUri,
-  fileSystem: SceneCacheFileSystem,
+  fileSystem: ReadWriteFileSystem,
   record: SceneCacheRecord,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeSceneCache(record)));

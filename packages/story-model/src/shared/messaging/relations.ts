@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { uriStringSchema } from './atoms';
+import type { CharacterRole, RelationLink } from '#model/format/card';
 
 export interface RelationsListRequestPayload {
   [key: string]: never;
@@ -10,21 +11,22 @@ export const relationsListRequestPayloadSchema: z.ZodType<RelationsListRequestPa
   {},
 );
 
-interface RelationListItemRelation {
-  target: string;
-  type: string;
-}
-
-const relationListItemRelationSchema: z.ZodType<RelationListItemRelation> = z.object({
+const relationListItemRelationSchema: z.ZodType<RelationLink> = z.object({
   target: z.string().trim().min(1),
   type: z.string().trim().min(1),
 });
+
+export interface CharacterRosterEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly role?: CharacterRole;
+}
 
 export interface RelationListCharacter {
   id: string;
   name: string;
   uri: string;
-  relations: RelationListItemRelation[];
+  relations: RelationLink[];
   role?: string;
 }
 

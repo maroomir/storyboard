@@ -5,7 +5,7 @@ import type {
   SidebarCardsInitialData,
   SidebarScenesInitialData,
   StudioCardStage,
-  StudioCardStageRelation,
+  RelationLink,
   StudioChatStage,
   StudioChatTurn,
   StudioEntity,
@@ -247,12 +247,12 @@ function parseCardStage(candidate: Partial<StudioCardStage>): StudioCardStage | 
   };
 }
 
-function isStudioCardStageRelation(value: unknown): value is StudioCardStageRelation {
+function isStudioCardStageRelation(value: unknown): value is RelationLink {
   if (!value || typeof value !== 'object') {
     return false;
   }
 
-  const candidate: Partial<StudioCardStageRelation> = value as Partial<StudioCardStageRelation>;
+  const candidate: Partial<RelationLink> = value as Partial<RelationLink>;
   return typeof candidate.target === 'string' && typeof candidate.type === 'string';
 }
 

@@ -1,6 +1,6 @@
 import type {
   StoryUri,
-  CardFileSystem,
+  ReadWriteFileSystem,
   CharacterCard,
   UsageAttribution,
   StoryboardCard,
@@ -27,7 +27,7 @@ export interface UpdateCharacterTraitsFromDraftInput {
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
   readonly aiService: Pick<StoryboardAiService, 'extractTraitsByCharacter'>;
-  readonly fileSystem: CardFileSystem;
+  readonly fileSystem: ReadWriteFileSystem;
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
   readonly recentDialogueLimit?: number;
   readonly logger?: TraitsUpdateLogger;
@@ -148,7 +148,7 @@ async function applyTraitsToCard(args: {
   readonly processed: ReturnType<typeof reconcileCharacterTraits>;
   readonly draftBody: string;
   readonly limit: number;
-  readonly fileSystem: CardFileSystem;
+  readonly fileSystem: ReadWriteFileSystem;
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
 }): Promise<TraitsCardOutcome> {
   const { ref, processed, draftBody, limit, fileSystem, resolveCharacterCardUri } = args;
@@ -241,7 +241,7 @@ export function applyTraitsFromExtractedBullets(input: {
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
   readonly rawResponsesByCharacter: Readonly<Record<string, string>>;
-  readonly fileSystem: CardFileSystem;
+  readonly fileSystem: ReadWriteFileSystem;
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
   readonly recentDialogueLimit?: number;
 }): Promise<TraitsUpdateSummary> {

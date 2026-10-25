@@ -32,6 +32,7 @@ export * from './slug';
 export * from './unknownValues';
 export * from './files/bible';
 export * from './files/card';
+export * from './files/readWriteFileSystem';
 export * from './files/cardMemory';
 export * from './files/draft';
 export * from './files/outline';

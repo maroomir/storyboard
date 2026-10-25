@@ -2,7 +2,11 @@ import { cardSchema, type StoryboardCard } from '#model/format/card';
 import { parseCard, serializeCard } from '#model/format/files/card';
 import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
 
-import type { StudioDraftReplacement, StudioPatch } from '#model/contracts/studioAgent';
+import type {
+  StudioCardFieldChange,
+  StudioDraftReplacement,
+  StudioPatch,
+} from '#model/contracts/studioAgent';
 import type { ZodSafeParseResult } from 'zod';
 
 export type StudioPatchTarget = 'entityCard' | 'sceneCard' | 'draft';
@@ -10,11 +14,6 @@ export type StudioPatchTarget = 'entityCard' | 'sceneCard' | 'draft';
 export type StudioPatchResult =
   | { readonly ok: true; readonly text: string; readonly changedFields: readonly string[] }
   | { readonly ok: false; readonly message: string };
-
-interface StudioCardFieldChange {
-  readonly field: string;
-  readonly value: string | readonly string[] | readonly Readonly<Record<string, string>>[];
-}
 
 const protectedEntityCardFields: Set<string> = new Set(['id', 'type']);
 

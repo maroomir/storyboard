@@ -107,11 +107,6 @@ function describeExtractionFailure(
   return `노트 묶음 ${position} (${titles})은 ${failureDescriptions[failure]} 아무것도 옮기지 못했습니다.`;
 }
 
-export interface CardConsolidation {
-  readonly plan: NoteAbsorbPlan;
-  readonly warnings: readonly string[];
-}
-
 export class PlanNoteAbsorbUseCase implements IUseCase<
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult
@@ -206,7 +201,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         scenes: source.scenes,
         scenePrefixDigits: source.project.editor.scenePrefixDigits,
       });
-      const consolidation: CardConsolidation = await this.consolidateCards(
+      const consolidation: NoteConsolidationOutcome = await this.consolidateCards(
         aiService,
         mergedPlan,
         chunks,
@@ -234,7 +229,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     plan: NoteAbsorbPlan,
     chunks: readonly (readonly NoteDocument[])[],
     cards: readonly StoryboardCard[],
-  ): Promise<CardConsolidation> {
+  ): Promise<NoteConsolidationOutcome> {
     const chunkByNoteId: Map<string, number> = new Map<string, number>();
     for (const [index, chunk] of chunks.entries()) {
       for (const note of chunk) {

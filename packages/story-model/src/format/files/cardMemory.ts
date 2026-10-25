@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { cardIdPattern, formatCardAttributes, joinCardText } from '#model/format/card';
 import type { BackgroundCard, CharacterCard } from '#model/format/card';
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 export interface PersonaMemoryRecord {
   readonly cardId: string;
   readonly persona: string;
@@ -16,11 +17,6 @@ export interface BackgroundMemoryRecord {
   readonly atmosphere: string;
   readonly updatedThroughScene: string;
   readonly cardHash: string;
-}
-
-export interface CardMemoryFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const cardHashSchema: z.ZodType<string> = z.string().regex(/^sha256:[a-f0-9]{64}$/);
@@ -91,7 +87,7 @@ function digestCard(digestSource: unknown): string {
 
 export async function readPersonaMemoryFile(
   uri: StoryUri,
-  fileSystem: CardMemoryFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<PersonaMemoryRecord> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parsePersonaMemory(new TextDecoder().decode(bytes));
@@ -99,7 +95,7 @@ export async function readPersonaMemoryFile(
 
 export async function writePersonaMemoryFile(
   uri: StoryUri,
-  fileSystem: CardMemoryFileSystem,
+  fileSystem: ReadWriteFileSystem,
   record: PersonaMemoryRecord,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializePersonaMemory(record)));
@@ -107,7 +103,7 @@ export async function writePersonaMemoryFile(
 
 export async function readBackgroundMemoryFile(
   uri: StoryUri,
-  fileSystem: CardMemoryFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<BackgroundMemoryRecord> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseBackgroundMemory(new TextDecoder().decode(bytes));
@@ -115,7 +111,7 @@ export async function readBackgroundMemoryFile(
 
 export async function writeBackgroundMemoryFile(
   uri: StoryUri,
-  fileSystem: CardMemoryFileSystem,
+  fileSystem: ReadWriteFileSystem,
   record: BackgroundMemoryRecord,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeBackgroundMemory(record)));

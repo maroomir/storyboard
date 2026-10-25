@@ -1,18 +1,8 @@
 import { z } from 'zod';
 
 import { characterRoles } from '#model/format/card';
-import type { CharacterRole } from '#model/format/card';
+import type { AttributeCandidate, CharacterRole, RelationLink } from '#model/format/card';
 import type { BibleSubjectKind } from '#model/format/bible';
-
-interface NoteExtractionAttribute {
-  key: string;
-  value: string;
-}
-
-interface NoteExtractionRelation {
-  target: string;
-  type: string;
-}
 
 export type NoteKind =
   | 'character'
@@ -114,9 +104,9 @@ export interface NoteExtractionEntity {
   voice: string[] | never[];
   sampleLines: string[] | never[];
   desire: string[] | never[];
-  attributes: NoteExtractionAttribute[];
-  relations: NoteExtractionRelation[];
-  canonFacts: NoteExtractionAttribute[];
+  attributes: AttributeCandidate[];
+  relations: RelationLink[];
+  canonFacts: AttributeCandidate[];
   senses: string[] | never[];
   characterNames: string[] | never[];
   sourceNotes: string[] | never[];

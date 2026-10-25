@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { craftContractOverrideSchema } from './craftContract';
+import { craftContractOverrideSchema, type CraftContractOverride } from './craftContract';
 
 export const storyboardProjectVersion: string = '1.0.0';
 
@@ -100,6 +100,12 @@ export interface StoryThread {
   wraps?: readonly string[];
 }
 
+export interface StoryThreadEntry {
+  readonly id: string;
+  readonly title: string;
+  readonly wraps?: readonly string[];
+}
+
 export const storyThreadSchema: z.ZodType<StoryThread> = z.object({
   title: z.string().trim().min(1),
   wraps: z.array(z.string().trim().min(1)).readonly().optional(),
@@ -114,16 +120,6 @@ export interface ProjectNarration {
 export const projectNarrationSchema: z.ZodType<ProjectNarration> = z.object({
   defaultNarrator: z.string().trim().min(1).optional(),
 });
-
-export interface ProjectSettingCraftContract {
-  banTelling?: boolean;
-  motifRepeatLimit?: number;
-  stockGestureBlacklist?: readonly string[];
-  requireCharacterInterior?: boolean;
-  actionClarity?: boolean;
-  modulateDensity?: boolean;
-  sceneLengthMultiplier?: number;
-}
 
 export interface ProjectSetting {
   tags: string[];
@@ -142,7 +138,7 @@ export interface ProjectSetting {
   threads?: Record<string, StoryThread>;
   chapterCount?: number;
   scenesPerChapter?: number;
-  craftContract?: ProjectSettingCraftContract;
+  craftContract?: CraftContractOverride;
 }
 
 export const projectSettingSchema: z.ZodType<ProjectSetting> = z.object({

@@ -18,10 +18,10 @@ import {
   parseSettingsReadSnapshot,
   type AiProviderId,
   type ConnectionTestState,
-  type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
+import type { SettingsMutationOkResponsePayload } from '@storyboard/story-model/contracts';
 
 interface SavedNotice {
   readonly message: string;
@@ -148,8 +148,8 @@ export function SettingsView({
     setRpcError(message);
   }, []);
 
-  const onSaved: (label: string, target: SaveTarget) => void = useCallback(
-    (label: string, target: SaveTarget): void => {
+  const onSaved: (label: string, target: SettingsMutationOkResponsePayload) => void = useCallback(
+    (label: string, target: SettingsMutationOkResponsePayload): void => {
       const where: string =
         target.origin === undefined ? '' : ` · ${originLabel(target.origin)} 설정에 저장됨`;
       setSavedNotice({

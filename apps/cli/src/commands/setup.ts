@@ -68,7 +68,11 @@ import type {
   ResourceOverrideReport,
 } from '@storyboard/story-app';
 import type { CommandContext, CommandOutcome } from './outcome';
-import { collectHiddenProviderChecks, setHiddenProviderKey } from './hiddenProvider';
+import {
+  collectHiddenProviderChecks,
+  setHiddenProviderKey,
+  type DoctorCheck,
+} from './hiddenProvider';
 import { signIn } from './login';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
@@ -214,13 +218,6 @@ async function signInIfNeeded(
   return container.canPrompt
     ? signIn(container, providerId)
     : { ok: true, message: `${providerId} 는 로그인이 필요합니다: storyboard login ${providerId}` };
-}
-
-interface DoctorCheck {
-  readonly status: 'ok' | 'warn' | 'fail' | 'info';
-  readonly label: string;
-  readonly detail: string;
-  readonly fix?: string;
 }
 
 function statusIcon(status: DoctorCheck['status']): string {

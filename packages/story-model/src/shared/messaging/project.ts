@@ -9,35 +9,36 @@ import {
   type ContractFieldKey,
   type PointOfView,
   type ProjectFormat,
+  type StoryThreadEntry,
 } from '#model/format/project';
 
-interface GenerationContractReadinessPayload {
-  isReady: boolean;
-  missing: ContractFieldKey[];
-  warnings: string[];
+export interface GenerationContractReadiness {
+  readonly isReady: boolean;
+  readonly missing: ContractFieldKey[];
+  readonly warnings: string[];
 }
 
-const generationContractReadinessSchema: z.ZodType<GenerationContractReadinessPayload> = z.object({
+const generationContractReadinessSchema: z.ZodType<GenerationContractReadiness> = z.object({
   isReady: z.boolean(),
   missing: z.array(z.enum(contractFieldKeys)),
   warnings: z.array(z.string()),
 });
 
-interface ContractThread {
-  id: string;
-  title: string;
-  wraps?: string[];
-}
-
-const contractThreadSchema: z.ZodType<ContractThread> = z.object({
+const contractThreadSchema: z.ZodType<StoryThreadEntry> = z.object({
   id: z.string(),
   title: z.string(),
   wraps: z.array(z.string()).optional(),
 });
 
-interface GenerationContractSetting {
-  threads: ContractThread[];
-  narrators: { id: string; name: string; summary: string }[];
+export interface NarratorSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly summary: string;
+}
+
+export interface GenerationContractSetting {
+  threads: StoryThreadEntry[];
+  narrators: NarratorSummary[];
   prohibitions: string[];
   styleConstraints: string[];
   qualityCriteria: string[];
@@ -63,7 +64,7 @@ const generationContractSettingSchema: z.ZodType<GenerationContractSetting> = z.
 
 interface ProjectContractSnapshot {
   isStoryboardProject: boolean;
-  readiness: GenerationContractReadinessPayload;
+  readiness: GenerationContractReadiness;
   format?: ProjectFormat;
   setting?: GenerationContractSetting;
 }

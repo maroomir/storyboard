@@ -8,6 +8,10 @@ import { SectionHeader } from '../ui/SectionHeader';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { createRequestId } from '@webview/lib/messaging';
 import { shortenLineSegment, type LineSegment } from '@webview/lib/lineSegment';
+import type {
+  RelationGraphInitialData,
+  RelationListCharacter,
+} from '@storyboard/story-model/contracts';
 
 const NODE_CARD_W: number = 112;
 const NODE_CARD_H: number = 52;
@@ -16,20 +20,6 @@ const LINK_TRIM: number = 52;
 
 const EDGE_GRADIENT_START: string = '#d97706';
 const EDGE_GRADIENT_END: string = '#0d9488';
-
-interface RelationListCharacter {
-  readonly id: string;
-  readonly name: string;
-  readonly role?: string;
-  readonly uri: string;
-  readonly relations: readonly { readonly target: string; readonly type: string }[];
-}
-
-export interface RelationGraphInitialData {
-  readonly title: string;
-  readonly characters: readonly RelationListCharacter[];
-  readonly isStoryboardProject: boolean;
-}
 
 interface GraphNode extends SimulationNodeDatum {
   readonly id: string;

@@ -2,13 +2,16 @@ import React, { useMemo, useState } from 'react';
 
 import { Button } from '../ui/Button';
 import { SectionHeader } from '../ui/SectionHeader';
-import { decimalSettingStep, parseSettingNumberInput } from '@storyboard/story-model/contracts';
+import {
+  decimalSettingStep,
+  parseSettingNumberInput,
+  type SettingsMutationOkResponsePayload,
+} from '@storyboard/story-model/contracts';
 
 import { OriginPill } from './SettingsPrimitives';
 import {
   getValueOrigin,
   parseSaveTarget,
-  type SaveTarget,
   type SettingDefinition,
   type SettingsReadSnapshot,
   type SettingValue,
@@ -19,7 +22,7 @@ export interface SettingsSectionProps {
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
-  readonly onSaved: (label: string, target: SaveTarget) => void;
+  readonly onSaved: (label: string, target: SettingsMutationOkResponsePayload) => void;
 }
 
 export function GenerationOptionsSection({

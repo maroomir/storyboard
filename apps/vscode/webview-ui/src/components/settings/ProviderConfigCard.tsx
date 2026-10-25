@@ -6,14 +6,16 @@ import {
   getProviderStatus,
   parseSaveTarget,
   type AiProviderId,
-  type AiProviderStatus,
   type ConnectionTestState,
-  type ProviderRuntimeConfig,
-  type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { fieldGroupClass, sbInputClass } from './settingsStyles';
-import { requiresApiKey } from '@storyboard/story-model/contracts';
+import {
+  requiresApiKey,
+  type AiProviderStatus,
+  type ProviderRuntimeConfig,
+  type SettingsMutationOkResponsePayload,
+} from '@storyboard/story-model/contracts';
 
 interface ConnectionCheckResponse {
   readonly ok?: boolean;
@@ -38,7 +40,7 @@ export function ProviderConfigCard({
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
-  readonly onSaved: (label: string, target: SaveTarget) => void;
+  readonly onSaved: (label: string, target: SettingsMutationOkResponsePayload) => void;
   readonly apiKeyDraft: Partial<Record<AiProviderId, string>>;
   readonly setApiKeyDraft: React.Dispatch<
     React.SetStateAction<Partial<Record<AiProviderId, string>>>

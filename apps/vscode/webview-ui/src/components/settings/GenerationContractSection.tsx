@@ -10,7 +10,10 @@ import {
   pointOfViews,
   type CompositionKind,
   type ContractFieldKey,
+  type GenerationContractSetting,
+  type NarratorSummary,
   type PointOfView,
+  type StoryThreadEntry,
 } from '@storyboard/story-model/contracts';
 
 import { ListField } from '../editor/fields/ListField';
@@ -45,31 +48,6 @@ const COMPOSITION_OPTIONS: ContractOption<CompositionKind>[] = compositionKinds.
   label: compositionCatalog[id].optionLabel,
 }));
 
-interface ContractThread {
-  readonly id: string;
-  readonly title: string;
-  readonly wraps?: readonly string[];
-}
-
-interface ContractNarrator {
-  readonly id: string;
-  readonly name: string;
-  readonly summary: string;
-}
-
-interface ContractSetting {
-  readonly genre?: string;
-  readonly audience?: string;
-  readonly pov?: PointOfView;
-  readonly composition?: CompositionKind;
-  readonly threads: readonly ContractThread[];
-  readonly narrators: readonly ContractNarrator[];
-  readonly targetWordCount?: number;
-  readonly prohibitions: readonly string[];
-  readonly styleConstraints: readonly string[];
-  readonly qualityCriteria: readonly string[];
-}
-
 interface ContractReadiness {
   readonly isReady: boolean;
   readonly missing: readonly string[];
@@ -79,7 +57,7 @@ interface ContractReadiness {
 interface ContractSnapshot {
   readonly isStoryboardProject: boolean;
   readonly format?: string;
-  readonly setting?: ContractSetting;
+  readonly setting?: GenerationContractSetting;
   readonly readiness: ContractReadiness;
 }
 
@@ -125,7 +103,7 @@ function parseContractSnapshot(value: unknown): ContractSnapshot | undefined {
   return candidate as unknown as ContractSnapshot;
 }
 
-function toDraft(setting: ContractSetting | undefined): ContractDraft {
+function toDraft(setting: GenerationContractSetting | undefined): ContractDraft {
   return {
     genre: setting?.genre ?? '',
     audience: setting?.audience ?? '',
@@ -211,8 +189,8 @@ function NarrationSummary({
   threads,
   narrators,
 }: {
-  readonly threads: readonly ContractThread[];
-  readonly narrators: readonly ContractNarrator[];
+  readonly threads: readonly StoryThreadEntry[];
+  readonly narrators: readonly NarratorSummary[];
 }): React.ReactElement | null {
   if (threads.length === 0 && narrators.length === 0) {
     return null;

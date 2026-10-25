@@ -20,6 +20,7 @@ import type {
   SidebarCardSummary,
   StoryboardResponsePayload,
   BibleSubjectKind,
+  SidebarCardsInitialData,
 } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
@@ -30,14 +31,6 @@ interface SidebarCardsProviderOptions {
   readonly cardType: BibleSubjectKind;
   readonly title: string;
   readonly cardGlob: string;
-}
-
-interface SidebarCardsInitialData {
-  readonly type: BibleSubjectKind;
-  readonly title: string;
-  readonly cards: readonly SidebarCardSummary[];
-  readonly isStoryboardProject: boolean;
-  readonly usage: UsageSummaryByEntity;
 }
 
 export interface SidebarCardsProvidersDependencies {

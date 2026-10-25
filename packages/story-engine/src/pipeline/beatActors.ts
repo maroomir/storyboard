@@ -20,7 +20,7 @@ const RETRY_SCORE_LIMIT: number = 3;
 const INNER_LINE_PREFIX: string = '(속)';
 const SCENE_BREAK_LINE: string = '---';
 
-interface CatchphraseCount {
+export interface CatchphraseCount {
   readonly phrase: string;
   readonly count: number;
 }

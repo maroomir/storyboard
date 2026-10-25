@@ -7,17 +7,11 @@ import {
 import { listCardFileUris } from './cardFiles';
 import type {
   StoryUri,
-  CharacterRole,
   RelationListCharacter,
   StoryboardCard,
+  CharacterRosterEntry,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-
-export interface CharacterRosterEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly role?: CharacterRole;
-}
 
 export async function loadCharacterRoster(
   fs: IFileSystem,

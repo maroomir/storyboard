@@ -6,13 +6,9 @@ import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCar
 import { narratorCardSchema, type NarratorCard } from '#model/format/narrator';
 import { sceneCardSchema, type SceneCard } from '#model/format/scene';
 import { serializeSceneCard } from './scene';
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
-
-export interface CardFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
-}
 
 export class CardParseError extends Error {
   public constructor(
@@ -99,7 +95,7 @@ export function serializeNarratorCard(card: NarratorCard): string {
 
 export async function readNarratorCardFile(
   uri: StoryUri,
-  fileSystem: CardFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<NarratorCard> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseNarratorCard(new TextDecoder().decode(bytes));
@@ -107,7 +103,7 @@ export async function readNarratorCardFile(
 
 export async function writeNarratorCardFile(
   uri: StoryUri,
-  fileSystem: CardFileSystem,
+  fileSystem: ReadWriteFileSystem,
   card: NarratorCard,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
@@ -172,7 +168,7 @@ export function canonicalizeCardText(rawCard: string): {
 
 export async function readCardFile(
   uri: StoryUri,
-  fileSystem: CardFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<StoryboardCard> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseCard(new TextDecoder().decode(bytes));
@@ -180,7 +176,7 @@ export async function readCardFile(
 
 export async function writeCardFile(
   uri: StoryUri,
-  fileSystem: CardFileSystem,
+  fileSystem: ReadWriteFileSystem,
   card: StoryboardCard,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));

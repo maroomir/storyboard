@@ -1,4 +1,4 @@
-import type { DisposableHandle } from '@storyboard/story-model';
+import type { DisposableHandle, RelationGraphInitialData } from '@storyboard/story-model';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
@@ -20,12 +20,6 @@ export interface RelationGraphPanelDependencies {
 
 export interface IRelationGraphPanel extends vscode.Disposable {
   reveal(extensionUri: vscode.Uri): void;
-}
-
-interface RelationGraphInitialData {
-  readonly title: string;
-  readonly characters: readonly RelationListCharacter[];
-  readonly isStoryboardProject: boolean;
 }
 
 export class RelationGraphProvider implements IRelationGraphPanel {

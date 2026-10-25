@@ -1,3 +1,4 @@
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 import type { StoryUri } from '#model/format/storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -16,24 +17,13 @@ export interface SceneDialogueRecord {
   readonly turns: readonly SceneDialogueTurn[];
 }
 
-export interface SceneDialogueFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
-}
-
 const sceneDialogueTurnSchema: z.ZodType<SceneDialogueTurn> = z.object({
   index: z.number().int().min(1),
   speaker: z.string().min(1),
   text: z.string().min(1),
 });
 
-interface SceneDialogueRecordPayload {
-  sceneStem: string;
-  bodyHash: string;
-  turns: SceneDialogueTurn[];
-}
-
-const sceneDialogueRecordSchema: z.ZodType<SceneDialogueRecordPayload> = z.object({
+const sceneDialogueRecordSchema: z.ZodType<SceneDialogueRecord> = z.object({
   sceneStem: z.string().min(1),
   bodyHash: z.string().regex(/^sha256:[a-f0-9]{64}$/),
   turns: z.array(sceneDialogueTurnSchema),
@@ -53,7 +43,7 @@ export function computeDraftBodyHash(body: string): string {
 
 export async function readSceneDialogueFile(
   uri: StoryUri,
-  fileSystem: SceneDialogueFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<SceneDialogueRecord> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseSceneDialogue(new TextDecoder().decode(bytes));
@@ -61,7 +51,7 @@ export async function readSceneDialogueFile(
 
 export async function writeSceneDialogueFile(
   uri: StoryUri,
-  fileSystem: SceneDialogueFileSystem,
+  fileSystem: ReadWriteFileSystem,
   record: SceneDialogueRecord,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeSceneDialogue(record)));
@@ -112,14 +102,14 @@ export function mergeVoiceSeeds(
 
 export async function readVoiceSeedsFile(
   uri: StoryUri,
-  fileSystem: SceneDialogueFileSystem,
+  fileSystem: ReadWriteFileSystem,
 ): Promise<VoiceSeeds> {
   return parseVoiceSeeds(new TextDecoder().decode(await fileSystem.readFile(uri)));
 }
 
 export async function writeVoiceSeedsFile(
   uri: StoryUri,
-  fileSystem: SceneDialogueFileSystem,
+  fileSystem: ReadWriteFileSystem,
   seeds: VoiceSeeds,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeVoiceSeeds(seeds)));

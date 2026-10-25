@@ -3,18 +3,20 @@ import { describe, expect, it } from "vitest"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { createStudioSessionRpcHandlers } from "@/presentation/messaging/studioSessionRpcHandlers"
 import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
+import type { IStudioSessionRepository } from "@storyboard/story-engine"
 import type {
-  IStudioSessionRepository,
-  StudioSessionSaveInput
-} from "@storyboard/story-engine"
-import type { StudioEntity, StudioSessionSnapshot, StudioSessionSummary } from "@storyboard/story-model"
+  StudioEntity,
+  StudioSessionSaveRequestPayload,
+  StudioSessionSnapshot,
+  StudioSessionSummary
+} from "@storyboard/story-model"
 
 const fakeRoot = { toString: () => "file:///workspace" } as never
 
 const sceneEntity: StudioEntity = { kind: "scene", key: "01-intro" }
 
 class FakeStudioSessionRepository implements IStudioSessionRepository {
-  public readonly saved: StudioSessionSaveInput[] = []
+  public readonly saved: StudioSessionSaveRequestPayload[] = []
   public readonly loadedIds: string[] = []
   public readonly requestedEntities: StudioEntity[] = []
 
@@ -23,7 +25,7 @@ class FakeStudioSessionRepository implements IStudioSessionRepository {
     private readonly snapshot: StudioSessionSnapshot | undefined = undefined
   ) {}
 
-  public async save(_root: unknown, input: StudioSessionSaveInput): Promise<void> {
+  public async save(_root: unknown, input: StudioSessionSaveRequestPayload): Promise<void> {
     this.saved.push(input)
   }
 

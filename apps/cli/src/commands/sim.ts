@@ -82,6 +82,7 @@ import {
   type ProfileWriteResult,
   type Overlay,
   type BaselineSample,
+  type SceneDraft,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -788,11 +789,6 @@ function judgeUsageTotals(judge: SimJudge): TokenTotals {
       attribution: { primary: { kind: 'scene', id: 'sim-judge' } },
     })),
   );
-}
-
-interface SceneDraft {
-  readonly sceneStem: string;
-  readonly draft: string;
 }
 
 interface PreparedSim {

@@ -12,8 +12,12 @@ export {
 } from '#model/contracts/studioAgent';
 export { requiresApiKey } from '#model/contracts/ai';
 export type { AiProviderId, ProviderModelOption } from '#model/contracts/providerCatalog';
-export type { EntityKind } from '#model/contracts/aiTypes';
-export type { StudioValidationState } from '#model/contracts/studioValidation';
+export type { AiProviderStatus, EntityKind } from '#model/contracts/aiTypes';
+export type {
+  StudioValidationState,
+  StudioValidationVerdict,
+  StudioValidationWarning,
+} from '#model/contracts/studioValidation';
 export type { StudioAgentToolName } from '#model/contracts/studioAgent';
 export {
   compositionCatalog,

@@ -1,4 +1,19 @@
 import type {
+  CharacterArc,
+  RelationLink,
+  StudioValidationVerdict,
+  SceneGrounding,
+  NarratorSummary,
+  CharacterRosterEntry,
+  UsageCacheAmount,
+  UsageAmount,
+  UsageSummaryByEntity,
+  StudioValidationWarning,
+  StudioCardFieldChange,
+  StudioDraftReplacement,
+  SidebarCardsInitialData,
+  SidebarScenesInitialData,
+  StudioInitialData,
   CardType,
   CharacterRole,
   StudioValidationState,
@@ -8,7 +23,6 @@ import type {
   SidebarCardSummary,
   StoryboardRequestMethod,
   StudioCardStage,
-  StudioCardStageRelation,
   StudioChatTurn,
   StudioEntity,
   StudioFollowUpTarget,
@@ -21,14 +35,25 @@ import type {
   StudioStage,
   StudioStageCard,
   StudioTarget,
-  StudioValidation,
   NarratorCard,
   SceneBeat,
   LocationKind,
-  BibleSubjectKind,
 } from '@storyboard/story-model/contracts';
 
 export type {
+  CharacterArc,
+  SceneGrounding,
+  NarratorSummary,
+  CharacterRosterEntry,
+  UsageCacheAmount,
+  UsageAmount,
+  UsageSummaryByEntity,
+  StudioValidationWarning,
+  StudioCardFieldChange,
+  StudioDraftReplacement,
+  SidebarCardsInitialData,
+  SidebarScenesInitialData,
+  StudioInitialData,
   CardType,
   CharacterRole,
   StudioValidationState,
@@ -37,7 +62,7 @@ export type {
   SidebarCardSummary,
   StoryboardRequestMethod,
   StudioCardStage,
-  StudioCardStageRelation,
+  RelationLink,
   StudioChatTurn,
   StudioEntity,
   EntityKind,
@@ -51,21 +76,10 @@ export type {
   StudioStage,
   StudioStageCard,
   StudioTarget,
-  StudioValidation,
+  StudioValidationVerdict,
 };
 
 type CardAttributeValue = string | number | boolean | null;
-
-export interface CharacterRelation {
-  readonly target: string;
-  readonly type: string;
-}
-
-export interface CharacterArc {
-  readonly stage: string;
-  readonly summary: string;
-  readonly sceneRef?: string;
-}
 
 export interface StoryboardCard {
   readonly type: CardType;
@@ -86,16 +100,9 @@ export interface StoryboardCard {
   readonly attributes?: Record<string, CardAttributeValue>;
   readonly tags?: readonly string[];
   readonly traits?: readonly string[];
-  readonly relations?: readonly CharacterRelation[];
+  readonly relations?: readonly RelationLink[];
   readonly arc?: readonly CharacterArc[];
   readonly recentDialogues?: readonly string[];
-}
-
-export interface SceneGrounding {
-  readonly incident?: string;
-  readonly place?: string;
-  readonly relation?: string;
-  readonly time?: string;
 }
 
 export interface SceneCard {
@@ -126,95 +133,25 @@ export type { NarratorCard };
 
 export type EditorCard = StoryboardCard | SceneCard | NarratorCard;
 
-export interface NarratorRosterEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly summary: string;
-}
-
-export interface CharacterRosterEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly role?: CharacterRole;
-}
-
 export interface CardEditorInitialData {
   readonly documentUri: string;
   readonly rawText: string;
   readonly card?: EditorCard;
   readonly imageUri?: string;
   readonly characterRoster?: readonly CharacterRosterEntry[];
-  readonly narratorRoster?: readonly NarratorRosterEntry[];
+  readonly narratorRoster?: readonly NarratorSummary[];
   readonly error?: string;
 }
 
 export type { SidebarRunnableCommand } from '@storyboard/story-model/contracts';
 
-export interface UsageCacheAmount {
-  readonly promptTokens: number;
-  readonly cachedTokens: number;
-  readonly savedUsd: number;
-}
-
-export interface UsageAmount {
-  readonly costUsd: number;
-  readonly tokens: number;
-  readonly hasUnpricedUsage: boolean;
-  readonly cache?: UsageCacheAmount;
-}
-
-export interface UsageSummaryByEntity {
-  readonly scenes: Readonly<Record<string, UsageAmount>>;
-  readonly characters: Readonly<Record<string, UsageAmount>>;
-  readonly backgrounds: Readonly<Record<string, UsageAmount>>;
-  readonly total: UsageAmount;
-}
-
-export interface SidebarCardsInitialData {
-  readonly type: BibleSubjectKind;
-  readonly title: string;
-  readonly cards: readonly SidebarCardSummary[];
-  readonly isStoryboardProject: boolean;
-  readonly usage: UsageSummaryByEntity;
-}
-
-export interface SidebarScenesInitialData {
-  readonly title: string;
-  readonly scenes: readonly SceneListItem[];
-  readonly isStoryboardProject: boolean;
-  readonly usage: UsageSummaryByEntity;
-}
-
 export type StudioReviewState = 'unreviewed' | 'clean' | 'issues';
-
-export interface StudioValidationWarning {
-  readonly message: string;
-  readonly source?: string;
-}
-
-export interface StudioCardFieldChange {
-  readonly field: string;
-  readonly value: string | readonly string[] | readonly Readonly<Record<string, string>>[];
-}
-
-export interface StudioDraftReplacement {
-  readonly startOffset: number;
-  readonly endOffset: number;
-  readonly oldText: string;
-  readonly newText: string;
-}
 
 export type StudioPatch =
   | { readonly target: 'card'; readonly changes: readonly StudioCardFieldChange[] }
   | { readonly target: 'draft'; readonly replacements: readonly StudioDraftReplacement[] };
 
 export type StudioChatStage = 'thinking' | 'looking-up' | 'invoking' | 'validating' | 'idle';
-
-export interface StudioInitialData {
-  readonly title: string;
-  readonly target: StudioTarget;
-  readonly session?: StudioSessionSnapshot;
-}
 
 export interface StoryboardEventMessage {
   readonly type: 'event';
