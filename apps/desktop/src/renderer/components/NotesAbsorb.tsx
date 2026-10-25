@@ -20,7 +20,7 @@ type Step =
   | { readonly kind: 'done'; readonly result: NotesApplyView };
 
 export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const [step, setStep] = useState<Step>({ kind: 'pick' });
   const [notionUrl, setNotionUrl] = useState('');
   const [isBusy, setBusy] = useState(false);
@@ -57,28 +57,28 @@ export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
     );
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={t('notes.title')}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={translate('notes.title')}>
       <div className="card stack" style={{ maxWidth: 560 }}>
-        <h2>{t('notes.title')}</h2>
+        <h2>{translate('notes.title')}</h2>
 
         {step.kind === 'pick' ? (
           <>
-            <p className="muted small">{t('notes.intro')}</p>
+            <p className="muted small">{translate('notes.intro')}</p>
             <div className="row">
               <button type="button" className="button" disabled={isBusy} onClick={() => void pickAndRead('folder')}>
-                {t('notes.pickFolder')}
+                {translate('notes.pickFolder')}
               </button>
               <button type="button" className="button" disabled={isBusy} onClick={() => void pickAndRead('zip')}>
-                {t('notes.pickZip')}
+                {translate('notes.pickZip')}
               </button>
             </div>
             <label className="field">
-              <span className="field-label">{t('notes.notionUrl')}</span>
+              <span className="field-label">{translate('notes.notionUrl')}</span>
               <div className="row">
                 <input
                   className="input"
                   value={notionUrl}
-                  placeholder={t('notes.notionUrlPlaceholder')}
+                  placeholder={translate('notes.notionUrlPlaceholder')}
                   onChange={(event) => setNotionUrl(event.target.value)}
                 />
                 <button
@@ -87,30 +87,30 @@ export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
                   disabled={isBusy || notionUrl.trim().length === 0 || !props.hasNotionToken}
                   onClick={() => void readLocation({ kind: 'notion', pageUrl: notionUrl.trim() })}
                 >
-                  {isBusy ? t('notes.reading') : t('notes.read')}
+                  {isBusy ? translate('notes.reading') : translate('notes.read')}
                 </button>
               </div>
-              {props.hasNotionToken ? null : <span className="field-hint">{t('notes.notionNeedsToken')}</span>}
+              {props.hasNotionToken ? null : <span className="field-hint">{translate('notes.notionNeedsToken')}</span>}
             </label>
           </>
         ) : null}
 
         {step.kind === 'estimate' ? (
           <>
-            <h3>{t('notes.estimateHeading')}</h3>
+            <h3>{translate('notes.estimateHeading')}</h3>
             <p className="small">{step.estimate.location}</p>
             <p>
-              {t('notes.estimate', {
+              {translate('notes.estimate', {
                 notes: step.estimate.noteCount.toLocaleString(language),
                 chars: step.estimate.characterCount.toLocaleString(language),
                 skipped: step.estimate.skippedCount.toLocaleString(language),
               })}
             </p>
             <p>
-              {t('notes.estimateCost', {
+              {translate('notes.estimateCost', {
                 requests: String(step.estimate.requestCount),
                 model: `${step.estimate.providerId} / ${step.estimate.model}`,
-                cost: step.estimate.costCeilingUsd === undefined ? t('notes.costUnknown') : `≤ ${formatUsd(step.estimate.costCeilingUsd)}`,
+                cost: step.estimate.costCeilingUsd === undefined ? translate('notes.costUnknown') : `≤ ${formatUsd(step.estimate.costCeilingUsd)}`,
               })}
             </p>
           </>
@@ -118,21 +118,21 @@ export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
 
         {step.kind === 'plan' ? (
           <>
-            <h3>{t('notes.planHeading')}</h3>
+            <h3>{translate('notes.planHeading')}</h3>
             <ul className="small">
-              <li>{t('notes.planCards', { count: String(step.plan.newCards.length), names: step.plan.newCards.join(', ') || '—' })}</li>
+              <li>{translate('notes.planCards', { count: String(step.plan.newCards.length), names: step.plan.newCards.join(', ') || '—' })}</li>
               <li>
-                {t('notes.planChanged', { count: String(step.plan.changedCards.length), names: step.plan.changedCards.join(', ') || '—' })}
+                {translate('notes.planChanged', { count: String(step.plan.changedCards.length), names: step.plan.changedCards.join(', ') || '—' })}
               </li>
-              <li>{t('notes.planScenes', { count: String(step.plan.sceneCount), skipped: String(step.plan.skippedSceneCount) })}</li>
+              <li>{translate('notes.planScenes', { count: String(step.plan.sceneCount), skipped: String(step.plan.skippedSceneCount) })}</li>
               <li>
-                {t('notes.planSynopsis', {
-                  state: step.plan.hasSynopsis ? t('notes.yes') : t('notes.no'),
+                {translate('notes.planSynopsis', {
+                  state: step.plan.hasSynopsis ? translate('notes.yes') : translate('notes.no'),
                   canon: String(step.plan.canonCandidateCount),
                 })}
               </li>
               {step.plan.unclassifiedNotes.length > 0 ? (
-                <li>{t('notes.planUnclassified', { names: step.plan.unclassifiedNotes.join(', ') })}</li>
+                <li>{translate('notes.planUnclassified', { names: step.plan.unclassifiedNotes.join(', ') })}</li>
               ) : null}
               {step.plan.warnings.map((warning) => (
                 <li key={warning} className="muted">
@@ -146,19 +146,19 @@ export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
         {step.kind === 'done' ? (
           <ul className="small">
             <li>
-              {t('notes.done', {
+              {translate('notes.done', {
                 cards: String(step.result.createdCards.length),
                 scenes: String(step.result.createdScenes.length),
               })}
             </li>
             {step.result.pendingCandidateCards.length > 0 ? (
-              <li>{t('notes.donePending', { count: String(step.result.pendingCandidateCards.length) })}</li>
+              <li>{translate('notes.donePending', { count: String(step.result.pendingCandidateCards.length) })}</li>
             ) : null}
-            {step.result.canonCandidateCount > 0 ? <li>{t('notes.doneCanon', { count: String(step.result.canonCandidateCount) })}</li> : null}
-            {step.result.synopsis === 'written' ? <li>{t('notes.doneSynopsis')}</li> : null}
-            {step.result.synopsis === 'candidate' ? <li>{t('notes.doneSynopsisCandidate')}</li> : null}
+            {step.result.canonCandidateCount > 0 ? <li>{translate('notes.doneCanon', { count: String(step.result.canonCandidateCount) })}</li> : null}
+            {step.result.synopsis === 'written' ? <li>{translate('notes.doneSynopsis')}</li> : null}
+            {step.result.synopsis === 'candidate' ? <li>{translate('notes.doneSynopsisCandidate')}</li> : null}
             {step.result.filledSettingKeys.length > 0 ? (
-              <li>{t('notes.doneContract', { keys: step.result.filledSettingKeys.join(', ') })}</li>
+              <li>{translate('notes.doneContract', { keys: step.result.filledSettingKeys.join(', ') })}</li>
             ) : null}
           </ul>
         ) : null}
@@ -171,16 +171,16 @@ export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
 
         <div className="spread">
           <button type="button" className="button button-quiet" disabled={isBusy} onClick={step.kind === 'done' ? props.onDone : props.onCancel}>
-            {step.kind === 'done' ? t('common.close') : t('common.cancel')}
+            {step.kind === 'done' ? translate('common.close') : translate('common.cancel')}
           </button>
           {step.kind === 'estimate' ? (
             <button type="button" className="button button-primary" disabled={isBusy} onClick={() => void sort()}>
-              {isBusy ? t('notes.sorting') : t('notes.sort')}
+              {isBusy ? translate('notes.sorting') : translate('notes.sort')}
             </button>
           ) : null}
           {step.kind === 'plan' ? (
             <button type="button" className="button button-primary" disabled={isBusy} onClick={() => void apply()}>
-              {isBusy ? t('notes.applying') : t('notes.apply')}
+              {isBusy ? translate('notes.applying') : translate('notes.apply')}
             </button>
           ) : null}
         </div>

@@ -13,7 +13,7 @@ interface HistoryProps {
 }
 
 export function History(props: HistoryProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const [entries, setEntries] = useState<readonly SnapshotEntry[]>();
   const [isRestoring, setRestoring] = useState(false);
   const isBusy: boolean = props.run !== undefined && props.run.status !== 'idle';
@@ -26,7 +26,7 @@ export function History(props: HistoryProps): JSX.Element {
   }, [props.change.sequence, props.run?.status]);
 
   const restore = async (entry: SnapshotEntry): Promise<void> => {
-    if (!window.confirm(t('history.restoreConfirm', { message: entry.message }))) {
+    if (!window.confirm(translate('history.restoreConfirm', { message: entry.message }))) {
       return;
     }
     setRestoring(true);
@@ -42,9 +42,9 @@ export function History(props: HistoryProps): JSX.Element {
   return (
     <main className="workspace-page">
       <div className="workspace-page-inner">
-        <h1 className="page-title">{t('history.title')}</h1>
-        <p className="muted">{t('history.intro')}</p>
-        {entries !== undefined && entries.length === 0 ? <p className="muted">{t('history.empty')}</p> : null}
+        <h1 className="page-title">{translate('history.title')}</h1>
+        <p className="muted">{translate('history.intro')}</p>
+        {entries !== undefined && entries.length === 0 ? <p className="muted">{translate('history.empty')}</p> : null}
         <ol className="list">
           {(entries ?? []).map((entry, index) => (
             <li key={entry.id} className="spread section">
@@ -56,7 +56,7 @@ export function History(props: HistoryProps): JSX.Element {
               </span>
               {index === 0 ? null : (
                 <button type="button" className="button" disabled={isBusy || isRestoring} onClick={() => void restore(entry)}>
-                  {t('history.restore')}
+                  {translate('history.restore')}
                 </button>
               )}
             </li>

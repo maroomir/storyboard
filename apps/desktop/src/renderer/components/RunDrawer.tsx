@@ -19,7 +19,7 @@ interface RunDrawerProps {
 }
 
 export function RunDrawer(props: RunDrawerProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const { run } = props;
   const [mode, setMode] = useState<NovelRunMode>(run.resumable?.mode ?? 'chapter-approval');
   const [budget, setBudget] = useState(String(run.budgetUsd));
@@ -70,19 +70,19 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
         <div className="spread">
           <div className="row">
             <h2 id="run-heading" style={{ margin: 0, fontSize: 16 }}>
-              {t('run.title')}
+              {translate('run.title')}
             </h2>
-            <span className="pill">{t(`run.status.${run.status}`)}</span>
+            <span className="pill">{translate(`run.status.${run.status}`)}</span>
           </div>
           <button type="button" className="button button-quiet" onClick={props.onClose}>
-            {t('common.close')}
+            {translate('common.close')}
           </button>
         </div>
 
-        <ol className="rail" aria-label={t('run.title')}>
+        <ol className="rail" aria-label={translate('run.title')}>
           {stageRail(run).map(({ stage, state }) => (
             <li key={stage} className="rail-step" data-state={state}>
-              {t(`run.stage.${stage}`)}
+              {translate(`run.stage.${stage}`)}
             </li>
           ))}
         </ol>
@@ -92,14 +92,14 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
             <span>{run.approval.info}</span>
             <span className="row">
               <button type="button" className="button" onClick={() => void act(() => call('run.answerApproval', { approved: false }))}>
-                {t('run.decline')}
+                {translate('run.decline')}
               </button>
               <button
                 type="button"
                 className="button button-primary"
                 onClick={() => void act(() => call('run.answerApproval', { approved: true }))}
               >
-                {t('run.approve')}
+                {translate('run.approve')}
               </button>
             </span>
           </div>
@@ -109,11 +109,11 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
           {isIdle ? (
             <>
               <label className="row">
-                <span className="field-label">{t('run.modeLabel')}</span>
+                <span className="field-label">{translate('run.modeLabel')}</span>
                 <select className="select" style={{ width: 'auto' }} value={mode} onChange={(event) => setMode(event.target.value as NovelRunMode)}>
                   {novelRunModes.map((option) => (
                     <option key={option} value={option}>
-                      {t(`run.mode.${option}`)}
+                      {translate(`run.mode.${option}`)}
                     </option>
                   ))}
                 </select>
@@ -125,7 +125,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
                   disabled={missing.length > 0 || isForeignLocked}
                   onClick={() => void act(() => call('run.startNovel', { mode, resume: false }))}
                 >
-                  {t('run.start')}
+                  {translate('run.start')}
                 </button>
               ) : (
                 <>
@@ -135,7 +135,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
                     disabled={isForeignLocked}
                     onClick={() => void act(() => call('run.startNovel', { mode, resume: true }))}
                   >
-                    {t('run.resume')}
+                    {translate('run.resume')}
                   </button>
                   <button
                     type="button"
@@ -143,7 +143,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
                     disabled={missing.length > 0 || isForeignLocked}
                     onClick={() => void act(() => call('run.startNovel', { mode, resume: false }))}
                   >
-                    {t('run.restart')}
+                    {translate('run.restart')}
                   </button>
                 </>
               )}
@@ -155,17 +155,17 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
               disabled={run.status === 'pausing'}
               onClick={() => void act(() => call('run.pause', {}))}
             >
-              {t('run.pause')}
+              {translate('run.pause')}
             </button>
           )}
           {run.resumable === undefined || !isIdle ? null : (
             <span className="muted small">
-              {t('run.resumable', { done: run.resumable.completedStages.length, total: novelStageNames.length })}
+              {translate('run.resumable', { done: run.resumable.completedStages.length, total: novelStageNames.length })}
             </span>
           )}
           {missing.length === 0 ? null : (
             <span className="error-text small">
-              {t('run.contractMissing', { fields: missing.map((key) => contractFieldLabel(language, key)).join(', ') })}
+              {translate('run.contractMissing', { fields: missing.map((key) => contractFieldLabel(language, key)).join(', ') })}
             </span>
           )}
           {props.overview.foreignLock === undefined ? null : (
@@ -176,7 +176,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
 
         <div className="drawer-grid">
           <div className="panel">
-            <h3>{t('run.scenes')}</h3>
+            <h3>{translate('run.scenes')}</h3>
             <div className="scene-grid">
               {props.overview.chapters.flatMap((chapter) =>
                 chapter.scenes.map((scene) => (
@@ -185,7 +185,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
                     type="button"
                     className="scene-cell"
                     data-status={run.sceneStem === scene.stem && !isIdle ? 'generating' : scene.status}
-                    title={`${scene.title} · ${t(`status.${scene.status}`)}`}
+                    title={`${scene.title} · ${translate(`status.${scene.status}`)}`}
                     onClick={() => props.onSceneOpen(scene.stem)}
                   >
                     <span>{scene.order}</span>
@@ -196,8 +196,8 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
             </div>
           </div>
           <div className="panel">
-            <h3>{t('run.log')}</h3>
-            {run.log.length === 0 ? <p className="muted small">{t('run.logEmpty')}</p> : null}
+            <h3>{translate('run.log')}</h3>
+            {run.log.length === 0 ? <p className="muted small">{translate('run.logEmpty')}</p> : null}
             <ol className="log" aria-live="polite">
               {run.log.map((line, index) => (
                 <li key={`${line.at}-${index}`} data-tone={line.tone} ref={index === run.log.length - 1 ? logEnd : undefined}>
@@ -207,14 +207,14 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
             </ol>
           </div>
           <div className="panel">
-            <h3>{t('run.cost')}</h3>
+            <h3>{translate('run.cost')}</h3>
             <div>
-              <div className="muted small">{t('run.thisRun')}</div>
+              <div className="muted small">{translate('run.thisRun')}</div>
               <div className="big-number">{formatUsd(run.spentUsd)}</div>
-              <div className="muted small">{t('run.tokens', { count: run.spentTokens.toLocaleString(language) })}</div>
+              <div className="muted small">{translate('run.tokens', { count: run.spentTokens.toLocaleString(language) })}</div>
               {run.cache === undefined || run.cache.hitRate <= 0 ? null : (
                 <div className="muted small">
-                  {t('run.cache', { rate: String(Math.round(run.cache.hitRate * 100)), saved: formatUsd(run.cache.savedUsd) })}
+                  {translate('run.cache', { rate: String(Math.round(run.cache.hitRate * 100)), saved: formatUsd(run.cache.savedUsd) })}
                 </div>
               )}
             </div>
@@ -224,11 +224,11 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
               </div>
             )}
             <div className="spread small">
-              <span className="muted">{t('run.project')}</span>
+              <span className="muted">{translate('run.project')}</span>
               <span>{formatUsd(run.projectSpentUsd)}</span>
             </div>
             <label className="field">
-              <span className="field-label">{t('run.budget')}</span>
+              <span className="field-label">{translate('run.budget')}</span>
               <input
                 className="input"
                 type="number"
@@ -244,9 +244,9 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
                   }
                 }}
               />
-              <span className="field-hint">{t('run.budgetHint')}</span>
+              <span className="field-hint">{translate('run.budgetHint')}</span>
             </label>
-            {run.hasUnpricedUsage ? <p className="muted small">{t('run.unpriced')}</p> : null}
+            {run.hasUnpricedUsage ? <p className="muted small">{translate('run.unpriced')}</p> : null}
           </div>
         </div>
       </section>

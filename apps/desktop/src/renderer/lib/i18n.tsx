@@ -7,18 +7,18 @@ export type Translate = (key: MessageKey, params?: MessageParams) => string;
 
 interface I18nValue {
   readonly language: UiLanguage;
-  readonly t: Translate;
+  readonly translate: Translate;
 }
 
 const I18nContext: React.Context<I18nValue> = createContext<I18nValue>({
   language: 'ko',
-  t: (key, params) => translate('ko', key, params),
+  translate: (key, params) => translate('ko', key, params),
 });
 
 export function I18nProvider(props: { readonly language: UiLanguage; readonly children: ReactNode }): JSX.Element {
   const value: I18nValue = {
     language: props.language,
-    t: (key, params) => translate(props.language, key, params),
+    translate: (key, params) => translate(props.language, key, params),
   };
 
   return <I18nContext.Provider value={value}>{props.children}</I18nContext.Provider>;

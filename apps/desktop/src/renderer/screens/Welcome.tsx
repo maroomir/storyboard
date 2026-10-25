@@ -9,29 +9,29 @@ interface WelcomeProps {
 }
 
 export function Welcome(props: WelcomeProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const dateFormat: Intl.DateTimeFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium' });
 
   return (
     <main className="centered">
       <div className="stack" style={{ alignItems: 'center', textAlign: 'center' }}>
         <h1 className="brand">Storyboard</h1>
-        <p className="tagline">{t('welcome.tagline')}</p>
+        <p className="tagline">{translate('welcome.tagline')}</p>
       </div>
       <div className="row">
         <button type="button" className="button button-primary" onClick={props.onNew}>
-          {t('welcome.newWork')}
+          {translate('welcome.newWork')}
         </button>
         <button type="button" className="button" onClick={() => props.onOpen()}>
-          {t('welcome.openWork')}
+          {translate('welcome.openWork')}
         </button>
       </div>
       <section className="stack" style={{ width: 'min(640px, 100%)' }} aria-labelledby="recent-heading">
         <h2 id="recent-heading" className="field-label">
-          {t('welcome.recent')}
+          {translate('welcome.recent')}
         </h2>
         {props.recentWorkspaces.length === 0 ? (
-          <p className="muted">{t('welcome.noRecent')}</p>
+          <p className="muted">{translate('welcome.noRecent')}</p>
         ) : (
           <ul className="recent-list">
             {props.recentWorkspaces.map((workspace) => (

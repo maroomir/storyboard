@@ -26,7 +26,7 @@ async function withScene<T>(
   run: (session: WorkspaceSession) => Promise<ServiceResult<T>>,
 ): Promise<ServiceResult<T>> {
   return await withSession(app, async (session) =>
-    (await session.sceneExists(stem)) ? await run(session) : fail('not-found', app.t('error.notFound')),
+    (await session.sceneExists(stem)) ? await run(session) : fail('not-found', app.translate('error.notFound')),
   );
 }
 
@@ -55,7 +55,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       await withWritableSession(app, async (session) =>
         (await session.sceneExists(stem))
           ? await session.proposeEdit(stem, selectedText, instruction)
-          : fail('not-found', app.t('error.notFound')),
+          : fail('not-found', app.translate('error.notFound')),
       ),
     'scene.notes': async ({ stem }) =>
       await withScene(app, stem, async (session) => succeed(await session.notes(stem))),
@@ -63,7 +63,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       await withWritableSession(app, async (session) =>
         (await session.sceneExists(stem))
           ? await session.renameScene(stem, to)
-          : fail('not-found', app.t('error.notFound')),
+          : fail('not-found', app.translate('error.notFound')),
       ),
 
     'run.status': async () => await withSession(app, async (session) => succeed(await session.runs.refresh())),
@@ -139,7 +139,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
     'notes.collect': async ({ location }) =>
       await withSession(app, async (session) =>
         location.kind === 'path' && !app.isOfferedNoteLocation(location.path)
-          ? fail('invalid-request', app.t('error.invalidRequest'))
+          ? fail('invalid-request', app.translate('error.invalidRequest'))
           : await session.notesImport.collect(location),
       ),
     'notes.plan': async () => await withSession(app, async (session) => await session.notesImport.planAbsorb()),
@@ -162,11 +162,11 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
         const target: SnapshotEntry | undefined = (await session.snapshots.list()).find((entry) => entry.id === id);
 
         if (target === undefined) {
-          return fail('not-found', app.t('error.notFound'));
+          return fail('not-found', app.translate('error.notFound'));
         }
 
         await session.endAllDraftSessions();
-        await session.snapshots.restore(id, app.t('snapshot.restored', { message: target.message }));
+        await session.snapshots.restore(id, app.translate('snapshot.restored', { message: target.message }));
         return succeed(await session.snapshots.list());
       }),
   };

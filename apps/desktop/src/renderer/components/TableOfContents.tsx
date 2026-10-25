@@ -9,16 +9,16 @@ interface TableOfContentsProps {
 }
 
 export function TableOfContents(props: TableOfContentsProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const target: number | undefined = props.overview.targetWordCount;
   const progress: number | undefined = target === undefined || target === 0 ? undefined : Math.min(1, props.overview.totalLength / target);
 
   return (
-    <nav className="toc" aria-label={t('desk.toc')}>
-      <div className="toc-heading">{t('desk.toc')}</div>
+    <nav className="toc" aria-label={translate('desk.toc')}>
+      <div className="toc-heading">{translate('desk.toc')}</div>
       {props.overview.chapters.map((chapter, chapterIndex) => (
-        <section key={`${chapter.title}-${chapterIndex}`} aria-label={chapter.title || t('desk.untitledChapter')}>
-          <div className="toc-chapter">{chapter.title || t('desk.untitledChapter')}</div>
+        <section key={`${chapter.title}-${chapterIndex}`} aria-label={chapter.title || translate('desk.untitledChapter')}>
+          <div className="toc-chapter">{chapter.title || translate('desk.untitledChapter')}</div>
           {chapter.scenes.map((scene) => (
             <button
               key={scene.stem}
@@ -31,20 +31,20 @@ export function TableOfContents(props: TableOfContentsProps): JSX.Element {
               <span>
                 {scene.order} {scene.title}
               </span>
-              <span className="sr-only">{t(`status.${scene.status}`)}</span>
+              <span className="sr-only">{translate(`status.${scene.status}`)}</span>
             </button>
           ))}
         </section>
       ))}
       <div className="toc-total">
         <div className="spread">
-          <span>{t('desk.totalLength')}</span>
-          <span>{t('common.characters', { count: props.overview.totalLength.toLocaleString(language) })}</span>
+          <span>{translate('desk.totalLength')}</span>
+          <span>{translate('common.characters', { count: props.overview.totalLength.toLocaleString(language) })}</span>
         </div>
         {target === undefined ? null : (
           <div className="spread">
-            <span>{t('desk.target')}</span>
-            <span>{t('common.characters', { count: target.toLocaleString(language) })}</span>
+            <span>{translate('desk.target')}</span>
+            <span>{translate('common.characters', { count: target.toLocaleString(language) })}</span>
           </div>
         )}
         {progress === undefined ? null : (
