@@ -88,8 +88,9 @@ What each check actually enforces, so a green run is not read as more than it is
   `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. The
   desktop applies the same rule.
 - `packages/story-model` — its own layer direction: `format` may import only itself, `contracts`
-  only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; plus
-  no cycles.
+  only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; no
+  import of an entry file (`#model/contracts`, `#model/index`) or a folder barrel (`#model/…/index`)
+  from inside the package, since those re-export every layer; plus no cycles.
 - `packages/story-engine` — `pipeline`, `ports` and `ai` may each import only themselves (and other
   packages); plus no cycles. `persistence` and `application` are a mutually dependent pair by design
   (application declares the repository ports, persistence implements them), so no order is imposed

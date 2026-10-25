@@ -17,7 +17,7 @@ import {
 import { mainThreadId } from '#model/format/project';
 import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from './storyUri';
 
-import type { StudioEntity } from '#model/shared/messaging/index';
+import type { StudioEntity } from '#model/shared/messaging/studio';
 
 export { isHiddenSceneFileName } from '#model/format/paths';
 export { isIgnoredSampleCardFileName } from '#model/format/sampleCard';
