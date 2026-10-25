@@ -37,8 +37,6 @@ export class RevisionPlanParseError extends Error {
     message: string,
     cause?: unknown,
   ) {
-    // NOTE: `cause` goes through Error's own options rather than a parameter property, which would
-    // shadow the base member.
     super(message, { cause });
     this.name = 'RevisionPlanParseError';
   }

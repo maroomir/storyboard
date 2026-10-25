@@ -11,8 +11,6 @@ import type {
   NoteExtractionResponse,
 } from '@storyboard/story-model';
 
-// A file written before 0.13 kept one absorb only; it is no longer read, and the next write
-// replaces it.
 export type NoteCandidateLoad =
   | { readonly kind: 'current'; readonly file: NoteCandidateFile }
   | { readonly kind: 'legacy' }
@@ -31,9 +29,6 @@ export class NoteCandidateFileError extends Error {
   }
 }
 
-// What the note import reads and writes. The bundle, the plan and the candidates live in the
-// workspace's cache, which git ignores: the notes stay the author's, and only what they turn into
-// is written to the workspace proper.
 export interface INoteAbsorbRepository {
   saveBundle(workspaceRoot: StoryUri, bundle: NoteBundle): Promise<void>;
   savePlan(workspaceRoot: StoryUri, plan: NoteAbsorbPlan): Promise<void>;
@@ -41,9 +36,7 @@ export interface INoteAbsorbRepository {
     workspaceRoot: StoryUri,
     responses: readonly NoteExtractionResponse[],
   ): Promise<void>;
-  // Throws NoteCandidateFileError for a file that is not JSON or not a candidate file.
   loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateLoad>;
-  // A file with no sources is removed, so a promoted or discarded candidate does not linger.
   saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void>;
   loadCard(
     workspaceRoot: StoryUri,
@@ -54,18 +47,14 @@ export interface INoteAbsorbRepository {
   writeScene(workspaceRoot: StoryUri, fileName: string, card: SceneCard): Promise<void>;
   synopsisExists(workspaceRoot: StoryUri): Promise<boolean>;
   writeSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void>;
-  // The notes' synopses kept beside an author's own. Empty text removes the file.
   loadSynopsisCandidate(workspaceRoot: StoryUri): Promise<string | undefined>;
   saveSynopsisCandidate(workspaceRoot: StoryUri, text: string): Promise<void>;
-  // Adds each character's quoted lines to the work's voice seeds; lines already there stay once.
   addVoiceSeeds(
     workspaceRoot: StoryUri,
     seeds: Readonly<Record<string, readonly string[]>>,
   ): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void>;
-  // The notes' setting facts as one candidate record per location, beside the drafts' records, so
-  // `canon promote` offers them the same way. An empty list removes the location's record.
   saveCanonCandidates(
     workspaceRoot: StoryUri,
     location: string,

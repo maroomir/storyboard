@@ -7,9 +7,6 @@ import {
 } from '#model/contracts/backgroundFactConflicts';
 import type { BackgroundCard } from '#model/format/card';
 
-// What the conflict check found per background card, keyed by what it read. Asking again about the
-// same lines gets the same answer at the same price, so the answer is kept until the card or the
-// prompt changes. It lives in the git-ignored cache: `doctor` reads it, nothing in the work does.
 export interface BackgroundFactConflictRecord {
   readonly inputKey: string;
   readonly conflicts: readonly BackgroundFactConflict[];
@@ -46,7 +43,6 @@ export function computeBackgroundFactConflictKey(
   return createHash('sha256').update(source).digest('hex');
 }
 
-// A file that cannot be read is treated as empty: the worst case is one more check.
 export function parseBackgroundFactConflictRecords(raw: string): BackgroundFactConflictRecords {
   try {
     const parsed: z.ZodSafeParseResult<BackgroundFactConflictRecordsPayload> =

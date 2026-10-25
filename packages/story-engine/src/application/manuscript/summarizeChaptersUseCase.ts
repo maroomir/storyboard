@@ -27,9 +27,6 @@ export interface IChapterSummaryRepository {
 }
 
 export type SummarizeChaptersOptions = {
-  // Summarize only this chapter (0-based) and merge it into the existing file. The novel pipeline
-  // passes it after each chapter so a later chapter generates against the story so far; omitting it
-  // resummarizes the whole manuscript.
   readonly chapterIndex?: number;
   readonly onProgress?: (current: number, total: number) => void;
   readonly shouldCancel?: () => boolean;
@@ -102,8 +99,6 @@ export class SummarizeChaptersUseCase implements IUseCase<
             computeDraftBodyHash(chapter.markdown),
           ]),
         );
-        // 한 장만 다시 요약할 때도 나머지 장의 낡음 표시를 다시 매긴다. 이 실행이 요약 파일을
-        // 어차피 쓰므로, 표시가 실제와 어긋난 채로 남는 창이 생기지 않는다.
         let summaries: readonly ChapterSummary[] =
           options.chapterIndex === undefined
             ? []

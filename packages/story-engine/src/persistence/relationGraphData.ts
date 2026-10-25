@@ -42,7 +42,7 @@ export async function loadRelationListCharacters(
     fs,
     getStoryboardProjectPaths(workspaceRoot).characterDirectory,
   );
-  const results: RelationListCharacter[] = [];
+  const listCharacters: RelationListCharacter[] = [];
 
   for (const uri of uris) {
     if (isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? '')) {
@@ -57,7 +57,7 @@ export async function loadRelationListCharacters(
         continue;
       }
 
-      results.push({
+      listCharacters.push({
         id: card.id,
         name: card.name,
         ...(card.role === undefined ? {} : { role: card.role }),
@@ -68,9 +68,9 @@ export async function loadRelationListCharacters(
         })),
       });
     } catch {
-      // NOTE: Unreadable or invalid cards are skipped so the relation list stays usable.
+      continue;
     }
   }
 
-  return results.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
+  return listCharacters.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
 }

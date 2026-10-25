@@ -30,8 +30,6 @@ const pageSize: number = 100;
 const maximumRateLimitRetries: number = 5;
 const untitledNoteTitle: string = '제목 없음';
 
-// The shape of `fetch` this source needs. A host passes the platform's own; a test passes recorded
-// responses.
 export interface NoteHttpResponse {
   readonly status: number;
   readonly headers: { get(name: string): string | null };
@@ -49,7 +47,6 @@ export type NoteHttpFetch = (
 
 export interface NotionNoteSourceOptions {
   readonly pageUrl: string;
-  // SECURITY: the integration token is sent only to api.notion.com and never logged.
   readonly token: string;
   readonly fetch: NoteHttpFetch;
   readonly sleep?: (milliseconds: number) => Promise<void>;
@@ -59,8 +56,6 @@ function defaultSleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-// Reads a Notion page and everything under it — sub-pages and the rows of inline databases, in
-// page order — then the pages its text links to, one step and no further.
 export class NotionNoteSource implements INoteSource {
   public readonly kind: NoteSourceKind = 'notion';
 
@@ -93,8 +88,6 @@ export class NotionNoteSource implements INoteSource {
         continue;
       }
 
-      // A linked page lives outside the tree that was shared, so the integration often cannot see
-      // it. That is a note left out, not a failed run.
       try {
         await this.visitPage(linkedId, [], 'link');
       } catch (error) {
@@ -105,7 +98,6 @@ export class NotionNoteSource implements INoteSource {
     return { notes: this.notes, skipped: this.skipped };
   }
 
-  // The address may name a page or a full-page database; only asking tells them apart.
   private async visitRoot(rootId: string): Promise<void> {
     try {
       await this.visitPage(rootId, [], 'tree');
@@ -183,8 +175,6 @@ export class NotionNoteSource implements INoteSource {
       notionRichText((await this.request('GET', `/databases/${id}`)).title).trim() ||
       untitledNoteTitle;
 
-    // NOTE: a query without sorts returns rows newest first, and the view's own order is not exposed,
-    // so rows are read in title order — the order a vault's notes are read in.
     const rows: NotionRecord[] = (await this.listAll('POST', `/databases/${id}/query`)).sort(
       (left, right) => compareNoteNames(notionPageTitle(left), notionPageTitle(right)),
     );
@@ -221,7 +211,7 @@ export class NotionNoteSource implements INoteSource {
   }
 
   private async listAll(method: 'GET' | 'POST', path: string): Promise<NotionRecord[]> {
-    const results: NotionRecord[] = [];
+    const records: NotionRecord[] = [];
     let cursor: string | undefined;
 
     do {
@@ -240,7 +230,7 @@ export class NotionNoteSource implements INoteSource {
         const record: NotionRecord | undefined = asNotionRecord(item);
 
         if (record !== undefined) {
-          results.push(record);
+          records.push(record);
         }
       }
 
@@ -250,7 +240,7 @@ export class NotionNoteSource implements INoteSource {
           : undefined;
     } while (cursor !== undefined);
 
-    return results;
+    return records;
   }
 
   private async request(
@@ -319,8 +309,6 @@ function toNoteSourceError(status: number, payload: NotionRecord): NoteSourceErr
 
   const message: string = typeof payload.message === 'string' ? payload.message : '';
 
-  // NOTE: Notion answers a database id on /pages with 400 validation_error, not 404, and the
-  // message is the only thing that tells it apart from a malformed request.
   if (status === 400 && payload.code === 'validation_error' && /is a database/i.test(message)) {
     return new NoteSourceError('not-a-page', '페이지가 아니라 데이터베이스입니다.');
   }

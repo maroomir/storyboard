@@ -1,5 +1,3 @@
-// 씬 하나가 목표로 삼을 원고 분량. 명시값 → 본문 마커 → 씬 시드 길이 기반 파생 순으로 정한다.
-// 파생 단계가 없으면 목표가 아예 없는 씬은 프롬프트에 분량 제약이 걸리지 않아 원고가 무한정 늘어난다.
 const DERIVED_SCENE_LENGTH_MIN: number = 2000;
 const DERIVED_SCENE_LENGTH_MAX: number = 20000;
 

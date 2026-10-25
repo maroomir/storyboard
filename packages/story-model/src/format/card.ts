@@ -18,9 +18,6 @@ export function isCharacterRole(value: string | undefined): value is CharacterRo
   return value === 'main' || value === 'supporting' || value === 'extra';
 }
 
-// Decision #29: forgive casing and the known near-miss "support", but surface anything else as a
-// validation error instead of silently demoting the character to an extra — a lenient fallback
-// here rewrites authorial intent on the next save.
 export const characterRoleSchema: z.ZodType<CharacterRole | undefined> = z.preprocess(
   (value) => {
     if (value === undefined || value === null) {
@@ -70,8 +67,6 @@ export interface CharacterRelation {
 export const characterRelationSchema: z.ZodType<CharacterRelation> = z.object({
   target: cardIdSchema,
   type: z.string().trim().min(1),
-  // 이 상대에게 쓰는 말투("반말", "존댓말", "누나라 부르며 존댓말"). voice 하나로는 상대별 존대를
-  // 적을 수 없어 검수가 맞게 쓴 존댓말을 위반으로 잡았다(#88-5). 인물별 다듬기와 검수가 읽는다.
   speech: z.string().trim().min(1).optional(),
 });
 
@@ -149,8 +144,6 @@ const characterCardShape = {
   traits: stringListSchema.optional(),
   description: stringListSchema.optional(),
   voice: stringListSchema.optional(),
-  // NOTE: voice 의 예시 대사는 참고라 프롬프트가 복사를 금지한다. 반복돼야 하는 입버릇·러닝개그는
-  // 여기에 두어야 복사 금지와 반복 제한(craftContract.motifRepeatLimit)에서 빠진다(#88-3·4).
   catchphrases: stringListSchema.optional(),
   desire: stringListSchema.optional(),
   relations: z.array(characterRelationSchema).optional(),
@@ -220,8 +213,6 @@ export function splitCardTextToList(value: string): string[] {
     .filter((line) => line.length > 0);
 }
 
-// NOTE: 게임 아이디(attributes.gamename)는 본문에서 실명만큼 자주 쓰이는 호칭이라, 별칭과 함께
-// 인물 매칭 토큰에 포함해야 아이디로만 등장하는 비트에서 인물(과 페르소나)이 누락되지 않는다.
 export function characterMatchTokens(card: CharacterCard): string[] {
   const gamename: string | number | boolean | null | undefined = card.attributes?.['gamename'];
   const tokens: string[] = [

@@ -34,7 +34,6 @@ import { stripForeignScript } from './foreignScript';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: StoryUri;
-  // 서사 시간(§4.4)을 읽어 오는 곳. 없으면 씬 순번을 서사 시간으로 쓴다.
   readonly sceneDirectory?: StoryUri;
   readonly backgroundDirectory: StoryUri;
   readonly draftDirectory: StoryUri;
@@ -80,8 +79,6 @@ export async function buildSceneContext(
 
 const summaryContextBudget: number = 8000;
 
-// NOTE: previousSceneOrder는 같은 스레드의 직전 씬이다. 주지 않으면 종전대로 바로 앞 번호를 본다 —
-// 스레드를 쓰지 않는 작품은 그 둘이 언제나 같다.
 export async function readPreviousSceneContext(
   paths: SceneContextWorkspacePaths,
   currentSceneOrder: number,
@@ -121,9 +118,6 @@ async function readRollingSummary(
   }
 }
 
-// A chapter marked stale was written from a draft that has since changed, so injecting it would
-// carry the discarded version's events into the next scene. Dropping every chapter leaves only the
-// file header, which is worth less than the previous draft's tail, so that falls back instead.
 function dropStaleChapters(content: string): string | undefined {
   if (content.length === 0) {
     return undefined;
@@ -139,9 +133,6 @@ function dropStaleChapters(content: string): string | undefined {
   return [preamble ?? '', ...fresh].join('').trim();
 }
 
-// Over budget, the oldest chapters are compressed to their first line rather than the whole file
-// being cut from the front: a raw tail cut drops the opening chapters entirely, which is exactly
-// where a long-range setup a later scene has to honour was established.
 function boundSummary(content: string): string {
   const trimmed: string = content.trim();
 
@@ -170,8 +161,6 @@ function joinSections(sections: readonly string[]): string {
   return sections.join('').trim();
 }
 
-// The heading plus the first sentence-bearing line — enough to say which chapter it was and what
-// happened, without the beat-by-beat detail a recent chapter still needs.
 function firstLines(section: string): string {
   const lines: string[] = section.split('\n');
   const heading: string = lines[0] ?? '';
@@ -213,21 +202,15 @@ async function readPreviousDraftTail(
 export interface NarrativeContext {
   readonly bibleFacts: readonly BibleFact[];
   readonly prompt?: string;
-  // 인물 이름 → 이 씬 이전에 그 인물이 겪었거나 알게 된 것. 원장의 목격자 태그로 고른다.
   readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
-  // 인물 이름 → 앞선 장면에서 바뀐 그 인물의 관계·호칭·말투. 원장의 관계 항목에서 고른다.
   readonly characterRelations?: ReadonlyMap<string, readonly string[]>;
 }
 
 export interface NarrativeContextOptions {
-  // 같은 스레드의 직전 씬 번호. 생략하면 바로 앞 번호를 본다.
   readonly previousSceneOrder?: number;
-  // 목격 범위 서술자의 초점 인물. 주면 그 인물이 목격하지 않은 이야기 상태 항목을 빼고 준다.
   readonly focalFilter?: StoryStateFocalFilter;
 }
 
-// NOTE: 씬 입력 해시(computeSceneInputHash)에도 이 사실 목록이 들어간다. 원장 감사가 지난 씬의
-// 해시를 다시 계산할 때 초안 꼬리나 원장까지 읽을 필요가 없도록 사실 해석만 따로 뽑아 둔다.
 export async function resolveSceneBibleFacts(
   paths: SceneContextWorkspacePaths,
   context: SceneContext,
@@ -251,8 +234,6 @@ export async function resolveSceneBibleFacts(
   );
 }
 
-// 유효 구간을 쓰는 사실이 하나도 없으면 서사 시간을 볼 일도 없다. 씬을 전부 읽는 비용을 그때만
-// 치르게 해, 시간축을 쓰지 않는 워크스페이스는 종전과 같은 읽기 수로 남는다.
 async function readStoryTimeline(
   paths: SceneContextWorkspacePaths,
   fileSystem: SceneContextWorkspaceFileSystem,
@@ -295,7 +276,7 @@ async function readStoryTimeline(
           timeline.set(parts.order, storyTime);
         }
       } catch {
-        // 읽히지 않는 씬은 시간을 선언하지 않은 것과 같다. 순번을 그대로 쓴다.
+        return;
       }
     }),
   );
@@ -303,8 +284,6 @@ async function readStoryTimeline(
   return timeline.size > 0 ? timeline : undefined;
 }
 
-// NOTE: Replaces the raw previous-draft tail as the pipeline's previousContext, prepending
-// canon bible facts for the scene's entities so long-range setting stays consistent.
 export async function buildNarrativeContext(
   paths: SceneContextWorkspacePaths,
   context: SceneContext,
@@ -393,8 +372,6 @@ function selectSceneCharacterKnowledge(
   return knowledge.size > 0 ? knowledge : undefined;
 }
 
-// NOTE: 원장은 직전 씬까지의 상태다. 씬을 다시 생성할 때 자기 자신이 남긴 상태를 되먹지 않도록
-// 현재 씬보다 앞선 분량만 주입한다(선별은 formatStoryStateForPrompt 가 한다).
 async function readSceneStoryLedger(
   paths: SceneContextWorkspacePaths,
   currentSceneOrder: number,
@@ -417,8 +394,6 @@ export function formatBibleFactLines(context: SceneContext, facts: readonly Bibl
   });
 }
 
-// 독자에게 공개된 사실이라고 등장 인물이 다 아는 것은 아니다. knownBy가 적힌 사실은 아직 모르는
-// 인물을 이름으로 적어, 서술자는 알고 그 인물은 모르는 장면을 쓸 수 있게 한다.
 function formatUnawareSuffix(context: SceneContext, fact: BibleFact): string {
   const knownBy: readonly string[] | undefined = revealKnownBy(fact);
 

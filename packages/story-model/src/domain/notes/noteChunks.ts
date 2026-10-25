@@ -1,12 +1,7 @@
 import type { NoteDocument } from '#model/shared/noteAbsorb';
 
-// NOTE: 한 요청이 읽는 노트 분량. 출력 한도(noteExtraction 의 maxTokens)와 함께 정해진다. 2026-10
-// 실측에서 claude-sonnet-5 는 3.6천자 노트 한 장에 사고 2.5천 + 본문 5.1천 토큰을 썼고, 4만 자
-// 묶음은 출력 8천 토큰을 사고로 다 써 본문 없이 잘렸다.
 export const noteChunkCharacterLimit: number = 12_000;
 
-// NOTE: 견적용 어림값이다. 한글은 글자당 토큰이 영문보다 많아 1.5자를 1토큰으로 잡고, 요청마다
-// 붙는 지시문 몫을 따로 더한다. 실제 사용량은 모델의 토크나이저가 정한다.
 const charactersPerToken: number = 1.5;
 const instructionTokensPerRequest: number = 1_200;
 
@@ -24,7 +19,6 @@ function splitOversizedNote(note: NoteDocument): NoteDocument[] {
   return parts;
 }
 
-// Notes stay in collection order, so what one request sees is a contiguous run of the notebook.
 export function groupNotesIntoChunks(notes: readonly NoteDocument[]): NoteDocument[][] {
   const chunks: NoteDocument[][] = [];
   let current: NoteDocument[] = [];
@@ -56,8 +50,6 @@ export interface NoteAbsorbWorkload {
   readonly characterCount: number;
   readonly requestCount: number;
   readonly inputTokens: number;
-  // The most the requests may write, not what they are expected to: each one is capped by its
-  // prompt's `maxTokens`.
   readonly outputTokenCeiling: number;
 }
 
@@ -70,9 +62,6 @@ export function measureNoteAbsorbWorkload(
   },
 ): NoteAbsorbWorkload {
   const extractionRequestCount: number = groupNotesIntoChunks(notes).length;
-  // NOTE: 정리 요청은 카드마다 하나라 노트를 읽기 전에는 수를 모른다. 2026-10 실측(Notion 12장,
-  // 묶음 5개)에서 정리 대상은 9~12장이었으므로 묶음 하나에 3장을 상한으로 센다. 종합 요청과 정리
-  // 요청은 노트가 필요로 할 때만 돌지만 견적에는 넣는다.
   const consolidationRequestCount: number = extractionRequestCount * 3;
   const requestCount: number = extractionRequestCount + 1 + consolidationRequestCount;
   const characterCount: number = notes.reduce(

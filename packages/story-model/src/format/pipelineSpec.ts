@@ -1,10 +1,6 @@
 import yaml from 'js-yaml';
 import { z } from 'zod';
 
-// A pipeline spec is the ordered list of stages a run executes, as a YAML file an author may lay
-// over the bundled order (`.storyboard/pipelines/<name>.yaml`). The stages themselves are code; the
-// file only says which run, in what order. A stage entry is its id, or `{ id, enabled: false }` to
-// leave a stage out while keeping it listed.
 type StageEntry = string | { id: string; enabled?: boolean };
 
 const stageEntrySchema: z.ZodType<StageEntry> = z.union([
@@ -27,18 +23,12 @@ export interface PipelineStageEntry {
   readonly enabled: boolean;
 }
 
-// What a pipeline says about each of its stages, so a spec can be checked before a run starts.
 export interface PipelineStageDefinition {
   readonly id: string;
   readonly label: string;
-  // A stage the pipeline cannot run without; a spec must list it enabled.
   readonly required?: boolean;
-  // Stages whose output this one reads; each must be enabled and come earlier.
   readonly requires?: readonly string[];
-  // A stage this one stands in for. With this one enabled, the other's `required` and the
-  // `requires` that name it count as met, and a spec may not enable both.
   readonly replaces?: string;
-  // Left out of the bundled plan; runs only when a spec names it.
   readonly isOptIn?: boolean;
 }
 
@@ -103,7 +93,6 @@ export function defaultPipelineSpec(catalog: readonly PipelineStageDefinition[])
   };
 }
 
-// The enabled stage ids in run order, or the first reason the spec cannot drive this pipeline.
 export function resolvePipelinePlan(
   spec: PipelineSpec,
   catalog: readonly PipelineStageDefinition[],
@@ -130,7 +119,6 @@ export function resolvePipelinePlan(
     }
   }
 
-  // replaced stage id → the enabled stage standing in for it.
   const standIns: Map<string, string> = new Map<string, string>();
 
   for (const id of plan) {

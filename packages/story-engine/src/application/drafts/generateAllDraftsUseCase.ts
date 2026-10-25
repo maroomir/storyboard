@@ -31,8 +31,6 @@ export type GenerateAllDraftsSummary = {
   readonly failures: number;
   readonly generated: number;
   readonly sceneCount: number;
-  // Set when the run was paused: the scenes it did not reach. Running again picks them up, since
-  // finished drafts are cache hits.
   readonly pausedWithRemaining?: number;
 };
 
@@ -44,7 +42,6 @@ export type GenerateAllDraftsResult =
 export type GenerateAllDraftsOptions = {
   readonly onProgress?: (progress: GenerateAllDraftsProgress) => void;
   readonly shouldCancel?: () => boolean;
-  // Checked between scenes only, so a pause never throws away a scene in progress.
   readonly shouldPause?: () => boolean;
 };
 
@@ -91,7 +88,7 @@ export class GenerateAllDraftsUseCase implements IUseCase<
       const current: number = index + 1;
       const label: string = sceneUri.path.split('/').at(-1) ?? sceneUri.fsPath;
       options.onProgress?.({ current, kind: 'prepared', label, total });
-      const result: GenerateDraftResult = await this.deps.generateDraftUseCase.execute({
+      const draftResult: GenerateDraftResult = await this.deps.generateDraftUseCase.execute({
         sceneUri,
         force: false,
         suppressLoggerPanel: true,
@@ -115,13 +112,12 @@ export class GenerateAllDraftsUseCase implements IUseCase<
         shouldCancel: options.shouldCancel,
       });
 
-      if (result.ok) {
-        if (result.kind === 'cache_hit') cacheHits += 1;
+      if (draftResult.ok) {
+        if (draftResult.kind === 'cache_hit') cacheHits += 1;
         else {
           generated += 1;
-          // 배치는 무인 실행이라 초안 앞머리의 warnings를 아무도 보지 않는다. 여기서 한 번 알린다.
-          if (result.warnings.length > 0) {
-            this.deps.logger.warn(`${label}: ${result.warnings.join(' / ')}`);
+          if (draftResult.warnings.length > 0) {
+            this.deps.logger.warn(`${label}: ${draftResult.warnings.join(' / ')}`);
           }
           const revised: ReviseDraftWorkflowResult | undefined =
             await this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
@@ -137,16 +133,18 @@ export class GenerateAllDraftsUseCase implements IUseCase<
         continue;
       }
 
-      if (result.kind === 'cancelled') break;
-      // The plan limit is not this scene's failure: the batch stops here and a rerun continues.
-      if (result.reason === 'usage-limit') {
-        this.deps.logger.warn(`${label}: ${result.message}`);
+      if (draftResult.kind === 'cancelled') break;
+      if (draftResult.reason === 'usage-limit') {
+        this.deps.logger.warn(`${label}: ${draftResult.message}`);
         pausedWithRemaining = total - index;
         break;
       }
       failures += 1;
-      if (failureLabels.length < 5) failureLabels.push(`${label}: ${result.message}`);
-      this.deps.logger.error(`Draft generation failed for ${label}`, new Error(result.message));
+      if (failureLabels.length < 5) failureLabels.push(`${label}: ${draftResult.message}`);
+      this.deps.logger.error(
+        `Draft generation failed for ${label}`,
+        new Error(draftResult.message),
+      );
     }
 
     return {

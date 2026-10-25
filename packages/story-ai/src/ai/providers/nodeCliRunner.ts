@@ -88,7 +88,7 @@ export class NodeCliRunner implements ICliRunner {
       let isSettled: boolean = false;
       const stopTimers: NodeJS.Timeout[] = [];
 
-      const settle = (result: CliRunResult): void => {
+      const settle = (runResult: CliRunResult): void => {
         if (isSettled) {
           return;
         }
@@ -97,7 +97,7 @@ export class NodeCliRunner implements ICliRunner {
         clearTimeout(timer);
         stopTimers.forEach(clearTimeout);
         request.signal?.removeEventListener('abort', onAbort);
-        resolve(result);
+        resolve(runResult);
       };
 
       const stop = (reason: CliRunFailure): void => {

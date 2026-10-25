@@ -71,8 +71,6 @@ export function deriveStudioSessionTitle(turns: readonly StudioChatTurn[]): stri
 export type PrunableStudioSession = Pick<StudioSessionSummary, 'id' | 'updatedAt'> &
   Pick<StudioSession, 'hasAppliedChanges'>;
 
-// NOTE: a session whose proposal was applied is a record of what changed in the workspace, so it
-// is kept for good; only sessions that never touched a file age out.
 export function selectSessionsToPrune(
   sessions: readonly PrunableStudioSession[],
   keep = 10,

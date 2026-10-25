@@ -3,11 +3,6 @@ import { z } from 'zod';
 
 import defaultsData from './pipelineDefaults.params.json';
 
-// 생성 파이프라인이 모델을 가리지 않고 쓰는 기본값. 모델별로 재본 값은 modelProfiles.params.json 이
-// 이 위에 덮어쓰고, 창작자가 적은 설정이 그보다 앞선다 — 이 파일은 그 층의 맨 아래다.
-// 값을 바꾸면 모든 모델의 생성 결과가 함께 움직이므로, 한 모델에서만 관찰한 값은 여기가 아니라
-// 모델 프로필에 적는다.
-
 const ratio: z.ZodNumber = z.number().positive().max(1);
 const positiveInt: z.ZodNumber = z.number().int().positive();
 
@@ -64,67 +59,43 @@ export interface PipelineDefaults {
 
 const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
   section: z.object({
-    // 한 구간을 다시 부르는 횟수.
     retryLimit: z.number().int().nonnegative(),
-    // 구간 결과가 이 비율에 못 미치면 분량 미달로 보고 다시 부른다.
     minimumLengthRatio: ratio,
-    // 앞 구간을 그대로 옮겨 적었는지 볼 때 비교하는 창의 크기와, 위반으로 보는 누적 글자 수.
     repeatedRunWindow: positiveInt,
     repeatedRunLimit: positiveInt,
-    // 한 구간이 앞 장면을 «아까 …»로 되짚어도 경고하지 않는 횟수. 실측 42비트 씬에서 구간별 0~11회,
-    // 뒤로 갈수록 늘었다(#120).
     recapPhraseLimit: z.number().int().nonnegative(),
   }),
   skeleton: z.object({
-    // 최종 목표 중 뼈대에 배분할 비율. 뼈대가 얇으면 살붙임이 감당 못 할 배율을 요구받는다.
     lengthRatio: ratio,
-    // 뼈대는 씬에서 가장 비싼 호출이라 기본은 한 번만 다시 부른다.
     retryLimit: z.number().int().nonnegative(),
     minimumLengthRatio: ratio,
-    // 미달 뼈대를 다시 부를 때, 둘 이상이 나오는 사건 하나에 대사가 이 수에 못 미치는 대목을 짧은
-    // 설전으로 보고 그 사건들을 지목한다. 지목한 사건은 requestedDialogueTurns 턴으로 늘리라고 한다.
     thinDialogueTurns: positiveInt,
     requestedDialogueTurns: positiveInt,
-    // 대목이 계획된 씬에서 뼈대 호출 하나가 맡는 목표 글자 수의 상한. 한 호출은 그 몫을 넘기지 않게
-    // 연속한 대목을 묶어 받는다. 한 호출의 뼈대는 목표와 무관하게 9~10k자에서 멈췄다(#115·#111).
     charsPerCall: positiveInt,
   }),
   sceneBreak: z.object({
-    // 좌표 비트 사이 시각 차가 이 분 이상이면 장면을 끊는다. 시:분이 읽히지 않으면 시간대 낱말로 본다.
     timeJumpMinutes: positiveInt,
   }),
   dialogue: z.object({
-    // 살붙임이 뼈대의 대사를 지웠는지 판정하는 유사도 임계.
     preservedRatio: ratio,
-    // 한 대사가 여러 조각으로 갈렸을 때 몇 조각까지 이어 붙여 비교할지.
     splitLimit: positiveInt,
-    // 같은 대사가 연달아 몇 번 나오면 되풀이로 보는지.
     repeatedRunLimit: positiveInt,
-    // 이보다 짧은 줄은 대사로 세지 않는다. 감탄사 한 마디가 통계를 흔드는 것을 막는다.
     minimumLineLength: positiveInt,
-    // 따옴표 안이 이보다 짧으면 대사 추출에서 제외한다.
     minimumQuotedLength: positiveInt,
   }),
   polish: z.object({
-    // 대사 다듬기가 뼈대의 몇 배를 넘으면 거부할지.
     lengthLimitRatio: z.number().positive(),
     retryLimit: positiveInt,
   }),
   catchphrase: z.object({
-    // 인물 하나의 입버릇이 비트 하나에 나와도 되는 횟수. 넘으면 초안 경고만 낸다.
     perBeatLimit: positiveInt,
   }),
-  // 배우 뼈대(actBeats). 값은 2026-10 guerrilla 01 실측 3회에서 정했다 — 재합침은 한 번이면 미해결이 0
-  // 이었고, 대사 80자·2문장 상한이 연설형 턴을 없앴다.
   actors: z.object({
-    // 심판·입버릇 계수가 반려한 대목을 감독이 다시 엮는 횟수.
     retryLimit: z.number().int().nonnegative(),
-    // 배우가 내는 대사 한 줄의 글자·문장 상한. 넘기면 그 배우에게 한 번 다시 묻는다.
     lineMaxChars: positiveInt,
     lineMaxSentences: positiveInt,
   }),
   padding: z.object({
-    // 같은 문단을 되풀이한 것으로 보는 유사도 임계와, 그 판정에 넣을 최소 문단 길이.
     paragraphRatio: ratio,
     paragraphMinimumLength: positiveInt,
   }),
@@ -134,12 +105,9 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     maximumLength: positiveInt,
   }),
   context: z.object({
-    // 직전 맥락을 압축할 때의 예산.
     condensedMaxChars: positiveInt,
-    // 장면 구분자를 줄바꿈 수로 적었을 때 받아들이는 최대 줄 수.
     maxSceneBreakNewlines: positiveInt,
   }),
-  // 재시도 후보 중 어느 판을 남길지 재는 저울. 원고를 못 쓰게 만드는 위반이 무겁다.
   violationWeights: z.object({
     cast: positiveInt,
     place: positiveInt,

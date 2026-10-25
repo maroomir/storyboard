@@ -30,7 +30,6 @@ import type {
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { readProjectJson } from '#engine/persistence/projectJson';
 
-// The final review's report, beside the assembled volume.
 export const manuscriptReviewFileName: string = 'REVIEW.md';
 
 export class ManuscriptAssemblyRepository
@@ -157,7 +156,6 @@ export class ManuscriptAssemblyRepository
     return paths.manuscriptVolume;
   }
 
-  // 낡은 요약은 폐기된 판본의 줄거리이므로 검수 창에도 실을 수 없다.
   private async loadFreshChapterSummaries(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
     const markdown: string | undefined = await this.readChapterSummaries(workspaceRoot);
 

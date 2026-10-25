@@ -129,8 +129,8 @@ export class GoogleProvider implements AiProvider {
   }
 }
 
-function usageFromGoogleResult(result: GoogleGenerateContentResultLike): AiUsage | undefined {
-  const meta: GoogleGenerateContentResultLike['response']['usageMetadata'] = result.response.usageMetadata;
+function usageFromGoogleResult(response: GoogleGenerateContentResultLike): AiUsage | undefined {
+  const meta: GoogleGenerateContentResultLike['response']['usageMetadata'] = response.response.usageMetadata;
   if (!meta) {
     return undefined;
   }

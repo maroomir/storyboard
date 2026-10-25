@@ -47,8 +47,6 @@ export class SceneSidebarRepository implements ISceneSidebarRepository {
     const sceneUri: StoryUri = joinStoryPath(paths.sceneDirectory, name);
     const draftUri: StoryUri = draftPath(root, parts.stem);
     const sceneMtime: number = await this.fileSystem.modifiedTime(sceneUri);
-    // A missing draft reports 0, which is what tells these apart — not an exception, which only
-    // the VSCode adapter used to raise.
     const draftModifiedAt: number = await this.fileSystem.modifiedTime(draftUri);
     const hasDraft: boolean = draftModifiedAt > 0;
     const draftMtime: number | undefined = hasDraft ? draftModifiedAt : undefined;
@@ -64,7 +62,7 @@ export class SceneSidebarRepository implements ISceneSidebarRepository {
       const raw: string | undefined = scene.frontmatter.title?.trim();
       title = raw || undefined;
     } catch {
-      // NOTE: A malformed scene stays visible without a frontmatter title.
+      title = undefined;
     }
     return {
       stem: parts.stem,

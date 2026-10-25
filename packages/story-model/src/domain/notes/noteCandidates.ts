@@ -8,8 +8,6 @@ import type {
 
 export const emptyNoteCandidateFile: NoteCandidateFile = { version: 2, sources: [] };
 
-// A keyed change sets one slot of a card, so two notes can disagree about it. The value is what
-// they disagree on.
 function keyedChangeValue(change: CardCollectProposal): string | undefined {
   switch (change.kind) {
     case 'attribute':
@@ -25,8 +23,6 @@ function keyedChangeValue(change: CardCollectProposal): string | undefined {
   }
 }
 
-// Two changes with one identity say the same thing: a keyed change by its slot and value, a list
-// item by its text under the shared spacing-and-punctuation rule, a card id exactly.
 function noteChangeIdentity(change: CardCollectProposal): string {
   switch (change.kind) {
     case 'attribute':
@@ -40,8 +36,6 @@ function noteChangeIdentity(change: CardCollectProposal): string {
       return `${change.kind}:${normalizeCardListText(change.value)}`;
   }
 }
-
-// What `card discard --change` takes: the source that proposed a change and the change's id.
 
 interface SynopsisSection {
   location: string;
@@ -66,7 +60,6 @@ export interface NoteCandidateConflict {
 
 export interface MergedNoteCardCandidate extends NoteCardCandidate {
   readonly locations: readonly string[];
-  // Slots the notes disagree on. They are never promoted until the author discards all but one.
   readonly conflicts: readonly NoteCandidateConflict[];
 }
 
@@ -91,8 +84,6 @@ function addUnique(list: string[], values: readonly string[]): void {
   }
 }
 
-// One entry per card across every source, oldest source first. Changes that say the same thing
-// become one (their scenes joined); keyed slots with more than one value become conflicts.
 export function mergeNoteCandidateSources(
   sources: readonly NoteCandidateSource[],
 ): MergedNoteCardCandidate[] {
@@ -208,8 +199,6 @@ function nextSourceId(sources: readonly NoteCandidateSource[]): string {
   return `s${highest + 1}`;
 }
 
-// An absorb's candidates join the file: they replace what the same location left before, or every
-// note candidate when the author asked to start over.
 export function addNoteCandidateSource(
   file: NoteCandidateFile,
   absorbed: Omit<NoteCandidateSource, 'id'>,
@@ -242,8 +231,6 @@ function mapCardChanges(
   );
 }
 
-// After a card is promoted only its conflicts stay: everything else was applied or the card
-// already had it.
 export function keepNoteCandidateConflicts(
   file: NoteCandidateFile,
   card: MergedNoteCardCandidate,
@@ -269,8 +256,6 @@ export function removeNoteCandidateCards(
   );
 }
 
-// Drops the change a ref names, and the same change wherever another source proposed it too, so a
-// discarded value does not come back from a second note.
 export function removeNoteCandidateChange(
   file: NoteCandidateFile,
   cardId: string,
@@ -298,8 +283,6 @@ function synopsisSourceHeading(location: string): string {
   return `<!-- note-source: ${location} -->`;
 }
 
-// The synopsis candidate is one section per location under a marker line. A re-read location
-// replaces its section; text above the first marker (a file from before sections) is kept as is.
 export function mergeNoteSynopsisCandidate(
   existing: string | undefined,
   location: string,

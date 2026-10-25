@@ -41,8 +41,6 @@ export interface StudioChatRequest {
   readonly isValidationEnabled: boolean;
   readonly resolveLookup: (requests: readonly StudioAgentLookupRequest[]) => Promise<string>;
   readonly resolveInvoke?: (request: StudioAgentInvokeRequest) => Promise<string>;
-  // NOTE: the model names follow-up targets from memory, so each one is confirmed against the
-  // workspace before it becomes a button the author can press.
   readonly resolveFollowUps: (
     followUps: readonly StudioAgentFollowUp[],
   ) => Promise<readonly StudioFollowUpTarget[]>;
@@ -150,7 +148,6 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
         warnings: verdict.warnings.map((warning) => ({ ...warning })),
       };
     } catch (error) {
-      // NOTE: a failed check must not block the author, so it degrades to 'skipped' and says so.
       this.deps.logger.warn(`Studio 정합성 검사 실패: ${String(error)}`);
       return { state: 'skipped', warnings: [] };
     }
@@ -161,8 +158,6 @@ export function hashBaseline(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
-// NOTE: the cap counts questions already asked in this session so a stubborn ambiguity cannot turn
-// the conversation into an interrogation.
 function remainingQuestions(history: readonly StudioChatTurn[]): number {
   const asked: number = history.filter(
     (turn) => turn.role === 'assistant' && turn.kind === 'ask',

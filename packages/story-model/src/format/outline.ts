@@ -42,7 +42,6 @@ export interface ChapterPlanChapter {
   readonly title: string;
   readonly summary?: string;
   readonly targetWordCount?: number;
-  // 이 장의 기본 서술자와 연속성 줄기. 씬 카드가 값을 가지면 씬이 이긴다.
   readonly narrator?: string;
   readonly thread?: string;
   readonly scenes: readonly ScenePlan[];
@@ -161,8 +160,6 @@ export interface OutlineBrief {
   readonly prohibitions: readonly string[];
   readonly styleConstraints: readonly string[];
   readonly qualityCriteria: readonly string[];
-  // 구성이 아웃라인 프롬프트를 바꾼다. 옴니버스는 편마다 독립된 결말을, 시점 교차는 장마다 다른
-  // 서술자를, 액자식은 외화를 앞뒤에 두도록 지시한다.
   readonly composition?: CompositionKind;
   readonly threads: readonly OutlineThreadBrief[];
   readonly narratorIds: readonly string[];
@@ -180,7 +177,6 @@ export interface OutlineCharacterBrief {
   readonly role?: string;
 }
 
-// A character the chapter plan casts but no card describes yet, with the scenes it appears in.
 export interface OutlineCastMember {
   readonly id: string;
   readonly sceneTitles: readonly string[];
@@ -195,12 +191,9 @@ export interface OutlineCharacterDraft {
 
 export interface UncastCharacters {
   readonly cast: readonly OutlineCastMember[];
-  // Ids no card file could carry (a Korean name, say): no card can answer them, so the scenes that
-  // name them resolve their other characters instead.
   readonly unusableIds: readonly string[];
 }
 
-// The cast the plan names without a card.
 export function findUncastCharacters(
   plan: ChapterPlan,
   existingIds: ReadonlySet<string>,
@@ -227,7 +220,6 @@ export function findUncastCharacters(
   };
 }
 
-// Keeps only the ids that were asked for, so a model cannot add a card nobody casts.
 export function coerceOutlineCharacters(
   raw: unknown,
   requestedIds: readonly string[],
@@ -263,7 +255,6 @@ export interface FlatChapterScene {
   readonly chapterTitle: string;
   readonly actIndex: number;
   readonly chapterIndex: number;
-  // 씬 시드가 물려받을 장의 서술자·줄기. 시점 교차는 이 값을 씬마다 복사해 표현한다.
   readonly chapterNarrator?: string;
   readonly chapterThread?: string;
 }
@@ -330,8 +321,6 @@ export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): Outlin
     return { ...parsed.data, pov: parsed.data.pov ?? brief.pov };
   }
 
-  // One malformed field (e.g. a blank conflict entry) must not reset the whole synopsis: salvage
-  // every field that validates on its own and default only the broken ones.
   const empty: OutlineSynopsis = outlineSynopsisSchema.parse({});
   const salvaged: Record<string, unknown> = { ...empty };
   for (const key of Object.keys(outlineSynopsisShape) as (keyof typeof outlineSynopsisShape)[]) {
@@ -343,8 +332,8 @@ export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): Outlin
     }
   }
 
-  const data: OutlineSynopsis = salvaged as unknown as OutlineSynopsis;
-  return { ...data, pov: data.pov ?? brief.pov };
+  const synopsis: OutlineSynopsis = salvaged as unknown as OutlineSynopsis;
+  return { ...synopsis, pov: synopsis.pov ?? brief.pov };
 }
 
 export function emptyOutlineSynopsis(): OutlineSynopsis {

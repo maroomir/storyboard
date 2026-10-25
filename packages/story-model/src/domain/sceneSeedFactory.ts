@@ -56,9 +56,6 @@ function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
   return uniqueSlug;
 }
 
-// summary 는 비워 둔 채 넘긴다. 작가가 사건을 적는 자리이고, 여기서 안내 문구로 채우면
-// extractSceneNarrativeSource 가 그 한 줄만 사건 재료로 골라 [목적]·[갈등]·[반전] 블록을
-// 통째로 버린다. 비어 있으면 같은 함수의 fallback 이 카드 본문 전체를 생성에 넘긴다.
 function buildSceneSeedCard(stem: string, flatScene: FlatChapterScene): SceneCard {
   const { scene } = flatScene;
 

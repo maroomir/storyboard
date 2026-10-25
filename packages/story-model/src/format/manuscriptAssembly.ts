@@ -10,9 +10,6 @@ export interface AssembleManuscriptInput {
   readonly plan: ChapterPlan;
   readonly projectName: string;
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;
-  // Emits `<!-- scene: <stem> -->` before each scene. The final review reads the whole volume at
-  // once, so an issue it finds can only be routed back to a draft file if the text says which
-  // scene it came from. Off for the manuscript a reader opens.
   readonly annotateSceneStems?: boolean;
 }
 

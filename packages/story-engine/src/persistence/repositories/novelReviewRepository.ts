@@ -45,7 +45,6 @@ export class NovelReviewRepository implements INovelReviewRepository {
     );
   }
 
-  // 낡은 요약은 폐기된 판본의 줄거리이므로 검수 창에도 실을 수 없다.
   private async loadFreshChapterSummaries(summaryUri: StoryUri): Promise<ChapterSummary[]> {
     try {
       const markdown: string = new TextDecoder().decode(await this.fileSystem.readFile(summaryUri));

@@ -31,9 +31,7 @@ export type RenameCardResult =
       readonly kind: 'renamed';
       readonly fromId: string;
       readonly toId: string;
-      // Cards whose references to the old id were rewritten.
       readonly rewrittenCount: number;
-      // Cards that could not be parsed, so their references were left as they were.
       readonly unreadableFiles: readonly string[];
     }
   | {
@@ -48,9 +46,6 @@ export interface RenameCardUseCaseDependencies {
   readonly logger: IStoryboardLogger;
 }
 
-// Renaming a card is a workspace-wide edit: the file moves, its own id changes, and every card
-// that references it is rewritten. The writes are sequential, so a crash mid-rename leaves
-// references half-updated — run it on a clean tree.
 export interface ReferenceRewrite {
   readonly rewrittenCount: number;
   readonly unreadableFiles: readonly string[];
@@ -99,7 +94,6 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
     await fileSystem.writeFile(toUri, new TextEncoder().encode(serializeCard(renamed)));
     await fileSystem.delete(fromUri);
 
-    // Only a character id is referenced from other cards; a background id is not.
     const references: ReferenceRewrite =
       category === 'character'
         ? await this.rewriteReferences(
@@ -137,8 +131,6 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
         try {
           next = serializeCard(rewriteCardIdReferences(parseCard(raw), fromId, toId));
         } catch {
-          // One unreadable card must not abort a rename that already moved the file. It is named
-          // in the result; the operator fixes that card and renames the reference by hand.
           unreadableFiles.push(uri.path);
           continue;
         }

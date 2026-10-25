@@ -20,7 +20,6 @@ export interface INovelOutlineRepository {
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
   loadChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan>;
   loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined>;
-  // Writes the synopsis alone, leaving a chapter plan the author may have written as it is.
   saveSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void>;
   save(
     workspaceRoot: StoryUri,
@@ -31,17 +30,13 @@ export interface INovelOutlineRepository {
 
 export interface ISceneSeedRepository {
   saveSeeds(workspaceRoot: StoryUri, seeds: readonly GeneratedSceneSeed[]): Promise<void>;
-  // The scene cards on disk by scene number. A card keeps its number through a rename or a change of
-  // prefix digits, so the number, not the file name, says which planned scene it is.
   listSceneStemsByOrder(workspaceRoot: StoryUri): Promise<ReadonlyMap<number, string>>;
-  // Writes only the seeds whose scene number has no card yet and returns how many it wrote.
   saveMissingSeeds(workspaceRoot: StoryUri, seeds: readonly GeneratedSceneSeed[]): Promise<number>;
 }
 
 export interface NovelReviewSource {
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;
   readonly canonFactLines: readonly string[];
-  // 앞 장을 검수 창에 실을 때 쓰는 장별 요약. 낡은 항목은 저장소가 걸러 낸다.
   readonly chapterSummaries: readonly ChapterSummary[];
 }
 

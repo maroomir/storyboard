@@ -24,16 +24,11 @@ interface ZipNoteFile {
 
 export interface NotionExportNoteSourceOptions {
   readonly fileSystem: IFileSystem;
-  // The «Markdown & CSV» zip Notion's export produces.
   readonly archive: StoryUri;
 }
 
 const macResourceForkDirectory: string = '__MACOSX/';
 
-// Reads a Notion export zip: every page is a Markdown file named `Title <id>.md`, sub-pages sit in a
-// folder of the same name, and a database comes as `Title <id>.csv` beside a folder of its row pages.
-// Ids are stripped from titles and paths; a database CSV whose rows are pages of their own is left
-// out, the rest become one note each. No link following — the export already holds the whole tree.
 export class NotionExportNoteSource implements INoteSource {
   public readonly kind: NoteSourceKind = 'notion-export';
 
@@ -102,8 +97,6 @@ export class NotionExportNoteSource implements INoteSource {
   }
 }
 
-// A database export is one table; each row becomes a heading with its properties, which reads like
-// the page Notion would show for it.
 export function renderCsvAsNote(title: string, csv: string): string {
   const rows: string[][] = parseCsv(csv.replace(/^\uFEFF/, ''));
   const [header, ...records] = rows;

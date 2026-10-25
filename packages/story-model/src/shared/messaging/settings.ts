@@ -60,9 +60,9 @@ const taskAssignmentReadSchema: z.ZodType<TaskAssignmentRead> = z
     providerId: providerIdSchema.nullable(),
     model: z.string().nullable(),
   })
-  .superRefine((data, ctx) => {
-    if (data.providerId === null && data.model !== null) {
-      ctx.addIssue({
+  .superRefine((assignment, refinement) => {
+    if (assignment.providerId === null && assignment.model !== null) {
+      refinement.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'taskAssignments: model must be null when providerId is null.',
       });
@@ -121,8 +121,6 @@ const settingDefinitionPayloadSchema: z.ZodType<SettingDefinitionPayload> = z.ob
   group: z.string().trim().min(1),
 });
 
-// `origins` says which config layer each value came from and `configFiles` where those layers
-// live, so the panel can tell the author "saved to this work" versus "saved for every work".
 export interface SettingsReadResponsePayload {
   defaultProvider: ProviderId;
   isDefaultProviderConfigured: boolean;
@@ -180,12 +178,14 @@ export const settingsUpdateProviderModelRequestPayloadSchema: z.ZodType<Settings
       providerId: providerIdSchema,
       model: z.string().trim().min(1),
     })
-    .superRefine((data, ctx) => {
-      const allowedIds: string[] = storyboardModelCatalog[data.providerId].map((entry) => entry.id);
-      if (!allowedIds.some((id) => id === data.model)) {
-        ctx.addIssue({
+    .superRefine((request, refinement) => {
+      const allowedIds: string[] = storyboardModelCatalog[request.providerId].map(
+        (entry) => entry.id,
+      );
+      if (!allowedIds.some((id) => id === request.model)) {
+        refinement.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Model must be a catalog option for ${data.providerId}.`,
+          message: `Model must be a catalog option for ${request.providerId}.`,
         });
       }
     });
@@ -223,10 +223,10 @@ export const settingsUpdateTaskAiConfigRequestPayloadSchema: z.ZodType<SettingsU
       providerId: providerIdSchema.nullable(),
       model: z.string().trim().min(1).nullable(),
     })
-    .superRefine((data, ctx) => {
-      if (data.providerId === null) {
-        if (data.model !== null) {
-          ctx.addIssue({
+    .superRefine((request, refinement) => {
+      if (request.providerId === null) {
+        if (request.model !== null) {
+          refinement.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'model must be null when providerId is null.',
           });
@@ -234,19 +234,21 @@ export const settingsUpdateTaskAiConfigRequestPayloadSchema: z.ZodType<SettingsU
         return;
       }
 
-      if (data.model === null) {
-        ctx.addIssue({
+      if (request.model === null) {
+        refinement.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'model is required when providerId is set.',
         });
         return;
       }
 
-      const allowedIds: string[] = storyboardModelCatalog[data.providerId].map((entry) => entry.id);
-      if (!allowedIds.some((id) => id === data.model)) {
-        ctx.addIssue({
+      const allowedIds: string[] = storyboardModelCatalog[request.providerId].map(
+        (entry) => entry.id,
+      );
+      if (!allowedIds.some((id) => id === request.model)) {
+        refinement.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Model must be a catalog option for ${data.providerId}.`,
+          message: `Model must be a catalog option for ${request.providerId}.`,
         });
       }
     });
@@ -262,23 +264,27 @@ export const settingsUpdateSettingValueRequestPayloadSchema: z.ZodType<SettingsU
       key: z.string().trim().min(1),
       value: settingValueSchema,
     })
-    .superRefine((data, ctx) => {
-      const definition: StoryboardSettingDefinition | undefined = findStoryboardSetting(data.key);
+    .superRefine((request, refinement) => {
+      const definition: StoryboardSettingDefinition | undefined = findStoryboardSetting(
+        request.key,
+      );
 
       if (!definition) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Unknown setting: ${data.key}.` });
+        refinement.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Unknown setting: ${request.key}.`,
+        });
         return;
       }
 
-      if (!isValidStoryboardSettingValue(definition, data.value)) {
-        ctx.addIssue({
+      if (!isValidStoryboardSettingValue(definition, request.value)) {
+        refinement.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Value is not valid for ${data.key} (${definition.kind}).`,
+          message: `Value is not valid for ${request.key} (${definition.kind}).`,
         });
       }
     });
 
-// Where the write landed, so the panel can confirm it instead of leaving the author guessing.
 export interface SettingsMutationOkResponsePayload {
   origin?: ConfigValueOrigin;
   file?: string;

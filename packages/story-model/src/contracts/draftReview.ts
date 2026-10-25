@@ -19,7 +19,6 @@ export interface DraftCritiqueIssue {
   readonly severity: Severity;
   readonly excerpt?: string;
   readonly comment: string;
-  // Present only when the critiqued body carried scene markers, as the final review's does.
   readonly sceneStem?: string;
 }
 
@@ -77,8 +76,6 @@ export interface CritiqueScore {
   readonly issueCount: number;
 }
 
-// 검수 점수의 저울. 만점에서 문제마다 깎는다. 장면 목적이 가장 무겁고 반복이 가장 가볍다 —
-// 목적이 없는 씬은 다시 써야 하지만 반복은 다듬어 고칠 수 있기 때문이다.
 export const critiqueScoring: {
   readonly baseScore: number;
   readonly deduction: Record<CritiqueCategory, Record<Severity, number>>;

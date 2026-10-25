@@ -64,7 +64,7 @@ export class ReviseAfterGenerateGate {
       return undefined;
     }
 
-    const result: ReviseDraftWorkflowResult = await this.deps.reviseDraftUseCase.execute({
+    const reviseResult: ReviseDraftWorkflowResult = await this.deps.reviseDraftUseCase.execute({
       workspaceUri,
       paths,
       draftUri,
@@ -80,11 +80,11 @@ export class ReviseAfterGenerateGate {
       await recordRevisionEntry(this.deps.fileSystem, paths, {
         sceneStem,
         checkedAt: new Date().toISOString(),
-        revisionCount: result.revisionCount,
-        remainingBlocking: result.remainingBlocking,
-        instructions: result.instructions,
-        preservedOriginal: result.preservedOriginal,
-        rejection: result.rejection,
+        revisionCount: reviseResult.revisionCount,
+        remainingBlocking: reviseResult.remainingBlocking,
+        instructions: reviseResult.instructions,
+        preservedOriginal: reviseResult.preservedOriginal,
+        rejection: reviseResult.rejection,
       });
     } catch (error) {
       this.deps.logger.warn(
@@ -92,6 +92,6 @@ export class ReviseAfterGenerateGate {
       );
     }
 
-    return result;
+    return reviseResult;
   }
 }

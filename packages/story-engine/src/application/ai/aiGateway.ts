@@ -12,7 +12,6 @@ export class AiGateway {
 
   public createService(workspaceUri: StoryUri): StoryboardAiService {
     return new StoryboardAiService(this.providerRegistry, {
-      // NOTE: usage accounting must never fail a generation the user already paid for.
       onUsage: (record): void => {
         void this.usageSink.record(workspaceUri, record).catch((error: unknown) => {
           this.logger.error('사용량 기록에 실패했습니다.', error);

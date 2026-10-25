@@ -2,14 +2,10 @@ const wikiLinkPattern: RegExp = /(!?)\[\[([^\]\n]+?)\]\]/g;
 const markdownLinkPattern: RegExp = /\[[^\]\n]*\]\(([^)\s]+)\)/g;
 const firstHeadingPattern: RegExp = /^#\s+(.+?)\s*$/m;
 
-// macOS 는 파일 이름을 풀어 쓴 자모(NFD)로 돌려주고 본문 링크는 조합형(NFC)이라, 맞추지 않으면
-// 한글 노트 이름이 하나도 이어지지 않는다.
 export function normalizeNoteName(value: string): string {
   return value.normalize('NFC').trim().toLocaleLowerCase('ko');
 }
 
-// Notes are read in name order wherever the source has no order of its own: numbers compare as
-// numbers, so `10 귀환` follows `9 등대`.
 export function compareNoteNames(left: string, right: string): number {
   return left.normalize('NFC').localeCompare(right.normalize('NFC'), 'ko', { numeric: true });
 }
@@ -18,8 +14,6 @@ export function stripMarkdownExtension(fileName: string): string {
   return fileName.replace(/\.md$/i, '');
 }
 
-// Notion's export names every page and folder `Title 1a2b…(32 hex)`. The id is noise in a title
-// and in a path; the title is what the author wrote.
 const notionIdSuffixPattern: RegExp = /\s+[0-9a-f]{32}$/i;
 
 export function stripNotionIdSuffix(name: string): string {
@@ -32,9 +26,6 @@ export function extractNoteTitle(body: string, fallbackTitle: string): string {
   return heading !== undefined && heading.length > 0 ? heading : fallbackTitle;
 }
 
-// The targets a note points at, in reading order and without duplicates: `[[Name]]`,
-// `[[folder/Name|label]]`, `[[Name#heading]]` and `[label](other.md)`. An embed of a non-note file
-// (`![[map.png]]`) and a web link are not notes, so they are left out.
 export function extractNoteLinkTargets(body: string): string[] {
   const targets: string[] = [];
 

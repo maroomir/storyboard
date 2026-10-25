@@ -47,7 +47,6 @@ function encodeJson(value: unknown): Uint8Array {
   return encodeText(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-// A location is a path or a URL; the record file needs a short stable name for it.
 function hashLocation(location: string): string {
   let hash: number = 5381;
   for (const char of location) {

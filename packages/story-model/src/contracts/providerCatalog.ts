@@ -1,30 +1,17 @@
-// 프로바이더 한 곳. 표시명·기본 모델·모델 목록·요금이 provider 마다 한 행이며,
-// 아래의 파생 표들은 전부 이 행에서 나온다. 프로바이더를 추가할 때 고쳐야 하는 파일은 여기 하나다.
-
-// 'cli' 는 사용자가 설치한 실행 파일을, 'oauth' 는 사용자가 브라우저로 로그인한 구독 세션을 쓴다.
 export type ProviderTransport = 'http' | 'cli' | 'oauth' | 'mock';
 
 export interface ProviderModelEntry {
   readonly id: string;
   readonly displayName: string;
-  // 구독 로그인으로 부르는 모델(transport 'cli'·'oauth')만 비운다. 요금이 없는 호출은 0 이 아니라
-  // «모름» 이다.
   readonly inputPricePerMillion?: number;
   readonly outputPricePerMillion?: number;
-  // 접두 캐시 요금. 프로바이더가 캐시 토큰을 입력과 따로 세는 경우에만 적는다(Claude).
   readonly cacheWritePricePerMillion?: number;
   readonly cacheReadPricePerMillion?: number;
-  // 생략하면 true. 기본값이 아닌 temperature 를 400 으로 거부하거나 지원 중단한 모델만 false 로 적는다.
   readonly acceptsTemperature?: boolean;
-  // 생략하면 false. 사고 강도(Claude output_config.effort, OpenAI reasoning_effort)의 low·medium·high
-  // 를 받는다고 공식 문서가 밝힌 모델만 true 로 적는다. 받지 않는 모델은 400 을 낸다.
   readonly acceptsReasoningEffort?: boolean;
-  // 생략하면 true. 출력 상한(max_output_tokens)을 400 으로 거부하는 경로만 false 로 적는다.
   readonly acceptsMaxTokens?: boolean;
 }
 
-// Claude 접두 캐시: 쓰기는 입력 요금의 1.25배, 읽기는 0.1배(5분 캐시 기준). Opus 5.5(0.05배)와
-// Fable 5.1(0.025배)은 읽기 배율이 다르므로 행에 직접 적는다.
 function claudeCachePrices(
   inputPricePerMillion: number,
   cacheReadMultiplier = 0.1,
@@ -42,15 +29,12 @@ export interface ProviderCatalogEntry {
   readonly displayName: string;
   readonly transport: ProviderTransport;
   readonly requiresApiKey: boolean;
-  // 목록·도움말·완성 어디에도 나오지 않고, 홈 설정의 `providers.<id>.enabled` 가 켜져야만 쓸 수 있다.
   readonly isHidden?: boolean;
   readonly defaultModel: string | undefined;
   readonly defaultBaseUrl: string | undefined;
   readonly models: readonly ProviderModelEntry[];
 }
 
-// NOTE: 모델·요금은 각 사의 공식 모델·요금 문서 2026-09-27 기준이다. 요금은 표준 등급, 긴 프롬프트
-// 할증이 있는 모델은 할증 전 구간 값이다.
 export const providerCatalog = {
   openai: {
     displayName: 'OpenAI',
@@ -58,9 +42,6 @@ export const providerCatalog = {
     requiresApiKey: true,
     defaultModel: 'gpt-6-sol',
     defaultBaseUrl: undefined,
-    // NOTE: OpenAI 최신 모델 안내가 GPT-6 세대(Astra·Sol·Luna)는 temperature·top_p 를 빼라고 명시한다.
-    // 5.x 는 확인된 문구가 없다. 사고 강도는 GPT-5 모델 문서가 minimal~high, GPT-6 안내가 low~max 를
-    // 받는다고 밝힌다(2026-10-04 확인).
     models: [
       {
         id: 'gpt-6-sol',
@@ -129,9 +110,6 @@ export const providerCatalog = {
     requiresApiKey: true,
     defaultModel: 'claude-sonnet-5',
     defaultBaseUrl: undefined,
-    // NOTE: Claude 4.7 이후 모델은 기본값이 아닌 temperature·top_p·top_k 를 400 으로 거부한다.
-    // NOTE: 사고 강도(output_config.effort)는 Opus·Sonnet 4.6 이후와 Fable 이 받고 Haiku 4.5 는 400 을
-    // 낸다(Claude API 문서, 2026-10-04 확인).
     models: [
       {
         id: 'claude-sonnet-5',
@@ -200,8 +178,6 @@ export const providerCatalog = {
     requiresApiKey: true,
     defaultModel: 'gemini-3.8-flash',
     defaultBaseUrl: undefined,
-    // NOTE: 3.x 세대는 temperature 를 지원 중단했다. 3.8 Flash 요금은 2026-12-31까지의 도입가이며
-    // 2027-01-01부터 두 배($1.50/$7.50)가 된다.
     models: [
       {
         id: 'gemini-3.8-flash',
@@ -250,7 +226,6 @@ export const providerCatalog = {
     requiresApiKey: true,
     defaultModel: 'grok-4.7',
     defaultBaseUrl: 'https://api.x.ai/v1',
-    // NOTE: docs.x.ai/developers/models 2026-09-27 기준, 프롬프트 200k 토큰 미만 요금.
     models: [
       {
         id: 'grok-4.7',
@@ -294,8 +269,6 @@ export const providerCatalog = {
     displayName: 'Ollama',
     transport: 'http',
     requiresApiKey: false,
-    // NOTE: 로컬은 받아 둔 모델이 기계마다 다르므로 이 목록은 고정 목록이 아니라 제안이다.
-    // 목록에 없는 이름도 그대로 받는다 — 진짜 목록은 ollama 가 갖고 있다.
     defaultModel: 'gemma4:12b',
     defaultBaseUrl: 'http://localhost:11434',
     models: [
@@ -337,9 +310,6 @@ export const providerCatalog = {
       },
     ],
   },
-  // NOTE: 사용자가 직접 설치하고 자기 구독으로 로그인한 공식 `claude` 실행 파일을 그대로 부른다.
-  // 인증 정보는 읽지도 넘기지도 않는다. 온도·시드 플래그는 없고, 사고 강도는 `--effort` 로 받는다
-  // (2.1.289, 2026-10-05 실측 — Haiku 는 재지 않아 API 행과 같게 비워 둔다).
   'claude-code': {
     displayName: 'Claude (구독 로그인)',
     transport: 'cli',
@@ -363,11 +333,6 @@ export const providerCatalog = {
       { id: 'claude-haiku-4-5', displayName: 'Claude Haiku 4.5', acceptsTemperature: false },
     ],
   },
-  // NOTE: OpenAI 의 «Sign in with ChatGPT — ChatGPT plan usage»(2026-09-29 미리보기). 사용자가
-  // 브라우저로 로그인해 준 토큰으로 공개 Responses API 를 부르고, 사용량은 그 사람의 ChatGPT 구독
-  // 한도에서 나간다. 미리보기 제약으로 temperature·top_p·max_output_tokens 를 받지 않는다. 모델
-  // 목록은 계정마다 다르므로 이 행은 openai 행의 최신 세대를 옮겨 적은 제안이고, 실제 목록은
-  // 로그인한 계정이 갖고 있다(doctor 가 대조한다). 실계정으로 검증하지 못한 경로다(2026-10-24).
   chatgpt: {
     displayName: 'ChatGPT (구독 로그인, 미리보기)',
     transport: 'oauth',
@@ -443,8 +408,6 @@ export const aiProviderIds: readonly [AiProviderId, ...AiProviderId[]] = Object.
   providerCatalog,
 ) as unknown as readonly [AiProviderId, ...AiProviderId[]];
 
-// `as const` 는 행마다 실제로 적힌 필드만 남기므로, 선택 필드를 읽는 파생 표는 선언된 모양으로
-// 한 번 넓혀서 읽는다.
 const catalogRows: Readonly<Record<AiProviderId, ProviderCatalogEntry>> = providerCatalog;
 
 export function isHiddenProvider(providerId: AiProviderId): boolean {
@@ -453,8 +416,6 @@ export function isHiddenProvider(providerId: AiProviderId): boolean {
 
 export const hiddenProviderIds: readonly AiProviderId[] = aiProviderIds.filter(isHiddenProvider);
 
-// 숨은 프로바이더를 켜는 키와, 위험 고지에 동의했다는 기록. 둘 다 홈 설정 파일에서만 읽는다 —
-// 구독은 사람에게 묶인 것이라, 남이 준 작품의 설정이 내 구독을 켜서는 안 된다.
 export function hiddenProviderEnabledKey(providerId: AiProviderId): string {
   return `providers.${providerId}.enabled`;
 }
@@ -463,8 +424,6 @@ export function hiddenProviderRiskAcknowledgedKey(providerId: AiProviderId): str
   return `providers.${providerId}.riskAcknowledged`;
 }
 
-// 사람에게 이름을 보여 주거나 받은 이름을 검사하는 곳이 쓰는 목록. 켜지 않은 숨은 프로바이더는
-// 없는 이름이다.
 export function listAvailableProviderIds(
   enabledHiddenProviderIds: readonly AiProviderId[] = [],
 ): AiProviderId[] {
@@ -473,8 +432,6 @@ export function listAvailableProviderIds(
   );
 }
 
-// 작가가 고르는 목록. mock 은 개발용이라 빼되, 이미 mock 으로 설정된 값은 선택 상태가 사라지지
-// 않도록 목록에 남긴다.
 export function listSelectableProviderIds(
   currentProviderId?: AiProviderId,
   enabledHiddenProviderIds: readonly AiProviderId[] = [],
@@ -490,8 +447,6 @@ export interface ProviderModelOption {
   readonly displayName: string;
 }
 
-// 모든 프로바이더는 모델을 적어도 하나 갖는다. 그 사실을 타입으로 적어야 «목록의 첫 모델»을
-// 읽는 쪽이 없는 경우를 방어하지 않아도 된다.
 export type ProviderModelOptions = readonly [ProviderModelOption, ...ProviderModelOption[]];
 
 export interface ModelPricePerMillion {
@@ -553,7 +508,6 @@ export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: s
   return catalogRows[providerId].models.some((model) => model.id === modelId);
 }
 
-// 카탈로그에 없는 모델(로컬 ollama 태그 등)은 temperature 를 받는다고 본다 — 거부가 확인된 모델만 뺀다.
 export function acceptsTemperature(providerId: AiProviderId, modelId: string): boolean {
   const model: ProviderModelEntry | undefined = catalogRows[providerId].models.find(
     (entry) => entry.id === modelId,
@@ -579,14 +533,10 @@ export function getProviderTransport(providerId: AiProviderId): ProviderTranspor
   return catalogRows[providerId].transport;
 }
 
-// 위험 고지는 실행 파일 경로의 것이다: 그 경로만 제공자 약관 밖에서 구독을 쓴다. 브라우저 로그인
-// 경로는 제공자가 공식으로 열어 둔 것이라 동의를 받지 않고, 미리보기라는 안내만 한다.
 export function requiresSubscriptionRiskNotice(providerId: AiProviderId): boolean {
   return isHiddenProvider(providerId) && catalogRows[providerId].transport === 'cli';
 }
 
-// 프로바이더가 내는 네 가지 실패 문구. 여섯 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
-// 호스트가 «키가 없다»를 알아보려고 문구 조각을 손으로 베껴 두게 된다.
 export const missingApiKeyMarker: string = 'API 키가 설정되어 있지 않습니다';
 
 export function missingApiKeyMessage(providerId: AiProviderId): string {
@@ -597,7 +547,6 @@ export function missingModelMessage(providerId: AiProviderId): string {
   return `${getProviderDisplayName(providerId)} 모델이 설정되어 있지 않습니다.`;
 }
 
-// The provider's own words (status, quota, rejected parameter) are what a person can act on.
 function withProviderErrorDetail(message: string, cause: unknown): string {
   const detail: string =
     cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
@@ -620,7 +569,6 @@ export function generationFailedMessage(providerId: AiProviderId, cause?: unknow
   );
 }
 
-// 구독 로그인 경로를 켜기 전에 사람이 읽고 답하는 고지문. 세 앱이 같은 글을 보여 준다.
 export const subscriptionRiskNoticeTitle: string = '구독 로그인으로 생성하기 전에 확인해 주세요.';
 
 export interface SubscriptionRiskNoticeItem {
@@ -671,7 +619,6 @@ export const subscriptionRiskWarning: string =
 export const planUsagePreviewWarning: string =
   '구독 로그인(미리보기)으로 생성합니다 — 사용량은 ChatGPT 구독 한도에서 나가고, 금액이 계산되지 않아 실행 예산이 적용되지 않습니다. 한도에 닿으면 씬 경계에서 멈춥니다.';
 
-// 숨은 프로바이더를 처음 부를 때 한 번 알리는 문장. 경로마다 위험이 다르다.
 export function hiddenProviderRunWarning(providerId: AiProviderId): string {
   return requiresSubscriptionRiskNotice(providerId)
     ? subscriptionRiskWarning
@@ -684,8 +631,6 @@ export function loginRequiredMessage(providerId: AiProviderId): string {
   return `${getProviderDisplayName(providerId)} 에 로그인돼 있지 않습니다. \`storyboard login ${providerId}\` 로 로그인하세요.`;
 }
 
-// 한도는 앱별 상한일 수도, 구독 전체일 수도 있다. 어느 쪽인지는 이 코드만으로 알 수 없으므로 확인할
-// 곳을 알려 주고, 재개 가능하다는 말은 러너가 덧붙인다.
 export function usageLimitMessage(providerId: AiProviderId): string {
   return `${getProviderDisplayName(providerId)} 사용 한도에 닿아 멈췄습니다. ChatGPT 설정 › Usage(${planUsageSettingsUrl})에서 이 앱의 한도와 남은 양을 확인하세요.`;
 }

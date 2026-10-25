@@ -35,8 +35,6 @@ export interface CheckDraftRequest {
   readonly workspaceRoot: StoryUri;
   readonly sceneStem: string;
   readonly kind: DraftCheckKind;
-  // The text to check, as the host holds it: the saved draft's body for the CLI, the editor's
-  // unsaved buffer for the extension. Offsets in the findings are offsets into this text.
   readonly text: string;
 }
 
@@ -46,7 +44,6 @@ export type CheckDraftResult =
       readonly ok: true;
       readonly kind: 'continuity';
       readonly issues: readonly ContinuityIssue[];
-      // No canon fact applies to this scene, so nothing was sent to the model.
       readonly hasFacts: boolean;
     }
   | { readonly ok: true; readonly kind: 'slop'; readonly findings: readonly SlopFinding[] }
@@ -58,9 +55,6 @@ export interface CheckDraftUseCaseDependencies {
   readonly logger: IStoryboardLogger;
 }
 
-// The three draft checks every host runs: grammar and continuity through the task's provider,
-// slop deterministically. Continuity is checked against the canon facts the scene's context
-// selects, so the same scene gets the same facts in the editor and the terminal.
 export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraftResult> {
   public constructor(private readonly deps: CheckDraftUseCaseDependencies) {}
 

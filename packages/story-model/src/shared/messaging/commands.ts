@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// SECURITY: a webview may only trigger the commands named here — an open-ended command id from
-// the browser side would let sidebar HTML run anything the extension host can.
 export type SidebarRunnableCommand =
   | 'storyboard.init'
   | 'storyboard.settings.open'

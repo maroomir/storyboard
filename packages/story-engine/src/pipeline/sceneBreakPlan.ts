@@ -7,10 +7,6 @@ import {
 
 import { countSharedShingles, normalizeForMatch } from './textMatch';
 
-// NOTE: 장면 전환(---)은 모델에 맡기면 지켜지지 않았다(#115: 42비트 중 40곳에서 끊음, #112: 살붙임이
-// 지움). 비트에 좌표가 있으면 파이프라인이 끊는 자리를 정해 뼈대 입력에 ⟪대목 n⟫ 으로 미리 표시하고,
-// 뼈대 결과의 --- 는 그 표식 앞에만 다시 놓는다. 좌표가 없는 씬은 종전대로 모델 재량이다.
-
 const SCENE_BREAK_LINE: string = '---';
 const SEGMENT_MARKER: RegExp = /⟪\s*대목\s*(\d+)\s*⟫/g;
 const ANY_MARKER: RegExp = /⟪[^⟪⟫\n]*⟫/g;
@@ -21,7 +17,6 @@ interface SkeletonCallBeats {
 }
 
 export interface PlannedSceneSegment {
-  // 이 대목에 드는 비트 번호(0부터).
   readonly beats: readonly number[];
   readonly coordinate: string | undefined;
 }
@@ -30,7 +25,6 @@ export interface SceneBreakPlan {
   readonly segments: readonly PlannedSceneSegment[];
 }
 
-// 시간대 낱말과 그 순서. 둘 다 시:분이 읽히지 않는 시각은 이 순서가 바뀔 때 전환으로 본다.
 interface DayPeriod {
   readonly words: readonly string[];
   readonly pm: boolean;
@@ -46,14 +40,11 @@ const dayPeriods: readonly DayPeriod[] = [
   { words: ['밤', '자정', '심야'], pm: true },
 ];
 
-// 한 비트 안에서 시간이 흐른 시각(«오전부터 오후까지», «수업 동안», «경과»). 그 비트가 끝나면 전환이다.
 const timeSpanPattern: RegExp = /까지|경과|동안|내내/;
 
-// 날이 바뀌었다고 적힌 시각은 언제나 전환이다.
 const dayChangePattern: RegExp =
   /다음\s*날|이튿날|며칠\s*(?:뒤|후)|\d+\s*일\s*(?:뒤|후)|일주일\s*(?:뒤|후)|다음\s*주/;
 
-// 장소에서 같은 곳인지 가리는 데 쓰지 않는 낱말.
 const placeStopWords: Set<string> = new Set([
   '앞',
   '뒤',
@@ -74,7 +65,6 @@ interface ReadTime {
   readonly isSpan: boolean;
 }
 
-// 문자열에서 마지막으로 언급된 시간대. «오전부터 오후까지»는 끝난 때인 오후다.
 function readPeriod(time: string): number | undefined {
   let found: { period: number; at: number } | undefined;
 
@@ -141,7 +131,6 @@ export function isTimeJump(previous: string, next: string, jumpMinutes: number):
   );
 }
 
-// 장소 문자열을 같은 곳인지 가리는 낱말로 나눈다. 조사를 떼고 방향 낱말은 버린다.
 export function placeWords(place: string): string[] {
   return place
     .split(/[\s,·、/()]+/)
@@ -153,8 +142,6 @@ function detailOf(beat: SceneBeat): Exclude<SceneBeat, string> | undefined {
   return typeof beat === 'string' ? undefined : beat;
 }
 
-// 비트 사이에서 끊을지. 작가의 break 가 우선이고, 다음은 장소다 — 다음 비트의 장소가 지금 대목의
-// 장소들과 낱말 하나도 겹치지 않으면 다른 곳이다(«집 현관»→«집 거실»은 같은 집). 마지막은 시각이다.
 function shouldBreakBefore(
   beat: SceneBeat,
   previous: SceneBeat,
@@ -205,7 +192,6 @@ function formatSegmentCoordinate(
   return parts.length > 0 ? parts.join(' / ') : undefined;
 }
 
-// 좌표(장소·시각·break)가 있는 비트가 하나도 없으면 계획하지 않는다 — 모델 재량으로 남는다.
 export function planSceneBreaks(
   beats: readonly SceneBeat[] | undefined,
   castName: (ref: string) => string,
@@ -249,8 +235,6 @@ export function planSceneBreaks(
   };
 }
 
-// 뼈대에 넘기는 사건 목록. 대목마다 ⟪대목 n⟫ 줄을 앞세운다. onlyBeats 를 주면 그 비트(0부터)만 싣고,
-// 대목의 첫 비트가 빠진 대목(앞 호출이 쓰기 시작한 대목)에는 표식을 달지 않는다. 번호는 전체 기준이다.
 export function renderPlannedNarrative(
   beats: readonly SceneBeat[],
   plan: SceneBreakPlan,
@@ -276,16 +260,10 @@ export function renderPlannedNarrative(
 }
 
 export interface SkeletonCall {
-  // 이 호출이 쓰는 비트 번호(0부터), 연속.
   readonly beats: readonly number[];
-  // 이 호출 안에서 시작하는 대목의 번호(1부터). 그 표식을 옮겨 적어야 한다.
   readonly markers: readonly number[];
 }
 
-// NOTE: 42비트를 한 호출에 담으면 목표가 13k든 18k든 뼈대는 9~10k자에서 멈췄다(#115·#111 실측 4회).
-// 호출 하나가 낼 수 있는 사건의 밀도에 상한이 있으므로, 뼈대 목표를 비트 수대로 나눠 한 호출의 몫이
-// charsPerCall 을 넘지 않게 연속한 대목을 묶는다. 대목 하나의 몫이 그보다 크면 비트를 고르게 나눠
-// 여러 호출로 이어 쓴다(15비트 대목이 한 호출에서 다시 69%에 멈춤). 목표가 없으면 한 호출이다.
 export function planSkeletonCalls(
   plan: SceneBreakPlan,
   targetLength: number | undefined,
@@ -324,7 +302,6 @@ export function planSkeletonCalls(
   return calls;
 }
 
-// 호출이 자기 첫 대목의 표식을 빠뜨렸으면 앞에 붙인다. 호출의 시작 대목은 파이프라인이 안다.
 export function ensureLeadingMarker(text: string, segmentNumber: number): string {
   const hasMarker: boolean = [...text.matchAll(SEGMENT_MARKER)].some(
     (match) => Number(match[1]) === segmentNumber,
@@ -332,9 +309,6 @@ export function ensureLeadingMarker(text: string, segmentNumber: number): string
   return hasMarker ? text : `⟪대목 ${segmentNumber}⟫\n${text}`;
 }
 
-// 호출이 자기 몫이 아닌 ⟪대목 n⟫ 표식을 지어내면(대목 하나를 나눠 받은 호출이 제 조각에 다음 번호를
-// 붙인 실측) 뒤 호출의 진짜 표식이 이미 본 번호로 무시돼 대목들이 마지막 대목에 뭉친다. 허용 번호 외의
-// 표식은 지우고, 표식만 있던 줄은 없앤다.
 export function keepOnlyMarkers(text: string, allowed: readonly number[]): string {
   return text
     .split('\n')
@@ -347,7 +321,6 @@ export function keepOnlyMarkers(text: string, allowed: readonly number[]): strin
     .join('\n');
 }
 
-// 본문에 없는 ⟪대목 n⟫ 표식의 수. 번호는 1부터.
 export function countMissingSegmentMarkers(
   text: string,
   segmentNumbers: readonly number[],
@@ -360,18 +333,12 @@ export function countMissingSegmentMarkers(
 
 export interface PlannedBreakResult {
   readonly text: string;
-  // 결과 본문의 대목 순서대로 그 좌표. --- 수 + 1 과 같다.
   readonly coordinates: readonly (string | undefined)[];
-  // 결과 본문의 대목 순서대로, 그 대목에 든 비트 번호(0부터). 표식이 빠져 앞 대목에 붙은 계획 대목의
-  // 비트는 그 앞 대목의 몫이다.
   readonly beats: readonly (readonly number[])[];
   readonly missingMarkers: number;
-  // 표식을 하나도 옮겨 적지 않았다. 그때 --- 를 모두 지우면 전환이 다 사라지므로 호출자는 모델의
-  // --- 를 그대로 쓴다.
   readonly hasNoMarkers: boolean;
 }
 
-// 모델이 쓴 --- 를 모두 지우고, ⟪대목 n⟫ 표식 앞에만 다시 놓는다. 빠진 표식의 대목은 앞 대목에 붙는다.
 export function applyPlannedSceneBreaks(
   skeleton: string,
   plan: SceneBreakPlan,
@@ -379,7 +346,6 @@ export function applyPlannedSceneBreaks(
   const out: string[] = [];
   const seen: Set<number> = new Set<number>();
   const coordinates: (string | undefined)[] = [];
-  // 결과 대목마다 그 대목을 여는 계획 대목 번호(1부터).
   const openingNumbers: number[] = [];
   const hasContent = (): boolean => out.some((line) => line.trim().length > 0);
   const openSegment = (segmentNumber: number): void => {
@@ -425,7 +391,6 @@ export function applyPlannedSceneBreaks(
     openSegment(1);
   }
 
-  // 결과 대목 i는 자기를 연 계획 대목부터 다음 결과 대목이 열리기 전까지의 비트를 모두 가진다.
   const beats: number[][] = openingNumbers.map((opening, index) => {
     const next: number = openingNumbers[index + 1] ?? plan.segments.length + 1;
     const from: number = index === 0 ? 1 : opening;
@@ -462,9 +427,6 @@ function similarity(paragraph: string, reference: string): number {
     : countSharedShingles(needle, normalizeForMatch(reference)) / needle.length;
 }
 
-// 살붙임이 뼈대 조각의 --- 를 지우거나 더했을 때, 뼈대 조각의 대목마다 그 첫 문단과 가장 닮은
-// 살붙임 문단 앞에 --- 를 다시 놓는다(#112). 바로 앞 문단이 이 대목을 더 닮았으면(전환 뒤 첫머리의
-// 설정 문장) 한 문단 당긴다. 자리를 못 찾으면 undefined.
 export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): string | undefined {
   const parts: string[] = sectionSkeleton.split('\n');
   const skeletonParts: string[][] = [[]];
@@ -545,9 +507,6 @@ function shortBeatText(beat: SceneBeat): string {
   return text.length > 24 ? `${text.slice(0, 24)}…` : text;
 }
 
-// NOTE: 미달 뼈대를 «더 쓰라»로만 다시 부르면 비트마다 고르게 조금씩 늘 뿐, 긴 설전이 두세 턴으로
-// 끝나는 비트는 그대로였다(#115: 42비트가 비트당 228자로 수렴). 대목마다 둘 이상이 나오는 사건 수와
-// 대사 수를 세어, 사건당 대사가 thinTurns 에 못 미치는 대목의 그런 사건들을 지목한다.
 export function findThinDialogueBeats(
   skeleton: string,
   plan: SceneBreakPlan,

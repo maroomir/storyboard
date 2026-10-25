@@ -14,15 +14,11 @@ import type { CompletedStoryScene } from './completeStoryScenesUseCase';
 
 export interface ApplyStoryCardTargetsResult {
   readonly writtenIds: readonly string[];
-  // New cards whose name yields no id. An editor asks a person; an unattended caller reports
-  // the names instead of filing them under a guessed id.
   readonly needsIdNames: readonly string[];
 }
 
 export interface ApplyCompletedScenesResult {
   readonly writtenFileNames: readonly string[];
-  // Completion scenes are appended after the last number; one that would replace an existing
-  // file is left alone, or the scene already written there would be lost.
   readonly skippedFileNames: readonly string[];
 }
 
@@ -30,8 +26,6 @@ export interface ApplyStoryProposalsDependencies {
   readonly fileSystem: IFileSystem;
 }
 
-// The write half of `card build` and `scene complete`: every change the proposal holds, applied
-// without a review step. A host that reviews first (the editor) picks its own subset instead.
 export class ApplyStoryProposals {
   public constructor(private readonly deps: ApplyStoryProposalsDependencies) {}
 

@@ -36,12 +36,10 @@ export interface StoryboardProjectPaths {
   readonly sceneGroundingGaps: StoryUri;
   readonly backgroundFactConflicts: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
-  // 감수 루프가 회차마다 남기는 검사·재작성 기록. 씬 하나에 파일 하나, 다시 돌리면 덮어쓴다.
   readonly revisionRoundsDirectory: StoryUri;
   readonly storyState: StoryUri;
   readonly chapterSummaries: StoryUri;
   readonly sceneDialogueDirectory: StoryUri;
-  // 노트에서 옮긴 인물별 예시 대사. 줄기와 무관하게 작품에 하나다.
   readonly voiceSeeds: StoryUri;
   readonly personaMemoryDirectory: StoryUri;
   readonly backgroundMemoryDirectory: StoryUri;
@@ -141,8 +139,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
   };
 }
 
-// NOTE: 연속성 재료만 줄기별로 가른다. 캐넌·아웃라인·씬·초안은 작품 하나에 하나라 그대로 둔다.
-// 기본 줄기는 종전 경로를 그대로 써서 스레드를 쓰지 않는 작품의 파일 배치가 달라지지 않는다.
 export function resolveThreadPaths(
   paths: StoryboardProjectPaths,
   threadId: string | undefined,
@@ -188,13 +184,8 @@ export function isDirectSceneCardFile(
   return isDirectSceneCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
-// SECURITY: entity keys reach here from webview payloads and become directory names; anything
-// outside the card/scene id shape would let a session escape the studio-sessions directory.
 const safeEntityKeyPattern: RegExp = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 
-// SECURITY: entity keys arrive from the webview and from model output, and they become path
-// segments for both the session cache and the card/scene files themselves; anything outside the
-// card id shape could read or overwrite a file outside the workspace.
 export function isSafeStudioEntityKey(key: string): boolean {
   return safeEntityKeyPattern.test(key);
 }

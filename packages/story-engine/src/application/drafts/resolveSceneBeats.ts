@@ -29,8 +29,6 @@ export interface SceneBeatCastCard {
   readonly aliases?: readonly string[];
 }
 
-// 초안 뼈대는 입력에 없는 사건을 지어내지 못하므로 비트 수가 분량의 상한이다. 비트가 없는 씬은
-// 생성 직전에 뽑아 카드에 남겨, 다음 생성에서도 같은 사건을 쓴다(사실 시트와 같은 패턴).
 export async function resolveSceneBeats(
   sceneUri: StoryUri,
   scene: SceneFile,
@@ -45,7 +43,6 @@ export async function resolveSceneBeats(
   try {
     beats = await proposeSceneBeats(sceneUri, scene, characters, options);
   } catch (error) {
-    // 비트 전개는 분량 보조 단계다. 실패해도 생성 자체는 막지 않는다.
     options.logger.warn(`씬 비트를 전개하지 못했습니다: ${String(error)}`);
     return scene;
   }
@@ -99,8 +96,6 @@ export async function proposeSceneBeats(
   return proposals.map((proposal) => toSceneBeat(proposal, characters));
 }
 
-// 좌표가 하나라도 있으면 객체 비트, 없으면 종전대로 문자열 비트다. 출연은 카드의 id·이름·별칭과
-// 맞으면 id 로 적고, 맞지 않는 이름은 그대로 둔다 — 생성과 doctor 가 «비트 출연» 경고로 알린다.
 export function toSceneBeat(
   proposal: ExpandedSceneBeat,
   characters: readonly SceneBeatCastCard[],

@@ -116,9 +116,6 @@ function appendListSection(sections: string[], heading: string, values: readonly
   sections.push(`## ${heading}\n\n${body}`);
 }
 
-// The markdown form uses three in-band markers: '## ' opens a section, '- ' opens a list item and
-// '_미작성_' means "empty". A VALUE containing any of those would corrupt the round trip, so
-// serialization escapes them and parsing reverses it — parse(serialize(x)) must equal x.
 function escapeSynopsisValue(value: string): string {
   let escaped: string = value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n');
   if (escaped.startsWith('#') || escaped === '_미작성_') {
@@ -143,8 +140,6 @@ export class SynopsisParseError extends Error {
   }
 }
 
-// Inverse of serializeSynopsisMarkdown, so a synopsis written by one app can seed chapter planning
-// in the other. Only the exact sectioned format that serializer emits is accepted.
 export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
   const sections: Map<string, string> = new Map<string, string>();
   let currentHeading: string | undefined;

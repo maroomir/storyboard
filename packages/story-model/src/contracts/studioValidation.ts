@@ -18,8 +18,6 @@ export const skippedStudioValidation: StudioValidationVerdict = { state: 'skippe
 
 const maxWarnings: number = 5;
 
-// NOTE: an unreadable verdict must not block the author, so it degrades to 'skipped' rather than
-// inventing a warning the model never made.
 export function coerceStudioValidationVerdict(response: string): StudioValidationVerdict {
   const parsed: Record<string, unknown> | null = parseJsonObject(response);
 

@@ -236,8 +236,6 @@ async function readDraftRevision(
   try {
     const fileNames: readonly string[] = await fs.listFileNames(draftHistorySceneDirectory(workspaceRoot, sceneStem));
 
-    // NOTE: Archives hold the *previous* drafts, so the live draft is one past the highest
-    // archived revision. With no archive the draft is unversioned, not v1.
     const currentRevision: number = nextDraftHistoryRevision(fileNames);
 
     return currentRevision > 1 ? currentRevision : undefined;

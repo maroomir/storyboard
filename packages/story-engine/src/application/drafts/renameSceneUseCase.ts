@@ -53,7 +53,6 @@ export type RenameSceneResult =
       readonly fromStem: string;
       readonly toStem: string;
       readonly hasOrderChanged: boolean;
-      // Workspace-relative paths, in the order they were written.
       readonly movedFiles: readonly string[];
       readonly rewrittenFiles: readonly string[];
     }
@@ -83,12 +82,6 @@ const sceneStemFieldNames: Set<string> = new Set([
 ]);
 const sceneEntityKeyFieldNames: Set<string> = new Set(['id', 'key']);
 
-// Scenes are keyed by their file stem: the card, its summary, the draft and its history, every
-// cache and memory file is named after it, and the ledgers and canon refer to it by stem or by
-// order. A rename moves and rewrites all of them. Every file is read and transformed before the
-// first write, so a file that cannot be parsed stops the rename with nothing changed. A rename
-// cut off before it deleted the old card is finished by running the same rename again; the
-// journal it wrote first is what marks it as cut off.
 export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSceneResult> {
   public constructor(private readonly deps: RenameSceneUseCaseDependencies) {}
 
@@ -168,10 +161,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     };
   }
 
-  // NOTE: A rename cut off before it deleted the old card left the target card and possibly more
-  // of the moved files. It is that rename only if its journal names this same rename and every
-  // target already there holds exactly what this rename would write; otherwise the target is
-  // another scene and must not be overwritten.
   private async isInterruptedRename(
     paths: StoryboardProjectPaths,
     rename: SceneRename,
@@ -216,7 +205,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     return undefined;
   }
 
-  // The main thread's memory plus one scope per non-main continuity thread.
   private async listMemoryScopes(
     paths: StoryboardProjectPaths,
   ): Promise<readonly StoryboardProjectPaths[]> {
@@ -424,8 +412,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   }
 }
 
-// NOTE: An archive is a past draft kept for the author to read. One that no longer parses still
-// belongs to the scene, so it moves with its frontmatter untouched instead of stopping the rename.
 function rewriteArchivedDraftStem(raw: string, toStem: string): string {
   try {
     return serializeDraft({ ...parseDraft(raw), sceneStem: toStem });
@@ -434,9 +420,6 @@ function rewriteArchivedDraftStem(raw: string, toStem: string): string {
   }
 }
 
-// Cache and memory JSON name the scene in a handful of fields: `sceneStem`, `sourceScene`,
-// `sceneRef`, `updatedThroughScene`, and the `id`/`key` of a `{ kind: 'scene' }` reference.
-// Returns undefined when nothing changed, so an untouched file keeps its bytes.
 function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undefined {
   let changed: boolean = false;
 
@@ -473,7 +456,6 @@ function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undef
     return undefined;
   }
 
-  // NOTE: Keep each file's own layout: the usage ledger is compact, every other file is indented.
   return raw.includes('\n') ? `${JSON.stringify(rewritten, null, 2)}\n` : JSON.stringify(rewritten);
 }
 

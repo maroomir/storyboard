@@ -24,8 +24,6 @@ export interface CollectNotesUseCaseDependencies {
   readonly repository: INoteAbsorbRepository;
 }
 
-// Reads the notes and nothing else: no AI call is made here, so a caller can show what was found
-// and what it would cost before anything is spent.
 export class CollectNotesUseCase implements IUseCase<CollectNotesRequest, CollectNotesResult> {
   public constructor(private readonly deps: CollectNotesUseCaseDependencies) {}
 

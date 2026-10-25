@@ -118,16 +118,16 @@ function readTextDelta(event: JsonRecord): string | undefined {
     : undefined;
 }
 
-function recordEvent(output: CliOutput, event: JsonRecord): void {
+function recordEvent(cliOutput: CliOutput, event: JsonRecord): void {
   if (event.type === 'rate_limit_event' && isRecord(event.rate_limit_info)) {
     const { status, resetsAt } = event.rate_limit_info;
 
     if (status === 'rejected') {
-      output.isRateLimited = true;
+      cliOutput.isRateLimited = true;
     }
 
     if (typeof resetsAt === 'number') {
-      output.rateLimitResetsAt = resetsAt;
+      cliOutput.rateLimitResetsAt = resetsAt;
     }
 
     return;
@@ -139,7 +139,7 @@ function recordEvent(output: CliOutput, event: JsonRecord): void {
 
   const usage: AiUsage | undefined = readUsage(event.usage);
 
-  output.result = {
+  cliOutput.result = {
     isError: event.is_error === true,
     text: typeof event.result === 'string' ? event.result : '',
     ...(typeof event.api_error_status === 'number'
@@ -290,7 +290,7 @@ export class ClaudeCodeProvider implements AiProvider {
     signal?: AbortSignal,
   ): Promise<AiGenerateResponse> {
     const { systemPrompt, prompt } = splitCliPrompt(request.messages);
-    const output: CliOutput = { isRateLimited: false };
+    const cliOutput: CliOutput = { isRateLimited: false };
 
     const run: CliRunResult = await this.runner.run({
       command: this.command,
@@ -321,7 +321,7 @@ export class ClaudeCodeProvider implements AiProvider {
           return;
         }
 
-        recordEvent(output, event);
+        recordEvent(cliOutput, event);
       },
       ...(signal === undefined ? {} : { signal }),
     });
@@ -344,10 +344,10 @@ export class ClaudeCodeProvider implements AiProvider {
       );
     }
 
-    const { result } = output;
+    const { result } = cliOutput;
 
     if (result === undefined || result.isError || run.exitCode !== 0) {
-      throw this.failedRunError(run, output);
+      throw this.failedRunError(run, cliOutput);
     }
 
     return aiGenerateResponseWithUsage({
@@ -377,8 +377,8 @@ export class ClaudeCodeProvider implements AiProvider {
     );
   }
 
-  private failedRunError(run: CliRunResult, output: CliOutput): AiProviderError {
-    const { result } = output;
+  private failedRunError(run: CliRunResult, cliOutput: CliOutput): AiProviderError {
+    const { result } = cliOutput;
     const reason: string = result?.isError === true ? result.text.trim() : '';
     const detail: string = reason || run.stderr.trim() || `종료 코드 ${String(run.exitCode)}`;
 
@@ -387,14 +387,14 @@ export class ClaudeCodeProvider implements AiProvider {
     }
 
     if (
-      output.isRateLimited ||
+      cliOutput.isRateLimited ||
       result?.apiErrorStatus === 429 ||
       /usage limit|rate limit|limit reached/i.test(detail)
     ) {
       return new AiProviderError(
         'cli-usage-limit',
         this.id,
-        `구독 사용 한도에 닿아 중단했습니다.${formatResetTime(output.rateLimitResetsAt)} (${detail})`,
+        `구독 사용 한도에 닿아 중단했습니다.${formatResetTime(cliOutput.rateLimitResetsAt)} (${detail})`,
       );
     }
 

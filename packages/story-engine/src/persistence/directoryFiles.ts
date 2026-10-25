@@ -1,8 +1,6 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 
-// The plain files in a directory, by name. A directory that is missing or unreadable lists as
-// empty: for every caller here "no files yet" and "no directory yet" mean the same thing.
 export async function listDirectoryFileNames(
   fileSystem: IFileSystem,
   directory: StoryUri,
@@ -23,18 +21,15 @@ export async function listDirectoryFileNames(
 
 export interface ReadDirectoryFilesOptions<T> {
   readonly isEligible?: (name: string) => boolean;
-  // Reads one file; returning undefined leaves it out of the result.
   readonly read: (uri: StoryUri, name: string) => Promise<T | undefined>;
 }
 
-// Reads every eligible file in turn and skips the ones that fail to read or parse: one corrupt
-// record must not hide the rest of the directory.
 export async function readDirectoryFiles<T>(
   fileSystem: IFileSystem,
   directory: StoryUri,
   options: ReadDirectoryFilesOptions<T>,
 ): Promise<T[]> {
-  const results: T[] = [];
+  const parsedFiles: T[] = [];
 
   for (const name of await listDirectoryFileNames(fileSystem, directory, options.isEligible)) {
     try {
@@ -44,14 +39,14 @@ export async function readDirectoryFiles<T>(
       );
 
       if (value !== undefined) {
-        results.push(value);
+        parsedFiles.push(value);
       }
     } catch {
       continue;
     }
   }
 
-  return results;
+  return parsedFiles;
 }
 
 export async function loadTextFile(fileSystem: IFileSystem, uri: StoryUri): Promise<string> {

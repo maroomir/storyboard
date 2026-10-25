@@ -125,8 +125,6 @@ export async function runOutlineStage(
     ? await outlineRepository.loadChapterPlan(workspaceUri)
     : undefined;
 
-  // A rerun keeps the plan it already made: a new one would seed the same scenes under new names.
-  // A plan the author wrote by hand may have no synopsis beside it; that one is still made.
   if (keptPlan !== undefined && flattenChapterPlan(keptPlan).length > 0) {
     refuseChapterCountMismatch(brief, keptPlan, 'kept');
 
@@ -150,15 +148,10 @@ export async function runOutlineStage(
 
 export interface CharactersStageReport {
   readonly writtenCount: number;
-  // Cast the model returned no card for; the person is told rather than the stage retried.
   readonly missingIds: readonly string[];
   readonly unusableIds: readonly string[];
 }
 
-// The chapter plan may cast people no card describes (an empty work has no cards at all), and a
-// scene whose cast resolves to nobody cannot be drafted. One call drafts the missing cards; a card
-// that exists is never touched, and nothing is called when the cast is complete. A call that
-// answers for nobody fails the stage, so a rerun asks again instead of drafting without a cast.
 export async function runCharactersStage(
   workspaceUri: StoryUri,
   project: StoryboardProject,
@@ -214,11 +207,9 @@ export async function runSeedsStage(
   digitCount: number,
   sceneSeedRepository: ISceneSeedRepository,
 ): Promise<void> {
-  // A scene card that exists may carry the author's edits, so a rerun writes only the missing ones.
   await sceneSeedRepository.saveMissingSeeds(workspaceUri, buildSceneSeeds(plan, digitCount));
 }
 
-// A pause with a reason of its own: the provider's subscription limit, in the provider's words.
 type ChapterDraftsOutcome = 'finished' | 'paused' | { readonly limitReached: string };
 
 async function runChapterDraftsAndRevise(
@@ -247,7 +238,6 @@ async function runChapterDraftsAndRevise(
       if (draftResult.kind === 'cancelled') {
         return 'finished';
       }
-      // The scene was not written, so a resume starts it over; nothing is counted as failed.
       if (draftResult.reason === 'usage-limit') {
         return { limitReached: draftResult.message };
       }
@@ -291,9 +281,9 @@ interface ChapterStageContext {
 }
 
 export async function runChapterStages(
-  ctx: ChapterStageContext,
+  chapterContext: ChapterStageContext,
 ): Promise<NovelPipelineResult | undefined> {
-  const { options, paths, groups, state, completed, persist } = ctx;
+  const { options, paths, groups, state, completed, persist } = chapterContext;
   if (completed.has('chapters')) {
     return undefined;
   }
@@ -312,8 +302,6 @@ export async function runChapterStages(
       `${chapterIndex + 1}/${groups.length}장 «${group.title}» 초안·검수 중…`,
     );
 
-    // NOTE: 장 도중에 멈추면 nextChapterIndex 를 올리지 않는다. 재개가 같은 장을 다시 돌면 끝난 씬은
-    // 캐시로 건너뛰고 남은 씬부터 이어 쓴다.
     const draftsOutcome: ChapterDraftsOutcome = await runChapterDraftsAndRevise(
       group,
       paths,
@@ -360,19 +348,17 @@ export async function runChapterStages(
   return undefined;
 }
 
-// The rolling summary is what a later chapter reads as "the story so far", so it is refreshed as
-// each chapter lands rather than only at the end of the run. A failure here costs the next chapter
-// its recap, not the run, so it is reported and the pipeline continues.
 async function refreshChapterSummary(
   options: NovelPipelineOptions,
   chapterIndex: number,
 ): Promise<void> {
-  const result: SummarizeChaptersResult = await options.deps.summarizeChaptersUseCase.execute({
-    workspaceRoot: options.workspaceUri,
-    chapterIndex,
-  });
+  const summaryResult: SummarizeChaptersResult =
+    await options.deps.summarizeChaptersUseCase.execute({
+      workspaceRoot: options.workspaceUri,
+      chapterIndex,
+    });
 
-  if (!result.ok) {
+  if (!summaryResult.ok) {
     options.onProgress(
       'chapters',
       `${chapterIndex + 1}장 요약을 갱신하지 못했습니다. 다음 장은 이전 요약으로 진행합니다.`,
@@ -384,18 +370,19 @@ export async function runAssembleStage(
   workspaceUri: StoryUri,
   assembleManuscriptUseCase: AssembleManuscriptUseCase,
 ): Promise<void> {
-  const result: AssembleManuscriptResult = await assembleManuscriptUseCase.execute({
+  const assemblyResult: AssembleManuscriptResult = await assembleManuscriptUseCase.execute({
     workspaceRoot: workspaceUri,
   });
-  if (!result.ok) {
+  if (!assemblyResult.ok) {
     throw new Error(
-      result.kind === 'failed' ? result.message : `원고를 조립할 수 없습니다: ${result.kind}`,
+      assemblyResult.kind === 'failed'
+        ? assemblyResult.message
+        : `원고를 조립할 수 없습니다: ${assemblyResult.kind}`,
     );
   }
 }
 
 export interface ReviewStageResult {
-  // Scenes with at least one high-severity finding, each with the issues to answer.
   readonly targets: readonly ReviewTarget[];
   readonly highCount: number;
 }
@@ -464,8 +451,6 @@ export async function runReviewStage(
   };
 }
 
-// An issue can only be rewritten if the review named a scene that actually has a draft. The rest
-// stay in the report — silently dropping them would read as "nothing to fix".
 function groupHighIssuesByScene(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[],
@@ -526,8 +511,6 @@ function countUnroutedHighIssues(
   );
 }
 
-// One rewrite pass per named scene, carrying the volume-level findings a per-scene check could not
-// have seen. The caller reviews once more afterwards so the report reflects the rewritten text.
 export async function runReviseFromReviewStage(
   options: NovelPipelineOptions,
   paths: StoryboardProjectPaths,
@@ -542,7 +525,7 @@ export async function runReviseFromReviewStage(
 
     options.onProgress('revise-from-review', `«${target.sceneStem}» 재작성 중…`);
 
-    const result: ReviseDraftWorkflowResult = await options.deps.reviseDraftUseCase.execute({
+    const reviseResult: ReviseDraftWorkflowResult = await options.deps.reviseDraftUseCase.execute({
       workspaceUri: options.workspaceUri,
       paths,
       draftUri: draftPath(options.workspaceUri, target.sceneStem),
@@ -556,18 +539,18 @@ export async function runReviseFromReviewStage(
       shouldCancel: options.shouldCancel,
     });
 
-    if (result.revisionCount > 0) {
+    if (reviseResult.revisionCount > 0) {
       revisedStems.push(target.sceneStem);
     }
 
     await recordRevisionEntry(options.deps.fileSystem, paths, {
       sceneStem: target.sceneStem,
       checkedAt: new Date().toISOString(),
-      revisionCount: result.revisionCount,
-      remainingBlocking: result.remainingBlocking,
-      instructions: result.instructions,
-      preservedOriginal: result.preservedOriginal,
-      rejection: result.rejection,
+      revisionCount: reviseResult.revisionCount,
+      remainingBlocking: reviseResult.remainingBlocking,
+      instructions: reviseResult.instructions,
+      preservedOriginal: reviseResult.preservedOriginal,
+      rejection: reviseResult.rejection,
     });
   }
 
@@ -578,18 +561,18 @@ export async function runSummariesStage(
   workspaceUri: StoryUri,
   summarizeChaptersUseCase: SummarizeChaptersUseCase,
 ): Promise<void> {
-  const result: SummarizeChaptersResult = await summarizeChaptersUseCase.execute({
+  const summaryResult: SummarizeChaptersResult = await summarizeChaptersUseCase.execute({
     workspaceRoot: workspaceUri,
   });
-  if (!result.ok) {
+  if (!summaryResult.ok) {
     throw new Error(
-      result.kind === 'failed' ? result.message : `장별 요약을 완료할 수 없습니다: ${result.kind}`,
+      summaryResult.kind === 'failed'
+        ? summaryResult.message
+        : `장별 요약을 완료할 수 없습니다: ${summaryResult.kind}`,
     );
   }
 }
 
-// A planned scene whose card was renamed is drafted under the card's name: `sceneStemsByOrder` maps
-// a scene number to the card on disk.
 export function groupChapterStems(
   plan: ChapterPlan,
   digitCount: number,

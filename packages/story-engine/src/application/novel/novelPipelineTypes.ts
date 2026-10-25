@@ -53,12 +53,7 @@ export interface NovelPipelineRunOptions {
   readonly onProgress: (stage: NovelStageName, message: string) => void;
   readonly requestApproval: (kind: NovelApprovalKind, info: string) => Promise<boolean>;
   readonly shouldCancel: () => boolean;
-  // Stops at the next scene or stage boundary instead of abandoning the scene in progress, so a
-  // budget stop or a pause button never throws away tokens already spent. The run resumes where
-  // it stopped.
   readonly shouldPause?: () => boolean;
-  // The stages to run, in order. Left out, the plan in force (the author's pipelines/novel.yaml
-  // over the bundled order) applies.
   readonly stages?: readonly NovelStageName[];
 }
 

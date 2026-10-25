@@ -18,7 +18,6 @@ import type { IStoryboardLogger } from '#engine/ports/logger';
 
 export interface ExportNotesRequest {
   readonly workspaceRoot: StoryUri;
-  // The folder the notes are written into; created when missing, files of the same name replaced.
   readonly target: StoryUri;
 }
 
@@ -36,7 +35,6 @@ export interface ExportNotesUseCaseDependencies {
   readonly synopsis: { loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined> };
 }
 
-// The folders Obsidian will show; the same folder imports into Notion as Markdown.
 interface NoteExportFolders {
   readonly characters: string;
   readonly backgrounds: string;
@@ -51,9 +49,6 @@ export const noteExportFolders: NoteExportFolders = {
   synopsis: '시놉시스.md',
 };
 
-// NOTE: 노트 앱으로 나가는 쪽. AI 는 쓰지 않는다. 프런트매터의 `storyboard-id`·`storyboard-type` 과
-// 본문의 [[위키링크]]가 카드의 id·관계를 남기므로, 내보낸 폴더를 다시 `notes absorb` 하면 [기존 카드]
-// 와 이름으로 이어진다(#54).
 export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNotesResult> {
   public constructor(private readonly deps: ExportNotesUseCaseDependencies) {}
 
@@ -96,7 +91,6 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
     });
   }
 
-  // A summary is inline on the card or in the sibling `<stem>.summary.md` the card points at.
   private async readSceneSummary(workspaceRoot: StoryUri, scene: SceneFile): Promise<string | undefined> {
     if (scene.summaryText !== undefined) {
       return scene.summaryText;
@@ -120,7 +114,6 @@ function cardNameResolver(cards: readonly StoryboardCard[]): (id: string) => str
   return (id) => names.get(id) ?? id;
 }
 
-// A note is named after the card; two cards sharing a name get their ids appended so neither is lost.
 function uniqueNoteFileNames(cards: readonly StoryboardCard[]): Map<string, string> {
   const counts: Map<string, number> = new Map<string, number>();
   for (const card of cards) {

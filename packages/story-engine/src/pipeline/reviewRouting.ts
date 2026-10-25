@@ -15,7 +15,6 @@ export const reviewAgents: readonly [ReviewAgent, ...ReviewAgent[]] = [
   'setting',
 ];
 
-// 초안 비평 카테고리에 검수만 쓰는 두 가지를 더한 것이다. 비평 쪽이 늘면 여기도 함께 늘어야 한다.
 export type ReviewCategory = CritiqueCategory | 'continuity' | 'grammar';
 
 export const reviewCategories: readonly ReviewCategory[] = [
@@ -53,7 +52,6 @@ export interface RoutingCharacter {
   readonly aliases?: readonly string[];
 }
 
-// NOTE: setting은 G-4(드로잉 능동 묘사) 전까지 매핑하지 않는다. grammar는 검수자 직접 수정이라 라우팅 대상이 아니다.
 const categoryToAgent: Record<ReviewCategory, ReviewAgent | undefined> = {
   voice: 'persona',
   purpose: 'narrator',

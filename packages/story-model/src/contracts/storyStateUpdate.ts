@@ -14,7 +14,6 @@ export const storyStateUpdateSections: readonly [
 export interface StoryStateUpdateItem {
   readonly section: StoryStateUpdateSection;
   readonly text: string;
-  // 그 사실이 확립되는 자리에 있었거나 그것을 알게 된 인물의 이름. 없으면 그 씬의 모든 인물이다.
   readonly witnesses?: readonly string[];
 }
 

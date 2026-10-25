@@ -17,9 +17,6 @@ export function parseJsonObject(response: string): Record<string, unknown> | nul
   const match: RegExpMatchArray | null = response.match(/\{[\s\S]*\}/);
   const greedy: Record<string, unknown> | null = match ? toPlainObject(match[0]) : null;
 
-  // NOTE: the greedy span runs to the last brace in the response, so a stray trailing brace or a
-  // closing remark would throw away an otherwise good object; fall back to the first span that
-  // actually balances.
   return greedy ?? scanBalancedObject(response);
 }
 
@@ -135,15 +132,15 @@ export function parseCharacterTraitSections(
   response: string,
   characterNames: readonly string[],
 ): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
+  const traitsByCharacter: Record<string, string[]> = {};
 
   for (const name of characterNames) {
     const pattern: RegExp = new RegExp(`\\[${escapeRegExp(name)}\\]([\\s\\S]*?)(?=\\[|$)`, 'g');
     const matches: RegExpMatchArray | null = response.match(pattern);
-    result[name] = matches ? parseBulletList(matches[0]) : [];
+    traitsByCharacter[name] = matches ? parseBulletList(matches[0]) : [];
   }
 
-  return result;
+  return traitsByCharacter;
 }
 
 export function detectCharactersFromDialogue(script: string): string[] {

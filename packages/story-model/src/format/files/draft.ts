@@ -124,8 +124,6 @@ export function parseDraft(rawDraft: string): Draft {
   };
 }
 
-// Legacy drafts (written before frontmatter unification) are plain markdown; fall back to the
-// raw text so readers never fail on them.
 export function extractDraftBody(rawDraft: string): string {
   try {
     return parseDraft(rawDraft).body;

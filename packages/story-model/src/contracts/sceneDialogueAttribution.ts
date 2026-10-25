@@ -14,8 +14,6 @@ const dialogueAttributionSchema: z.ZodType<DialogueAttribution> = z.object({
   speaker: z.string().trim().min(1),
 });
 
-// NOTE: 귀속은 말투 코퍼스를 쌓기 위한 메타데이터라서 본문 생성을 막지 않는다. 파싱이 실패하거나
-// 명단에 없는 화자가 오면 그 자리를 unknown으로 두고 넘어간다.
 export function coerceDialogueAttribution(
   rawText: string,
   turnCount: number,

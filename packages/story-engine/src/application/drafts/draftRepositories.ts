@@ -1,4 +1,3 @@
-// The repository ports the draft use cases consume; persistence implements them.
 import type {
   StoryUri,
   Draft,
@@ -31,7 +30,6 @@ export interface ISceneCacheRepository {
 
 export interface ISceneGroundingGapRepository {
   read(workspaceRoot: StoryUri, sceneStem: string): Promise<SceneGroundingGap | undefined>;
-  // Undefined clears the scene's record.
   write(
     workspaceRoot: StoryUri,
     sceneStem: string,

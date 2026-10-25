@@ -14,8 +14,6 @@ export const projectFormats: readonly [ProjectFormat, ...ProjectFormat[]] = [
   'poem',
 ];
 
-// NOTE: 창작자가 고르는 시점 목록. 서술자 카드를 만들지 않아도 이 값 하나로 서술 인칭·지식 경계가
-// 정해진다(암묵 서술자). 값 추가는 하위 호환이다 — 기존 세 값의 의미는 그대로다.
 export type PointOfView =
   | 'first'
   | 'first-retrospective'
@@ -31,8 +29,6 @@ export const pointOfViews: readonly [PointOfView, ...PointOfView[]] = [
   'third-omniscient',
 ];
 
-// 이름이 쓰이는 자리가 둘이라 칸도 둘이다. `label` 은 아웃라인 본문처럼 «시점: » 뒤에 붙는 짧은
-// 이름이고, `optionLabel` 은 고르는 자리에서 혼자 서는 이름이다.
 export interface NarrativeChoiceLabels {
   readonly label: string;
   readonly optionLabel: string;
@@ -79,8 +75,6 @@ export const projectEditorSchema: z.ZodType<ProjectEditor> = z.object({
   trackDraft: z.boolean().optional(),
 });
 
-// 구성. 스레드와 서술자를 어떻게 배치할지 정하는 프리셋이며, 실제 배치는 프리셋이 threads와
-// 아웃라인 지시로 풀어낸다.
 export type CompositionKind = 'linear' | 'omnibus' | 'alternating-pov' | 'frame';
 
 export const compositionKinds: readonly [CompositionKind, ...CompositionKind[]] = [
@@ -101,7 +95,6 @@ export const compositionKindLabels: Record<CompositionKind, string> = Object.fro
   compositionKinds.map((kind) => [kind, compositionCatalog[kind].label]),
 ) as Record<CompositionKind, string>;
 
-// 연속성 줄기. 이야기 상태·장 요약·직전 씬 맥락은 스레드 안에서만 이어지고, 캐넌만 전역이다.
 export interface StoryThread {
   title: string;
   wraps?: readonly string[];
@@ -109,7 +102,6 @@ export interface StoryThread {
 
 export const storyThreadSchema: z.ZodType<StoryThread> = z.object({
   title: z.string().trim().min(1),
-  // 액자식에서 이 스레드가 감싸는 내부 스레드. 조립할 때 외화를 앞뒤에 두는 근거가 된다.
   wraps: z.array(z.string().trim().min(1)).readonly().optional(),
 });
 
@@ -120,7 +112,6 @@ export interface ProjectNarration {
 }
 
 export const projectNarrationSchema: z.ZodType<ProjectNarration> = z.object({
-  // 이름 붙인 기본 서술자(`narrator/<id>.card`). 없으면 `pov`에서 암묵 서술자를 파생한다.
   defaultNarrator: z.string().trim().min(1).optional(),
 });
 
@@ -166,7 +157,6 @@ export const projectSettingSchema: z.ZodType<ProjectSetting> = z.object({
   narration: projectNarrationSchema.optional(),
   composition: z.enum(compositionKinds).optional(),
   threads: z.record(z.string().trim().min(1), storyThreadSchema).readonly().optional(),
-  // 아웃라인이 만들 장·씬 개수. 작품마다 한 번 정하는 값이라 계약에 둔다.
   chapterCount: z.number().int().positive().optional(),
   scenesPerChapter: z.number().int().positive().optional(),
   prohibitions: z.array(z.string()).default([]),

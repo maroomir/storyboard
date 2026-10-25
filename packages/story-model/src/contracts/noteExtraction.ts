@@ -3,10 +3,6 @@ import { z } from 'zod';
 import { characterRoles } from '#model/format/card';
 import type { CharacterRole } from '#model/format/card';
 
-// What a note may hold. `other` alone means nothing in the note belongs in the workspace; `draft` is
-// prose already written, which gives cards and premise but never a scene.
-// 'setting' 은 세계관·규칙만 적힌 노트다 — 그 사실은 카드가 아니라 정전 후보로 간다(#55).
-
 interface NoteExtractionAttribute {
   key: string;
   value: string;
@@ -50,14 +46,10 @@ export interface NoteExtractionKnownCard {
   readonly aliases: readonly string[];
 }
 
-// NOTE: zod 4 는 빠진 키를 preprocess 에 넘기지 않고 바로 거부한다. 목록 칸은 optional 로 받고
-// 없으면 빈 배열로 채워, 모델이 칸 하나를 빼먹었다고 항목 전체가 버려지지 않게 한다.
 function emptyWhenMissing<Item>(schema: z.ZodType<Item[]>): z.ZodType<Item[]> {
   return schema.optional().transform((value) => value ?? []);
 }
 
-// 모델은 «모르는 값» 을 빈 문자열로 적어 보낸다. 그것을 오류로 세면 노트 수십 장을 읽은 응답이
-// 빈 칸 하나 때문에 통째로 버려지므로, 빈 값은 안 적은 것으로 읽고 목록에서는 걸러 낸다.
 const optionalText: z.ZodPreprocess<z.ZodOptional<z.ZodString>> = z.preprocess(
   (value) => (typeof value === 'string' && value.trim().length === 0 ? undefined : value),
   z.string().trim().min(1).optional(),
@@ -75,8 +67,6 @@ function textList(): z.ZodType<string[]> {
   );
 }
 
-// 괄호가 든 별칭은 호칭이 아니라 호칭에 붙인 설명이다(«엘리트라 불리는 쪽은 아님(은하를 그렇게
-// 부름)»). 그런 줄이 카드에 남으면 틀린 호칭이 생성 프롬프트까지 가므로 읽을 때 걸러 낸다.
 const annotatedAliasPattern: RegExp = /[()[\]{}（）［］｛｝【】〔〕]/;
 
 function aliasList(): z.ZodType<string[]> {
@@ -150,7 +140,6 @@ const noteEntitySchema: z.ZodType<NoteExtractionEntity> = z.object({
   traits: textList(),
   description: textList(),
   voice: textList(),
-  // 노트에 따옴표로 적힌 이 인물의 대사, 고치지 않은 그대로. 첫 씬의 말투 표본이 된다.
   sampleLines: textList(),
   desire: textList(),
   attributes: recordList(
@@ -159,7 +148,6 @@ const noteEntitySchema: z.ZodType<NoteExtractionEntity> = z.object({
   relations: recordList(
     z.object({ target: z.string().trim().min(1), type: z.string().trim().min(1) }),
   ),
-  // 작품 내내 참이어야 하는 이 대상의 설정 사실. 카드 필드가 아니라 정전(canon) 후보가 된다.
   canonFacts: recordList(
     z.object({ key: z.string().trim().min(1), value: z.string().trim().min(1) }),
   ),
@@ -201,7 +189,6 @@ export interface NoteExtraction {
   readonly premise: readonly string[];
 }
 
-// One malformed entry must not cost the rest of the response, so each list keeps what parses.
 function salvageList<T>(value: unknown, schema: z.ZodType<T>): T[] {
   return Array.isArray(value)
     ? value.flatMap((entry) => {
@@ -211,7 +198,6 @@ function salvageList<T>(value: unknown, schema: z.ZodType<T>): T[] {
     : [];
 }
 
-// Why a response gave nothing to read: cut off at the output limit, or no extraction object in it.
 export type NoteExtractionFailure = 'truncated' | 'unparsed';
 
 export interface NoteExtractionResult {
@@ -220,7 +206,6 @@ export interface NoteExtractionResult {
   readonly failure?: NoteExtractionFailure;
 }
 
-// What the plan keeps of each extraction request, so a failed one can be read afterwards.
 export interface NoteExtractionResponse {
   readonly chunk: number;
   readonly noteIds: readonly string[];
@@ -230,8 +215,6 @@ export interface NoteExtractionResponse {
 
 const extractionKeys: readonly string[] = ['notes', 'entities', 'scenes', 'premise'];
 
-// NOTE: a broken response still parses when the balanced-object fallback picks up an inner object
-// such as one `notes` entry, so an object without any extraction key counts as unparsed too.
 export function readNoteExtractionResponse(
   responseText: string,
   parsed: Record<string, unknown> | null,

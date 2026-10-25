@@ -27,7 +27,6 @@ export class BibleCandidateRepository implements IBibleCandidateRepository {
   public async loadRecords(workspaceRoot: StoryUri): Promise<readonly BibleCandidateRecord[]> {
     const { bibleCacheDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
-    // NOTE: Invalid cache records are excluded from candidate promotion.
     return await readDirectoryFiles(this.fileSystem, bibleCacheDirectory, {
       isEligible: (name) => name.endsWith('.json'),
       read: (uri) => readBibleCandidateFile(uri, this.fileSystem),

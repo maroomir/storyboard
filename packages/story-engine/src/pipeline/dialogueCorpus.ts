@@ -13,8 +13,6 @@ export interface VoiceSampleBounds {
   readonly maximumLength: number;
 }
 
-// NOTE: 말투 기준점이라 매 생성마다 같은 입력에서 같은 표본이 나와야 한다. AI를 쓰지 않고 씬 순서와
-// 길이만으로 고르며, 작품 전체에 고르게 걸치도록 후보를 등분해 각 구간의 첫 대사를 뽑는다.
 export function selectRepresentativeDialogue(
   records: readonly SceneDialogueRecord[],
   characterId: string,
@@ -35,8 +33,6 @@ export function selectRepresentativeDialogue(
   );
 }
 
-// 뒤 씬의 대사를 표본으로 쓰면 3번 씬이 20번 씬의 말투를 기준으로 삼는다. 인물의 말투는 작품이
-// 진행되며 변하므로, 지금 쓰는 씬보다 앞선 것만 남긴다.
 function collectCandidates(
   records: readonly SceneDialogueRecord[],
   characterId: string,

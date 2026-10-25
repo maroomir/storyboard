@@ -24,9 +24,7 @@ export type PrepareNoteCandidatePromotionResult =
   | { readonly kind: 'no_new_candidates' }
   | {
       readonly kind: 'ready';
-      // Cards with something to apply, each with the conflicts it still holds.
       readonly candidates: readonly MergedNoteCardCandidate[];
-      // Cards whose only candidates are conflicts: nothing applies until one value is discarded.
       readonly heldCards: readonly MergedNoteCardCandidate[];
     };
 
@@ -34,7 +32,6 @@ export interface PromoteNoteCandidatesResult {
   readonly updatedCardIds: readonly string[];
 }
 
-// Without card ids every note candidate goes; with a change ref only that value of one card.
 export type DiscardNoteCandidatesRequest =
   | { readonly kind: 'cards'; readonly cardIds?: ReadonlySet<string> }
   | { readonly kind: 'change'; readonly cardId: string; readonly ref: string };
@@ -49,8 +46,6 @@ export interface PromoteNoteCandidatesUseCaseDependencies {
   readonly cardWriter: ICardWriterRepository;
 }
 
-// Candidates from notes about cards that already existed. `card promote` reads these beside the
-// candidates generation leaves, so the author has one verb for both.
 export class PromoteNoteCandidatesUseCase {
   public constructor(private readonly deps: PromoteNoteCandidatesUseCaseDependencies) {}
 
@@ -70,7 +65,6 @@ export class PromoteNoteCandidatesUseCase {
         candidate.cardType,
         candidate.cardId,
       );
-      // The card may have been edited since the absorb; only what it still lacks is offered.
       const changes: CardCollectProposal[] =
         card === undefined
           ? []

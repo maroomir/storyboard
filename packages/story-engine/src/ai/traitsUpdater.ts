@@ -250,17 +250,17 @@ export function applyTraitsFromExtractedBullets(input: {
 }): Promise<TraitsUpdateSummary> {
   const fakeService: Pick<StoryboardAiService, 'extractTraitsByCharacter'> = {
     extractTraitsByCharacter: async (_draft, names) => {
-      const result: Record<string, string[]> = {};
+      const traitsByCharacter: Record<string, string[]> = {};
 
       for (const name of names) {
         const raw: string | undefined = input.rawResponsesByCharacter[name];
 
         if (raw !== undefined) {
-          result[name] = parseBulletList(raw);
+          traitsByCharacter[name] = parseBulletList(raw);
         }
       }
 
-      return result;
+      return traitsByCharacter;
     },
   };
 

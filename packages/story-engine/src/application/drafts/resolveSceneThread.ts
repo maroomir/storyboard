@@ -20,14 +20,10 @@ interface NumberedSceneFile {
 
 export interface SceneThreadContext {
   readonly threadId: string;
-  // 이야기 상태·요약·인물 기억이 이 줄기 안에서만 이어지도록 갈아 끼운 경로.
   readonly threadPaths: StoryboardProjectPaths;
-  // 같은 줄기의 직전 씬. 줄기가 하나뿐인 작품에서는 undefined로 두어 종전 동작(바로 앞 번호)을 쓴다.
   readonly previousSceneOrder: number | undefined;
 }
 
-// NOTE: 줄기를 선언하지 않은 작품은 씬 디렉터리를 훑지 않는다. 씬마다 다른 카드를 읽는 비용은
-// 옴니버스처럼 실제로 줄기가 갈린 작품만 치르면 된다.
 export async function resolveSceneThread(
   paths: StoryboardProjectPaths,
   scene: SceneFile,
@@ -92,8 +88,6 @@ async function findPreviousSceneOrderInThread(
   return undefined;
 }
 
-// NOTE: 앞 씬의 줄기도 씬 카드가 먼저다. 카드에 없으면 이 씬과 같은 장 기본값을 쓴다 — 장이
-// 다르면 그 장의 값을 읽어야 정확하지만, 시드가 카드로 복사해 두므로 실제로는 거의 걸리지 않는다.
 async function readSceneThreadId(
   paths: StoryboardProjectPaths,
   fileName: string,

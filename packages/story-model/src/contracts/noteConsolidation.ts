@@ -12,30 +12,22 @@ export const noteConsolidatedFields: readonly [NoteConsolidatedField, ...NoteCon
   'senses',
 ];
 
-// A field missing here was not sent, or was left out of the answer; an empty list is an answer.
 export type NoteConsolidatedValues = Partial<
   Readonly<Record<NoteConsolidatedField, readonly string[]>>
 >;
 
-// `readCount` is how many readings of the notes gave the alias to that card; a card on disk that
-// already has it carries none.
 export interface NoteAliasCarrier {
   readonly cardId: string;
   readonly name: string;
   readonly readCount?: number;
 }
 
-// An alias that another card carries too, as a candidate of its own or already on disk. Only the
-// model can tell whose it is, so every card that proposes it is asked in the same request.
 export interface NoteSharedAlias {
   readonly alias: string;
   readonly readCount: number;
   readonly otherCards: readonly NoteAliasCarrier[];
 }
 
-// A card whose lists came from more than one reading of the notes, which already has some of them,
-// or which proposes an alias that needs a look. `existing` is what the card holds and is never
-// proposed again; `candidates` are what the model narrows to one item per meaning.
 export interface NoteConsolidationTarget {
   readonly cardId: string;
   readonly name: string;
@@ -49,10 +41,6 @@ export type NoteConsolidatedGroups = Partial<
   Readonly<Record<NoteConsolidatedField, readonly (readonly string[])[]>>
 >;
 
-// A field is answered either as a flat list of what to keep (`values`, the shape asked for aliases)
-// or as groups of one meaning, the most specific first (`groups`, the shape asked for the rest).
-// Two candidates of one field that state the same fact in opposite ways. Both stay; the author is
-// told, since neither the notes nor the model can say which one the work means.
 export interface NoteConsolidationConflict {
   readonly field: NoteConsolidatedField;
   readonly items: readonly string[];

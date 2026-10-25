@@ -1,7 +1,5 @@
 import { inflateRawSync } from 'node:zlib';
 
-// The slice of the zip format a Notion export uses: a central directory of stored or deflated
-// entries, no zip64, no encryption. Reading it here keeps the import free of a zip dependency.
 export interface ZipEntry {
   readonly name: string;
   readonly data: Uint8Array;

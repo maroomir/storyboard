@@ -67,6 +67,4 @@ export * from './shared/slop';
 export * from './shared/slopPhrases';
 export * from './shared/messaging/index';
 
-// NOTE: format/files/sceneDialogue 와 contracts/sceneDialogueAttribution 이 같은 이름·같은 값의
-// 상수를 각자 선언한다. 두 `export *` 가 겹치면 모호해지므로 배럴은 포맷 쪽 하나를 명시해 내보낸다.
 export { unknownDialogueSpeaker } from './format/files/sceneDialogue';

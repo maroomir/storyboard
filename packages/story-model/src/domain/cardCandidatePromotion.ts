@@ -86,9 +86,6 @@ function addItem(byKey: Map<string, CardCandidateItem>, item: CardCandidateItem)
   }
 }
 
-// NOTE: A card that already carries the same fact should not be re-proposed. Attributes match by
-// key only (the AI must never overwrite a user-authored value); relations by target+type; arc by
-// sceneRef+summary. Unknown cards (no card found) keep every item as new.
 function isCardCandidateItemPresent(
   item: CardCandidateItem,
   card: CharacterCard | undefined,

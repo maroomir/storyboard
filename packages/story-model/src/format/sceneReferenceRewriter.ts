@@ -5,8 +5,6 @@ import { z } from 'zod';
 import { parseSceneStem, type SceneFileNameParts } from './scene';
 import type { StoryState, StoryStateEntry } from './storyState';
 
-// A scene rename moves the stem and possibly the order. Every reference written as the old stem
-// follows the stem; every reference written as a bare order follows the order.
 export interface SceneRename {
   readonly from: SceneFileNameParts;
   readonly to: SceneFileNameParts;
@@ -36,8 +34,6 @@ export function renumberStoryStateScene(state: StoryState, rename: SceneRename):
       entry.throughScene === from.order ? { ...entry, throughScene: to.order } : entry,
   );
 
-  // NOTE: through-scene is a high-water mark. Moving the scene that set it lowers it to whatever
-  // is still sealed; moving a scene past it raises it.
   const sealedOrders: number[] = [
     ...sceneInputHashes.keys(),
     ...entries.flatMap((entry) => (entry.throughScene === undefined ? [] : [entry.throughScene])),
@@ -136,8 +132,6 @@ export function rewriteCharacterArcSceneRefs(
   };
 }
 
-// NOTE: The scene card is edited as text, not re-serialized: a rename must not mix the card
-// canonicalization that only `doctor` performs into the diff.
 export function rewriteSceneCardStemText(rawCard: string, rename: SceneRename): string {
   const { from, to } = rename;
   const escapedStem: string = from.stem.replace(/-/g, '\\-');
@@ -152,9 +146,6 @@ export function rewriteSceneCardStemText(rawCard: string, rename: SceneRename): 
     .replace(fieldLine('summary', '.summary.md'), `$1${to.stem}.summary.md$2`);
 }
 
-// NOTE: A rename records itself before its first write and removes the record after its last
-// delete. Only a recorded rename may finish over files it already wrote: card contents alone cannot
-// tell a cut-off rename from two scenes that look alike (two fresh cards differ only in their stem).
 interface SceneRenameJournal {
   fromStem: string;
   toStem: string;
@@ -169,7 +160,6 @@ export function serializeSceneRenameJournal(rename: SceneRename): string {
   return `${JSON.stringify({ fromStem: rename.from.stem, toStem: rename.to.stem }, null, 2)}\n`;
 }
 
-// An unreadable journal is no evidence of a rename, so it reads as none and the rename is refused.
 export function parseSceneRenameJournal(raw: string): SceneRename | undefined {
   let value: unknown;
 

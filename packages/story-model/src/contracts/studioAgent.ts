@@ -30,9 +30,6 @@ export const studioAgentToolNames: readonly [StudioAgentToolName, ...StudioAgent
   'relationCheck',
 ];
 
-// NOTE: which tools a conversation may call follows the file being edited, so a card chat never
-// sees a draft transform and vice versa; the prompt, the composer menu and the resolver all key
-// off this one table.
 export const studioToolNamesByShape = {
   draft: ['continuityCheck', 'grammarCheck', 'expand', 'condense', 'augment'],
   entityCard: ['collectFromDrafts', 'cardAudit', 'relationCheck'],
@@ -42,8 +39,6 @@ export const studioToolNamesByShape = {
 export interface StudioAgentToolSpan {
   readonly startOffset: number;
   readonly endOffset: number;
-  // NOTE: same anchor rule as a draft replacement — the tool refuses to run on a span whose
-  // offsets drifted off the text the model thinks it selected.
   readonly oldText: string;
 }
 
@@ -63,8 +58,6 @@ export function isSpanRequiredTool(tool: StudioAgentToolName): boolean {
   return spanRequiredTools.has(tool);
 }
 
-// NOTE: arc is a list of {stage, summary, sceneRef} objects, so a card patch has to carry more than
-// text; the card schema validates the shape before anything is written.
 export type StudioCardFieldValue =
   | string
   | readonly string[]
@@ -78,8 +71,6 @@ export interface StudioCardFieldChange {
 export interface StudioDraftReplacement {
   readonly startOffset: number;
   readonly endOffset: number;
-  // NOTE: the exact text the offsets are supposed to cover. A model that miscounts by a character
-  // would otherwise rewrite an unrelated passage that still passes the range checks.
   readonly oldText: string;
   readonly newText: string;
 }
@@ -369,8 +360,6 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
 
   const objects: Readonly<Record<string, string>>[] | undefined = stringRecordList(candidate.value);
 
-  // NOTE: an empty list is a deliberate "clear this field", so it stays a string list rather than
-  // being dropped as unreadable.
   return objects ? { field, value: objects } : { field, value: stringList(candidate.value) };
 }
 

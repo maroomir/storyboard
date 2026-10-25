@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import { cardCollectProposalSchema, type CardCollectProposal } from './cardCollect';
 
-// 'notion-export' 는 Notion 의 «Markdown & CSV» 내보내기 zip — 통합 토큰 없이 읽는 길이다.
 export type NoteSourceKind = 'obsidian' | 'notion' | 'notion-export';
 
 export const noteSourceKinds: readonly [NoteSourceKind, ...NoteSourceKind[]] = [
@@ -11,7 +10,6 @@ export const noteSourceKinds: readonly [NoteSourceKind, ...NoteSourceKind[]] = [
   'notion-export',
 ];
 
-// 'tree' 는 준 페이지와 그 아래에 있던 노트, 'link' 는 본문 링크를 한 단계 따라가 읽은 노트다.
 export type NoteOrigin = 'tree' | 'link';
 
 export const noteOrigins: readonly [NoteOrigin, ...NoteOrigin[]] = ['tree', 'link'];
@@ -58,8 +56,6 @@ export const noteBundleSchema: z.ZodType<NoteBundle> = z.object({
   skipped: z.array(skippedNoteSchema),
 });
 
-// What a note had to say about a card that already exists. It waits in the cache until
-// `card promote` lays it over the card, the same way facts from a draft wait.
 export interface NoteCardCandidate {
   cardId: string;
   cardType: 'character' | 'background';
@@ -76,8 +72,6 @@ export const noteCardCandidateSchema: z.ZodType<NoteCardCandidate> = z.object({
   changes: z.array(cardCollectProposalSchema),
 });
 
-// One absorb's candidates. Absorbing the same location again replaces its source, so a re-read is
-// idempotent; other locations keep theirs until promoted or discarded.
 export interface NoteCandidateSource {
   id: string;
   location: string;

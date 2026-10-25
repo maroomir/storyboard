@@ -24,7 +24,6 @@ const kindByField: Readonly<Record<NoteConsolidatedField, ListKind>> = {
   senses: 'sense',
 };
 
-// 경고는 작가가 읽으므로 칸 이름을 한국어로 쓰고, 카드 파일에서 찾을 수 있게 키를 괄호로 붙인다.
 const labelByField: Readonly<Record<NoteConsolidatedField, string>> = {
   aliases: '다른 이름',
   traits: '성격',
@@ -64,8 +63,6 @@ function aliasKey(kind: CardKind, alias: string): string {
   return `${kind}:${normalizeCardListText(alias)}`;
 }
 
-// A form of address is a word or two; one with a space may be a remark about the name, which only
-// the model can tell apart.
 function isAliasWorthChecking(alias: string): boolean {
   return /\s/.test(alias);
 }
@@ -78,7 +75,6 @@ function readCountOf(cardPlan: NoteCardPlan, alias: string): number {
   return cardPlan.aliasReadCounts[normalizeCardListText(alias)] ?? 1;
 }
 
-// Every card that carries each alias, on disk or as a candidate of this plan.
 function collectAliasCarriers(
   plan: NoteAbsorbPlan,
   cards: readonly StoryboardCard[],
@@ -125,9 +121,6 @@ function findSharedAliases(
   });
 }
 
-// Lists joined from two readings repeat a meaning in other words, and so do new candidates beside
-// what an existing card already says; exact matches are gone by now, so only the model can tell.
-// An alias another card carries too, or one that reads like a remark, is asked about on any card.
 export function selectNoteConsolidationTargets(
   plan: NoteAbsorbPlan,
   chunkByNoteId: ReadonlyMap<string, number>,
@@ -168,9 +161,6 @@ export function selectNoteConsolidationTargets(
   });
 }
 
-// Each card is its own request, so the model weighs one card's lines against each other instead of
-// skimming a dozen cards at once; cards that share an alias are decided together, so they travel
-// in one request.
 export function groupNoteConsolidationTargets(
   targets: readonly NoteConsolidationTarget[],
 ): NoteConsolidationTarget[][] {
@@ -217,9 +207,6 @@ function keptFromList(candidates: readonly string[], answer: readonly string[]):
   return new Set(candidates.filter((value) => answered.has(normalizeCardListText(value))));
 }
 
-// Each group keeps one line in the notes' own wording: its first item that is a candidate. A group
-// headed by a line the card already has keeps none, since that meaning is on the card. A group with
-// no candidate in it places nothing, so a candidate left out of every group is kept.
 function keptFromGroups(
   target: NoteConsolidationTarget,
   field: NoteConsolidatedField,
@@ -269,11 +256,6 @@ function keptFromGroups(
   return kept;
 }
 
-// The model only chooses among the candidates: a value it rewrote or made up never reaches the
-// card, which keeps the notes' own wording. Every candidate of a field stays when the answer leaves
-// the field out, answers a list other than aliases flat (that shape cannot say which line covers a
-// dropped one), or empties a new card's list — a description with no line at all cannot be right.
-// Aliases are answered as a flat list and may all go: each may have been a remark or someone else's.
 function narrowTargetValues(
   target: NoteConsolidationTarget,
   answer: NoteConsolidatedLists,
@@ -317,7 +299,6 @@ function narrowTargetValues(
 interface SharedAliasDecision {
   readonly alias: string;
   readonly proposers: readonly NoteConsolidationTarget[];
-  // Cards that carry the alias without proposing it: they are on disk and are never changed.
   readonly onDisk: readonly NoteAliasCarrier[];
 }
 
@@ -358,8 +339,6 @@ function namesOf(carriers: readonly { readonly name: string }[]): string {
   return carriers.map((carrier) => carrier.name).join(', ');
 }
 
-// Whose a shared alias is gets decided across the cards that propose it. With no clear answer
-// every card keeps it and the author is told; a card on disk is never changed.
 function decideSharedAliases(
   targets: readonly NoteConsolidationTarget[],
   answerById: ReadonlyMap<string, NoteConsolidatedLists>,
@@ -415,7 +394,6 @@ function narrowCardPlan(cardPlan: NoteCardPlan, kept: KeptValues): NoteCardPlan 
   return { ...cardPlan, changes: cardPlan.changes.filter(isKept) };
 }
 
-// Both items stay on the card: a one-shot import has nobody to ask, so the author is told instead.
 function describeConflicts(
   target: NoteConsolidationTarget,
   answer: NoteConsolidatedLists,
@@ -462,7 +440,6 @@ export function applyNoteConsolidation(
 
     const narrowed: NoteCardPlan = narrowCardPlan(cardPlan, kept);
 
-    // An existing card the notes add nothing to is not a candidate.
     return narrowed.isNew || narrowed.changes.length > 0 ? [narrowed] : [];
   });
 

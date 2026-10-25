@@ -53,8 +53,6 @@ export function selectFollowUpsFor(
   return followUps.filter((followUp) => isSameEntity(followUp.target, target));
 }
 
-// NOTE: a follow-up exists to remind the author that one file is now out of step with another, so
-// any accepted edit on that file answers it — matching the specific instruction is not the point.
 export function resolveFollowUpsFor(
   followUps: readonly StudioFollowUp[],
   target: StudioEntity,
