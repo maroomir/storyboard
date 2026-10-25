@@ -7,7 +7,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const ASSEMBLE_MANUSCRIPT_COMMAND = 'storyboard.manuscript.assemble';
+const ASSEMBLE_MANUSCRIPT_COMMAND: string = 'storyboard.manuscript.assemble';
 
 export type RegisterAssembleManuscriptCommandDependencies = {
   readonly manuscript: Pick<ManuscriptManager, 'assemble'>;
@@ -25,13 +25,13 @@ export function registerAssembleManuscriptCommand(
 async function runAssembleManuscript(
   dependencies: RegisterAssembleManuscriptCommandDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
-  const result = await vscode.window.withProgress(
+  const result: AssembleManuscriptResult = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '원고 조립 중…' },
     () => dependencies.manuscript.assemble({ workspaceRoot }),
   );
@@ -40,7 +40,9 @@ async function runAssembleManuscript(
     return;
   }
 
-  const document = await vscode.workspace.openTextDocument(result.result.volumeUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+    result.result.volumeUri,
+  );
   await vscode.window.showTextDocument(document);
   await vscode.window.showInformationMessage(
     `원고를 조립했습니다. 챕터 ${result.result.chapterCount}개, 포함 ${result.result.includedCount}개, 누락 ${result.result.missingCount}개, 기타 ${result.result.extraCount}개, 복선 ${result.result.foreshadowingCount}건.`,

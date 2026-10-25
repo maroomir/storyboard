@@ -5,8 +5,9 @@ import type { CardEditorInitialData, StoryboardCard } from '@webview/lib/types';
 import { IconButton } from '../ui/IconButton';
 import { SectionHeader } from '../ui/SectionHeader';
 import { sbYamlTextareaClass } from '../ui/formClasses';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
-const panelClass =
+const panelClass: string =
   'flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]';
 
 type RpcResponse = {
@@ -24,7 +25,7 @@ export type YamlEditorPanelProps = {
   readonly onSaved: (next: Pick<CardEditorInitialData, 'card' | 'rawText'>) => void;
   readonly onEditingChange?: (isEditing: boolean) => void;
   readonly onStatusChange?: (status: string) => void;
-  readonly vscodeApi?: ReturnType<NonNullable<typeof window.acquireVsCodeApi>>;
+  readonly vscodeApi?: VscodeApi;
 };
 
 function callWriteRaw(
@@ -32,11 +33,11 @@ function callWriteRaw(
   documentUri: string,
   rawText: string,
 ): Promise<{ readonly card: StoryboardCard; readonly rawText: string }> {
-  const id = createRequestId();
+  const id: string = createRequestId();
 
   return new Promise((resolve, reject) => {
     const handler = (event: MessageEvent): void => {
-      const data = event.data as RpcResponse | undefined;
+      const data: RpcResponse | undefined = event.data as RpcResponse | undefined;
       if (!data || data.type !== 'response' || data.id !== id) {
         return;
       }
@@ -75,7 +76,7 @@ export function YamlEditorPanel({
   const [saveError, setSaveError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);
 
-  const setEditing = useCallback(
+  const setEditing: (next: boolean) => void = useCallback(
     (next: boolean): void => {
       setIsEditing(next);
       onEditingChange?.(next);
@@ -114,7 +115,8 @@ export function YamlEditorPanel({
         onStatusChange?.('YAML을 저장했습니다.');
       })
       .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : 'YAML을 저장하지 못했습니다.';
+        const message: string =
+          error instanceof Error ? error.message : 'YAML을 저장하지 못했습니다.';
         setSaveError(message);
         onStatusChange?.(message);
       })
@@ -123,7 +125,7 @@ export function YamlEditorPanel({
       });
   };
 
-  const displayText = isEditing ? draftText : rawText;
+  const displayText: string = isEditing ? draftText : rawText;
 
   return (
     <div className={panelClass}>
@@ -167,7 +169,7 @@ export function YamlEditorPanel({
         value={displayText}
         onChange={
           isEditing
-            ? (event) => {
+            ? (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
                 setDraftText(event.target.value);
                 setSaveError(undefined);
               }

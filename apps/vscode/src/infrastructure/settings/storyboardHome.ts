@@ -1,3 +1,4 @@
+import type { DisposableHandle } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import type {
@@ -13,6 +14,7 @@ import {
   watchFiles,
   type ConfigFileError,
   type ConfigKeyWarning,
+  type FileConfiguration,
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
@@ -39,15 +41,16 @@ export interface StoryboardHomeStoresOptions {
 export function createStoryboardHomeStores(
   options: StoryboardHomeStoresOptions,
 ): StoryboardHomeStores {
-  const paths = resolveStoryboardHomePaths();
-  const workspaceConfigFile =
+  const paths: StoryboardHomePaths = resolveStoryboardHomePaths();
+  const workspaceConfigFile: string | undefined =
     options.workspaceRoot === undefined
       ? undefined
       : resolveWorkspaceConfigFile(options.workspaceRoot);
-  const changeEmitter = new vscode.EventEmitter<StoryboardConfigurationChangeEventLike>();
+  const changeEmitter: vscode.EventEmitter<StoryboardConfigurationChangeEventLike> =
+    new vscode.EventEmitter<StoryboardConfigurationChangeEventLike>();
   const changeEvent: StoryboardConfigurationChangeEventLike = { affectsConfiguration: () => true };
 
-  const fileConfiguration = createFileConfiguration({
+  const fileConfiguration: FileConfiguration = createFileConfiguration({
     userConfigFile: paths.configFile,
     workspaceConfigFile,
     onInvalidFile: options.onInvalidFile,
@@ -63,7 +66,7 @@ export function createStoryboardHomeStores(
     },
   };
 
-  const watcher = watchFiles(
+  const watcher: DisposableHandle = watchFiles(
     [paths.configFile, ...(workspaceConfigFile === undefined ? [] : [workspaceConfigFile])],
     () => changeEmitter.fire(changeEvent),
   );

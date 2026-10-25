@@ -11,7 +11,10 @@ import {
   sumUsageMap,
   usageAmountOf,
 } from '@webview/lib/messaging';
-import { groupCharacterCardsByRole } from '@webview/lib/characterSidebarGroups';
+import {
+  groupCharacterCardsByRole,
+  type CharacterSidebarSection,
+} from '@webview/lib/characterSidebarGroups';
 import type {
   SidebarCardSummary,
   SidebarCardsInitialData,
@@ -20,6 +23,7 @@ import type {
   StoryboardRequestMethod,
   UsageAmount,
 } from '@webview/lib/types';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
 function SidebarCardRow({
   card,
@@ -94,7 +98,7 @@ export function CardsSidebar({
 }: {
   readonly initialData: SidebarCardsInitialData;
 }): React.ReactElement {
-  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
+  const vscodeApi: VscodeApi | undefined = useMemo(() => window.acquireVsCodeApi?.(), []);
   const [sidebarState, setSidebarState] = useState(initialData);
 
   useEffect(() => {
@@ -117,7 +121,7 @@ export function CardsSidebar({
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return (): void => window.removeEventListener('message', handleMessage);
   }, []);
 
   const postCardRequest = (
@@ -141,26 +145,26 @@ export function CardsSidebar({
   const deleteCard = (card: SidebarCardSummary): void =>
     postCardRequest('cards.delete', { uri: card.uri });
 
-  const kindLabel = sidebarState.type === 'character' ? '캐릭터' : '배경';
-  const headerUsageTotal =
+  const kindLabel: '캐릭터' | '배경' = sidebarState.type === 'character' ? '캐릭터' : '배경';
+  const headerUsageTotal: UsageAmount =
     sidebarState.type === 'character'
       ? sumUsageMap(sidebarState.usage.characters)
       : sumUsageMap(sidebarState.usage.backgrounds);
 
   const cardUsage = (card: SidebarCardSummary): UsageAmount => {
-    const map =
+    const map: Readonly<Record<string, UsageAmount>> =
       sidebarState.type === 'character'
         ? sidebarState.usage.characters
         : sidebarState.usage.backgrounds;
     return usageAmountOf(map, card.id);
   };
 
-  const characterSections = useMemo(
+  const characterSections: readonly CharacterSidebarSection[] = useMemo(
     () => (sidebarState.type === 'character' ? groupCharacterCardsByRole(sidebarState.cards) : []),
     [sidebarState.cards, sidebarState.type],
   );
 
-  const backgroundCards = useMemo(() => {
+  const backgroundCards: SidebarCardSummary[] = useMemo(() => {
     if (sidebarState.type !== 'background') {
       return [];
     }

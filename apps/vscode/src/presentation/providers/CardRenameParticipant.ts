@@ -7,13 +7,18 @@ import {
 } from '@/infrastructure/vscode/cardRenameEdit';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
+interface CardFileRename {
+  readonly oldUri: vscode.Uri;
+  readonly newUri: vscode.Uri;
+}
+
 export function registerCardRenameParticipant({
   logger,
 }: {
   readonly logger: IStoryboardLogger;
 }): vscode.Disposable {
   return vscode.workspace.onWillRenameFiles((event) => {
-    const cardRenames = event.files.filter(
+    const cardRenames: CardFileRename[] = event.files.filter(
       (file) => parseCardRenameCandidate(file.oldUri, file.newUri) !== undefined,
     );
 
@@ -35,13 +40,13 @@ async function applyCardRenames(
   files: readonly { readonly oldUri: vscode.Uri; readonly newUri: vscode.Uri }[],
   logger: IStoryboardLogger,
 ): Promise<vscode.WorkspaceEdit | undefined> {
-  const combinedEdit = new vscode.WorkspaceEdit();
+  const combinedEdit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
 
   for (const file of files) {
     try {
       await appendCardRenameWorkspaceEdit(combinedEdit, file.oldUri, file.newUri);
     } catch (error) {
-      const message =
+      const message: string =
         error instanceof CardRenameValidationError
           ? error.message
           : '카드 rename을 적용할 수 없어 원래 파일명을 유지합니다.';

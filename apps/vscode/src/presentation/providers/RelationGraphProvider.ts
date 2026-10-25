@@ -1,3 +1,4 @@
+import type { DisposableHandle } from '@storyboard/story-model';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
@@ -11,7 +12,7 @@ import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
 import { STORYBOARD_GLOBS } from '@storyboard/story-model';
 
-const panelViewType = 'storyboard.relationGraph';
+const panelViewType: string = 'storyboard.relationGraph';
 
 export interface RelationGraphPanelDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
@@ -29,7 +30,7 @@ interface RelationGraphInitialData {
 
 export class RelationGraphProvider implements IRelationGraphPanel {
   private panel: vscode.WebviewPanel | undefined;
-  private bridge: { readonly dispose: () => void } | undefined;
+  private bridge: DisposableHandle | undefined;
   private watchers: vscode.Disposable | undefined;
 
   public constructor(private readonly dependencies: RelationGraphPanelDependencies) {}
@@ -50,9 +51,9 @@ export class RelationGraphProvider implements IRelationGraphPanel {
   }
 
   private async open(extensionUri: vscode.Uri): Promise<void> {
-    const initialData = await createRelationGraphInitialData();
+    const initialData: RelationGraphInitialData = await createRelationGraphInitialData();
 
-    const panel = vscode.window.createWebviewPanel(
+    const panel: vscode.WebviewPanel = vscode.window.createWebviewPanel(
       panelViewType,
       'Character Relations',
       vscode.ViewColumn.Active,
@@ -74,9 +75,9 @@ export class RelationGraphProvider implements IRelationGraphPanel {
 
     this.bridge = createWebviewBridge(panel.webview, this.createHandlers());
 
-    const storyboardRoot = await resolveStoryboardWorkspaceRoot();
+    const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
     if (storyboardRoot) {
-      const watcher = vscode.workspace.createFileSystemWatcher(
+      const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(storyboardRoot, STORYBOARD_GLOBS.characterCards),
       );
       const scheduleRefresh = (): void => {
@@ -133,7 +134,7 @@ export class RelationGraphProvider implements IRelationGraphPanel {
 }
 
 async function createRelationGraphInitialData(): Promise<RelationGraphInitialData> {
-  const storyboardRoot = await resolveStoryboardWorkspaceRoot();
+  const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
   return {
     title: 'Character Relations',
@@ -145,7 +146,7 @@ async function createRelationGraphInitialData(): Promise<RelationGraphInitialDat
 }
 
 async function loadRelationListCharactersForRpc(): Promise<RelationListCharacter[]> {
-  const storyboardRoot = await resolveStoryboardWorkspaceRoot();
+  const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
   if (!storyboardRoot) {
     return [];

@@ -17,7 +17,7 @@ import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule
 import type { IPlatformServices } from './platformModule';
 
 export class WorkbenchModule implements IApplicationModule {
-  private readonly disposables = new DisposableStore();
+  private readonly disposables: DisposableStore = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 
@@ -39,8 +39,10 @@ export class WorkbenchModule implements IApplicationModule {
         ? {}
         : { workspace: homeStores.workspaceConfigFile }),
     });
-    const relationGraphPanel = new RelationGraphProvider({ aiProviderRegistry });
-    const settingsPanel = new SettingsPanelProvider({
+    const relationGraphPanel: RelationGraphProvider = new RelationGraphProvider({
+      aiProviderRegistry,
+    });
+    const settingsPanel: SettingsPanelProvider = new SettingsPanelProvider({
       aiProviderRegistry,
       secretStore,
       configBridge,

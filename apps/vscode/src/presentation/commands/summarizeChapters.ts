@@ -7,7 +7,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const SUMMARIZE_CHAPTERS_COMMAND = 'storyboard.manuscript.summaries';
+const SUMMARIZE_CHAPTERS_COMMAND: string = 'storyboard.manuscript.summaries';
 
 export type RegisterSummarizeChaptersCommandDependencies = {
   readonly logger: IStoryboardLogger;
@@ -25,13 +25,13 @@ export function registerSummarizeChaptersCommand(
 async function runSummarizeChapters(
   dependencies: RegisterSummarizeChaptersCommandDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
-  const result = await vscode.window.withProgress(
+  const result: SummarizeChaptersResult = await vscode.window.withProgress(
     {
       cancellable: true,
       location: vscode.ProgressLocation.Notification,
@@ -51,7 +51,7 @@ async function runSummarizeChapters(
     return;
   }
 
-  const document = await vscode.workspace.openTextDocument(result.summaryUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.summaryUri);
   await vscode.window.showTextDocument(document);
   await vscode.window.showInformationMessage(`장 ${result.summaryCount}개를 요약했습니다.`);
 }

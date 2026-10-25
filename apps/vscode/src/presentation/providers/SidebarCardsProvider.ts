@@ -5,7 +5,11 @@ import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommand
 import type { ICardSidebarRepository, SidebarCardCategory } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary, STORYBOARD_GLOBS } from '@storyboard/story-model';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import {
+  createWebviewBridge,
+  type StoryboardRpcHandlers,
+  type StoryboardWebviewBridge,
+} from '@/presentation/messaging/bridge';
 import {
   createAiRpcHandlers,
   createUsageRpcHandlers,
@@ -63,7 +67,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async bootstrapWebview(webviewView: vscode.WebviewView): Promise<void> {
-    const initialData = await this.createInitialData();
+    const initialData: SidebarCardsInitialData = await this.createInitialData();
 
     webviewView.webview.html = createWebviewHtml(webviewView.webview, {
       extensionUri: this.extensionUri,
@@ -72,7 +76,10 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
       initialData,
     });
 
-    const bridge = createWebviewBridge(webviewView.webview, this.createHandlers());
+    const bridge: StoryboardWebviewBridge = createWebviewBridge(
+      webviewView.webview,
+      this.createHandlers(),
+    );
     this.disposables.push(bridge);
 
     this.disposables.push(
@@ -81,7 +88,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
       }),
     );
 
-    const storyboardRoot = await resolveStoryboardWorkspaceRoot();
+    const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
     if (storyboardRoot) {
       this.registerCardWatcher(storyboardRoot);
     }
@@ -113,9 +120,9 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
         return {};
       },
       'cards.delete': async (payload): Promise<StoryboardResponsePayload<'cards.delete'>> => {
-        const targetUri = vscode.Uri.parse(payload.uri);
-        const fileName = targetUri.path.split('/').at(-1) ?? this.options.cardType;
-        const confirmed = await vscode.window.showWarningMessage(
+        const targetUri: vscode.Uri = vscode.Uri.parse(payload.uri);
+        const fileName: string = targetUri.path.split('/').at(-1) ?? this.options.cardType;
+        const confirmed: '삭제' | undefined = await vscode.window.showWarningMessage(
           `${fileName} 카드를 삭제할까요?`,
           { modal: true },
           '삭제',
@@ -134,7 +141,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private registerCardWatcher(workspaceRoot: vscode.Uri): void {
-    const watcher = vscode.workspace.createFileSystemWatcher(
+    const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, this.options.cardGlob),
     );
 
@@ -155,8 +162,8 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async postUsageChanged(): Promise<void> {
-    const root = await resolveStoryboardWorkspaceRoot();
-    const summary =
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    const summary: UsageSummaryByEntity =
       root !== undefined
         ? await this.dependencies.usageRecorder.getSummary(root)
         : emptyUsageSummary();
@@ -169,8 +176,8 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async createInitialData(): Promise<SidebarCardsInitialData> {
-    const storyboardRoot = await resolveStoryboardWorkspaceRoot();
-    const usage =
+    const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    const usage: UsageSummaryByEntity =
       storyboardRoot !== undefined
         ? await this.dependencies.usageRecorder.getSummary(storyboardRoot)
         : emptyUsageSummary();
@@ -185,7 +192,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async loadCardSummaries(workspaceRoot?: vscode.Uri): Promise<SidebarCardSummary[]> {
-    const root = workspaceRoot ?? (await resolveStoryboardWorkspaceRoot());
+    const root: vscode.Uri | undefined = workspaceRoot ?? (await resolveStoryboardWorkspaceRoot());
 
     if (!root) {
       return [];
@@ -212,12 +219,12 @@ export function registerSidebarCardsProviders(
     cardGlob: STORYBOARD_GLOBS.backgroundCards,
   };
 
-  const charactersProvider = new SidebarCardsProvider(
+  const charactersProvider: SidebarCardsProvider = new SidebarCardsProvider(
     context.extensionUri,
     dependencies,
     charactersOptions,
   );
-  const backgroundsProvider = new SidebarCardsProvider(
+  const backgroundsProvider: SidebarCardsProvider = new SidebarCardsProvider(
     context.extensionUri,
     dependencies,
     backgroundsOptions,

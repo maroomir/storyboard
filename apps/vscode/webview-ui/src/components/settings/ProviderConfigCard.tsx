@@ -7,11 +7,17 @@ import {
   parseSaveTarget,
   requiresApiKey,
   type AiProviderId,
+  type AiProviderStatus,
   type ConnectionTestState,
+  type ProviderRuntimeConfig,
   type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { fieldGroupClass, sbInputClass } from './settingsStyles';
+
+interface ConnectionCheckResponse {
+  readonly ok?: boolean;
+}
 
 export function ProviderConfigCard({
   providerId,
@@ -46,27 +52,29 @@ export function ProviderConfigCard({
     React.SetStateAction<Partial<Record<AiProviderId, ConnectionTestState>>>
   >;
 }): React.ReactElement {
-  const status = getProviderStatus(snapshot, providerId);
-  const displayName = status?.displayName ?? providerId;
-  const config = snapshot.providerConfigs[providerId];
-  const showApiKey = requiresApiKey(providerId);
-  const isOllama = providerId === 'ollama';
-  const testState = connectionTest[providerId] ?? 'idle';
+  const status: AiProviderStatus | undefined = getProviderStatus(snapshot, providerId);
+  const displayName: string = status?.displayName ?? providerId;
+  const config: ProviderRuntimeConfig = snapshot.providerConfigs[providerId];
+  const showApiKey: boolean = requiresApiKey(providerId);
+  const isOllama: boolean = providerId === 'ollama';
+  const testState: ConnectionTestState = connectionTest[providerId] ?? 'idle';
   const [isExpanded, setIsExpanded] = useState(providerId === snapshot.defaultProvider);
-  const hasConnectionFields = showApiKey || isOllama;
+  const hasConnectionFields: boolean = showApiKey || isOllama;
 
-  const resolvedBaseUrl =
+  const resolvedBaseUrl: string =
     ollamaBaseUrlDraft !== null ? ollamaBaseUrlDraft : (config.baseUrl ?? 'http://127.0.0.1:11434');
 
   const runConnectionTest = (): void => {
     setConnectionTest((previous) => ({ ...previous, [providerId]: 'loading' }));
     void callRpc('ai.providers.checkConnection', { providerId })
       .then((payload) => {
-        const result =
-          typeof payload === 'object' && payload !== null ? (payload as { ok?: boolean }) : {};
+        const connectionCheck: ConnectionCheckResponse =
+          typeof payload === 'object' && payload !== null
+            ? (payload as ConnectionCheckResponse)
+            : {};
         setConnectionTest((previous) => ({
           ...previous,
-          [providerId]: result.ok === true ? 'ok' : 'error',
+          [providerId]: connectionCheck.ok === true ? 'ok' : 'error',
         }));
       })
       .catch(() => {
@@ -75,7 +83,7 @@ export function ProviderConfigCard({
   };
 
   const saveApiKey = (): void => {
-    const value = (apiKeyDraft[providerId] ?? '').trim();
+    const value: string = (apiKeyDraft[providerId] ?? '').trim();
     if (value.length === 0) {
       onRpcError('API 키를 입력한 뒤 저장하세요.');
       return;
@@ -85,7 +93,7 @@ export function ProviderConfigCard({
       .then(() => {
         onSaved(`${displayName} API 키`, {});
         setApiKeyDraft((previous) => {
-          const next = { ...previous };
+          const next: Partial<Record<AiProviderId, string>> = { ...previous };
           delete next[providerId];
           return next;
         });
@@ -96,7 +104,7 @@ export function ProviderConfigCard({
   };
 
   const applyOllamaBaseUrl = (): void => {
-    const trimmed = resolvedBaseUrl.trim();
+    const trimmed: string = resolvedBaseUrl.trim();
     if (trimmed.length === 0) {
       onRpcError('Ollama base URL을 입력하세요.');
       return;
@@ -203,7 +211,7 @@ export function ProviderConfigCard({
                     status?.hasApiKey ? '새 키를 입력하려면 입력 후 저장' : 'API 키를 입력하세요'
                   }
                   onChange={(event) => {
-                    const next = event.target.value;
+                    const next: string = event.target.value;
                     setApiKeyDraft((previous) => ({ ...previous, [providerId]: next }));
                   }}
                 />

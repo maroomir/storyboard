@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { CardManager } from '@storyboard/story-app';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type {
+  IStoryboardLogger,
+  PrepareBibleCandidatePromotionResult,
+} from '@storyboard/story-engine';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { BibleFact } from '@storyboard/story-model';
 
-const promoteCommand = 'storyboard.bible.promoteCandidates';
+const promoteCommand: string = 'storyboard.bible.promoteCandidates';
 
 interface CandidateQuickPickItem extends vscode.QuickPickItem {
   readonly fact: BibleFact;
@@ -14,7 +17,7 @@ async function runPromote(
   logger: IStoryboardLogger,
   cards: Pick<CardManager, 'prepareBiblePromotion' | 'promoteBibleFacts'>,
 ): Promise<void> {
-  const folder = await getTargetWorkspaceFolder();
+  const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!folder) {
     await vscode.window.showErrorMessage('Storyboard 워크스페이스 폴더를 찾을 수 없습니다.');
@@ -26,7 +29,9 @@ async function runPromote(
     return;
   }
 
-  const preparation = await cards.prepareBiblePromotion(folder.uri);
+  const preparation: PrepareBibleCandidatePromotionResult = await cards.prepareBiblePromotion(
+    folder.uri,
+  );
 
   if (preparation.kind === 'no_candidates') {
     await vscode.window.showInformationMessage(
@@ -48,7 +53,7 @@ async function runPromote(
     fact,
   }));
 
-  const picked = await vscode.window.showQuickPick(items, {
+  const picked: CandidateQuickPickItem[] | undefined = await vscode.window.showQuickPick(items, {
     canPickMany: true,
     title: '스토리 바이블 canon으로 승격할 설정 선택',
     placeHolder: 'canon에 추가할 설정 사실을 선택하세요.',

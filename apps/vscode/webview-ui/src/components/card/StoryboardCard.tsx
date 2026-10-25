@@ -1,8 +1,8 @@
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
+import { motion, type MotionProps, type TargetAndTransition, type Transition } from 'framer-motion';
 import type React from 'react';
 
-import type { StoryboardCard as StoryboardCardModel } from '@webview/lib/types';
+import type { CharacterRole, StoryboardCard as StoryboardCardModel } from '@webview/lib/types';
 import { cardGameFrameClass, cardGameInnerBevelClass } from './cardFrameStyles';
 import { CardImagePane } from './CardImagePane';
 import { CardRoleBadge } from './CardRoleBadge';
@@ -16,7 +16,7 @@ export type StoryboardCardProps = {
   readonly className?: string;
 };
 
-const shadowRest =
+const shadowRest: string =
   'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)';
 
 const shadowHover: Record<'character' | 'background', string> = {
@@ -26,13 +26,13 @@ const shadowHover: Record<'character' | 'background', string> = {
     'inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 32px rgba(0,0,0,0.24), 0 0 36px rgba(45, 212, 191, 0.2)',
 };
 
-const motionTap = { scale: 0.99 };
+const motionTap: TargetAndTransition = { scale: 0.99 };
 
 function descriptionExcerpt(
   description: readonly string[] | undefined,
   maxLength: number,
 ): string | undefined {
-  const trimmed = (description ?? []).join('\n').trim();
+  const trimmed: string = (description ?? []).join('\n').trim();
   if (!trimmed) {
     return undefined;
   }
@@ -43,7 +43,7 @@ function descriptionExcerpt(
 }
 
 function HeroDescriptionBox({ card }: { readonly card: StoryboardCardModel }): React.ReactElement {
-  const excerpt = descriptionExcerpt(card.description, 200);
+  const excerpt: string | undefined = descriptionExcerpt(card.description, 200);
 
   return (
     <div className="relative z-[4] border-t border-black/30 bg-gradient-to-b from-sb-bg-sidebar/95 via-sb-bg-sidebar to-black/25 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
@@ -74,16 +74,17 @@ export function StoryboardCard({
   onOpen,
   className,
 }: StoryboardCardProps): React.ReactElement {
-  const isHero = variant === 'hero';
-  const glowKey = card.type === 'character' ? 'character' : 'background';
-  const showRoleBadge = card.type === 'character' && card.role;
+  const isHero: boolean = variant === 'hero';
+  const glowKey: 'character' | 'background' =
+    card.type === 'character' ? 'character' : 'background';
+  const showRoleBadge: false | CharacterRole | undefined = card.type === 'character' && card.role;
 
-  const compactSecondary =
+  const compactSecondary: string =
     (card.description ?? []).join('\n').trim() ||
     [card.locationKind].filter(Boolean).join(' · ') ||
     '';
 
-  const frameClass = clsx(
+  const frameClass: string = clsx(
     'group relative flex w-full flex-col overflow-hidden text-left animate-cardEntrance',
     cardGameFrameClass(card.type, variant),
     isHero ? 'min-h-[380px]' : 'aspect-[9/13] max-w-[200px]',
@@ -91,7 +92,7 @@ export function StoryboardCard({
     className,
   );
 
-  const inner = (
+  const inner: React.JSX.Element = (
     <>
       <div className={cardGameInnerBevelClass(variant)} aria-hidden />
       <div className={clsx('relative flex min-h-0 flex-col', isHero ? 'flex-1' : 'flex-[7]')}>
@@ -129,8 +130,8 @@ export function StoryboardCard({
     </>
   );
 
-  const transition = { type: 'spring' as const, stiffness: 420, damping: 28 };
-  const motionProps = {
+  const transition: Transition = { type: 'spring', stiffness: 420, damping: 28 };
+  const motionProps: MotionProps = {
     initial: { boxShadow: shadowRest },
     whileHover: { y: -4, scale: 1.02, boxShadow: shadowHover[glowKey] },
     transition,

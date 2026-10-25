@@ -6,6 +6,7 @@ import type {
   StoryboardCard,
   CardCollectProposal,
   StudioEntity,
+  SceneCard,
 } from '@storyboard/story-model';
 import {
   parseCard,
@@ -34,7 +35,7 @@ export interface StudioCardToolResolverInput {
   readonly baseline: string;
 }
 
-const maxReportedItems = 15;
+const maxReportedItems: number = 15;
 
 export function createStudioCardInvokeResolver(
   deps: StudioCardToolResolverDependencies,
@@ -75,7 +76,10 @@ async function runCollect(
     return '[도구 실패: collectFromDrafts] 카드를 읽지 못해 수집할 수 없었다.';
   }
 
-  const proposals = await deps.cards.collectProposals({ workspaceRoot: input.workspaceRoot, card });
+  const proposals: CardCollectProposal[] = await deps.cards.collectProposals({
+    workspaceRoot: input.workspaceRoot,
+    card,
+  });
 
   if (proposals.length === 0) {
     return '[도구 결과: collectFromDrafts] 초안에서 카드에 더할 새 정보를 찾지 못했다.';
@@ -124,7 +128,7 @@ async function runAudit(
 // NOTE: reference integrity is a filesystem fact, so this tool spends no AI call — it walks the
 // cards and reports dangling targets and one-way relations directly.
 async function runRelationCheck(input: StudioCardToolResolverInput): Promise<string> {
-  const lines =
+  const lines: string[] =
     input.entity.kind === 'scene'
       ? await checkSceneReferences(input)
       : await checkCardRelations(input);
@@ -137,7 +141,7 @@ async function runRelationCheck(input: StudioCardToolResolverInput): Promise<str
 }
 
 async function checkSceneReferences(input: StudioCardToolResolverInput): Promise<string[]> {
-  const scene = parseSceneCard(input.baseline);
+  const scene: SceneCard = parseSceneCard(input.baseline);
   const lines: string[] = [];
 
   for (const id of scene.characters ?? []) {
@@ -146,7 +150,7 @@ async function checkSceneReferences(input: StudioCardToolResolverInput): Promise
     }
   }
 
-  const location = scene.location;
+  const location: string | undefined = scene.location;
 
   if (
     location !== undefined &&
@@ -159,7 +163,7 @@ async function checkSceneReferences(input: StudioCardToolResolverInput): Promise
 }
 
 async function checkCardRelations(input: StudioCardToolResolverInput): Promise<string[]> {
-  const card = parseCard(input.baseline);
+  const card: StoryboardCard = parseCard(input.baseline);
   const lines: string[] = [];
 
   if (isBackgroundCard(card)) {
@@ -174,7 +178,7 @@ async function checkCardRelations(input: StudioCardToolResolverInput): Promise<s
 
   for (const relation of card.relations ?? []) {
     // SECURITY: the target becomes a file path, so an unsafe id is reported broken, never read.
-    const targetText = isSafeStudioEntityKey(relation.target)
+    const targetText: string | undefined = isSafeStudioEntityKey(relation.target)
       ? await readCardText(characterCardPath(input.workspaceRoot, relation.target))
       : undefined;
 
@@ -197,7 +201,7 @@ async function checkCardRelations(input: StudioCardToolResolverInput): Promise<s
 
 function hasRelationBack(targetCardText: string, sourceId: string): boolean {
   try {
-    const target = parseCard(targetCardText);
+    const target: StoryboardCard = parseCard(targetCardText);
     return (
       !isBackgroundCard(target) &&
       (target.relations ?? []).some((relation) => relation.target === sourceId)
@@ -233,7 +237,7 @@ async function readCardText(uri: vscode.Uri): Promise<string | undefined> {
 }
 
 function describeCollectProposal(proposal: CardCollectProposal): string {
-  const sources =
+  const sources: string =
     proposal.sourceScenes.length > 0 ? ` (출처: ${proposal.sourceScenes.join(', ')})` : '';
 
   switch (proposal.kind) {

@@ -1,16 +1,21 @@
 import clsx from 'clsx';
-import { Minus, Pencil, Plus, Save, X } from 'lucide-react';
+import { Minus, Pencil, Plus, Save, X, type LucideIcon } from 'lucide-react';
 import type React from 'react';
 
 type IconButtonSize = 'sm' | 'md';
 type IconButtonIcon = 'add' | 'remove' | 'edit' | 'save' | 'cancel';
 
-const sizeClass: Record<IconButtonSize, { button: string; icon: string }> = {
+interface IconButtonDimensions {
+  readonly button: string;
+  readonly icon: string;
+}
+
+const sizeClass: Record<IconButtonSize, IconButtonDimensions> = {
   sm: { button: 'h-7 w-7', icon: 'h-3.5 w-3.5' },
   md: { button: 'h-8 w-8', icon: 'h-4 w-4' },
 };
 
-const baseClass =
+const baseClass: string =
   'inline-flex shrink-0 cursor-pointer items-center justify-center rounded border border-[color:var(--vscode-button-border)] bg-sb-bg-button p-0 text-sb-fg-button outline-none hover:bg-sb-bg-button-hover focus-visible:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus';
 
 export type IconButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
@@ -34,8 +39,8 @@ export function IconButton({
   type = 'button',
   ...rest
 }: IconButtonProps): React.ReactElement {
-  const LucideIcon = iconComponents[icon];
-  const sizes = sizeClass[size];
+  const IconGlyph: LucideIcon = iconComponents[icon];
+  const sizes: IconButtonDimensions = sizeClass[size];
 
   return (
     <button
@@ -48,7 +53,7 @@ export function IconButton({
       )}
       {...rest}
     >
-      <LucideIcon className={sizes.icon} aria-hidden />
+      <IconGlyph className={sizes.icon} aria-hidden />
     </button>
   );
 }

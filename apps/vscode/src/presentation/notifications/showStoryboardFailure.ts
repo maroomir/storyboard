@@ -27,14 +27,14 @@ function resolveFailureAction(message: string): FailureAction | undefined {
 }
 
 export async function showStoryboardFailure(message: string): Promise<void> {
-  const action = resolveFailureAction(message);
+  const action: FailureAction | undefined = resolveFailureAction(message);
 
   if (!action) {
     await vscode.window.showErrorMessage(message);
     return;
   }
 
-  const choice = await vscode.window.showErrorMessage(message, action.label);
+  const choice: string | undefined = await vscode.window.showErrorMessage(message, action.label);
 
   if (choice === action.label) {
     await vscode.commands.executeCommand(action.command);

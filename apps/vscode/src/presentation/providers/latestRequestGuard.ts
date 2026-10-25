@@ -1,22 +1,25 @@
 export class LatestRequestGuard {
-  private readonly generationByKey = new Map<string, number>();
-  private readonly timerByKey = new Map<string, ReturnType<typeof setTimeout>>();
-  private isDisposed = false;
+  private readonly generationByKey: Map<string, number> = new Map<string, number>();
+  private readonly timerByKey: Map<string, NodeJS.Timeout> = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
+  private isDisposed: boolean = false;
 
   public schedule(key: string, delayMs: number, task: () => Promise<void>): void {
     if (this.isDisposed) {
       return;
     }
 
-    const generation = (this.generationByKey.get(key) ?? 0) + 1;
+    const generation: number = (this.generationByKey.get(key) ?? 0) + 1;
     this.generationByKey.set(key, generation);
-    const previousTimer = this.timerByKey.get(key);
+    const previousTimer: NodeJS.Timeout | undefined = this.timerByKey.get(key);
 
     if (previousTimer) {
       clearTimeout(previousTimer);
     }
 
-    const timer = setTimeout((): void => {
+    const timer: NodeJS.Timeout = setTimeout((): void => {
       this.timerByKey.delete(key);
 
       if (this.isDisposed || this.generationByKey.get(key) !== generation) {
@@ -29,7 +32,7 @@ export class LatestRequestGuard {
   }
 
   public cancel(key: string): void {
-    const timer = this.timerByKey.get(key);
+    const timer: NodeJS.Timeout | undefined = this.timerByKey.get(key);
     if (timer) {
       clearTimeout(timer);
     }

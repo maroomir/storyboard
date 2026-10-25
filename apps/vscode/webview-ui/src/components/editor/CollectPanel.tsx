@@ -4,13 +4,14 @@ import { createRequestId } from '@webview/lib/messaging';
 import type { CardCollectProposal, StoryboardCard } from '@webview/lib/types';
 import { Button } from '../ui/Button';
 import { SectionHeader } from '../ui/SectionHeader';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
-const panelClass =
+const panelClass: string =
   'flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]';
 
-const addedColor =
+const addedColor: string =
   'var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-charts-green))';
-const removedColor =
+const removedColor: string =
   'var(--vscode-gitDecoration-deletedResourceForeground, var(--vscode-errorForeground))';
 
 const kindLabels: Record<CardCollectProposal['kind'], string> = {
@@ -29,7 +30,10 @@ const kindLabels: Record<CardCollectProposal['kind'], string> = {
   characterId: '등장인물',
 };
 
-type VscodeApi = ReturnType<NonNullable<typeof window.acquireVsCodeApi>>;
+interface ProposalGroup {
+  readonly kind: CardCollectProposal['kind'];
+  readonly items: CardCollectProposal[];
+}
 
 type RpcResponse<T> = {
   readonly type: 'response';
@@ -44,11 +48,11 @@ function callRpc<T>(
   method: string,
   payload: Record<string, unknown>,
 ): Promise<T> {
-  const id = createRequestId();
+  const id: string = createRequestId();
 
   return new Promise((resolve, reject) => {
     const handler = (event: MessageEvent): void => {
-      const data = event.data as RpcResponse<T> | undefined;
+      const data: RpcResponse<T> | undefined = event.data as RpcResponse<T> | undefined;
       if (!data || data.type !== 'response' || data.id !== id) {
         return;
       }
@@ -87,7 +91,7 @@ function proposalDiff(proposal: CardCollectProposal): {
     case 'arc':
       return { after: proposal.summary, before: proposal.before };
     case 'scalar': {
-      const label = proposal.field === 'time' ? '시간' : '날씨';
+      const label: '시간' | '날씨' = proposal.field === 'time' ? '시간' : '날씨';
       return {
         after: `${label}: ${proposal.after}`,
         before: proposal.before === undefined ? undefined : `${label}: ${proposal.before}`,
@@ -152,7 +156,7 @@ export function CollectPanel({
     setError(undefined);
   }, [card.id]);
 
-  const runCollect = useCallback((): void => {
+  const runCollect: () => void = useCallback((): void => {
     if (!vscodeApi) {
       setError('VS Code API를 사용할 수 없습니다.');
       return;
@@ -178,7 +182,7 @@ export function CollectPanel({
         );
       })
       .catch((collectError: unknown) => {
-        const message =
+        const message: string =
           collectError instanceof Error ? collectError.message : '수집에 실패했습니다.';
         setError(message);
         setPhase('idle');
@@ -186,9 +190,9 @@ export function CollectPanel({
       });
   }, [vscodeApi, documentUri, onStatusChange]);
 
-  const toggle = useCallback((id: string): void => {
+  const toggle: (id: string) => void = useCallback((id: string): void => {
     setAcceptedIds((previous) => {
-      const next = new Set(previous);
+      const next: Set<string> = new Set(previous);
       if (next.has(id)) {
         next.delete(id);
       } else {
@@ -198,9 +202,9 @@ export function CollectPanel({
     });
   }, []);
 
-  const allSelected = proposals.length > 0 && acceptedIds.size === proposals.length;
+  const allSelected: boolean = proposals.length > 0 && acceptedIds.size === proposals.length;
 
-  const toggleAll = useCallback((): void => {
+  const toggleAll: () => void = useCallback((): void => {
     setAcceptedIds((previous) =>
       previous.size === proposals.length
         ? new Set()
@@ -208,13 +212,15 @@ export function CollectPanel({
     );
   }, [proposals]);
 
-  const previewDiff = useCallback((): void => {
+  const previewDiff: () => void = useCallback((): void => {
     if (!vscodeApi) {
       setError('VS Code API를 사용할 수 없습니다.');
       return;
     }
 
-    const accepted = proposals.filter((proposal) => acceptedIds.has(proposal.id));
+    const accepted: CardCollectProposal[] = proposals.filter((proposal) =>
+      acceptedIds.has(proposal.id),
+    );
 
     if (accepted.length === 0) {
       return;
@@ -228,20 +234,22 @@ export function CollectPanel({
         onStatusChange?.('선택 항목을 반영한 YAML diff를 열었습니다.');
       })
       .catch((previewError: unknown) => {
-        const message =
+        const message: string =
           previewError instanceof Error ? previewError.message : 'diff 미리보기에 실패했습니다.';
         setError(message);
         onStatusChange?.(message);
       });
   }, [vscodeApi, documentUri, proposals, acceptedIds, onStatusChange]);
 
-  const applyAccepted = useCallback((): void => {
+  const applyAccepted: () => void = useCallback((): void => {
     if (!vscodeApi) {
       setError('VS Code API를 사용할 수 없습니다.');
       return;
     }
 
-    const accepted = proposals.filter((proposal) => acceptedIds.has(proposal.id));
+    const accepted: CardCollectProposal[] = proposals.filter((proposal) =>
+      acceptedIds.has(proposal.id),
+    );
 
     if (accepted.length === 0) {
       return;
@@ -262,14 +270,15 @@ export function CollectPanel({
         onStatusChange?.(`${accepted.length}개의 제안을 카드에 반영했습니다.`);
       })
       .catch((applyError: unknown) => {
-        const message = applyError instanceof Error ? applyError.message : '반영에 실패했습니다.';
+        const message: string =
+          applyError instanceof Error ? applyError.message : '반영에 실패했습니다.';
         setError(message);
         setPhase('loaded');
         onStatusChange?.(message);
       });
   }, [vscodeApi, documentUri, proposals, acceptedIds, onStatusChange]);
 
-  const groups = useMemo(() => {
+  const groups: ProposalGroup[] = useMemo((): ProposalGroup[] => {
     const order: CardCollectProposal['kind'][] = [
       'descriptionLine',
       'attribute',
@@ -289,7 +298,7 @@ export function CollectPanel({
       .filter((group) => group.items.length > 0);
   }, [proposals]);
 
-  const isBusy = phase === 'loading' || phase === 'applying';
+  const isBusy: boolean = phase === 'loading' || phase === 'applying';
 
   return (
     <div className={panelClass}>

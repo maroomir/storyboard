@@ -342,7 +342,7 @@
     "build:webview": "vite build",
     "build": "npm run compile && npm run build:webview",
     "watch": "node esbuild.config.mjs --watch",
-    "lint": "eslint . --ext .ts && tsc --noEmit -p tsconfig.json && tsc --project webview-ui/tsconfig.json --noEmit && npm run check:architecture && npm run format:check:src",
+    "lint": "eslint . --ext .ts,.tsx && tsc --noEmit -p tsconfig.json && tsc --project webview-ui/tsconfig.json --noEmit && npm run check:architecture && npm run format:check:src",
     "check:architecture": "node scripts/check-architecture.mjs",
     "test": "vitest run",
     "format": "prettier --write .",

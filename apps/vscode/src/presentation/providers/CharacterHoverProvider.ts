@@ -11,8 +11,13 @@ import {
 } from '@storyboard/story-model';
 import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import type { CharacterCard } from '@storyboard/story-model';
-const wordPattern = /[0-9A-Za-z가-힣_-]+/;
+import type {
+  Character,
+  CharacterCard,
+  StoryboardCard,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
+const wordPattern: RegExp = /[0-9A-Za-z가-힣_-]+/;
 
 interface CharacterHoverContext {
   readonly character: CharacterCard;
@@ -47,9 +52,10 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
     lines.push('', `- 관계: ${relatedCharacterNames.join(', ')}`);
   }
 
-  const MarkdownCtor = (vscode as unknown as { MarkdownString?: typeof vscode.MarkdownString })
-    .MarkdownString;
-  const markdown = MarkdownCtor
+  const MarkdownCtor: typeof vscode.MarkdownString | undefined = (
+    vscode as unknown as { MarkdownString?: typeof vscode.MarkdownString }
+  ).MarkdownString;
+  const markdown: vscode.MarkdownString = MarkdownCtor
     ? new MarkdownCtor(lines.join('\n'))
     : ({
         value: lines.join('\n'),
@@ -62,9 +68,11 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
 async function listCharacterCardsInWorkspace(
   workspaceFolder: vscode.WorkspaceFolder,
 ): Promise<CharacterCard[]> {
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
-  const entries = await vscode.workspace.fs.readDirectory(paths.characterDirectory);
-  const cardNames = entries
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
+  const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
+    paths.characterDirectory,
+  );
+  const cardNames: string[] = entries
     .filter(
       ([name, type]) =>
         type === vscode.FileType.File &&
@@ -73,11 +81,11 @@ async function listCharacterCardsInWorkspace(
     )
     .map(([name]) => name);
 
-  const cards = await Promise.all(
+  const cards: (Character | undefined)[] = await Promise.all(
     cardNames.map(async (name) => {
-      const uri = vscode.Uri.joinPath(paths.characterDirectory, name);
+      const uri: vscode.Uri = vscode.Uri.joinPath(paths.characterDirectory, name);
       try {
-        const parsed = await readCardFile(uri, vscodeFsAdapter);
+        const parsed: StoryboardCard = await readCardFile(uri, vscodeFsAdapter);
         return parsed.type === 'character' ? parsed : undefined;
       } catch {
         return undefined;
@@ -97,7 +105,9 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       return undefined;
     }
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+      document.uri,
+    );
     if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
       return undefined;
     }
@@ -106,26 +116,29 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       return undefined;
     }
 
-    const wordRange = document.getWordRangeAtPosition(position, wordPattern);
+    const wordRange: vscode.Range | undefined = document.getWordRangeAtPosition(
+      position,
+      wordPattern,
+    );
     if (!wordRange) {
       return undefined;
     }
 
-    const hoveredWord = document.getText(wordRange).trim();
+    const hoveredWord: string = document.getText(wordRange).trim();
     if (hoveredWord.length === 0) {
       return undefined;
     }
 
-    const characters = await listCharacterCardsInWorkspace(workspaceFolder);
+    const characters: CharacterCard[] = await listCharacterCardsInWorkspace(workspaceFolder);
     if (characters.length === 0) {
       return undefined;
     }
 
-    const matchedNames = detectCharactersInText(
+    const matchedNames: string[] = detectCharactersInText(
       hoveredWord,
       characters.map((character) => character.name),
     );
-    const matched =
+    const matched: Character | undefined =
       matchedNames.length > 0
         ? characters.find((character) => character.name === matchedNames[0])
         : undefined;
@@ -133,8 +146,10 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       return undefined;
     }
 
-    const byId = new Map(characters.map((character) => [character.id, character.name] as const));
-    const relatedNames = (matched.relations ?? [])
+    const byId: Map<string, string> = new Map(
+      characters.map((character) => [character.id, character.name] as const),
+    );
+    const relatedNames: string[] = (matched.relations ?? [])
       .map((relation) => byId.get(relation.target))
       .filter((name): name is string => typeof name === 'string');
 

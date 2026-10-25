@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 
 import type { DraftManager } from '@storyboard/story-app';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { draftPath, parseSceneStem } from '@storyboard/story-model';
+import type { IStoryboardLogger, ReviseDraftWorkflowResult } from '@storyboard/story-engine';
+import { draftPath, parseSceneStem, type StoryUri } from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const reviseDraftCommand = 'storyboard.draft.reviseLoop';
+const reviseDraftCommand: string = 'storyboard.draft.reviseLoop';
 
 export interface RegisterReviseDraftCommandDependencies {
   readonly configBridge: ConfigBridge;
@@ -24,8 +24,8 @@ export function registerReviseDraftCommand(
 }
 
 function resolveSceneStem(uri: vscode.Uri): string | undefined {
-  const fileName = uri.path.split('/').pop() ?? '';
-  const stem = fileName.replace(/\.(md|txt)$/, '');
+  const fileName: string = uri.path.split('/').pop() ?? '';
+  const stem: string = fileName.replace(/\.(md|txt)$/, '');
   return parseSceneStem(stem) ? stem : undefined;
 }
 
@@ -33,28 +33,30 @@ async function runReviseDraft(
   invokedUri: vscode.Uri | undefined,
   dependencies: RegisterReviseDraftCommandDependencies,
 ): Promise<void> {
-  const targetUri = invokedUri ?? vscode.window.activeTextEditor?.document.uri;
+  const targetUri: vscode.Uri | undefined =
+    invokedUri ?? vscode.window.activeTextEditor?.document.uri;
 
   if (!targetUri || targetUri.scheme !== 'file') {
     await vscode.window.showErrorMessage('씬 또는 초안 파일을 연 뒤 다시 시도해 주세요.');
     return;
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(targetUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(targetUri);
 
   if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
     await vscode.window.showWarningMessage('Storyboard 프로젝트가 아닙니다.');
     return;
   }
 
-  const sceneStem = resolveSceneStem(targetUri);
+  const sceneStem: string | undefined = resolveSceneStem(targetUri);
 
   if (!sceneStem) {
     await vscode.window.showErrorMessage('씬/초안 파일명은 `NN-slug` 형식이어야 합니다.');
     return;
   }
 
-  const draftUri = draftPath(workspaceFolder.uri, sceneStem);
+  const draftUri: StoryUri = draftPath(workspaceFolder.uri, sceneStem);
 
   if (!(await uriExists(draftUri))) {
     await vscode.window.showInformationMessage(
@@ -71,10 +73,14 @@ async function runReviseDraft(
     },
     async (progress, token) => {
       try {
-        const result = await dependencies.drafts.reviseScene(workspaceFolder.uri, sceneStem, {
-          onProgress: (message) => progress.report({ message }),
-          shouldCancel: () => token.isCancellationRequested,
-        });
+        const result: ReviseDraftWorkflowResult | undefined = await dependencies.drafts.reviseScene(
+          workspaceFolder.uri,
+          sceneStem,
+          {
+            onProgress: (message) => progress.report({ message }),
+            shouldCancel: () => token.isCancellationRequested,
+          },
+        );
 
         if (!result) {
           await vscode.window.showInformationMessage(
@@ -83,13 +89,13 @@ async function runReviseDraft(
           return;
         }
 
-        const document = await vscode.workspace.openTextDocument(draftUri);
+        const document: vscode.TextDocument = await vscode.workspace.openTextDocument(draftUri);
         await vscode.window.showTextDocument(document);
         await reportResult(result);
       } catch (error) {
         dependencies.logger.error('Draft revise loop failed', error);
         dependencies.logger.show();
-        const message = error instanceof Error ? error.message : String(error);
+        const message: string = error instanceof Error ? error.message : String(error);
         await showStoryboardFailure(`초안 검수·재작성에 실패했습니다: ${message}`);
       }
     },

@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import {
   describeReviseOutcome,
   type GenerateDraftResult,
+  type ReviseDraftWorkflowResult,
   type SceneGenerationPipelineStage,
 } from '@storyboard/story-engine';
 import type { DraftManager, RunGate } from '@storyboard/story-app';
@@ -11,11 +12,11 @@ import { showStoryboardFailure } from '@/presentation/notifications/showStoryboa
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
-const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
-const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';
-const CACHE_HIT_MESSAGE = '입력이 동일하여 캐시된 초안을 엽니다.';
-const REGENERATE_SUCCESS_MESSAGE = '초안을 다시 생성해 저장했습니다.';
-const GENERATE_SUCCESS_MESSAGE = '초안을 생성해 저장했습니다.';
+const GENERATE_DRAFT_COMMAND: string = 'storyboard.draft.generate';
+const REGENERATE_DRAFT_COMMAND: string = 'storyboard.draft.regenerate';
+const CACHE_HIT_MESSAGE: string = '입력이 동일하여 캐시된 초안을 엽니다.';
+const REGENERATE_SUCCESS_MESSAGE: string = '초안을 다시 생성해 저장했습니다.';
+const GENERATE_SUCCESS_MESSAGE: string = '초안을 생성해 저장했습니다.';
 
 export interface RegisterGenerateDraftCommandDependencies {
   readonly runGate: Pick<RunGate, 'hold'>;
@@ -46,12 +47,12 @@ function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | un
     return invokedUri;
   }
 
-  const document = vscode.window.activeTextEditor?.document;
+  const document: vscode.TextDocument | undefined = vscode.window.activeTextEditor?.document;
   return document?.uri.scheme === 'file' ? document.uri : undefined;
 }
 
 async function openDraftResult(result: Extract<GenerateDraftResult, { ok: true }>): Promise<void> {
-  const document = await vscode.workspace.openTextDocument(result.draftUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.draftUri);
   await vscode.window.showTextDocument(document);
 }
 
@@ -69,7 +70,7 @@ async function runGenerateDraftForWorkspaceScene(
     async (progress, token) => {
       progress.report({ message: '준비 중…' });
 
-      const result = await dependencies.drafts.generate({
+      const result: GenerateDraftResult = await dependencies.drafts.generate({
         sceneUri,
         force,
         confirmSceneGrounding,
@@ -82,7 +83,7 @@ async function runGenerateDraftForWorkspaceScene(
         },
         onPipelineProgress: (stage, current, total) => {
           if (!token.isCancellationRequested) {
-            const label = stageProgressLabel(stage);
+            const label: string = stageProgressLabel(stage);
             progress.report({
               message: total > 1 ? `${label} (${current}/${total})…` : `${label}…`,
             });
@@ -106,11 +107,13 @@ async function runGenerateDraftForWorkspaceScene(
       await openDraftResult(result);
 
       if (result.kind === 'generated') {
-        const reviseResult = await dependencies.drafts.reviseAfterGenerate(sceneUri, {
-          onProgress: (message) => progress.report({ message }),
-          shouldCancel: () => token.isCancellationRequested,
-        });
-        const reviseWarning = reviseResult && describeReviseOutcome(reviseResult).warning;
+        const reviseResult: ReviseDraftWorkflowResult | undefined =
+          await dependencies.drafts.reviseAfterGenerate(sceneUri, {
+            onProgress: (message) => progress.report({ message }),
+            shouldCancel: () => token.isCancellationRequested,
+          });
+        const reviseWarning: string | undefined =
+          reviseResult && describeReviseOutcome(reviseResult).warning;
         if (reviseWarning) {
           await vscode.window.showWarningMessage(
             reviseResult?.rejection
@@ -139,14 +142,15 @@ async function runCommand(
   force: boolean,
   dependencies: RegisterGenerateDraftCommandDependencies,
 ): Promise<void> {
-  const sceneUri = resolveSceneUriFromInvocation(invokedUri);
+  const sceneUri: vscode.Uri | undefined = resolveSceneUriFromInvocation(invokedUri);
 
   if (!sceneUri) {
     await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);
     return;
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(sceneUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(sceneUri);
 
   if (!workspaceFolder) {
     await runGenerateDraftForWorkspaceScene(sceneUri, force, dependencies);

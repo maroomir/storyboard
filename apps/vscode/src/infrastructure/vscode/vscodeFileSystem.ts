@@ -30,12 +30,16 @@ export class VscodeFileSystem implements IFileSystem {
   }
 
   public async listFileNames(uri: StoryUri): Promise<readonly string[]> {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri);
+    const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
+      uri as vscode.Uri,
+    );
     return entries.filter(([, type]) => type === vscode.FileType.File).map(([name]) => name);
   }
 
   public async readDirectory(uri: StoryUri): Promise<FileSystemDirectoryEntry[]> {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri);
+    const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
+      uri as vscode.Uri,
+    );
     return entries.map(([name, type]) => [
       name,
       { type: type === vscode.FileType.Directory ? ('directory' as const) : ('file' as const) },
@@ -59,7 +63,7 @@ export class VscodeFileSystem implements IFileSystem {
       fs.realpath(uri.fsPath),
       fs.realpath(root.fsPath),
     ]);
-    const fromRoot = relative(realRoot, realTarget);
+    const fromRoot: string = relative(realRoot, realTarget);
 
     return fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot);
   }
@@ -67,4 +71,4 @@ export class VscodeFileSystem implements IFileSystem {
 
 // The extension has exactly one file system, the same way it has exactly one `vscode.workspace.fs`.
 // Presentation code reaches for this instance; the engine never does — it is always injected.
-export const vscodeFileSystem = new VscodeFileSystem();
+export const vscodeFileSystem: VscodeFileSystem = new VscodeFileSystem();

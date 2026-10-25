@@ -7,13 +7,13 @@ import { Pill } from '../ui/Pill';
 import { CHARACTER_ROLE_OPTIONS } from '@webview/lib/characterSidebarGroups';
 import type { CharacterRole, StoryboardCard } from '@webview/lib/types';
 
-const previewShellClass =
+const previewShellClass: string =
   'relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-xl border border-sb-border/90 bg-gradient-to-b from-sb-bg-widget/50 via-sb-bg-sidebar to-sb-bg-sidebar/95 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.2)]';
 
-const heroFrameClass =
+const heroFrameClass: string =
   'overflow-hidden rounded-lg border border-sb-border/80 bg-sb-bg-sidebar/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]';
 
-const roleLabelByValue = Object.fromEntries(
+const roleLabelByValue: Record<CharacterRole, string> = Object.fromEntries(
   CHARACTER_ROLE_OPTIONS.map((option) => [option.value, option.label]),
 ) as Record<CharacterRole, string>;
 
@@ -29,9 +29,9 @@ export type PreviewPanelProps = {
 };
 
 export function PreviewPanel({ card, imageUri, className }: PreviewPanelProps): React.ReactElement {
-  const roleLabel =
+  const roleLabel: string | undefined =
     card.type === 'character' && card.role ? roleLabelByValue[card.role] : undefined;
-  const locationLabel =
+  const locationLabel: string | undefined =
     card.type !== 'character' && card.locationKind
       ? locationKindLabel[card.locationKind]
       : undefined;

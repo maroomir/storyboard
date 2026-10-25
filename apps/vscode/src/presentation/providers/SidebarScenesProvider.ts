@@ -9,7 +9,11 @@ import {
   STORYBOARD_GLOBS,
   STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import {
+  createWebviewBridge,
+  type StoryboardRpcHandlers,
+  type StoryboardWebviewBridge,
+} from '@/presentation/messaging/bridge';
 import {
   createAiRpcHandlers,
   createUsageRpcHandlers,
@@ -24,7 +28,7 @@ import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
 
-const generateDraftCommand = 'storyboard.draft.generate';
+const generateDraftCommand: string = 'storyboard.draft.generate';
 
 interface SidebarScenesInitialData {
   readonly title: string;
@@ -60,7 +64,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async bootstrapWebview(webviewView: vscode.WebviewView): Promise<void> {
-    const initialData = await this.createInitialData();
+    const initialData: SidebarScenesInitialData = await this.createInitialData();
 
     webviewView.webview.html = createWebviewHtml(webviewView.webview, {
       extensionUri: this.extensionUri,
@@ -69,7 +73,10 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       initialData,
     });
 
-    const bridge = createWebviewBridge(webviewView.webview, this.createHandlers());
+    const bridge: StoryboardWebviewBridge = createWebviewBridge(
+      webviewView.webview,
+      this.createHandlers(),
+    );
     this.disposables.push(bridge);
 
     this.disposables.push(
@@ -78,7 +85,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       }),
     );
 
-    const storyboardRoot = await resolveStoryboardWorkspaceRoot();
+    const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
     if (storyboardRoot) {
       this.registerWatchers(storyboardRoot);
     }
@@ -110,7 +117,9 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       'scenes.openScene': async (
         payload,
       ): Promise<StoryboardResponsePayload<'scenes.openScene'>> => {
-        const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(payload.uri));
+        const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+          vscode.Uri.parse(payload.uri),
+        );
         await vscode.window.showTextDocument(document);
         return {};
       },
@@ -118,7 +127,9 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       'scenes.openDraft': async (
         payload,
       ): Promise<StoryboardResponsePayload<'scenes.openDraft'>> => {
-        const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(payload.uri));
+        const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+          vscode.Uri.parse(payload.uri),
+        );
         await vscode.window.showTextDocument(document);
         return {};
       },
@@ -132,13 +143,13 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private registerWatchers(workspaceRoot: vscode.Uri): void {
-    const sceneWatcher = vscode.workspace.createFileSystemWatcher(
+    const sceneWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.sceneCards),
     );
-    const draftWatcher = vscode.workspace.createFileSystemWatcher(
+    const draftWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.draftMarkdown),
     );
-    const projectWatcher = vscode.workspace.createFileSystemWatcher(
+    const projectWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, STORYBOARD_RELATIVE_PATHS.projectJson),
     );
 
@@ -169,8 +180,8 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async postUsageChanged(): Promise<void> {
-    const root = await resolveStoryboardWorkspaceRoot();
-    const summary =
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    const summary: UsageSummaryByEntity =
       root !== undefined
         ? await this.dependencies.usageRecorder.getSummary(root)
         : emptyUsageSummary();
@@ -183,8 +194,8 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async createInitialData(): Promise<SidebarScenesInitialData> {
-    const storyboardRoot = await resolveStoryboardWorkspaceRoot();
-    const usage =
+    const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    const usage: UsageSummaryByEntity =
       storyboardRoot !== undefined
         ? await this.dependencies.usageRecorder.getSummary(storyboardRoot)
         : emptyUsageSummary();
@@ -198,7 +209,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async loadSceneList(workspaceRoot?: vscode.Uri): Promise<SceneListItem[]> {
-    const root = workspaceRoot ?? (await resolveStoryboardWorkspaceRoot());
+    const root: vscode.Uri | undefined = workspaceRoot ?? (await resolveStoryboardWorkspaceRoot());
 
     if (!root) {
       return [];
@@ -212,7 +223,10 @@ export function registerSidebarScenesProvider(
   context: vscode.ExtensionContext,
   dependencies: SidebarScenesProviderDependencies,
 ): vscode.Disposable {
-  const provider = new SidebarScenesProvider(context.extensionUri, dependencies);
+  const provider: SidebarScenesProvider = new SidebarScenesProvider(
+    context.extensionUri,
+    dependencies,
+  );
 
   return vscode.Disposable.from(
     vscode.window.registerWebviewViewProvider(sidebarViewIds.scenes, provider),

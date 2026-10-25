@@ -3,6 +3,7 @@
 export * from './cardCandidates';
 export * from './catalogs';
 export * from './cardCollect';
+export * from './disposableHandle';
 export * from './jsonRepair';
 export * from './messaging';
 export * from './novelRun';

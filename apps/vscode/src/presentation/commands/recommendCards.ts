@@ -10,8 +10,8 @@ import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const recommendCharacterCommand = 'storyboard.character.recommend';
-const recommendBackgroundCommand = 'storyboard.background.recommend';
+const recommendCharacterCommand: string = 'storyboard.character.recommend';
+const recommendBackgroundCommand: string = 'storyboard.background.recommend';
 
 export interface RecommendCardDependencies {
   readonly cards: Pick<CardManager, 'recommend' | 'deriveUniqueId' | 'write'>;
@@ -34,14 +34,18 @@ async function recommendCards(
   category: RecommendationCategory,
   dependencies: RecommendCardDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
     await vscode.window.showWarningMessage('Storyboard 프로젝트를 먼저 열어 주세요.');
     return;
   }
 
-  const result = await runCardRecommendation(category, workspaceRoot, dependencies);
+  const result: RecommendCardsResult | undefined = await runCardRecommendation(
+    category,
+    workspaceRoot,
+    dependencies,
+  );
 
   if (!result || result.kind === 'cancelled') {
     return;
@@ -68,13 +72,16 @@ async function recommendCards(
     return;
   }
 
-  const picked = await pickRecommendations(category, recommendations);
+  const picked: RecommendedCard[] | undefined = await pickRecommendations(
+    category,
+    recommendations,
+  );
 
   if (!picked || picked.length === 0) {
     return;
   }
 
-  const created = await createCardsFromRecommendations(
+  const created: number = await createCardsFromRecommendations(
     workspaceRoot,
     category,
     picked,
@@ -122,7 +129,7 @@ async function pickRecommendations(
     recommendation,
   }));
 
-  const selected = await vscode.window.showQuickPick(items, {
+  const selected: RecommendationPick[] | undefined = await vscode.window.showQuickPick(items, {
     canPickMany: true,
     title: category === 'character' ? '추가할 캐릭터 선택' : '추가할 배경 선택',
     placeHolder: '카드로 추가할 항목을 선택하세요.',
@@ -152,16 +159,16 @@ async function createCardsFromRecommendations(
   cards: Pick<CardManager, 'deriveUniqueId' | 'write'>,
 ): Promise<number> {
   const cardType: StoryboardCard['type'] = category === 'character' ? 'character' : 'location';
-  let created = 0;
+  let created: number = 0;
 
   for (const recommendation of recommendations) {
-    const base = await askCardIdBase(recommendation.name, category);
+    const base: string | null | undefined = await askCardIdBase(recommendation.name, category);
 
     if (base === null) {
       continue;
     }
 
-    const id = await cards.deriveUniqueId(
+    const id: string = await cards.deriveUniqueId(
       workspaceRoot,
       cardType,
       base ?? suggestCardId(recommendation.name),
@@ -182,8 +189,8 @@ async function askCardIdBase(
     return undefined;
   }
 
-  const label = category === 'character' ? '캐릭터' : '배경';
-  const input = await vscode.window.showInputBox({
+  const label: '캐릭터' | '배경' = category === 'character' ? '캐릭터' : '배경';
+  const input: string | undefined = await vscode.window.showInputBox({
     title: `${name} — 파일 ID 지정`,
     prompt: `영문 소문자·숫자·하이픈만 사용 가능. ${label} 폴더의 파일명으로 쓰입니다.`,
     ignoreFocusOut: true,
@@ -198,7 +205,7 @@ function buildCardFromRecommendation(
   id: string,
   recommendation: RecommendedCard,
 ): StoryboardCard {
-  const description = recommendation.description
+  const description: Partial<Pick<StoryboardCard, 'description'>> = recommendation.description
     ? { description: [recommendation.description] }
     : {};
 

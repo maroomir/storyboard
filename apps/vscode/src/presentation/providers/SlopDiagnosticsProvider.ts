@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 
 import type { DraftManager } from '@storyboard/story-app';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type { CheckDraftResult, IStoryboardLogger } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { isDraftMarkdownFile, parseDraft, type SlopFinding } from '@storyboard/story-model';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { LatestRequestGuard } from './latestRequestGuard';
 
-const slopCheckCommand = 'storyboard.draft.slopCheck';
-const slopSource = 'storyboard-slop';
-const slopDebounceMs = 700;
+const slopCheckCommand: string = 'storyboard.draft.slopCheck';
+const slopSource: string = 'storyboard-slop';
+const slopDebounceMs: number = 700;
 
 export interface RegisterSlopDiagnosticsProviderDependencies {
   readonly drafts: Pick<DraftManager, 'check'>;
@@ -19,7 +19,7 @@ export interface RegisterSlopDiagnosticsProviderDependencies {
 }
 
 export function computeBodyOffset(documentText: string, body: string): number {
-  const normalized = documentText.replace(/\r\n/g, '\n');
+  const normalized: string = documentText.replace(/\r\n/g, '\n');
   if (!normalized.endsWith(body)) {
     return normalized.indexOf(body);
   }
@@ -40,12 +40,12 @@ export function mapSlopFindingsToDiagnostics(
   bodyOffset: number,
 ): vscode.Diagnostic[] {
   return findings.flatMap((finding) => {
-    const range = toSlopRange(document, finding, bodyOffset);
+    const range: vscode.Range | undefined = toSlopRange(document, finding, bodyOffset);
     if (!range) {
       return [];
     }
 
-    const diagnostic =
+    const diagnostic: vscode.Diagnostic =
       finding.severity === 'warning'
         ? createWarningDiagnostic(range, finding.message, slopSource)
         : createDiagnostic(
@@ -59,8 +59,9 @@ export function mapSlopFindingsToDiagnostics(
 }
 
 class SlopDiagnosticsController {
-  private readonly collection = vscode.languages.createDiagnosticCollection(slopSource);
-  private readonly latestRequests = new LatestRequestGuard();
+  private readonly collection: vscode.DiagnosticCollection =
+    vscode.languages.createDiagnosticCollection(slopSource);
+  private readonly latestRequests: LatestRequestGuard = new LatestRequestGuard();
 
   public constructor(private readonly dependencies: RegisterSlopDiagnosticsProviderDependencies) {}
 
@@ -74,7 +75,7 @@ class SlopDiagnosticsController {
       return;
     }
 
-    const documentText = document.getText();
+    const documentText: string = document.getText();
 
     let body: string;
     try {
@@ -85,13 +86,15 @@ class SlopDiagnosticsController {
       return;
     }
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+      document.uri,
+    );
     if (!workspaceFolder) {
       this.collection.delete(document.uri);
       return;
     }
 
-    const result = await this.dependencies.drafts.check({
+    const result: CheckDraftResult = await this.dependencies.drafts.check({
       workspaceRoot: workspaceFolder.uri,
       sceneStem: document.uri.path.split('/').pop()?.replace(/\.md$/i, '') ?? '',
       kind: 'slop',
@@ -103,7 +106,7 @@ class SlopDiagnosticsController {
       return;
     }
 
-    const bodyOffset = computeBodyOffset(documentText, body);
+    const bodyOffset: number = computeBodyOffset(documentText, body);
     this.collection.set(
       document.uri,
       mapSlopFindingsToDiagnostics(document, result.findings, bodyOffset),
@@ -131,7 +134,9 @@ class SlopDiagnosticsController {
     if (document.uri.scheme !== 'file') {
       return false;
     }
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+      document.uri,
+    );
     if (!workspaceFolder) {
       return false;
     }
@@ -146,33 +151,33 @@ async function runSlopCheckCommand(
   controller: SlopDiagnosticsController,
   uri?: vscode.Uri,
 ): Promise<void> {
-  const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
+  const targetUri: vscode.Uri | undefined = uri ?? vscode.window.activeTextEditor?.document.uri;
   if (!targetUri) {
     await vscode.window.showErrorMessage('활성 드래프트 파일을 찾을 수 없습니다.');
     return;
   }
 
-  const document = await vscode.workspace.openTextDocument(targetUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(targetUri);
   await controller.runForDocument(document);
 }
 
 export function registerSlopDiagnosticsProvider(
   dependencies: RegisterSlopDiagnosticsProviderDependencies,
 ): vscode.Disposable {
-  const controller = new SlopDiagnosticsController(dependencies);
+  const controller: SlopDiagnosticsController = new SlopDiagnosticsController(dependencies);
 
-  const commandRegistration = vscode.commands.registerCommand(
+  const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
     slopCheckCommand,
     (uri?: vscode.Uri) => runSlopCheckCommand(controller, uri),
   );
-  const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
+  const saveListener: vscode.Disposable = vscode.workspace.onDidSaveTextDocument((document) => {
     if (!dependencies.configBridge.isSlopRealtimeEnabled()) {
       return;
     }
 
     controller.scheduleRealtimeCheck(document);
   });
-  const closeListener = vscode.workspace.onDidCloseTextDocument((document) => {
+  const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
     controller.cancelRealtimeCheck(document);
     controller.getDiagnosticsCollection().delete(document.uri);
   });

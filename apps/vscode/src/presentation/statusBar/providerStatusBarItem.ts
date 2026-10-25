@@ -1,27 +1,31 @@
+import type { DisposableHandle } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
-import type { ConfigBridge } from '@storyboard/story-ai';
+import type { ConfigBridge, ConfigValueOrigin } from '@storyboard/story-ai';
 
 import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
 import type { SettingsConfigFiles } from '@/presentation/messaging/settingsRpcHandlers';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
+import type { AiProviderId } from '@storyboard/story-model';
 
 export interface ProviderStatusBarDependencies {
   readonly configBridge: ConfigBridge;
   readonly configFiles: () => SettingsConfigFiles;
 }
 
-const originLabels = {
+const originLabels: Readonly<Record<ConfigValueOrigin, string>> = {
   default: '기본값',
   user: '공통 설정',
   workspace: '이 작품 설정',
-} as const;
+};
 
-export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
+export interface ProviderStatusText {
   readonly text: string;
   readonly tooltip: string;
   readonly command: string;
-} {
+}
+
+export function describeProviderStatus(deps: ProviderStatusBarDependencies): ProviderStatusText {
   if (!deps.configBridge.isDefaultProviderConfigured()) {
     return {
       text: '$(warning) AI 제공자 선택',
@@ -30,11 +34,11 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
     };
   }
 
-  const providerId = deps.configBridge.getDefaultProvider();
-  const model = deps.configBridge.getProviderConfig(providerId).model ?? '';
-  const origin = deps.configBridge.getValueOrigin('ai.provider.default');
-  const files = deps.configFiles();
-  const file = origin === 'workspace' ? (files.workspace ?? files.user) : files.user;
+  const providerId: AiProviderId = deps.configBridge.getDefaultProvider();
+  const model: string = deps.configBridge.getProviderConfig(providerId).model ?? '';
+  const origin: ConfigValueOrigin = deps.configBridge.getValueOrigin('ai.provider.default');
+  const files: SettingsConfigFiles = deps.configFiles();
+  const file: string = origin === 'workspace' ? (files.workspace ?? files.user) : files.user;
 
   return {
     text: `$(sparkle) ${providerId}${model ? ` · ${model}` : ''}`,
@@ -48,10 +52,13 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
 export function registerProviderStatusBarItem(
   deps: ProviderStatusBarDependencies,
 ): vscode.Disposable {
-  const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
+  const item: vscode.StatusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left,
+    50,
+  );
 
   const refresh = (): void => {
-    const status = describeProviderStatus(deps);
+    const status: ProviderStatusText = describeProviderStatus(deps);
     item.text = status.text;
     item.tooltip = status.tooltip;
     item.command = status.command;
@@ -60,7 +67,7 @@ export function registerProviderStatusBarItem(
   refresh();
   item.show();
 
-  const subscription = deps.configBridge.onDidChange(refresh);
+  const subscription: DisposableHandle = deps.configBridge.onDidChange(refresh);
 
   return vscode.Disposable.from(item, subscription);
 }

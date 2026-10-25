@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { Map, User } from 'lucide-react';
+import { Map, User, type LucideIcon } from 'lucide-react';
 import type React from 'react';
 
 import type { CardType } from '@webview/lib/types';
@@ -25,8 +25,8 @@ export function CardTagRow({
   layout = 'inline',
   className,
 }: CardTagRowProps): React.ReactElement {
-  const tone = cardType === 'character' ? 'character' : 'background';
-  const Icon = cardType === 'character' ? User : Map;
+  const tone: 'character' | 'background' = cardType === 'character' ? 'character' : 'background';
+  const Icon: LucideIcon = cardType === 'character' ? User : Map;
 
   return (
     <div

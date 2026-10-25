@@ -29,6 +29,7 @@ import { formatUsageBadgeLabel, formatUsageBadgeTooltip } from '@webview/lib/cos
 import { Button } from '../ui/Button';
 import { CostBadge } from '../ui/CostBadge';
 import { EmptyState } from '../ui/EmptyState';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
 function sceneStatusPresentation(status: SceneListItem['status']): {
   readonly Icon: LucideIcon;
@@ -68,7 +69,7 @@ export function ScenesSidebar({
 }: {
   readonly initialData: SidebarScenesInitialData;
 }): React.ReactElement {
-  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
+  const vscodeApi: VscodeApi | undefined = useMemo(() => window.acquireVsCodeApi?.(), []);
   const [sidebarState, setSidebarState] = useState(initialData);
   const [pendingGenerateRequestMap, setPendingGenerateRequestMap] = useState<
     Readonly<Record<string, string>>
@@ -81,13 +82,13 @@ export function ScenesSidebar({
       >,
     ): void => {
       if (event.data.type === 'response' && 'id' in event.data) {
-        const responseId = event.data.id;
+        const responseId: string = event.data.id;
         setPendingGenerateRequestMap((prev) => {
           if (!prev[responseId]) {
             return prev;
           }
 
-          const next = { ...prev };
+          const next: Record<string, string> = { ...prev };
           delete next[responseId];
           return next;
         });
@@ -98,7 +99,7 @@ export function ScenesSidebar({
         return;
       }
 
-      const eventMessage = event.data as StoryboardEventMessage;
+      const eventMessage: StoryboardEventMessage = event.data as StoryboardEventMessage;
 
       if (eventMessage.method === 'scenes.listChanged') {
         setSidebarState(parseSidebarScenesInitialData(eventMessage.payload));
@@ -114,13 +115,13 @@ export function ScenesSidebar({
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return (): void => window.removeEventListener('message', handleMessage);
   }, []);
 
   // The header carries the work's whole spend: the outline, summaries and the review belong to no
   // scene, so a sum of the scene rows would hide them.
-  const workUsage = sidebarState.usage.total;
-  const workUsageTooltip = `작품 전체 · ${formatUsageBadgeTooltip(workUsage)} · 씬 ${formatUsageBadgeLabel(sumUsageMap(sidebarState.usage.scenes))}`;
+  const workUsage: UsageAmount = sidebarState.usage.total;
+  const workUsageTooltip: string = `작품 전체 · ${formatUsageBadgeTooltip(workUsage)} · 씬 ${formatUsageBadgeLabel(sumUsageMap(sidebarState.usage.scenes))}`;
   const sceneUsage = (scene: SceneListItem): UsageAmount =>
     usageAmountOf(sidebarState.usage.scenes, scene.stem);
 
@@ -131,9 +132,9 @@ export function ScenesSidebar({
     method: StoryboardRequestMethod,
     payload: Record<string, unknown>,
   ): void => {
-    const requestId = createRequestId();
+    const requestId: string = createRequestId();
     if (method === 'scenes.generateDraft') {
-      const uri = typeof payload.uri === 'string' ? payload.uri : '';
+      const uri: string = typeof payload.uri === 'string' ? payload.uri : '';
       if (uri.length > 0) {
         setPendingGenerateRequestMap((prev) => ({ ...prev, [requestId]: uri }));
       }
@@ -174,7 +175,7 @@ export function ScenesSidebar({
     );
   }
 
-  const pendingGenerateUris = new Set(Object.values(pendingGenerateRequestMap));
+  const pendingGenerateUris: Set<string> = new Set(Object.values(pendingGenerateRequestMap));
 
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">

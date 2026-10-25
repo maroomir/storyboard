@@ -1,6 +1,6 @@
 import type { StudioCardStage, StudioReviewState, StudioStage, StudioTarget } from './types';
 
-const millisecondsPerDay = 86_400_000;
+const millisecondsPerDay: number = 86_400_000;
 
 export function stageTitle(target: StudioTarget, stage?: StudioStage): string {
   if (!stage) {
@@ -11,14 +11,14 @@ export function stageTitle(target: StudioTarget, stage?: StudioStage): string {
     return `${cardKindLabel(stage.cardKind)} · ${stage.name}`;
   }
 
-  const order = stage.sceneStem.split('-')[0];
+  const order: string | undefined = stage.sceneStem.split('-')[0];
   return `씬 ${order} · ${stage.title ?? stage.sceneStem}`;
 }
 
 // NOTE: mirrors the host's rule — a scene entity spans the seed card and its draft, and whichever
 // file the author has open is the one a proposal may rewrite.
 export function editTargetFile(target: StudioTarget): string | undefined {
-  const entity = target.entity;
+  const entity: StudioTarget['entity'] = target.entity;
 
   if (!entity) {
     return undefined;
@@ -56,7 +56,7 @@ export function stageFacts(stage?: StudioStage, now: Date = new Date()): readonl
 
   facts.push(stage.draftRevision === undefined ? '초안' : `초안 v${stage.draftRevision}`);
 
-  const updatedLabel = formatRelativeDay(stage.draftUpdatedAt, now);
+  const updatedLabel: string = formatRelativeDay(stage.draftUpdatedAt, now);
   if (updatedLabel.length > 0) {
     facts.push(updatedLabel);
   }
@@ -67,13 +67,13 @@ export function stageFacts(stage?: StudioStage, now: Date = new Date()): readonl
 }
 
 export function formatRelativeDay(isoDate: string, now: Date = new Date()): string {
-  const updated = new Date(isoDate);
+  const updated: Date = new Date(isoDate);
 
   if (Number.isNaN(updated.getTime())) {
     return '';
   }
 
-  const elapsedDays = calendarDayDifference(now, updated);
+  const elapsedDays: number = calendarDayDifference(now, updated);
 
   if (elapsedDays <= 0) {
     return '오늘';
@@ -146,8 +146,8 @@ function targetTitle(target: StudioTarget): string {
 }
 
 function calendarDayDifference(now: Date, updated: Date): number {
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const updatedDay = Date.UTC(updated.getFullYear(), updated.getMonth(), updated.getDate());
+  const today: number = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const updatedDay: number = Date.UTC(updated.getFullYear(), updated.getMonth(), updated.getDate());
 
   return Math.round((today - updatedDay) / millisecondsPerDay);
 }

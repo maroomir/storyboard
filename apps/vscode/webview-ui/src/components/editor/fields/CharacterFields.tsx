@@ -25,7 +25,7 @@ export function CharacterFields({
           className={sbInputClass}
           value={card.role ?? ''}
           onChange={(event) => {
-            const value = event.target.value;
+            const value: string = event.target.value;
             if (value === '') {
               updateCard({ ...card, role: undefined });
               return;

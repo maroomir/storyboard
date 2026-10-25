@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
-import type { StudioCardSeed, StoryboardResponsePayload } from '@storyboard/story-model';
+import type {
+  StudioCardSeed,
+  StoryboardResponsePayload,
+  StoryUri,
+  Character,
+  LocationBackgroundCard,
+} from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
@@ -15,7 +21,7 @@ export interface StudioCardUpdateRpcHandlersDependencies {
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
 }
 
-const unreadableSeedMessage =
+const unreadableSeedMessage: string =
   '설명에서 카드 이름을 읽지 못했어요. 이름을 앞세워 다시 적어 주시겠어요?';
 
 export function createStudioCardUpdateRpcHandlers(
@@ -25,7 +31,7 @@ export function createStudioCardUpdateRpcHandlers(
     'studio.card.update': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.card.update'>> => {
-      const root = await deps.getProjectRoot();
+      const root: vscode.Uri | undefined = await deps.getProjectRoot();
 
       if (!root) {
         return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
@@ -46,8 +52,9 @@ export function createStudioCardUpdateRpcHandlers(
         return { ok: false, message: unreadableSeedMessage };
       }
 
-      const cardType = seed.kind === 'character' ? 'character' : 'location';
-      const instruction = fillInstruction(payload.description);
+      const cardType: 'character' | 'location' =
+        seed.kind === 'character' ? 'character' : 'location';
+      const instruction: string = fillInstruction(payload.description);
 
       // NOTE: describing a card that already exists opens the existing file for an update
       // conversation instead of quietly minting a "-2" duplicate.
@@ -60,13 +67,13 @@ export function createStudioCardUpdateRpcHandlers(
         };
       }
 
-      const card =
+      const card: Character | LocationBackgroundCard =
         seed.kind === 'character'
           ? createEmptyCharacter(seed.id, seed.name)
           : createEmptyBackground(seed.id, seed.name);
 
       try {
-        const uri = await deps.cards.write(root, card);
+        const uri: StoryUri = await deps.cards.write(root, card);
         await vscode.window.showTextDocument(uri, { preview: true });
       } catch (error) {
         deps.logger.warn(`Studio 카드 생성 실패: ${String(error)}`);
@@ -87,7 +94,8 @@ function cardFile(seed: StudioCardSeed): string {
 }
 
 async function openCard(root: vscode.Uri, seed: StudioCardSeed): Promise<void> {
-  const directory = seed.kind === 'character' ? 'character' : 'background';
+  const directory: 'character' | 'background' =
+    seed.kind === 'character' ? 'character' : 'background';
 
   try {
     await vscode.window.showTextDocument(vscode.Uri.joinPath(root, directory, `${seed.id}.card`), {

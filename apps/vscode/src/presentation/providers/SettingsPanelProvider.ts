@@ -1,3 +1,4 @@
+import type { DisposableHandle } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
@@ -13,7 +14,7 @@ import {
 import type { StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
-const panelViewType = 'storyboard.settings';
+const panelViewType: string = 'storyboard.settings';
 
 export interface SettingsPanelDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
@@ -28,7 +29,7 @@ export interface ISettingsPanel extends vscode.Disposable {
 
 export class SettingsPanelProvider implements ISettingsPanel {
   private panel: vscode.WebviewPanel | undefined;
-  private bridge: { readonly dispose: () => void } | undefined;
+  private bridge: DisposableHandle | undefined;
   private hostSubscriptions: vscode.Disposable | undefined;
 
   public constructor(private readonly dependencies: SettingsPanelDependencies) {}
@@ -49,13 +50,14 @@ export class SettingsPanelProvider implements ISettingsPanel {
   }
 
   private async open(extensionUri: vscode.Uri): Promise<void> {
-    const initialSnapshot = await getSettingsReadSnapshot({
-      configBridge: this.dependencies.configBridge,
-      registry: this.dependencies.aiProviderRegistry,
-      configFiles: this.dependencies.configFiles,
-    });
+    const initialSnapshot: StoryboardResponsePayload<'settings.read'> =
+      await getSettingsReadSnapshot({
+        configBridge: this.dependencies.configBridge,
+        registry: this.dependencies.aiProviderRegistry,
+        configFiles: this.dependencies.configFiles,
+      });
 
-    const panel = vscode.window.createWebviewPanel(
+    const panel: vscode.WebviewPanel = vscode.window.createWebviewPanel(
       panelViewType,
       'Storyboard Settings',
       vscode.ViewColumn.Active,
@@ -77,7 +79,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
 
     this.bridge = createWebviewBridge(panel.webview, this.createHandlers());
 
-    const secretDisposables = aiProviderIds.map((providerId) =>
+    const secretDisposables: DisposableHandle[] = aiProviderIds.map((providerId) =>
       this.dependencies.secretStore.onDidChangeApiKey(providerId, () => {
         void this.postSettingsChanged();
       }),

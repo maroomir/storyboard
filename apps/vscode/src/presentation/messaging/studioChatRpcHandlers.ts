@@ -43,18 +43,18 @@ export function createStudioChatRpcHandlers(
 ): StoryboardRpcHandlers {
   // NOTE: a provider call cannot be aborted mid-flight, so a cancel bumps the generation and the
   // reply that eventually lands is dropped instead of appearing after the author moved on.
-  let generation = 0;
+  let generation: number = 0;
 
   return {
     'studio.chat.send': async (payload): Promise<StoryboardResponsePayload<'studio.chat.send'>> => {
-      const root = await deps.getProjectRoot();
+      const root: vscode.Uri | undefined = await deps.getProjectRoot();
 
       if (!root) {
         return { turns: [sayTurn('Storyboard 프로젝트를 먼저 열어 주세요.')] };
       }
 
-      const target = await deps.getTarget();
-      const entityContext = await readStudioEntityContext(
+      const target: StudioTarget = await deps.getTarget();
+      const entityContext: StudioEntityContext | undefined = await readStudioEntityContext(
         vscodeFileSystem,
         root,
         payload.entity,
@@ -67,15 +67,15 @@ export function createStudioChatRpcHandlers(
 
       // NOTE: the prompt tells the model a selection was given, so the selected text has to travel
       // with it; a bare hasSelection flag would leave the model guessing which passage to rewrite.
-      const selection = readSelectedDraftText(entityContext);
-      const contextWithSelection = selection
+      const selection: string | undefined = readSelectedDraftText(entityContext);
+      const contextWithSelection: string = selection
         ? `${entityContext.context}\n\n[작가가 선택한 구간]\n${selection}`
         : entityContext.context;
 
-      const startedGeneration = generation;
+      const startedGeneration: number = generation;
 
       try {
-        const turns = await deps.studio.chat({
+        const turns: readonly StudioChatTurn[] = await deps.studio.chat({
           workspaceRoot: root,
           entityContext: { ...entityContext, context: contextWithSelection },
           history: payload.history,
@@ -172,15 +172,15 @@ function readSelectedDraftText(entityContext: StudioEntityContext): string | und
     return undefined;
   }
 
-  const editor = vscode.window.activeTextEditor;
+  const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
 
   if (!editor || editor.selection.isEmpty) {
     return undefined;
   }
 
-  const body = extractDraftBody(entityContext.baseline);
-  const selected = editor.document.getText(editor.selection);
-  const startOffset = body.indexOf(selected);
+  const body: string = extractDraftBody(entityContext.baseline);
+  const selected: string = editor.document.getText(editor.selection);
+  const startOffset: number = body.indexOf(selected);
 
   if (selected.trim().length === 0 || startOffset === -1) {
     return undefined;

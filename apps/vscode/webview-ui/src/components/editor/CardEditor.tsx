@@ -8,7 +8,7 @@ import { CollectPanel } from './CollectPanel';
 import { PreviewPanel } from './PreviewPanel';
 import { YamlEditorPanel } from './YamlEditorPanel';
 import { SectionHeader } from '../ui/SectionHeader';
-import { Tabs } from '../ui/Tabs';
+import { Tabs, type TabItem } from '../ui/Tabs';
 import { sbInputClass, sbYamlTextareaClass } from '../ui/formClasses';
 import { ArcCurveView } from '../character/ArcCurveView';
 import { CharacterRelationPreview } from '../character/CharacterRelationPreview';
@@ -20,8 +20,9 @@ import { SceneFields } from './fields/SceneFields';
 import { NarratorPreviewPanel } from './NarratorPreviewPanel';
 import { ScenePreviewPanel } from './ScenePreviewPanel';
 import { SceneStructurePanel } from './SceneStructurePanel';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
-const overviewBoxClass =
+const overviewBoxClass: string =
   'flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]';
 
 export function CardEditor({
@@ -29,7 +30,7 @@ export function CardEditor({
 }: {
   readonly initialData: CardEditorInitialData;
 }): React.ReactElement {
-  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
+  const vscodeApi: VscodeApi | undefined = useMemo(() => window.acquireVsCodeApi?.(), []);
   const [documentState, setDocumentState] = useState(initialData);
   const [card, setCard] = useState<EditorCard | undefined>(initialData.card);
   const [status, setStatus] = useState('문서에서 카드 정보를 불러왔습니다.');
@@ -39,14 +40,17 @@ export function CardEditor({
     CardEditorInitialData | undefined
   >();
 
-  const applyDocumentState = useCallback((nextDocumentState: CardEditorInitialData): void => {
-    setDocumentState(nextDocumentState);
-    setCard(nextDocumentState.card);
-    setIsDirty(false);
-    setIsEditingYaml(false);
-    setPendingExternalData(undefined);
-    setStatus('문서 변경 사항을 다시 불러왔습니다.');
-  }, []);
+  const applyDocumentState: (nextDocumentState: CardEditorInitialData) => void = useCallback(
+    (nextDocumentState: CardEditorInitialData): void => {
+      setDocumentState(nextDocumentState);
+      setCard(nextDocumentState.card);
+      setIsDirty(false);
+      setIsEditingYaml(false);
+      setPendingExternalData(undefined);
+      setStatus('문서 변경 사항을 다시 불러왔습니다.');
+    },
+    [],
+  );
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
@@ -54,7 +58,9 @@ export function CardEditor({
         return;
       }
 
-      const nextDocumentState = parseCardEditorInitialData(event.data.payload);
+      const nextDocumentState: CardEditorInitialData = parseCardEditorInitialData(
+        event.data.payload,
+      );
 
       if (isDirty || isEditingYaml) {
         setPendingExternalData(nextDocumentState);
@@ -66,11 +72,11 @@ export function CardEditor({
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return (): void => window.removeEventListener('message', handleMessage);
   }, [isDirty, isEditingYaml, applyDocumentState]);
 
-  const applyYamlSave = useCallback(
-    (next: Pick<CardEditorInitialData, 'card' | 'rawText'>): void => {
+  const applyYamlSave: (next: Pick<CardEditorInitialData, 'card' | 'rawText'>) => void =
+    useCallback((next: Pick<CardEditorInitialData, 'card' | 'rawText'>): void => {
       if (!next.card) {
         return;
       }
@@ -79,11 +85,9 @@ export function CardEditor({
       setCard(next.card);
       setIsDirty(false);
       setPendingExternalData(undefined);
-    },
-    [],
-  );
+    }, []);
 
-  const updateCard = useCallback(
+  const updateCard: (nextCard: EditorCard) => void = useCallback(
     (nextCard: EditorCard): void => {
       setCard(nextCard);
       setIsDirty(true);
@@ -103,7 +107,7 @@ export function CardEditor({
     [documentState.documentUri, vscodeApi],
   );
 
-  const yamlPanel = useMemo(
+  const yamlPanel: React.JSX.Element = useMemo(
     () => (
       <YamlEditorPanel
         documentUri={documentState.documentUri}
@@ -117,7 +121,7 @@ export function CardEditor({
     [documentState.documentUri, documentState.rawText, vscodeApi, applyYamlSave],
   );
 
-  const tabItems = useMemo(() => {
+  const tabItems: TabItem[] = useMemo((): TabItem[] => {
     if (!card) {
       return [];
     }
@@ -181,7 +185,7 @@ export function CardEditor({
       ];
     }
 
-    const overview = (
+    const overview: React.JSX.Element = (
       <div className={overviewBoxClass}>
         <SectionHeader title="기본 정보" eyebrow="Overview" />
         <label className="flex flex-col gap-[0.35rem]">
@@ -213,7 +217,7 @@ export function CardEditor({
       </div>
     );
 
-    const collectTab = {
+    const collectTab: TabItem = {
       id: 'collect',
       label: '수집',
       panel: (
@@ -285,7 +289,7 @@ export function CardEditor({
     );
   }
 
-  const panelClass =
+  const panelClass: string =
     'relative flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4';
 
   return (

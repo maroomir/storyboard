@@ -28,7 +28,7 @@ export function GenerationOptionsSection({
   onRpcError,
   onSaved,
 }: SettingsSectionProps): React.ReactElement {
-  const groups = useMemo(
+  const groups: readonly (readonly [string, readonly SettingDefinition[]])[] = useMemo(
     () => groupDefinitions(snapshot.settingCatalog),
     [snapshot.settingCatalog],
   );
@@ -89,7 +89,7 @@ function OptionRow({
   readonly originFile: string | undefined;
   readonly onSave: (value: SettingValue) => void;
 }): React.ReactElement {
-  const inputId = `option-${definition.key.replace(/\./g, '-')}`;
+  const inputId: string = `option-${definition.key.replace(/\./g, '-')}`;
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-sb-border bg-sb-bg-widget/60 px-3 py-2">
@@ -130,13 +130,13 @@ function OptionControl({
     );
   }
 
-  const current = draft ?? String(value);
+  const current: string = draft ?? String(value);
   const commit = (): void => {
     if (draft === null) {
       return;
     }
 
-    const next =
+    const next: string | number | undefined =
       definition.kind === 'integer'
         ? Number.parseInt(draft, 10)
         : definition.kind === 'decimal'
@@ -184,10 +184,10 @@ function OptionControl({
 function groupDefinitions(
   catalog: readonly SettingDefinition[],
 ): ReadonlyArray<readonly [string, readonly SettingDefinition[]]> {
-  const byGroup = new Map<string, SettingDefinition[]>();
+  const byGroup: Map<string, SettingDefinition[]> = new Map<string, SettingDefinition[]>();
 
   for (const definition of catalog) {
-    const list = byGroup.get(definition.group) ?? [];
+    const list: SettingDefinition[] = byGroup.get(definition.group) ?? [];
     list.push(definition);
     byGroup.set(definition.group, list);
   }

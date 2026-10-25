@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { VirtualDocumentStore } from './virtualDocumentStore';
 
-const proposalPreviewScheme = 'storyboard-proposal';
+const proposalPreviewScheme: string = 'storyboard-proposal';
 
 export interface ProposalReviewItem {
   readonly original: vscode.Uri | undefined;
@@ -12,7 +12,7 @@ export interface ProposalReviewItem {
 }
 
 export class ProposalReviewService implements vscode.Disposable {
-  private readonly store = new VirtualDocumentStore();
+  private readonly store: VirtualDocumentStore = new VirtualDocumentStore();
 
   public constructor(context: vscode.ExtensionContext) {
     context.subscriptions.push(
@@ -23,11 +23,11 @@ export class ProposalReviewService implements vscode.Disposable {
 
   public async showDiffs(items: readonly ProposalReviewItem[]): Promise<void> {
     for (const item of items) {
-      const proposedUri = vscode.Uri.parse(
+      const proposedUri: vscode.Uri = vscode.Uri.parse(
         `${proposalPreviewScheme}:${encodeURIComponent(item.key)}`,
       );
       this.store.setContent(proposedUri, item.proposedText);
-      const originalUri =
+      const originalUri: vscode.Uri =
         item.original ??
         vscode.Uri.parse(`${proposalPreviewScheme}:${encodeURIComponent(`${item.key}:empty`)}`);
       if (!item.original) {

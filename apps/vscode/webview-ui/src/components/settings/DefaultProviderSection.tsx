@@ -9,10 +9,12 @@ import {
   listSnapshotSelectableProviderIds,
   parseSaveTarget,
   pickModelForTaskProvider,
+  type AiProviderStatus,
   type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { sbSelectClass, sectionCardClass } from './settingsStyles';
+import type { AiProviderId, ProviderModelOption } from '@storyboard/story-model/contracts';
 
 export function DefaultProviderSection({
   snapshot,
@@ -26,14 +28,18 @@ export function DefaultProviderSection({
   readonly onSaved: (label: string, target: SaveTarget) => void;
 }): React.ReactElement {
   const [pending, setPending] = useState(false);
-  const defaultProviderId = snapshot.defaultProvider;
+  const defaultProviderId: AiProviderId = snapshot.defaultProvider;
   const originFileOf = (key: string): string | undefined =>
     getValueOrigin(snapshot, key) === 'workspace'
       ? snapshot.configFiles.workspace
       : snapshot.configFiles.user;
-  const selectedProvider = getProviderStatus(snapshot, defaultProviderId);
-  const defaultModelCatalog = snapshot.modelCatalog[defaultProviderId];
-  const defaultModelSelectValue = pickModelForTaskProvider(
+  const selectedProvider: AiProviderStatus | undefined = getProviderStatus(
+    snapshot,
+    defaultProviderId,
+  );
+  const defaultModelCatalog: readonly ProviderModelOption[] =
+    snapshot.modelCatalog[defaultProviderId];
+  const defaultModelSelectValue: string = pickModelForTaskProvider(
     snapshot,
     defaultProviderId,
     snapshot.providerConfigs[defaultProviderId].model,
@@ -68,7 +74,7 @@ export function DefaultProviderSection({
             value={snapshot.isDefaultProviderConfigured ? defaultProviderId : ''}
             disabled={pending}
             onChange={(event) => {
-              const providerId = event.target.value;
+              const providerId: string = event.target.value;
               if (!isAiProviderId(providerId)) {
                 return;
               }
@@ -114,7 +120,7 @@ export function DefaultProviderSection({
             value={defaultModelSelectValue}
             disabled={pending}
             onChange={(event) => {
-              const model = event.target.value;
+              const model: string = event.target.value;
               if (model.length === 0) {
                 return;
               }

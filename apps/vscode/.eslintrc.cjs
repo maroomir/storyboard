@@ -1,3 +1,5 @@
+const explicitTypeRules = require("../../scripts/lint/explicitTypeRules.cjs");
+
 module.exports = {
   root: true,
   env: {
@@ -13,8 +15,9 @@ module.exports = {
   extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   ignorePatterns: ["out", "dist", "node_modules"],
   rules: {
-    "@typescript-eslint/explicit-function-return-type": "error",
+    ...explicitTypeRules,
     "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", ignoreRestSiblings: true }],
     "no-warning-comments": [
       "warn",
       {
@@ -22,5 +25,11 @@ module.exports = {
         location: "anywhere"
       }
     ]
-  }
+  },
+  overrides: [
+    {
+      files: ["test/**", "scripts/**", "*.config.ts", "*.config.mts"],
+      rules: { "no-restricted-syntax": "off" }
+    }
+  ]
 }

@@ -6,15 +6,17 @@ import {
   getProviderStatus,
   hasTaskOverride,
   requiresApiKey,
+  type AiProviderId,
+  type AiProviderStatus,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 
-const summaryCardClass =
+const summaryCardClass: string =
   'flex flex-col gap-1 rounded-lg border border-sb-border bg-sb-bg-widget/70 px-3 py-2.5';
-const summaryLabelClass =
+const summaryLabelClass: string =
   'm-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted';
-const summaryValueClass = 'text-base font-semibold leading-tight text-sb-fg';
-const summaryLinkClass = 'self-start px-0 py-0 text-xs';
+const summaryValueClass: string = 'text-base font-semibold leading-tight text-sb-fg';
+const summaryLinkClass: string = 'self-start px-0 py-0 text-xs';
 
 export function SettingsSummaryCards({
   snapshot,
@@ -23,23 +25,23 @@ export function SettingsSummaryCards({
   readonly snapshot: SettingsReadSnapshot;
   readonly onNavigate: (tabId: string) => void;
 }): React.ReactElement {
-  const defaultProviderId = snapshot.defaultProvider;
-  const defaultProviderName =
+  const defaultProviderId: AiProviderId = snapshot.defaultProvider;
+  const defaultProviderName: string =
     getProviderStatus(snapshot, defaultProviderId)?.displayName ?? defaultProviderId;
-  const defaultModelId = snapshot.providerConfigs[defaultProviderId].model;
-  const defaultModelName =
+  const defaultModelId: string = snapshot.providerConfigs[defaultProviderId].model;
+  const defaultModelName: string =
     snapshot.modelCatalog[defaultProviderId].find((entry) => entry.id === defaultModelId)
       ?.displayName ?? defaultModelId;
 
-  const keyedProviders = AI_PROVIDER_IDS.filter(requiresApiKey);
-  const connectedCount = keyedProviders.filter(
+  const keyedProviders: AiProviderId[] = AI_PROVIDER_IDS.filter(requiresApiKey);
+  const connectedCount: number = keyedProviders.filter(
     (id) => getProviderStatus(snapshot, id)?.hasApiKey === true,
   ).length;
 
-  const overrideCount = snapshot.taskCatalog.filter((task) =>
+  const overrideCount: number = snapshot.taskCatalog.filter((task) =>
     hasTaskOverride(snapshot, task.name),
   ).length;
-  const defaultTaskCount = snapshot.taskCatalog.length - overrideCount;
+  const defaultTaskCount: number = snapshot.taskCatalog.length - overrideCount;
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="설정 요약">
@@ -70,8 +72,8 @@ export function SettingsSummaryCards({
         </span>
         <ul className="m-0 flex list-none flex-wrap gap-x-2.5 gap-y-1 p-0 text-xs text-sb-fg-muted">
           {keyedProviders.map((providerId) => {
-            const status = getProviderStatus(snapshot, providerId);
-            const isConnected = status?.hasApiKey === true;
+            const status: AiProviderStatus | undefined = getProviderStatus(snapshot, providerId);
+            const isConnected: boolean = status?.hasApiKey === true;
             return (
               <li key={providerId} className="flex items-center gap-1">
                 <span

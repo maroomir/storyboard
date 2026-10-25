@@ -9,7 +9,7 @@ import { showStoryboardFailure } from '@/presentation/notifications/showStoryboa
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
+const GENERATE_OUTLINE_COMMAND: string = 'storyboard.outline.generate';
 
 export type RegisterGenerateOutlineCommandDependencies = {
   readonly novel: Pick<NovelManager, 'generateOutline'>;
@@ -27,17 +27,17 @@ export function registerGenerateOutlineCommand(
 async function runGenerateOutline(
   dependencies: RegisterGenerateOutlineCommandDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
-  let result = await runWithProgress(workspaceRoot, dependencies, false);
+  let result: GenerateOutlineResult = await runWithProgress(workspaceRoot, dependencies, false);
 
   if (!result.ok && result.kind === 'existing') {
-    const overwrite = await vscode.window.showWarningMessage(
+    const overwrite: '덮어쓰기' | undefined = await vscode.window.showWarningMessage(
       '이미 아웃라인 파일이 있습니다. 덮어쓸까요?',
       { modal: true },
       '덮어쓰기',
@@ -78,7 +78,9 @@ async function reportResult(
   logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.ok) {
-    const document = await vscode.workspace.openTextDocument(result.synopsisUri);
+    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+      result.synopsisUri,
+    );
     await vscode.window.showTextDocument(document);
     await vscode.window.showInformationMessage(
       '아웃라인을 생성했습니다 (synopsis.md, chapters.yaml).',
@@ -87,9 +89,9 @@ async function reportResult(
   }
 
   if (result.kind === 'missing_contract') {
-    const openSettings = '설정 열기';
-    const labels = result.missing.map((key) => contractFieldLabels[key]).join(', ');
-    const choice = await vscode.window.showWarningMessage(
+    const openSettings: string = '설정 열기';
+    const labels: string = result.missing.map((key) => contractFieldLabels[key]).join(', ');
+    const choice: string | undefined = await vscode.window.showWarningMessage(
       `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
       openSettings,
     );

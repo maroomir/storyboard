@@ -11,7 +11,15 @@ import {
   parseDraft,
   readSceneFile,
 } from '@storyboard/story-model';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
+import type {
+  BackgroundCard,
+  CharacterCard,
+  SceneContext,
+  SceneContextWorkspacePaths,
+  SceneFile,
+  SceneFileNameParts,
+  StoryUri,
+} from '@storyboard/story-model';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,
@@ -22,12 +30,12 @@ import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 import type { InlineCompletionContext } from '@storyboard/story-ai';
 import { parseDraftSceneParts } from '@/infrastructure/vscode/draftSceneLink';
 
-const inlineCompletionDelayMs = 700;
-const inlineCompletionPrefixChars = 1200;
-const inlineCompletionCacheLimit = 100;
-const inlineSceneContextTtlMs = 60_000;
-const inlineSceneIntentChars = 300;
-const inlineMaxActiveCharacters = 3;
+const inlineCompletionDelayMs: number = 700;
+const inlineCompletionPrefixChars: number = 1200;
+const inlineCompletionCacheLimit: number = 100;
+const inlineSceneContextTtlMs: number = 60_000;
+const inlineSceneIntentChars: number = 300;
+const inlineMaxActiveCharacters: number = 3;
 
 export interface RegisterInlineCompletionProviderDependencies {
   readonly aiGateway: AiGateway;
@@ -57,8 +65,8 @@ export function formatInlineSceneContext(
 }
 
 function formatActiveCharacters(characters: readonly CharacterCard[]): string | undefined {
-  const labels = characters.slice(0, inlineMaxActiveCharacters).map((character) => {
-    const voice = character.voice?.[0]?.trim();
+  const labels: string[] = characters.slice(0, inlineMaxActiveCharacters).map((character) => {
+    const voice: string | undefined = character.voice?.[0]?.trim();
     return voice ? `${character.name}(${voice})` : character.name;
   });
 
@@ -70,12 +78,12 @@ function formatSceneBackground(background: BackgroundCard | undefined): string |
     return undefined;
   }
 
-  const description = background.description[0]?.trim();
+  const description: string | undefined = background.description[0]?.trim();
   return description ? `${background.name} — ${description}` : background.name;
 }
 
 function formatSceneIntent(sceneBody: string): string | undefined {
-  const trimmed = sceneBody.trim();
+  const trimmed: string = sceneBody.trim();
   if (trimmed.length === 0) {
     return undefined;
   }
@@ -106,7 +114,8 @@ async function resolveStoryboardWorkspaceFolder(
     return undefined;
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(documentUri);
   if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
     return undefined;
   }
@@ -127,11 +136,13 @@ export function pruneInlineCompletionCache(cache: Map<string, InlineCompletionCa
     return;
   }
 
-  const sorted = [...cache.entries()].sort((a, b) => a[1].updatedAt - b[1].updatedAt);
-  const removeCount = cache.size - inlineCompletionCacheLimit;
+  const sorted: [string, InlineCompletionCacheValue][] = [...cache.entries()].sort(
+    (a, b) => a[1].updatedAt - b[1].updatedAt,
+  );
+  const removeCount: number = cache.size - inlineCompletionCacheLimit;
 
-  for (let index = 0; index < removeCount; index += 1) {
-    const key = sorted[index]?.[0];
+  for (let index: number = 0; index < removeCount; index += 1) {
+    const key: string | undefined = sorted[index]?.[0];
     if (key) {
       cache.delete(key);
     }
@@ -139,8 +150,14 @@ export function pruneInlineCompletionCache(cache: Map<string, InlineCompletionCa
 }
 
 class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
-  private readonly cache = new Map<string, InlineCompletionCacheValue>();
-  private readonly sceneContextCache = new Map<string, CachedSceneContext>();
+  private readonly cache: Map<string, InlineCompletionCacheValue> = new Map<
+    string,
+    InlineCompletionCacheValue
+  >();
+  private readonly sceneContextCache: Map<string, CachedSceneContext> = new Map<
+    string,
+    CachedSceneContext
+  >();
 
   public constructor(private readonly dependencies: RegisterInlineCompletionProviderDependencies) {}
 
@@ -159,12 +176,12 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     workspaceFolder: vscode.WorkspaceFolder,
     sceneStem: string,
   ): Promise<InlineCompletionContext> {
-    const cached = this.sceneContextCache.get(sceneStem);
+    const cached: CachedSceneContext | undefined = this.sceneContextCache.get(sceneStem);
     if (cached && Date.now() - cached.cachedAt < inlineSceneContextTtlMs) {
       return cached.context;
     }
 
-    const context = await this.readSceneContext(document, workspaceFolder);
+    const context: InlineCompletionContext = await this.readSceneContext(document, workspaceFolder);
     this.sceneContextCache.set(sceneStem, { context, cachedAt: Date.now() });
     return context;
   }
@@ -173,18 +190,24 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     document: vscode.TextDocument,
     workspaceFolder: vscode.WorkspaceFolder,
   ): Promise<InlineCompletionContext> {
-    const parts = parseDraftSceneParts(document.getText());
+    const parts: SceneFileNameParts | undefined = parseDraftSceneParts(document.getText());
     if (!parts) {
       return {};
     }
 
     try {
-      const sceneUri = sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug);
-      const fileName = sceneUri.path.split('/').pop() ?? '';
-      const scene = await readSceneFile(sceneUri, vscodeFsAdapter, fileName);
+      const sceneUri: StoryUri = sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug);
+      const fileName: string = sceneUri.path.split('/').pop() ?? '';
+      const scene: SceneFile = await readSceneFile(sceneUri, vscodeFsAdapter, fileName);
 
-      const paths = sceneContextPaths(getStoryboardProjectPaths(workspaceFolder.uri));
-      const sceneContext = await buildSceneContext(paths, scene, sceneContextFileSystem);
+      const paths: SceneContextWorkspacePaths = sceneContextPaths(
+        getStoryboardProjectPaths(workspaceFolder.uri),
+      );
+      const sceneContext: SceneContext = await buildSceneContext(
+        paths,
+        scene,
+        sceneContextFileSystem,
+      );
 
       return formatInlineSceneContext(sceneContext.characters, sceneContext.background, scene.body);
     } catch {
@@ -198,7 +221,8 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     _context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken,
   ): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined> {
-    const workspaceFolder = await resolveStoryboardWorkspaceFolder(document.uri);
+    const workspaceFolder: vscode.WorkspaceFolder | undefined =
+      await resolveStoryboardWorkspaceFolder(document.uri);
     if (!workspaceFolder) {
       return undefined;
     }
@@ -206,14 +230,16 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
       return undefined;
     }
 
-    const fullPrefix = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
-    const prefix = trimInlineCompletionPrefix(fullPrefix).trim();
+    const fullPrefix: string = document.getText(
+      new vscode.Range(new vscode.Position(0, 0), position),
+    );
+    const prefix: string = trimInlineCompletionPrefix(fullPrefix).trim();
     if (prefix.length === 0) {
       return undefined;
     }
 
-    const cacheKey = createInlineCompletionCacheKey(document, position, prefix);
-    const cached = this.cache.get(cacheKey);
+    const cacheKey: string = createInlineCompletionCacheKey(document, position, prefix);
+    const cached: InlineCompletionCacheValue | undefined = this.cache.get(cacheKey);
     if (cached) {
       return [new vscode.InlineCompletionItem(cached.value, new vscode.Range(position, position))];
     }
@@ -223,20 +249,24 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
       return undefined;
     }
 
-    let sceneStem = 'unknown-scene';
+    let sceneStem: string = 'unknown-scene';
     try {
       sceneStem = parseDraft(document.getText()).sceneStem;
     } catch {
-      const fileName = document.uri.path.split('/').pop() ?? '';
+      const fileName: string = document.uri.path.split('/').pop() ?? '';
       sceneStem = fileName.replace(/\.md$/i, '');
     }
 
-    const sceneContext = await this.loadSceneContext(document, workspaceFolder, sceneStem);
+    const sceneContext: InlineCompletionContext = await this.loadSceneContext(
+      document,
+      workspaceFolder,
+      sceneStem,
+    );
     if (token.isCancellationRequested) {
       return undefined;
     }
 
-    const completion = await this.dependencies.aiGateway
+    const completion: string = await this.dependencies.aiGateway
       .createService(workspaceFolder.uri)
       .completeInline(prefix, sceneContext, {
         providerId: this.dependencies.aiGateway.getTaskProvider('inlineCompletion'),

@@ -1,3 +1,4 @@
+import type { DisposableHandle } from '@storyboard/story-model';
 import { ZodError } from 'zod';
 
 import {
@@ -12,9 +13,9 @@ import {
 
 export interface StoryboardWebviewLike {
   readonly postMessage: (message: unknown) => PromiseLike<boolean>;
-  readonly onDidReceiveMessage: (listener: (message: unknown) => void | PromiseLike<void>) => {
-    readonly dispose: () => void;
-  };
+  readonly onDidReceiveMessage: (
+    listener: (message: unknown) => void | PromiseLike<void>,
+  ) => DisposableHandle;
 }
 
 export type StoryboardRpcHandlers = {
@@ -32,7 +33,7 @@ export function createWebviewBridge(
   webview: StoryboardWebviewLike,
   handlers: StoryboardRpcHandlers,
 ): StoryboardWebviewBridge {
-  const disposable = webview.onDidReceiveMessage((message) =>
+  const disposable: DisposableHandle = webview.onDidReceiveMessage((message) =>
     handleIncomingMessage(webview, handlers, message),
   );
 
@@ -55,7 +56,7 @@ async function handleIncomingMessage(
     return;
   }
 
-  const handler = handlers[request.method];
+  const handler: StoryboardRpcHandlers[StoryboardRequestMethod] = handlers[request.method];
 
   if (!handler) {
     await webview.postMessage(
@@ -68,7 +69,10 @@ async function handleIncomingMessage(
   }
 
   try {
-    const payload = await invokeHandler(handler, request);
+    const payload: StoryboardResponsePayload<StoryboardRequestMethod> = await invokeHandler(
+      handler,
+      request,
+    );
     await webview.postMessage(createStoryboardSuccessResponse(request, payload));
   } catch (error) {
     await webview.postMessage(createStoryboardErrorResponse(request, toMessageError(error)));

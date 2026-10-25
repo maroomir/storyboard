@@ -1,3 +1,4 @@
+import type * as vscode from 'vscode';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type {
@@ -7,6 +8,7 @@ import type {
   ProjectSetting,
   StoryboardProject,
   StoryUri,
+  StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import {
   contractFieldKeys,
@@ -38,12 +40,12 @@ export function createContractRpcHandlers(): StoryboardRpcHandlers {
 }
 
 async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
-  const root = await resolveStoryboardWorkspaceRoot();
+  const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
   if (!root) {
     return notAProjectSnapshot();
   }
 
-  const project = await readProjectJson(
+  const project: StoryboardProject = await readProjectJson(
     vscodeFileSystem,
     getStoryboardProjectPaths(root).projectJson,
   );
@@ -54,7 +56,10 @@ async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
 async function readNarratorSummaries(
   root: StoryUri,
 ): Promise<{ id: string; name: string; summary: string }[]> {
-  const narrators = await loadNarratorCards(getStoryboardProjectPaths(root), vscodeFileSystem);
+  const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
+    getStoryboardProjectPaths(root),
+    vscodeFileSystem,
+  );
 
   return [...narrators.values()].map((card) => ({
     id: card.id,
@@ -71,14 +76,14 @@ async function readNarratorSummaries(
 async function updateContract(
   payload: StoryboardRequestPayload<'project.updateContract'>,
 ): Promise<ProjectContractSnapshot> {
-  const root = await resolveStoryboardWorkspaceRoot();
+  const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
   if (!root) {
     return notAProjectSnapshot();
   }
 
-  const paths = getStoryboardProjectPaths(root);
-  const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
-  const preset =
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
+  const project: StoryboardProject = await readProjectJson(vscodeFileSystem, paths.projectJson);
+  const preset: CompositionPreset | undefined =
     payload.composition == null
       ? undefined
       : buildCompositionPreset({
@@ -112,7 +117,7 @@ async function writePresetNarrators(
   await vscodeFileSystem.createDirectory(narratorDirectory);
 
   for (const card of cards) {
-    const uri = joinStoryPath(narratorDirectory, `${card.id}.card`);
+    const uri: StoryUri = joinStoryPath(narratorDirectory, `${card.id}.card`);
 
     if (!(await vscodeFileSystem.exists(uri))) {
       await vscodeFileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
@@ -187,7 +192,7 @@ function mergeContractSetting(
 }
 
 function normalizeText(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
+  const trimmed: string | undefined = value?.trim();
   return trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
 }
 

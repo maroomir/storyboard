@@ -59,6 +59,7 @@ export * from './paths/sceneContextPaths';
 export * from './paths/storyUri';
 export * from './shared/cardCandidates';
 export * from './shared/cardCollect';
+export * from './shared/disposableHandle';
 export * from './shared/jsonRepair';
 export * from './shared/noteAbsorb';
 export * from './shared/novelRun';

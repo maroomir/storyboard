@@ -1,3 +1,4 @@
+import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 import type {
   CardEditorInitialData,
   SceneListItem,
@@ -19,6 +20,7 @@ import type {
   StudioStageCard,
   StudioTarget,
   UsageAmount,
+  UsageCacheAmount,
   UsageSummaryByEntity,
 } from './types';
 
@@ -81,7 +83,7 @@ export function parseStudioTarget(value: unknown): StudioTarget {
     return noneStudioTarget;
   }
 
-  const candidate = value as Partial<StudioTarget>;
+  const candidate: Partial<StudioTarget> = value as Partial<StudioTarget>;
 
   if (!isStudioTargetKind(candidate.kind)) {
     return noneStudioTarget;
@@ -115,8 +117,8 @@ function parseStudioEntity(value: unknown): StudioEntity | undefined {
     return undefined;
   }
 
-  const candidate = value as Partial<StudioEntity>;
-  const kind = candidate.kind;
+  const candidate: Partial<StudioEntity> = value as Partial<StudioEntity>;
+  const kind: 'character' | 'background' | 'scene' | 'project' | undefined = candidate.kind;
 
   if (kind !== 'character' && kind !== 'background' && kind !== 'scene' && kind !== 'project') {
     return undefined;
@@ -128,8 +130,10 @@ function parseStudioEntity(value: unknown): StudioEntity | undefined {
 }
 
 export function parseStudioInitialData(value: unknown): StudioInitialData {
-  const candidate = (value && typeof value === 'object' ? value : {}) as Partial<StudioInitialData>;
-  const title = typeof candidate.title === 'string' ? candidate.title : 'Studio';
+  const candidate: Partial<StudioInitialData> = (
+    value && typeof value === 'object' ? value : {}
+  ) as Partial<StudioInitialData>;
+  const title: string = typeof candidate.title === 'string' ? candidate.title : 'Studio';
 
   return {
     title,
@@ -143,8 +147,8 @@ function parseStudioSessionSnapshot(value: unknown): StudioSessionSnapshot | und
     return undefined;
   }
 
-  const candidate = value as Partial<StudioSessionSnapshot>;
-  const entity = parseStudioEntity(candidate.entity);
+  const candidate: Partial<StudioSessionSnapshot> = value as Partial<StudioSessionSnapshot>;
+  const entity: StudioEntity | undefined = parseStudioEntity(candidate.entity);
 
   if (
     typeof candidate.id !== 'string' ||
@@ -171,7 +175,7 @@ export function parseSessionListPayload(payload: unknown): readonly StudioSessio
     return [];
   }
 
-  const sessions = (payload as { sessions?: unknown }).sessions;
+  const sessions: unknown = (payload as { sessions?: unknown }).sessions;
   if (!Array.isArray(sessions)) {
     return [];
   }
@@ -184,18 +188,18 @@ export function parseStagePayload(payload: unknown): StudioStage | undefined {
     return undefined;
   }
 
-  const stage = (payload as { stage?: unknown }).stage;
+  const stage: unknown = (payload as { stage?: unknown }).stage;
   if (!stage || typeof stage !== 'object') {
     return undefined;
   }
 
-  const kind = (stage as { kind?: unknown }).kind;
+  const kind: unknown = (stage as { kind?: unknown }).kind;
 
   if (kind === 'card') {
     return parseCardStage(stage as Partial<StudioCardStage>);
   }
 
-  const candidate = stage as Partial<StudioSceneStage>;
+  const candidate: Partial<StudioSceneStage> = stage as Partial<StudioSceneStage>;
   if (typeof candidate.sceneStem !== 'string' || candidate.sceneStem.length === 0) {
     return undefined;
   }
@@ -215,7 +219,7 @@ export function parseStagePayload(payload: unknown): StudioStage | undefined {
 }
 
 function parseCardStage(candidate: Partial<StudioCardStage>): StudioCardStage | undefined {
-  const cardKind = candidate.cardKind;
+  const cardKind: 'character' | 'background' | undefined = candidate.cardKind;
 
   if (cardKind !== 'character' && cardKind !== 'background') {
     return undefined;
@@ -245,7 +249,7 @@ function isStudioCardStageRelation(value: unknown): value is StudioCardStageRela
     return false;
   }
 
-  const candidate = value as Partial<StudioCardStageRelation>;
+  const candidate: Partial<StudioCardStageRelation> = value as Partial<StudioCardStageRelation>;
   return typeof candidate.target === 'string' && typeof candidate.type === 'string';
 }
 
@@ -258,7 +262,7 @@ function isStudioStageCard(value: unknown): value is StudioStageCard {
     return false;
   }
 
-  const candidate = value as Partial<StudioStageCard>;
+  const candidate: Partial<StudioStageCard> = value as Partial<StudioStageCard>;
   return (
     (candidate.kind === 'character' || candidate.kind === 'background') &&
     typeof candidate.name === 'string' &&
@@ -279,7 +283,7 @@ function isStudioSessionSummary(value: unknown): value is StudioSessionSummary {
     return false;
   }
 
-  const candidate = value as Partial<StudioSessionSummary>;
+  const candidate: Partial<StudioSessionSummary> = value as Partial<StudioSessionSummary>;
   return (
     typeof candidate.id === 'string' &&
     typeof candidate.title === 'string' &&
@@ -294,7 +298,7 @@ export function parseChatSendPayload(payload: unknown): readonly StudioChatTurn[
     return [];
   }
 
-  const turns = (payload as { turns?: unknown }).turns;
+  const turns: unknown = (payload as { turns?: unknown }).turns;
 
   return Array.isArray(turns) ? (turns as readonly StudioChatTurn[]) : [];
 }
@@ -303,12 +307,10 @@ export function parseProposalApplyPayload(payload: unknown): {
   readonly status: 'applied' | 'failed';
   readonly message: string;
 } {
-  const candidate = (payload && typeof payload === 'object' ? payload : {}) as {
-    status?: unknown;
-    message?: unknown;
-  };
+  const candidate: PayloadFields = readPayloadFields(payload);
 
-  const message = typeof candidate.message === 'string' ? candidate.message : '적용하지 못했습니다';
+  const message: string =
+    typeof candidate.message === 'string' ? candidate.message : '적용하지 못했습니다';
 
   return candidate.status === 'applied'
     ? { status: 'applied', message }
@@ -320,7 +322,7 @@ export function parsePendingFollowUpsPayload(payload: unknown): readonly StudioP
     return [];
   }
 
-  const followUps = (payload as { followUps?: unknown }).followUps;
+  const followUps: unknown = (payload as { followUps?: unknown }).followUps;
 
   return Array.isArray(followUps)
     ? (followUps as readonly StudioPendingFollowUp[]).filter(isPendingFollowUp)
@@ -332,7 +334,7 @@ function isPendingFollowUp(value: unknown): value is StudioPendingFollowUp {
     return false;
   }
 
-  const candidate = value as Partial<StudioPendingFollowUp>;
+  const candidate: Partial<StudioPendingFollowUp> = value as Partial<StudioPendingFollowUp>;
 
   return (
     typeof candidate.id === 'string' &&
@@ -343,10 +345,7 @@ function isPendingFollowUp(value: unknown): value is StudioPendingFollowUp {
 }
 
 export function parsePreviewFailure(payload: unknown): string | undefined {
-  const candidate = (payload && typeof payload === 'object' ? payload : {}) as {
-    shown?: unknown;
-    message?: unknown;
-  };
+  const candidate: PayloadFields = readPayloadFields(payload);
 
   if (candidate.shown !== false) {
     return undefined;
@@ -358,7 +357,7 @@ export function parsePreviewFailure(payload: unknown): string | undefined {
 }
 
 export function parseProgressPayload(payload: unknown): StudioChatStage {
-  const stage = (payload && typeof payload === 'object' ? payload : {}) as { stage?: unknown };
+  const stage: PayloadFields = readPayloadFields(payload);
 
   return stage.stage === 'thinking' ||
     stage.stage === 'looking-up' ||
@@ -373,7 +372,7 @@ function isCardEditorInitialData(value: unknown): value is CardEditorInitialData
     return false;
   }
 
-  const candidate = value as Partial<CardEditorInitialData>;
+  const candidate: Partial<CardEditorInitialData> = value as Partial<CardEditorInitialData>;
   return typeof candidate.documentUri === 'string' && typeof candidate.rawText === 'string';
 }
 
@@ -382,7 +381,7 @@ export function parseUsageChangedPayload(payload: unknown): UsageSummaryByEntity
 }
 
 export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
-  const cache =
+  const cache: UsageCacheAmount | undefined =
     base.cache === undefined || delta.cache === undefined
       ? (base.cache ?? delta.cache)
       : {
@@ -415,14 +414,14 @@ function normalizeUsageAmount(value: unknown): UsageAmount | undefined {
     return undefined;
   }
 
-  const amount = value as Partial<UsageAmount>;
+  const amount: Partial<UsageAmount> = value as Partial<UsageAmount>;
 
   if (!Number.isFinite(amount.costUsd) || !Number.isFinite(amount.tokens)) {
     return undefined;
   }
 
-  const cache = amount.cache;
-  const hasCache =
+  const cache: UsageCacheAmount | undefined = amount.cache;
+  const hasCache: boolean =
     cache !== undefined &&
     Number.isFinite(cache.promptTokens) &&
     Number.isFinite(cache.cachedTokens) &&
@@ -432,7 +431,7 @@ function normalizeUsageAmount(value: unknown): UsageAmount | undefined {
     costUsd: amount.costUsd as number,
     tokens: amount.tokens as number,
     hasUnpricedUsage: amount.hasUnpricedUsage === true,
-    ...(hasCache
+    ...(hasCache && cache !== undefined
       ? {
           cache: {
             promptTokens: cache.promptTokens,
@@ -452,7 +451,7 @@ function normalizeUsageMap(value: unknown): Readonly<Record<string, UsageAmount>
   const normalized: Record<string, UsageAmount> = {};
 
   for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
-    const amount = normalizeUsageAmount(raw);
+    const amount: UsageAmount | undefined = normalizeUsageAmount(raw);
 
     if (amount) {
       normalized[key] = amount;
@@ -467,7 +466,7 @@ function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
     return emptyUsageSummary;
   }
 
-  const summary = value as Partial<UsageSummaryByEntity>;
+  const summary: Partial<UsageSummaryByEntity> = value as Partial<UsageSummaryByEntity>;
 
   return {
     scenes: normalizeUsageMap(summary.scenes),
@@ -482,7 +481,7 @@ function isSidebarCardsInitialData(value: unknown): value is SidebarCardsInitial
     return false;
   }
 
-  const candidate = value as Partial<SidebarCardsInitialData>;
+  const candidate: Partial<SidebarCardsInitialData> = value as Partial<SidebarCardsInitialData>;
   return (
     isSidebarCardCategory(candidate.type) &&
     typeof candidate.title === 'string' &&
@@ -496,7 +495,7 @@ function isSidebarScenesInitialData(value: unknown): value is SidebarScenesIniti
     return false;
   }
 
-  const candidate = value as Partial<SidebarScenesInitialData>;
+  const candidate: Partial<SidebarScenesInitialData> = value as Partial<SidebarScenesInitialData>;
   return (
     typeof candidate.title === 'string' &&
     Array.isArray(candidate.scenes) &&
@@ -510,7 +509,7 @@ function isSceneListItem(value: unknown): value is SceneListItem {
     return false;
   }
 
-  const s = value as Partial<SceneListItem>;
+  const s: Partial<SceneListItem> = value as Partial<SceneListItem>;
   return (
     typeof s.stem === 'string' &&
     typeof s.order === 'number' &&

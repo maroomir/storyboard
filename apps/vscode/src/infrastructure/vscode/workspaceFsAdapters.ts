@@ -1,16 +1,21 @@
-import type { StoryUri, SceneContextWorkspaceFileSystem } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  SceneContextWorkspaceFileSystem,
+  CardFileSystem,
+  DraftHistoryFileSystem,
+} from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import { writeFileAtomically } from './atomicWrite';
 
-export const vscodeFsAdapter = {
+export const vscodeFsAdapter: CardFileSystem = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
     vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri: StoryUri, content: Uint8Array): PromiseLike<void> =>
     writeFileAtomically(uri, content),
 };
 
-export const draftHistoryFileSystem = {
+export const draftHistoryFileSystem: DraftHistoryFileSystem = {
   readFile: vscodeFsAdapter.readFile,
   writeFile: vscodeFsAdapter.writeFile,
   createDirectory: (uri: StoryUri): PromiseLike<void> =>
@@ -24,7 +29,9 @@ export const draftHistoryFileSystem = {
     }
   },
   listFileNames: async (uri: StoryUri): Promise<string[]> => {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri);
+    const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
+      uri as vscode.Uri,
+    );
     return entries.filter(([, type]) => type === vscode.FileType.File).map(([name]) => name);
   },
 };
@@ -33,7 +40,9 @@ export const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
   readFile: vscodeFsAdapter.readFile,
   writeFile: vscodeFsAdapter.writeFile,
   readDirectory: async (uri: StoryUri): Promise<[string, { type: 'file' | 'directory' }][]> => {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri);
+    const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
+      uri as vscode.Uri,
+    );
     return entries.map(([name, fileType]) => [
       name,
       { type: fileType === vscode.FileType.Directory ? ('directory' as const) : ('file' as const) },

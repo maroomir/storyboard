@@ -15,26 +15,31 @@ import {
 import { ListField } from '../editor/fields/ListField';
 import { SectionHeader } from '../ui/SectionHeader';
 
-const sbInputClass =
+const sbInputClass: string =
   'w-full rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-3 py-2 text-sb-fg-input outline-none transition focus:border-sb-border-focus focus:ring-1 focus:ring-sb-border-focus/40';
 
-const sbSelectClass = `${sbInputClass} max-w-md`;
+const sbSelectClass: string = `${sbInputClass} max-w-md`;
 
-const sectionCardClass =
+const sectionCardClass: string =
   'flex flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar/80 p-4';
 
-const fieldGroupClass = 'flex max-w-md flex-col gap-1.5';
+const fieldGroupClass: string = 'flex max-w-md flex-col gap-1.5';
 
 function contractFieldLabelFor(key: string): string {
   return contractFieldLabels[key as ContractFieldKey] ?? key;
 }
 
-const POV_OPTIONS = pointOfViews.map((id) => ({
+interface ContractOption<Id extends string> {
+  readonly id: Id;
+  readonly label: string;
+}
+
+const POV_OPTIONS: ContractOption<PointOfView>[] = pointOfViews.map((id) => ({
   id,
   label: pointOfViewCatalog[id].optionLabel,
 }));
 
-const COMPOSITION_OPTIONS = compositionKinds.map((id) => ({
+const COMPOSITION_OPTIONS: ContractOption<CompositionKind>[] = compositionKinds.map((id) => ({
   id,
   label: compositionCatalog[id].optionLabel,
 }));
@@ -103,12 +108,14 @@ function parseContractSnapshot(value: unknown): ContractSnapshot | undefined {
     return undefined;
   }
 
-  const candidate = value as Record<string, unknown>;
+  const candidate: Record<string, unknown> = value as Record<string, unknown>;
   if (typeof candidate.isStoryboardProject !== 'boolean') {
     return undefined;
   }
 
-  const readiness = candidate.readiness as Record<string, unknown> | undefined;
+  const readiness: Record<string, unknown> | undefined = candidate.readiness as
+    | Record<string, unknown>
+    | undefined;
   if (
     !readiness ||
     typeof readiness.isReady !== 'boolean' ||
@@ -137,13 +144,13 @@ function toDraft(setting: ContractSetting | undefined): ContractDraft {
 }
 
 function buildUpdatePayload(draft: ContractDraft): Record<string, unknown> {
-  const targetWordCount = parsePositiveInt(draft.targetWordCount);
+  const targetWordCount: number | null = parsePositiveInt(draft.targetWordCount);
 
-  const povCharacters = draft.povCharacters
+  const povCharacters: string[] = draft.povCharacters
     .split(',')
     .map((id) => id.trim())
     .filter((id) => id.length > 0);
-  const episodeCount = parsePositiveInt(draft.episodeCount);
+  const episodeCount: number | null = parsePositiveInt(draft.episodeCount);
 
   return {
     genre: draft.genre,
@@ -160,12 +167,12 @@ function buildUpdatePayload(draft: ContractDraft): Record<string, unknown> {
 }
 
 function parsePositiveInt(value: string): number | null {
-  const trimmed = value.trim();
+  const trimmed: string = value.trim();
   if (trimmed.length === 0) {
     return null;
   }
 
-  const parsed = Number(trimmed);
+  const parsed: number = Number(trimmed);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
@@ -244,7 +251,7 @@ export function GenerationContractSection({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true;
+    let active: boolean = true;
 
     void callRpc('project.readContract', {})
       .then((payload) => {
@@ -252,7 +259,7 @@ export function GenerationContractSection({
           return;
         }
 
-        const next = parseContractSnapshot(payload);
+        const next: ContractSnapshot | undefined = parseContractSnapshot(payload);
         if (!next) {
           setLoadError('작품 계약을 불러오지 못했습니다.');
           return;
@@ -268,7 +275,7 @@ export function GenerationContractSection({
         }
       });
 
-    return () => {
+    return (): void => {
       active = false;
     };
   }, [callRpc]);
@@ -277,7 +284,7 @@ export function GenerationContractSection({
     setDraft(nextDraft);
     void callRpc('project.updateContract', buildUpdatePayload(nextDraft))
       .then((payload) => {
-        const next = parseContractSnapshot(payload);
+        const next: ContractSnapshot | undefined = parseContractSnapshot(payload);
         if (next) {
           setSnapshot(next);
         }
@@ -287,7 +294,7 @@ export function GenerationContractSection({
       });
   };
 
-  const header = useMemo(
+  const header: React.JSX.Element = useMemo(
     () => (
       <SectionHeader
         title="작품 계약"
@@ -360,7 +367,7 @@ export function GenerationContractSection({
             className={sbSelectClass}
             value={draft.pov}
             onChange={(event) => {
-              const value = event.target.value;
+              const value: string = event.target.value;
               save({ ...draft, pov: value === '' || !isPointOfView(value) ? '' : value });
             }}
           >
@@ -379,7 +386,7 @@ export function GenerationContractSection({
             className={sbSelectClass}
             value={draft.composition}
             onChange={(event) => {
-              const value = event.target.value;
+              const value: string = event.target.value;
               save({
                 ...draft,
                 composition: value === '' || !isCompositionKind(value) ? '' : value,

@@ -6,8 +6,10 @@ import * as vscode from 'vscode';
 // 누락된다(경고 로그만 남는다). 임시 파일에 쓴 뒤 바꿔치기해 파일이 옛 내용이거나 새 내용이거나
 // 둘 중 하나만 되게 한다. CLI의 NodeFileSystem도 같은 규칙이다.
 export async function writeFileAtomically(uri: StoryUri, content: Uint8Array): Promise<void> {
-  const target = uri as vscode.Uri;
-  const temporary = target.with({ path: `${target.path}.tmp-${Date.now().toString(36)}` });
+  const target: vscode.Uri = uri as vscode.Uri;
+  const temporary: vscode.Uri = target.with({
+    path: `${target.path}.tmp-${Date.now().toString(36)}`,
+  });
 
   try {
     await vscode.workspace.fs.writeFile(temporary, content);

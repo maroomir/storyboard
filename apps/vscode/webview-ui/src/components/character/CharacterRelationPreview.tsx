@@ -4,22 +4,23 @@ import type React from 'react';
 import {
   buildCharacterRosterLookup,
   resolveCharacterDisplayName,
+  type CharacterDisplayName,
 } from '@webview/lib/characterRosterLookup';
 import type { CharacterRelation, CharacterRole, CharacterRosterEntry } from '@webview/lib/types';
 
-const VIEW_WIDTH = 420;
-const VIEW_HEIGHT = 280;
-const CENTER_X = VIEW_WIDTH / 2;
-const CENTER_Y = VIEW_HEIGHT / 2;
-const ORBIT_RADIUS = 96;
+const VIEW_WIDTH: number = 420;
+const VIEW_HEIGHT: number = 280;
+const CENTER_X: number = VIEW_WIDTH / 2;
+const CENTER_Y: number = VIEW_HEIGHT / 2;
+const ORBIT_RADIUS: number = 96;
 
-const CENTER_NODE_W = 108;
-const CENTER_NODE_H = 54;
-const TARGET_NODE_W = 92;
-const TARGET_NODE_H = 44;
+const CENTER_NODE_W: number = 108;
+const CENTER_NODE_H: number = 54;
+const TARGET_NODE_W: number = 92;
+const TARGET_NODE_H: number = 44;
 
-const EDGE_GRADIENT_START = '#d97706';
-const EDGE_GRADIENT_END = '#0d9488';
+const EDGE_GRADIENT_START: string = '#d97706';
+const EDGE_GRADIENT_END: string = '#0d9488';
 
 const roleAccent: Record<
   CharacterRole,
@@ -46,6 +47,13 @@ function shortenLabel(value: string, maxLength: number): string {
   return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
 }
 
+interface LineSegment {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+}
+
 function shortenLineSegment(
   x1: number,
   y1: number,
@@ -53,19 +61,17 @@ function shortenLineSegment(
   y2: number,
   insetStart: number,
   insetEnd: number,
-):
-  | { readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number }
-  | undefined {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.hypot(dx, dy);
+): LineSegment | undefined {
+  const dx: number = x2 - x1;
+  const dy: number = y2 - y1;
+  const length: number = Math.hypot(dx, dy);
 
   if (length < insetStart + insetEnd + 4) {
     return undefined;
   }
 
-  const ux = dx / length;
-  const uy = dy / length;
+  const ux: number = dx / length;
+  const uy: number = dy / length;
 
   return {
     x1: x1 + ux * insetStart,
@@ -75,14 +81,20 @@ function shortenLineSegment(
   };
 }
 
-function relationNodeStyle(
-  role: CharacterRole | undefined,
-  isCenter: boolean,
-): {
+interface RelationNodeStyle {
   readonly stroke: string;
   readonly fill: string;
   readonly glow?: string;
-} {
+}
+
+interface RelationTarget {
+  readonly relation: CharacterRelation;
+  readonly resolved: CharacterDisplayName;
+  readonly x: number;
+  readonly y: number;
+}
+
+function relationNodeStyle(role: CharacterRole | undefined, isCenter: boolean): RelationNodeStyle {
   if (role) {
     return roleAccent[role];
   }
@@ -112,9 +124,9 @@ function RelationNode({
   readonly role?: CharacterRole;
   readonly isCenter: boolean;
 }): React.ReactElement {
-  const halfW = width / 2;
-  const halfH = height / 2;
-  const style = relationNodeStyle(role, isCenter);
+  const halfW: number = width / 2;
+  const halfH: number = height / 2;
+  const style: RelationNodeStyle = relationNodeStyle(role, isCenter);
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -183,12 +195,12 @@ export function CharacterRelationPreview({
   readonly characterRoster?: readonly CharacterRosterEntry[];
   readonly relations: readonly CharacterRelation[];
 }): React.ReactElement {
-  const rosterLookup = useMemo(
+  const rosterLookup: ReadonlyMap<string, CharacterRosterEntry> = useMemo(
     () => buildCharacterRosterLookup(characterRoster),
     [characterRoster],
   );
 
-  const linkedRelations = relations.filter(
+  const linkedRelations: CharacterRelation[] = relations.filter(
     (relation) => relation.target.trim().length > 0 && relation.type.trim().length > 0,
   );
 
@@ -200,9 +212,12 @@ export function CharacterRelationPreview({
     );
   }
 
-  const targets = linkedRelations.map((relation, index) => {
-    const angle = (index / linkedRelations.length) * Math.PI * 2 - Math.PI / 2;
-    const resolved = resolveCharacterDisplayName(relation.target, rosterLookup);
+  const targets: RelationTarget[] = linkedRelations.map((relation, index): RelationTarget => {
+    const angle: number = (index / linkedRelations.length) * Math.PI * 2 - Math.PI / 2;
+    const resolved: CharacterDisplayName = resolveCharacterDisplayName(
+      relation.target,
+      rosterLookup,
+    );
 
     return {
       relation,
@@ -212,8 +227,8 @@ export function CharacterRelationPreview({
     };
   });
 
-  const centerInset = Math.max(CENTER_NODE_W, CENTER_NODE_H) * 0.42;
-  const targetInset = Math.max(TARGET_NODE_W, TARGET_NODE_H) * 0.42;
+  const centerInset: number = Math.max(CENTER_NODE_W, CENTER_NODE_H) * 0.42;
+  const targetInset: number = Math.max(TARGET_NODE_W, TARGET_NODE_H) * 0.42;
 
   return (
     <div className="flex flex-col gap-2">
@@ -244,7 +259,14 @@ export function CharacterRelationPreview({
             <path d="M 0 0 L 10 5 L 0 10 z" fill={EDGE_GRADIENT_END} opacity="0.9" />
           </marker>
           {targets.map(({ x, y }, index) => {
-            const segment = shortenLineSegment(CENTER_X, CENTER_Y, x, y, centerInset, targetInset);
+            const segment: LineSegment | undefined = shortenLineSegment(
+              CENTER_X,
+              CENTER_Y,
+              x,
+              y,
+              centerInset,
+              targetInset,
+            );
             if (segment == null) {
               return null;
             }
@@ -293,16 +315,23 @@ export function CharacterRelationPreview({
           opacity={0.35}
         />
 
-        {targets.map(({ relation, resolved, x, y }, index) => {
-          const segment = shortenLineSegment(CENTER_X, CENTER_Y, x, y, centerInset, targetInset);
+        {targets.map(({ relation, x, y }, index) => {
+          const segment: LineSegment | undefined = shortenLineSegment(
+            CENTER_X,
+            CENTER_Y,
+            x,
+            y,
+            centerInset,
+            targetInset,
+          );
           if (segment == null) {
             return null;
           }
 
-          const labelX = (segment.x1 + segment.x2) / 2;
-          const labelY = (segment.y1 + segment.y2) / 2;
-          const label = shortenLabel(relation.type, 10);
-          const labelWidth = Math.max(label.length * 7 + 14, 34);
+          const labelX: number = (segment.x1 + segment.x2) / 2;
+          const labelY: number = (segment.y1 + segment.y2) / 2;
+          const label: string = shortenLabel(relation.type, 10);
+          const labelWidth: number = Math.max(label.length * 7 + 14, 34);
 
           return (
             <g key={`relation-edge-${index}`}>
@@ -351,7 +380,7 @@ export function CharacterRelationPreview({
           isCenter
         />
 
-        {targets.map(({ relation, resolved, x, y }, index) => (
+        {targets.map(({ resolved, x, y }, index) => (
           <RelationNode
             key={`relation-node-${index}`}
             x={x}

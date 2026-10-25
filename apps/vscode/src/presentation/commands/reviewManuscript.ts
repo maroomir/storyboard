@@ -7,7 +7,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const reviewManuscriptCommand = 'storyboard.manuscript.review';
+const reviewManuscriptCommand: string = 'storyboard.manuscript.review';
 
 export interface RegisterReviewManuscriptCommandDependencies {
   readonly logger: IStoryboardLogger;
@@ -25,13 +25,13 @@ export function registerReviewManuscriptCommand(
 async function runReviewManuscript(
   dependencies: RegisterReviewManuscriptCommandDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
-  const result = await vscode.window.withProgress(
+  const result: ReviewManuscriptResult = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Storyboard 원고 최종 검사',
@@ -48,10 +48,10 @@ async function runReviewManuscript(
     return;
   }
 
-  const document = await vscode.workspace.openTextDocument(result.reportUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.reportUri);
   await vscode.window.showTextDocument(document);
 
-  const total = result.continuityCount + result.critiqueCount;
+  const total: number = result.continuityCount + result.critiqueCount;
   await vscode.window.showInformationMessage(
     total === 0
       ? '원고 최종 검사를 마쳤습니다. 발견된 이슈가 없습니다.'

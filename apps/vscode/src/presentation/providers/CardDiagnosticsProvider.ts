@@ -11,8 +11,11 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { createDiagnostic } from './diagnosticsShared';
 
-const cardSource = 'storyboard-card';
-const cardGlobs = [STORYBOARD_GLOBS.characterCards, STORYBOARD_GLOBS.backgroundCards] as const;
+const cardSource: string = 'storyboard-card';
+const cardGlobs: readonly string[] = [
+  STORYBOARD_GLOBS.characterCards,
+  STORYBOARD_GLOBS.backgroundCards,
+];
 
 export interface CardDiagnosticSpan {
   readonly line: number;
@@ -38,34 +41,37 @@ export function mapCardErrorToSpans(text: string, error: unknown): CardDiagnosti
     }
   }
 
-  const message = error instanceof Error ? error.message : String(error);
+  const message: string = error instanceof Error ? error.message : String(error);
   return [{ line: 0, start: 0, end: firstLineLength(text), message }];
 }
 
 function schemaIssueToSpan(text: string, issue: ZodIssue): CardDiagnosticSpan {
-  const message =
+  const message: string =
     issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message;
-  const key = [...issue.path]
+  const key: string | undefined = [...issue.path]
     .reverse()
     .find((segment): segment is string => typeof segment === 'string');
-  const position = key ? locateKey(text, key) : undefined;
+  const position: KeyLocation | undefined = key ? locateKey(text, key) : undefined;
 
   return position
     ? { ...position, message }
     : { line: 0, start: 0, end: firstLineLength(text), message };
 }
 
-function locateKey(
-  text: string,
-  key: string,
-): { readonly line: number; readonly start: number; readonly end: number } | undefined {
-  const keyPattern = new RegExp(`^(\\s*)${escapeRegExp(key)}:`);
-  const lines = text.split('\n');
+interface KeyLocation {
+  readonly line: number;
+  readonly start: number;
+  readonly end: number;
+}
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const match = keyPattern.exec(lines[index] ?? '');
+function locateKey(text: string, key: string): KeyLocation | undefined {
+  const keyPattern: RegExp = new RegExp(`^(\\s*)${escapeRegExp(key)}:`);
+  const lines: string[] = text.split('\n');
+
+  for (let index: number = 0; index < lines.length; index += 1) {
+    const match: RegExpExecArray | null = keyPattern.exec(lines[index] ?? '');
     if (match) {
-      const start = match[1]?.length ?? 0;
+      const start: number = match[1]?.length ?? 0;
       return { line: index, start, end: start + key.length };
     }
   }
@@ -73,16 +79,20 @@ function locateKey(
   return undefined;
 }
 
+interface YamlErrorMark {
+  readonly line?: number;
+}
+
 function yamlErrorToSpan(text: string, cause: unknown, message: string): CardDiagnosticSpan {
-  const mark = (cause as { mark?: { line?: number } } | undefined)?.mark;
-  const line = typeof mark?.line === 'number' && mark.line >= 0 ? mark.line : 0;
-  const lines = text.split('\n');
+  const mark: YamlErrorMark | undefined = (cause as { mark?: YamlErrorMark } | undefined)?.mark;
+  const line: number = typeof mark?.line === 'number' && mark.line >= 0 ? mark.line : 0;
+  const lines: string[] = text.split('\n');
 
   return { line, start: 0, end: (lines[line] ?? '').length, message };
 }
 
 function firstLineLength(text: string): number {
-  const newlineIndex = text.indexOf('\n');
+  const newlineIndex: number = text.indexOf('\n');
   return newlineIndex === -1 ? text.length : newlineIndex;
 }
 
@@ -91,12 +101,14 @@ function escapeRegExp(value: string): string {
 }
 
 function cardFileName(uri: vscode.Uri): string {
-  const segments = uri.path.split('/');
+  const segments: string[] = uri.path.split('/');
   return segments[segments.length - 1] ?? '';
 }
 
 function createRange(span: CardDiagnosticSpan): vscode.Range {
-  const RangeCtor = (vscode as unknown as { Range?: typeof vscode.Range }).Range;
+  const RangeCtor: typeof vscode.Range | undefined = (
+    vscode as unknown as { Range?: typeof vscode.Range }
+  ).Range;
   return RangeCtor
     ? new RangeCtor(span.line, span.start, span.line, span.end)
     : ({
@@ -106,7 +118,8 @@ function createRange(span: CardDiagnosticSpan): vscode.Range {
 }
 
 class CardDiagnosticsController {
-  private readonly collection = vscode.languages.createDiagnosticCollection(cardSource);
+  private readonly collection: vscode.DiagnosticCollection =
+    vscode.languages.createDiagnosticCollection(cardSource);
 
   public constructor(private readonly logger: IStoryboardLogger) {}
 
@@ -117,7 +130,7 @@ class CardDiagnosticsController {
 
     let text: string;
     try {
-      const bytes = await vscode.workspace.fs.readFile(uri);
+      const bytes: Uint8Array<ArrayBufferLike> = await vscode.workspace.fs.readFile(uri);
       text = new TextDecoder().decode(bytes);
     } catch (error) {
       this.logger.error('Card diagnostics read failed', error);
@@ -128,8 +141,9 @@ class CardDiagnosticsController {
       parseCard(text);
       this.collection.delete(uri);
     } catch (error) {
-      const severity = (vscode.DiagnosticSeverity?.Error ?? 0) as vscode.DiagnosticSeverity;
-      const diagnostics = mapCardErrorToSpans(text, error).map((span) =>
+      const severity: vscode.DiagnosticSeverity = (vscode.DiagnosticSeverity?.Error ??
+        0) as vscode.DiagnosticSeverity;
+      const diagnostics: vscode.Diagnostic[] = mapCardErrorToSpans(text, error).map((span) =>
         createDiagnostic(createRange(span), span.message, cardSource, severity),
       );
       this.collection.set(uri, diagnostics);
@@ -141,13 +155,15 @@ class CardDiagnosticsController {
   }
 
   public async scanWorkspace(): Promise<void> {
-    const root = await resolveStoryboardWorkspaceRoot();
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
     if (!root) {
       return;
     }
 
     for (const glob of cardGlobs) {
-      const uris = await vscode.workspace.findFiles(new vscode.RelativePattern(root, glob));
+      const uris: vscode.Uri[] = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(root, glob),
+      );
       for (const uri of uris) {
         await this.validateUri(uri);
       }
@@ -162,19 +178,19 @@ class CardDiagnosticsController {
 export function registerCardDiagnosticsProvider(
   dependencies: RegisterCardDiagnosticsProviderDependencies,
 ): vscode.Disposable {
-  const controller = new CardDiagnosticsController(dependencies.logger);
+  const controller: CardDiagnosticsController = new CardDiagnosticsController(dependencies.logger);
   const watchers: vscode.Disposable[] = [];
 
   void (async (): Promise<void> => {
     await controller.scanWorkspace();
 
-    const root = await resolveStoryboardWorkspaceRoot();
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
     if (!root) {
       return;
     }
 
     for (const glob of cardGlobs) {
-      const watcher = vscode.workspace.createFileSystemWatcher(
+      const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(root, glob),
       );
       watchers.push(

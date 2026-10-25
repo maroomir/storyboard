@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { RunGate } from '@storyboard/story-app';
+import type { RunGate, WorkspaceHoldResult } from '@storyboard/story-app';
 
 // Long generation writes drafts, cards and memory for minutes. The desktop app and the CLI take
 // the same lock, so two of them never rewrite one workspace at once.
@@ -10,7 +10,7 @@ export async function runHoldingWorkspaceLock(
   label: string,
   run: () => PromiseLike<void>,
 ): Promise<void> {
-  const held = await runGate.hold(workspaceRoot, label, async () => {
+  const held: WorkspaceHoldResult<void> = await runGate.hold(workspaceRoot, label, async () => {
     await run();
   });
 

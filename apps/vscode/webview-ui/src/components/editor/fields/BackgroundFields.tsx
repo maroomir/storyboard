@@ -24,7 +24,7 @@ export function BackgroundFields({
           className={sbInputClass}
           value={card.time ?? ''}
           onChange={(event) => {
-            const value = event.target.value;
+            const value: string = event.target.value;
             updateCard({ ...card, time: value === '' ? undefined : value });
           }}
         />
@@ -35,7 +35,7 @@ export function BackgroundFields({
           className={sbInputClass}
           value={card.weather ?? ''}
           onChange={(event) => {
-            const value = event.target.value;
+            const value: string = event.target.value;
             updateCard({ ...card, weather: value === '' ? undefined : value });
           }}
         />

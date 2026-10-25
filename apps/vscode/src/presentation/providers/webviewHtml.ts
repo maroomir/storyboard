@@ -8,10 +8,10 @@ export interface WebviewHtmlOptions {
 }
 
 export function createWebviewHtml(webview: vscode.Webview, options: WebviewHtmlOptions): string {
-  const nonce = createNonce();
-  const scriptUri = getWebviewAssetUri(webview, options.extensionUri, 'index.js');
-  const styleUri = getWebviewAssetUri(webview, options.extensionUri, 'index.css');
-  const initialDataScript =
+  const nonce: string = createNonce();
+  const scriptUri: vscode.Uri = getWebviewAssetUri(webview, options.extensionUri, 'index.js');
+  const styleUri: vscode.Uri = getWebviewAssetUri(webview, options.extensionUri, 'index.css');
+  const initialDataScript: string =
     options.initialData === undefined ? 'undefined' : JSON.stringify(options.initialData);
 
   return `<!DOCTYPE html>
@@ -49,11 +49,12 @@ function getWebviewAssetUri(
 }
 
 function createNonce(): string {
-  const possibleCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const nonceLength = 32;
-  let nonce = '';
+  const possibleCharacters: string =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const nonceLength: number = 32;
+  let nonce: string = '';
 
-  for (let index = 0; index < nonceLength; index += 1) {
+  for (let index: number = 0; index < nonceLength; index += 1) {
     nonce += possibleCharacters.charAt(Math.floor(Math.random() * possibleCharacters.length));
   }
 

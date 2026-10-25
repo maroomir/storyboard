@@ -5,8 +5,9 @@ import {
   type StoryboardSettingKind,
 } from '@storyboard/story-model/contracts';
 
-export const AI_PROVIDER_IDS = aiProviderIds;
+export const AI_PROVIDER_IDS: readonly AiProviderId[] = aiProviderIds;
 import { listSelectableProviderIds } from '@storyboard/story-model/contracts';
+import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 
 // NOTE: 호스트가 보낸 제공자 목록에 있는 것만 고를 수 있다. 호스트는 켜지 않은 숨은 제공자를
 // 목록에 넣지 않으므로, 웹뷰는 무엇이 숨어 있는지 따로 알 필요가 없다.
@@ -38,12 +39,12 @@ interface ProviderModelOption {
   readonly displayName: string;
 }
 
-interface ProviderRuntimeConfig {
+export interface ProviderRuntimeConfig {
   readonly model: string;
   readonly baseUrl?: string;
 }
 
-interface TaskAiAssignment {
+export interface TaskAiAssignment {
   readonly providerId: AiProviderId | null;
   readonly model: string | null;
 }
@@ -97,8 +98,8 @@ export function parseSaveTarget(value: unknown): SaveTarget {
     return {};
   }
 
-  const candidate = value as { origin?: unknown; file?: unknown };
-  const origin =
+  const candidate: PayloadFields = readPayloadFields(value);
+  const origin: ConfigValueOrigin | undefined =
     candidate.origin === 'user' ||
     candidate.origin === 'workspace' ||
     candidate.origin === 'default'
@@ -135,7 +136,7 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
     return undefined;
   }
 
-  const candidate = value as Partial<SettingsReadSnapshot>;
+  const candidate: Partial<SettingsReadSnapshot> = value as Partial<SettingsReadSnapshot>;
   if (!isAiProviderId(candidate.defaultProvider ?? '')) {
     return undefined;
   }
@@ -170,11 +171,11 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
   }
 
   for (const id of AI_PROVIDER_IDS) {
-    const cfg = (candidate.providerConfigs as Record<string, unknown>)[id];
+    const cfg: unknown = (candidate.providerConfigs as Record<string, unknown>)[id];
     if (!cfg || typeof cfg !== 'object' || typeof (cfg as { model?: unknown }).model !== 'string') {
       return undefined;
     }
-    const models = (candidate.modelCatalog as Record<string, unknown>)[id];
+    const models: unknown = (candidate.modelCatalog as Record<string, unknown>)[id];
     if (!Array.isArray(models) || models.length === 0) {
       return undefined;
     }
@@ -185,7 +186,7 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
       return undefined;
     }
 
-    const task = taskEntry as Record<string, unknown>;
+    const task: Record<string, unknown> = taskEntry as Record<string, unknown>;
     if (typeof task.name !== 'string' || task.name.trim().length === 0) {
       return undefined;
     }
@@ -193,20 +194,20 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
       return undefined;
     }
 
-    const taskName = task.name;
-    const assignment = (candidate.taskAssignments as Record<string, unknown>)[taskName];
+    const taskName: string = task.name;
+    const assignment: unknown = (candidate.taskAssignments as Record<string, unknown>)[taskName];
     if (!assignment || typeof assignment !== 'object') {
       return undefined;
     }
 
-    const row = assignment as Record<string, unknown>;
+    const row: Record<string, unknown> = assignment as Record<string, unknown>;
     if (!('providerId' in row) || !('model' in row)) {
       return undefined;
     }
 
-    const providerId = row.providerId;
-    const model = row.model;
-    const usesDefaultProvider = providerId === null || providerId === undefined;
+    const providerId: unknown = row.providerId;
+    const model: unknown = row.model;
+    const usesDefaultProvider: boolean = providerId === null || providerId === undefined;
 
     if (!usesDefaultProvider) {
       if (typeof providerId !== 'string' || !isAiProviderId(providerId)) {
@@ -231,7 +232,7 @@ export function requiresApiKey(providerId: AiProviderId): boolean {
 }
 
 export function hasTaskOverride(snapshot: SettingsReadSnapshot, taskName: AiTaskName): boolean {
-  const assignment = snapshot.taskAssignments[taskName];
+  const assignment: TaskAiAssignment | undefined = snapshot.taskAssignments[taskName];
   return assignment !== undefined && assignment.providerId !== null;
 }
 
@@ -247,12 +248,12 @@ export function pickModelForTaskProvider(
   providerId: AiProviderId,
   preferredModelId: string | null,
 ): string {
-  const catalog = snapshot.modelCatalog[providerId];
+  const catalog: readonly ProviderModelOption[] = snapshot.modelCatalog[providerId];
   if (preferredModelId !== null && catalog.some((entry) => entry.id === preferredModelId)) {
     return preferredModelId;
   }
 
-  const globalModel = snapshot.providerConfigs[providerId].model;
+  const globalModel: string = snapshot.providerConfigs[providerId].model;
   if (catalog.some((entry) => entry.id === globalModel)) {
     return globalModel;
   }
@@ -261,7 +262,7 @@ export function pickModelForTaskProvider(
 }
 
 export function formatResolvedTaskAi(snapshot: SettingsReadSnapshot, taskName: AiTaskName): string {
-  const assign = snapshot.taskAssignments[taskName];
+  const assign: TaskAiAssignment | undefined = snapshot.taskAssignments[taskName];
   let providerId: AiProviderId;
   let modelId: string;
 
@@ -273,18 +274,18 @@ export function formatResolvedTaskAi(snapshot: SettingsReadSnapshot, taskName: A
     modelId = assign.model ?? snapshot.providerConfigs[providerId].model;
   }
 
-  const providerName = getProviderStatus(snapshot, providerId)?.displayName ?? providerId;
-  const modelLabel =
+  const providerName: string = getProviderStatus(snapshot, providerId)?.displayName ?? providerId;
+  const modelLabel: string =
     snapshot.modelCatalog[providerId].find((entry) => entry.id === modelId)?.displayName ?? modelId;
 
   return `${providerName} / ${modelLabel}`;
 }
 
 export function formatDefaultProviderSummary(snapshot: SettingsReadSnapshot): string {
-  const providerId = snapshot.defaultProvider;
-  const providerName = getProviderStatus(snapshot, providerId)?.displayName ?? providerId;
-  const modelId = snapshot.providerConfigs[providerId].model;
-  const modelName =
+  const providerId: AiProviderId = snapshot.defaultProvider;
+  const providerName: string = getProviderStatus(snapshot, providerId)?.displayName ?? providerId;
+  const modelId: string = snapshot.providerConfigs[providerId].model;
+  const modelName: string =
     snapshot.modelCatalog[providerId].find((entry) => entry.id === modelId)?.displayName ?? modelId;
 
   return `${providerName} · ${modelName}`;

@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 
-import { applyStoryCardChanges, type StoryCardTarget } from '@storyboard/story-engine';
+import {
+  applyStoryCardChanges,
+  type BuildStoryCardsProposal,
+  type StoryCardTarget,
+} from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
 import {
   parseCard,
@@ -8,9 +12,9 @@ import {
   backgroundCardPath,
   characterCardPath,
 } from '@storyboard/story-model';
-import type { StoryboardCard, CardCollectProposal } from '@storyboard/story-model';
+import type { StoryboardCard, CardCollectProposal, StoryUri } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
-const buildStoryCardsCommand = 'storyboard.cards.buildFromScenes';
+const buildStoryCardsCommand: string = 'storyboard.cards.buildFromScenes';
 
 interface SelectedChange {
   readonly target: StoryCardTarget;
@@ -28,38 +32,46 @@ interface StoryChangePick extends vscode.QuickPickItem {
   readonly proposal?: CardCollectProposal;
 }
 
+interface TargetProposals {
+  readonly target: StoryCardTarget;
+  readonly proposals: CardCollectProposal[];
+}
+
 export function registerBuildStoryCardsFromScenesCommand(
   context: vscode.ExtensionContext,
   cards: Pick<CardManager, 'buildFromScenes' | 'hasCurrentBuildSources'>,
   reviewService: ProposalReviewService,
 ): vscode.Disposable {
   return vscode.commands.registerCommand(buildStoryCardsCommand, async (): Promise<void> => {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const workspaceRoot: vscode.Uri | undefined = vscode.workspace.workspaceFolders?.[0]?.uri;
     if (!workspaceRoot) {
       await vscode.window.showErrorMessage('Storyboard 프로젝트 작업 공간을 열어주세요.');
       return;
     }
 
     try {
-      const proposal = await vscode.window.withProgress(
+      const proposal: BuildStoryCardsProposal = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: '씬에서 카드 제안을 구성 중...',
           cancellable: true,
         },
         async (_progress, token) => {
-          const result = await cards.buildFromScenes({ workspaceRoot });
+          const result: BuildStoryCardsProposal = await cards.buildFromScenes({ workspaceRoot });
           if (token.isCancellationRequested) {
             throw new StoryCardBuildCancelledError();
           }
           return result;
         },
       );
-      const selected = await selectChanges(proposal.targets);
+      const selected: SelectedChange[] = await selectChanges(proposal.targets);
       if (selected.length === 0) {
         return;
       }
-      const prepared = await prepareChanges(workspaceRoot, selected);
+      const prepared: PreparedCardChange[] | undefined = await prepareChanges(
+        workspaceRoot,
+        selected,
+      );
       if (!prepared) {
         return;
       }
@@ -71,7 +83,7 @@ export function registerBuildStoryCardsFromScenesCommand(
           label: `${change.card.name} ↔ 카드 제안`,
         })),
       );
-      const confirmation = await vscode.window.showWarningMessage(
+      const confirmation: '적용' | undefined = await vscode.window.showWarningMessage(
         `${prepared.length}개 카드에 선택한 필드만 적용합니다. 기존 사실은 삭제하지 않습니다.`,
         { modal: true },
         '적용',
@@ -85,15 +97,15 @@ export function registerBuildStoryCardsFromScenesCommand(
         );
         return;
       }
-      const edit = new vscode.WorkspaceEdit();
+      const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
       for (const change of prepared) {
-        const text = serializeCard(change.card);
+        const text: string = serializeCard(change.card);
         if (change.target.isNew) {
           edit.createFile(change.uri, { overwrite: false, ignoreIfExists: false });
           edit.insert(change.uri, new vscode.Position(0, 0), text);
           continue;
         }
-        const document = await vscode.workspace.openTextDocument(change.uri);
+        const document: vscode.TextDocument = await vscode.workspace.openTextDocument(change.uri);
         edit.replace(
           change.uri,
           new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)),
@@ -142,7 +154,7 @@ async function selectChanges(targets: readonly StoryCardTarget[]): Promise<Selec
       proposal: change.proposal,
     }));
   });
-  const picked = await vscode.window.showQuickPick(items, {
+  const picked: StoryChangePick[] | undefined = await vscode.window.showQuickPick(items, {
     title: '씬 근거 카드 변경 선택',
     placeHolder: '적용할 필드만 선택하세요.',
     canPickMany: true,
@@ -161,13 +173,16 @@ async function prepareChanges(
   workspaceRoot: vscode.Uri,
   selected: readonly SelectedChange[],
 ): Promise<PreparedCardChange[] | undefined> {
-  const byTarget = new Map<string, { target: StoryCardTarget; proposals: CardCollectProposal[] }>();
+  const byTarget: Map<string, TargetProposals> = new Map<string, TargetProposals>();
   for (const change of selected) {
-    const current = byTarget.get(change.target.uriId) ?? { target: change.target, proposals: [] };
+    const current: TargetProposals = byTarget.get(change.target.uriId) ?? {
+      target: change.target,
+      proposals: [],
+    };
     current.proposals.push(change.proposal);
     byTarget.set(change.target.uriId, current);
   }
-  const usedIds = new Set<string>();
+  const usedIds: Set<string> = new Set<string>();
   for (const item of byTarget.values()) {
     if (!item.target.isNew) {
       usedIds.add(item.target.card.id);
@@ -175,23 +190,23 @@ async function prepareChanges(
   }
   const prepared: PreparedCardChange[] = [];
   for (const { target, proposals } of byTarget.values()) {
-    let card = applyStoryCardChanges(target, proposals);
+    let card: StoryboardCard = applyStoryCardChanges(target, proposals);
     if (target.isNew && target.requiresIdConfirmation) {
-      const id = await askForCardId(card.name, usedIds);
+      const id: string | undefined = await askForCardId(card.name, usedIds);
       if (!id) {
         return undefined;
       }
       card = { ...card, id } as StoryboardCard;
     }
     if (usedIds.has(card.id)) {
-      const id = await askForCardId(card.name, usedIds);
+      const id: string | undefined = await askForCardId(card.name, usedIds);
       if (!id) {
         return undefined;
       }
       card = { ...card, id } as StoryboardCard;
     }
     usedIds.add(card.id);
-    const uri =
+    const uri: StoryUri =
       card.type === 'character'
         ? characterCardPath(workspaceRoot, card.id)
         : backgroundCardPath(workspaceRoot, card.id);

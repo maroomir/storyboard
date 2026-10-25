@@ -18,6 +18,7 @@ import {
   type SaveTarget,
   type SettingsReadSnapshot,
   type TaskCatalogItem,
+  type TaskAiAssignment,
 } from './settingsSnapshot';
 import { sbInlineSelectClass, sbInputClass, sectionCardClass } from './settingsStyles';
 
@@ -35,24 +36,25 @@ export function TaskAssignmentsSection({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
 
-  const overrides = useMemo(() => listTaskOverrides(snapshot), [snapshot]);
-  const addableTasks = useMemo(
+  const overrides: readonly TaskOverride[] = useMemo(() => listTaskOverrides(snapshot), [snapshot]);
+  const addableTasks: TaskCatalogItem[] = useMemo(
     () => snapshot.taskCatalog.filter((task) => !hasTaskOverride(snapshot, task.name)),
     [snapshot],
   );
-  const matchedTasks = useMemo(
+  const matchedTasks: readonly TaskCatalogItem[] = useMemo(
     () => filterTasksByQuery(addableTasks, pickerQuery),
     [addableTasks, pickerQuery],
   );
 
-  const defaultSummary = formatDefaultProviderSummary(snapshot);
+  const defaultSummary: string = formatDefaultProviderSummary(snapshot);
 
   const saveTaskAi = (
     taskName: AiTaskName,
     providerId: AiProviderId | null,
     model: string | null,
   ): void => {
-    const label = snapshot.taskCatalog.find((task) => task.name === taskName)?.label ?? taskName;
+    const label: string =
+      snapshot.taskCatalog.find((task) => task.name === taskName)?.label ?? taskName;
 
     void callRpc('settings.updateTaskAiConfig', { taskName, providerId, model })
       .then((payload) =>
@@ -74,7 +76,7 @@ export function TaskAssignmentsSection({
   };
 
   const addOverride = (taskName: AiTaskName): void => {
-    const providerId = snapshot.defaultProvider;
+    const providerId: AiProviderId = snapshot.defaultProvider;
     saveTaskAi(taskName, providerId, pickModelForTaskProvider(snapshot, providerId, null));
     closePicker();
   };
@@ -167,7 +169,7 @@ function OverrideRow({
   ) => void;
 }): React.ReactElement {
   const { task, providerId, model } = override;
-  const modelValue = pickModelForTaskProvider(snapshot, providerId, model);
+  const modelValue: string = pickModelForTaskProvider(snapshot, providerId, model);
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-sb-border border-l-2 border-l-sb-accent-background bg-sb-bg-widget/60 px-3 py-2">
@@ -185,7 +187,7 @@ function OverrideRow({
           aria-label={`${task.label} 제공자`}
           value={providerId}
           onChange={(event) => {
-            const nextProviderId = event.target.value;
+            const nextProviderId: string = event.target.value;
             if (!isAiProviderId(nextProviderId)) {
               return;
             }
@@ -208,7 +210,7 @@ function OverrideRow({
           aria-label={`${task.label} 모델`}
           value={modelValue}
           onChange={(event) => {
-            const model = event.target.value;
+            const model: string = event.target.value;
             if (model.length === 0) {
               return;
             }
@@ -242,7 +244,7 @@ function listTaskOverrides(snapshot: SettingsReadSnapshot): readonly TaskOverrid
   const overrides: TaskOverride[] = [];
 
   for (const task of snapshot.taskCatalog) {
-    const assigned = snapshot.taskAssignments[task.name];
+    const assigned: TaskAiAssignment | undefined = snapshot.taskAssignments[task.name];
     if (assigned?.providerId != null) {
       overrides.push({ task, providerId: assigned.providerId, model: assigned.model });
     }
@@ -255,7 +257,7 @@ function filterTasksByQuery(
   tasks: readonly TaskCatalogItem[],
   query: string,
 ): readonly TaskCatalogItem[] {
-  const normalized = query.trim().toLowerCase();
+  const normalized: string = query.trim().toLowerCase();
   if (normalized.length === 0) {
     return tasks;
   }

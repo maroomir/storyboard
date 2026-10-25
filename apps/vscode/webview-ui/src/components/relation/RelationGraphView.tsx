@@ -1,18 +1,26 @@
-import { drag } from 'd3-drag';
+import { drag, type DragBehavior, type SubjectPosition } from 'd3-drag';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from 'd3-force';
-import type { SimulationNodeDatum } from 'd3-force';
-import { select } from 'd3-selection';
+import type { Simulation, SimulationNodeDatum } from 'd3-force';
+import { select, type Selection } from 'd3-selection';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { SectionHeader } from '../ui/SectionHeader';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
-const NODE_CARD_W = 112;
-const NODE_CARD_H = 52;
-const NODE_COLLIDE_R = 58;
-const LINK_TRIM = 52;
+const NODE_CARD_W: number = 112;
+const NODE_CARD_H: number = 52;
+const NODE_COLLIDE_R: number = 58;
+const LINK_TRIM: number = 52;
 
-const EDGE_GRADIENT_START = '#d97706';
-const EDGE_GRADIENT_END = '#0d9488';
+const EDGE_GRADIENT_START: string = '#d97706';
+const EDGE_GRADIENT_END: string = '#0d9488';
+
+interface LineSegment {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+}
 
 function shortenLineSegment(
   x1: number,
@@ -21,19 +29,17 @@ function shortenLineSegment(
   y2: number,
   insetStart: number,
   insetEnd: number,
-):
-  | { readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number }
-  | undefined {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.hypot(dx, dy);
+): LineSegment | undefined {
+  const dx: number = x2 - x1;
+  const dy: number = y2 - y1;
+  const length: number = Math.hypot(dx, dy);
 
   if (length < insetStart + insetEnd + 4) {
     return undefined;
   }
 
-  const ux = dx / length;
-  const uy = dy / length;
+  const ux: number = dx / length;
+  const uy: number = dy / length;
 
   return {
     x1: x1 + ux * insetStart,
@@ -79,16 +85,15 @@ export function RelationGraph({
 }: {
   readonly initialData: RelationGraphInitialData;
 }): React.ReactElement {
-  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
+  const vscodeApi: VscodeApi | undefined = useMemo(() => window.acquireVsCodeApi?.(), []);
   const [data, setData] = useState(initialData);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
+  const svgRef: React.RefObject<SVGSVGElement> = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ width: 640, height: 480 });
-  const nodesRef = useRef<GraphNode[]>([]);
-  const linksRef = useRef<GraphLinkDatum[]>([]);
-  const simulationRef = useRef<ReturnType<typeof forceSimulation<GraphNode>> | undefined>(
-    undefined,
-  );
+  const nodesRef: React.MutableRefObject<GraphNode[]> = useRef<GraphNode[]>([]);
+  const linksRef: React.MutableRefObject<GraphLinkDatum[]> = useRef<GraphLinkDatum[]>([]);
+  const simulationRef: React.MutableRefObject<Simulation<GraphNode, undefined> | undefined> =
+    useRef<ReturnType<typeof forceSimulation<GraphNode>> | undefined>(undefined);
   const [, setRenderVersion] = useState(0);
 
   useEffect(() => {
@@ -107,18 +112,18 @@ export function RelationGraph({
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return (): void => window.removeEventListener('message', handleMessage);
   }, []);
 
   useEffect(() => {
-    const element = containerRef.current;
+    const element: HTMLDivElement | null = containerRef.current;
     if (!element) {
       return;
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      const nextWidth = element.clientWidth;
-      const nextHeight = element.clientHeight;
+    const resizeObserver: ResizeObserver = new ResizeObserver(() => {
+      const nextWidth: number = element.clientWidth;
+      const nextHeight: number = element.clientHeight;
 
       if (nextWidth > 0 && nextHeight > 0) {
         setSize({ width: nextWidth, height: nextHeight });
@@ -126,7 +131,7 @@ export function RelationGraph({
     });
 
     resizeObserver.observe(element);
-    return () => resizeObserver.disconnect();
+    return (): void => resizeObserver.disconnect();
   }, []);
 
   useEffect(() => {
@@ -145,9 +150,9 @@ export function RelationGraph({
       return;
     }
 
-    const idSet = new Set(data.characters.map((character) => character.id));
+    const idSet: Set<string> = new Set(data.characters.map((character) => character.id));
     const nodes: GraphNode[] = data.characters.map((character, index) => {
-      const angle = (index / Math.max(data.characters.length, 1)) * Math.PI * 2;
+      const angle: number = (index / Math.max(data.characters.length, 1)) * Math.PI * 2;
       return {
         id: character.id,
         name: character.name,
@@ -167,7 +172,7 @@ export function RelationGraph({
       }
     }
 
-    const simulation = forceSimulation<GraphNode>(nodes)
+    const simulation: Simulation<GraphNode, undefined> = forceSimulation<GraphNode>(nodes)
       .force(
         'link',
         forceLink<GraphNode, GraphLinkDatum>(linkInputs)
@@ -182,7 +187,7 @@ export function RelationGraph({
     linksRef.current = linkInputs;
     simulationRef.current = simulation;
 
-    let scheduledFrame = 0;
+    let scheduledFrame: number = 0;
     const onTick = (): void => {
       if (scheduledFrame !== 0) {
         return;
@@ -196,52 +201,56 @@ export function RelationGraph({
 
     simulation.on('tick', onTick);
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index: number = 0; index < 24; index += 1) {
       simulation.tick();
     }
 
     setRenderVersion((value) => value + 1);
 
     let dragCleanup: (() => void) | undefined;
-    let dragFrameOuter = 0;
-    let dragFrameInner = 0;
+    let dragFrameOuter: number = 0;
+    let dragFrameInner: number = 0;
 
     dragFrameOuter = window.requestAnimationFrame(() => {
       dragFrameInner = window.requestAnimationFrame(() => {
-        const svg = svgRef.current;
-        const activeSimulation = simulationRef.current;
+        const svg: SVGSVGElement | null = svgRef.current;
+        const activeSimulation: Simulation<GraphNode, undefined> | undefined =
+          simulationRef.current;
 
         if (!svg || !activeSimulation) {
           return;
         }
 
-        const nodeSelection = select(svg).selectAll<SVGGElement, GraphNode>('g.graph-node');
+        const nodeSelection: Selection<SVGGElement, GraphNode, SVGSVGElement, unknown> = select(
+          svg,
+        ).selectAll<SVGGElement, GraphNode>('g.graph-node');
 
         if (nodeSelection.empty()) {
           return;
         }
 
-        const dragBehavior = drag<SVGGElement, GraphNode>()
-          .on('start', (event, node) => {
-            if (!event.active) {
-              activeSimulation.alphaTarget(0.35).restart();
-            }
+        const dragBehavior: DragBehavior<SVGGElement, GraphNode, GraphNode | SubjectPosition> =
+          drag<SVGGElement, GraphNode>()
+            .on('start', (event, node) => {
+              if (!event.active) {
+                activeSimulation.alphaTarget(0.35).restart();
+              }
 
-            node.fx = node.x;
-            node.fy = node.y;
-          })
-          .on('drag', (event, node) => {
-            node.fx = event.x;
-            node.fy = event.y;
-          })
-          .on('end', (event, node) => {
-            if (!event.active) {
-              activeSimulation.alphaTarget(0);
-            }
+              node.fx = node.x;
+              node.fy = node.y;
+            })
+            .on('drag', (event, node) => {
+              node.fx = event.x;
+              node.fy = event.y;
+            })
+            .on('end', (event, node) => {
+              if (!event.active) {
+                activeSimulation.alphaTarget(0);
+              }
 
-            node.fx = null;
-            node.fy = null;
-          });
+              node.fx = null;
+              node.fy = null;
+            });
 
         nodeSelection.call(dragBehavior);
         dragCleanup = (): void => {
@@ -250,7 +259,7 @@ export function RelationGraph({
       });
     });
 
-    return () => {
+    return (): void => {
       simulation.on('tick', null);
       simulation.stop();
       if (scheduledFrame !== 0) {
@@ -297,12 +306,12 @@ export function RelationGraph({
     );
   }
 
-  const nodes = nodesRef.current;
-  const links = linksRef.current;
-  const hasRenderableLinks = links.length > 0;
+  const nodes: GraphNode[] = nodesRef.current;
+  const links: GraphLinkDatum[] = linksRef.current;
+  const hasRenderableLinks: boolean = links.length > 0;
 
-  const halfW = NODE_CARD_W / 2;
-  const halfH = NODE_CARD_H / 2;
+  const halfW: number = NODE_CARD_W / 2;
+  const halfH: number = NODE_CARD_H / 2;
 
   return (
     <main className="flex h-screen min-h-0 flex-col gap-3 bg-sb-bg p-3">
@@ -348,11 +357,11 @@ export function RelationGraph({
               <path d="M 0 0 L 10 5 L 0 10 z" fill={EDGE_GRADIENT_END} opacity="0.85" />
             </marker>
             {links.map((link, index) => {
-              const sourceNode =
+              const sourceNode: GraphNode | undefined =
                 typeof link.source === 'object'
                   ? link.source
                   : nodes.find((node) => node.id === link.source);
-              const targetNode =
+              const targetNode: GraphNode | undefined =
                 typeof link.target === 'object'
                   ? link.target
                   : nodes.find((node) => node.id === link.target);
@@ -368,7 +377,7 @@ export function RelationGraph({
                 return null;
               }
 
-              const segment = shortenLineSegment(
+              const segment: LineSegment | undefined = shortenLineSegment(
                 sourceNode.x,
                 sourceNode.y,
                 targetNode.x,
@@ -398,11 +407,11 @@ export function RelationGraph({
             })}
           </defs>
           {links.map((link, index) => {
-            const sourceNode =
+            const sourceNode: GraphNode | undefined =
               typeof link.source === 'object'
                 ? link.source
                 : nodes.find((node) => node.id === link.source);
-            const targetNode =
+            const targetNode: GraphNode | undefined =
               typeof link.target === 'object'
                 ? link.target
                 : nodes.find((node) => node.id === link.target);
@@ -418,7 +427,7 @@ export function RelationGraph({
               return null;
             }
 
-            const segment = shortenLineSegment(
+            const segment: LineSegment | undefined = shortenLineSegment(
               sourceNode.x,
               sourceNode.y,
               targetNode.x,
@@ -446,10 +455,11 @@ export function RelationGraph({
             );
           })}
           {nodes.map((node) => {
-            const x = node.x ?? 0;
-            const y = node.y ?? 0;
-            const displayName = node.name.length > 16 ? `${node.name.slice(0, 15)}…` : node.name;
-            const roleText =
+            const x: number = node.x ?? 0;
+            const y: number = node.y ?? 0;
+            const displayName: string =
+              node.name.length > 16 ? `${node.name.slice(0, 15)}…` : node.name;
+            const roleText: string =
               node.role && node.role.length > 0
                 ? node.role.length > 18
                   ? `${node.role.slice(0, 17)}…`
@@ -524,7 +534,7 @@ function isRelationGraphInitialData(value: unknown): value is RelationGraphIniti
     return false;
   }
 
-  const candidate = value as Partial<RelationGraphInitialData>;
+  const candidate: Partial<RelationGraphInitialData> = value as Partial<RelationGraphInitialData>;
   if (
     typeof candidate.title !== 'string' ||
     typeof candidate.isStoryboardProject !== 'boolean' ||
@@ -541,7 +551,7 @@ function isRelationListCharacter(value: unknown): value is RelationListCharacter
     return false;
   }
 
-  const candidate = value as Partial<RelationListCharacter>;
+  const candidate: Partial<RelationListCharacter> = value as Partial<RelationListCharacter>;
   if (
     typeof candidate.id !== 'string' ||
     typeof candidate.name !== 'string' ||
