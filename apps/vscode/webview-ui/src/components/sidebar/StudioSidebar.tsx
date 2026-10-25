@@ -55,6 +55,7 @@ import { StudioToolMenu } from './StudioToolMenu';
 import { StudioTurnView, type StudioProposalActions } from './StudioTurnView';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
+import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
 
 type StudioResponseMessage = {
   readonly type: 'response';
@@ -844,7 +845,7 @@ function chatStageLabel(stage: StudioChatStage): string {
 
 interface StagePill {
   readonly key: string;
-  readonly tone: 'character' | 'background';
+  readonly tone: BibleSubjectKind;
   readonly icon: LucideIcon;
   readonly text: string;
 }

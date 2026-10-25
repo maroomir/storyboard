@@ -88,8 +88,8 @@ export const projectReadContractResponsePayloadSchema: z.ZodType<ProjectContract
 export interface ProjectUpdateContractRequestPayload {
   genre?: string;
   audience?: string;
-  pov?: null | 'first' | 'first-retrospective' | 'second' | 'third-limited' | 'third-omniscient';
-  composition?: null | 'linear' | 'omnibus' | 'alternating-pov' | 'frame';
+  pov?: PointOfView | null;
+  composition?: CompositionKind | null;
   povCharacters?: string[];
   episodeCount?: number;
   targetWordCount?: null | number;

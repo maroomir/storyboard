@@ -1,7 +1,9 @@
 import type {
+BibleSubjectKind,
 SceneFile,
   StoryboardCard,
   StoryUri,
+  StudioAgentEntityKind,
   StudioAgentFollowUp,
   StudioAgentLookupRequest,
   StudioEntity,
@@ -28,7 +30,7 @@ import {
 
 
 export interface StudioEntityContext {
-  readonly agentEntityKind: 'character' | 'background' | 'scene';
+  readonly agentEntityKind: StudioAgentEntityKind;
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly targetUri: StoryUri | undefined;
@@ -112,7 +114,7 @@ function followUpUri(workspaceRoot: StoryUri, followUp: StudioAgentFollowUp): St
 async function readCardContext(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
-  cardKind: 'character' | 'background',
+  cardKind: BibleSubjectKind,
   cardId: string,
 ): Promise<StudioEntityContext | undefined> {
   const targetUri: StoryUri = cardPathFor(workspaceRoot, cardKind, cardId);
@@ -193,7 +195,7 @@ async function readScenesFeaturingCard(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
   cardId: string,
-  cardKind: 'character' | 'background',
+  cardKind: BibleSubjectKind,
 ): Promise<string[]> {
   const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
@@ -230,7 +232,7 @@ async function readScenesFeaturingCard(
 function sceneDeclaresCard(
   scene: Awaited<ReturnType<typeof readSceneFile>>,
   cardId: string,
-  cardKind: 'character' | 'background',
+  cardKind: BibleSubjectKind,
 ): boolean {
   return cardKind === 'character'
     ? (scene.frontmatter.characters?.includes(cardId) ?? false)
@@ -264,7 +266,7 @@ async function readLookupText(
 
 function cardPathFor(
   workspaceRoot: StoryUri,
-  cardKind: 'character' | 'background',
+  cardKind: BibleSubjectKind,
   cardId: string,
 ): StoryUri {
   return cardKind === 'character'
@@ -272,7 +274,7 @@ function cardPathFor(
     : backgroundCardPath(workspaceRoot, cardId);
 }
 
-function relativeCardPath(cardKind: 'character' | 'background', cardId: string): string {
+function relativeCardPath(cardKind: BibleSubjectKind, cardId: string): string {
   return `${cardKind}/${cardId}.card`;
 }
 

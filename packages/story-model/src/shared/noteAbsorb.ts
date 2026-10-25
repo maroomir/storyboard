@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { cardCollectProposalSchema, type CardCollectProposal } from './cardCollect';
+import type { BibleSubjectKind } from '#model/format/bible';
 
 export type NoteSourceKind = 'obsidian' | 'notion' | 'notion-export';
 
@@ -58,7 +59,7 @@ export const noteBundleSchema: z.ZodType<NoteBundle> = z.object({
 
 export interface NoteCardCandidate {
   cardId: string;
-  cardType: 'character' | 'background';
+  cardType: BibleSubjectKind;
   name: string;
   sourceNotes: string[];
   changes: CardCollectProposal[];

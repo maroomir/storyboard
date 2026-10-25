@@ -146,7 +146,7 @@ export class RunController {
     }
 
     const resumeState: NovelRunState | undefined = resume ? await this.readResumableState() : undefined;
-    const runMode: "auto" | "outline-approval" | "chapter-approval" | "review-approval" = resumeState?.runMode ?? mode;
+    const runMode: NovelRunMode = resumeState?.runMode ?? mode;
     const started: ServiceResult<ActiveRun> = await this.begin({ kind: 'novel', mode: runMode, label: translate('lock.novel') });
 
     if (!started.ok) {

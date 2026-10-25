@@ -10,6 +10,7 @@ import type {
   StudioChatStage,
   StudioChatTurn,
   StudioEntity,
+  StudioEntityKind,
   StudioInitialData,
   StudioPendingFollowUp,
   StudioReviewState,
@@ -23,6 +24,7 @@ import type {
   UsageCacheAmount,
   UsageSummaryByEntity,
 } from './types';
+import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
 
 export function createRequestId(): string {
   return crypto.randomUUID();
@@ -118,7 +120,7 @@ function parseStudioEntity(value: unknown): StudioEntity | undefined {
   }
 
   const candidate: Partial<StudioEntity> = value as Partial<StudioEntity>;
-  const kind: 'character' | 'background' | 'scene' | 'project' | undefined = candidate.kind;
+  const kind: StudioEntityKind | undefined = candidate.kind;
 
   if (kind !== 'character' && kind !== 'background' && kind !== 'scene' && kind !== 'project') {
     return undefined;
@@ -219,7 +221,7 @@ export function parseStagePayload(payload: unknown): StudioStage | undefined {
 }
 
 function parseCardStage(candidate: Partial<StudioCardStage>): StudioCardStage | undefined {
-  const cardKind: 'character' | 'background' | undefined = candidate.cardKind;
+  const cardKind: BibleSubjectKind | undefined = candidate.cardKind;
 
   if (cardKind !== 'character' && cardKind !== 'background') {
     return undefined;

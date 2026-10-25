@@ -15,6 +15,7 @@ import {
   type NoteAbsorbPlan,
   type NoteBundle,
   type NoteCardPlan,
+  type NoteSourceKind,
 } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
@@ -28,7 +29,7 @@ export interface RegisterAbsorbNotesCommandDependencies {
 }
 
 interface LocationPickItem extends vscode.QuickPickItem {
-  readonly source: 'obsidian' | 'notion-export' | 'notion';
+  readonly source: NoteSourceKind;
 }
 
 const locationPicks: readonly LocationPickItem[] = [

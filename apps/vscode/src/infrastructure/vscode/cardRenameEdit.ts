@@ -15,11 +15,12 @@ import {
   type StoryboardProjectPaths,
   type StoryboardCard,
   type StoryUri,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 import { uriExists } from './workspace';
 
 export interface CardRenameCandidate {
-  readonly kind: 'character' | 'background';
+  readonly kind: BibleSubjectKind;
   readonly workspaceRoot: vscode.Uri;
   readonly oldId: string;
   readonly newId: string;

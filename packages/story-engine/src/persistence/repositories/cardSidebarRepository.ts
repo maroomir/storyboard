@@ -12,6 +12,7 @@ import type {
   SidebarCardSummary,
   StoryboardProjectPaths,
   StoryboardCard,
+  CharacterRole,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
@@ -52,7 +53,7 @@ export class CardSidebarRepository implements ICardSidebarRepository {
         return this.errorSummary(uri, category, `Expected ${category} card, got ${card.type}.`);
       }
 
-      const role: 'main' | 'supporting' | 'extra' | undefined =
+      const role: CharacterRole | undefined =
         card.type === 'character' && isCharacterRole(card.role) ? card.role : undefined;
       return {
         type: card.type,

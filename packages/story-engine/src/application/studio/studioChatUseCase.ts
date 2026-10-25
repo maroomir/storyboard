@@ -15,6 +15,7 @@ import type {
   StudioPatch,
   StudioValidation,
   StudioValidationVerdict,
+  StudioAgentEntityKind,
 } from '@storyboard/story-model';
 import type { StoryboardAiService, StudioAgentMessage } from '@storyboard/story-ai';
 
@@ -22,7 +23,7 @@ import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 
 export interface StudioChatContext {
-  readonly agentEntityKind: 'character' | 'background' | 'scene';
+  readonly agentEntityKind: StudioAgentEntityKind;
   readonly patchTarget: StudioPatchTarget;
   readonly entityLabel: string;
   readonly targetFile: string;

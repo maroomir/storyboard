@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { characterRoles } from '#model/format/card';
 import type { CharacterRole } from '#model/format/card';
+import type { BibleSubjectKind } from '#model/format/bible';
 
 interface NoteExtractionAttribute {
   key: string;
@@ -41,7 +42,7 @@ export interface NoteExtractionNote {
 
 export interface NoteExtractionKnownCard {
   readonly id: string;
-  readonly type: 'character' | 'background';
+  readonly type: BibleSubjectKind;
   readonly name: string;
   readonly aliases: readonly string[];
 }
@@ -104,7 +105,7 @@ const noteClassificationSchema: z.ZodType<NoteClassification> = z.object({
 });
 
 export interface NoteExtractionEntity {
-  type: 'character' | 'background';
+  type: BibleSubjectKind;
   name: string;
   aliases: string[];
   tags: string[] | never[];

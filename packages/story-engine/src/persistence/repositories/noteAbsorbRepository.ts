@@ -30,6 +30,7 @@ import {
   type NoteCandidateLoad,
 } from '#engine/application/notes/noteAbsorbRepository';
 import type {
+  BibleSubjectKind,
   NoteAbsorbPlan,
   SceneSummaryExtraction,
   StoryboardProjectPaths,
@@ -121,7 +122,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
 
   public async loadCard(
     workspaceRoot: StoryUri,
-    cardType: 'character' | 'background',
+    cardType: BibleSubjectKind,
     id: string,
   ): Promise<StoryboardCard | undefined> {
     const uri: StoryUri =

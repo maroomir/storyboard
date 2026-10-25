@@ -74,7 +74,7 @@ export function coerceCardRecommendations(
     }
 
     const description: string | undefined = coerceOptionalString(record.description);
-    const role: 'main' | 'supporting' | 'extra' | undefined =
+    const role: CharacterRole | undefined =
       category === 'character' ? coerceRole(record.role) : undefined;
 
     recommendedEntities.push({

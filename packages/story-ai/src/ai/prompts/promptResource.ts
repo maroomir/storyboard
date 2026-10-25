@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { cacheTtls, reasoningEfforts } from '@storyboard/story-model';
+import { cacheTtls, reasoningEfforts, type CacheTtl } from '@storyboard/story-model';
 
 import { promptResourceSources } from './resources.generated';
 import { renderTemplate, type TemplatePartials, type TemplateView } from './template';
@@ -244,7 +244,7 @@ export function renderPrompt(
   const resource: PromptResource = promptResources.get(key);
   const partials: TemplatePartials = options.partials ?? {};
   const prefix: string | undefined = optionalSectionText(resource, 'prefix', variant);
-  const prefixCacheTtl: "5m" | "1h" | undefined = prefix === undefined ? undefined : promptResources.config(key).prefixCacheTtl;
+  const prefixCacheTtl: CacheTtl | undefined = prefix === undefined ? undefined : promptResources.config(key).prefixCacheTtl;
 
   return {
     system: renderTemplate(sectionText(resource, 'system', variant), options.view, partials),

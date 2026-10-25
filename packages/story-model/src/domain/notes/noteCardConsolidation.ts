@@ -385,7 +385,7 @@ function decideSharedAliases(
 
 function narrowCardPlan(cardPlan: NoteCardPlan, kept: KeptValues): NoteCardPlan {
   const isKept = (change: CardCollectProposal): boolean => {
-    const field: "tags" | "description" | "voice" | "aliases" | "traits" | "desire" | "senses" | undefined = fieldByKind.get(change.kind as ListKind);
+    const field: NoteConsolidatedField | undefined = fieldByKind.get(change.kind as ListKind);
     const values: Set<string> | undefined = field === undefined ? undefined : kept[field];
 
     return values === undefined || ('value' in change && values.has(change.value));

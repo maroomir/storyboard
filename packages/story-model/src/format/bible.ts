@@ -19,7 +19,7 @@ export const bibleSubjectKinds: readonly [BibleSubjectKind, ...BibleSubjectKind[
 ];
 
 export interface BibleFactSubject {
-  kind: 'character' | 'background';
+  kind: BibleSubjectKind;
   id: string;
 }
 
