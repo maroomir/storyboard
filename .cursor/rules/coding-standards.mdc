@@ -129,9 +129,11 @@ exactly one file; everything else derives from it.
 - **Where a value lives**: tuning numbers a person adjusts go in a JSON data file next to a zod
   schema that documents each knob — the `*.params.json` files listed in **The parameter map** below
   are the models to copy.
-  Identifiers and enums stay TypeScript `as const` so the literal types survive — `providerCatalog`,
-  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. JSON loses literal types, so
-  never move an enum into one.
+  Identifiers and enums stay TypeScript, declared type first: the literal union (or row interface)
+  is written out and the table is annotated with it (`type CardCategory = 'character' | 'background';`
+  `const cardCategories: readonly CardCategory[] = [...]`) — `providerCatalog`,
+  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. No `as const` declarations.
+  JSON loses literal types, so never move an enum into one.
 - **The layering for generation knobs** is user setting → model profile → pipeline default. A value
   that only one model needs belongs in the model profile, never in the shared default.
 - **Setting defaults and bounds** belong to `storyboardSettingCatalog` alone. Read them through
@@ -181,7 +183,7 @@ author's override file may carry its own. `reasoningEffort` reaches only a model
 `acceptsReasoningEffort`. After editing a resource, run `npm run build:prompts --workspace
 @storyboard/story-ai`; `apps/cli/test/promptResources.test.ts` fails on a stale generated module.
 
-Identifier tables stay TypeScript (`as const`) and live with their owner:
+Identifier tables stay TypeScript (declared type first) and live with their owner:
 `providerCatalog.ts`, `settingCatalog.ts` and `generationParameters.ts` (story-model `contracts/`; the last names every
 `generation.*` knob the model profiles and the sweep may move), `project.ts` / `paths.ts` / `narrator.ts`
 (story-model `format/`), `contributionIds.ts` and `storyboardMessages.ts` (vscode), `commands/catalog.ts` (cli).
