@@ -4,8 +4,7 @@ import type { NotesApplyView, NotesEstimateView, NotesPlanView } from '@/shared/
 
 import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
-import { formatUsd } from '@/renderer/lib/runView';
-import { extractErrorMessage } from '@storyboard/story-model/contracts';
+import { extractErrorMessage, formatUsd } from '@storyboard/story-model/contracts';
 
 interface NotesAbsorbProps {
   readonly fillContract: boolean;

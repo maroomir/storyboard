@@ -90,6 +90,7 @@ import {
   type BibleSubjectKind,
   slugify,
   extractErrorMessage,
+  formatUsd,
 } from '@storyboard/story-model';
 
 import type { DraftAugmentScope, OAuthConnection } from '@storyboard/story-ai';
@@ -556,11 +557,11 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   const { spending } = novelRun;
   const budgetNote: string =
     novelRun.outcome === 'paused' && spending.isOverBudget
-      ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 $${spending.costUsd.toFixed(2)}).`
+      ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 ${formatUsd(spending.costUsd)}).`
       : '';
   const cacheNote: string =
     spending.cache !== undefined && spending.cache.cachedTokens > 0
-      ? ` 프롬프트 캐시 적중 ${Math.round((spending.cache.cachedTokens / spending.cache.promptTokens) * 100)}%, 절약 $${spending.cache.savedUsd.toFixed(2)}.`
+      ? ` 프롬프트 캐시 적중 ${Math.round((spending.cache.cachedTokens / spending.cache.promptTokens) * 100)}%, 절약 ${formatUsd(spending.cache.savedUsd)}.`
       : '';
 
   return {
