@@ -10,8 +10,9 @@ import type {
 import { createCliContainer, type CliContainer, type CliContainerOptions } from '@/container';
 import type { GenerateDraftResult } from '@storyboard/story-engine';
 
-// 측정 실행을 제품과 같은 경로에 태운다. 사용자가 `draft generate` 로 밟는 길과 같은 use case 를
-// 부르고, 컨테이너가 열어 둔 이음매 셋으로 원장·손잡이·후처리만 갈아끼운다.
+const shouldUpdateCardsInBackgroundDuringMeasurement: boolean = false;
+const shouldBypassDraftCacheSoEveryRunCallsAi: boolean = true;
+
 export interface SimWorkspaceFactoryOptions {
   readonly logger: CliContainerOptions['logger'];
   readonly version: string;
@@ -44,9 +45,7 @@ export function createSimWorkspaceFactory(
         },
         createConfigBridge: (dependencies) =>
           new TunedConfigBridge(dependencies, input.tuning, input.sectionOutputLimit),
-        // 후처리는 초안 뒤에 카드를 고치는 백그라운드 작업이다. 그 토큰이 다음 씬 측정에 섞이고,
-        // 시험체도 회차마다 달라진다.
-        postGenerationUpdates: false,
+        postGenerationUpdates: shouldUpdateCardsInBackgroundDuringMeasurement,
       });
 
       return {
@@ -54,8 +53,7 @@ export function createSimWorkspaceFactory(
         generate: async (sceneStem: string): Promise<SceneGenerationOutcome> => {
           const result: GenerateDraftResult = await container.drafts.generate({
             sceneUri: scenePath(container.workspaceRoot, sceneStem),
-            // 캐시를 맞으면 AI 호출이 0회라 회차가 아무것도 재지 못한다.
-            force: true,
+            force: shouldBypassDraftCacheSoEveryRunCallsAi,
           });
 
           if (!result.ok) {
