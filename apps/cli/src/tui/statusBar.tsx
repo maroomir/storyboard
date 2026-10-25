@@ -8,11 +8,9 @@ export interface StatusBarProps {
   readonly view: WorkspaceView;
   readonly isBusy: boolean;
   readonly columns: number;
-  // What Esc does in the running command; absent when it does nothing there.
   readonly escapeHint?: string;
 }
 
-// Below this the full key list would push the status onto a second line.
 const fullKeyHintColumns: number = 72;
 
 function describeKeyHint(props: StatusBarProps): string {
@@ -24,9 +22,6 @@ function describeKeyHint(props: StatusBarProps): string {
     : '/help 도움말';
 }
 
-// The line under the prompt: which work, whether it can be written now, which AI answers, and the
-// keys that matter, on one line: the left side is cut before the keys are. Another app holding the
-// run lock is the one state worth a color.
 export function StatusBar(props: StatusBarProps): React.ReactElement {
   const theme: TuiTheme = useTuiTheme();
   const { header, lockHolder } = props.view;

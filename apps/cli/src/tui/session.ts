@@ -54,8 +54,6 @@ export const slashCommands: readonly SlashCommand[] = [
   { name: '/quit', summary: '나가기 (Ctrl+C 도 됩니다)' },
 ];
 
-// Splits a typed line into argv the same way a POSIX shell would for quotes, so
-// `init --title "밤의 항해"` reaches the parser as one title.
 export function splitCommandLine(line: string): string[] {
   const argv: string[] = [];
   let current: string = '';
@@ -99,10 +97,8 @@ export function splitCommandLine(line: string): string[] {
 }
 
 export interface InputSuggestion {
-  // What the list shows: a whole verb while the verb is being typed, otherwise the one token.
   readonly text: string;
   readonly summary: string;
-  // The input line once this suggestion is taken; only the token under the cursor changes.
   readonly line: string;
 }
 
@@ -110,9 +106,6 @@ function isVerbOrVerbStart(words: string): boolean {
   return commandCatalog.some((spec) => spec.verb === words || spec.verb.startsWith(`${words} `));
 }
 
-// What the composer proposes while the author types: slash commands for a leading `/`; otherwise
-// what shell completion would offer for the last word (verb words, flags, scene stems, card ids),
-// and for a verb nothing starts with, the verbs it most resembles.
 export function suggestForInput(input: string, cwd: string = process.cwd()): InputSuggestion[] {
   const trimmed: string = input.trimStart();
 
@@ -168,8 +161,6 @@ export function suggestForInput(input: string, cwd: string = process.cwd()): Inp
     : [];
 }
 
-// The prompt takes a command without the `storyboard` prefix, so the list says how to drill in
-// rather than repeating the shell form.
 export function renderVerbList(): string {
   return [
     ...renderGroupList(),
@@ -186,8 +177,6 @@ export interface SpendingEntry {
   readonly costUsd: number;
 }
 
-// What this screen has spent, command by command. The CLI keeps no ledger across runs, so the
-// screen's own record is the only total there is.
 export function describeSpending(spending: readonly SpendingEntry[]): string {
   if (spending.length === 0) {
     return '이 화면에서 아직 비용이 든 명령이 없습니다.';
@@ -202,13 +191,10 @@ export function describeSpending(spending: readonly SpendingEntry[]): string {
 
 export interface SessionSink {
   readonly append: (tone: LogTone, text: string) => void;
-  // Shows a question over the prompt and settles with the answer.
   readonly ask: <T>(request: ChoiceRequest<T>) => Promise<T | undefined>;
   readonly askText: (request: TextRequest) => Promise<string | undefined>;
   readonly setTheme: (name: TuiThemeName) => void;
-  // Opens a draft in the reader instead of the log.
   readonly openReader: (title: string, body: string) => void;
-  // What Esc does in the running command, for the status line; undefined when it does nothing.
   readonly setEscapeHint: (hint: string | undefined) => void;
   readonly clear: () => void;
   readonly exit: () => void;
@@ -236,7 +222,6 @@ function describeShellOutput(result: ShellCommandResult): string {
   return output.length > 0 ? output : `종료 코드 ${result.exitCode}`;
 }
 
-// A run the author stopped is neither a result nor an error.
 function describeResultTone(result: DispatchResult): LogTone {
   if (result.outcome?.stop !== undefined) {
     return 'hint';
@@ -246,15 +231,12 @@ function describeResultTone(result: DispatchResult): LogTone {
 
 export interface TuiSession {
   readonly run: (line: string) => Promise<void>;
-  // Esc during a run: stops a shell command, or a batch at the next scene boundary. Returns what
-  // happened, for the log.
   readonly interrupt: () => string;
 }
 
-// Everything typed at the prompt goes through the same `dispatch` the one-shot CLI uses; the TUI
-// only decides how to show what comes back.
+const canReadlineShareStdinWithTheScreen: boolean = false;
+
 export function createTuiSession(options: TuiSessionOptions, sink: SessionSink): TuiSession {
-  // One per command, so a pause asked for one run never carries into the next.
   let pauseRequests: PauseRequests = new PauseRequests();
   let stopShellCommand: (() => void) | undefined;
 
@@ -263,8 +245,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
     return dispatch(argv, {
       version: options.version,
       cwd: options.cwd,
-      // Progress belongs in the log, but readline prompts would fight the screen for stdin.
-      isInteractive: false,
+      isInteractive: canReadlineShareStdinWithTheScreen,
       createLogger: () => createSessionLogger(sink),
       pauseRequests,
       createPrompter: () => ({
@@ -278,8 +259,6 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
 
   const spending: SpendingEntry[] = [];
 
-  // Settings go through `config set`, so the screen writes exactly what the shell would: this
-  // work's file inside a workspace, the shared home file outside one.
   const setConfig = async (key: string, value: string): Promise<void> => {
     const scope: string[] = isWorkspace(options.cwd) ? [] : ['--global'];
     show(await runArgv(['config', 'set', key, value, ...scope]));
@@ -453,7 +432,6 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       const argv: string[] = splitCommandLine(trimmed);
 
       try {
-        // `@01-a` names the scene 01-a; the mark only told the composer what to suggest.
         const result: DispatchResult = await runArgv(
           argv.map((token) => (token.startsWith('@') ? token.slice(1) : token)),
         );
@@ -461,7 +439,6 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
           spending.push({ line: trimmed, costUsd: result.costUsd ?? 0 });
         }
 
-        // A draft is read, not scanned: it opens in the reader rather than folding into the log.
         const isDraftShown: boolean =
           argv[0] === 'draft' &&
           argv[1] === 'show' &&

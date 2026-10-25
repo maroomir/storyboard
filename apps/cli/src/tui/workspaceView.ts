@@ -20,13 +20,9 @@ export interface TuiHeaderInfo {
   readonly hint?: string;
 }
 
-// What the screen shows around the prompt. It is read again after every command, since a command
-// (or another app) may have changed it.
 export interface WorkspaceView {
   readonly header: TuiHeaderInfo;
-  // Another app writing this workspace right now, phrased for the author.
   readonly lockHolder?: string;
-  // Absent outside a workspace, or when the workspace cannot be read; the prompt still works then.
   readonly status?: WorkspaceStatus;
 }
 
@@ -41,8 +37,6 @@ export function isWorkspace(cwd: string): boolean {
   return existsSync(join(cwd, STORYBOARD_RELATIVE_PATHS.projectJson));
 }
 
-// The header answers the two questions a person has before typing anything: where am I, and
-// which AI will answer. Both come from the same files the one-shot commands read.
 export function describeHeader(cwd: string): TuiHeaderInfo {
   const isWorkspaceFolder: boolean = isWorkspace(cwd);
   const home: StoryboardHomePaths = resolveStoryboardHomePaths();
@@ -105,7 +99,6 @@ async function readStatus(
   try {
     return await container.describeWorkspace();
   } catch {
-    // A damaged project file must not take the prompt down with it; `doctor` at the prompt names it.
     return undefined;
   }
 }
