@@ -17,20 +17,16 @@ import {
   missingModelMessage,
 } from '@storyboard/story-model';
 import { NodeCliRunner } from './nodeCliRunner';
+import type { CliProviderConfig, ProviderModelConfig } from '#ai/ports/ConfigBridge';
 
 const providerId: AiProviderId = 'claude-code';
-const defaultCommand = 'claude';
-const defaultTimeoutMs = 10 * 60 * 1000;
-const connectionCheckTimeoutMs = 20 * 1000;
+const defaultCommand: string = 'claude';
+const defaultTimeoutMs: number = 10 * 60 * 1000;
+const connectionCheckTimeoutMs: number = 20 * 1000;
 
-// SECURITY: the child signs in with whatever the user's own `claude` login holds. An ANTHROPIC_
-// variable in the parent's environment — a key, a token, another endpoint — would silently turn a
-// subscription call into a metered one or send it elsewhere, so the child inherits none of them.
-const withheldEnvironment = ['ANTHROPIC_'] as const;
+const withheldEnvironment: readonly string[] = ['ANTHROPIC_'];
 
-// NOTE: 2.1.289 에서 실측한 조합이다. 도구·MCP·슬래시 명령·사용자 설정을 모두 끄지 않으면 호출마다
-// 2만 토큰이 넘는 코딩 에이전트 문맥이 실린다. `--bare` 는 구독 로그인을 읽지 않으므로 쓰지 않는다.
-const fixedArguments = [
+const fixedArguments: readonly string[] = [
   '-p',
   '--tools',
   '',
@@ -43,12 +39,14 @@ const fixedArguments = [
   'stream-json',
   '--verbose',
   '--include-partial-messages',
-] as const;
+];
 
-// The CLI replaces its coding-agent persona only when it is handed a system prompt of its own.
-const fallbackSystemPrompt = '요청받은 글만 답한다. 도구를 쓰지 않는다.';
+const fallbackSystemPrompt: string = '요청받은 글만 답한다. 도구를 쓰지 않는다.';
 
-const roleLabels = { user: '사용자', assistant: '어시스턴트' } as const;
+const roleLabels: Readonly<Record<'user' | 'assistant', string>> = {
+  user: '사용자',
+  assistant: '어시스턴트',
+};
 
 export interface ClaudeCodeProviderOptions {
   readonly model: string | undefined;
@@ -82,19 +80,15 @@ function parseJsonLine(line: string): JsonRecord | undefined {
     const parsed: unknown = JSON.parse(line);
     return isRecord(parsed) ? parsed : undefined;
   } catch {
-    // The CLI may print a notice that is not an event; only events are read.
     return undefined;
   }
 }
 
 function readTokenCount(usage: JsonRecord, key: string): number {
-  const value = usage[key];
+  const value: unknown = usage[key];
   return typeof value === 'number' ? value : 0;
 }
 
-// NOTE: 실행 파일은 프롬프트 거의 전부를 캐시 쓰기로 센다(실측: 6만 토큰 프롬프트에 input_tokens 2,
-// cache_creation_input_tokens 61,354). 이 경로는 요금이 없어 토큰 수가 유일한 척도이므로, 캐시로
-// 센 것까지 입력에 합쳐 «보낸 만큼» 이 보이게 한다.
 function readUsage(value: unknown): AiUsage | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -114,7 +108,7 @@ function readTextDelta(event: JsonRecord): string | undefined {
     return undefined;
   }
 
-  const delta = event.event.delta;
+  const delta: unknown = event.event.delta;
 
   return event.event.type === 'content_block_delta' &&
     isRecord(delta) &&
@@ -143,7 +137,7 @@ function recordEvent(output: CliOutput, event: JsonRecord): void {
     return;
   }
 
-  const usage = readUsage(event.usage);
+  const usage: AiUsage | undefined = readUsage(event.usage);
 
   output.result = {
     isError: event.is_error === true,
@@ -156,20 +150,18 @@ function recordEvent(output: CliOutput, event: JsonRecord): void {
   };
 }
 
-// The CLI takes one system prompt and one prompt on stdin, so a conversation is written out as a
-// labelled transcript; a single user message goes through untouched.
 export function splitCliPrompt(messages: readonly AiMessage[]): {
   readonly systemPrompt: string;
   readonly prompt: string;
 } {
-  const systemPrompt = messages
+  const systemPrompt: string = messages
     .filter((message) => message.role === 'system')
     .map((message) => message.content)
     .join('\n\n');
-  const turns = messages.filter((message) => message.role !== 'system');
+  const turns: AiMessage[] = messages.filter((message) => message.role !== 'system');
   const [onlyTurn] = turns;
 
-  const prompt =
+  const prompt: string =
     turns.length === 1 && onlyTurn?.role === 'user'
       ? onlyTurn.content
       : turns
@@ -179,12 +171,10 @@ export function splitCliPrompt(messages: readonly AiMessage[]): {
   return { systemPrompt: systemPrompt.length > 0 ? systemPrompt : fallbackSystemPrompt, prompt };
 }
 
-// One child at a time, across every provider instance in this process: a subscription is priced for
-// a person typing, not for a pipeline fanning out.
 let queueTail: Promise<void> = Promise.resolve();
 
 function runInTurn<T>(task: () => Promise<T>): Promise<T> {
-  const turn = queueTail.then(task);
+  const turn: Promise<T> = queueTail.then(task);
   queueTail = turn.then(
     () => undefined,
     () => undefined,
@@ -200,14 +190,14 @@ function formatResetTime(resetsAtSeconds: number | undefined): string {
 
 export class ClaudeCodeProvider implements AiProvider {
   public readonly id: AiProviderId = providerId;
-  public readonly displayName = getProviderDisplayName(providerId);
+  public readonly displayName: string = getProviderDisplayName(providerId);
   private readonly model: string;
   private readonly command: string;
   private readonly timeoutMs: number;
   private readonly runner: ICliRunner;
 
   public constructor(options: ClaudeCodeProviderOptions) {
-    const model = options.model?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!model) {
       throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
@@ -219,11 +209,9 @@ export class ClaudeCodeProvider implements AiProvider {
     this.runner = options.runner ?? new NodeCliRunner();
   }
 
-  // NOTE: 로그인 여부는 실행 파일 스스로 답한다(`claude auth status --json` 의 loggedIn). 이쪽은 그
-  // 답만 읽고, 로그인 정보가 어디에 어떻게 있는지는 알지 못한다.
   public async checkConnection(): Promise<boolean> {
-    let status = '';
-    const run = await this.runner.run({
+    let status: string = '';
+    const run: CliRunResult = await this.runner.run({
       command: this.command,
       args: ['auth', 'status', '--json'],
       stdin: '',
@@ -258,10 +246,10 @@ export class ClaudeCodeProvider implements AiProvider {
   public async *generateStream(request: AiGenerateRequest): AsyncIterable<AiStreamChunk> {
     const deltas: string[] = [];
     let wake: (() => void) | undefined;
-    let isFinished = false;
-    const abort = new AbortController();
+    let isFinished: boolean = false;
+    const abort: AbortController = new AbortController();
 
-    const generation = runInTurn(() =>
+    const generation: Promise<AiGenerateResponse> = runInTurn(() =>
       this.runGeneration(
         request,
         (delta) => {
@@ -274,12 +262,11 @@ export class ClaudeCodeProvider implements AiProvider {
       isFinished = true;
       wake?.();
     });
-    // The failure is rethrown below, once the deltas that arrived before it are handed over.
     generation.catch(() => undefined);
 
     try {
       while (!isFinished || deltas.length > 0) {
-        const delta = deltas.shift();
+        const delta: string | undefined = deltas.shift();
 
         if (delta !== undefined) {
           yield { type: 'text-delta', delta };
@@ -293,7 +280,6 @@ export class ClaudeCodeProvider implements AiProvider {
 
       yield { type: 'done', response: await generation };
     } finally {
-      // A reader that stops early must not leave the child writing to no one.
       abort.abort();
     }
   }
@@ -306,9 +292,7 @@ export class ClaudeCodeProvider implements AiProvider {
     const { systemPrompt, prompt } = splitCliPrompt(request.messages);
     const output: CliOutput = { isRateLimited: false };
 
-    // NOTE: 실행 파일에는 온도·시드·출력 상한 플래그가 없어 request.temperature 와 maxTokens 는
-    // 전달되지 않는다.
-    const run = await this.runner.run({
+    const run: CliRunResult = await this.runner.run({
       command: this.command,
       args: [
         ...fixedArguments,
@@ -324,13 +308,13 @@ export class ClaudeCodeProvider implements AiProvider {
       timeoutMs: this.timeoutMs,
       withoutEnvironment: withheldEnvironment,
       onStdoutLine: (line) => {
-        const event = parseJsonLine(line);
+        const event: JsonRecord | undefined = parseJsonLine(line);
 
         if (event === undefined) {
           return;
         }
 
-        const delta = readTextDelta(event);
+        const delta: string | undefined = readTextDelta(event);
 
         if (delta !== undefined) {
           onTextDelta?.(delta);
@@ -393,13 +377,10 @@ export class ClaudeCodeProvider implements AiProvider {
     );
   }
 
-  // Each cause gets its own sentence: a person can act on «log in» or «wait until four», not on
-  // «generation failed».
   private failedRunError(run: CliRunResult, output: CliOutput): AiProviderError {
     const { result } = output;
-    // A result that is not an error is the generated text, not a reason; it never goes in a message.
-    const reason = result?.isError === true ? result.text.trim() : '';
-    const detail = reason || run.stderr.trim() || `종료 코드 ${String(run.exitCode)}`;
+    const reason: string = result?.isError === true ? result.text.trim() : '';
+    const detail: string = reason || run.stderr.trim() || `종료 코드 ${String(run.exitCode)}`;
 
     if (/not logged in|\/login/i.test(detail)) {
       return this.notLoggedInError();
@@ -426,9 +407,9 @@ export class ClaudeCodeProvider implements AiProvider {
 }
 
 registerProviderFactory(providerId, (context) => {
-  const config = context.configBridge.getProviderConfig(providerId);
-  const cli = context.configBridge.getCliProviderConfig(providerId);
-  const runner = context.clients.createCliRunner?.();
+  const config: ProviderModelConfig = context.configBridge.getProviderConfig(providerId);
+  const cli: CliProviderConfig = context.configBridge.getCliProviderConfig(providerId);
+  const runner: ICliRunner | undefined = context.clients.createCliRunner?.();
 
   return new ClaudeCodeProvider({
     model: context.modelOverride ?? config.model,

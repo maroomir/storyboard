@@ -14,6 +14,7 @@ import {
   missingModelMessage,
 } from '@storyboard/story-model';
 import { registerProviderFactory } from '#ai/ai/providerFactory';
+import type { ProviderModelConfig } from '#ai/ports/ConfigBridge';
 
 export interface OllamaClientLike {
   readonly get: (path: string) => Promise<unknown>;
@@ -23,10 +24,7 @@ export interface OllamaClientLike {
 export interface OllamaProviderOptions {
   readonly baseUrl: string | undefined;
   readonly model: string | undefined;
-  // NOTE: 지정하지 않으면 ollama 가 모델 기본 문맥(보통 2~4천 토큰)을 쓰고, 넘치는 앞부분을
-  // 오류 없이 버린다. 긴 원고를 이어 읽는 쪽에서는 그것이 «앞을 못 읽은 판정» 으로 조용히 나온다.
   readonly contextTokens?: number;
-  // 생각(thinking) 켜기/끄기. 안 주면 ollama 의 모델 기본값이다.
   readonly think?: boolean;
   readonly createClient?: (baseUrl: string) => OllamaClientLike;
 }
@@ -46,7 +44,6 @@ interface OllamaChatRequest {
 interface OllamaChatResponse {
   readonly message?: {
     readonly content?: string;
-    // 생각하는 모델의 생각. 본문(content)과 따로 온다.
     readonly thinking?: string;
   };
   readonly prompt_eval_count?: number;
@@ -63,8 +60,8 @@ export class OllamaProvider implements AiProvider {
   private readonly think: boolean | undefined;
 
   public constructor(options: OllamaProviderOptions) {
-    const baseUrl = options.baseUrl?.trim();
-    const model = options.model?.trim();
+    const baseUrl: string | undefined = options.baseUrl?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!baseUrl) {
       throw new AiProviderError(
@@ -101,7 +98,7 @@ export class OllamaProvider implements AiProvider {
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
-      const response = await this.client.post('/api/chat', {
+      const response: OllamaChatResponse = await this.client.post('/api/chat', {
         model: this.model,
         messages: request.messages.map(({ role, content }) => ({ role, content })),
         stream: false,
@@ -113,17 +110,14 @@ export class OllamaProvider implements AiProvider {
         },
       });
 
-      const text = response.message?.content ?? '';
-      const thinking = response.message?.thinking ?? '';
+      const text: string = response.message?.content ?? '';
+      const thinking: string = response.message?.thinking ?? '';
 
-      // NOTE: 생각하는 모델은 num_predict 를 생각으로 다 쓰면 본문 없이 돌아온다. 그것을 빈 본문으로
-      // 넘기면 뼈대가 비고, 그 빈 뼈대를 «내용이 입력되지 않았습니다» 라는 한 줄로 확장한 원고가
-      // 조용히 저장된다. 실측에서 gemma4 가 뼈대 프롬프트에 생각 19,000자를 쓰고 그렇게 됐다.
       if (text.trim().length === 0 && thinking.trim().length > 0) {
         throw new ThinkingExhaustedOutputError(this.model, thinking.length);
       }
 
-      const usage = usageFromOllamaResponse(response);
+      const usage: AiUsage | undefined = usageFromOllamaResponse(response);
       return aiGenerateResponseWithUsage({
         providerId: this.id,
         model: this.model,
@@ -173,7 +167,7 @@ function createDefaultOllamaClient(baseUrl: string): OllamaClientLike {
 }
 
 registerProviderFactory('ollama', (context) => {
-  const config = context.configBridge.getProviderConfig('ollama');
+  const config: ProviderModelConfig = context.configBridge.getProviderConfig('ollama');
 
   return new OllamaProvider({
     baseUrl: config.baseUrl,

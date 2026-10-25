@@ -1,5 +1,5 @@
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface DraftExpansionPromptContext {
@@ -7,7 +7,9 @@ export interface DraftExpansionPromptContext {
   readonly background?: string;
 }
 
-export const DraftExpansionPrompt = {
+export const DraftExpansionPrompt: PromptModule<
+  [selection: string, context?: DraftExpansionPromptContext, variant?: PromptVariantId]
+> = {
   config: promptTuning('draftExpansion'),
   build(
     selection: string,
@@ -23,4 +25,4 @@ export const DraftExpansionPrompt = {
       },
     });
   },
-} as const;
+};

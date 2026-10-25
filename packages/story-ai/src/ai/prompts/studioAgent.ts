@@ -5,7 +5,7 @@ import {
 } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import type { PromptArtifact } from './types';
+import type { PromptArtifact, PromptModule } from './types';
 
 export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';
 
@@ -24,7 +24,7 @@ export interface StudioAgentPromptInput {
   readonly hasSelection: boolean;
 }
 
-export const StudioAgentPrompt = {
+export const StudioAgentPrompt: PromptModule<[input: StudioAgentPromptInput]> = {
   config: promptTuning('studioAgent'),
   build(input: StudioAgentPromptInput): PromptArtifact {
     return renderPrompt('studioAgent', 'generic', {
@@ -52,9 +52,9 @@ export const StudioAgentPrompt = {
       },
     });
   },
-} as const;
+};
 
-const editableSceneCardFields = [
+const editableSceneCardFields: string[] = [
   'title',
   'summary',
   'purpose',

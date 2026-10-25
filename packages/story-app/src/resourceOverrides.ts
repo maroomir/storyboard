@@ -113,7 +113,7 @@ export async function loadResourceOverrides(
       {
         kind: 'promptVariants',
         label: '프롬프트 변형 규칙 파일',
-        schema: promptVariantRulesOverrideSchema.strict(),
+        schema: promptVariantRulesOverrideSchema,
         apply: overridePromptVariantRules,
       },
     );

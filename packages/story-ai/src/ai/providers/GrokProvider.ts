@@ -14,13 +14,12 @@ import {
   missingApiKeyMessage,
   missingModelMessage,
   providerCatalog,
+  type AiUsage,
 } from '@storyboard/story-model';
-import { type OpenAiClientLike } from './OpenAiProvider';
+import { type OpenAiChatCompletionResponse, type OpenAiClientLike } from './OpenAiProvider';
 import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
-// xAI serves Grok through an OpenAI-compatible chat completions endpoint, so the client shape is
-// the OpenAI one; only the base URL and the key differ.
-export const grokApiBaseUrl = providerCatalog.grok.defaultBaseUrl;
+export const grokApiBaseUrl: string = providerCatalog.grok.defaultBaseUrl;
 
 export interface GrokProviderOptions {
   readonly apiKey: string | undefined;
@@ -30,13 +29,13 @@ export interface GrokProviderOptions {
 
 export class GrokProvider implements AiProvider {
   public readonly id: AiProviderId = 'grok';
-  public readonly displayName = getProviderDisplayName('grok');
+  public readonly displayName: string = getProviderDisplayName('grok');
   private readonly client: OpenAiClientLike;
   private readonly model: string;
 
   public constructor(options: GrokProviderOptions) {
-    const apiKey = options.apiKey?.trim();
-    const model = options.model?.trim();
+    const apiKey: string | undefined = options.apiKey?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!apiKey) {
       throw new AiProviderError('missing-api-key', this.id, missingApiKeyMessage(this.id));
@@ -66,15 +65,15 @@ export class GrokProvider implements AiProvider {
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
-      const response = await this.client.chat.completions.create({
+      const response: OpenAiChatCompletionResponse = await this.client.chat.completions.create({
         model: this.model,
         messages: request.messages,
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         max_tokens: request.maxTokens,
       });
 
-      const text = response.choices[0]?.message?.content ?? '';
-      const usage = response.usage
+      const text: string = response.choices[0]?.message?.content ?? '';
+      const usage: AiUsage | undefined = response.usage
         ? {
             inputTokens: response.usage.prompt_tokens ?? 0,
             outputTokens: response.usage.completion_tokens ?? 0,
@@ -99,7 +98,7 @@ export class GrokProvider implements AiProvider {
 }
 
 function createDefaultGrokClient(apiKey: string): OpenAiClientLike {
-  const client = new OpenAI({ apiKey, baseURL: grokApiBaseUrl });
+  const client: OpenAI = new OpenAI({ apiKey, baseURL: grokApiBaseUrl });
 
   return {
     models: {

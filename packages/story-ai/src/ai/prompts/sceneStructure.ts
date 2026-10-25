@@ -1,6 +1,6 @@
 import { sceneSeedSectionLabels } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export type SceneStructureFieldKey =
@@ -20,16 +20,17 @@ export interface SceneStructurePromptInput {
 
 const listFields: readonly SceneStructureFieldKey[] = ['foreshadowing', 'neededCanon'];
 
-export const SceneStructurePrompt = {
+export const SceneStructurePrompt: PromptModule<
+  [input: SceneStructurePromptInput, variant?: PromptVariantId]
+> = {
   config: promptTuning('sceneStructure'),
   build(input: SceneStructurePromptInput, variant: PromptVariantId = 'generic'): PromptArtifact {
-    const responseShape = input.missingFields
+    const responseShape: string = input.missingFields
       .map((key) => (listFields.includes(key) ? `"${key}":[]` : `"${key}":""`))
       .join(',');
 
     return renderPrompt('sceneStructure', variant, {
       view: {
-        // NOTE: 항목마다 자기 키 이름의 플래그를 켜서 리소스가 그 키의 안내 문구를 고른다.
         requestedFields: input.missingFields.map((key, index) => ({
           key,
           label: sceneSeedSectionLabels[key],
@@ -43,4 +44,4 @@ export const SceneStructurePrompt = {
       },
     });
   },
-} as const;
+};

@@ -1,6 +1,6 @@
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import type { PromptArtifact } from './types';
+import type { PromptArtifact, PromptModule } from './types';
 
 export interface StudioCardAuditPromptInput {
   readonly entityLabel: string;
@@ -8,7 +8,7 @@ export interface StudioCardAuditPromptInput {
   readonly context: string;
 }
 
-export const StudioCardAuditPrompt = {
+export const StudioCardAuditPrompt: PromptModule<[input: StudioCardAuditPromptInput]> = {
   config: promptTuning('studioCardAudit'),
   build(input: StudioCardAuditPromptInput): PromptArtifact {
     return renderPrompt('studioCardAudit', 'generic', {
@@ -19,4 +19,4 @@ export const StudioCardAuditPrompt = {
       },
     });
   },
-} as const;
+};

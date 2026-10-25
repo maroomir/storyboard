@@ -1,10 +1,17 @@
 import type { OutlineBrief, OutlineCastMember, OutlineSynopsis } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 import { briefToUserBlock } from './outlineSynopsis';
 
-export const OutlineCharactersPrompt = {
+export const OutlineCharactersPrompt: PromptModule<
+  [
+    brief: OutlineBrief,
+    synopsis: OutlineSynopsis,
+    cast: readonly OutlineCastMember[],
+    variant?: PromptVariantId,
+  ]
+> = {
   config: promptTuning('outlineCharacters'),
   build(
     brief: OutlineBrief,
@@ -22,10 +29,10 @@ export const OutlineCharactersPrompt = {
       partials: { brief: briefToUserBlock(brief) },
     });
   },
-} as const;
+};
 
 function synopsisToBlock(synopsis: OutlineSynopsis): string {
-  const lines = [
+  const lines: string[] = [
     synopsis.logline.length > 0 ? `로그라인: ${synopsis.logline}` : undefined,
     synopsis.mainConflicts.length > 0
       ? `주요 갈등: ${synopsis.mainConflicts.join(', ')}`

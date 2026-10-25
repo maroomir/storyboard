@@ -1,6 +1,10 @@
-import { describeNarration, type StyleDirective } from '@storyboard/story-model';
+import {
+  describeNarration,
+  type NarrationDirective,
+  type StyleDirective,
+} from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface DraftCritiqueInput {
@@ -12,15 +16,15 @@ export interface DraftCritiqueInput {
   readonly styleConstraints?: readonly string[];
   readonly qualityCriteria?: readonly string[];
   readonly styleDirective?: StyleDirective;
-  // Set when the body is an assembled volume carrying `<!-- scene: <stem> -->` markers, so each
-  // issue can name the scene it came from and be routed back to a draft file.
   readonly hasSceneMarkers?: boolean;
 }
 
-export const DraftCritiquePrompt = {
+export const DraftCritiquePrompt: PromptModule<
+  [input: DraftCritiqueInput, variant?: PromptVariantId]
+> = {
   config: promptTuning('draftCritique'),
   build(input: DraftCritiqueInput, variant: PromptVariantId = 'generic'): PromptArtifact {
-    const narration = input.styleDirective?.narration;
+    const narration: NarrationDirective | undefined = input.styleDirective?.narration;
 
     return renderPrompt('draftCritique', variant, {
       view: {
@@ -39,4 +43,4 @@ export const DraftCritiquePrompt = {
       },
     });
   },
-} as const;
+};

@@ -1,5 +1,3 @@
-// Loading a provider module registers its factory; importing this barrel is what links the
-// providers into the registry.
 import './chatGptProvider';
 import './claudeCodeProvider';
 import './ClaudeProvider';

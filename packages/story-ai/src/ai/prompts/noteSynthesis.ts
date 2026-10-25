@@ -1,9 +1,11 @@
 import { pointOfViews } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 
-export const NoteSynthesisPrompt = {
+export const NoteSynthesisPrompt: PromptModule<
+  [premise: readonly string[], castNames: readonly string[], variant?: PromptVariantId]
+> = {
   config: promptTuning('noteSynthesis'),
   build(
     premise: readonly string[],
@@ -19,4 +21,4 @@ export const NoteSynthesisPrompt = {
       },
     });
   },
-} as const;
+};

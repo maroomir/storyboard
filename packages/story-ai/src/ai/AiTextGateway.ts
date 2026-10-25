@@ -11,7 +11,12 @@ import { projectUsageAttribution } from '@storyboard/story-model';
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/promptVariants';
 import type { PromptVariantId } from './prompts/types';
-import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
+import type {
+  GenerateTextOptions,
+  OnUsageRecordCallback,
+  StoryboardAiServiceOptions,
+} from './aiServiceTypes';
+import type { TaskAiConfigResolved } from '#ai/ports/ConfigBridge';
 
 export class AiTextGateway {
   public constructor(
@@ -24,7 +29,7 @@ export class AiTextGateway {
     messages: readonly AiMessage[],
     options: GenerateTextOptions,
   ): Promise<AiGenerateResponse> {
-    const response = options.providerId
+    const response: AiGenerateResponse = options.providerId
       ? await this.registry.generateWithProvider(options.providerId, {
           taskName,
           messages,
@@ -49,7 +54,7 @@ export class AiTextGateway {
     messages: readonly AiMessage[],
     options: GenerateTextOptions,
   ): AsyncIterable<AiStreamChunk> {
-    const stream = options.providerId
+    const stream: AsyncIterable<AiStreamChunk> = options.providerId
       ? this.registry.generateStreamWithProvider(options.providerId, {
           taskName,
           messages,
@@ -72,8 +77,8 @@ export class AiTextGateway {
   }
 
   public resolvePromptVariant(taskName: AiTaskName, options: GenerateTextOptions): PromptVariantId {
-    const resolved = this.registry.getTaskAiConfig(taskName);
-    const override = this.registry.getPromptVariantOverride();
+    const resolved: TaskAiConfigResolved = this.registry.getTaskAiConfig(taskName);
+    const override: PromptVariantId | undefined = this.registry.getPromptVariantOverride();
     return selectPromptVariant({
       providerId: options.providerId ?? resolved.providerId,
       taskName,
@@ -88,14 +93,12 @@ export class AiTextGateway {
     response: AiGenerateResponse,
     attribution: UsageAttribution | undefined,
   ): void {
-    const onUsage = this.options.onUsage;
+    const onUsage: OnUsageRecordCallback | undefined = this.options.onUsage;
 
     if (!onUsage) {
       return;
     }
 
-    // NOTE: 귀속이 없는 호출을 버리면 원장·예산·/cost 어디에도 잡히지 않는다. 씬이나 카드에 속하지
-    // 않는 호출은 작품에 귀속한다.
     onUsage({
       taskName,
       providerId: response.providerId,

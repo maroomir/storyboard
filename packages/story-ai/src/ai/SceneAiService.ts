@@ -1,4 +1,4 @@
-import type { Background, Character, ProjectFormat } from '@storyboard/story-model';
+import type { AiGenerateResponse, Background, Character, ProjectFormat } from '@storyboard/story-model';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   toPromptMessages,
@@ -64,6 +64,7 @@ import {
 } from './prompts/sceneSectionExpansion';
 import { SceneStructurePrompt, type SceneStructureFieldKey } from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
+import type { PromptArtifact, PromptVariantId } from '#ai/ai/prompts/types';
 
 export class SceneAiService {
   public constructor(private readonly gateway: AiTextGateway) {}
@@ -72,19 +73,18 @@ export class SceneAiService {
     input: string,
     options: GenerateTextOptions = {},
   ): Promise<SituationWithCharacters[]> {
-    const variant = this.gateway.resolvePromptVariant('situationExtraction', options);
-    const prompt = SituationExtractionPrompt.build(input, variant);
-    const response = await this.gateway.generate(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('situationExtraction', options);
+    const prompt: PromptArtifact = SituationExtractionPrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.gateway.generate(
       'situationExtraction',
       toPromptMessages(prompt),
       options,
     );
-    const parsedArray = parseJsonArray(response.text);
+    const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
     return parsedArray ? parsedArray.flatMap((item) => toSituationWithCharacters(item)) : [];
   }
 
-  // 빈 grounding 필드만 채워 달라고 요청한다. 이미 확정된 사실은 모순 방지용 컨텍스트로만 넘긴다.
   public async proposeSceneGrounding(
     input: {
       readonly sceneBody: string;
@@ -98,8 +98,8 @@ export class SceneAiService {
       return {};
     }
 
-    const variant = this.gateway.resolvePromptVariant('sceneGrounding', options);
-    const prompt = SceneGroundingPrompt.build(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneGrounding', options);
+    const prompt: PromptArtifact = SceneGroundingPrompt.build(
       {
         sceneBody: input.sceneBody,
         missingFields: input.missingFields,
@@ -108,7 +108,7 @@ export class SceneAiService {
       },
       variant,
     );
-    const response = await this.gateway.generate('sceneGrounding', toPromptMessages(prompt), {
+    const response: AiGenerateResponse = await this.gateway.generate('sceneGrounding', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneGroundingPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneGroundingPrompt.config.maxTokens,
@@ -127,8 +127,8 @@ export class SceneAiService {
     },
     options: GenerateTextOptions = {},
   ): Promise<ExpandedSceneBeat[]> {
-    const variant = this.gateway.resolvePromptVariant('sceneBeats', options);
-    const prompt = SceneBeatsPrompt.build(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneBeats', options);
+    const prompt: PromptArtifact = SceneBeatsPrompt.build(
       {
         sceneBody: input.sceneBody,
         ...(input.summary === undefined ? {} : { summary: input.summary }),
@@ -138,7 +138,7 @@ export class SceneAiService {
       },
       variant,
     );
-    const response = await this.gateway.generate('sceneBeats', toPromptMessages(prompt), {
+    const response: AiGenerateResponse = await this.gateway.generate('sceneBeats', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneBeatsPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneBeatsPrompt.config.maxTokens,
@@ -147,8 +147,6 @@ export class SceneAiService {
     return coerceExpandedSceneBeats(response.text);
   }
 
-  // summary(자유 산문)에서 비어 있는 구조 필드만 제안받는다. 이미 작성된 필드는 모순 방지용
-  // 컨텍스트로만 넘긴다.
   public async proposeSceneStructure(
     input: {
       readonly sceneSummary: string;
@@ -161,8 +159,8 @@ export class SceneAiService {
       return {};
     }
 
-    const variant = this.gateway.resolvePromptVariant('sceneStructure', options);
-    const prompt = SceneStructurePrompt.build(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneStructure', options);
+    const prompt: PromptArtifact = SceneStructurePrompt.build(
       {
         sceneSummary: input.sceneSummary,
         missingFields: input.missingFields,
@@ -170,7 +168,7 @@ export class SceneAiService {
       },
       variant,
     );
-    const response = await this.gateway.generate('sceneStructure', toPromptMessages(prompt), {
+    const response: AiGenerateResponse = await this.gateway.generate('sceneStructure', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneStructurePrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneStructurePrompt.config.maxTokens,
@@ -183,9 +181,9 @@ export class SceneAiService {
     character: Character,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('personaGeneration', options);
-    const prompt = PersonaGenerationPrompt.build(character, variant, options.styleDirective);
-    const response = await this.gateway.generate(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('personaGeneration', options);
+    const prompt: PromptArtifact = PersonaGenerationPrompt.build(character, variant, options.styleDirective);
+    const response: AiGenerateResponse = await this.gateway.generate(
       'personaGeneration',
       toPromptMessages(prompt),
       options,
@@ -199,9 +197,9 @@ export class SceneAiService {
     options: GenerateTextOptions = {},
     recentExcerpt?: string,
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('backgroundDescription', options);
-    const prompt = BackgroundDescriptionPrompt.build(background, variant, recentExcerpt);
-    const response = await this.gateway.generate(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('backgroundDescription', options);
+    const prompt: PromptArtifact = BackgroundDescriptionPrompt.build(background, variant, recentExcerpt);
+    const response: AiGenerateResponse = await this.gateway.generate(
       'backgroundDescription',
       toPromptMessages(prompt),
       {
@@ -218,9 +216,9 @@ export class SceneAiService {
     background: Background,
     options: GenerateTextOptions = {},
   ): Promise<BackgroundFactConflict[]> {
-    const variant = this.gateway.resolvePromptVariant('backgroundFactConflicts', options);
-    const prompt = BackgroundFactConflictsPrompt.build(background, variant);
-    const response = await this.gateway.generate(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('backgroundFactConflicts', options);
+    const prompt: PromptArtifact = BackgroundFactConflictsPrompt.build(background, variant);
+    const response: AiGenerateResponse = await this.gateway.generate(
       'backgroundFactConflicts',
       toPromptMessages(prompt),
       {
@@ -240,9 +238,9 @@ export class SceneAiService {
     input: SceneSkeletonInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('sceneSkeleton', options);
-    const prompt = SceneSkeletonPrompt.build({ ...input, style: options.styleDirective }, variant);
-    const response = await this.gateway.generate('sceneSkeleton', toPromptMessages(prompt), {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneSkeleton', options);
+    const prompt: PromptArtifact = SceneSkeletonPrompt.build({ ...input, style: options.styleDirective }, variant);
+    const response: AiGenerateResponse = await this.gateway.generate('sceneSkeleton', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneSkeletonPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneSkeletonPrompt.config.maxTokens,
@@ -255,12 +253,12 @@ export class SceneAiService {
     input: SceneDialoguePolishInput,
     options: GenerateTextOptions = {},
   ): Promise<SceneDialoguePolishResult> {
-    const variant = this.gateway.resolvePromptVariant('sceneDialoguePolish', options);
-    const prompt = SceneDialoguePolishPrompt.build(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneDialoguePolish', options);
+    const prompt: PromptArtifact = SceneDialoguePolishPrompt.build(
       { ...input, style: options.styleDirective },
       variant,
     );
-    const response = await this.gateway.generate('sceneDialoguePolish', toPromptMessages(prompt), {
+    const response: AiGenerateResponse = await this.gateway.generate('sceneDialoguePolish', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneDialoguePolishPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneDialoguePolishPrompt.config.maxTokens,
@@ -272,14 +270,13 @@ export class SceneAiService {
     };
   }
 
-  // 배우 뼈대의 세 호출. 배우와 심판은 JSON 하나를, 감독은 «[선택: …]» 한 줄 뒤 뼈대 본문을 돌려준다.
   public async proposeBeatAction(
     input: SceneBeatActorInput,
     options: GenerateTextOptions = {},
   ): Promise<SceneBeatProposal | undefined> {
-    const variant = this.gateway.resolvePromptVariant('sceneBeatActor', options);
-    const prompt = SceneBeatActorPrompt.build(input, variant);
-    const response = await this.gateway.generate('sceneBeatActor', toPromptMessages(prompt), {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneBeatActor', options);
+    const prompt: PromptArtifact = SceneBeatActorPrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.gateway.generate('sceneBeatActor', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneBeatActorPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneBeatActorPrompt.config.maxTokens,
@@ -292,9 +289,9 @@ export class SceneAiService {
     input: SceneBeatArbiterInput,
     options: GenerateTextOptions = {},
   ): Promise<SceneBeatPassage> {
-    const variant = this.gateway.resolvePromptVariant('sceneBeatArbiter', options);
-    const prompt = SceneBeatArbiterPrompt.build({ ...input, style: options.styleDirective }, variant);
-    const response = await this.gateway.generate('sceneBeatArbiter', toPromptMessages(prompt), {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneBeatArbiter', options);
+    const prompt: PromptArtifact = SceneBeatArbiterPrompt.build({ ...input, style: options.styleDirective }, variant);
+    const response: AiGenerateResponse = await this.gateway.generate('sceneBeatArbiter', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneBeatArbiterPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneBeatArbiterPrompt.config.maxTokens,
@@ -307,9 +304,9 @@ export class SceneAiService {
     input: SceneBeatJudgeInput,
     options: GenerateTextOptions = {},
   ): Promise<SceneBeatVerdict | undefined> {
-    const variant = this.gateway.resolvePromptVariant('sceneBeatJudge', options);
-    const prompt = SceneBeatJudgePrompt.build(input, variant);
-    const response = await this.gateway.generate('sceneBeatJudge', toPromptMessages(prompt), {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneBeatJudge', options);
+    const prompt: PromptArtifact = SceneBeatJudgePrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.gateway.generate('sceneBeatJudge', toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? SceneBeatJudgePrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneBeatJudgePrompt.config.maxTokens,
@@ -322,9 +319,9 @@ export class SceneAiService {
     input: SceneDialogueAttributionInput,
     options: GenerateTextOptions = {},
   ): Promise<DialogueAttribution[]> {
-    const variant = this.gateway.resolvePromptVariant('sceneDialogueAttribution', options);
-    const prompt = SceneDialogueAttributionPrompt.build(input, variant);
-    const response = await this.gateway.generate(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneDialogueAttribution', options);
+    const prompt: PromptArtifact = SceneDialogueAttributionPrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.gateway.generate(
       'sceneDialogueAttribution',
       toPromptMessages(prompt),
       {
@@ -345,12 +342,12 @@ export class SceneAiService {
     input: SceneSectionExpansionInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('sceneSectionExpansion', options);
-    const prompt = SceneSectionExpansionPrompt.build(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneSectionExpansion', options);
+    const prompt: PromptArtifact = SceneSectionExpansionPrompt.build(
       { ...input, style: options.styleDirective },
       variant,
     );
-    const response = await this.gateway.generate(
+    const response: AiGenerateResponse = await this.gateway.generate(
       'sceneSectionExpansion',
       toPromptMessages(prompt),
       {
@@ -368,9 +365,9 @@ export class SceneAiService {
     format: ProjectFormat,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('sceneDraft', options);
-    const prompt = GenreFormattingPrompt.build(dialogue, format, variant, options.styleDirective);
-    const response = await this.gateway.generate('sceneDraft', toPromptMessages(prompt), options);
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneDraft', options);
+    const prompt: PromptArtifact = GenreFormattingPrompt.build(dialogue, format, variant, options.styleDirective);
+    const response: AiGenerateResponse = await this.gateway.generate('sceneDraft', toPromptMessages(prompt), options);
 
     return response.text.trim();
   }
@@ -382,7 +379,7 @@ function describeKnownGrounding(grounding: SceneGrounding | undefined): string[]
   }
 
   return sceneGroundingFieldKeys.flatMap((key) => {
-    const value = grounding[key]?.trim();
+    const value: string | undefined = grounding[key]?.trim();
     return value ? [`- ${sceneGroundingFieldLabels[key]}: ${value}`] : [];
   });
 }
@@ -409,11 +406,11 @@ function toSceneStructureProposal(
   const proposal: Record<string, string | string[]> = {};
 
   for (const key of requestedFields) {
-    const value = parsed[key];
+    const value: unknown = parsed[key];
 
     if (sceneStructureListKeys.includes(key)) {
       if (Array.isArray(value)) {
-        const items = value
+        const items: string[] = value
           .filter((item): item is string => typeof item === 'string')
           .map((item) => item.trim())
           .filter((item) => item.length > 0);
@@ -444,7 +441,7 @@ function toSceneGrounding(
   const grounding: Record<string, string> = {};
 
   for (const key of requestedFields) {
-    const value = parsed[key];
+    const value: unknown = parsed[key];
 
     if (typeof value === 'string' && value.trim().length > 0) {
       grounding[key] = value.trim();

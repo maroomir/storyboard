@@ -69,7 +69,7 @@ import {
   type NoteConsolidationTarget,
   type NoteSynthesis,
 } from '@storyboard/story-model';
-import { type PromptArtifact, type PromptConfig } from './prompts/types';
+import { type PromptArtifact, type PromptConfig, type PromptVariantId } from './prompts/types';
 import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {
   toPromptMessages,
@@ -385,9 +385,9 @@ export class StoryboardAiService {
     brief: OutlineBrief,
     options: GenerateTextOptions = {},
   ): Promise<OutlineSynopsis> {
-    const variant = this.gateway.resolvePromptVariant('outlineSynopsis', options);
-    const prompt = OutlineSynopsisPrompt.build(brief, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('outlineSynopsis', options);
+    const prompt: PromptArtifact = OutlineSynopsisPrompt.build(brief, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'outlineSynopsis',
       prompt,
       OutlineSynopsisPrompt.config,
@@ -403,9 +403,9 @@ export class StoryboardAiService {
     characters: readonly OutlineCharacterBrief[],
     options: GenerateTextOptions = {},
   ): Promise<ChapterPlan> {
-    const variant = this.gateway.resolvePromptVariant('chapterPlan', options);
-    const prompt = ChapterPlanPrompt.build(brief, synopsis, characters, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('chapterPlan', options);
+    const prompt: PromptArtifact = ChapterPlanPrompt.build(brief, synopsis, characters, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'chapterPlan',
       prompt,
       ChapterPlanPrompt.config,
@@ -415,16 +415,18 @@ export class StoryboardAiService {
     return coerceChapterPlan(parseJsonObject(response.text));
   }
 
-  // Cards for the cast a chapter plan names but no card describes, so the scenes can resolve them.
   public async generateOutlineCharacters(
     brief: OutlineBrief,
     synopsis: OutlineSynopsis,
     cast: readonly OutlineCastMember[],
     options: GenerateTextOptions = {},
   ): Promise<OutlineCharacterDraft[]> {
-    const variant = this.gateway.resolvePromptVariant('outlineCharacters', options);
-    const prompt = OutlineCharactersPrompt.build(brief, synopsis, cast, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+      'outlineCharacters',
+      options,
+    );
+    const prompt: PromptArtifact = OutlineCharactersPrompt.build(brief, synopsis, cast, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'outlineCharacters',
       prompt,
       OutlineCharactersPrompt.config,
@@ -448,9 +450,9 @@ export class StoryboardAiService {
     input: ChapterSummaryInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('chapterSummary', options);
-    const prompt = ChapterSummaryPrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('chapterSummary', options);
+    const prompt: PromptArtifact = ChapterSummaryPrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'chapterSummary',
       prompt,
       ChapterSummaryPrompt.config,

@@ -20,27 +20,27 @@ import {
 import './providers';
 import { createRegisteredProvider, type ProviderClientFactories } from './providerFactory';
 import { SecretStore } from '#ai/ports/SecretStore';
-import { ConfigBridge } from '#ai/ports/ConfigBridge';
+import {
+  ConfigBridge,
+  type ProviderModelConfig,
+  type TaskAiConfigResolved,
+} from '#ai/ports/ConfigBridge';
 import type { PromptVariantId } from './prompts/types';
 
 export interface AiProviderRegistryOptions extends ProviderClientFactories {
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
-  // A fresh install has no `defaultProvider`, and silently generating with `mock` there writes a
-  // fake draft that exits clean. With this on, a task that resolves to no configured provider is
-  // refused with `missing-provider` so the host can ask the author to choose one.
   readonly requireConfiguredProvider?: boolean;
-  // Told once per registry, the first time a hidden provider is about to be called.
   readonly onRiskWarning?: (message: string) => void;
 }
 
-export const missingProviderMessage =
+export const missingProviderMessage: string =
   '기본 AI 제공자가 설정되지 않았습니다. 설정에서 제공자를 고른 뒤 다시 시도하세요.';
 
 export class AiProviderRegistry {
   public constructor(private readonly options: AiProviderRegistryOptions) {}
 
-  private readonly warnedProviderIds = new Set<AiProviderId>();
+  private readonly warnedProviderIds: Set<AiProviderId> = new Set<AiProviderId>();
 
   public async listProviders(): Promise<AiProviderStatus[]> {
     return Promise.all(
@@ -70,10 +70,7 @@ export class AiProviderRegistry {
     return this.options.configBridge.getTaskProvider(taskName);
   }
 
-  public getTaskAiConfig(taskName: AiTaskName): {
-    readonly providerId: AiProviderId;
-    readonly model: string;
-  } {
+  public getTaskAiConfig(taskName: AiTaskName): TaskAiConfigResolved {
     this.assertTaskProviderConfigured(taskName);
     return this.options.configBridge.getTaskAiConfig(taskName);
   }
@@ -110,14 +107,14 @@ export class AiProviderRegistry {
     request: AiGenerateRequest,
     modelOverride?: string,
   ): AsyncIterable<AiStreamChunk> {
-    const provider = await this.createProvider(providerId, modelOverride);
+    const provider: AiProvider = await this.createProvider(providerId, modelOverride);
 
     if (provider.generateStream) {
       yield* provider.generateStream(request);
       return;
     }
 
-    const response = await provider.generate(request);
+    const response: AiGenerateResponse = await provider.generate(request);
     if (response.text.length > 0) {
       yield { type: 'text-delta', delta: response.text };
     }
@@ -146,8 +143,6 @@ export class AiProviderRegistry {
     });
   }
 
-  // The last gate: whatever a host forgot to check, a hidden provider that the home file has not
-  // switched on is an unknown name here, and one whose risks were never accepted does not run.
   private assertHiddenProviderAllowed(providerId: AiProviderId): void {
     if (!isHiddenProvider(providerId)) {
       return;
@@ -180,7 +175,6 @@ export class AiProviderRegistry {
     }
   }
 
-  // «Has a credential»: the key for an API provider, a login for a browser-login provider.
   private async hasCredential(providerId: AiProviderId): Promise<boolean> {
     if (requiresApiKey(providerId)) {
       return await this.options.secretStore.hasApiKey(providerId);
@@ -194,8 +188,8 @@ export class AiProviderRegistry {
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {
-    const config = this.options.configBridge.getProviderConfig(providerId);
-    const hasApiKey = await this.hasCredential(providerId);
+    const config: ProviderModelConfig = this.options.configBridge.getProviderConfig(providerId);
+    const hasApiKey: boolean = await this.hasCredential(providerId);
 
     return {
       providerId,

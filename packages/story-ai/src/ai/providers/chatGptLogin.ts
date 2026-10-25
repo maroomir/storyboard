@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import type { SecretStore } from '#ai/ports/SecretStore';
+import type { OAuthRegistration, SecretStore } from '#ai/ports/SecretStore';
 import type { OAuthConnection } from '#ai/ports/SecretStore';
 import type { AiProviderId } from '@storyboard/story-model';
 import {
@@ -19,19 +19,22 @@ import {
   revokeRefreshToken,
   tokensFromResponse,
   validateIdToken,
+  type AuthorizationAttempt,
+  type AuthorizedCallback,
+  type DiscoveryDocument,
   type FetchLike,
+type IdTokenIdentity,
+type TokenResponse,
 } from './chatGptOAuth';
 
 const providerId: AiProviderId = 'chatgpt';
-const defaultTimeoutMs = 5 * 60 * 1000;
+const defaultTimeoutMs: number = 5 * 60 * 1000;
 
-// What the browser shows once it has handed the code back; the person returns to the terminal.
 const callbackPage = (title: string, body: string): string =>
   `<!doctype html><html lang="ko"><meta charset="utf-8"><title>Storyboard</title><body style="font-family:sans-serif;margin:3rem"><h1>${title}</h1><p>${body}</p></body></html>`;
 
 export interface ChatGptLoginDependencies {
   readonly secretStore: SecretStore;
-  // Opens the system browser; false when it could not. The URL is shown to the person either way.
   readonly openBrowser: (url: string) => Promise<boolean>;
   readonly onAuthorizationUrl: (url: string, wasOpened: boolean) => void;
   readonly fetch?: FetchLike;
@@ -45,30 +48,30 @@ export interface ChatGptLoginResult {
   readonly isNewRegistration: boolean;
 }
 
-// Listens on the loopback address: the documented port when it is free, any free port otherwise
-// (only the port may differ between logins). Resolves with the first request to the callback path.
-async function listenForCallback(
-  preferredPort: number,
-): Promise<{
+interface CallbackListener {
   readonly server: Server;
   readonly port: number;
   readonly query: Promise<URLSearchParams>;
-}> {
-  const server = createServer();
+}
+
+async function listenForCallback(
+  preferredPort: number,
+): Promise<CallbackListener> {
+  const server: Server = createServer();
   let settle: ((query: URLSearchParams) => void) | undefined;
-  const query = new Promise<URLSearchParams>((resolve) => {
+  const query: Promise<URLSearchParams> = new Promise<URLSearchParams>((resolve) => {
     settle = resolve;
   });
 
   server.on('request', (request, response) => {
-    const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+    const url: URL = new URL(request.url ?? '/', 'http://127.0.0.1');
 
     if (url.pathname !== chatGptCallbackPath) {
       response.writeHead(404).end();
       return;
     }
 
-    const isDenied = url.searchParams.has('error');
+    const isDenied: boolean = url.searchParams.has('error');
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     response.end(
       isDenied
@@ -78,7 +81,7 @@ async function listenForCallback(
     settle?.(url.searchParams);
   });
 
-  const port = await new Promise<number>((resolve, reject) => {
+  const port: number = await new Promise<number>((resolve, reject) => {
     const tryListen = (candidate: number): void => {
       server.once('error', (error: NodeJS.ErrnoException) => {
         if (error.code === 'EADDRINUSE' && candidate !== 0) {
@@ -101,7 +104,7 @@ async function listenForCallback(
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
+    const timer: NodeJS.Timeout = setTimeout(
       () => reject(new ChatGptOAuthError('access-denied', message)),
       timeoutMs,
     );
@@ -118,20 +121,17 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
   });
 }
 
-// The whole sign-in: a fresh attempt, the browser, the callback, the code exchange, the ID token
-// and the plan-usage scope, then the connection written to the secret store. A registration that
-// exists is reauthorized with its issued client id; the host id never changes once chosen.
 export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<ChatGptLoginResult> {
-  const fetchImpl = deps.fetch ?? globalThis.fetch;
-  const now = deps.now ?? ((): Date => new Date());
-  const existing = await deps.secretStore.getOAuthConnection(providerId);
-  const hostId = existing?.hostId ?? createHostId();
-  const registration = existing?.registration;
+  const fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response> = deps.fetch ?? globalThis.fetch;
+  const now: () => Date = deps.now ?? ((): Date => new Date());
+  const existing: OAuthConnection | undefined = await deps.secretStore.getOAuthConnection(providerId);
+  const hostId: string = existing?.hostId ?? createHostId();
+  const registration: OAuthRegistration | undefined = existing?.registration;
 
-  const listener = await listenForCallback(deps.preferredPort ?? chatGptPreferredCallbackPort);
+  const listener: CallbackListener = await listenForCallback(deps.preferredPort ?? chatGptPreferredCallbackPort);
 
   try {
-    const attempt = createAuthorizationAttempt({
+    const attempt: AuthorizationAttempt = createAuthorizationAttempt({
       hostId,
       redirectUri: loopbackRedirectUri(listener.port),
       ...(registration === undefined ? {} : { clientId: registration.clientId }),
@@ -139,17 +139,17 @@ export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<Chat
       ...(registration?.email === undefined ? {} : { loginHint: registration.email }),
     });
 
-    const wasOpened = await deps.openBrowser(attempt.url).catch(() => false);
+    const wasOpened: boolean = await deps.openBrowser(attempt.url).catch(() => false);
     deps.onAuthorizationUrl(attempt.url, wasOpened);
 
-    const query = await withTimeout(
+    const query: URLSearchParams = await withTimeout(
       listener.query,
       deps.timeoutMs ?? defaultTimeoutMs,
       '제한 시간 안에 브라우저 로그인이 끝나지 않았습니다. 다시 실행하세요.',
     );
-    const callback = readAuthorizationCallback(query, attempt);
+    const callback: AuthorizedCallback = readAuthorizationCallback(query, attempt);
 
-    const tokenResponse = await exchangeAuthorizationCode(fetchImpl, {
+    const tokenResponse: TokenResponse = await exchangeAuthorizationCode(fetchImpl, {
       clientId: callback.clientId,
       code: callback.code,
       codeVerifier: attempt.codeVerifier,
@@ -163,8 +163,8 @@ export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<Chat
       );
     }
 
-    const discovery = await fetchDiscoveryDocument(fetchImpl);
-    const identity = validateIdToken(tokenResponse.idToken, {
+    const discovery: DiscoveryDocument = await fetchDiscoveryDocument(fetchImpl);
+    const identity: IdTokenIdentity = validateIdToken(tokenResponse.idToken, {
       clientId: callback.clientId,
       nonce: attempt.nonce,
       keys: await fetchJsonWebKeys(fetchImpl, discovery.jwksUri),
@@ -204,26 +204,23 @@ export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<Chat
 
 export interface ChatGptLogoutResult {
   readonly wasConnected: boolean;
-  // False when the server did not confirm the revocation; the tokens are cleared locally anyway.
   readonly isRevoked: boolean;
 }
 
-// Ends the renewable session on the server when it can, then drops the tokens. The registration
-// and the host id stay, so a later login is a reauthorization rather than a new client.
 export async function logoutChatGpt(deps: {
   readonly secretStore: SecretStore;
   readonly fetch?: FetchLike;
 }): Promise<ChatGptLogoutResult> {
-  const fetchImpl = deps.fetch ?? globalThis.fetch;
-  const existing = await deps.secretStore.getOAuthConnection(providerId);
+  const fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response> = deps.fetch ?? globalThis.fetch;
+  const existing: OAuthConnection | undefined = await deps.secretStore.getOAuthConnection(providerId);
 
   if (existing?.tokens === undefined || existing.registration === undefined) {
     return { wasConnected: false, isRevoked: false };
   }
 
-  let isRevoked = false;
+  let isRevoked: boolean = false;
   try {
-    const discovery = await fetchDiscoveryDocument(fetchImpl);
+    const discovery: DiscoveryDocument = await fetchDiscoveryDocument(fetchImpl);
     if (discovery.revocationEndpoint !== undefined) {
       await revokeRefreshToken(fetchImpl, {
         revocationEndpoint: discovery.revocationEndpoint,
@@ -233,7 +230,7 @@ export async function logoutChatGpt(deps: {
       isRevoked = true;
     }
   } catch {
-    // The person is told the server did not confirm; the local tokens go regardless.
+    isRevoked = false;
   }
 
   await deps.secretStore.setOAuthConnection(providerId, {

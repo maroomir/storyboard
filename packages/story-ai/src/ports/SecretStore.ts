@@ -1,33 +1,45 @@
 import { type AiProviderId, type DisposableHandle } from '@storyboard/story-model';
 import { z } from 'zod';
 
-// What a browser login leaves behind. The registration (the issued client id and the account it is
-// bound to) and this machine's host id outlive a sign-out, so a later login is a reauthorization of
-// the same client; only the tokens are cleared.
-const oauthRegistrationSchema = z.object({
+export interface OAuthRegistration {
+  readonly clientId: string;
+  readonly subject: string;
+  readonly email?: string;
+}
+
+export interface OAuthTokens {
+  readonly accessToken: string;
+  readonly refreshToken: string;
+  readonly idToken?: string;
+  readonly expiresAt: string;
+  readonly scopes: string[];
+}
+
+export interface OAuthConnection {
+  readonly hostId: string;
+  readonly registration?: OAuthRegistration;
+  readonly tokens?: OAuthTokens;
+}
+
+const oauthRegistrationSchema: z.ZodType<OAuthRegistration> = z.object({
   clientId: z.string().min(1),
   subject: z.string().min(1),
   email: z.string().min(1).optional(),
 });
 
-const oauthTokensSchema = z.object({
+const oauthTokensSchema: z.ZodType<OAuthTokens> = z.object({
   accessToken: z.string().min(1),
   refreshToken: z.string().min(1),
   idToken: z.string().min(1).optional(),
-  // ISO 8601, the instant the access token stops working.
   expiresAt: z.string().min(1),
   scopes: z.array(z.string()),
 });
 
-const oauthConnectionSchema = z.object({
+const oauthConnectionSchema: z.ZodType<OAuthConnection> = z.object({
   hostId: z.string().min(1),
   registration: oauthRegistrationSchema.optional(),
   tokens: oauthTokensSchema.optional(),
 });
-
-export type OAuthRegistration = z.infer<typeof oauthRegistrationSchema>;
-export type OAuthTokens = z.infer<typeof oauthTokensSchema>;
-export type OAuthConnection = z.infer<typeof oauthConnectionSchema>;
 
 export interface StoryboardSecretStorageChangeEvent {
   readonly key: string;
@@ -46,7 +58,7 @@ export class SecretStore {
   public constructor(private readonly secretStorage: StoryboardSecretStorageLike) {}
 
   public async setApiKey(providerId: AiProviderId, apiKey: string): Promise<void> {
-    const normalizedApiKey = apiKey.trim();
+    const normalizedApiKey: string = apiKey.trim();
 
     if (normalizedApiKey.length === 0) {
       await this.deleteApiKey(providerId);
@@ -68,10 +80,8 @@ export class SecretStore {
     return (await this.getApiKey(providerId)) !== undefined;
   }
 
-  // SECURITY: the whole connection — tokens included — lives in the same 0600 file as the API keys.
-  // A record that no longer parses reads as «not connected»; the next login rewrites it.
   public async getOAuthConnection(providerId: AiProviderId): Promise<OAuthConnection | undefined> {
-    const raw = await this.secretStorage.get(createOAuthSecretKey(providerId));
+    const raw: string | undefined = await this.secretStorage.get(createOAuthSecretKey(providerId));
 
     if (raw === undefined) {
       return undefined;
@@ -96,7 +106,7 @@ export class SecretStore {
   }
 
   public async setNotionToken(token: string): Promise<void> {
-    const normalizedToken = token.trim();
+    const normalizedToken: string = token.trim();
 
     if (normalizedToken.length === 0) {
       await this.secretStorage.delete(notionTokenSecretKey);
@@ -115,7 +125,7 @@ export class SecretStore {
       return { dispose: (): void => undefined };
     }
 
-    const secretKey = createApiKeySecretKey(providerId);
+    const secretKey: string = createApiKeySecretKey(providerId);
 
     return this.secretStorage.onDidChange((event) => {
       if (event.key === secretKey) {
@@ -125,9 +135,7 @@ export class SecretStore {
   }
 }
 
-// The Notion integration token the note import reads pages with. It sits beside the API keys so a
-// host has one secret file to protect.
-export const notionTokenSecretKey = 'storyboard.integration.notion';
+export const notionTokenSecretKey: string = 'storyboard.integration.notion';
 
 export function createApiKeySecretKey(providerId: AiProviderId): string {
   return `storyboard.apiKey.${providerId}`;

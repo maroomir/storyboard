@@ -30,7 +30,7 @@ import {
   type NoteSynthesis,
 } from '@storyboard/story-model';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
-import type { PromptArtifact, PromptConfig } from './prompts/types';
+import type { PromptArtifact, PromptConfig, PromptVariantId } from './prompts/types';
 import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '@storyboard/story-model';
 import {
   parseBulletList,
@@ -69,12 +69,24 @@ export class CardAiService {
       options,
       TraitsExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
-        const variant = this.gateway.resolvePromptVariant('traitsExtraction', resolvedOptions);
-        const prompt = TraitsExtractionPrompt.build(draftBody, name, options.aliases, variant);
-        const response = await this.gateway.generate('traitsExtraction', toPromptMessages(prompt), {
-          ...resolvedOptions,
-          attribution,
-        });
+        const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+          'traitsExtraction',
+          resolvedOptions,
+        );
+        const prompt: PromptArtifact = TraitsExtractionPrompt.build(
+          draftBody,
+          name,
+          options.aliases,
+          variant,
+        );
+        const response: AiGenerateResponse = await this.gateway.generate(
+          'traitsExtraction',
+          toPromptMessages(prompt),
+          {
+            ...resolvedOptions,
+            attribution,
+          },
+        );
 
         return parseBulletList(response.text);
       },
@@ -91,13 +103,20 @@ export class CardAiService {
       options,
       FactExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
-        const variant = this.gateway.resolvePromptVariant('factExtraction', resolvedOptions);
-        const prompt = FactExtractionPrompt.build(draftBody, name, variant);
-        const response = await this.gateway.generate('factExtraction', toPromptMessages(prompt), {
-          ...resolvedOptions,
-          attribution,
-        });
-        const parsedArray = parseJsonArray(response.text);
+        const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+          'factExtraction',
+          resolvedOptions,
+        );
+        const prompt: PromptArtifact = FactExtractionPrompt.build(draftBody, name, variant);
+        const response: AiGenerateResponse = await this.gateway.generate(
+          'factExtraction',
+          toPromptMessages(prompt),
+          {
+            ...resolvedOptions,
+            attribution,
+          },
+        );
+        const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
         return parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : [];
       },
@@ -114,14 +133,17 @@ export class CardAiService {
       options,
       CardCandidateExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
-        const variant = this.gateway.resolvePromptVariant('cardFactExtraction', resolvedOptions);
-        const prompt = CardCandidateExtractionPrompt.build(
+        const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+          'cardFactExtraction',
+          resolvedOptions,
+        );
+        const prompt: PromptArtifact = CardCandidateExtractionPrompt.build(
           draftBody,
           name,
           options.aliases,
           variant,
         );
-        const response = await this.gateway.generate(
+        const response: AiGenerateResponse = await this.gateway.generate(
           'cardFactExtraction',
           toPromptMessages(prompt),
           { ...resolvedOptions, attribution },
@@ -137,9 +159,16 @@ export class CardAiService {
     backgroundName: string,
     options: GenerateTextOptions = {},
   ): Promise<BackgroundFactExtraction> {
-    const variant = this.gateway.resolvePromptVariant('backgroundFactExtraction', options);
-    const prompt = BackgroundFactExtractionPrompt.build(draftBody, backgroundName, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+      'backgroundFactExtraction',
+      options,
+    );
+    const prompt: PromptArtifact = BackgroundFactExtractionPrompt.build(
+      draftBody,
+      backgroundName,
+      variant,
+    );
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'backgroundFactExtraction',
       prompt,
       BackgroundFactExtractionPrompt.config,
@@ -155,9 +184,17 @@ export class CardAiService {
     knownNames: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<RecommendedEntity[]> {
-    const variant = this.gateway.resolvePromptVariant('cardRecommendation', options);
-    const prompt = CardRecommendationPrompt.build(body, category, knownNames, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+      'cardRecommendation',
+      options,
+    );
+    const prompt: PromptArtifact = CardRecommendationPrompt.build(
+      body,
+      category,
+      knownNames,
+      variant,
+    );
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'cardRecommendation',
       prompt,
       CardRecommendationPrompt.config,
@@ -172,9 +209,9 @@ export class CardAiService {
     knownCards: readonly NoteExtractionKnownCard[],
     options: GenerateTextOptions = {},
   ): Promise<NoteExtractionResult> {
-    const variant = this.gateway.resolvePromptVariant('noteExtraction', options);
-    const prompt = NoteExtractionPrompt.build(notes, knownCards, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('noteExtraction', options);
+    const prompt: PromptArtifact = NoteExtractionPrompt.build(notes, knownCards, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'noteExtraction',
       prompt,
       NoteExtractionPrompt.config,
@@ -193,9 +230,9 @@ export class CardAiService {
     castNames: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<NoteSynthesis> {
-    const variant = this.gateway.resolvePromptVariant('noteSynthesis', options);
-    const prompt = NoteSynthesisPrompt.build(premise, castNames, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('noteSynthesis', options);
+    const prompt: PromptArtifact = NoteSynthesisPrompt.build(premise, castNames, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'noteSynthesis',
       prompt,
       NoteSynthesisPrompt.config,
@@ -209,9 +246,12 @@ export class CardAiService {
     targets: readonly NoteConsolidationTarget[],
     options: GenerateTextOptions = {},
   ): Promise<NoteConsolidationResult> {
-    const variant = this.gateway.resolvePromptVariant('noteCardConsolidation', options);
-    const prompt = NoteCardConsolidationPrompt.build(targets, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+      'noteCardConsolidation',
+      options,
+    );
+    const prompt: PromptArtifact = NoteCardConsolidationPrompt.build(targets, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'noteCardConsolidation',
       prompt,
       NoteCardConsolidationPrompt.config,
@@ -232,26 +272,29 @@ export class CardAiService {
   ): Promise<number[] | null> {
     if (statements.length === 0) return [];
 
-    const variant = this.gateway.resolvePromptVariant('cardFactVerification', options);
-    const prompt = CardCandidateVerificationPrompt.build(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+      'cardFactVerification',
+      options,
+    );
+    const prompt: PromptArtifact = CardCandidateVerificationPrompt.build(
       draftBody,
       characterName,
       statements,
       variant,
     );
-    const response = await this.generateWithDefaults(
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'cardFactVerification',
       prompt,
       CardCandidateVerificationPrompt.config,
       options,
     );
-    const parsedArray = parseJsonArray(response.text);
+    const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
     if (!parsedArray) return null;
 
-    const approved = new Set<number>();
+    const approved: Set<number> = new Set<number>();
     for (const value of parsedArray) {
-      const index = typeof value === 'number' ? value : Number(value);
+      const index: number = typeof value === 'number' ? value : Number(value);
       if (Number.isInteger(index) && index >= 0 && index < statements.length) {
         approved.add(index);
       }
@@ -272,17 +315,18 @@ export class CardAiService {
       attribution: UsageAttribution | undefined,
     ) => Promise<T>,
   ): Promise<Record<string, T>> {
-    const uniqueNames = [
+    const uniqueNames: string[] = [
       ...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0)),
     ];
-    const resolved = {
+    const resolved: typeof options & PromptConfig = {
       ...options,
       temperature: options.temperature ?? config.temperature,
       maxTokens: options.maxTokens ?? config.maxTokens,
     };
-    const entries = await Promise.all(
+    const entries: (readonly [string, Awaited<T>])[] = await Promise.all(
       uniqueNames.map(async (name) => {
-        const attribution = resolved.attributionForCharacter?.(name) ?? resolved.attribution;
+        const attribution: UsageAttribution | undefined =
+          resolved.attributionForCharacter?.(name) ?? resolved.attribution;
         return [name, await runForName(name, resolved, attribution)] as const;
       }),
     );

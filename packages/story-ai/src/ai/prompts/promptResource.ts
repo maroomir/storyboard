@@ -6,13 +6,6 @@ import { promptResourceSources } from './resources.generated';
 import { renderTemplate, type TemplatePartials, type TemplateView } from './template';
 import type { PromptArtifact, PromptConfig, PromptVariantId } from './types';
 
-// A prompt resource is one Markdown file per prompt. A front-matter block between `---` lines
-// carries the sampling config (`temperature`, `maxTokens`, optionally `reasoningEffort` and
-// `prefixCacheTtl`); `## system` and `## user` hold the generic variant, and an optional `## prefix`
-// holds the user text that is the same for every call of a scene and goes out ahead of `## user` as
-// a cached prefix; `## system:xs`, `## user:rich` and so on hold a variant's text, and a variant
-// without its own section falls back to the generic one. The body of a section is the text up to
-// the next `## ` heading with the trailing blank lines dropped.
 export type PromptSectionName = 'system' | 'prefix' | 'user';
 
 export interface PromptResource {
@@ -36,19 +29,17 @@ export class PromptResourceError extends Error {
   }
 }
 
-const headingPattern = /^## (system|prefix|user)(?::(generic|xs|rich))?\s*$/;
+const headingPattern: RegExp = /^## (system|prefix|user)(?::(generic|xs|rich))?\s*$/;
 
-// 온도는 검사류를 낮게, 창작류를 높게 두는 결이 있어 프롬프트마다 다르고, 출력 상한은 한 번에
-// 낼 분량이다. 모델을 가리지 않는 값이며, 한 모델에서만 관찰한 값은 modelProfiles.params.json 에 적는다.
-const promptConfigSchema = z.strictObject({
+const promptConfigSchema: z.ZodType<PromptConfig> = z.strictObject({
   temperature: z.number().min(0).max(2),
   maxTokens: z.number().int().positive(),
   reasoningEffort: z.enum(reasoningEfforts).optional(),
   prefixCacheTtl: z.enum(cacheTtls).optional(),
 });
 
-const frontMatterLinePattern = /^([A-Za-z]+):\s*(\S+)\s*$/;
-const numberPattern = /^-?\d+(?:\.\d+)?$/;
+const frontMatterLinePattern: RegExp = /^([A-Za-z]+):\s*(\S+)\s*$/;
+const numberPattern: RegExp = /^-?\d+(?:\.\d+)?$/;
 
 function parseFrontMatter(
   key: string,
@@ -58,7 +49,7 @@ function parseFrontMatter(
     return { config: undefined, bodyStart: 0 };
   }
 
-  const end = lines.indexOf('---', 1);
+  const end: number = lines.indexOf('---', 1);
 
   if (end === -1) {
     throw new PromptResourceError(
@@ -74,7 +65,7 @@ function parseFrontMatter(
       continue;
     }
 
-    const match = frontMatterLinePattern.exec(line);
+    const match: RegExpExecArray | null = frontMatterLinePattern.exec(line);
 
     if (match === null || match[1] === undefined || match[2] === undefined) {
       throw new PromptResourceError(
@@ -86,10 +77,10 @@ function parseFrontMatter(
     fields[match[1]] = numberPattern.test(match[2]) ? Number(match[2]) : match[2];
   }
 
-  const parsed = promptConfigSchema.safeParse(fields);
+  const parsed: z.ZodSafeParseResult<PromptConfig> = promptConfigSchema.safeParse(fields);
 
   if (!parsed.success) {
-    const issue = parsed.error.issues[0];
+    const issue: z.core.$ZodIssue | undefined = parsed.error.issues[0];
     throw new PromptResourceError(
       'bad-front-matter',
       `프롬프트 리소스 ${key}의 머리말이 잘못되었습니다: ${issue?.path.join('.') ?? ''} ${issue?.message ?? ''}`.trim(),
@@ -100,9 +91,9 @@ function parseFrontMatter(
 }
 
 export function parsePromptResource(key: string, text: string): PromptResource {
-  const lines = text.split('\n');
+  const lines: string[] = text.split('\n');
   const { config, bodyStart } = parseFrontMatter(key, lines);
-  const sections = new Map<string, string>();
+  const sections: Map<string, string> = new Map<string, string>();
   let currentName: string | undefined;
   let currentLines: string[] = [];
 
@@ -120,7 +111,7 @@ export function parsePromptResource(key: string, text: string): PromptResource {
 
   for (const line of lines.slice(bodyStart)) {
     if (line.startsWith('## ')) {
-      const match = headingPattern.exec(line);
+      const match: RegExpExecArray | null = headingPattern.exec(line);
 
       if (match === null) {
         throw new PromptResourceError(
@@ -146,42 +137,39 @@ export function parsePromptResource(key: string, text: string): PromptResource {
   return { key, config, sections };
 }
 
-// Where a prompt's text comes from. The bundled sources are the defaults; a host may lay the
-// author's own files over them (workspace over home over bundle) before anything is rendered.
 class PromptResourceStore {
-  private readonly overrides = new Map<string, PromptResource>();
-  private readonly bundledCache = new Map<string, PromptResource>();
+  private readonly overrides: Map<string, PromptResource> = new Map<string, PromptResource>();
+  private readonly bundledCache: Map<string, PromptResource> = new Map<string, PromptResource>();
 
   public get(key: string): PromptResource {
     return this.overrides.get(key) ?? this.bundled(key);
   }
 
   private bundled(key: string): PromptResource {
-    const cached = this.bundledCache.get(key);
+    const cached: PromptResource | undefined = this.bundledCache.get(key);
 
     if (cached !== undefined) {
       return cached;
     }
 
-    const source = promptResourceSources[key];
+    const source: string | undefined = promptResourceSources[key];
 
     if (source === undefined) {
       throw new PromptResourceError('missing-resource', `프롬프트 리소스가 없습니다: ${key}`);
     }
 
-    const parsed = parsePromptResource(key, source);
+    const parsed: PromptResource = parsePromptResource(key, source);
     this.bundledCache.set(key, parsed);
 
     return parsed;
   }
 
-  // An author's file may leave the front-matter out and keep the bundled sampling config.
   public config(key: string): PromptConfig {
     return this.overrides.get(key)?.config ?? this.bundledConfig(key);
   }
 
   public bundledConfig(key: string): PromptConfig {
-    const config = this.bundled(key).config;
+    const config: PromptConfig | undefined = this.bundled(key).config;
 
     if (config === undefined) {
       throw new PromptResourceError(
@@ -206,12 +194,10 @@ class PromptResourceStore {
   }
 }
 
-export const promptResources = new PromptResourceStore();
+export const promptResources: PromptResourceStore = new PromptResourceStore();
 
-// The text in force for a prompt, bundled or the author's, as one stable string. A cache of what the
-// prompt produced keys on it so a reworded prompt does not keep serving the old wording's output.
 export function promptResourceFingerprint(key: string): string {
-  const resource = promptResources.get(key);
+  const resource: PromptResource = promptResources.get(key);
 
   return JSON.stringify({ config: resource.config ?? null, sections: [...resource.sections] });
 }
@@ -233,7 +219,7 @@ function sectionText(
   name: PromptSectionName,
   variant: PromptVariantId,
 ): string {
-  const text = optionalSectionText(resource, name, variant);
+  const text: string | undefined = optionalSectionText(resource, name, variant);
 
   if (text === undefined) {
     throw new PromptResourceError(
@@ -250,16 +236,15 @@ export interface RenderPromptOptions {
   readonly partials?: TemplatePartials;
 }
 
-// Renders a prompt's system and user text for a variant from its resource and the module's view.
 export function renderPrompt(
   key: string,
   variant: PromptVariantId,
   options: RenderPromptOptions,
 ): PromptArtifact {
-  const resource = promptResources.get(key);
-  const partials = options.partials ?? {};
-  const prefix = optionalSectionText(resource, 'prefix', variant);
-  const prefixCacheTtl = prefix === undefined ? undefined : promptResources.config(key).prefixCacheTtl;
+  const resource: PromptResource = promptResources.get(key);
+  const partials: TemplatePartials = options.partials ?? {};
+  const prefix: string | undefined = optionalSectionText(resource, 'prefix', variant);
+  const prefixCacheTtl: "5m" | "1h" | undefined = prefix === undefined ? undefined : promptResources.config(key).prefixCacheTtl;
 
   return {
     system: renderTemplate(sectionText(resource, 'system', variant), options.view, partials),

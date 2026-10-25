@@ -1,7 +1,7 @@
 import type { ProjectFormat } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 
 export interface DraftCondenseInput {
   readonly body: string;
@@ -12,7 +12,9 @@ export interface DraftCondenseInput {
   readonly characterCards?: readonly string[];
 }
 
-export const DraftCondensePrompt = {
+export const DraftCondensePrompt: PromptModule<
+  [input: DraftCondenseInput, variant?: PromptVariantId]
+> = {
   config: promptTuning('draftCondense'),
   build(input: DraftCondenseInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return renderPrompt('draftCondense', variant, {
@@ -28,4 +30,4 @@ export const DraftCondensePrompt = {
       },
     });
   },
-} as const;
+};

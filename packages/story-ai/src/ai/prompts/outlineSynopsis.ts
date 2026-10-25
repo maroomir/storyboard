@@ -1,15 +1,16 @@
 import { pointOfViewLabels } from '@storyboard/story-model';
 import type { OutlineBrief } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
-export const OutlineSynopsisPrompt = {
-  config: promptTuning('outlineSynopsis'),
-  build(brief: OutlineBrief, variant: PromptVariantId = 'generic'): PromptArtifact {
-    return renderPrompt('outlineSynopsis', variant, { view: { brief: briefToUserBlock(brief) } });
-  },
-} as const;
+export const OutlineSynopsisPrompt: PromptModule<[brief: OutlineBrief, variant?: PromptVariantId]> =
+  {
+    config: promptTuning('outlineSynopsis'),
+    build(brief: OutlineBrief, variant: PromptVariantId = 'generic'): PromptArtifact {
+      return renderPrompt('outlineSynopsis', variant, { view: { brief: briefToUserBlock(brief) } });
+    },
+  };
 
 export function briefToUserBlock(brief: OutlineBrief): string {
   const lines: string[] = [
