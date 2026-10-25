@@ -1,8 +1,8 @@
-import { render } from 'ink';
+import { render, type Instance } from 'ink';
 
 import { StoryboardTui } from './app';
 import { loadTuiThemeName } from './tuiTheme';
-import { describeHeader, readWorkspaceView } from './workspaceView';
+import { describeHeader, readWorkspaceView, type TuiHeaderInfo } from './workspaceView';
 
 export { describeHeader };
 
@@ -19,8 +19,8 @@ export async function runTui(options: RunTuiOptions): Promise<number> {
     return 1;
   }
 
-  const header = describeHeader(options.cwd);
-  const instance = render(
+  const header: TuiHeaderInfo = describeHeader(options.cwd);
+  const instance: Instance = render(
     <StoryboardTui
       version={options.version}
       cwd={options.cwd}

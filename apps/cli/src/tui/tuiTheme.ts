@@ -6,9 +6,9 @@ import { createContext, useContext } from 'react';
 
 // 대화형 화면의 색. 컴포넌트는 역할(강조·흐림·경고·…)만 말하고, 어느 색인지는 고른 테마가 정한다.
 
-export const tuiThemeNames = ['default', 'light', 'mono'] as const;
+export type TuiThemeName = 'default' | 'light' | 'mono';
 
-export type TuiThemeName = (typeof tuiThemeNames)[number];
+export const tuiThemeNames: readonly TuiThemeName[] = ['default', 'light', 'mono'];
 
 // An undefined color is the terminal's own foreground, which is what «mono» asks for.
 export interface TuiTheme {
@@ -37,7 +37,7 @@ export const tuiThemeLabels: Readonly<Record<TuiThemeName, string>> = {
   mono: '무채색',
 };
 
-export const TuiThemeContext = createContext<TuiTheme>(tuiThemes.default);
+export const TuiThemeContext: React.Context<TuiTheme> = createContext<TuiTheme>(tuiThemes.default);
 
 export function useTuiTheme(): TuiTheme {
   return useContext(TuiThemeContext);
@@ -59,7 +59,7 @@ export function loadTuiThemeName(file: string = tuiStateFile()): TuiThemeName {
 
   try {
     const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'));
-    const name = (parsed as { theme?: unknown }).theme;
+    const name: unknown = (parsed as { theme?: unknown }).theme;
     return isThemeName(name) ? name : 'default';
   } catch {
     // A damaged preference file costs the author their color choice, not the screen.

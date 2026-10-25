@@ -43,14 +43,19 @@ export class LineRunProgress implements IRunProgress {
   public finish(): void {}
 }
 
-const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const spinnerFrames: string[] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 // What the spinner says while it turns: a writer's verbs, changing every few seconds so a long
 // stage still looks alive. The step beside it says what is actually running.
-const writerPhrases = ['구상하는 중', '문장을 고르는 중', '장면을 잇는 중', '퇴고하는 중'];
-const phraseMilliseconds = 4_000;
-const progressBarWidth = 20;
-const redrawMilliseconds = 100;
+const writerPhrases: string[] = [
+  '구상하는 중',
+  '문장을 고르는 중',
+  '장면을 잇는 중',
+  '퇴고하는 중',
+];
+const phraseMilliseconds: number = 4_000;
+const progressBarWidth: number = 20;
+const redrawMilliseconds: number = 100;
 
 export interface RailRunProgressDependencies {
   readonly liveArea: LiveArea;
@@ -81,8 +86,8 @@ export function describeChecklist(checklist: ProgressChecklist, theme: Theme): s
 }
 
 export function formatElapsed(milliseconds: number): string {
-  const seconds = Math.floor(milliseconds / 1000);
-  const minutes = Math.floor(seconds / 60);
+  const seconds: number = Math.floor(milliseconds / 1000);
+  const minutes: number = Math.floor(seconds / 60);
   return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
@@ -93,9 +98,9 @@ export class RailRunProgress implements IRunProgress {
   private startedAt: number | undefined;
   private timer: ReturnType<typeof setInterval> | undefined;
   private unit: ProgressUnit | undefined;
-  private step = '';
+  private step: string = '';
   private checklist: ProgressChecklist | undefined;
-  private frame = 0;
+  private frame: number = 0;
 
   public constructor(private readonly deps: RailRunProgressDependencies) {
     this.now = deps.now ?? Date.now;
@@ -129,14 +134,16 @@ export class RailRunProgress implements IRunProgress {
 
   public describeLines(): string[] {
     const { paint } = this.deps.theme;
-    const spinner = paint('accent', spinnerFrames[this.frame % spinnerFrames.length] ?? '');
-    const item =
+    const spinner: string = paint('accent', spinnerFrames[this.frame % spinnerFrames.length] ?? '');
+    const item: string =
       this.unit === undefined ? '' : `${this.unit.current}/${this.unit.total} ${this.unit.label}`;
-    const what = [item, this.step].filter((part) => part.length > 0).join(paint('muted', ' · '));
-    const cost = this.deps.readCostUsd();
-    const unpricedTokens = this.deps.readUnpricedTokens?.() ?? 0;
-    const cacheHitRate = this.deps.readCacheHitRate?.();
-    const meta = [
+    const what: string = [item, this.step]
+      .filter((part) => part.length > 0)
+      .join(paint('muted', ' · '));
+    const cost: number = this.deps.readCostUsd();
+    const unpricedTokens: number = this.deps.readUnpricedTokens?.() ?? 0;
+    const cacheHitRate: number | undefined = this.deps.readCacheHitRate?.();
+    const meta: string = [
       formatElapsed(this.now() - (this.startedAt ?? this.now())),
       ...(cost > 0 ? [`$${cost.toFixed(2)}`] : []),
       ...(cost <= 0 && unpricedTokens > 0
@@ -146,16 +153,21 @@ export class RailRunProgress implements IRunProgress {
         ? [`캐시 ${Math.round(cacheHitRate * 100)}%`]
         : []),
     ].join(' · ');
-    const elapsed = this.now() - (this.startedAt ?? this.now());
-    const phrase = writerPhrases[Math.floor(elapsed / phraseMilliseconds) % writerPhrases.length];
-    const lines = [`${spinner} ${paint('muted', `${phrase}…`)} ${what}  ${paint('muted', meta)}`];
+    const elapsed: number = this.now() - (this.startedAt ?? this.now());
+    const phrase: string | undefined =
+      writerPhrases[Math.floor(elapsed / phraseMilliseconds) % writerPhrases.length];
+    const lines: string[] = [
+      `${spinner} ${paint('muted', `${phrase}…`)} ${what}  ${paint('muted', meta)}`,
+    ];
 
     if (this.checklist !== undefined) {
       lines.push(`  ${describeChecklist(this.checklist, this.deps.theme)}`);
     }
 
     if (this.unit !== undefined && this.unit.total > 1) {
-      const filled = Math.round(((this.unit.current - 1) / this.unit.total) * progressBarWidth);
+      const filled: number = Math.round(
+        ((this.unit.current - 1) / this.unit.total) * progressBarWidth,
+      );
       lines.push(
         `  ${paint('accent', '█'.repeat(filled))}${paint('muted', '░'.repeat(progressBarWidth - filled))}`,
       );

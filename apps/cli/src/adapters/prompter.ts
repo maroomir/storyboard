@@ -1,4 +1,4 @@
-import { createInterface } from 'node:readline/promises';
+import { createInterface, type Interface } from 'node:readline/promises';
 
 import { renderBox } from '@/terminal/layout';
 import type { TerminalStream } from '@/terminal/profile';
@@ -45,7 +45,7 @@ export function describeChoiceLines<T>(
   stream: TerminalStream,
 ): string[] {
   const { paint } = stream.theme;
-  const options = request.options.map((option, index) =>
+  const options: string[] = request.options.map((option, index) =>
     index === selectedIndex
       ? paint('accent', `❯ ${index + 1}. ${option.label}`)
       : `  ${index + 1}. ${option.label}`,
@@ -66,13 +66,21 @@ export function describeChoiceLines<T>(
   ];
 }
 
-const keys = {
+interface TerminalKeySequences {
+  readonly up: string;
+  readonly down: string;
+  readonly enter: string;
+  readonly escape: string;
+  readonly interrupt: string;
+}
+
+const keys: TerminalKeySequences = {
   up: '\u001b[A',
   down: '\u001b[B',
   enter: '\r',
   escape: '\u001b',
   interrupt: '\u0003',
-} as const;
+};
 
 export interface KeyInput {
   readonly isRaw?: boolean;
@@ -85,7 +93,7 @@ export interface KeyInput {
 
 // Draws the choice in the live area at the bottom of stderr and reads keys from a raw stdin.
 export class TerminalPrompter implements IPrompter {
-  public readonly shouldConfirmPaidRuns = false;
+  public readonly shouldConfirmPaidRuns: boolean = false;
 
   public constructor(
     private readonly input: KeyInput,
@@ -101,9 +109,9 @@ export class TerminalPrompter implements IPrompter {
   // Hangul input. Esc, Ctrl+C and Ctrl+D back out, as Esc and Ctrl+C do in a choice box.
   public async askText(request: TextRequest): Promise<string | undefined> {
     const { paint } = this.stream.theme;
-    const hint = request.hint === undefined ? '' : paint('muted', ` (${request.hint})`);
-    const readline = createInterface({ input: process.stdin, output: process.stderr });
-    const backOut = new AbortController();
+    const hint: string = request.hint === undefined ? '' : paint('muted', ` (${request.hint})`);
+    const readline: Interface = createInterface({ input: process.stdin, output: process.stderr });
+    const backOut: AbortController = new AbortController();
     const backOutOnEscape = (_text: unknown, key: { readonly name?: string } | undefined): void => {
       if (key?.name === 'escape') {
         backOut.abort();
@@ -114,7 +122,7 @@ export class TerminalPrompter implements IPrompter {
     process.stdin.on('keypress', backOutOnEscape);
 
     try {
-      const answer = await readline.question(
+      const answer: string = await readline.question(
         `${paint('accent', '◆')}  ${request.title}${hint}  › `,
         { signal: backOut.signal },
       );
@@ -131,8 +139,8 @@ export class TerminalPrompter implements IPrompter {
   }
 
   public choose<T>(request: ChoiceRequest<T>): Promise<T | undefined> {
-    let selectedIndex = 0;
-    const wasRaw = this.input.isRaw ?? false;
+    let selectedIndex: number = 0;
+    const wasRaw: boolean = this.input.isRaw ?? false;
     const draw = (): void =>
       this.liveArea.show(describeChoiceLines(request, selectedIndex, this.stream));
 
@@ -146,15 +154,15 @@ export class TerminalPrompter implements IPrompter {
       };
 
       const onData = (chunk: Buffer | string): void => {
-        const key = chunk.toString();
-        const digit = Number.parseInt(key, 10);
+        const key: string = chunk.toString();
+        const digit: number = Number.parseInt(key, 10);
 
         if (key === keys.escape || key === keys.interrupt) {
           finish(undefined);
         } else if (key === keys.enter) {
           finish(request.options[selectedIndex]?.value);
         } else if (key === keys.up || key === keys.down) {
-          const step = key === keys.up ? -1 : 1;
+          const step: 1 | -1 = key === keys.up ? -1 : 1;
           selectedIndex = (selectedIndex + step + request.options.length) % request.options.length;
           draw();
         } else if (digit >= 1 && digit <= request.options.length) {

@@ -23,7 +23,7 @@ import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 import { PauseRequests } from './adapters/pauseRequests';
 import type { IPrompter } from './adapters/prompter';
 import { LineRunProgress, type IRunProgress } from './adapters/runProgress';
-import { resolveCliPaths } from './adapters/paths';
+import { resolveCliPaths, type CliPaths } from './adapters/paths';
 import {
   configurationTargets,
   createFileConfiguration,
@@ -31,6 +31,7 @@ import {
   resolveStoryboardHomePaths,
   resolveWorkspaceConfigFile,
   type ConfigurationTarget,
+  type FileConfiguration,
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
@@ -156,21 +157,21 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 // The CLI's side of the composition: only the host adapters are built here. The engine graph they
 // feed is assembled once, for every app, by StoryboardApplication.
 export function createCliContainer(options: CliContainerOptions): CliContainer {
-  const paths = resolveCliPaths(process.env);
-  const homePaths = resolveStoryboardHomePaths();
-  const workspaceRoot = NodeUri.file(options.workspacePath);
+  const paths: CliPaths = resolveCliPaths(process.env);
+  const homePaths: StoryboardHomePaths = resolveStoryboardHomePaths();
+  const workspaceRoot: NodeUri = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
-  const fileSystem = new NodeFileSystem();
-  const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
+  const fileSystem: NodeFileSystem = new NodeFileSystem();
+  const secretStore: SecretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
   // A folder without a project is not a work, so it has no work settings to read or show.
-  const isWorkspace = existsSync(
+  const isWorkspace: boolean = existsSync(
     join(options.workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson),
   );
-  const workspaceConfigFile = isWorkspace
+  const workspaceConfigFile: string | undefined = isWorkspace
     ? resolveWorkspaceConfigFile(workspaceRoot.fsPath)
     : undefined;
-  const configuration = createFileConfiguration({
+  const configuration: FileConfiguration = createFileConfiguration({
     userConfigFile: paths.configFile,
     ...(workspaceConfigFile === undefined ? {} : { workspaceConfigFile }),
     overrides: configOverrides(options),
@@ -180,13 +181,13 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     getConfiguration: () => configuration,
     ...(options.configWriteTarget === undefined ? {} : { writeTarget: options.configWriteTarget }),
   };
-  const configBridge =
+  const configBridge: ConfigBridge =
     options.createConfigBridge?.(configBridgeDependencies) ??
     new ConfigBridge(configBridgeDependencies);
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
   // cost is reported per run instead of persisted.
-  const application = new StoryboardApplication(
+  const application: StoryboardApplication = new StoryboardApplication(
     {
       fileSystem,
       workspaceLocator: new NodeWorkspaceLocator(folder),

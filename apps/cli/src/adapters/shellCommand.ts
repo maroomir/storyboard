@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcessByStdio } from 'node:child_process';
+import type Stream from 'node:stream';
 
 export interface ShellCommandResult {
   readonly exitCode: number;
@@ -16,14 +17,18 @@ export interface ShellCommandRun {
 // so a command that waits for input (`!vim`) waits until it is stopped.
 export function runShellCommand(command: string, cwd: string): ShellCommandRun {
   // Its own process group, so stopping the shell also stops the program the shell started.
-  const child = spawn(process.env.SHELL ?? '/bin/sh', ['-c', command], {
-    cwd,
-    detached: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const child: ChildProcessByStdio<null, Stream.Readable, Stream.Readable> = spawn(
+    process.env.SHELL ?? '/bin/sh',
+    ['-c', command],
+    {
+      cwd,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
   const chunks: Buffer[] = [];
 
-  const result = new Promise<ShellCommandResult>((resolve) => {
+  const result: Promise<ShellCommandResult> = new Promise<ShellCommandResult>((resolve) => {
     child.stdout.on('data', (chunk: Buffer) => chunks.push(chunk));
     child.stderr.on('data', (chunk: Buffer) => chunks.push(chunk));
     child.on('error', (error) => resolve({ exitCode: 127, output: error.message }));

@@ -22,7 +22,7 @@ const roleCodes: Readonly<Record<ThemeRole, readonly [open: number, close: numbe
 export function createTheme(isColorEnabled: boolean): Theme {
   return {
     isColorEnabled,
-    paint: (role, text) => {
+    paint: (role, text): string => {
       if (!isColorEnabled || text.length === 0) {
         return text;
       }
@@ -33,7 +33,7 @@ export function createTheme(isColorEnabled: boolean): Theme {
   };
 }
 
-export const plainTheme = createTheme(false);
+export const plainTheme: Theme = createTheme(false);
 
 export interface ColorConditions {
   readonly isTty: boolean;
@@ -49,6 +49,6 @@ export function shouldUseColor(conditions: ColorConditions): boolean {
     return false;
   }
 
-  const noColor = conditions.env.NO_COLOR;
+  const noColor: string | undefined = conditions.env.NO_COLOR;
   return (noColor === undefined || noColor.length === 0) && conditions.env.TERM !== 'dumb';
 }

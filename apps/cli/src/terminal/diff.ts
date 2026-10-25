@@ -20,12 +20,14 @@ export function splitSentences(text: string): string[] {
 // Longest common subsequence over sentences; drafts are a few hundred sentences, so the quadratic
 // table is small.
 function diffSequences(before: readonly string[], after: readonly string[]): DiffLine[] {
-  const rows = before.length;
-  const columns = after.length;
-  const table = Array.from({ length: rows + 1 }, () => new Array<number>(columns + 1).fill(0));
+  const rows: number = before.length;
+  const columns: number = after.length;
+  const table: number[][] = Array.from({ length: rows + 1 }, () =>
+    new Array<number>(columns + 1).fill(0),
+  );
 
-  for (let i = rows - 1; i >= 0; i -= 1) {
-    for (let j = columns - 1; j >= 0; j -= 1) {
+  for (let i: number = rows - 1; i >= 0; i -= 1) {
+    for (let j: number = columns - 1; j >= 0; j -= 1) {
       table[i]![j] =
         before[i] === after[j]
           ? table[i + 1]![j + 1]! + 1
@@ -34,8 +36,8 @@ function diffSequences(before: readonly string[], after: readonly string[]): Dif
   }
 
   const lines: DiffLine[] = [];
-  let i = 0;
-  let j = 0;
+  let i: number = 0;
+  let j: number = 0;
 
   while (i < rows || j < columns) {
     if (i < rows && j < columns && before[i] === after[j]) {
@@ -57,8 +59,8 @@ function diffSequences(before: readonly string[], after: readonly string[]): Dif
 
 // Changes with `context` unchanged sentences around each; longer unchanged runs fold into a gap.
 export function diffSentences(before: string, after: string, context = 1): DiffLine[] {
-  const lines = diffSequences(splitSentences(before), splitSentences(after));
-  const isNearChange = lines.map((_, index) =>
+  const lines: DiffLine[] = diffSequences(splitSentences(before), splitSentences(after));
+  const isNearChange: boolean[] = lines.map((_, index) =>
     lines
       .slice(Math.max(0, index - context), index + context + 1)
       .some((line) => line.kind !== 'same'),
@@ -71,7 +73,7 @@ export function diffSentences(before: string, after: string, context = 1): DiffL
       return;
     }
 
-    const last = shown[shown.length - 1];
+    const last: DiffLine | undefined = shown[shown.length - 1];
     if (last?.kind === 'gap') {
       shown[shown.length - 1] = { kind: 'gap', count: last.count + 1 };
     } else {
@@ -102,7 +104,7 @@ export function renderSentenceDiff(
   limit = 40,
 ): string[] {
   const { added, removed } = countChanges(lines);
-  const body = lines.slice(0, limit).map((line) => {
+  const body: string[] = lines.slice(0, limit).map((line) => {
     switch (line.kind) {
       case 'added':
         return theme.paint('success', `+ ${line.text}`);

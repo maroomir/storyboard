@@ -1,9 +1,14 @@
 import { draftPath, scenePath } from '@storyboard/story-model';
 import type { UsageRecord } from '@storyboard/story-model';
 import { TunedConfigBridge } from '@storyboard/story-sim';
-import type { ISimWorkspaceFactory, SimSceneGenerator } from '@storyboard/story-sim';
+import type {
+  ISimWorkspaceFactory,
+  SceneGenerationOutcome,
+  SimSceneGenerator,
+} from '@storyboard/story-sim';
 
-import { createCliContainer, type CliContainerOptions } from '@/container';
+import { createCliContainer, type CliContainer, type CliContainerOptions } from '@/container';
+import type { GenerateDraftResult } from '@storyboard/story-engine';
 
 // 측정 실행을 제품과 같은 경로에 태운다. 사용자가 `draft generate` 로 밟는 길과 같은 use case 를
 // 부르고, 컨테이너가 열어 둔 이음매 셋으로 원장·손잡이·후처리만 갈아끼운다.
@@ -23,7 +28,7 @@ export function createSimWorkspaceFactory(
     open: async (input): Promise<SimSceneGenerator> => {
       let pending: UsageRecord[] = [];
 
-      const container = createCliContainer({
+      const container: CliContainer = createCliContainer({
         workspacePath: input.workspacePath,
         logger: options.logger,
         canPrompt: false,
@@ -46,8 +51,8 @@ export function createSimWorkspaceFactory(
 
       return {
         workspacePath: input.workspacePath,
-        generate: async (sceneStem) => {
-          const result = await container.drafts.generate({
+        generate: async (sceneStem: string): Promise<SceneGenerationOutcome> => {
+          const result: GenerateDraftResult = await container.drafts.generate({
             sceneUri: scenePath(container.workspaceRoot, sceneStem),
             // 캐시를 맞으면 AI 호출이 0회라 회차가 아무것도 재지 못한다.
             force: true,
@@ -68,13 +73,13 @@ export function createSimWorkspaceFactory(
             warnings: result.kind === 'generated' ? result.warnings : [],
           };
         },
-        drainUsage: () => {
-          const drained = pending;
+        drainUsage: (): readonly UsageRecord[] => {
+          const drained: UsageRecord[] = pending;
           pending = [];
           return drained;
         },
-        readDraft: async (sceneStem) => {
-          const bytes = await container.fileSystem.readFile(
+        readDraft: async (sceneStem: string): Promise<string> => {
+          const bytes: Uint8Array = await container.fileSystem.readFile(
             draftPath(container.workspaceRoot, sceneStem),
           );
           return new TextDecoder().decode(bytes);

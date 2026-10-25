@@ -1,9 +1,9 @@
-import { createInterface } from 'node:readline/promises';
+import { createInterface, type Interface } from 'node:readline/promises';
 
 // 터미널에서 사람에게 묻는 두 가지. 일반 입력과, 화면에 남지 않아야 하는 비밀 입력.
 
-const endOfText = '\u0003';
-const deleteChar = '\u007f';
+const endOfText: string = '\u0003';
+const deleteChar: string = '\u007f';
 
 // An agent pipes a secret in instead of typing it.
 export async function readStdin(): Promise<string> {
@@ -17,7 +17,7 @@ export async function readStdin(): Promise<string> {
 }
 
 export async function askLine(prompt: string): Promise<string> {
-  const readline = createInterface({ input: process.stdin, output: process.stderr });
+  const readline: Interface = createInterface({ input: process.stdin, output: process.stderr });
 
   try {
     return (await readline.question(prompt)).trim();
@@ -29,14 +29,14 @@ export async function askLine(prompt: string): Promise<string> {
 // Echo is switched off while the key is typed so it never lands in the scrollback.
 export async function askSecret(prompt: string): Promise<string> {
   process.stderr.write(prompt);
-  const stdin = process.stdin;
-  const wasRaw = stdin.isRaw;
+  const stdin: NodeJS.ReadStream = process.stdin;
+  const wasRaw: boolean = stdin.isRaw;
   stdin.setRawMode(true);
   stdin.resume();
   stdin.setEncoding('utf8');
 
   return new Promise((resolve) => {
-    let value = '';
+    let value: string = '';
 
     const cleanup = (): void => {
       stdin.off('data', onData);

@@ -4,12 +4,12 @@ import { measureWidth, padEndToWidth, truncateToWidth, wrapToWidth } from './wid
 // 거치므로 한글이 섞여도 오른쪽 변과 둘째 열이 맞는다.
 
 // Below this a frame eats more of the line than it gives back, so the content goes out unframed.
-export const minimumBoxWidth = 40;
+export const minimumBoxWidth: number = 40;
 
-const maximumBoxWidth = 100;
+const maximumBoxWidth: number = 100;
 
 // When the description column would be narrower than this, it moves under its label instead.
-const minimumDescriptionWidth = 24;
+const minimumDescriptionWidth: number = 24;
 
 export interface BoxOptions {
   // The terminal's columns; the box is as wide as its content needs, never wider than this.
@@ -23,31 +23,33 @@ export interface BoxOptions {
 }
 
 export function renderBox(lines: readonly string[], options: BoxOptions): string[] {
-  const paintFrame = options.paintFrame ?? identity;
-  const paintTitle = options.paintTitle ?? identity;
+  const paintFrame: (text: string) => string = options.paintFrame ?? identity;
+  const paintTitle: (text: string) => string = options.paintTitle ?? identity;
 
   // Only an over-wide line is re-wrapped; wrapping trims, which would undo a caller's indentation.
-  const wrapOverWide = (width: number) => (line: string) =>
-    measureWidth(line) <= width ? [line] : wrapToWidth(line, width);
+  const wrapOverWide =
+    (width: number): ((line: string) => string[]) =>
+    (line: string): string[] =>
+      measureWidth(line) <= width ? [line] : wrapToWidth(line, width);
 
   if (options.availableWidth < minimumBoxWidth) {
-    const body = lines.flatMap(wrapOverWide(options.availableWidth));
+    const body: string[] = lines.flatMap(wrapOverWide(options.availableWidth));
     return options.title === undefined ? body : [paintTitle(options.title), ...body];
   }
 
-  const widestAllowed = Math.min(options.availableWidth, maximumBoxWidth);
-  const titleWidth = options.title === undefined ? 0 : measureWidth(options.title) + 4;
-  const contentWidth = Math.max(titleWidth, ...lines.map(measureWidth));
-  const innerWidth = Math.min(options.innerWidth ?? contentWidth, widestAllowed - 4);
-  const body = lines.flatMap(wrapOverWide(innerWidth));
+  const widestAllowed: number = Math.min(options.availableWidth, maximumBoxWidth);
+  const titleWidth: number = options.title === undefined ? 0 : measureWidth(options.title) + 4;
+  const contentWidth: number = Math.max(titleWidth, ...lines.map(measureWidth));
+  const innerWidth: number = Math.min(options.innerWidth ?? contentWidth, widestAllowed - 4);
+  const body: string[] = lines.flatMap(wrapOverWide(innerWidth));
 
-  const title =
+  const title: string =
     options.title === undefined ? '' : ` ${truncateToWidth(options.title, innerWidth - 2)} `;
-  const top = `${paintFrame('╭─')}${paintTitle(title)}${paintFrame(
+  const top: string = `${paintFrame('╭─')}${paintTitle(title)}${paintFrame(
     `${'─'.repeat(innerWidth + 1 - measureWidth(title))}╮`,
   )}`;
-  const bottom = paintFrame(`╰${'─'.repeat(innerWidth + 2)}╯`);
-  const middle = body.map(
+  const bottom: string = paintFrame(`╰${'─'.repeat(innerWidth + 2)}╯`);
+  const middle: string[] = body.map(
     (line) => `${paintFrame('│')} ${padEndToWidth(line, innerWidth)} ${paintFrame('│')}`,
   );
 
@@ -72,24 +74,24 @@ export interface ColumnOptions {
 
 // A label column and a description column whose wrapped lines hang under the description start.
 export function renderColumns(rows: readonly ColumnRow[], options: ColumnOptions): string[] {
-  const indent = ' '.repeat(options.indent ?? 2);
-  const gap = options.gap ?? 2;
-  const maximumLabelWidth = options.maximumLabelWidth ?? 34;
-  const fittingLabels = rows
+  const indent: string = ' '.repeat(options.indent ?? 2);
+  const gap: number = options.gap ?? 2;
+  const maximumLabelWidth: number = options.maximumLabelWidth ?? 34;
+  const fittingLabels: number[] = rows
     .map((row) => measureWidth(row.label))
     .filter((w) => w <= maximumLabelWidth);
-  const labelWidth = options.labelWidth ?? Math.max(0, ...fittingLabels);
-  const descriptionStart = indent.length + labelWidth + gap;
-  const descriptionWidth = options.availableWidth - descriptionStart;
+  const labelWidth: number = options.labelWidth ?? Math.max(0, ...fittingLabels);
+  const descriptionStart: number = indent.length + labelWidth + gap;
+  const descriptionWidth: number = options.availableWidth - descriptionStart;
 
   if (descriptionWidth < minimumDescriptionWidth) {
     return renderStackedRows(rows, indent, options.availableWidth);
   }
 
   return rows.flatMap((row) => {
-    const wrapped = wrapToWidth(row.description, descriptionWidth);
-    const hanging = ' '.repeat(descriptionStart);
-    const continuation = wrapped.slice(1).map((line) => `${hanging}${line}`);
+    const wrapped: string[] = wrapToWidth(row.description, descriptionWidth);
+    const hanging: string = ' '.repeat(descriptionStart);
+    const continuation: string[] = wrapped.slice(1).map((line) => `${hanging}${line}`);
 
     if (measureWidth(row.label) > labelWidth) {
       return [
@@ -106,7 +108,7 @@ export function renderColumns(rows: readonly ColumnRow[], options: ColumnOptions
 }
 
 function renderStackedRows(rows: readonly ColumnRow[], indent: string, width: number): string[] {
-  const descriptionIndent = `${indent}  `;
+  const descriptionIndent: string = `${indent}  `;
 
   return rows.flatMap((row) => [
     ...wrapLabel(row.label, indent, width),
@@ -118,7 +120,7 @@ function renderStackedRows(rows: readonly ColumnRow[], indent: string, width: nu
 
 // A usage line longer than the terminal wraps with its continuation indented under it.
 function wrapLabel(label: string, indent: string, width: number): string[] {
-  const continuationIndent = `${indent}  `;
+  const continuationIndent: string = `${indent}  `;
 
   return wrapToWidth(label, width - continuationIndent.length).map(
     (line, index) => `${index === 0 ? indent : continuationIndent}${line}`,

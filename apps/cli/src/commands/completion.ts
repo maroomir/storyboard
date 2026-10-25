@@ -17,6 +17,7 @@ import {
   narratorPersons,
   pointOfViewLabels,
   pointOfViews,
+  type ProviderModelOptions,
 } from '@storyboard/story-model';
 
 import {
@@ -29,7 +30,9 @@ import {
   globalFlagNames,
   initLanguages,
   noteSources,
+  type CardCategory,
   type CommandSpec,
+  type FlagSpec,
 } from './catalog';
 import { availableProviderIds } from '@/adapters/availableProviders';
 export { completionShells, type CompletionShell } from './catalog';
@@ -43,9 +46,8 @@ export interface CompletionContext {
   readonly cwd: string;
 }
 
-
 function unique(items: readonly Completion[]): Completion[] {
-  const seen = new Set<string>();
+  const seen: Set<string> = new Set<string>();
   return items.filter((item) => (seen.has(item.text) ? false : (seen.add(item.text), true)));
 }
 
@@ -61,29 +63,29 @@ function listFiles(directory: string, extension: string): string[] {
 }
 
 function workspaceRoot(words: readonly string[], cwd: string): string {
-  const index = words.indexOf('--workspace');
-  const flagged = index >= 0 ? words[index + 1] : undefined;
-  const inline = words
+  const index: number = words.indexOf('--workspace');
+  const flagged: string | undefined = index >= 0 ? words[index + 1] : undefined;
+  const inline: string | undefined = words
     .find((word) => word.startsWith('--workspace='))
     ?.slice('--workspace='.length);
   return resolve(cwd, flagged ?? inline ?? '.');
 }
 
 function describeVerbWord(prefixWords: readonly string[]): Completion[] {
-  const depth = prefixWords.length;
-  const prefix = prefixWords.join(' ');
-  const nextWords = new Map<string, Completion>();
+  const depth: number = prefixWords.length;
+  const prefix: string = prefixWords.join(' ');
+  const nextWords: Map<string, Completion> = new Map<string, Completion>();
 
   for (const spec of commandCatalog) {
     if (spec.verb === 'tui' && depth === 0) {
       continue;
     }
-    const parts = spec.verb.split(' ');
+    const parts: string[] = spec.verb.split(' ');
     if (parts.length <= depth || (depth > 0 && parts.slice(0, depth).join(' ') !== prefix)) {
       continue;
     }
-    const word = parts[depth] ?? '';
-    const isLeaf = parts.length === depth + 1;
+    const word: string = parts[depth] ?? '';
+    const isLeaf: boolean = parts.length === depth + 1;
     if (!nextWords.has(word) || isLeaf) {
       nextWords.set(word, { text: word, description: isLeaf ? spec.summary : `${word} …` });
     }
@@ -93,10 +95,13 @@ function describeVerbWord(prefixWords: readonly string[]): Completion[] {
 }
 
 function flagCompletions(spec: CommandSpec | undefined): Completion[] {
-  const names = [...(spec?.flags ?? []), ...globalFlagNames.filter((name) => name !== 'version')];
+  const names: string[] = [
+    ...(spec?.flags ?? []),
+    ...globalFlagNames.filter((name) => name !== 'version'),
+  ];
   return unique(
     names.map((name) => {
-      const flag = findFlagSpec(name);
+      const flag: FlagSpec | undefined = findFlagSpec(name);
       return { text: `--${name}`, description: flag?.summary ?? '' };
     }),
   );
@@ -107,8 +112,8 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
     case 'provider':
       return availableProviderIds().map((id) => ({ text: id, description: '' }));
     case 'model': {
-      const provider = findProviderWord(words);
-      const catalog =
+      const provider: string | undefined = findProviderWord(words);
+      const catalog: ProviderModelOptions | undefined =
         provider && availableProviderIds().includes(provider as AiProviderId)
           ? storyboardModelCatalog[provider as AiProviderId]
           : undefined;
@@ -150,20 +155,20 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
 
 // `--provider <id>`, or the value of a `config set` key that names a provider.
 function findProviderWord(words: readonly string[]): string | undefined {
-  const providerIndex = words.indexOf('--provider');
+  const providerIndex: number = words.indexOf('--provider');
 
   if (providerIndex >= 0) {
     return words[providerIndex + 1];
   }
 
-  const keyIndex = words.findIndex(
+  const keyIndex: number = words.findIndex(
     (word) => word === 'ai.provider.default' || /^tasks\.[^.]+\.provider$/.test(word),
   );
   return keyIndex >= 0 ? words[keyIndex + 1] : undefined;
 }
 
 function configKeyCompletions(): Completion[] {
-  const providerKeys = availableProviderIds().flatMap((id) => [
+  const providerKeys: Completion[] = availableProviderIds().flatMap((id) => [
     { text: `providers.${id}.model`, description: `${id} 모델` },
     ...(id === 'ollama'
       ? [
@@ -201,12 +206,12 @@ function positionalCompletions(
   words: readonly string[],
   context: CompletionContext,
 ): Completion[] {
-  const slots = spec.usage
+  const slots: string[] = spec.usage
     .split(' ')
     .slice(spec.verb.split(' ').length)
     .filter((token) => token.startsWith('<') || token.startsWith('['));
-  const slot = slots[positionals.length];
-  const root = workspaceRoot(words, context.cwd);
+  const slot: string | undefined = slots[positionals.length];
+  const root: string = workspaceRoot(words, context.cwd);
 
   switch (slot) {
     case '<stem>':
@@ -222,7 +227,7 @@ function positionalCompletions(
         }));
       }
 
-      const categories = cardCategories.filter(
+      const categories: CardCategory[] = cardCategories.filter(
         (category) => positionals[0] === undefined || category === positionals[0],
       );
       return categories.flatMap((category) =>
@@ -281,12 +286,12 @@ export function computeCompletions(
   words: readonly string[],
   context: CompletionContext,
 ): Completion[] {
-  const current = words[words.length - 1] ?? '';
-  const previous = words.slice(0, -1);
+  const current: string = words[words.length - 1] ?? '';
+  const previous: string[] = words.slice(0, -1);
 
-  const previousWord = previous[previous.length - 1];
+  const previousWord: string | undefined = previous[previous.length - 1];
   if (previousWord?.startsWith('--') && !previousWord.includes('=')) {
-    const values = valueCompletions(previousWord.slice(2), previous);
+    const values: Completion[] | undefined = valueCompletions(previousWord.slice(2), previous);
     if (values !== undefined) {
       return filterByPrefix(values, current);
     }
@@ -294,7 +299,7 @@ export function computeCompletions(
 
   const verbWords: string[] = [];
   const positionals: string[] = [];
-  let skipValue = false;
+  let skipValue: boolean = false;
 
   for (const word of previous) {
     if (skipValue) {
@@ -302,11 +307,11 @@ export function computeCompletions(
       continue;
     }
     if (word.startsWith('--')) {
-      const name = word.slice(2).split('=')[0] ?? '';
+      const name: string = word.slice(2).split('=')[0] ?? '';
       skipValue = findFlagSpec(name)?.valueLabel !== undefined && !word.includes('=');
       continue;
     }
-    const candidate = [...verbWords, word].join(' ');
+    const candidate: string = [...verbWords, word].join(' ');
     if (
       commandCatalog.some(
         (spec) => spec.verb === candidate || spec.verb.startsWith(`${candidate} `),
@@ -318,8 +323,8 @@ export function computeCompletions(
     }
   }
 
-  const verb = verbWords.join(' ');
-  const spec = findCommandSpec(verb);
+  const verb: string = verbWords.join(' ');
+  const spec: CommandSpec | undefined = findCommandSpec(verb);
 
   if (current.startsWith('-')) {
     return filterByPrefix(flagCompletions(spec), current);
@@ -348,7 +353,7 @@ export function formatCompletions(items: readonly Completion[]): string {
     .join('\n');
 }
 
-const zshScript = `#compdef storyboard
+const zshScript: string = `#compdef storyboard
 # Storyboard CLI completion for zsh. Register with: eval "$(storyboard completion zsh)"
 _storyboard() {
   local -a lines entries
@@ -366,7 +371,7 @@ _storyboard() {
 compdef _storyboard storyboard
 `;
 
-const bashScript = `# Storyboard CLI completion for bash. Register with: eval "$(storyboard completion bash)"
+const bashScript: string = `# Storyboard CLI completion for bash. Register with: eval "$(storyboard completion bash)"
 _storyboard() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local candidates
@@ -380,7 +385,7 @@ _storyboard() {
 complete -F _storyboard storyboard
 `;
 
-const fishScript = `# Storyboard CLI completion for fish. Register with: storyboard completion fish | source
+const fishScript: string = `# Storyboard CLI completion for fish. Register with: storyboard completion fish | source
 function __storyboard_complete
   set -l tokens (commandline -opc)
   storyboard __complete $tokens[2..] (commandline -ct) 2>/dev/null

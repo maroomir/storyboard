@@ -3,16 +3,16 @@
 
 /* eslint-disable no-control-regex -- these patterns match terminal control bytes on purpose. */
 // CSI sequences (`ESC [ … final`); the color ones end in `m`.
-const csiPattern = /\u001b\[[0-?]*[ -/]*[@-~]/g;
+const csiPattern: RegExp = /\u001b\[[0-?]*[ -/]*[@-~]/g;
 // OSC sequences (titles, links), ended by BEL or ESC \.
-const oscPattern = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?/g;
+const oscPattern: RegExp = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?/g;
 // Two-byte escapes (`ESC =`, `ESC >`, `ESC 7`) and character set picks (`ESC ( B`).
-const shortEscapePattern = /\u001b(?:[()*+][0-9A-Za-z]|[@-Z\\^_=>78])/g;
+const shortEscapePattern: RegExp = /\u001b(?:[()*+][0-9A-Za-z]|[@-Z\\^_=>78])/g;
 // Every other control byte except tab and newline; an ESC left now opens a color code.
-const controlBytePattern = /[\u0000-\u0008\u000b-\u001a\u001c-\u001f\u007f]|\u001b(?!\[)/g;
+const controlBytePattern: RegExp = /[\u0000-\u0008\u000b-\u001a\u001c-\u001f\u007f]|\u001b(?!\[)/g;
 // What only a full-screen program sends: an absolute cursor position, a screen clear, or a switch
 // to the alternate screen. A progress bar moves the cursor up or back, never these.
-const screenDrawingPattern = /\u001b\[(?:\d*(?:;\d*)?[Hf]|[23]J|\?(?:1049|1047|47)h)/;
+const screenDrawingPattern: RegExp = /\u001b\[(?:\d*(?:;\d*)?[Hf]|[23]J|\?(?:1049|1047|47)h)/;
 /* eslint-enable no-control-regex */
 
 // A full-screen program (an editor, a pager) drew a screen, not lines; its text without the

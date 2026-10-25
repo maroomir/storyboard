@@ -33,7 +33,7 @@ export function markOutcome(
 
   const { paint } = stream.theme;
   const [headline = '', ...details] = message.split('\n');
-  const markedHeadline =
+  const markedHeadline: string =
     marking.stop !== undefined
       ? paint('warning', headline)
       : marking.ok
@@ -48,13 +48,13 @@ export function markOutcome(
 // The same step `storyboard status` names, so the hint after a run and the status screen never
 // disagree about what comes next.
 export function renderNextStep(status: WorkspaceStatus, stream: TerminalStream): string {
-  const command = nextStepCommands[status.nextStep];
+  const command: string | undefined = nextStepCommands[status.nextStep];
 
   if (command === undefined) {
     return '';
   }
 
   const { paint } = stream.theme;
-  const hint = `${paint('muted', '다음 →')}  ${paint('accent', `storyboard ${command}`)}  ${paint('muted', describeNextStep(status))}`;
+  const hint: string = `${paint('muted', '다음 →')}  ${paint('accent', `storyboard ${command}`)}  ${paint('muted', describeNextStep(status))}`;
   return `${wrapWordsToWidth(hint, stream.columns).join('\n')}\n`;
 }

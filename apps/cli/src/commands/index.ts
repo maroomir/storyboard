@@ -17,6 +17,39 @@ import {
   describeReviseOutcome,
   type GenerateAllDraftsProgress,
   type ReviseOutcome,
+  type GenerateAllDraftsResult,
+  type GenerateDraftResult,
+  type ReviseDraftWorkflowResult,
+  type GenerateSceneBeatsResult,
+  type GenerateOutlineResult,
+  type AssembleManuscriptResult,
+  type ReviewManuscriptResult,
+  type SummarizeChaptersResult,
+  type PrepareCardCandidatePromotionResult,
+  type PrepareNoteCandidatePromotionResult,
+  type PromoteCardCandidatesResult,
+  type PromoteNoteCandidatesResult,
+  type DiscardNoteCandidatesResult,
+  type PrepareBibleCandidatePromotionResult,
+  type RecommendCardsResult,
+  type RenameCardResult,
+  type SaveDraftEditResult,
+  type CondenseDraftResult,
+  type ExpandDraftResult,
+  type SeedScenesResult,
+  type CompleteStoryScenesProposal,
+  type BuildStoryCardsProposal,
+  type CreateSceneResult,
+  type RenameSceneResult,
+  type ApplyDraftFormatResult,
+  type AugmentDraftResult,
+  type LoadExportSourceResult,
+  type ExportManuscriptResult,
+  type GenerateStoryStateResult,
+  type UpdateProjectContractResult,
+  type CompositionPreset,
+  type CheckDraftResult,
+  type DraftCheckKind,
 } from '@storyboard/story-engine';
 import {
   draftPath,
@@ -43,12 +76,22 @@ import {
   requiresApiKey,
   type AiProviderId,
   type MergedNoteCardCandidate,
+  type SceneFile,
+  type CardCandidateItem,
+  type BibleCandidateRecord,
+  type StoryboardProjectPaths,
+  type ManuscriptExportFormat,
+  type StoryboardProject,
+  type NovelStageName,
+  type StoryBible,
+  type Character,
+  type LocationBackgroundCard,
 } from '@storyboard/story-model';
 
-import type { DraftAugmentScope } from '@storyboard/story-ai';
+import type { DraftAugmentScope, OAuthConnection } from '@storyboard/story-ai';
 import type { IPrompter } from '@/adapters/prompter';
 import type { CliContainer } from '@/container';
-import type { WorkspaceStatus } from '@storyboard/story-app';
+import type { NovelRunResult, WorkspaceStatus } from '@storyboard/story-app';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import { cardCategories, draftCheckKinds, type CardCategory } from './catalog';
@@ -79,11 +122,11 @@ import { availableProviderIds } from '@/adapters/availableProviders';
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
 function sceneStemFrom(args: ParsedArguments, positionalIndex = 0): string | undefined {
-  const raw = args.positionals[positionalIndex];
+  const raw: string | undefined = args.positionals[positionalIndex];
   if (raw === undefined) {
     return undefined;
   }
-  const fileName = raw.endsWith('.card') ? raw : `${raw}.card`;
+  const fileName: string = raw.endsWith('.card') ? raw : `${raw}.card`;
   return parseSceneFileName(fileName)?.stem ?? raw.replace(/\.card$/, '');
 }
 
@@ -100,8 +143,8 @@ const sceneStageLabels: Record<string, string> = Object.fromEntries(
 
 function describeModel(container: CliContainer): string {
   const { configBridge } = container;
-  const provider = configBridge.getDefaultProvider();
-  const model = configBridge.getProviderConfig(provider).model;
+  const provider: AiProviderId = configBridge.getDefaultProvider();
+  const model: string | undefined = configBridge.getProviderConfig(provider).model;
   return model === undefined ? provider : `${provider} · ${model}`;
 }
 
@@ -123,7 +166,7 @@ async function confirmPaidRun(
   }
 
   const { title, details } = summarize(await container.describeWorkspace());
-  const answer = await prompter.choose({
+  const answer: boolean | undefined = await prompter.choose({
     title,
     details: [...details, `모델  ${describeModel(container)}`],
     options: [
@@ -158,8 +201,8 @@ function describeBatchStep(progress: GenerateAllDraftsProgress): string {
 
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
-    const isConfirmed = await confirmPaidRun(container, (status) => {
-      const pending = status.drafts.missing + status.drafts.stale;
+    const isConfirmed: boolean = await confirmPaidRun(container, (status) => {
+      const pending: number = status.drafts.missing + status.drafts.stale;
       return {
         title: `초안 ${pending}개 생성`,
         details: [
@@ -172,10 +215,10 @@ const generateScene: CommandHandler = async ({ container, args }) => {
       return cancelledBeforeRun;
     }
 
-    const result = await container.drafts.generateAll({
+    const result: GenerateAllDraftsResult = await container.drafts.generateAll({
       shouldPause: container.pauseRequests.watch(),
       onProgress: (progress) => {
-        const step = describeBatchStep(progress);
+        const step: string = describeBatchStep(progress);
         container.progress.update({
           // A log line per stage, so each line says which stage it is.
           line: `${progress.current}/${progress.total} ${progress.label} · ${step}`,
@@ -214,7 +257,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const stem = sceneStemFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
   if (stem === undefined) {
     return {
       ok: false,
@@ -222,11 +265,11 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result = await container.drafts.generate({
+  const result: GenerateDraftResult = await container.drafts.generate({
     sceneUri: sceneUriFor(container.workspaceRoot, stem),
     force: flagBoolean(args.flags, 'force'),
     onPipelineProgress: (stage, current, total) => {
-      const step = `${sceneStageLabels[stage] ?? stage} ${current}/${total}`;
+      const step: string = `${sceneStageLabels[stage] ?? stage} ${current}/${total}`;
       container.progress.update({ line: step, step });
     },
   });
@@ -238,23 +281,27 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   // 초안 앞머리에만 남기면 아무도 보지 않는다. 경고는 stderr로 알리되 생성 자체는 성공이다 —
   // 분량 미달은 모델 편차에서도 나오므로 게이트로 쓰면 정상 결과까지 실패로 만든다. 검수
   // 재작성 뒤에 찍으면 이미 고쳐진 문제를 다시 알리는 꼴이라 생성 직후에 낸다.
-  const warnings = result.kind === 'generated' ? result.warnings : [];
+  const warnings: readonly string[] = result.kind === 'generated' ? result.warnings : [];
   for (const warning of warnings) {
     container.logger.warn(warning);
   }
 
   // `--no-revise` overrides the setting; without it the workspace's `revise.loop.afterGenerate`
   // decides, exactly as it does in the extension.
-  const reviseRequested =
+  const reviseRequested: boolean =
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
   // 초안은 이미 디스크에 있다. 그 뒤의 감수가 멈춰도(재작성 타임아웃 등) 생성은 성공이고, 에이전트가
   // 종료 코드만 보고 초안을 다시 사는 일이 없도록 경고와 data.revise 로만 알린다.
   let revise: ReviseOutcome | undefined;
   if (result.kind === 'generated' && reviseRequested) {
-    const revised = await container.drafts.reviseScene(container.workspaceRoot, stem, {
-      onProgress: (message) => container.progress.update({ line: message, step: message }),
-    });
+    const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
+      container.workspaceRoot,
+      stem,
+      {
+        onProgress: (message) => container.progress.update({ line: message, step: message }),
+      },
+    );
     revise = revised && describeReviseOutcome(revised);
 
     if (revise?.warning) {
@@ -277,19 +324,19 @@ const generateScene: CommandHandler = async ({ container, args }) => {
 // 비트는 `draft generate` 가 비어 있을 때 자동으로 채우지만, 생성 전에 사건 전개를 검수하려는
 // 창작자를 위해 verb 로도 노출한다. --all 은 비트 없는 씬만 고르고, --force 가 있어야 다시 뽑는다.
 const generateSceneBeats: CommandHandler = async ({ container, args }) => {
-  const force = flagBoolean(args.flags, 'force');
-  const dryRun = flagBoolean(args.flags, 'dry-run');
+  const force: boolean = flagBoolean(args.flags, 'force');
+  const dryRun: boolean = flagBoolean(args.flags, 'dry-run');
 
   if (flagBoolean(args.flags, 'all')) {
-    const stems = (await container.drafts.listScenes(container.workspaceRoot)).map(
+    const stems: string[] = (await container.drafts.listScenes(container.workspaceRoot)).map(
       (scene) => scene.stem,
     );
     const results: Record<string, unknown> = {};
     const failures: string[] = [];
-    let proposed = 0;
+    let proposed: number = 0;
 
     for (const stem of stems) {
-      const result = await runSceneBeats(container, stem, force, dryRun);
+      const result: GenerateSceneBeatsResult = await runSceneBeats(container, stem, force, dryRun);
       results[stem] = result;
       if (!result.ok) {
         failures.push(stem);
@@ -309,7 +356,7 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const stem = sceneStemFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
   if (stem === undefined) {
     return {
       ok: false,
@@ -317,7 +364,7 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result = await runSceneBeats(container, stem, force, dryRun);
+  const result: GenerateSceneBeatsResult = await runSceneBeats(container, stem, force, dryRun);
   if (!result.ok) {
     return { ok: false, message: result.message };
   }
@@ -355,12 +402,15 @@ function runSceneBeats(
 }
 
 const reviseScene: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
   if (stem === undefined) {
     return { ok: false, message: '씬 stem을 지정해 주세요.' };
   }
 
-  const result = await container.drafts.reviseScene(container.workspaceRoot, stem);
+  const result: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
+    container.workspaceRoot,
+    stem,
+  );
   if (result === undefined) {
     return { ok: false, message: '초안이 없어 검수를 건너뛰었습니다.' };
   }
@@ -376,7 +426,7 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
 };
 
 const generateOutline: CommandHandler = async ({ container, args }) => {
-  const result = await container.novel.generateOutline({
+  const result: GenerateOutlineResult = await container.novel.generateOutline({
     workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
     onProgress: (message: string) => container.progress.update({ line: message, step: message }),
@@ -405,7 +455,7 @@ function describeOutlineResult(kind: string): string {
 }
 
 const assembleManuscript: CommandHandler = async ({ container }) => {
-  const result = await container.manuscript.assemble({
+  const result: AssembleManuscriptResult = await container.manuscript.assemble({
     workspaceRoot: container.workspaceRoot,
   });
   return {
@@ -416,7 +466,7 @@ const assembleManuscript: CommandHandler = async ({ container }) => {
 };
 
 const reviewManuscript: CommandHandler = async ({ container }) => {
-  const result = await container.manuscript.review({
+  const result: ReviewManuscriptResult = await container.manuscript.review({
     workspaceRoot: container.workspaceRoot,
   });
   return {
@@ -427,7 +477,7 @@ const reviewManuscript: CommandHandler = async ({ container }) => {
 };
 
 const summarizeChapters: CommandHandler = async ({ container }) => {
-  const result = await container.manuscript.summarizeChapters({
+  const result: SummarizeChaptersResult = await container.manuscript.summarizeChapters({
     workspaceRoot: container.workspaceRoot,
   });
   return {
@@ -439,10 +489,13 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 
 const generateNovel: CommandHandler = async ({ container, args }) => {
   // NOTE: 이 명령은 실행 잠금을 쥔 채 돈다. 그러니 running 으로 남은 상태는 죽은 프로세스의 것이다.
-  const interrupted = await container.novel.findResumableRun(container.workspaceRoot, {
-    holdsRunLock: true,
-  });
-  const restartChoice =
+  const interrupted: NovelRunState | undefined = await container.novel.findResumableRun(
+    container.workspaceRoot,
+    {
+      holdsRunLock: true,
+    },
+  );
+  const restartChoice: 'restart' | 'resume' | undefined =
     interrupted === undefined
       ? 'restart'
       : await askResumeOrRestart(container.prompter, interrupted);
@@ -451,7 +504,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     return cancelledBeforeRun;
   }
 
-  const isConfirmed = await confirmPaidRun(container, (status) => ({
+  const isConfirmed: boolean = await confirmPaidRun(container, (status) => ({
     title: '장편 생성',
     details: [
       `작품  ${status.project.name}`,
@@ -464,10 +517,10 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     return cancelledBeforeRun;
   }
 
-  const project = await container.novel.readProject(container.workspaceRoot);
-  const novelPlan = resolveNovelPipelinePlan();
-  const reviseIterations = flagString(args.flags, 'revise-iterations');
-  const result = await container.novel.run({
+  const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
+  const novelPlan: readonly NovelStageName[] = resolveNovelPipelinePlan();
+  const reviseIterations: string | undefined = flagString(args.flags, 'revise-iterations');
+  const result: NovelRunResult = await container.novel.run({
     workspaceUri: container.workspaceRoot,
     project,
     // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
@@ -491,11 +544,11 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   });
 
   const { spending } = result;
-  const budgetNote =
+  const budgetNote: string =
     result.outcome === 'paused' && spending.isOverBudget
       ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 $${spending.costUsd.toFixed(2)}).`
       : '';
-  const cacheNote =
+  const cacheNote: string =
     spending.cache !== undefined && spending.cache.cachedTokens > 0
       ? ` 프롬프트 캐시 적중 ${Math.round((spending.cache.cachedTokens / spending.cache.promptTokens) * 100)}%, 절약 $${spending.cache.savedUsd.toFixed(2)}.`
       : '';
@@ -524,7 +577,9 @@ async function askResumeOrRestart(
     return 'resume';
   }
 
-  const finished = interrupted.completedStages.map((stage) => novelStageLabel(stage)).join(', ');
+  const finished: string = interrupted.completedStages
+    .map((stage) => novelStageLabel(stage))
+    .join(', ');
 
   return await prompter.choose<'resume' | 'restart'>({
     title: '끊긴 장편 생성이 있습니다',
@@ -539,23 +594,26 @@ async function askResumeOrRestart(
 // 파생이 어떻게 됐는지 확인하는 자리. 서술자 카드를 만들지 않은 작품도 계약의 시점 하나가 어떤
 // 서술로 풀리는지 여기서 볼 수 있다.
 const showScene: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const scene = await container.drafts.readScene(container.workspaceRoot, stem);
+  const scene: SceneFile | undefined = await container.drafts.readScene(
+    container.workspaceRoot,
+    stem,
+  );
 
   if (scene === undefined) {
     return { ok: false, message: `씬을 찾을 수 없습니다: ${stem}` };
   }
-  const narration = await describeSceneNarration(
+  const narration: string = await describeSceneNarration(
     container,
     scene.card.narrator,
     scene.frontmatter.povCharacter,
   );
-  const thread = scene.card.thread ?? mainThreadId;
+  const thread: string = scene.card.thread ?? mainThreadId;
 
   return {
     ok: true,
@@ -583,7 +641,7 @@ const showScene: CommandHandler = async ({ container, args }) => {
 // Notes that disagree about one slot of a card are held back: promotion asks nobody, so the
 // author keeps one value with `card discard --change` and promotes again.
 function describeNoteConflicts(cards: readonly MergedNoteCardCandidate[]): string[] {
-  const lines = cards.flatMap((card) =>
+  const lines: string[] = cards.flatMap((card) =>
     card.conflicts.flatMap((conflict) => [
       `  보류      ${card.cardId} ${conflict.key} — 노트마다 값이 다릅니다`,
       ...conflict.options.map(
@@ -602,24 +660,27 @@ function describeNoteConflicts(cards: readonly MergedNoteCardCandidate[]): strin
 // Candidates come from two places — facts generation pulled out of drafts, and notes about cards
 // that already existed — and the author promotes both with this one verb.
 const promoteCards: CommandHandler = async ({ container, args }) => {
-  const prepared = await container.cards.prepareCandidatePromotion(container.workspaceRoot);
-  const preparedNotes = await container.notes.prepareCandidatePromotion(container.workspaceRoot);
+  const prepared: PrepareCardCandidatePromotionResult =
+    await container.cards.prepareCandidatePromotion(container.workspaceRoot);
+  const preparedNotes: PrepareNoteCandidatePromotionResult =
+    await container.notes.prepareCandidatePromotion(container.workspaceRoot);
 
   if (prepared.kind !== 'ready' && preparedNotes.kind !== 'ready') {
-    const kind =
+    const kind: 'no_candidates' | 'no_new_candidates' =
       prepared.kind === 'no_candidates' && preparedNotes.kind === 'no_candidates'
         ? 'no_candidates'
         : 'no_new_candidates';
     return { ok: true, message: describeNothingToPromote(kind), data: { kind } };
   }
 
-  const draftItems = prepared.kind === 'ready' ? prepared.items : [];
-  const noteCandidates = preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
-  const conflictedCards = [
+  const draftItems: readonly CardCandidateItem[] = prepared.kind === 'ready' ? prepared.items : [];
+  const noteCandidates: readonly MergedNoteCardCandidate[] =
+    preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
+  const conflictedCards: MergedNoteCardCandidate[] = [
     ...noteCandidates,
     ...(preparedNotes.kind === 'ready' ? preparedNotes.heldCards : []),
   ].filter((candidate) => candidate.conflicts.length > 0);
-  const conflictLines = describeNoteConflicts(conflictedCards);
+  const conflictLines: string[] = describeNoteConflicts(conflictedCards);
 
   if (flagBoolean(args.flags, 'dry-run')) {
     return {
@@ -637,16 +698,16 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result =
+  const result: PromoteCardCandidatesResult | undefined =
     draftItems.length > 0
       ? await container.cards.promoteCandidates(container.workspaceRoot, draftItems)
       : undefined;
-  const noteResult =
+  const noteResult: PromoteNoteCandidatesResult | undefined =
     noteCandidates.length > 0
       ? await container.notes.promoteCandidates(container.workspaceRoot, noteCandidates)
       : undefined;
-  const isDraftSaveFailed = result !== undefined && result.kind !== 'promoted';
-  const updatedCardCount =
+  const isDraftSaveFailed: boolean = result !== undefined && result.kind !== 'promoted';
+  const updatedCardCount: number =
     (result?.kind === 'promoted' ? result.updatedCardCount : 0) +
     (noteResult?.updatedCardIds.length ?? 0);
 
@@ -660,13 +721,13 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
 };
 
 const discardCardCandidates: CommandHandler = async ({ container, args }) => {
-  const invalidId = args.positionals.find((id) => !cardIdPattern.test(id));
+  const invalidId: string | undefined = args.positionals.find((id) => !cardIdPattern.test(id));
 
   if (invalidId !== undefined) {
     return { ok: false, message: `카드 id 가 올바르지 않습니다: ${invalidId}` };
   }
 
-  const changeRef = flagString(args.flags, 'change');
+  const changeRef: string | undefined = flagString(args.flags, 'change');
 
   if (changeRef !== undefined) {
     const [cardId] = args.positionals;
@@ -678,11 +739,14 @@ const discardCardCandidates: CommandHandler = async ({ container, args }) => {
       };
     }
 
-    const result = await container.notes.discardCandidates(container.workspaceRoot, {
-      kind: 'change',
-      cardId,
-      ref: changeRef,
-    });
+    const result: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
+      container.workspaceRoot,
+      {
+        kind: 'change',
+        cardId,
+        ref: changeRef,
+      },
+    );
 
     return result.kind === 'change_not_found'
       ? {
@@ -692,13 +756,20 @@ const discardCardCandidates: CommandHandler = async ({ container, args }) => {
       : { ok: true, message: `${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, data: result };
   }
 
-  const cardIds = args.positionals.length > 0 ? new Set(args.positionals) : undefined;
-  const notes = await container.notes.discardCandidates(container.workspaceRoot, {
-    kind: 'cards',
-    ...(cardIds === undefined ? {} : { cardIds }),
-  });
-  const draftItemCount = await container.cards.discardCandidates(container.workspaceRoot, cardIds);
-  const noteCardIds = notes.kind === 'discarded' ? notes.cardIds : [];
+  const cardIds: Set<string> | undefined =
+    args.positionals.length > 0 ? new Set(args.positionals) : undefined;
+  const notes: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
+    container.workspaceRoot,
+    {
+      kind: 'cards',
+      ...(cardIds === undefined ? {} : { cardIds }),
+    },
+  );
+  const draftItemCount: number = await container.cards.discardCandidates(
+    container.workspaceRoot,
+    cardIds,
+  );
+  const noteCardIds: readonly string[] = notes.kind === 'discarded' ? notes.cardIds : [];
 
   if (noteCardIds.length === 0 && draftItemCount === 0) {
     return { ok: true, message: '버릴 후보가 없습니다.', data: { notes: [], drafts: 0 } };
@@ -716,7 +787,8 @@ const discardCardCandidates: CommandHandler = async ({ container, args }) => {
 };
 
 const promoteBible: CommandHandler = async ({ container, args }) => {
-  const prepared = await container.cards.prepareBiblePromotion(container.workspaceRoot);
+  const prepared: PrepareBibleCandidatePromotionResult =
+    await container.cards.prepareBiblePromotion(container.workspaceRoot);
 
   if (prepared.kind !== 'ready') {
     return { ok: true, message: describeNothingToPromote(prepared.kind), data: prepared };
@@ -736,13 +808,13 @@ const promoteBible: CommandHandler = async ({ container, args }) => {
 
 // Read-only: an agent uses this to decide whether a card is worth creating, so it never writes.
 const recommendCards: CommandHandler = async ({ container, args }) => {
-  const category = cardCategoryFrom(args);
+  const category: CardCategory | undefined = cardCategoryFrom(args);
 
   if (category === undefined) {
     return { ok: false, message: describeMissingCardCategory('card recommend') };
   }
 
-  const result = await container.cards.recommend({
+  const result: RecommendCardsResult = await container.cards.recommend({
     category,
     workspaceRoot: container.workspaceRoot,
   });
@@ -764,7 +836,7 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
       };
 };
 
-const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+const cardIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
 function cardCategoryFrom(args: ParsedArguments): CardCategory | undefined {
   return cardCategories.find((category) => category === args.positionals[0]);
@@ -775,9 +847,9 @@ function describeMissingCardCategory(verb: string): string {
 }
 
 const renameCard: CommandHandler = async ({ container, args }) => {
-  const category = cardCategoryFrom(args);
-  const fromId = args.positionals[1];
-  const toId = flagString(args.flags, 'to');
+  const category: CardCategory | undefined = cardCategoryFrom(args);
+  const fromId: string | undefined = args.positionals[1];
+  const toId: string | undefined = flagString(args.flags, 'to');
 
   if (category === undefined) {
     return { ok: false, message: describeMissingCardCategory('card rename') };
@@ -787,7 +859,7 @@ const renameCard: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '바꿀 id 와 --to <새 id> 를 지정해 주세요.' };
   }
 
-  const result = await container.cards.rename({
+  const result: RenameCardResult = await container.cards.rename({
     workspaceRoot: container.workspaceRoot,
     category,
     fromId,
@@ -821,14 +893,14 @@ function parseLineRange(raw: string | undefined): LineRange | undefined | 'inval
     return undefined;
   }
 
-  const match = /^(\d+)-(\d+)$/.exec(raw.trim());
+  const match: RegExpExecArray | null = /^(\d+)-(\d+)$/.exec(raw.trim());
 
   if (!match) {
     return 'invalid';
   }
 
-  const from = Number(match[1]);
-  const to = Number(match[2]);
+  const from: number = Number(match[1]);
+  const to: number = Number(match[2]);
   return from >= 1 && to >= from ? { from, to } : 'invalid';
 }
 
@@ -848,7 +920,7 @@ function replaceLines(body: string, range: LineRange | undefined, replacement: s
     return replacement;
   }
 
-  const lines = body.split('\n');
+  const lines: string[] = body.split('\n');
   return [
     ...lines.slice(0, range.from - 1),
     ...replacement.split('\n'),
@@ -858,18 +930,28 @@ function replaceLines(body: string, range: LineRange | undefined, replacement: s
 
 // The draft and the lines a rewrite works on. The same check serves a dry run, so an empty range
 // is refused before any model is called.
+interface TransformedDraft {
+  ok: boolean;
+  text?: string;
+  message: string;
+}
+
+type LoadedDraftTarget =
+  | { ok: true; body: string; target: string }
+  | { ok: false; message: string };
+
 async function loadDraftTarget(
   container: CliContainer,
   stem: string,
   range: LineRange | undefined,
-): Promise<{ ok: true; body: string; target: string } | { ok: false; message: string }> {
-  const body = await readDraftBody(container, stem);
+): Promise<LoadedDraftTarget> {
+  const body: string | undefined = await readDraftBody(container, stem);
 
   if (body === undefined) {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
-  const target = sliceLines(body, range);
+  const target: string = sliceLines(body, range);
 
   if (target.trim().length === 0) {
     return { ok: false, message: '대상 구간이 비어 있습니다.' };
@@ -884,23 +966,23 @@ async function rewriteDraft(
   container: CliContainer,
   stem: string,
   range: LineRange | undefined,
-  transform: (target: string) => Promise<{ ok: boolean; text?: string; message: string }>,
+  transform: (target: string) => Promise<TransformedDraft>,
 ): Promise<CommandOutcome> {
-  const loaded = await loadDraftTarget(container, stem, range);
+  const loaded: LoadedDraftTarget = await loadDraftTarget(container, stem, range);
 
   if (!loaded.ok) {
     return loaded;
   }
 
   const { body, target } = loaded;
-  const result = await transform(target);
+  const result: TransformedDraft = await transform(target);
 
   if (!result.ok || result.text === undefined) {
     return { ok: false, message: result.message };
   }
 
   // 손질 한 번이 한 편집 세션이다. 고치기 전 판본은 재생성과 같은 설정을 따라 .draft/ 에 남는다.
-  const saved = await container.drafts.saveEdit({
+  const saved: SaveDraftEditResult = await container.drafts.saveEdit({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
     body: replaceLines(body, range, result.text),
@@ -911,7 +993,7 @@ async function rewriteDraft(
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
-  const draftUri = draftPath(container.workspaceRoot, stem);
+  const draftUri: StoryUri = draftPath(container.workspaceRoot, stem);
 
   return { ok: true, message: result.message, data: { draft: draftUri.fsPath } };
 }
@@ -921,8 +1003,8 @@ function rangeFrom(args: ParsedArguments): LineRange | undefined | 'invalid' {
 }
 
 const condenseDraft: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
-  const range = rangeFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
+  const range: LineRange | 'invalid' | undefined = rangeFrom(args);
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
@@ -932,10 +1014,10 @@ const condenseDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
   }
 
-  const project = await container.novel.readProject(container.workspaceRoot);
+  const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const result = await container.drafts.condense({
+    const result: CondenseDraftResult = await container.drafts.condense({
       workspaceRoot: container.workspaceRoot,
       sceneStem: stem,
       format: project.format,
@@ -950,8 +1032,8 @@ const condenseDraft: CommandHandler = async ({ container, args }) => {
 };
 
 const expandDraft: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
-  const range = rangeFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
+  const range: LineRange | 'invalid' | undefined = rangeFrom(args);
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
@@ -962,7 +1044,7 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
   }
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const result = await container.drafts.expand({
+    const result: ExpandDraftResult = await container.drafts.expand({
       workspaceRoot: container.workspaceRoot,
       sceneStem: stem,
       selectedText: target,
@@ -977,7 +1059,7 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
 // Seeds come from the outline, so an agent runs `outline generate` first. Overwriting is what the
 // editor asks about with a modal; unattended, it is refused unless `--force` says so.
 const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
-  const result = await container.novel.seedScenes({
+  const result: SeedScenesResult = await container.novel.seedScenes({
     workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
   });
@@ -1009,7 +1091,7 @@ const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
 // 익스텐션은 제안을 QuickPick 으로 고르고 diff 로 검토한 뒤 쓴다. 무인 실행에는 그 자리가 없으니
 // 제안 전체를 적용하고, 미리 보려면 --dry-run 을 쓴다 — card promote 와 같은 관례다.
 const completeStory: CommandHandler = async ({ container, args }) => {
-  const proposal = await container.novel.completeScenes({
+  const proposal: CompleteStoryScenesProposal = await container.novel.completeScenes({
     workspaceRoot: container.workspaceRoot,
   });
 
@@ -1036,7 +1118,7 @@ const completeStory: CommandHandler = async ({ container, args }) => {
 };
 
 const buildStoryCards: CommandHandler = async ({ container, args }) => {
-  const proposal = await container.cards.buildFromScenes({
+  const proposal: BuildStoryCardsProposal = await container.cards.buildFromScenes({
     workspaceRoot: container.workspaceRoot,
   });
 
@@ -1070,8 +1152,11 @@ function describeCardBuild(writtenCount: number, needsId: readonly string[]): st
 }
 
 const canonDiff: CommandHandler = async ({ container }) => {
-  const canon = await container.cards.bibleCandidates.loadCanon(container.workspaceRoot);
-  const candidates = await container.cards.bibleCandidates.loadRecords(container.workspaceRoot);
+  const canon: StoryBible = await container.cards.bibleCandidates.loadCanon(
+    container.workspaceRoot,
+  );
+  const candidates: readonly BibleCandidateRecord[] =
+    await container.cards.bibleCandidates.loadRecords(container.workspaceRoot);
   const { pending } = diffCandidatesAgainstCanon(canon, candidates);
 
   return {
@@ -1085,8 +1170,8 @@ const canonDiff: CommandHandler = async ({ container }) => {
 // Cards start empty and get filled by the studio or by hand; creating one is a file write, not a
 // generation, so no provider is involved.
 const createCard: CommandHandler = async ({ container, args }) => {
-  const kind = cardCategoryFrom(args);
-  const name = flagString(args.flags, 'name') ?? args.positionals[1];
+  const kind: CardCategory | undefined = cardCategoryFrom(args);
+  const name: string | undefined = flagString(args.flags, 'name') ?? args.positionals[1];
 
   if (kind === undefined) {
     return { ok: false, message: describeMissingCardCategory('card create') };
@@ -1096,9 +1181,9 @@ const createCard: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '--name 으로 이름을 지정해 주세요.' };
   }
 
-  const cardType = kind === 'character' ? 'character' : 'location';
-  const explicitId = flagString(args.flags, 'id');
-  const suggested = explicitId ?? slugify(name);
+  const cardType: 'character' | 'location' = kind === 'character' ? 'character' : 'location';
+  const explicitId: string | undefined = flagString(args.flags, 'id');
+  const suggested: string | undefined = explicitId ?? slugify(name);
 
   // 한글 이름은 ascii 슬러그를 내지 못한다. 예전에는 이때 new-card, new-card-2 로 번호를 붙여
   // 이름과 무관한 id 가 조용히 만들어졌고, 씬 카드가 그 id 로 인물을 참조했다. 짐작하는 대신
@@ -1129,17 +1214,17 @@ const createCard: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const id = await container.cards.deriveUniqueId(
+  const id: string = await container.cards.deriveUniqueId(
     container.workspaceRoot,
     cardType,
     suggested,
     suggested,
   );
-  const card =
+  const card: Character | LocationBackgroundCard =
     kind === 'character'
       ? createEmptyCharacter(id, name.trim())
       : createEmptyBackground(id, name.trim());
-  const uri = await container.cards.write(container.workspaceRoot, card);
+  const uri: StoryUri = await container.cards.write(container.workspaceRoot, card);
 
   return {
     ok: true,
@@ -1151,14 +1236,14 @@ const createCard: CommandHandler = async ({ container, args }) => {
 // 씬은 번호가 정체성을 지니므로 이름에서 슬러그를 못 만들어도 거부하지 않는다. 그때는 엔진이
 // sceneSeedFactory 의 폴백과 같은 `scene-<번호>` 로 붙인다.
 const createScene: CommandHandler = async ({ container, args }) => {
-  const name = flagString(args.flags, 'name') ?? args.positionals[0];
+  const name: string | undefined = flagString(args.flags, 'name') ?? args.positionals[0];
 
   if (name === undefined || name.trim().length === 0) {
     return { ok: false, message: '--name 으로 씬 이름을 지정해 주세요.' };
   }
 
-  const slug = slugify(name);
-  const result = await container.drafts.createScene({
+  const slug: string | undefined = slugify(name);
+  const result: CreateSceneResult = await container.drafts.createScene({
     workspaceRoot: container.workspaceRoot,
     ...(slug === undefined ? {} : { slug }),
   });
@@ -1177,14 +1262,14 @@ const createScene: CommandHandler = async ({ container, args }) => {
 // The stem is the scene's key: the engine moves every file named after it and rewrites the
 // ledgers, canon and caches that point at it. A number another scene holds is refused.
 const renameScene: CommandHandler = async ({ container, args }) => {
-  const fromStem = args.positionals[0];
-  const toStem = flagString(args.flags, 'to');
+  const fromStem: string | undefined = args.positionals[0];
+  const toStem: string | undefined = flagString(args.flags, 'to');
 
   if (fromStem === undefined || toStem === undefined) {
     return { ok: false, message: '바꿀 씬과 --to <새 이름> 을 지정해 주세요.' };
   }
 
-  const result = await container.drafts.renameScene({
+  const result: RenameSceneResult = await container.drafts.renameScene({
     workspaceRoot: container.workspaceRoot,
     fromStem,
     toStem,
@@ -1194,9 +1279,10 @@ const renameScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: result.message };
   }
 
-  const orderNote = result.hasOrderChanged
-    ? ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
-    : '';
+  const orderNote: '' | ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.' =
+    result.hasOrderChanged
+      ? ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
+      : '';
 
   return {
     ok: true,
@@ -1208,7 +1294,7 @@ const renameScene: CommandHandler = async ({ container, args }) => {
 // Card ids are file names, so they stay ascii-safe and lowercase. A name with no ascii yields
 // nothing usable; the caller refuses rather than inventing a name-shaped id.
 function slugify(name: string): string | undefined {
-  const slug = name
+  const slug: string = name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -1218,13 +1304,13 @@ function slugify(name: string): string | undefined {
 }
 
 const applyDraftFormat: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const result = await container.drafts.applyFormat({
+  const result: ApplyDraftFormatResult = await container.drafts.applyFormat({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
   });
@@ -1241,8 +1327,8 @@ const applyDraftFormat: CommandHandler = async ({ container, args }) => {
 // Card-based augmentation rewrites the whole draft from updated cards and canon, without
 // regenerating it. The editor shows a diff first; unattended, the caller asked for it, so it lands.
 const augmentDraft: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
-  const range = rangeFrom(args);
+  const stem: string | undefined = sceneStemFrom(args);
+  const range: LineRange | 'invalid' | undefined = rangeFrom(args);
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
@@ -1265,9 +1351,9 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
 // The editor asks for the instruction in a prompt box; here it is a flag. Everything else is the
 // selection-scoped augmentation the editor runs.
 const editDraft: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
-  const range = rangeFrom(args);
-  const instruction = flagString(args.flags, 'instruction');
+  const stem: string | undefined = sceneStemFrom(args);
+  const range: LineRange | 'invalid' | undefined = rangeFrom(args);
+  const instruction: string | undefined = flagString(args.flags, 'instruction');
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
@@ -1306,7 +1392,7 @@ async function augmentDraftRange(
   range: LineRange | undefined,
   options: AugmentDraftRangeOptions,
 ): Promise<CommandOutcome> {
-  const prepare = (target: string) =>
+  const prepare = (target: string): Promise<AugmentDraftResult> =>
     container.drafts.prepareAugmentation({
       draftSceneStem: stem,
       sceneUri: scenePath(container.workspaceRoot, stem),
@@ -1317,13 +1403,13 @@ async function augmentDraftRange(
     });
 
   if (options.isDryRun) {
-    const loaded = await loadDraftTarget(container, stem, range);
+    const loaded: LoadedDraftTarget = await loadDraftTarget(container, stem, range);
 
     if (!loaded.ok) {
       return loaded;
     }
 
-    const prepared = await prepare(loaded.target);
+    const prepared: AugmentDraftResult = await prepare(loaded.target);
 
     return prepared.ok
       ? { ok: true, message: options.proposedMessage, data: prepared }
@@ -1331,7 +1417,7 @@ async function augmentDraftRange(
   }
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const prepared = await prepare(target);
+    const prepared: AugmentDraftResult = await prepare(target);
 
     return prepared.ok
       ? { ok: true, text: prepared.text, message: options.appliedMessage }
@@ -1340,13 +1426,15 @@ async function augmentDraftRange(
 }
 
 const exportManuscript: CommandHandler = async ({ container, args }) => {
-  const source = await container.manuscript.loadExportSource(container.workspaceRoot);
+  const source: LoadExportSourceResult = await container.manuscript.loadExportSource(
+    container.workspaceRoot,
+  );
 
   if (!source.ok) {
     return { ok: false, message: `내보낼 원고가 없습니다 (${source.kind}).`, data: source };
   }
 
-  const target = flagString(args.flags, 'out');
+  const target: string | undefined = flagString(args.flags, 'out');
 
   if (target === undefined) {
     process.stdout.write(source.markdown);
@@ -1354,8 +1442,8 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
   }
 
   // 편집기의 형식 선택과 같은 두 형식이다. 확장자가 .txt 면 마크다운 기호를 걷어 낸 평문으로 낸다.
-  const format = target.toLowerCase().endsWith('.txt') ? 'txt' : 'md';
-  const exported = await container.manuscript.writeExport(
+  const format: ManuscriptExportFormat = target.toLowerCase().endsWith('.txt') ? 'txt' : 'md';
+  const exported: ExportManuscriptResult = await container.manuscript.writeExport(
     NodeUri.file(resolve(target)),
     source.markdown,
     format,
@@ -1379,9 +1467,10 @@ async function sealWorkspaceStoryState(
   container: CliContainer,
   paths: ReturnType<typeof getStoryboardProjectPaths>,
 ): Promise<readonly number[]> {
-  const project = await readProjectJson(container.fileSystem, paths.projectJson).catch(
-    () => undefined,
-  );
+  const project: StoryboardProject | undefined = await readProjectJson(
+    container.fileSystem,
+    paths.projectJson,
+  ).catch(() => undefined);
 
   if (project === undefined) {
     return [];
@@ -1397,23 +1486,23 @@ async function sealWorkspaceStoryState(
 
 // "5", "5-8", "5,7,9" 를 받는다. 형식이 어긋나면 undefined 로 알려 조용히 전체를 봉인하는 일을 막는다.
 function parseSceneOrders(raw: string): readonly number[] | undefined {
-  const orders = new Set<number>();
+  const orders: Set<number> = new Set<number>();
 
   for (const part of raw.split(',')) {
-    const bounds = /^(\d+)(?:-(\d+))?$/.exec(part.trim());
-    const start = Number(bounds?.[1]);
+    const bounds: RegExpExecArray | null = /^(\d+)(?:-(\d+))?$/.exec(part.trim());
+    const start: number = Number(bounds?.[1]);
 
     if (bounds === undefined || bounds === null || !Number.isInteger(start)) {
       return undefined;
     }
 
-    const end = bounds[2] === undefined ? start : Number(bounds[2]);
+    const end: number = bounds[2] === undefined ? start : Number(bounds[2]);
 
     if (end < start) {
       return undefined;
     }
 
-    for (let order = start; order <= end; order += 1) {
+    for (let order: number = start; order <= end; order += 1) {
       orders.add(order);
     }
   }
@@ -1424,8 +1513,9 @@ function parseSceneOrders(raw: string): readonly number[] | undefined {
 // 원장은 생성이 쌓는다. 초안만 있는 작품(원장 이전에 쓴 것, 밖에서 들여온 것)은 그 초안에서 세운다.
 // 씬 하나에 호출 하나이고, 이미 원장에 있는 씬은 --force 없이는 건드리지 않는다.
 const generateState: CommandHandler = async ({ container, args }) => {
-  const rawOrders = args.positionals[0];
-  const sceneOrders = rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
+  const rawOrders: string | undefined = args.positionals[0];
+  const sceneOrders: readonly number[] | undefined =
+    rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
 
   if (rawOrders !== undefined && sceneOrders === undefined) {
     return {
@@ -1434,7 +1524,7 @@ const generateState: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result = await container.drafts.generateStoryState({
+  const result: GenerateStoryStateResult = await container.drafts.generateStoryState({
     workspaceRoot: container.workspaceRoot,
     ...(sceneOrders === undefined ? {} : { sceneOrders }),
     force: flagBoolean(args.flags, 'force'),
@@ -1449,7 +1539,7 @@ const generateState: CommandHandler = async ({ container, args }) => {
   });
 
   const { recorded, kept, withoutDraft, failures, pausedWithRemaining } = result;
-  const summary =
+  const summary: string =
     `원장에 씬 ${recorded.length}개를 기록했습니다` +
     (kept.length > 0 ? `, ${kept.length}개는 이미 있어 그대로 둡니다` : '') +
     (withoutDraft.length > 0 ? `, 초안 없는 씬 ${withoutDraft.length}개는 건너뜁니다` : '') +
@@ -1477,8 +1567,9 @@ const generateState: CommandHandler = async ({ container, args }) => {
 // 낡음 판정은 옳다. 사람이 "카드는 고쳤지만 이 초안이 맞다"고 판단했을 때 그 판단을 원장에 남기는
 // 유일한 통로이므로, 자동으로 도는 곳이 없고 이 명령만 덮어쓴다.
 const resealState: CommandHandler = async ({ container, args }) => {
-  const rawOrders = args.positionals[0];
-  const sceneOrders = rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
+  const rawOrders: string | undefined = args.positionals[0];
+  const sceneOrders: readonly number[] | undefined =
+    rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
 
   if (rawOrders !== undefined && sceneOrders === undefined) {
     return {
@@ -1487,7 +1578,10 @@ const resealState: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const resealed = await container.drafts.resealStoryState(container.workspaceRoot, sceneOrders);
+  const resealed: readonly number[] = await container.drafts.resealStoryState(
+    container.workspaceRoot,
+    sceneOrders,
+  );
 
   return {
     ok: true,
@@ -1501,12 +1595,12 @@ const resealState: CommandHandler = async ({ container, args }) => {
 
 // a workspace the extension already created.
 const initProject: CommandHandler = async ({ container, args }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
 
   // `--repair` 는 계약은 손대지 않고 발판(디렉터리·.gitignore)만 채운다. 0.8 이전에 만든
   // 워크스페이스에는 생성물 무시 항목이 빠져 있어 원고가 통째로 커밋 대상에 남는다. 플래그 없이
   // 기존 워크스페이스에 오면 거부해, --title 이 조용히 무시된 채 exit 0 이 되는 일을 막는다.
-  const isExistingWorkspace = await container.fileSystem.exists(paths.projectJson);
+  const isExistingWorkspace: boolean = await container.fileSystem.exists(paths.projectJson);
 
   if (flagBoolean(args.flags, 'repair')) {
     if (!isExistingWorkspace) {
@@ -1518,9 +1612,12 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
     await createStoryboardDirectories(container.fileSystem, paths);
     await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
-    const addedAgentGuides = await writeWorkspaceAgentGuidesIfMissing(container.fileSystem, paths);
-    const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
-    const sealedSceneOrders = await sealWorkspaceStoryState(container, paths);
+    const addedAgentGuides: string[] = await writeWorkspaceAgentGuidesIfMissing(
+      container.fileSystem,
+      paths,
+    );
+    const gitRepository: GitRepositoryOutcome = ensureGitRepository(container.workspaceRoot.fsPath);
+    const sealedSceneOrders: readonly number[] = await sealWorkspaceStoryState(container, paths);
 
     return {
       ok: true,
@@ -1543,33 +1640,36 @@ const initProject: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const name = flagString(args.flags, 'title') ?? args.positionals[0];
-  const hasName = name !== undefined && name.trim().length > 0;
+  const name: string | undefined = flagString(args.flags, 'title') ?? args.positionals[0];
+  const hasName: boolean = name !== undefined && name.trim().length > 0;
 
   // A person at a terminal is asked instead of being told to start over with flags.
   if (!hasName && container.prompter !== undefined) {
-    const answers = await askInitContract(container.prompter, args);
+    const answers: Record<string, string> | undefined = await askInitContract(
+      container.prompter,
+      args,
+    );
 
     return answers === undefined
       ? { ok: false, message: '취소했습니다. 아무것도 만들지 않았습니다.', stop: 'cancelled' }
       : initProject({ container, args: { ...args, flags: { ...args.flags, ...answers } } });
   }
 
-  if (!hasName) {
+  if (name === undefined || !hasName) {
     return {
       ok: false,
       message: '작품 이름이 필요합니다: storyboard init --title "작품 이름"',
     };
   }
 
-  const contract = await readContractInput(container, args);
+  const contract: ContractInput = await readContractInput(container, args);
 
   if ('message' in contract) {
     return { ok: false, message: contract.message };
   }
 
-  const language = flagString(args.flags, 'language');
-  const setting =
+  const language: string | undefined = flagString(args.flags, 'language');
+  const setting: ProjectSetting | undefined =
     contract.setting === undefined ? undefined : mergeProjectSetting(undefined, contract.setting);
   const { project, createdNarrators } = await createWorkspace({
     fileSystem: container.fileSystem,
@@ -1579,11 +1679,11 @@ const initProject: CommandHandler = async ({ container, args }) => {
     ...(setting === undefined ? {} : { setting }),
     narratorCards: contract.narratorCards ?? [],
   });
-  const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
-  const fromNotes = flagString(args.flags, 'from-notes');
+  const gitRepository: GitRepositoryOutcome = ensureGitRepository(container.workspaceRoot.fsPath);
+  const fromNotes: string | undefined = flagString(args.flags, 'from-notes');
 
   if (fromNotes !== undefined) {
-    const absorbed = await runNoteAbsorb(container, args, fromNotes, {
+    const absorbed: CommandOutcome = await runNoteAbsorb(container, args, fromNotes, {
       shouldFillContract: true,
       retryCommand: `storyboard notes absorb '${fromNotes.replace(/'/g, `'\\''`)}' --yes`,
     });
@@ -1637,7 +1737,7 @@ function describeGitRepository(outcome: GitRepositoryOutcome): string {
 // 계약은 outline generate 의 입구다. 이걸 채우는 길이 없으면 워크스페이스를 만들고도 CLI 만으로는
 // 한 걸음도 못 나간다. init 이 처음 채우고, project set 이 나중에 고친다 — 둘 다 같은 입력을 읽는다.
 const setProjectContract: CommandHandler = async ({ container, args }) => {
-  const contract = await readContractInput(container, args);
+  const contract: ContractInput = await readContractInput(container, args);
 
   if ('message' in contract) {
     return { ok: false, message: contract.message };
@@ -1651,7 +1751,7 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const updated = await container.novel.updateContract({
+  const updated: UpdateProjectContractResult = await container.novel.updateContract({
     workspaceRoot: container.workspaceRoot,
     setting: contract.setting,
     ...(contract.narratorCards === undefined ? {} : { narratorCards: contract.narratorCards }),
@@ -1678,10 +1778,10 @@ async function askInitContract(
   prompter: IPrompter,
   args: ParsedArguments,
 ): Promise<Record<string, string> | undefined> {
-  const later = '';
+  const later: string = '';
   prompter.announce('┌  새 작품 만들기');
 
-  const title = await prompter.askText({ title: '작품 이름' });
+  const title: string | undefined = await prompter.askText({ title: '작품 이름' });
   if (title === undefined || title.length === 0) {
     return undefined;
   }
@@ -1689,7 +1789,10 @@ async function askInitContract(
   const answers: Record<string, string> = { title };
 
   if (flagString(args.flags, 'genre') === undefined) {
-    const genre = await prompter.askText({ title: '장르', hint: '비우면 나중에' });
+    const genre: string | undefined = await prompter.askText({
+      title: '장르',
+      hint: '비우면 나중에',
+    });
     if (genre === undefined) {
       return undefined;
     }
@@ -1700,7 +1803,7 @@ async function askInitContract(
   }
 
   if (flagString(args.flags, 'pov') === undefined) {
-    const pov = await prompter.choose<string>({
+    const pov: string | undefined = await prompter.choose<string>({
       title: '시점',
       details: [],
       options: [
@@ -1720,7 +1823,7 @@ async function askInitContract(
   }
 
   if (flagString(args.flags, 'composition') === undefined) {
-    const composition = await prompter.choose<CompositionKind>({
+    const composition: CompositionKind | undefined = await prompter.choose<CompositionKind>({
       title: '구성',
       details: [],
       options: compositionKinds.map((value) => ({
@@ -1743,12 +1846,14 @@ async function readContractInput(
   container: CliContainer,
   args: ParsedArguments,
 ): Promise<ContractInput> {
-  const fromPath = flagString(args.flags, 'from');
+  const fromPath: string | undefined = flagString(args.flags, 'from');
   let fromFile: Partial<ProjectSetting> | undefined;
 
   if (fromPath !== undefined) {
     try {
-      const bytes = await container.fileSystem.readFile(NodeUri.file(resolve(fromPath)));
+      const bytes: Uint8Array = await container.fileSystem.readFile(
+        NodeUri.file(resolve(fromPath)),
+      );
       const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
 
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
@@ -1756,7 +1861,7 @@ async function readContractInput(
       }
 
       // setting 을 감싼 project.json 을 그대로 줘도 받는다.
-      const record = parsed as Record<string, unknown>;
+      const record: Record<string, unknown> = parsed as Record<string, unknown>;
       fromFile = (record.setting ?? record) as Partial<ProjectSetting>;
     } catch (error) {
       return {
@@ -1765,7 +1870,7 @@ async function readContractInput(
     }
   }
 
-  const pov = flagString(args.flags, 'pov');
+  const pov: string | undefined = flagString(args.flags, 'pov');
 
   if (pov !== undefined && !pointOfViews.includes(pov as PointOfView)) {
     return { message: `--pov 는 ${pointOfViews.join(', ')} 중 하나여야 합니다.` };
@@ -1779,13 +1884,13 @@ async function readContractInput(
   const parsedNumbers: Record<string, number> = {};
 
   for (const [key, flag] of numbers) {
-    const raw = flagString(args.flags, flag);
+    const raw: string | undefined = flagString(args.flags, flag);
 
     if (raw === undefined) {
       continue;
     }
 
-    const value = Number(raw);
+    const value: number = Number(raw);
 
     if (!Number.isInteger(value) || value <= 0) {
       return { message: `--${flag} 는 양의 정수여야 합니다: ${raw}` };
@@ -1794,26 +1899,27 @@ async function readContractInput(
     parsedNumbers[key] = value;
   }
 
-  const composition = flagString(args.flags, 'composition');
+  const composition: string | undefined = flagString(args.flags, 'composition');
 
   if (composition !== undefined && !compositionKinds.includes(composition as CompositionKind)) {
     return { message: `--composition 은 ${compositionKinds.join(', ')} 중 하나여야 합니다.` };
   }
 
-  const episodesRaw = flagString(args.flags, 'episodes');
-  const episodeCount = episodesRaw === undefined ? undefined : Number(episodesRaw);
+  const episodesRaw: string | undefined = flagString(args.flags, 'episodes');
+  const episodeCount: number | undefined =
+    episodesRaw === undefined ? undefined : Number(episodesRaw);
 
   if (episodeCount !== undefined && (!Number.isInteger(episodeCount) || episodeCount <= 0)) {
     return { message: `--episodes 는 양의 정수여야 합니다: ${episodesRaw}` };
   }
 
-  const povCharacters = (flagString(args.flags, 'pov-characters') ?? '')
+  const povCharacters: string[] = (flagString(args.flags, 'pov-characters') ?? '')
     .split(',')
     .map((id) => id.trim())
     .filter((id) => id.length > 0);
 
   // 프리셋이 줄기와 서술자 카드를 만든다. 창작자는 구성 하나만 고르면 된다.
-  const preset =
+  const preset: CompositionPreset | undefined =
     composition === undefined
       ? undefined
       : buildCompositionPreset({
@@ -1841,7 +1947,7 @@ async function readContractInput(
     ...(preset?.setting ?? {}),
   };
 
-  const merged = { ...(fromFile ?? {}), ...fromFlags };
+  const merged: Partial<ProjectSetting> = { ...(fromFile ?? {}), ...fromFlags };
 
   return {
     setting: Object.keys(merged).length === 0 ? undefined : merged,
@@ -1862,8 +1968,10 @@ async function readDraftBody(container: CliContainer, stem: string): Promise<str
 }
 
 const checkDraft: CommandHandler = async ({ container, args }) => {
-  const kind = draftCheckKinds.find((candidate) => candidate === args.positionals[0]);
-  const stem = sceneStemFrom(args, 1);
+  const kind: DraftCheckKind | undefined = draftCheckKinds.find(
+    (candidate) => candidate === args.positionals[0],
+  );
+  const stem: string | undefined = sceneStemFrom(args, 1);
 
   if (kind === undefined) {
     return {
@@ -1876,13 +1984,13 @@ const checkDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const body = await readDraftBody(container, stem);
+  const body: string | undefined = await readDraftBody(container, stem);
 
   if (body === undefined) {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
-  const result = await container.drafts.check({
+  const result: CheckDraftResult = await container.drafts.check({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
     kind,
@@ -1927,7 +2035,7 @@ const checkDraft: CommandHandler = async ({ container, args }) => {
 // SECURITY: the key is read from stdin or a hidden prompt, never from argv — an API key on a
 // command line lands in the shell history and in the process list for every user on the machine.
 const setApiKey: CommandHandler = async ({ container, args }) => {
-  const provider = await resolveApiKeyProvider(container, args.positionals[0]);
+  const provider: string | undefined = await resolveApiKeyProvider(container, args.positionals[0]);
 
   if (typeof provider === 'string' && !availableProviderIds().includes(provider as AiProviderId)) {
     return { ok: false, message: provider };
@@ -1939,8 +2047,8 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const providerId = provider as AiProviderId;
-  const key = (
+  const providerId: AiProviderId = provider as AiProviderId;
+  const key: string = (
     process.stdin.isTTY && container.canPrompt
       ? await askSecret(
           `${providerId} API 키를 붙여 넣고 Enter (입력은 화면에 보이지 않습니다. 비워 두면 삭제): `,
@@ -1964,7 +2072,7 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
       data: { providerId, verified: true },
     };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
+    const reason: string = error instanceof Error ? error.message : String(error);
     return {
       ok: true,
       message: [
@@ -1991,7 +2099,8 @@ const showApiKeys: CommandHandler = async ({ container }) => {
     if (requiresApiKey(providerId)) {
       rows.push({ providerId, stored: await container.secretStore.hasApiKey(providerId) });
     } else if (getProviderTransport(providerId) === 'oauth') {
-      const connection = await container.secretStore.getOAuthConnection(providerId);
+      const connection: OAuthConnection | undefined =
+        await container.secretStore.getOAuthConnection(providerId);
       logins.push({
         providerId,
         isLoggedIn: connection?.tokens !== undefined,
@@ -2005,7 +2114,7 @@ const showApiKeys: CommandHandler = async ({ container }) => {
     if (!login.isLoggedIn) {
       return `     ${login.providerId}  로그인 안 됨`;
     }
-    const account = login.accountLabel === null ? '' : ` (${login.accountLabel})`;
+    const account: string = login.accountLabel === null ? '' : ` (${login.accountLabel})`;
     return `  ✅ ${login.providerId}  로그인됨${account}`;
   };
 
@@ -2037,13 +2146,15 @@ async function resolveApiKeyProvider(
     return undefined;
   }
 
-  const candidates = availableProviderIds().filter((providerId) => requiresApiKey(providerId));
+  const candidates: AiProviderId[] = availableProviderIds().filter((providerId) =>
+    requiresApiKey(providerId),
+  );
   process.stderr.write('어느 프로바이더의 API 키입니까?\n');
   candidates.forEach((providerId, index) => {
     process.stderr.write(`  ${index + 1}. ${providerId}\n`);
   });
-  const answer = await askLine('번호 또는 이름: ');
-  const byIndex = candidates[Number(answer) - 1];
+  const answer: string = await askLine('번호 또는 이름: ');
+  const byIndex: AiProviderId | undefined = candidates[Number(answer) - 1];
 
   return byIndex ?? (candidates.includes(answer as AiProviderId) ? answer : undefined);
 }

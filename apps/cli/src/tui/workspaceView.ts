@@ -6,12 +6,13 @@ import {
   createFileConfiguration,
   resolveStoryboardHomePaths,
   resolveWorkspaceConfigFile,
+  type StoryboardHomePaths,
 } from '@storyboard/story-config';
 import type { WorkspaceStatus } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
-import { createCliContainer } from '@/container';
+import { createCliContainer, type CliContainer } from '@/container';
 
 export interface TuiHeaderInfo {
   readonly workspaceLabel: string;
@@ -43,9 +44,9 @@ export function isWorkspace(cwd: string): boolean {
 // The header answers the two questions a person has before typing anything: where am I, and
 // which AI will answer. Both come from the same files the one-shot commands read.
 export function describeHeader(cwd: string): TuiHeaderInfo {
-  const isWorkspaceFolder = isWorkspace(cwd);
-  const home = resolveStoryboardHomePaths();
-  const configBridge = new ConfigBridge({
+  const isWorkspaceFolder: boolean = isWorkspace(cwd);
+  const home: StoryboardHomePaths = resolveStoryboardHomePaths();
+  const configBridge: ConfigBridge = new ConfigBridge({
     getConfiguration: () =>
       createFileConfiguration({
         userConfigFile: home.configFile,
@@ -54,7 +55,7 @@ export function describeHeader(cwd: string): TuiHeaderInfo {
       }),
   });
 
-  const providerLabel = configBridge.isDefaultProviderConfigured()
+  const providerLabel: string = configBridge.isDefaultProviderConfigured()
     ? `${configBridge.getDefaultProvider()} · ${configBridge.getProviderConfig(configBridge.getDefaultProvider()).model ?? ''}`.replace(
         / · $/,
         '',
@@ -74,20 +75,22 @@ export function describeHeader(cwd: string): TuiHeaderInfo {
 }
 
 export async function readWorkspaceView(cwd: string, version: string): Promise<WorkspaceView> {
-  const header = describeHeader(cwd);
+  const header: TuiHeaderInfo = describeHeader(cwd);
 
   if (!isWorkspace(cwd)) {
     return { header };
   }
 
-  const container = createCliContainer({
+  const container: CliContainer = createCliContainer({
     workspacePath: cwd,
     logger: silentLogger,
     canPrompt: false,
     version,
   });
-  const lockHolder = await container.runGate.describeHolder(container.workspaceRoot);
-  const status = await readStatus(container);
+  const lockHolder: string | undefined = await container.runGate.describeHolder(
+    container.workspaceRoot,
+  );
+  const status: WorkspaceStatus | undefined = await readStatus(container);
 
   return {
     header,

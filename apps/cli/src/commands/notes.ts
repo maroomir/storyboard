@@ -8,14 +8,18 @@ import {
 } from '@storyboard/story-model';
 import {
   type ApplyNoteAbsorbOutcome,
+  type ApplyNoteAbsorbResult,
+  type CollectNotesResult,
+  type ExportNotesResult,
   type NoteAbsorbEstimate,
   type NoteLocation,
+  type PlanNoteAbsorbResult,
 } from '@storyboard/story-engine';
 
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
 import type { IPrompter } from '@/adapters/prompter';
 import type { CliContainer } from '@/container';
-import { noteSources } from './catalog';
+import { defaultNoteSource, noteSources } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
 import { askSecret, readStdin } from './prompt';
 
@@ -41,7 +45,7 @@ async function confirm(
   details: readonly string[],
   proceedLabel: string,
 ): Promise<boolean> {
-  const answer = await prompter.choose({
+  const answer: boolean | undefined = await prompter.choose({
     title,
     details,
     options: [
@@ -80,13 +84,13 @@ function describePlan(plan: NoteAbsorbPlan): string[] {
   const lines: string[] = [];
 
   for (const entry of plan.cards) {
-    const kind = entry.card.type === 'character' ? '인물' : '배경';
-    const action = entry.isNew ? '새 카드' : `후보 ${entry.changes.length}건`;
+    const kind: '인물' | '배경' = entry.card.type === 'character' ? '인물' : '배경';
+    const action: string = entry.isNew ? '새 카드' : `후보 ${entry.changes.length}건`;
     lines.push(`${kind}  ${entry.card.id} (${entry.card.name}) — ${action}`);
   }
 
   for (const scene of plan.scenes) {
-    const source = scene.sourceNote === undefined ? '' : ` ← ${scene.sourceNote}`;
+    const source: string = scene.sourceNote === undefined ? '' : ` ← ${scene.sourceNote}`;
     lines.push(`씬    ${scene.card.id} ${scene.card.title ?? ''}${source}`);
   }
 
@@ -126,7 +130,7 @@ function quoteShellValue(value: string): string {
 }
 
 function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
-  const lines = [
+  const lines: string[] = [
     `카드 ${outcome.createdCards.length}장을 만들었습니다${outcome.createdCards.length > 0 ? `: ${outcome.createdCards.join(', ')}` : ''}.`,
     `씬 ${outcome.createdScenes.length}개를 만들었습니다${outcome.skippedScenes.length > 0 ? ` (건너뜀 ${outcome.skippedScenes.length}개)` : ''}.`,
   ];
@@ -167,7 +171,7 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     );
   }
 
-  const proposals = Object.entries(outcome.settingProposals);
+  const proposals: [string, unknown][] = Object.entries(outcome.settingProposals);
 
   if (proposals.length > 0) {
     lines.push(
@@ -188,8 +192,8 @@ export async function runNoteAbsorb(
   rawLocation: string,
   options: { readonly shouldFillContract: boolean; readonly retryCommand: string },
 ): Promise<CommandOutcome> {
-  const location = parseNoteLocation(rawLocation);
-  const collected = await container.notes.collect({
+  const location: NoteLocation = parseNoteLocation(rawLocation);
+  const collected: CollectNotesResult = await container.notes.collect({
     workspaceRoot: container.workspaceRoot,
     location,
   });
@@ -199,9 +203,9 @@ export async function runNoteAbsorb(
   }
 
   const { bundle } = collected;
-  const estimate = container.notes.estimate(bundle);
-  const estimateLines = describeEstimate(bundle, estimate);
-  const isConfirmed = flagBoolean(args.flags, 'yes');
+  const estimate: NoteAbsorbEstimate = container.notes.estimate(bundle);
+  const estimateLines: string[] = describeEstimate(bundle, estimate);
+  const isConfirmed: boolean = flagBoolean(args.flags, 'yes');
 
   if (!isConfirmed) {
     if (container.prompter === undefined) {
@@ -226,13 +230,16 @@ export async function runNoteAbsorb(
     }
   }
 
-  const planned = await container.notes.plan({ workspaceRoot: container.workspaceRoot, bundle });
+  const planned: PlanNoteAbsorbResult = await container.notes.plan({
+    workspaceRoot: container.workspaceRoot,
+    bundle,
+  });
 
   if (!planned.ok) {
     return { ok: false, message: planned.message };
   }
 
-  const planLines = describePlan(planned.plan);
+  const planLines: string[] = describePlan(planned.plan);
 
   if (flagBoolean(args.flags, 'dry-run')) {
     return {
@@ -255,7 +262,7 @@ export async function runNoteAbsorb(
     }
   }
 
-  const applied = await container.notes.apply({
+  const applied: ApplyNoteAbsorbResult = await container.notes.apply({
     workspaceRoot: container.workspaceRoot,
     plan: planned.plan,
     location: bundle.location,
@@ -275,7 +282,7 @@ export async function runNoteAbsorb(
 }
 
 export const absorbNotes: CommandHandler = async ({ container, args }) => {
-  const rawLocation = args.positionals[0];
+  const rawLocation: string | undefined = args.positionals[0];
 
   if (rawLocation === undefined) {
     return {
@@ -293,14 +300,17 @@ export const absorbNotes: CommandHandler = async ({ container, args }) => {
 
 // Writes outside the workspace, so it takes no run lock; the target folder is the author's.
 export const exportNotes: CommandHandler = async ({ container, args }) => {
-  const rawTarget = args.positionals[0];
+  const rawTarget: string | undefined = args.positionals[0];
 
   if (rawTarget === undefined) {
     return { ok: false, message: '내보낼 폴더를 지정해 주세요: storyboard notes export <folder>' };
   }
 
-  const target = NodeUri.file(resolve(rawTarget));
-  const result = await container.notes.export({ workspaceRoot: container.workspaceRoot, target });
+  const target: NodeUri = NodeUri.file(resolve(rawTarget));
+  const result: ExportNotesResult = await container.notes.export({
+    workspaceRoot: container.workspaceRoot,
+    target,
+  });
 
   if (!result.ok) {
     return { ok: false, message: result.message };
@@ -316,7 +326,7 @@ export const exportNotes: CommandHandler = async ({ container, args }) => {
 // SECURITY: the token is read without echo (or from stdin for an agent) and goes only to the 0600
 // secrets file; it is never printed.
 export const connectNotes: CommandHandler = async ({ container, args }) => {
-  const source = args.positionals[0] ?? noteSources[0];
+  const source: string = args.positionals[0] ?? defaultNoteSource;
 
   if (!noteSources.some((candidate) => candidate === source)) {
     return {
@@ -325,7 +335,7 @@ export const connectNotes: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const token = (
+  const token: string = (
     canAsk(container)
       ? await askSecret(
           'Notion 통합 토큰을 붙여 넣고 Enter (입력은 화면에 보이지 않습니다. 비워 두면 삭제): ',

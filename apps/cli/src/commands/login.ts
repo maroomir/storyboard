@@ -3,6 +3,7 @@ import {
   ChatGptProvider,
   loginChatGpt,
   logoutChatGpt,
+  type ChatGptLogoutResult,
   type FetchLike,
   type SecretStore,
 } from '@storyboard/story-ai';
@@ -60,10 +61,10 @@ function loginProviderIds(): AiProviderId[] {
 }
 
 // The provider named on the command line, or the sentence that says why there is none.
-function resolveLoginProvider(
-  given: string | undefined,
-): { readonly providerId: AiProviderId } | { readonly problem: string } {
-  const candidates = loginProviderIds();
+type LoginProviderResolution = { readonly providerId: AiProviderId } | { readonly problem: string };
+
+function resolveLoginProvider(given: string | undefined): LoginProviderResolution {
+  const candidates: AiProviderId[] = loginProviderIds();
 
   if (given === undefined) {
     return {
@@ -78,7 +79,7 @@ function resolveLoginProvider(
     return { problem: `모르는 프로바이더입니다: ${given}` };
   }
 
-  const providerId = given as AiProviderId;
+  const providerId: AiProviderId = given as AiProviderId;
 
   if (loginFlows[providerId] === undefined) {
     return {
@@ -96,7 +97,7 @@ function describeLoginFailure(error: unknown): string {
     return error.message;
   }
 
-  const detail = error instanceof Error ? error.message : String(error);
+  const detail: string = error instanceof Error ? error.message : String(error);
   return `로그인을 마치지 못했습니다: ${detail}`;
 }
 
@@ -107,13 +108,13 @@ export async function signIn(
   providerId: AiProviderId,
   deps: LoginDependencies = defaultLoginDependencies,
 ): Promise<CommandOutcome> {
-  const flow = loginFlows[providerId];
+  const flow: LoginFlow | undefined = loginFlows[providerId];
 
   if (flow === undefined) {
     return { ok: false, message: `${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.` };
   }
 
-  const displayName = getProviderDisplayName(providerId);
+  const displayName: string = getProviderDisplayName(providerId);
   let result: { readonly accountLabel: string | undefined };
 
   try {
@@ -142,8 +143,8 @@ export async function signIn(
     return { ok: false, message: describeLoginFailure(error) };
   }
 
-  const account = result.accountLabel === undefined ? '' : ` (${result.accountLabel})`;
-  const saved = `${providerId} 에 로그인했습니다${account}: ${container.homePaths.secretsFile}`;
+  const account: string = result.accountLabel === undefined ? '' : ` (${result.accountLabel})`;
+  const saved: string = `${providerId} 에 로그인했습니다${account}: ${container.homePaths.secretsFile}`;
 
   // One call right away: a login that cannot call anything is found here, not in a paid run.
   try {
@@ -154,7 +155,7 @@ export async function signIn(
       data: { providerId, accountLabel: result.accountLabel ?? null, verified: true },
     };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
+    const reason: string = error instanceof Error ? error.message : String(error);
     return {
       ok: true,
       message: `${saved}\n다만 연결 확인에 실패했습니다: ${reason}`,
@@ -164,7 +165,7 @@ export async function signIn(
 }
 
 export async function runLogin({ container, args }: CommandContext): Promise<CommandOutcome> {
-  const resolved = resolveLoginProvider(args.positionals[0]);
+  const resolved: LoginProviderResolution = resolveLoginProvider(args.positionals[0]);
 
   if ('problem' in resolved) {
     return { ok: false, message: resolved.problem };
@@ -178,13 +179,13 @@ export async function signOut(
   providerId: AiProviderId,
   deps: Pick<LoginDependencies, 'fetch'> = {},
 ): Promise<CommandOutcome> {
-  const flow = loginFlows[providerId];
+  const flow: LoginFlow | undefined = loginFlows[providerId];
 
   if (flow === undefined) {
     return { ok: false, message: `${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.` };
   }
 
-  const result = await flow.logout({
+  const result: ChatGptLogoutResult = await flow.logout({
     secretStore: container.secretStore,
     ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
   });
@@ -203,7 +204,7 @@ export async function signOut(
 }
 
 export async function runLogout({ container, args }: CommandContext): Promise<CommandOutcome> {
-  const resolved = resolveLoginProvider(args.positionals[0]);
+  const resolved: LoginProviderResolution = resolveLoginProvider(args.positionals[0]);
 
   if ('problem' in resolved) {
     return { ok: false, message: resolved.problem };

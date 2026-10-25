@@ -9,17 +9,22 @@ import {
   type NarratorPerson,
   type NarrativeTense,
   describeNarration,
+  type NarrationDirective,
+  type StoryboardProject,
 } from '@storyboard/story-model';
 
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
+import type { CreateNarratorCardResult, RemoveNarratorCardResult } from '@storyboard/story-engine';
 
-const narratorIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+const narratorIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
 export const listNarrators: CommandHandler = async ({ container }) => {
-  const narrators = [...(await container.cards.listNarrators(container.workspaceRoot)).values()];
+  const narrators: NarratorCard[] = [
+    ...(await container.cards.listNarrators(container.workspaceRoot)).values(),
+  ];
 
   if (narrators.length === 0) {
     return {
@@ -29,7 +34,9 @@ export const listNarrators: CommandHandler = async ({ container }) => {
     };
   }
 
-  const lines = narrators.map((card) => `${card.id}\t${card.name}\t${describeCard(card)}`);
+  const lines: string[] = narrators.map(
+    (card) => `${card.id}\t${card.name}\t${describeCard(card)}`,
+  );
 
   return {
     ok: true,
@@ -39,13 +46,15 @@ export const listNarrators: CommandHandler = async ({ container }) => {
 };
 
 export const showNarrator: CommandHandler = async ({ container, args }) => {
-  const id = args.positionals[0];
+  const id: string | undefined = args.positionals[0];
 
   if (id === undefined) {
     return { ok: false, message: '서술자 id 를 지정해 주세요.' };
   }
 
-  const narrator = (await container.cards.listNarrators(container.workspaceRoot)).get(id);
+  const narrator: NarratorCard | undefined = (
+    await container.cards.listNarrators(container.workspaceRoot)
+  ).get(id);
 
   if (!narrator) {
     return { ok: false, message: `서술자 '${id}' 를 찾을 수 없습니다.` };
@@ -65,7 +74,7 @@ export const showNarrator: CommandHandler = async ({ container, args }) => {
 };
 
 export const createNarrator: CommandHandler = async ({ container, args }) => {
-  const id = flagString(args.flags, 'id') ?? args.positionals[0];
+  const id: string | undefined = flagString(args.flags, 'id') ?? args.positionals[0];
 
   if (id === undefined || !narratorIdPattern.test(id)) {
     return {
@@ -74,13 +83,16 @@ export const createNarrator: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const card = buildCard(id, args.flags);
+  const card: BuildCardResult = buildCard(id, args.flags);
 
   if (!card.ok) {
     return card.outcome;
   }
 
-  const created = await container.cards.createNarrator(container.workspaceRoot, card.card);
+  const created: CreateNarratorCardResult = await container.cards.createNarrator(
+    container.workspaceRoot,
+    card.card,
+  );
 
   if (!created.ok) {
     return { ok: false, message: `이미 있습니다: narrator/${id}.card` };
@@ -94,13 +106,16 @@ export const createNarrator: CommandHandler = async ({ container, args }) => {
 };
 
 export const removeNarrator: CommandHandler = async ({ container, args }) => {
-  const id = args.positionals[0];
+  const id: string | undefined = args.positionals[0];
 
   if (id === undefined) {
     return { ok: false, message: '서술자 id 를 지정해 주세요.' };
   }
 
-  const removed = await container.cards.removeNarrator(container.workspaceRoot, id);
+  const removed: RemoveNarratorCardResult = await container.cards.removeNarrator(
+    container.workspaceRoot,
+    id,
+  );
 
   if (!removed.ok) {
     return { ok: false, message: `서술자 '${id}' 를 찾을 수 없습니다.` };
@@ -120,10 +135,10 @@ export async function describeSceneNarration(
   sceneNarrator: string | undefined,
   povCharacter: string | undefined,
 ): Promise<string> {
-  const project = await container.novel.readProject(container.workspaceRoot);
+  const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
 
   try {
-    const narration = resolveNarration({
+    const narration: NarrationDirective | undefined = resolveNarration({
       ...(sceneNarrator === undefined ? {} : { sceneNarrator }),
       ...(project.setting?.narration?.defaultNarrator === undefined
         ? {}
@@ -144,12 +159,12 @@ type BuildCardResult =
   | { readonly ok: false; readonly outcome: CommandOutcome };
 
 function buildCard(id: string, flags: Readonly<Record<string, string | boolean>>): BuildCardResult {
-  const person = flagString(flags, 'person');
-  const knowledge = flagString(flags, 'knowledge');
-  const tense = flagString(flags, 'tense');
-  const focal = flagString(flags, 'focal');
-  const name = flagString(flags, 'name');
-  const voice = flagString(flags, 'voice');
+  const person: string | undefined = flagString(flags, 'person');
+  const knowledge: string | undefined = flagString(flags, 'knowledge');
+  const tense: string | undefined = flagString(flags, 'tense');
+  const focal: string | undefined = flagString(flags, 'focal');
+  const name: string | undefined = flagString(flags, 'name');
+  const voice: string | undefined = flagString(flags, 'voice');
 
   if (person !== undefined && !isPerson(person)) {
     return invalid('person', narratorPersons);
@@ -163,7 +178,7 @@ function buildCard(id: string, flags: Readonly<Record<string, string | boolean>>
     return invalid('tense', narrativeTenses);
   }
 
-  const voiceItems = (voice ?? '')
+  const voiceItems: string[] = (voice ?? '')
     .split(',')
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
