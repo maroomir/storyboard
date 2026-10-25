@@ -2,6 +2,7 @@ import {
   isBackgroundCard,
   type BackgroundCard,
   type CharacterCard,
+  type CharacterRelation,
   type StoryboardCard,
 } from './card';
 
@@ -33,7 +34,7 @@ export function renameCardIdInCharacterCard(
   }
 
   let changed: boolean = false;
-  const relations = card.relations.map((relation) => {
+  const relations: CharacterRelation[] = card.relations.map((relation) => {
     if (relation.target !== oldId) {
       return relation;
     }

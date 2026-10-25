@@ -1,5 +1,7 @@
 import { parseJsonObject } from './aiResponseParser';
 
+type UntypedFields = Readonly<Record<string, unknown>>;
+
 export type StudioValidationState = 'pass' | 'warn' | 'skipped';
 
 export interface StudioValidationWarning {
@@ -48,7 +50,7 @@ function toWarning(value: unknown): StudioValidationWarning | undefined {
     return undefined;
   }
 
-  const candidate = value as { readonly message?: unknown; readonly source?: unknown };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (typeof candidate.message !== 'string' || candidate.message.trim().length === 0) {
     return undefined;

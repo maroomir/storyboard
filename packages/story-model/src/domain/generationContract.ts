@@ -1,6 +1,6 @@
 import { contractFieldKeys, mainThreadId } from '#model/format/project';
 import { resolveCompositionPresetDefaults } from '#model/format/compositionPresets';
-import type { ContractFieldKey, ProjectSetting } from '#model/format/project';
+import type { ContractFieldKey, ProjectSetting, StoryThread } from '#model/format/project';
 
 const minReasonableTargetWordCount: number = 1_000;
 const maxReasonableTargetWordCount: number = 2_000_000;
@@ -76,7 +76,7 @@ function findWarnings(setting: ProjectSetting | undefined): string[] {
 // 옴니버스는 생성이 끝난 뒤에야 결과에서 드러나고, 그때는 이미 원고를 다시 만들어야 한다.
 function findCompositionWarnings(setting: ProjectSetting): string[] {
   const warnings: string[] = [];
-  const threads = setting.threads ?? {};
+  const threads: Record<string, StoryThread> = setting.threads ?? {};
   const threadIds: Set<string> = new Set([...Object.keys(threads), mainThreadId]);
 
   for (const [threadId, thread] of Object.entries(threads)) {

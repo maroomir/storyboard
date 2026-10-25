@@ -1,17 +1,26 @@
 import { z } from 'zod';
 
-const workspaceRunLockVersion = 1 as const;
+type WorkspaceRunLockVersion = 1;
 
-export const workspaceRunLockOwners = ['cli', 'desktop', 'vscode'] as const;
-export type WorkspaceRunLockOwner = (typeof workspaceRunLockOwners)[number];
+const workspaceRunLockVersion: WorkspaceRunLockVersion = 1;
+
+export type WorkspaceRunLockOwner = 'cli' | 'desktop' | 'vscode';
+
+export const workspaceRunLockOwners: readonly [WorkspaceRunLockOwner, ...WorkspaceRunLockOwner[]] =
+  ['cli', 'desktop', 'vscode'];
 
 // NOTE: 잠금을 쥔 앱이 죽으면 파일이 남는다. 쥔 쪽이 주기적으로 heartbeatAt 을 갱신하고, 그 갱신이
 // 끊긴 지 staleAfterMs 가 지난 잠금은 버려진 것으로 본다. pid 로 생사를 묻지 않는 이유는 동기화
 // 폴더처럼 다른 기기의 프로세스가 쥔 잠금도 같은 규칙으로 풀려야 하기 때문이다.
-export const workspaceRunLockTiming = {
+interface WorkspaceRunLockTiming {
+  readonly heartbeatIntervalMs: number;
+  readonly staleAfterMs: number;
+}
+
+export const workspaceRunLockTiming: WorkspaceRunLockTiming = {
   heartbeatIntervalMs: 10_000,
   staleAfterMs: 45_000,
-} as const;
+};
 
 export interface WorkspaceRunLockHolder {
   readonly owner: WorkspaceRunLockOwner;
@@ -54,7 +63,9 @@ const workspaceRunLockSchema: z.ZodType<WorkspaceRunLock> = z.object({
 // nothing: undefined lets the caller take the workspace instead of being blocked forever by it.
 export function parseWorkspaceRunLock(raw: string): WorkspaceRunLockRecord | undefined {
   try {
-    const parsed = workspaceRunLockSchema.safeParse(JSON.parse(raw));
+    const parsed: z.ZodSafeParseResult<WorkspaceRunLock> = workspaceRunLockSchema.safeParse(
+      JSON.parse(raw),
+    );
     return parsed.success ? parsed.data : undefined;
   } catch {
     return undefined;

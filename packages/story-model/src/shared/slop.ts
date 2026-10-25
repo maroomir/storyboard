@@ -114,7 +114,11 @@ function detectOverfrequentTrigrams(body: string, threshold: number): SlopFindin
   >();
 
   for (let index: number = 0; index + 2 < tokens.length; index += 1) {
-    const trigram = [tokens[index], tokens[index + 1], tokens[index + 2]] as const;
+    const trigram: readonly [Token | undefined, Token | undefined, Token | undefined] = [
+      tokens[index],
+      tokens[index + 1],
+      tokens[index + 2],
+    ];
     const [first, second, third] = trigram;
     if (!first || !second || !third) {
       continue;

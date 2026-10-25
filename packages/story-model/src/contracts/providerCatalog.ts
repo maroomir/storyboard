@@ -623,7 +623,12 @@ export function generationFailedMessage(providerId: AiProviderId, cause?: unknow
 // 구독 로그인 경로를 켜기 전에 사람이 읽고 답하는 고지문. 세 앱이 같은 글을 보여 준다.
 export const subscriptionRiskNoticeTitle: string = '구독 로그인으로 생성하기 전에 확인해 주세요.';
 
-export const subscriptionRiskNoticeItems = [
+export interface SubscriptionRiskNoticeItem {
+  readonly title: string;
+  readonly detail: string;
+}
+
+export const subscriptionRiskNoticeItems: readonly SubscriptionRiskNoticeItem[] = [
   {
     title: '구독 한도를 함께 씁니다.',
     detail:
@@ -647,7 +652,7 @@ export const subscriptionRiskNoticeItems = [
     title: '실험 기능입니다.',
     detail: '지원 대상이 아니며 언제든 빠질 수 있습니다.',
   },
-] as const;
+];
 
 export const subscriptionRiskNoticeQuestion: string = '이 위험을 이해했고 내 책임으로 켭니다.';
 

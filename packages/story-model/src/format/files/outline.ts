@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import {
   chapterPlanSchema,
   type ChapterPlan,
+  type ChapterPlanPayload,
   type OutlineSynopsis,
 } from '#model/format/outline';
 import { pointOfViewLabels, type PointOfView } from '#model/format/project';
@@ -28,7 +29,7 @@ export class ChapterPlanParseError extends Error {
 }
 
 export function serializeChapterPlan(plan: ChapterPlan): string {
-  const parsedPlan = chapterPlanSchema.parse(plan);
+  const parsedPlan: ChapterPlanPayload = chapterPlanSchema.parse(plan);
 
   return yaml.dump(parsedPlan, {
     lineWidth: -1,
@@ -191,7 +192,7 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
   }
 
   const povLabel: string = text('시점');
-  const pov = (Object.entries(pointOfViewLabels) as [PointOfView, string][]).find(
+  const pov: PointOfView | undefined = (Object.entries(pointOfViewLabels) as [PointOfView, string][]).find(
     ([, label]) => label === povLabel,
   )?.[0];
 

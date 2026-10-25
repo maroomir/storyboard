@@ -6,7 +6,7 @@ import type {
 } from '#model/contracts/noteExtraction';
 import type { NoteSynthesis, NoteSynthesisSetting } from '#model/contracts/noteSynthesis';
 import type { BibleFactSubject } from '#model/format/bible';
-import { cardIdPattern, type StoryboardCard } from '#model/format/card';
+import { cardIdPattern, type CharacterRole, type StoryboardCard } from '#model/format/card';
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
 import { sceneFileNamePattern, type SceneCard, type SceneFile } from '#model/format/scene';
 
@@ -86,7 +86,7 @@ export interface NoteAbsorbPlanInput {
 }
 
 const slugPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
-const roleRank = { main: 3, supporting: 2, extra: 1 } as const;
+const roleRank: Readonly<Record<CharacterRole, number>> = { main: 3, supporting: 2, extra: 1 };
 
 function normalizeName(value: string): string {
   return value.normalize('NFC').trim().toLocaleLowerCase('ko').replace(/\s+/g, ' ');
@@ -203,7 +203,7 @@ function findSameSubject(
   const ids: string[] = idsOf(entity);
 
   return sameType.find((index) => {
-    const known = merged[index];
+    const known: NoteExtractionEntity | undefined = merged[index];
     return known !== undefined && idsOf(known).some((id) => ids.includes(id));
   });
 }
@@ -215,7 +215,7 @@ function findAliasTarget(
   groups: readonly NoteExtractionEntity[],
   index: number,
 ): number | undefined {
-  const entity = groups[index];
+  const entity: NoteExtractionEntity | undefined = groups[index];
 
   if (entity === undefined || hasOwnId(entity)) {
     return undefined;
@@ -223,7 +223,7 @@ function findAliasTarget(
 
   const name: string = normalizeName(entity.name);
   const carriers: number[] = [...groups.keys()].filter((other) => {
-    const known = groups[other];
+    const known: NoteExtractionEntity | undefined = groups[other];
     return other !== index && known?.type === entity.type && namesOf(known).includes(name);
   });
 
@@ -252,7 +252,7 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): MergedEntity[
 
   for (const entity of entities) {
     const index: number | undefined = findSameSubject(groups, entity);
-    const known = index === undefined ? undefined : groups[index];
+    const known: NoteExtractionEntity | undefined = index === undefined ? undefined : groups[index];
 
     if (index === undefined || known === undefined) {
       groups.push(entity);
@@ -281,7 +281,7 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): MergedEntity[
   groups.forEach((entity, index) => {
     const root: number = findRoot(parents, index);
     const known: MergedEntity | undefined = merged.get(root);
-    const readings = readingsByGroup[index] ?? [];
+    const readings: NoteExtractionEntity[] = readingsByGroup[index] ?? [];
     merged.set(
       root,
       known === undefined
@@ -467,7 +467,7 @@ function planCards(
 } {
   const characters: CardNameIndex = new CardNameIndex('character');
   const backgrounds: CardNameIndex = new CardNameIndex('background');
-  const cardsById = new Map(cards.map((card) => [card.id, card]));
+  const cardsById: Map<string, StoryboardCard> = new Map(cards.map((card) => [card.id, card]));
   const takenIds: Set<string> = new Set(cardsById.keys());
 
   for (const card of cards) {
@@ -477,8 +477,8 @@ function planCards(
 
   const resolved: ResolvedEntity[] = entities.map(({ entity, readings }, index): ResolvedEntity => {
     const kindIndex: CardNameIndex = entity.type === 'character' ? characters : backgrounds;
-    const byId = entity.existingId === undefined ? undefined : cardsById.get(entity.existingId);
-    const existing =
+    const byId: StoryboardCard | undefined = entity.existingId === undefined ? undefined : cardsById.get(entity.existingId);
+    const existing: StoryboardCard | undefined =
       byId !== undefined && entityKind(byId) === entity.type
         ? byId
         : cardsById.get(kindIndex.resolve(entity.name) ?? '');
@@ -499,7 +499,7 @@ function planCards(
   });
 
   const plans: NoteCardPlan[] = resolved.flatMap((entry): NoteCardPlan[] => {
-    const changes = toProposalDrafts(entry, characters)
+    const changes: CardCollectProposal[] = toProposalDrafts(entry, characters)
       .map(
         (draft) =>
           ({
@@ -524,12 +524,12 @@ function planCards(
       : [];
   });
 
-  const voiceSeeds = Object.fromEntries(
+  const voiceSeeds: Record<string, string[]> = Object.fromEntries(
     resolved
       .filter((entry) => entry.entity.type === 'character' && entry.entity.sampleLines.length > 0)
       .map((entry) => [entry.card.id, entry.entity.sampleLines]),
   );
-  const canonCandidates = resolved.flatMap((entry) =>
+  const canonCandidates: NoteCanonCandidate[] = resolved.flatMap((entry) =>
     entry.entity.canonFacts.map((fact) => ({
       subject: { kind: entry.entity.type, id: entry.card.id },
       key: fact.key,
@@ -564,7 +564,7 @@ function mergeScenesBySourceNote(scenes: readonly NoteExtractionScene[]): NoteEx
   for (const scene of scenes) {
     const index: number | undefined =
       scene.sourceNote === undefined ? undefined : indexBySourceNote.get(scene.sourceNote);
-    const known = index === undefined ? undefined : merged[index];
+    const known: NoteExtractionScene | undefined = index === undefined ? undefined : merged[index];
 
     if (index === undefined || known === undefined) {
       if (scene.sourceNote !== undefined) {
@@ -593,7 +593,7 @@ function orderScenes(
 ): NoteExtractionScene[] {
   const noteIndexById: Map<string, number> = new Map(notes.map((note, index) => [note.id, index]));
   const draftNoteIds: Set<string> = findDraftNoteIds(extractions);
-  const scenes = extractions
+  const scenes: NoteExtractionScene[] = extractions
     .flatMap((extraction) => extraction.scenes)
     .filter((scene) => scene.sourceNote === undefined || !draftNoteIds.has(scene.sourceNote));
 
@@ -746,8 +746,8 @@ function toSynopsis(synthesis: NoteSynthesis): OutlineSynopsis | undefined {
 // which only add to a card that exists, which scenes follow the last one, and what was left out.
 export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan {
   const entities: MergedEntity[] = mergeEntities(input.extractions.flatMap((extraction) => extraction.entities));
-  const cards = planCards(entities, input.cards);
-  const scenes = planScenes(input, cards.characters, cards.backgrounds);
+  const cards: ReturnType<typeof planCards> = planCards(entities, input.cards);
+  const scenes: ReturnType<typeof planScenes> = planScenes(input, cards.characters, cards.backgrounds);
   const synopsis: OutlineSynopsis | undefined = toSynopsis(input.synthesis);
 
   return {

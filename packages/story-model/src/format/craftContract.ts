@@ -4,7 +4,7 @@ import craftContractData from './craftContract.params.json';
 
 // 생성 프롬프트에 항상 주입되는 작법 규칙. 프로젝트가 아무 설정도 하지 않아도 기본 계약이 걸린다.
 // 기본값은 craftContract.params.json 에 있고, 작가는 같은 꼴의 파일을 홈·작품에 두어 그 위에 덮는다.
-export const craftContractSchema = z.object({
+const craftContractShape = {
   banTelling: z.boolean(),
   motifRepeatLimit: z.number().int().positive(),
   stockGestureBlacklist: z.array(z.string()).readonly(),
@@ -13,13 +13,38 @@ export const craftContractSchema = z.object({
   modulateDensity: z.boolean(),
   // 목표 분량이 없는 씬의 기본 예산을 씬 시드 길이의 배수로 정한다. 0이면 제한을 걸지 않는다.
   sceneLengthMultiplier: z.number().nonnegative(),
-});
+} satisfies z.ZodRawShape;
 
-export type CraftContract = z.infer<typeof craftContractSchema>;
+export interface CraftContract {
+  banTelling: boolean;
+  motifRepeatLimit: number;
+  stockGestureBlacklist: readonly string[];
+  requireCharacterInterior: boolean;
+  actionClarity: boolean;
+  modulateDensity: boolean;
+  sceneLengthMultiplier: number;
+}
 
-export const craftContractOverrideSchema = craftContractSchema.partial();
+export const craftContractSchema: z.ZodType<CraftContract> = z.object(craftContractShape);
 
-export type CraftContractOverride = z.infer<typeof craftContractOverrideSchema>;
+export interface CraftContractOverride {
+  banTelling?: boolean;
+  motifRepeatLimit?: number;
+  stockGestureBlacklist?: readonly string[];
+  requireCharacterInterior?: boolean;
+  actionClarity?: boolean;
+  modulateDensity?: boolean;
+  sceneLengthMultiplier?: number;
+}
+
+export const craftContractOverrideSchema: z.ZodType<CraftContractOverride> = z
+  .object(craftContractShape)
+  .partial();
+
+export const craftContractOverrideFileSchema: z.ZodType<CraftContractOverride> = z
+  .object(craftContractShape)
+  .partial()
+  .strict();
 
 export const defaultCraftContract: CraftContract = craftContractSchema.parse(craftContractData);
 

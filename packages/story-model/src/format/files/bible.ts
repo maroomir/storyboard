@@ -43,7 +43,7 @@ export function parseBible(rawBible: string): StoryBible {
 }
 
 export function serializeBible(bible: StoryBible): string {
-  const parsedBible = storyBibleSchema.parse(bible);
+  const parsedBible: StoryBible = storyBibleSchema.parse(bible);
 
   return yaml.dump(parsedBible, {
     lineWidth: -1,

@@ -67,7 +67,7 @@ export const studioStageCardSchema: z.ZodType<StudioStageCard> = z.object({
   name: z.string().min(1),
 });
 
-export const studioSceneStageSchema = z.object({
+const studioSceneStageShape = {
   kind: z.literal('scene'),
   sceneStem: z.string().min(1),
   title: z.string().optional(),
@@ -76,7 +76,20 @@ export const studioSceneStageSchema = z.object({
   draftRevision: z.number().int().positive().optional(),
   review: z.enum(['unreviewed', 'clean', 'issues']),
   cards: z.array(studioStageCardSchema),
-});
+} satisfies z.ZodRawShape;
+
+export interface StudioSceneStage {
+  kind: 'scene';
+  sceneStem: string;
+  review: 'unreviewed' | 'clean' | 'issues';
+  cards: StudioStageCard[];
+  title?: string;
+  draftLength?: number;
+  draftUpdatedAt?: string;
+  draftRevision?: number;
+}
+
+export const studioSceneStageSchema: z.ZodType<StudioSceneStage> = z.object(studioSceneStageShape);
 
 export interface StudioCardStageRelation {
   target: string;
@@ -88,7 +101,7 @@ export const studioCardStageRelationSchema: z.ZodType<StudioCardStageRelation> =
   type: z.string().min(1),
 });
 
-export const studioCardStageSchema = z.object({
+const studioCardStageShape = {
   kind: z.literal('card'),
   cardKind: z.enum(['character', 'background']),
   cardId: z.string().min(1),
@@ -96,36 +109,26 @@ export const studioCardStageSchema = z.object({
   role: z.string().optional(),
   relations: z.array(studioCardStageRelationSchema),
   appearsInScenes: z.array(z.string().min(1)),
-});
+} satisfies z.ZodRawShape;
 
-export type StudioStage =
-  | {
-      kind: 'scene';
-      sceneStem: string;
-      review: 'unreviewed' | 'clean' | 'issues';
-      cards: StudioStageCard[];
-      title?: string;
-      draftLength?: number;
-      draftUpdatedAt?: string;
-      draftRevision?: number;
-    }
-  | {
-      kind: 'card';
-      cardKind: 'character' | 'background';
-      cardId: string;
-      name: string;
-      relations: StudioCardStageRelation[];
-      appearsInScenes: string[];
-      role?: string;
-    };
+export interface StudioCardStage {
+  kind: 'card';
+  cardKind: 'character' | 'background';
+  cardId: string;
+  name: string;
+  relations: StudioCardStageRelation[];
+  appearsInScenes: string[];
+  role?: string;
+}
+
+export const studioCardStageSchema: z.ZodType<StudioCardStage> = z.object(studioCardStageShape);
+
+export type StudioStage = StudioSceneStage | StudioCardStage;
 
 export const studioStageSchema: z.ZodType<StudioStage> = z.discriminatedUnion('kind', [
-  studioSceneStageSchema,
-  studioCardStageSchema,
+  z.object(studioSceneStageShape),
+  z.object(studioCardStageShape),
 ]);
-
-export type StudioSceneStage = z.infer<typeof studioSceneStageSchema>;
-export type StudioCardStage = z.infer<typeof studioCardStageSchema>;
 
 export interface StudioStageRequestPayload {
   [key: string]: never;
@@ -229,7 +232,7 @@ export const studioFollowUpTargetSchema: z.ZodType<StudioFollowUpTarget> = z.obj
   targetFile: z.string().min(1),
 });
 
-interface StudioUserTurn {
+export interface StudioUserTurn {
   id: string;
   role: 'user';
   text: string;
@@ -241,7 +244,7 @@ const studioUserTurnSchema: z.ZodType<StudioUserTurn> = z.object({
   text: z.string(),
 });
 
-interface StudioSayTurn {
+export interface StudioSayTurn {
   id: string;
   role: 'assistant';
   kind: 'say';
@@ -257,7 +260,7 @@ const studioSayTurnSchema: z.ZodType<StudioSayTurn> = z.object({
   followUps: z.array(studioFollowUpTargetSchema).optional(),
 });
 
-interface StudioAskTurn {
+export interface StudioAskTurn {
   id: string;
   role: 'assistant';
   kind: 'ask';
@@ -306,7 +309,7 @@ const studioProposalTurnSchema: z.ZodType<StudioProposalTurn> = z.object({
   followUps: z.array(studioFollowUpTargetSchema).optional(),
 });
 
-interface StudioResultTurn {
+export interface StudioResultTurn {
   id: string;
   role: 'assistant';
   kind: 'result';

@@ -6,14 +6,14 @@ import { STORYBOARD_RELATIVE_PATHS } from './paths';
 // initial commit sweeps every draft into history.
 export const storyboardGitignoreMarker: string = '# Storyboard generated files';
 
-export const storyboardGitignoreEntries = [
+export const storyboardGitignoreEntries: readonly string[] = [
   `${STORYBOARD_RELATIVE_PATHS.cacheDirectory}/`,
   `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/`,
   `${STORYBOARD_RELATIVE_PATHS.manuscriptDirectory}/`,
   STORYBOARD_RELATIVE_PATHS.sampleCharacterCard,
   STORYBOARD_RELATIVE_PATHS.sampleBackgroundCard,
   STORYBOARD_RELATIVE_PATHS.sampleScene,
-] as const;
+];
 
 export function readMissingGitignoreEntries(current: string | undefined): readonly string[] {
   if (current === undefined) {

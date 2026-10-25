@@ -17,7 +17,16 @@ interface NoteExtractionRelation {
   type: string;
 }
 
-export const noteKinds = [
+export type NoteKind =
+  | 'character'
+  | 'background'
+  | 'scene'
+  | 'premise'
+  | 'setting'
+  | 'draft'
+  | 'other';
+
+export const noteKinds: readonly [NoteKind, ...NoteKind[]] = [
   'character',
   'background',
   'scene',
@@ -25,9 +34,7 @@ export const noteKinds = [
   'setting',
   'draft',
   'other',
-] as const;
-
-export type NoteKind = (typeof noteKinds)[number];
+];
 
 export interface NoteExtractionNote {
   readonly id: string;
@@ -45,7 +52,7 @@ export interface NoteExtractionKnownCard {
 
 // NOTE: zod 4 는 빠진 키를 preprocess 에 넘기지 않고 바로 거부한다. 목록 칸은 optional 로 받고
 // 없으면 빈 배열로 채워, 모델이 칸 하나를 빼먹었다고 항목 전체가 버려지지 않게 한다.
-function emptyWhenMissing<T extends z.ZodType>(schema: T) {
+function emptyWhenMissing<Item>(schema: z.ZodType<Item[]>): z.ZodType<Item[]> {
   return schema.optional().transform((value) => value ?? []);
 }
 
@@ -56,7 +63,7 @@ const optionalText: z.ZodPreprocess<z.ZodOptional<z.ZodString>> = z.preprocess(
   z.string().trim().min(1).optional(),
 );
 
-function textList() {
+function textList(): z.ZodType<string[]> {
   return emptyWhenMissing(
     z.preprocess(
       (value) =>
@@ -72,13 +79,13 @@ function textList() {
 // 부름)»). 그런 줄이 카드에 남으면 틀린 호칭이 생성 프롬프트까지 가므로 읽을 때 걸러 낸다.
 const annotatedAliasPattern: RegExp = /[()[\]{}（）［］｛｝【】〔〕]/;
 
-function aliasList() {
+function aliasList(): z.ZodType<string[]> {
   return textList().transform((aliases) =>
     aliases.filter((alias) => !annotatedAliasPattern.test(alias)),
   );
 }
 
-function recordList<T extends z.ZodType>(item: T) {
+function recordList<Item>(item: z.ZodType<Item>): z.ZodType<Item[]> {
   return emptyWhenMissing(
     z.preprocess(
       (value) =>
@@ -221,7 +228,7 @@ export interface NoteExtractionResponse {
   readonly text: string;
 }
 
-const extractionKeys = ['notes', 'entities', 'scenes', 'premise'] as const;
+const extractionKeys: readonly string[] = ['notes', 'entities', 'scenes', 'premise'];
 
 // NOTE: a broken response still parses when the balanced-object fallback picks up an inner object
 // such as one `notes` entry, so an object without any extraction key counts as unparsed too.

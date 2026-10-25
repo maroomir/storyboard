@@ -4,10 +4,19 @@ import { resolveSceneOrder } from './scene';
 
 export const storyBibleVersion: string = '1.0.0';
 
-export const bibleFactStatuses = ['canon', 'candidate'] as const;
-export type BibleFactStatus = (typeof bibleFactStatuses)[number];
+export type BibleFactStatus = 'canon' | 'candidate';
 
-export const bibleSubjectKinds = ['character', 'background'] as const;
+export const bibleFactStatuses: readonly [BibleFactStatus, ...BibleFactStatus[]] = [
+  'canon',
+  'candidate',
+];
+
+export type BibleSubjectKind = 'character' | 'background';
+
+export const bibleSubjectKinds: readonly [BibleSubjectKind, ...BibleSubjectKind[]] = [
+  'character',
+  'background',
+];
 
 export interface BibleFactSubject {
   kind: 'character' | 'background';
@@ -96,7 +105,7 @@ export const storyBibleSchema: z.ZodType<StoryBible> = z.object({
 // revealFrom은 씬 참조 하나이거나 { scene, knownBy } 객체다. 두 모양을 읽는 자리는 여러 곳이므로
 // 씬 참조와 인지 목록을 꺼내는 함수를 하나씩 둔다.
 export function revealFromScene(fact: BibleFact): string | number | undefined {
-  const reveal = fact.revealFrom;
+  const reveal: BibleFact['revealFrom'] = fact.revealFrom;
 
   if (reveal === undefined) {
     return undefined;
@@ -106,7 +115,7 @@ export function revealFromScene(fact: BibleFact): string | number | undefined {
 }
 
 export function revealKnownBy(fact: BibleFact): readonly string[] | undefined {
-  const reveal = fact.revealFrom;
+  const reveal: BibleFact['revealFrom'] = fact.revealFrom;
 
   return typeof reveal === 'object' ? reveal.knownBy : undefined;
 }
@@ -346,13 +355,13 @@ export function selectInjectedFacts(
   );
 
   const entityIds: Set<string> = new Set(entityWinners.map((version) => version.fact.id));
-  const rankedKeyword = keywordWinners
+  const rankedKeyword: BibleFact[] = keywordWinners
     .filter((version) => !entityIds.has(version.fact.id))
     .map((version) => ({ version, score: countKeywordHits(version.fact.keywords, sceneTextLower) }))
     .sort(compareKeywordRank)
     .map((scored) => scored.version.fact);
 
-  const merged = [...entityWinners.map((version) => version.fact), ...rankedKeyword];
+  const merged: BibleFact[] = [...entityWinners.map((version) => version.fact), ...rankedKeyword];
 
   return applyBudget(merged, options?.budget);
 }

@@ -6,6 +6,7 @@ import {
   type CompositionKind,
   type PointOfView,
   type ProjectFormat,
+  type ProjectSetting,
   type StoryboardProject,
 } from './project';
 
@@ -59,7 +60,7 @@ export interface ChapterPlan {
   readonly acts: readonly ChapterPlanAct[];
 }
 
-export const outlineSynopsisSchema = z.object({
+const outlineSynopsisShape = {
   logline: z.string().trim().default(''),
   genrePromise: z.string().trim().default(''),
   mainConflicts: z.array(z.string().trim().min(1)).default([]),
@@ -68,7 +69,9 @@ export const outlineSynopsisSchema = z.object({
   tone: z.string().trim().default(''),
   pov: z.enum(pointOfViews).optional(),
   styleRules: z.array(z.string().trim().min(1)).default([]),
-});
+} satisfies z.ZodRawShape;
+
+export const outlineSynopsisSchema: z.ZodType<OutlineSynopsis> = z.object(outlineSynopsisShape);
 
 interface ScenePlanPayload {
   id: string;
@@ -291,7 +294,7 @@ export function toOutlineBrief(
   project: StoryboardProject,
   narratorIds: readonly string[] = [],
 ): OutlineBrief {
-  const setting = project.setting;
+  const setting: ProjectSetting | undefined = project.setting;
 
   return {
     composition: setting?.composition,
@@ -321,7 +324,7 @@ export function toOutlineBrief(
 
 export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): OutlineSynopsis {
   const record: Record<string, unknown> = isRecord(raw) ? raw : {};
-  const parsed = outlineSynopsisSchema.safeParse(record);
+  const parsed: z.ZodSafeParseResult<OutlineSynopsis> = outlineSynopsisSchema.safeParse(record);
 
   if (parsed.success) {
     return { ...parsed.data, pov: parsed.data.pov ?? brief.pov };
@@ -329,14 +332,12 @@ export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): Outlin
 
   // One malformed field (e.g. a blank conflict entry) must not reset the whole synopsis: salvage
   // every field that validates on its own and default only the broken ones.
-  const empty = outlineSynopsisSchema.parse({});
+  const empty: OutlineSynopsis = outlineSynopsisSchema.parse({});
   const salvaged: Record<string, unknown> = { ...empty };
-  for (const key of Object.keys(
-    outlineSynopsisSchema.shape,
-  ) as (keyof typeof outlineSynopsisSchema.shape)[]) {
-    const fieldSchema = outlineSynopsisSchema.shape[key];
+  for (const key of Object.keys(outlineSynopsisShape) as (keyof typeof outlineSynopsisShape)[]) {
+    const fieldSchema: z.ZodType = outlineSynopsisShape[key];
     const fieldValue: unknown = record[key];
-    const fieldParsed = fieldSchema.safeParse(fieldValue);
+    const fieldParsed: z.ZodSafeParseResult<unknown> = fieldSchema.safeParse(fieldValue);
     if (fieldParsed.success && fieldParsed.data !== undefined) {
       salvaged[key] = fieldParsed.data;
     }
@@ -353,7 +354,7 @@ export function emptyOutlineSynopsis(): OutlineSynopsis {
 export function coerceChapterPlan(raw: unknown): ChapterPlan {
   const actsRaw: unknown[] = isRecord(raw) ? asArray(raw.acts) : asArray(raw);
 
-  const acts = actsRaw.map((actRaw, actIndex) => {
+  const acts: ChapterPlan['acts'] = actsRaw.map((actRaw, actIndex) => {
     const act: Record<string, unknown> = isRecord(actRaw) ? actRaw : {};
     const chaptersRaw: unknown[] = asArray(act.chapters);
 

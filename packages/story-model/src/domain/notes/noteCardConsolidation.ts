@@ -35,7 +35,7 @@ const labelByField: Readonly<Record<NoteConsolidatedField, string>> = {
   senses: '감각',
 };
 
-const fieldByKind = new Map(
+const fieldByKind: Map<ListKind, NoteConsolidatedField> = new Map(
   Object.entries(kindByField).map(([field, kind]) => [kind, field as NoteConsolidatedField]),
 );
 
@@ -434,7 +434,7 @@ export function applyNoteConsolidation(
   answers: readonly NoteConsolidatedLists[],
 ): { readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] } {
   const answerById: Map<string, NoteConsolidatedLists> = new Map(answers.map((answer) => [answer.cardId, answer]));
-  const keptById = new Map<string, KeptValues>();
+  const keptById: Map<string, Partial<Record<NoteConsolidatedField, Set<string>>>> = new Map<string, KeptValues>();
   const warnings: string[] = [];
 
   for (const target of targets) {
@@ -449,7 +449,7 @@ export function applyNoteConsolidation(
   warnings.push(...decideSharedAliases(targets, answerById, keptById));
 
   const cards: NoteCardPlan[] = plan.cards.flatMap((cardPlan): NoteCardPlan[] => {
-    const kept = keptById.get(cardPlan.card.id);
+    const kept: Partial<Record<NoteConsolidatedField, Set<string>>> | undefined = keptById.get(cardPlan.card.id);
 
     if (kept === undefined) {
       return [cardPlan];

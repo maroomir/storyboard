@@ -9,8 +9,8 @@ export function planRemainingStages(
   state: NovelRunState | undefined,
   chapterCount: number,
 ): NovelRunPlan {
-  const completed = new Set(state?.completedStages ?? []);
-  const stages = novelStageNames.filter((stage) => !completed.has(stage));
+  const completed: Set<NovelStageName> = new Set(state?.completedStages ?? []);
+  const stages: NovelStageName[] = novelStageNames.filter((stage) => !completed.has(stage));
   const startChapterIndex: number = completed.has('chapters')
     ? chapterCount
     : (state?.nextChapterIndex ?? 0);

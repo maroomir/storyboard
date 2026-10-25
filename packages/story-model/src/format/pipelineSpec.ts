@@ -72,7 +72,7 @@ export function parsePipelineSpec(text: string): PipelineSpec {
     );
   }
 
-  const parsed = pipelineSpecSchema.safeParse(loaded);
+  const parsed: z.ZodSafeParseResult<PipelineSpec> = pipelineSpecSchema.safeParse(loaded);
 
   if (!parsed.success) {
     const issue: z.core.$ZodIssue | undefined = parsed.error.issues[0];

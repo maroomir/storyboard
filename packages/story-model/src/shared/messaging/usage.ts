@@ -23,4 +23,5 @@ export interface UsageReadRequestPayload {
 
 export const usageReadRequestPayloadSchema: z.ZodType<UsageReadRequestPayload> = z.object({});
 
-export const usageReadResponsePayloadSchema = usageSummaryByEntitySchema;
+export const usageReadResponsePayloadSchema: z.ZodType<UsageSummaryByEntity> =
+  usageSummaryByEntitySchema;

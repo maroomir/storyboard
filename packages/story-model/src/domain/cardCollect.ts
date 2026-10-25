@@ -1,5 +1,6 @@
 import type {
   BackgroundCard,
+  CharacterArc,
   CharacterCard,
   CharacterRelation,
   StoryboardCard,
@@ -41,9 +42,11 @@ function applyToCharacter(
   card: CharacterCard,
   accepted: readonly CardCollectProposal[],
 ): CharacterCard {
-  const attributes = { ...(card.attributes ?? {}) };
+  const attributes: Record<string, string | number | boolean | null> = {
+    ...(card.attributes ?? {}),
+  };
   const relations: CharacterRelation[] = [...(card.relations ?? [])];
-  const arc = [...(card.arc ?? [])];
+  const arc: CharacterArc[] = [...(card.arc ?? [])];
   let traits: string[] = [...(card.traits ?? [])];
   let recentDialogues: string[] = [...(card.recentDialogues ?? [])];
   let description: string[] = [...(card.description ?? [])];
@@ -200,13 +203,15 @@ export function shouldProposeCardCollect(
         return current !== proposal.value;
       }
       case 'relation': {
-        const current = (card.relations ?? []).find(
+        const current: CharacterRelation | undefined = (card.relations ?? []).find(
           (relation) => relation.target === proposal.target,
         );
         return current?.type !== proposal.type;
       }
       case 'arc': {
-        const current = (card.arc ?? []).find((entry) => entry.sceneRef === proposal.sceneRef);
+        const current: CharacterArc | undefined = (card.arc ?? []).find(
+          (entry) => entry.sceneRef === proposal.sceneRef,
+        );
         return current?.summary !== proposal.summary;
       }
       case 'trait':

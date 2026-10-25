@@ -83,7 +83,8 @@ export interface ProjectReadContractRequestPayload {
 export const projectReadContractRequestPayloadSchema: z.ZodType<ProjectReadContractRequestPayload> =
   z.object({});
 
-export const projectReadContractResponsePayloadSchema = projectContractSnapshotSchema;
+export const projectReadContractResponsePayloadSchema: z.ZodType<ProjectContractSnapshot> =
+  projectContractSnapshotSchema;
 
 export interface ProjectUpdateContractRequestPayload {
   genre?: string;
@@ -113,4 +114,5 @@ export const projectUpdateContractRequestPayloadSchema: z.ZodType<ProjectUpdateC
     qualityCriteria: z.array(z.string()).optional(),
   });
 
-export const projectUpdateContractResponsePayloadSchema = projectContractSnapshotSchema;
+export const projectUpdateContractResponsePayloadSchema: z.ZodType<ProjectContractSnapshot> =
+  projectContractSnapshotSchema;

@@ -8,7 +8,7 @@ const optionalText: z.ZodPreprocess<z.ZodCatch<z.ZodOptional<z.ZodString>>> = z.
 );
 
 // zod 4 는 빠진 키를 preprocess 에 넘기지 않으므로, 목록은 optional 로 받고 빈 배열로 채운다.
-const textList = z
+const textList: z.ZodType<string[]> = z
   .preprocess(
     (value) =>
       Array.isArray(value)
@@ -97,7 +97,7 @@ export const emptyNoteSynthesis: NoteSynthesis = {
 };
 
 export function coerceNoteSynthesis(value: Record<string, unknown> | null): NoteSynthesis {
-  const parsed = noteSynthesisSchema.safeParse({
+  const parsed: z.ZodSafeParseResult<NoteSynthesisPayload> = noteSynthesisSchema.safeParse({
     setting: value?.setting ?? {},
     synopsis: value?.synopsis ?? {},
   });

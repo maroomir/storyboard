@@ -3,14 +3,18 @@ import { z } from 'zod';
 import { cardCollectProposalSchema, type CardCollectProposal } from './cardCollect';
 
 // 'notion-export' 는 Notion 의 «Markdown & CSV» 내보내기 zip — 통합 토큰 없이 읽는 길이다.
-export const noteSourceKinds = ['obsidian', 'notion', 'notion-export'] as const;
+export type NoteSourceKind = 'obsidian' | 'notion' | 'notion-export';
 
-export type NoteSourceKind = (typeof noteSourceKinds)[number];
+export const noteSourceKinds: readonly [NoteSourceKind, ...NoteSourceKind[]] = [
+  'obsidian',
+  'notion',
+  'notion-export',
+];
 
 // 'tree' 는 준 페이지와 그 아래에 있던 노트, 'link' 는 본문 링크를 한 단계 따라가 읽은 노트다.
-export const noteOrigins = ['tree', 'link'] as const;
+export type NoteOrigin = 'tree' | 'link';
 
-export type NoteOrigin = (typeof noteOrigins)[number];
+export const noteOrigins: readonly [NoteOrigin, ...NoteOrigin[]] = ['tree', 'link'];
 
 export interface NoteDocument {
   id: string;
