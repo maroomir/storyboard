@@ -1,13 +1,6 @@
-import {
-escapeRegExp,
-  formatSceneBeatCoordinates,
-  sceneBeatCoordinateLabels,
-  sceneBeatText,
-  type CharacterCard,
-  type SceneBeat,
-type SceneBeatDetail,
-} from '@storyboard/story-model';
+import { formatSceneBeatCoordinates, sceneBeatCoordinateLabels, sceneBeatText, type CharacterCard, type SceneBeat, type SceneBeatDetail } from '@storyboard/story-model';
 import type { SceneBeatDirective, SceneBeatProposal, SceneBeatVerdict } from '@storyboard/story-ai';
+import { countCatchphrase, type CatchphraseCount } from '#engine/pipeline/catchphrases';
 
 const LOOKAHEAD_BEATS: number = 2;
 const RECENT_PASSAGES_IN_FULL: number = 10;
@@ -19,11 +12,6 @@ const RETRY_SCORE_LIMIT: number = 3;
 
 const INNER_LINE_PREFIX: string = '(속)';
 const SCENE_BREAK_LINE: string = '---';
-
-export interface CatchphraseCount {
-  readonly phrase: string;
-  readonly count: number;
-}
 
 export interface ActedBeat {
   readonly number: number;
@@ -151,10 +139,6 @@ export function previousPassagesForJudge(
     .slice(-JUDGE_PREVIOUS_PASSAGES)
     .map((beat) => `[대목 ${beat.number}]\n${passages.get(beat.number) as string}`)
     .join('\n\n');
-}
-
-export function countCatchphrase(text: string, phrase: string): number {
-  return (text.match(new RegExp(`(^|[^가-힣])${escapeRegExp(phrase)}`, 'g')) ?? []).length;
 }
 
 export function findBeatCatchphraseOveruse(input: {

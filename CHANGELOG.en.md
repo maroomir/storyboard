@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The end-of-scene catchphrase warning no longer counts letters inside other words.** A catchphrase such as «이 몸» was also counted inside «윗사람이 몸소»; it now follows the actor loop's rule and counts only where the preceding character is not Hangul.
+
 ### Internal
 
 - **Every app and package moves its comments into names and spells out every type.** Explanatory comments are gone and their meaning lives in constant, boolean and function names (tool directives stay), and every local, field and return carries a type, enforced by lint (`scripts/lint/explicitTypeRules.cjs`). zod schemas are written interface first and bound with `z.ZodType<X>`, and `as const` tables declare their type first. Contract names — command ids, RPC/IPC channels, stage ids — are unchanged, and so is the workspace file format.

@@ -12,7 +12,7 @@ import type {
   SceneGenerationTuningInput,
   SectionViolationKind,
 } from './sceneGenerationTuning';
-import type { CatchphraseCount } from '#engine/pipeline/beatActors';
+import { countCatchphrase, type CatchphraseCount } from '#engine/pipeline/catchphrases';
 
 interface LineSpan {
   line: string;
@@ -758,7 +758,7 @@ export function findCatchphraseOveruse(input: {
 
   for (const character of input.characters) {
     const counts: CatchphraseCount[] = (character.catchphrases ?? [])
-      .map((phrase) => ({ phrase, count: input.text.split(phrase).length - 1 }))
+      .map((phrase) => ({ phrase, count: countCatchphrase(input.text, phrase) }))
       .filter((entry) => entry.phrase.length > 0 && entry.count > 0);
     const total: number = counts.reduce((sum, entry) => sum + entry.count, 0);
 

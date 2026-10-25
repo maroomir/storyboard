@@ -1550,6 +1550,16 @@ describe("findCatchphraseOveruse", () => {
     ])
   })
 
+  it("counts a catchphrase only where it starts a word, not inside another word", () => {
+    const narrator: CharacterCard = { ...eliaCard, catchphrases: ["이 몸"] }
+    const text = "윗사람이 몸소 왔다. 윗사람이 몸소 갔다. 이 몸이 간다."
+
+    expect(findCatchphraseOveruse({ text, characters: [narrator], beatCount: 1 })).toEqual([])
+    expect(findCatchphraseOveruse({ text: `${text} 그래, 이 몸.`, characters: [narrator], beatCount: 1 })).toEqual([
+      '엘리아의 입버릇이 2회 나옵니다 (비트 1개, 상한 1회): "이 몸" 2회'
+    ])
+  })
+
   it("stays quiet at the limit, and when the scene has no beats to measure by", () => {
     const text = "세기의 철학자. 세기의 철학자."
 
