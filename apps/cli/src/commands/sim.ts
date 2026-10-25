@@ -6,6 +6,7 @@ import {
   parseSceneCard,
   parseSceneFileName,
   extractErrorMessage,
+  formatUsd,
 } from '@storyboard/story-model';
 import type { AiProviderId, SceneCard, SceneFileNameParts } from '@storyboard/story-model';
 import {
@@ -415,7 +416,7 @@ function reportEstimate(
   }
 
   const cost: string =
-    estimate.estimatedUsd === undefined ? '금액 불명' : `$${estimate.estimatedUsd.toFixed(2)}`;
+    estimate.estimatedUsd === undefined ? '금액 불명' : formatUsd(estimate.estimatedUsd);
 
   return {
     ok: true,
@@ -1070,7 +1071,7 @@ export const reportSim: CommandHandler = async (context) => {
         const judgeCost: string =
           point.judgeCostUsd === undefined || point.judgeCostUsd === 0
             ? ''
-            : `\t심판 $${point.judgeCostUsd.toFixed(2)}`;
+            : `\t심판 ${formatUsd(point.judgeCostUsd)}`;
         return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}\t관문 ${point.gatePassed}/${point.judged}${critic}${judgeCost}`;
       }),
   ]);
@@ -1238,7 +1239,7 @@ export const rejudgeSim: CommandHandler = async (context) => {
         (record.recalled === undefined ? '' : ` · 회수 ${record.recalled}/${record.recallTotal}`) +
         (record.judgeTokens?.costUsd === undefined
           ? ''
-          : ` · 심판 $${record.judgeTokens.costUsd.toFixed(2)}`),
+          : ` · 심판 ${formatUsd(record.judgeTokens.costUsd)}`),
     );
   }
 

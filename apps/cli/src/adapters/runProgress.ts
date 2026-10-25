@@ -3,6 +3,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { Theme } from '@/terminal/theme';
 
 import type { LiveArea } from './liveArea';
+import { formatUsd } from '@storyboard/story-model';
 
 export interface ProgressUnit {
   readonly current: number;
@@ -129,7 +130,7 @@ export class RailRunProgress implements IRunProgress {
     const cacheHitRate: number | undefined = this.deps.readCacheHitRate?.();
     const meta: string = [
       formatElapsed(this.now() - (this.startedAt ?? this.now())),
-      ...(cost > 0 ? [`$${cost.toFixed(2)}`] : []),
+      ...(cost > 0 ? [formatUsd(cost)] : []),
       ...(cost <= 0 && unpricedTokens > 0
         ? [`${Math.round(unpricedTokens).toLocaleString('en-US')} 토큰`]
         : []),

@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed
+
+- **The three apps show amounts of money the same way.** Every amount now has two decimals ($0.50, $12.40). The desktop's one-decimal form from $10 up and the extension usage badge's four-decimal form below one cent ($0.0042) are gone; less than a cent shows as $0.00.
+
 ### Fixed
 
 - **The end-of-scene catchphrase warning no longer counts letters inside other words.** A catchphrase such as «이 몸» was also counted inside «윗사람이 몸소»; it now follows the actor loop's rule and counts only where the preceding character is not Hangul.

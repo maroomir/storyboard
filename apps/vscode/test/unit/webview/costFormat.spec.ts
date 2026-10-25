@@ -28,8 +28,8 @@ describe("formatUsageBadgeLabel", () => {
     expect(formatUsageBadgeLabel({ costUsd: 1.234, tokens: 12_300, hasUnpricedUsage: false })).toBe(
       "$1.23 · 12.3k"
     )
-    expect(formatUsageBadgeLabel({ costUsd: 0.005, tokens: 40, hasUnpricedUsage: false })).toBe(
-      "$0.005 · 40"
+    expect(formatUsageBadgeLabel({ costUsd: 0.0042, tokens: 40, hasUnpricedUsage: false })).toBe(
+      "$0.00 · 40"
     )
   })
 

@@ -5,6 +5,7 @@ import {
   type NoteAbsorbPlan,
   type NoteBundle,
   NodeUri,
+  formatUsd,
 } from '@storyboard/story-model';
 import {
   type ApplyNoteAbsorbOutcome,
@@ -55,8 +56,8 @@ async function confirm(
   return answer === true;
 }
 
-function formatUsd(value: number | undefined): string {
-  return value === undefined ? '금액 불명 (가격표에 없는 모델)' : `최대 $${value.toFixed(2)}`;
+function formatCostCeiling(value: number | undefined): string {
+  return value === undefined ? '금액 불명 (가격표에 없는 모델)' : `최대 ${formatUsd(value)}`;
 }
 
 function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): string[] {
@@ -66,7 +67,7 @@ function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): str
       .filter((note) => note.origin === 'link')
       .map((note) => `  링크로 읽음  ${note.title} (${note.id})`),
     ...bundle.skipped.map((entry) => `  읽지 못함    ${entry.label} — ${entry.reason}`),
-    `AI 요청 최대 ${estimate.requestCount}회 · ${estimate.providerId}/${estimate.model} · 입력 약 ${estimate.inputTokens.toLocaleString()} 토큰 · ${formatUsd(estimate.costCeilingUsd)}`,
+    `AI 요청 최대 ${estimate.requestCount}회 · ${estimate.providerId}/${estimate.model} · 입력 약 ${estimate.inputTokens.toLocaleString()} 토큰 · ${formatCostCeiling(estimate.costCeilingUsd)}`,
   ];
 }
 

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { decimalSettingStep, parseSettingNumberInput, novelRunModes, novelStageNames, type NovelRunMode, extractErrorMessage } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, parseSettingNumberInput, novelRunModes, novelStageNames, type NovelRunMode, extractErrorMessage, formatUsd } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, WorkspaceOverview } from '@/shared/dto';
 
 import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { contractFieldLabel } from '@/renderer/lib/narrativeLabels';
-import { budgetProgress, formatUsd, stageRail } from '@/renderer/lib/runView';
+import { budgetProgress, stageRail } from '@/renderer/lib/runView';
 
 interface RunDrawerProps {
   readonly overview: WorkspaceOverview;

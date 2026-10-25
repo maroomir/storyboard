@@ -156,6 +156,10 @@ export interface UsageSummaryByEntity {
   readonly total: UsageAmount;
 }
 
+export function formatUsd(amountUsd: number): string {
+  return `$${amountUsd.toFixed(2)}`;
+}
+
 export function emptyUsageAmount(): UsageAmount {
   return { costUsd: 0, tokens: 0, hasUnpricedUsage: false };
 }

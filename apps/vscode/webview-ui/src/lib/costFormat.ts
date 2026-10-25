@@ -1,3 +1,4 @@
+import { formatUsd } from '@storyboard/story-model/contracts';
 import type { UsageAmount } from '@webview/lib/types';
 
 export function formatTokenCount(tokens: number): string {
@@ -14,20 +15,6 @@ export function formatTokenCount(tokens: number): string {
   }
 
   return String(Math.round(tokens));
-}
-
-function formatUsd(usd: number): string {
-  if (!Number.isFinite(usd) || usd <= 0) {
-    return '$0.00';
-  }
-
-  if (usd >= 0.01) {
-    return `$${usd.toFixed(2)}`;
-  }
-
-  const raw: string = usd.toFixed(4);
-  const trimmed: string = raw.replace(/0+$/, '').replace(/\.$/, '');
-  return `$${trimmed}`;
 }
 
 export function isEmptyUsageDisplay(usage: UsageAmount): boolean {

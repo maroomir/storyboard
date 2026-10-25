@@ -29,7 +29,3 @@ export function budgetProgress(snapshot: RunSnapshot): number | undefined {
 
   return Math.min(1, snapshot.spentUsd / snapshot.budgetUsd);
 }
-
-export function formatUsd(amount: number): string {
-  return `$${amount.toFixed(amount >= 10 ? 1 : 2)}`;
-}

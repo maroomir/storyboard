@@ -11,6 +11,7 @@ import type {
   PlanNoteAbsorbResult,
 } from '@storyboard/story-engine';
 import {
+  formatUsd,
   isNotionUrl,
   type NoteAbsorbPlan,
   type NoteBundle,
@@ -181,7 +182,7 @@ function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): str
   const cost: string =
     estimate.costCeilingUsd === undefined
       ? '요금 정보 없음'
-      : `최대 $${estimate.costCeilingUsd.toFixed(2)}`;
+      : `최대 ${formatUsd(estimate.costCeilingUsd)}`;
 
   return [
     `노트 ${estimate.noteCount}장${estimate.linkedNoteCount > 0 ? ` (링크로 따라온 ${estimate.linkedNoteCount}장)` : ''}, ${estimate.characterCount.toLocaleString()}자`,
