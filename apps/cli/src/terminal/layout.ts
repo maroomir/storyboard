@@ -1,23 +1,15 @@
 import { measureWidth, padEndToWidth, truncateToWidth, wrapToWidth } from './width';
 
-// 박스와 2열 표. 둘 다 줄 배열을 돌려주고 출력은 부르는 쪽이 한다. 칸 계산은 모두 width.ts 를
-// 거치므로 한글이 섞여도 오른쪽 변과 둘째 열이 맞는다.
-
-// Below this a frame eats more of the line than it gives back, so the content goes out unframed.
 export const minimumBoxWidth: number = 40;
 
 const maximumBoxWidth: number = 100;
 
-// When the description column would be narrower than this, it moves under its label instead.
 const minimumDescriptionWidth: number = 24;
 
 export interface BoxOptions {
-  // The terminal's columns; the box is as wide as its content needs, never wider than this.
   readonly availableWidth: number;
   readonly title?: string;
-  // Sizes the box to this instead of its content, so stacked boxes line up.
   readonly innerWidth?: number;
-  // Styles the frame characters, e.g. dimming them. Content keeps its own styling.
   readonly paintFrame?: (text: string) => string;
   readonly paintTitle?: (text: string) => string;
 }
@@ -26,7 +18,6 @@ export function renderBox(lines: readonly string[], options: BoxOptions): string
   const paintFrame: (text: string) => string = options.paintFrame ?? identity;
   const paintTitle: (text: string) => string = options.paintTitle ?? identity;
 
-  // Only an over-wide line is re-wrapped; wrapping trims, which would undo a caller's indentation.
   const wrapOverWide =
     (width: number): ((line: string) => string[]) =>
     (line: string): string[] =>
@@ -65,14 +56,10 @@ export interface ColumnOptions {
   readonly availableWidth: number;
   readonly indent?: number;
   readonly gap?: number;
-  // The label column never grows past this, so one long usage line cannot push every description
-  // to the right edge; a longer label puts its description on the next line instead.
   readonly maximumLabelWidth?: number;
-  // Fixes the label column, so several tables drawn apart still share one description column.
   readonly labelWidth?: number;
 }
 
-// A label column and a description column whose wrapped lines hang under the description start.
 export function renderColumns(rows: readonly ColumnRow[], options: ColumnOptions): string[] {
   const indent: string = ' '.repeat(options.indent ?? 2);
   const gap: number = options.gap ?? 2;
@@ -118,7 +105,6 @@ function renderStackedRows(rows: readonly ColumnRow[], indent: string, width: nu
   ]);
 }
 
-// A usage line longer than the terminal wraps with its continuation indented under it.
 function wrapLabel(label: string, indent: string, width: number): string[] {
   const continuationIndent: string = `${indent}  `;
 

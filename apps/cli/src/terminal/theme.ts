@@ -1,6 +1,3 @@
-// 색은 역할로만 고른다. 부르는 쪽은 «강조»나 «경고»를 말하고, 그것이 어떤 SGR 코드인지는 이
-// 파일만 안다. 테마를 바꾸는 일이 이 표 하나를 바꾸는 일이 되도록.
-
 export type ThemeRole = 'accent' | 'muted' | 'heading' | 'success' | 'warning' | 'danger';
 
 export interface Theme {
@@ -8,8 +5,6 @@ export interface Theme {
   readonly paint: (role: ThemeRole, text: string) => string;
 }
 
-// Each role closes with its own reset (39 for color, 22 for weight) rather than a full reset, so a
-// painted word inside a painted line does not cut the outer style short.
 const roleCodes: Readonly<Record<ThemeRole, readonly [open: number, close: number]>> = {
   accent: [36, 39],
   muted: [90, 39],
@@ -42,8 +37,6 @@ export interface ColorConditions {
   readonly isJsonOutput: boolean;
 }
 
-// Color is for a person at a terminal. A pipe, an agent reading `--json`, `NO_COLOR`
-// (https://no-color.org) or a dumb terminal all get the same bytes they got before color existed.
 export function shouldUseColor(conditions: ColorConditions): boolean {
   if (!conditions.isTty || conditions.hasNoColorFlag || conditions.isJsonOutput) {
     return false;

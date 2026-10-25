@@ -1,9 +1,5 @@
 import { createTheme, plainTheme, shouldUseColor, type Theme } from './theme';
 
-// stdout 과 stderr 는 따로 판정한다. `storyboard draft show 01-a > out.md` 는 stdout 만 파일이고
-// 진행 로그는 여전히 사람이 보는 터미널로 간다.
-
-// What the process knows about its streams before any argument is read.
 export interface TerminalStreamFacts {
   readonly isTty: boolean;
   readonly columns?: number;
@@ -16,7 +12,6 @@ export interface TerminalFacts {
 }
 
 export interface TerminalStream {
-  // A person reads it, so marks and hints are worth adding; a pipe gets only the result.
   readonly isTty: boolean;
   readonly columns: number;
   readonly theme: Theme;
@@ -27,10 +22,8 @@ export interface TerminalProfile {
   readonly stderr: TerminalStream;
 }
 
-// A pipe has no width; 80 is what a reader of the piped text most likely has.
-export const defaultColumns: number = 80;
+export const assumedColumnsWithoutTerminal: number = 80;
 
-// Tests and the TUI call dispatch without real streams, and get exactly the pre-color output.
 export const plainTerminalFacts: TerminalFacts = {
   stdout: { isTty: false },
   stderr: { isTty: false },
@@ -42,17 +35,20 @@ export interface OutputRequest {
   readonly isJsonOutput: boolean;
 }
 
+function hasKnownColumns(
+  stream: TerminalStreamFacts,
+): stream is TerminalStreamFacts & { readonly columns: number } {
+  return stream.columns !== undefined && stream.columns > 0;
+}
+
 export function createTerminalProfile(
   facts: TerminalFacts,
   request: OutputRequest,
 ): TerminalProfile {
-  // A dumb terminal cannot move the cursor or follow an escape sequence, so it is read like a
-  // pipe: no rail, no links, no panels.
-  const isDumb: boolean = facts.env.TERM === 'dumb';
+  const isDumbTerminal: boolean = facts.env.TERM === 'dumb';
   const describeStream = (stream: TerminalStreamFacts): TerminalStream => ({
-    isTty: stream.isTty && !isDumb,
-    // Some pseudo terminals report 0 columns; that is "unknown", not a zero-width screen.
-    columns: stream.columns !== undefined && stream.columns > 0 ? stream.columns : defaultColumns,
+    isTty: stream.isTty && !isDumbTerminal,
+    columns: hasKnownColumns(stream) ? stream.columns : assumedColumnsWithoutTerminal,
     theme: createTheme(shouldUseColor({ isTty: stream.isTty, env: facts.env, ...request })),
   });
 
@@ -61,6 +57,6 @@ export function createTerminalProfile(
 
 export const plainTerminalStream: TerminalStream = {
   isTty: false,
-  columns: defaultColumns,
+  columns: assumedColumnsWithoutTerminal,
   theme: plainTheme,
 };
