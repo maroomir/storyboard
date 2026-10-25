@@ -1,6 +1,9 @@
 import type { AiMessage, Severity, UsageAttribution } from '@storyboard/story-model';
 import type { PromptArtifact } from './prompts/types';
 
+
+type UntypedFields = Readonly<Record<string, unknown>>;
+
 export interface SituationWithCharacters {
   readonly characters: readonly string[];
   readonly situation: string;
@@ -25,7 +28,6 @@ export interface ContinuityIssue {
   readonly original: string;
   readonly reason: string;
   readonly severity: Severity;
-  // Present only when the checked body carried scene markers, as the final review's does.
   readonly sceneStem?: string;
 }
 
@@ -38,16 +40,13 @@ export function toSituationWithCharacters(value: unknown): SituationWithCharacte
     return [];
   }
 
-  const candidate = value as {
-    readonly characters?: unknown;
-    readonly situation?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (typeof candidate.situation !== 'string') {
     return [];
   }
 
-  const characters = Array.isArray(candidate.characters)
+  const characters: string[] = Array.isArray(candidate.characters)
     ? candidate.characters.filter((character): character is string => typeof character === 'string')
     : [];
 
@@ -64,13 +63,7 @@ export function toGrammarIssue(value: unknown): GrammarIssue[] {
     return [];
   }
 
-  const candidate = value as {
-    readonly start?: unknown;
-    readonly end?: unknown;
-    readonly original?: unknown;
-    readonly suggestion?: unknown;
-    readonly reason?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (
     typeof candidate.start !== 'number' ||
@@ -102,14 +95,14 @@ export function toFactCandidate(value: unknown): FactCandidate[] {
     return [];
   }
 
-  const candidate = value as { readonly key?: unknown; readonly value?: unknown };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (typeof candidate.key !== 'string' || typeof candidate.value !== 'string') {
     return [];
   }
 
-  const key = candidate.key.trim();
-  const factValue = candidate.value.trim();
+  const key: string = candidate.key.trim();
+  const factValue: string = candidate.value.trim();
 
   if (key.length === 0 || factValue.length === 0) {
     return [];
@@ -123,14 +116,7 @@ export function toContinuityIssue(value: unknown): ContinuityIssue[] {
     return [];
   }
 
-  const candidate = value as {
-    readonly start?: unknown;
-    readonly end?: unknown;
-    readonly original?: unknown;
-    readonly reason?: unknown;
-    readonly severity?: unknown;
-    readonly sceneStem?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (
     typeof candidate.start !== 'number' ||
@@ -161,8 +147,6 @@ export function toContinuityIssue(value: unknown): ContinuityIssue[] {
   ];
 }
 
-// 접두가 있으면 user 메시지 둘로 나간다: 접두에 캐시 경계를 달고, 꼬리는 그 뒤에. Claude 는 경계
-// 블록에 cache_control 을 달고, 접두 캐시가 자동인 프로바이더는 순서만으로 같은 효과를 본다.
 export function toPromptMessages(artifact: PromptArtifact): readonly AiMessage[] {
   const prefix: AiMessage[] =
     artifact.userPrefix === undefined || artifact.userPrefix.trim().length === 0

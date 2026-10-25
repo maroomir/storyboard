@@ -5,10 +5,12 @@ import {
   type StyleDirective,
 } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
-export const GenreFormattingPrompt = {
+export const GenreFormattingPrompt: PromptModule<
+  [dialogue: string, format: ProjectFormat, variant?: PromptVariantId, style?: StyleDirective]
+> = {
   config: promptTuning('genreFormatting'),
   build(
     dialogue: string,
@@ -25,4 +27,4 @@ export const GenreFormattingPrompt = {
       },
     });
   },
-} as const;
+};

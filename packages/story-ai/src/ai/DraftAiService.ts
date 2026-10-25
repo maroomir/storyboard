@@ -1,8 +1,6 @@
 import type { GenerateTextOptions } from './aiServiceTypes';
 
 export interface ContinuityCheckOptions extends GenerateTextOptions {
-  // The body is an assembled volume carrying `<!-- scene: <stem> -->` markers, so each issue is
-  // asked to name its scene.
   readonly hasSceneMarkers?: boolean;
 }
 import { AiTextGateway } from './AiTextGateway';
@@ -23,7 +21,7 @@ import { GrammarCheckPrompt } from './prompts/grammarCheck';
 import { InlineCompletionPrompt } from './prompts/inlineCompletion';
 import { SceneCoveragePrompt } from './prompts/sceneCoverage';
 import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from './prompts/storyStateUpdate';
-import type { PromptArtifact, PromptConfig } from './prompts/types';
+import type { PromptArtifact, PromptConfig, PromptVariantId } from './prompts/types';
 import type { AiGenerateResponse, AiTaskName } from '@storyboard/story-model';
 import {
   coerceCritiqueIssues,
@@ -53,15 +51,15 @@ export class DraftAiService {
     body: string,
     options: GenerateTextOptions = {},
   ): Promise<GrammarIssue[]> {
-    const variant = this.gateway.resolvePromptVariant('grammarCheck', options);
-    const prompt = GrammarCheckPrompt.build(body, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('grammarCheck', options);
+    const prompt: PromptArtifact = GrammarCheckPrompt.build(body, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'grammarCheck',
       prompt,
       GrammarCheckPrompt.config,
       options,
     );
-    const parsedArray = parseJsonArray(response.text);
+    const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
     return parsedArray ? parsedArray.flatMap((value) => toGrammarIssue(value)) : [];
   }
@@ -73,15 +71,20 @@ export class DraftAiService {
   ): Promise<ContinuityIssue[]> {
     if (facts.length === 0) return [];
 
-    const variant = this.gateway.resolvePromptVariant('continuityCheck', options);
-    const prompt = ContinuityCheckPrompt.build(body, facts, variant, options.hasSceneMarkers);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('continuityCheck', options);
+    const prompt: PromptArtifact = ContinuityCheckPrompt.build(
+      body,
+      facts,
+      variant,
+      options.hasSceneMarkers,
+    );
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'continuityCheck',
       prompt,
       ContinuityCheckPrompt.config,
       options,
     );
-    const parsedArray = parseJsonArray(response.text);
+    const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
     return parsedArray ? parsedArray.flatMap((value) => toContinuityIssue(value)) : [];
   }
@@ -93,9 +96,9 @@ export class DraftAiService {
   ): Promise<SceneCoverageIssue[]> {
     if (beats.length === 0) return [];
 
-    const variant = this.gateway.resolvePromptVariant('sceneCoverage', options);
-    const prompt = SceneCoveragePrompt.build(beats, draft, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneCoverage', options);
+    const prompt: PromptArtifact = SceneCoveragePrompt.build(beats, draft, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'sceneCoverage',
       prompt,
       SceneCoveragePrompt.config,
@@ -109,9 +112,9 @@ export class DraftAiService {
     input: StoryStateUpdateInput,
     options: GenerateTextOptions = {},
   ): Promise<StoryStateUpdateItem[]> {
-    const variant = this.gateway.resolvePromptVariant('storyStateUpdate', options);
-    const prompt = StoryStateUpdatePrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('storyStateUpdate', options);
+    const prompt: PromptArtifact = StoryStateUpdatePrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'storyStateUpdate',
       prompt,
       StoryStateUpdatePrompt.config,
@@ -126,9 +129,9 @@ export class DraftAiService {
     context: InlineCompletionContext = {},
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('inlineCompletion', options);
-    const prompt = InlineCompletionPrompt.build(prefix, context, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('inlineCompletion', options);
+    const prompt: PromptArtifact = InlineCompletionPrompt.build(prefix, context, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'inlineCompletion',
       prompt,
       InlineCompletionPrompt.config,
@@ -143,9 +146,9 @@ export class DraftAiService {
     context: DraftExpansionContext = {},
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftExpansion', options);
-    const prompt = DraftExpansionPrompt.build(selection, context, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('draftExpansion', options);
+    const prompt: PromptArtifact = DraftExpansionPrompt.build(selection, context, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'draftExpansion',
       prompt,
       DraftExpansionPrompt.config,
@@ -159,9 +162,9 @@ export class DraftAiService {
     input: DraftCritiqueInput,
     options: GenerateTextOptions = {},
   ): Promise<DraftCritiqueIssue[]> {
-    const variant = this.gateway.resolvePromptVariant('draftCritique', options);
-    const prompt = DraftCritiquePrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('draftCritique', options);
+    const prompt: PromptArtifact = DraftCritiquePrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'draftCritique',
       prompt,
       DraftCritiquePrompt.config,
@@ -175,9 +178,9 @@ export class DraftAiService {
     input: DraftRevisionInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftRevision', options);
-    const prompt = DraftRevisionPrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('draftRevision', options);
+    const prompt: PromptArtifact = DraftRevisionPrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'draftRevision',
       prompt,
       DraftRevisionPrompt.config,
@@ -191,9 +194,9 @@ export class DraftAiService {
     input: DraftCondenseInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftRevision', options);
-    const prompt = DraftCondensePrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('draftRevision', options);
+    const prompt: PromptArtifact = DraftCondensePrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'draftRevision',
       prompt,
       DraftCondensePrompt.config,
@@ -207,9 +210,9 @@ export class DraftAiService {
     input: DraftAugmentInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftAugment', options);
-    const prompt = DraftAugmentPrompt.build(input, variant, options.styleDirective);
-    const response = await this.generateWithDefaults(
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('draftAugment', options);
+    const prompt: PromptArtifact = DraftAugmentPrompt.build(input, variant, options.styleDirective);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
       'draftAugment',
       prompt,
       DraftAugmentPrompt.config,

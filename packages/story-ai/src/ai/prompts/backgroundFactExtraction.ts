@@ -1,5 +1,5 @@
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface BackgroundFactExtraction {
@@ -10,7 +10,9 @@ export interface BackgroundFactExtraction {
   readonly characterNames: readonly string[];
 }
 
-export const BackgroundFactExtractionPrompt = {
+export const BackgroundFactExtractionPrompt: PromptModule<
+  [body: string, backgroundName: string, variant?: PromptVariantId]
+> = {
   config: promptTuning('backgroundFactExtraction'),
   build(
     body: string,
@@ -19,22 +21,22 @@ export const BackgroundFactExtractionPrompt = {
   ): PromptArtifact {
     return renderPrompt('backgroundFactExtraction', variant, { view: { body, backgroundName } });
   },
-} as const;
+};
 
 function coerceStringList(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  const result: string[] = [];
+  const nonEmptyStrings: string[] = [];
 
   for (const entry of value) {
     if (typeof entry === 'string' && entry.trim().length > 0) {
-      result.push(entry.trim());
+      nonEmptyStrings.push(entry.trim());
     }
   }
 
-  return result;
+  return nonEmptyStrings;
 }
 
 function coerceOptionalString(value: unknown): string | undefined {

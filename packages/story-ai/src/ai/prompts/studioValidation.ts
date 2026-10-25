@@ -1,6 +1,6 @@
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import type { PromptArtifact } from './types';
+import type { PromptArtifact, PromptModule } from './types';
 
 export interface StudioValidationPromptInput {
   readonly entityLabel: string;
@@ -9,7 +9,7 @@ export interface StudioValidationPromptInput {
   readonly diff: string;
 }
 
-export const StudioValidationPrompt = {
+export const StudioValidationPrompt: PromptModule<[input: StudioValidationPromptInput]> = {
   config: promptTuning('studioValidation'),
   build(input: StudioValidationPromptInput): PromptArtifact {
     return renderPrompt('studioValidation', 'generic', {
@@ -21,4 +21,4 @@ export const StudioValidationPrompt = {
       },
     });
   },
-} as const;
+};

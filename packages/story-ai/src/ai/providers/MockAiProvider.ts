@@ -10,25 +10,31 @@ import {
 } from '@storyboard/story-model';
 import { registerProviderFactory } from '#ai/ai/providerFactory';
 
-const mockCatalogModelId = 'mock-default';
+const mockCatalogModelId: string = 'mock-default';
+
+
+interface MockLineRewrite {
+  readonly n: number;
+  readonly text: string;
+}
 
 export class MockAiProvider implements AiProvider {
   public readonly id: AiProviderId = 'mock';
-  public readonly displayName = getProviderDisplayName('mock');
+  public readonly displayName: string = getProviderDisplayName('mock');
 
   public async checkConnection(): Promise<boolean> {
     return true;
   }
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
-    const userPrompt = request.messages
+    const userPrompt: string = request.messages
       .filter((message) => message.role === 'user')
       .map((message) => message.content.trim())
       .filter((content) => content.length > 0)
       .join('\n\n');
 
-    const text = createMockResponse(request.taskName, userPrompt);
-    const usage = syntheticUsageFromMessages(request, text);
+    const text: string = createMockResponse(request.taskName, userPrompt);
+    const usage: AiUsage = syntheticUsageFromMessages(request, text);
     return aiGenerateResponseWithUsage({
       providerId: this.id,
       model: mockCatalogModelId,
@@ -39,7 +45,7 @@ export class MockAiProvider implements AiProvider {
 }
 
 function syntheticUsageFromMessages(request: AiGenerateRequest, responseText: string): AiUsage {
-  const promptChars = request.messages.map((message) => message.content).join('').length;
+  const promptChars: number = request.messages.map((message) => message.content).join('').length;
 
   return {
     inputTokens: Math.floor(promptChars / 4),
@@ -48,7 +54,7 @@ function syntheticUsageFromMessages(request: AiGenerateRequest, responseText: st
 }
 
 function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
-  const promptSummary = userPrompt.length > 0 ? userPrompt : '입력된 프롬프트가 없습니다.';
+  const promptSummary: string = userPrompt.length > 0 ? userPrompt : '입력된 프롬프트가 없습니다.';
 
   switch (taskName) {
     case 'situationExtraction':
@@ -187,16 +193,16 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
 }
 
 function extractSceneInput(prompt: string): string {
-  const marker = 'User Input:\n';
-  const markerIndex = prompt.indexOf(marker);
+  const marker: string = 'User Input:\n';
+  const markerIndex: number = prompt.indexOf(marker);
 
   if (markerIndex === -1) {
     return prompt;
   }
 
-  const inputStart = markerIndex + marker.length;
-  const outputMarkerIndex = prompt.indexOf('\n\nOutput only the JSON array.', inputStart);
-  const input =
+  const inputStart: number = markerIndex + marker.length;
+  const outputMarkerIndex: number = prompt.indexOf('\n\nOutput only the JSON array.', inputStart);
+  const input: string =
     outputMarkerIndex === -1
       ? prompt.slice(inputStart)
       : prompt.slice(inputStart, outputMarkerIndex);
@@ -204,8 +210,6 @@ function extractSceneInput(prompt: string): string {
   return input.trim() || '모의 상황';
 }
 
-// NOTE: 뼈대에 따옴표 대사가 없으면 다듬기 단계가 통째로 건너뛰어져, 골든 작품이 번호 병합 경로를
-// 한 번도 지나지 않는다. 그래서 모의 뼈대는 대사 두 줄로 끝난다.
 function createMockSceneSkeleton(prompt: string): string {
   return [
     `[Mock AI: sceneSkeleton] ${prompt}`,
@@ -213,23 +217,20 @@ function createMockSceneSkeleton(prompt: string): string {
   ].join('\n\n');
 }
 
-// 인물별 다듬기의 모의 응답. 등장 인물을 이름순으로 세워 번호를 돌아가며 나눠 가지므로 두 인물이
-// 같은 번호를 가져가는 일이 없고, 손본 문장은 앞에 «다듬은»을 붙여 원고에서 알아볼 수 있다.
 function createMockDialoguePolish(prompt: string): string {
-  const self = /^\[이 인물\]\n(.+)$/m.exec(prompt)?.[1]?.trim();
+  const self: string | undefined = /^\[이 인물\]\n(.+)$/m.exec(prompt)?.[1]?.trim();
   if (self === undefined) {
     return '[]';
   }
 
-  // 다른 인물은 한 줄에 하나(«- 이름» 또는 «- 이름: 말투»)다.
-  const others = (/^\[다른 등장 인물\]\n((?:- .+\n?)+)/m.exec(prompt)?.[1] ?? '')
+  const others: string[] = (/^\[다른 등장 인물\]\n((?:- .+\n?)+)/m.exec(prompt)?.[1] ?? '')
     .split('\n')
     .map((line) => line.replace(/^- /, '').split(':')[0]?.trim() ?? '')
     .filter((name) => name.length > 0);
-  const cast = [self, ...others].sort();
-  const position = cast.indexOf(self);
-  const rewrites = [...prompt.matchAll(/⟨(\d+)⟩“([^”\n]*)”/g)].flatMap((match) => {
-    const index = Number(match[1]);
+  const cast: string[] = [self, ...others].sort();
+  const position: number = cast.indexOf(self);
+  const rewrites: MockLineRewrite[] = [...prompt.matchAll(/⟨(\d+)⟩“([^”\n]*)”/g)].flatMap((match) => {
+    const index: number = Number(match[1]);
     return (index - 1) % cast.length === position
       ? [{ n: index, text: `다듬은 ${match[2] ?? ''}` }]
       : [];
@@ -238,10 +239,8 @@ function createMockDialoguePolish(prompt: string): string {
   return JSON.stringify(rewrites);
 }
 
-// 배우 뼈대의 모의 응답. 배우는 전략이 다른 선택지 둘을, 감독은 선택 줄 뒤에 지시문을 되풀이한 대목을,
-// 심판은 이름마다 만점을 돌려주므로 모의 작품은 재합침 없이 한 바퀴를 돈다.
 function createMockBeatProposal(prompt: string): string {
-  const name = /^\[인물\] (.+)$/m.exec(prompt)?.[1]?.trim() ?? '인물';
+  const name: string = /^\[인물\] (.+)$/m.exec(prompt)?.[1]?.trim() ?? '인물';
 
   return JSON.stringify({
     inner: `${name}의 모의 속마음입니다.`,
@@ -253,8 +252,8 @@ function createMockBeatProposal(prompt: string): string {
 }
 
 function createMockBeatPassage(prompt: string): string {
-  const directive = /^\[감독 지시 — 대목 (\d+)\]\n(.+)$/m.exec(prompt);
-  const names = [...prompt.matchAll(/^\[배우 제안 — (.+)\]$/gm)].map((match) => match[1]?.trim());
+  const directive: RegExpExecArray | null = /^\[감독 지시 — 대목 (\d+)\]\n(.+)$/m.exec(prompt);
+  const names: (string | undefined)[] = [...prompt.matchAll(/^\[배우 제안 — (.+)\]$/gm)].map((match) => match[1]?.trim());
 
   return [
     `[선택: ${names.map((name) => `${name}=1`).join(', ')}]`,
@@ -264,7 +263,7 @@ function createMockBeatPassage(prompt: string): string {
 }
 
 function createMockBeatVerdict(prompt: string): string {
-  const names = (/^인물 이름: (.+)$/m.exec(prompt)?.[1] ?? '')
+  const names: string[] = (/^인물 이름: (.+)$/m.exec(prompt)?.[1] ?? '')
     .split(',')
     .map((name) => name.trim())
     .filter((name) => name.length > 0);
@@ -279,14 +278,14 @@ function createMockBeatVerdict(prompt: string): string {
 }
 
 function extractDraftInput(prompt: string): string {
-  const lastBlankLineIndex = prompt.lastIndexOf('\n\n');
-  const input = lastBlankLineIndex === -1 ? prompt : prompt.slice(lastBlankLineIndex + 2);
+  const lastBlankLineIndex: number = prompt.lastIndexOf('\n\n');
+  const input: string = lastBlankLineIndex === -1 ? prompt : prompt.slice(lastBlankLineIndex + 2);
 
   return input.trim() || prompt;
 }
 
 function createMockGrammarIssues(prompt: string): string {
-  const subject = extractLastContentLine(prompt, '문장을 확인해주세요.');
+  const subject: string = extractLastContentLine(prompt, '문장을 확인해주세요.');
 
   return JSON.stringify([
     {
@@ -300,17 +299,17 @@ function createMockGrammarIssues(prompt: string): string {
 }
 
 function createMockInlineCompletion(prompt: string): string {
-  const seed = extractLastContentLine(prompt, '그는 잠시 숨을 고르고');
+  const seed: string = extractLastContentLine(prompt, '그는 잠시 숨을 고르고');
   return `${seed} 다음 말을 조심스럽게 이어 갔다.`;
 }
 
 function createMockDraftExpansion(prompt: string): string {
-  const selection = extractLastContentLine(prompt, '그는 문을 열었다.');
+  const selection: string = extractLastContentLine(prompt, '그는 문을 열었다.');
   return `${selection}\n\n주변 공기는 묵직했고, 발걸음이 멈출 때마다 긴장이 더 선명해졌다.`;
 }
 
 function extractLastContentLine(prompt: string, fallback: string): string {
-  const line = prompt
+  const line: string | undefined = prompt
     .split('\n')
     .map((item) => item.trim())
     .filter((item) => item.length > 0)

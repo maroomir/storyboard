@@ -6,7 +6,7 @@ import {
 } from '@storyboard/story-model';
 import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export type DraftAugmentScope = 'draft' | 'selection';
@@ -21,17 +21,17 @@ export interface DraftAugmentInput {
   readonly instruction?: string;
 }
 
-export const DraftAugmentPrompt = {
+export const DraftAugmentPrompt: PromptModule<
+  [input: DraftAugmentInput, variant?: PromptVariantId, style?: StyleDirective]
+> = {
   config: promptTuning('draftAugment'),
   build(
     input: DraftAugmentInput,
     variant: PromptVariantId = 'generic',
     style?: StyleDirective,
   ): PromptArtifact {
-    const instruction = input.instruction?.trim() || undefined;
+    const instruction: string | undefined = input.instruction?.trim() || undefined;
 
-    // NOTE: The craft contract always renders at least one line, so it is a plain value rather
-    // than a standalone partial, which would leave a trailing newline at the end of the system text.
     return renderPrompt('draftAugment', variant, {
       view: {
         isInstructed: instruction !== undefined,
@@ -46,17 +46,19 @@ export const DraftAugmentPrompt = {
       },
     });
   },
-} as const;
+};
 
 export function formatAugmentCards(
   characters: readonly CharacterCard[],
   background: BackgroundCard | undefined,
 ): string[] {
   const blocks: string[] = [];
-  const nameById = new Map(characters.map((character) => [character.id, character.name]));
+  const nameById: Map<string, string> = new Map(
+    characters.map((character) => [character.id, character.name]),
+  );
 
   for (const character of characters) {
-    const lines = [`[${character.name}] 역할: ${character.role ?? 'extra'}`];
+    const lines: string[] = [`[${character.name}] 역할: ${character.role ?? 'extra'}`];
     appendCardLine(lines, '말투', joinCardText(character.voice));
     appendCardLine(
       lines,
@@ -82,10 +84,10 @@ export function formatAugmentCards(
   }
 
   if (background) {
-    const header = [`[배경: ${background.name}]`, background.time, background.weather]
+    const header: string = [`[배경: ${background.name}]`, background.time, background.weather]
       .filter((part): part is string => Boolean(part && part.trim().length > 0))
       .join(' ');
-    const lines = [header];
+    const lines: string[] = [header];
     appendCardLine(lines, '묘사', joinCardText(background.description));
     appendCardLine(lines, '감각', joinCardText(background.senses));
     blocks.push(lines.join('\n'));

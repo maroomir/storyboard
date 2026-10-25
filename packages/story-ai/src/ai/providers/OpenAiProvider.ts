@@ -50,7 +50,7 @@ interface OpenAiChatCompletionRequest {
   readonly reasoning_effort?: ReasoningEffort;
 }
 
-interface OpenAiChatCompletionResponse {
+export interface OpenAiChatCompletionResponse {
   readonly choices: ReadonlyArray<{
     readonly message?: {
       readonly content?: string | null;
@@ -65,13 +65,13 @@ interface OpenAiChatCompletionResponse {
 
 export class OpenAiProvider implements AiProvider {
   public readonly id: AiProviderId = 'openai';
-  public readonly displayName = getProviderDisplayName('openai');
+  public readonly displayName: string = getProviderDisplayName('openai');
   private readonly client: OpenAiClientLike;
   private readonly model: string;
 
   public constructor(options: OpenAiProviderOptions) {
-    const apiKey = options.apiKey?.trim();
-    const model = options.model?.trim();
+    const apiKey: string | undefined = options.apiKey?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!apiKey) {
       throw new AiProviderError(
@@ -105,19 +105,18 @@ export class OpenAiProvider implements AiProvider {
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
-      const response = await this.client.chat.completions.create({
+      const response: OpenAiChatCompletionResponse = await this.client.chat.completions.create({
         model: this.model,
         messages: request.messages.map(({ role, content }) => ({ role, content })),
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
-        // NOTE: GPT-6 세대는 max_tokens 를 400 으로 거부한다(2026-10-04 gpt-6-luna 실측).
         max_completion_tokens: request.maxTokens,
         ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
           ? { reasoning_effort: request.reasoningEffort }
           : {}),
       });
 
-      const text = response.choices[0]?.message?.content ?? '';
-      const usage = usageFromOpenAiResponse(response);
+      const text: string = response.choices[0]?.message?.content ?? '';
+      const usage: AiUsage | undefined = usageFromOpenAiResponse(response);
       return aiGenerateResponseWithUsage({
         providerId: this.id,
         model: this.model,
@@ -137,7 +136,7 @@ export class OpenAiProvider implements AiProvider {
 }
 
 function usageFromOpenAiResponse(response: OpenAiChatCompletionResponse): AiUsage | undefined {
-  const usage = response.usage;
+  const usage: OpenAiChatCompletionResponse['usage'] = response.usage;
   if (!usage) {
     return undefined;
   }
@@ -149,7 +148,7 @@ function usageFromOpenAiResponse(response: OpenAiChatCompletionResponse): AiUsag
 }
 
 function createDefaultOpenAiClient(apiKey: string): OpenAiClientLike {
-  const client = new OpenAI({ apiKey });
+  const client: OpenAI = new OpenAI({ apiKey });
 
   return {
     models: {

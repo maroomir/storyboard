@@ -1,7 +1,7 @@
 import { isCharacterRole } from '@storyboard/story-model';
 import type { CharacterRole } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export type RecommendationCategory = 'character' | 'background';
@@ -12,7 +12,14 @@ export interface RecommendedEntity {
   readonly description?: string;
 }
 
-export const CardRecommendationPrompt = {
+export const CardRecommendationPrompt: PromptModule<
+  [
+    body: string,
+    category: RecommendationCategory,
+    knownNames: readonly string[],
+    variant?: PromptVariantId,
+  ]
+> = {
   config: promptTuning('cardRecommendation'),
   build(
     body: string,
@@ -20,7 +27,7 @@ export const CardRecommendationPrompt = {
     knownNames: readonly string[],
     variant: PromptVariantId = 'generic',
   ): PromptArtifact {
-    const knownNameList = knownNames
+    const knownNameList: string = knownNames
       .map((name) => name.trim())
       .filter((name) => name.length > 0)
       .join(', ');
@@ -29,7 +36,7 @@ export const CardRecommendationPrompt = {
       view: { body, isCharacter: category === 'character', knownNameList },
     });
   },
-} as const;
+};
 
 function coerceOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
@@ -40,7 +47,7 @@ function coerceRole(value: unknown): CharacterRole | undefined {
     return undefined;
   }
 
-  const trimmed = value.trim();
+  const trimmed: string = value.trim();
   return isCharacterRole(trimmed) ? trimmed : undefined;
 }
 
@@ -52,29 +59,30 @@ export function coerceCardRecommendations(
     return [];
   }
 
-  const result: RecommendedEntity[] = [];
+  const recommendedEntities: RecommendedEntity[] = [];
 
   for (const entry of value) {
     if (typeof entry !== 'object' || entry === null) {
       continue;
     }
 
-    const record = entry as Record<string, unknown>;
-    const name = coerceOptionalString(record.name);
+    const record: Record<string, unknown> = entry as Record<string, unknown>;
+    const name: string | undefined = coerceOptionalString(record.name);
 
     if (name === undefined) {
       continue;
     }
 
-    const description = coerceOptionalString(record.description);
-    const role = category === 'character' ? coerceRole(record.role) : undefined;
+    const description: string | undefined = coerceOptionalString(record.description);
+    const role: 'main' | 'supporting' | 'extra' | undefined =
+      category === 'character' ? coerceRole(record.role) : undefined;
 
-    result.push({
+    recommendedEntities.push({
       name,
       ...(role !== undefined ? { role } : {}),
       ...(description !== undefined ? { description } : {}),
     });
   }
 
-  return result;
+  return recommendedEntities;
 }

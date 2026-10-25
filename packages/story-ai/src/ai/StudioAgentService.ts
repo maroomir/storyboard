@@ -19,7 +19,9 @@ import {
   type StudioCardSeed,
   coerceStudioValidationVerdict,
   type StudioValidationVerdict,
+  type AiGenerateResponse,
 } from '@storyboard/story-model';
+import type { PromptArtifact } from '#ai/ai/prompts/types';
 
 export interface StudioAgentMessage {
   readonly role: 'user' | 'assistant';
@@ -42,8 +44,6 @@ export interface StudioAgentRunInput {
   readonly instruction: string;
   readonly hasSelection: boolean;
   readonly remainingQuestions: number;
-  // NOTE: the author pinned this tool in the composer, so the first round must call it rather
-  // than letting the model decide whether a tool is warranted.
   readonly pinnedTool?: StudioAgentToolName;
   readonly resolveLookup?: StudioLookupResolver;
   readonly resolveInvoke?: StudioInvokeResolver;
@@ -62,12 +62,11 @@ export interface StudioAgentRunOptions extends GenerateTextOptions {
   readonly onStage?: (stage: StudioAgentStage) => void;
 }
 
-// NOTE: one turn may fan out into extra provider calls for lookups and tools; the caps keep a
-// confused model from spending the author's budget in a loop.
-const maxLookupRounds = 3;
-const maxInvokeRounds = 2;
+const maxLookupRounds: number = 3;
+const maxInvokeRounds: number = 2;
 
-const unreadableResponseMessage = '응답을 이해하지 못했어요. 조금 더 구체적으로 말씀해 주시겠어요?';
+const unreadableResponseMessage: string =
+  '응답을 이해하지 못했어요. 조금 더 구체적으로 말씀해 주시겠어요?';
 
 export class StudioAgentService {
   public constructor(private readonly gateway: AiTextGateway) {}
@@ -78,22 +77,20 @@ export class StudioAgentService {
   ): Promise<StudioAgentAction> {
     const { onStage, ...generateOptions } = options;
     const gathered: string[] = [];
-    let lookupsUsed = 0;
-    let invokesUsed = 0;
+    let lookupsUsed: number = 0;
+    let invokesUsed: number = 0;
 
-    for (let round = 0; ; round += 1) {
+    for (let round: number = 0; ; round += 1) {
       onStage?.(round === 0 ? 'thinking' : 'looking-up');
 
-      const canInvoke = Boolean(input.resolveInvoke) && invokesUsed < maxInvokeRounds;
+      const canInvoke: boolean = Boolean(input.resolveInvoke) && invokesUsed < maxInvokeRounds;
 
-      const action = await this.requestAction(
+      const action: StudioAgentAction = await this.requestAction(
         input,
         gathered,
         {
           canLookup: Boolean(input.resolveLookup) && lookupsUsed < maxLookupRounds,
           canInvoke,
-          // NOTE: the pin only steers the first round; once its tool has run the agent is free to
-          // look up, ask or propose as usual.
           ...(canInvoke && invokesUsed === 0 && input.pinnedTool !== undefined
             ? { pinnedTool: input.pinnedTool }
             : {}),
@@ -130,26 +127,32 @@ export class StudioAgentService {
     input: StudioValidationInput,
     options: GenerateTextOptions = {},
   ): Promise<StudioValidationVerdict> {
-    const prompt = StudioValidationPrompt.build(input);
-    const response = await this.gateway.generate('studioValidation', toPromptMessages(prompt), {
-      ...StudioValidationPrompt.config,
-      ...options,
-    });
+    const prompt: PromptArtifact = StudioValidationPrompt.build(input);
+    const response: AiGenerateResponse = await this.gateway.generate(
+      'studioValidation',
+      toPromptMessages(prompt),
+      {
+        ...StudioValidationPrompt.config,
+        ...options,
+      },
+    );
 
     return coerceStudioValidationVerdict(response.text);
   }
 
-  // NOTE: rides the studioValidation task so the audit follows the same provider routing and
-  // budget the proposal check uses.
   public async auditEntity(
     input: StudioCardAuditPromptInput,
     options: GenerateTextOptions = {},
   ): Promise<StudioValidationVerdict> {
-    const prompt = StudioCardAuditPrompt.build(input);
-    const response = await this.gateway.generate('studioValidation', toPromptMessages(prompt), {
-      ...StudioCardAuditPrompt.config,
-      ...options,
-    });
+    const prompt: PromptArtifact = StudioCardAuditPrompt.build(input);
+    const response: AiGenerateResponse = await this.gateway.generate(
+      'studioValidation',
+      toPromptMessages(prompt),
+      {
+        ...StudioCardAuditPrompt.config,
+        ...options,
+      },
+    );
 
     return coerceStudioValidationVerdict(response.text);
   }
@@ -158,11 +161,15 @@ export class StudioAgentService {
     description: string,
     options: GenerateTextOptions = {},
   ): Promise<StudioCardSeed | undefined> {
-    const prompt = StudioCardSeedPrompt.build(description);
-    const response = await this.gateway.generate('studioAgent', toPromptMessages(prompt), {
-      ...StudioCardSeedPrompt.config,
-      ...options,
-    });
+    const prompt: PromptArtifact = StudioCardSeedPrompt.build(description);
+    const response: AiGenerateResponse = await this.gateway.generate(
+      'studioAgent',
+      toPromptMessages(prompt),
+      {
+        ...StudioCardSeedPrompt.config,
+        ...options,
+      },
+    );
 
     return coerceStudioCardSeed(response.text);
   }
@@ -177,7 +184,7 @@ export class StudioAgentService {
     },
     options: GenerateTextOptions,
   ): Promise<StudioAgentAction> {
-    const prompt = StudioAgentPrompt.build({
+    const prompt: PromptArtifact = StudioAgentPrompt.build({
       entityKind: input.entityKind,
       patchShape: input.patchShape,
       entityLabel: input.entityLabel,
@@ -192,19 +199,21 @@ export class StudioAgentService {
       hasSelection: input.hasSelection,
     });
 
-    const response = await this.gateway.generate('studioAgent', toPromptMessages(prompt), {
-      ...StudioAgentPrompt.config,
-      ...options,
-    });
+    const response: AiGenerateResponse = await this.gateway.generate(
+      'studioAgent',
+      toPromptMessages(prompt),
+      {
+        ...StudioAgentPrompt.config,
+        ...options,
+      },
+    );
 
-    const action = coerceStudioAgentAction(response.text);
+    const action: StudioAgentAction | undefined = coerceStudioAgentAction(response.text);
 
     if (!action) {
       return { kind: 'say', message: unreadableResponseMessage };
     }
 
-    // NOTE: the question budget is enforced here rather than trusted to the prompt, so an
-    // over-eager model turns into a plain remark instead of another round of questions.
     return action.kind === 'ask' && input.remainingQuestions <= 0
       ? { kind: 'say', message: action.question }
       : action;
@@ -224,10 +233,10 @@ function roleLabel(role: StudioAgentMessage['role']): string {
 }
 
 function unresolvedLookupMessage(requests: readonly StudioAgentLookupRequest[]): string {
-  const names = requests.map((request) => request.key).join(', ');
+  const names: string = requests.map((request) => request.key).join(', ');
 
   return `판단하려면 ${names} 내용을 확인해야 하는데 지금은 읽을 수 없어요. 필요한 내용을 알려주시겠어요?`;
 }
 
-const unresolvedInvokeMessage =
+const unresolvedInvokeMessage: string =
   '이번 턴에 쓸 수 있는 도구 호출을 모두 썼어요. 필요한 작업을 다시 말씀해 주시겠어요?';

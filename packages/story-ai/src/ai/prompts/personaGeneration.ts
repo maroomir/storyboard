@@ -6,10 +6,12 @@ import {
   type StyleDirective,
 } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
-export const PersonaGenerationPrompt = {
+export const PersonaGenerationPrompt: PromptModule<
+  [character: Character, variant?: PromptVariantId, style?: StyleDirective]
+> = {
   config: promptTuning('personaGeneration'),
   build(
     character: Character,
@@ -30,4 +32,4 @@ export const PersonaGenerationPrompt = {
       },
     });
   },
-} as const;
+};

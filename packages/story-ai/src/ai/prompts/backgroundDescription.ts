@@ -1,10 +1,12 @@
 import type { Background } from '@storyboard/story-model';
 import { joinCardText } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
-export const BackgroundDescriptionPrompt = {
+export const BackgroundDescriptionPrompt: PromptModule<
+  [background: Background, variant?: PromptVariantId, recentExcerpt?: string]
+> = {
   config: promptTuning('backgroundDescription'),
   build(
     background: Background,
@@ -25,4 +27,4 @@ export const BackgroundDescriptionPrompt = {
       },
     });
   },
-} as const;
+};

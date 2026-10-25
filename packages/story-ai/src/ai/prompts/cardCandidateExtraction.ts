@@ -1,5 +1,5 @@
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface CardCandidateExtraction {
@@ -11,7 +11,9 @@ export interface CardCandidateExtraction {
   readonly arc?: { readonly summary: string };
 }
 
-export const CardCandidateExtractionPrompt = {
+export const CardCandidateExtractionPrompt: PromptModule<
+  [body: string, characterName: string, aliases?: readonly string[], variant?: PromptVariantId]
+> = {
   config: promptTuning('cardCandidateExtraction'),
   build(
     body: string,
@@ -23,7 +25,7 @@ export const CardCandidateExtractionPrompt = {
       view: { body, characterName, aliasList: quoteAliases(aliases) },
     });
   },
-} as const;
+};
 
 function quoteAliases(aliases?: readonly string[]): string {
   return (aliases ?? [])
@@ -83,9 +85,9 @@ function coerceStringRecords(
       continue;
     }
 
-    const record = entry as Record<string, unknown>;
-    const left = record[leftField];
-    const right = record[rightField];
+    const record: Record<string, unknown> = entry as Record<string, unknown>;
+    const left: unknown = record[leftField];
+    const right: unknown = record[rightField];
 
     if (
       typeof left === 'string' &&
@@ -105,7 +107,7 @@ function coerceArc(value: unknown): { readonly arc?: { readonly summary: string 
     return {};
   }
 
-  const summary = (value as Record<string, unknown>).summary;
+  const summary: unknown = (value as Record<string, unknown>).summary;
 
   if (typeof summary !== 'string' || summary.trim().length === 0) {
     return {};

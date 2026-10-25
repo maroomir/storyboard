@@ -53,13 +53,13 @@ interface GoogleModelOptions {
 
 export class GoogleProvider implements AiProvider {
   public readonly id: AiProviderId = 'google';
-  public readonly displayName = getProviderDisplayName('google');
+  public readonly displayName: string = getProviderDisplayName('google');
   private readonly client: GoogleClientLike;
   private readonly model: string;
 
   public constructor(options: GoogleProviderOptions) {
-    const apiKey = options.apiKey?.trim();
-    const model = options.model?.trim();
+    const apiKey: string | undefined = options.apiKey?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!apiKey) {
       throw new AiProviderError(
@@ -79,9 +79,9 @@ export class GoogleProvider implements AiProvider {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      const model = this.client.getGenerativeModel({ model: this.model });
-      const result = await model.generateContent('test');
-      return result.response.text().length > 0;
+      const model: GoogleGenerativeModelLike = this.client.getGenerativeModel({ model: this.model });
+      const connectionCheck: GoogleGenerateContentResultLike = await model.generateContent('test');
+      return connectionCheck.response.text().length > 0;
     } catch (error) {
       throw new AiProviderError(
         'connection-failed',
@@ -94,12 +94,12 @@ export class GoogleProvider implements AiProvider {
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
-      const systemInstruction = request.messages
+      const systemInstruction: string = request.messages
         .filter((message) => message.role === 'system')
         .map((message) => message.content)
         .join('\n\n');
 
-      const model = this.client.getGenerativeModel({
+      const model: GoogleGenerativeModelLike = this.client.getGenerativeModel({
         model: this.model,
         ...(systemInstruction.length > 0 ? { systemInstruction } : {}),
         generationConfig: {
@@ -107,16 +107,16 @@ export class GoogleProvider implements AiProvider {
           maxOutputTokens: request.maxTokens,
         },
       });
-      const result = await model.generateContent(createGoogleConversationPrompt(request));
+      const generation: GoogleGenerateContentResultLike = await model.generateContent(createGoogleConversationPrompt(request));
 
-      const text = result.response.text();
-      const usage = usageFromGoogleResult(result);
+      const text: string = generation.response.text();
+      const usage: AiUsage | undefined = usageFromGoogleResult(generation);
       return aiGenerateResponseWithUsage({
         providerId: this.id,
         model: this.model,
         text,
         usage,
-        isTruncated: result.response.candidates?.[0]?.finishReason === 'MAX_TOKENS',
+        isTruncated: generation.response.candidates?.[0]?.finishReason === 'MAX_TOKENS',
       });
     } catch (error) {
       throw new AiProviderError(
@@ -130,7 +130,7 @@ export class GoogleProvider implements AiProvider {
 }
 
 function usageFromGoogleResult(result: GoogleGenerateContentResultLike): AiUsage | undefined {
-  const meta = result.response.usageMetadata;
+  const meta: GoogleGenerateContentResultLike['response']['usageMetadata'] = result.response.usageMetadata;
   if (!meta) {
     return undefined;
   }
@@ -149,7 +149,7 @@ function createGoogleConversationPrompt(request: AiGenerateRequest): string {
 }
 
 function createDefaultGoogleClient(apiKey: string): GoogleClientLike {
-  const client = new GoogleGenerativeAI(apiKey);
+  const client: GoogleGenerativeAI = new GoogleGenerativeAI(apiKey);
 
   return {
     getGenerativeModel: (options): GoogleGenerativeModelLike => client.getGenerativeModel(options),

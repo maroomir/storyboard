@@ -1,6 +1,6 @@
 import { sceneGroundingFieldLabels, type SceneGroundingFieldKey } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface SceneGroundingPromptInput {
@@ -10,12 +10,13 @@ export interface SceneGroundingPromptInput {
   readonly knownGrounding: readonly string[];
 }
 
-export const SceneGroundingPrompt = {
+export const SceneGroundingPrompt: PromptModule<
+  [input: SceneGroundingPromptInput, variant?: PromptVariantId]
+> = {
   config: promptTuning('sceneGrounding'),
   build(input: SceneGroundingPromptInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return renderPrompt('sceneGrounding', variant, {
       view: {
-        // NOTE: 항목마다 자기 키 이름의 플래그를 켜서 리소스가 그 키의 안내 문구를 고른다.
         requestedFields: input.missingFields.map((key, index) => ({
           key,
           label: sceneGroundingFieldLabels[key],
@@ -31,4 +32,4 @@ export const SceneGroundingPrompt = {
       },
     });
   },
-} as const;
+};

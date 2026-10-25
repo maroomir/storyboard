@@ -1,10 +1,3 @@
-// A Mustache subset for prompt resources: `{{name}}` inserts a value verbatim (no escaping — prompts
-// are plain text), `{{#name}}…{{/name}}` renders once for a truthy value or once per item of an
-// array, `{{^name}}…{{/name}}` renders when the value is missing, empty or false, `{{> name}}`
-// inserts a partial the calling module rendered in code, and `{{! … }}` is a comment. A tag that
-// stands alone on its line takes the whole line with it, so conditional lines join exactly as a
-// filtered `lines.join('\n')` would.
-
 export type TemplateValue =
   | string
   | number
@@ -37,27 +30,26 @@ interface Tag {
   readonly standalone: boolean;
 }
 
-const tagPattern = /\{\{\s*([#^/>!]?)\s*([^}]*?)\s*\}\}/g;
+const tagPattern: RegExp = /\{\{\s*([#^/>!]?)\s*([^}]*?)\s*\}\}/g;
 
 function isBlank(text: string): boolean {
   return /^[ \t]*$/.test(text);
 }
 
-// Widens a tag's span to the whole line when nothing but whitespace shares the line with it.
 function scanTags(template: string): Tag[] {
   const tags: Tag[] = [];
 
   for (const match of template.matchAll(tagPattern)) {
-    const sigil = match[1] as Tag['sigil'];
-    const name = match[2] ?? '';
-    let start = match.index ?? 0;
-    let end = start + match[0].length;
-    let standalone = false;
+    const sigil: Tag['sigil'] = match[1] as Tag['sigil'];
+    const name: string = match[2] ?? '';
+    let start: number = match.index ?? 0;
+    let end: number = start + match[0].length;
+    let standalone: boolean = false;
 
     if (sigil !== '') {
-      const lineStart = template.lastIndexOf('\n', start - 1) + 1;
-      const lineEndIndex = template.indexOf('\n', end);
-      const lineEnd = lineEndIndex === -1 ? template.length : lineEndIndex;
+      const lineStart: number = template.lastIndexOf('\n', start - 1) + 1;
+      const lineEndIndex: number = template.indexOf('\n', end);
+      const lineEnd: number = lineEndIndex === -1 ? template.length : lineEndIndex;
 
       if (isBlank(template.slice(lineStart, start)) && isBlank(template.slice(end, lineEnd))) {
         standalone = true;
@@ -80,10 +72,10 @@ export class TemplateSyntaxError extends Error {
 }
 
 function parse(template: string): Node[] {
-  const tags = scanTags(template);
+  const tags: Tag[] = scanTags(template);
   const root: Node[] = [];
-  const stack: { readonly name: string; readonly nodes: Node[] }[] = [{ name: '', nodes: root }];
-  let cursor = 0;
+  const stack: OpenSection[] = [{ name: '', nodes: root }];
+  let cursor: number = 0;
 
   const current = (): Node[] => (stack[stack.length - 1] as { nodes: Node[] }).nodes;
 
@@ -115,7 +107,7 @@ function parse(template: string): Node[] {
         break;
       }
       case '/': {
-        const open = stack.pop();
+        const open: OpenSection | undefined = stack.pop();
 
         if (open === undefined || stack.length === 0 || open.name !== tag.name) {
           throw new TemplateSyntaxError(`닫는 태그가 맞지 않습니다: {{/${tag.name}}}`);
@@ -145,8 +137,8 @@ function lookup(contexts: readonly TemplateValue[], name: string): TemplateValue
 
   const [head, ...rest] = name.split('.');
 
-  for (let depth = contexts.length - 1; depth >= 0; depth -= 1) {
-    const context = contexts[depth];
+  for (let depth: number = contexts.length - 1; depth >= 0; depth -= 1) {
+    const context: TemplateValue = contexts[depth];
 
     if (
       context !== null &&
@@ -196,7 +188,7 @@ function renderNodes(
   contexts: readonly TemplateValue[],
   partials: TemplatePartials,
 ): string {
-  let output = '';
+  let output: string = '';
 
   for (const node of nodes) {
     switch (node.kind) {
@@ -207,21 +199,19 @@ function renderNodes(
         output += stringify(lookup(contexts, node.name));
         break;
       case 'partial': {
-        const partial = partials[node.name];
+        const partial: string | undefined = partials[node.name];
 
         if (partial === undefined) {
           throw new TemplateSyntaxError(`정의되지 않은 partial: {{> ${node.name}}}`);
         }
 
-        // A standalone partial line yields nothing at all when the partial is empty, so an optional
-        // block leaves no blank line behind.
         if (partial.length > 0) {
           output += node.standalone ? `${partial}\n` : partial;
         }
         break;
       }
       case 'section': {
-        const value = lookup(contexts, node.name);
+        const value: TemplateValue = lookup(contexts, node.name);
 
         if (node.inverted) {
           if (!isTruthy(value)) {
@@ -234,7 +224,7 @@ function renderNodes(
           break;
         }
 
-        const items = Array.isArray(value) ? value : [value];
+        const items: readonly TemplateValue[] = Array.isArray(value) ? value : [value];
 
         for (const item of items) {
           output += renderNodes(node.body, [...contexts, item], partials);
@@ -245,6 +235,11 @@ function renderNodes(
   }
 
   return output;
+}
+
+interface OpenSection {
+  readonly name: string;
+  readonly nodes: Node[];
 }
 
 export function renderTemplate(

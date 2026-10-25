@@ -1,7 +1,7 @@
 import type { NoteExtractionKnownCard, NoteExtractionNote } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 
 function renderNote(note: NoteExtractionNote): string {
   return [
@@ -14,12 +14,18 @@ function renderNote(note: NoteExtractionNote): string {
 }
 
 function renderKnownCard(card: NoteExtractionKnownCard): string {
-  const aliases = card.aliases.length > 0 ? ` (다른 호칭: ${card.aliases.join(', ')})` : '';
+  const aliases: string = card.aliases.length > 0 ? ` (다른 호칭: ${card.aliases.join(', ')})` : '';
 
   return `- ${card.id} · ${card.type === 'character' ? '인물' : '배경'} · ${card.name}${aliases}`;
 }
 
-export const NoteExtractionPrompt = {
+export const NoteExtractionPrompt: PromptModule<
+  [
+    notes: readonly NoteExtractionNote[],
+    knownCards: readonly NoteExtractionKnownCard[],
+    variant?: PromptVariantId,
+  ]
+> = {
   config: promptTuning('noteExtraction'),
   build(
     notes: readonly NoteExtractionNote[],
@@ -34,4 +40,4 @@ export const NoteExtractionPrompt = {
       },
     });
   },
-} as const;
+};

@@ -18,6 +18,7 @@ import {
   missingModelMessage,
   providerCatalog,
   usageLimitMessage,
+  type ReasoningEffort,
 } from '@storyboard/story-model';
 import {
   ChatGptOAuthError,
@@ -25,20 +26,19 @@ import {
   shouldRefreshTokens,
   tokensFromResponse,
   type FetchLike,
+  type TokenResponse,
 } from './chatGptOAuth';
+import type { ProviderModelConfig } from '#ai/ports/ConfigBridge';
 
 const providerId: AiProviderId = 'chatgpt';
-const baseUrl = providerCatalog.chatgpt.defaultBaseUrl;
+const baseUrl: string = providerCatalog.chatgpt.defaultBaseUrl;
 
-// Responses-layer codes with a meaning of their own (errors-and-recovery, 2026-10-24). The limit
-// pauses the run; a lost subscriber context means the person signs in again.
-const usageLimitErrorCode = 'subscription_sharing_usage_limit_exceeded';
-const invalidUserErrorCode = 'subscription_sharing_invalid_user';
+const usageLimitErrorCode: string = 'subscription_sharing_usage_limit_exceeded';
+const invalidUserErrorCode: string = 'subscription_sharing_invalid_user';
 
 export interface ChatGptProviderOptions {
   readonly model: string | undefined;
   readonly connection: OAuthConnection | undefined;
-  // Where a refreshed token set goes, so the next process starts from the latest rotation.
   readonly saveConnection: (connection: OAuthConnection) => Promise<void>;
   readonly fetch?: FetchLike;
   readonly now?: () => Date;
@@ -60,30 +60,42 @@ function readErrorField(body: unknown, field: 'code' | 'message'): string | unde
     return undefined;
   }
 
-  const error = isRecord(body.error) ? body.error : body;
-  const value = error[field] ?? (field === 'message' ? body.detail : undefined);
+  const error: JsonRecord = isRecord(body.error) ? body.error : body;
+  const value: unknown = error[field] ?? (field === 'message' ? body.detail : undefined);
 
   return typeof value === 'string' ? value : undefined;
 }
 
-// The context is sent whole on every call: a system message becomes `instructions` (a system role
-// item is rejected on this route), the turns become the `input` array.
 export function toResponsesInput(messages: readonly AiMessage[]): {
   readonly instructions: string | undefined;
   readonly input: readonly { readonly role: 'user' | 'assistant'; readonly content: string }[];
 } {
-  const instructions = messages
+  const instructions: string = messages
     .filter((message) => message.role === 'system')
     .map((message) => message.content)
     .join('\n\n');
-  const input = messages
+  const input: ResponsesInputMessage[] = messages
     .filter(
       (message): message is AiMessage & { readonly role: 'user' | 'assistant' } =>
         message.role !== 'system',
     )
-    .map(({ role, content }) => ({ role, content }));
+    .map(({ role, content }): ResponsesInputMessage => ({ role, content }));
 
   return { instructions: instructions.length > 0 ? instructions : undefined, input };
+}
+
+interface ResponsesInputMessage {
+  readonly role: 'user' | 'assistant';
+  readonly content: string;
+}
+
+interface ResponsesRequestBody {
+  readonly model: string;
+  readonly instructions?: string;
+  readonly input: readonly ResponsesInputMessage[];
+  readonly store: boolean;
+  readonly stream: boolean;
+  readonly reasoning?: { readonly effort: ReasoningEffort };
 }
 
 function readUsage(value: unknown): AiUsage | undefined {
@@ -91,10 +103,13 @@ function readUsage(value: unknown): AiUsage | undefined {
     return undefined;
   }
 
-  const inputTokens = typeof value.input_tokens === 'number' ? value.input_tokens : 0;
-  const outputTokens = typeof value.output_tokens === 'number' ? value.output_tokens : 0;
-  const details = isRecord(value.input_tokens_details) ? value.input_tokens_details : {};
-  const cachedTokens = typeof details.cached_tokens === 'number' ? details.cached_tokens : 0;
+  const inputTokens: number = typeof value.input_tokens === 'number' ? value.input_tokens : 0;
+  const outputTokens: number = typeof value.output_tokens === 'number' ? value.output_tokens : 0;
+  const details: JsonRecord = isRecord(value.input_tokens_details)
+    ? value.input_tokens_details
+    : {};
+  const cachedTokens: number =
+    typeof details.cached_tokens === 'number' ? details.cached_tokens : 0;
 
   return {
     inputTokens,
@@ -103,14 +118,11 @@ function readUsage(value: unknown): AiUsage | undefined {
   };
 }
 
-// `data:` lines of a server-sent event stream, each a JSON event, in arrival order.
 async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIterable<JsonRecord> {
-  const decoder = new TextDecoder();
-  let buffered = '';
+  const decoder: InstanceType<typeof TextDecoder> = new TextDecoder();
+  let buffered: string = '';
 
-  // Read through the reader rather than async iteration: the browser-typed hosts' lib does not
-  // declare the stream iterable, and the bytes are the same either way.
-  const reader = body.getReader();
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
 
   for (;;) {
     const { done, value } = await reader.read();
@@ -119,31 +131,31 @@ async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIte
     }
 
     buffered += decoder.decode(value, { stream: true });
-    const lines = buffered.split('\n');
+    const lines: string[] = buffered.split('\n');
     buffered = lines.pop() ?? '';
 
     for (const line of lines) {
-      const event = parseEventLine(line);
+      const event: JsonRecord | undefined = parseEventLine(line);
       if (event !== undefined) {
         yield event;
       }
     }
   }
 
-  const last = parseEventLine(buffered);
+  const last: JsonRecord | undefined = parseEventLine(buffered);
   if (last !== undefined) {
     yield last;
   }
 }
 
 function parseEventLine(line: string): JsonRecord | undefined {
-  const trimmed = line.trimEnd();
+  const trimmed: string = line.trimEnd();
 
   if (!trimmed.startsWith('data:')) {
     return undefined;
   }
 
-  const payload = trimmed.slice('data:'.length).trim();
+  const payload: string = trimmed.slice('data:'.length).trim();
 
   if (payload.length === 0 || payload === '[DONE]') {
     return undefined;
@@ -157,13 +169,11 @@ function parseEventLine(line: string): JsonRecord | undefined {
   }
 }
 
-// One refresh at a time per process: two calls that both see an old token must not race the
-// rotating refresh token, or the second one invalidates the first's replacement.
 let refreshTail: Promise<unknown> = Promise.resolve();
 
 export class ChatGptProvider implements AiProvider {
   public readonly id: AiProviderId = providerId;
-  public readonly displayName = getProviderDisplayName(providerId);
+  public readonly displayName: string = getProviderDisplayName(providerId);
   private readonly model: string;
   private connection: OAuthConnection & {
     readonly registration: OAuthRegistration;
@@ -174,7 +184,7 @@ export class ChatGptProvider implements AiProvider {
   private readonly now: () => Date;
 
   public constructor(options: ChatGptProviderOptions) {
-    const model = options.model?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!model) {
       throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
@@ -201,11 +211,10 @@ export class ChatGptProvider implements AiProvider {
     return true;
   }
 
-  // The models this account may call, in the server's order; the catalog row is only a suggestion.
   public async listModels(): Promise<readonly ChatGptModelOption[]> {
-    const response = await this.send('/models', { method: 'GET' }, 'connection-failed');
+    const response: Response = await this.send('/models', { method: 'GET' }, 'connection-failed');
     const body: unknown = await response.json().catch(() => undefined);
-    const models = isRecord(body) && Array.isArray(body.models) ? body.models : [];
+    const models: unknown[] = isRecord(body) && Array.isArray(body.models) ? body.models : [];
 
     return models.flatMap((model): ChatGptModelOption[] => {
       if (!isRecord(model) || typeof model.slug !== 'string') {
@@ -240,9 +249,7 @@ export class ChatGptProvider implements AiProvider {
 
   public async *generateStream(request: AiGenerateRequest): AsyncIterable<AiStreamChunk> {
     const { instructions, input } = toResponsesInput(request.messages);
-    // NOTE: 미리보기 경로는 temperature·top_p·max_output_tokens 를 400 으로 거부한다. 카탈로그 행이
-    // 그 플래그를 false 로 들고 있어 호출자가 넘긴 값은 여기서 버려진다.
-    const body = {
+    const body: ResponsesRequestBody = {
       model: this.model,
       ...(instructions === undefined ? {} : { instructions }),
       input,
@@ -253,7 +260,7 @@ export class ChatGptProvider implements AiProvider {
         : {}),
     };
 
-    const response = await this.send(
+    const response: Response = await this.send(
       '/responses',
       {
         method: 'POST',
@@ -271,7 +278,7 @@ export class ChatGptProvider implements AiProvider {
       );
     }
 
-    let text = '';
+    let text: string = '';
 
     for await (const event of readServerSentEvents(response.body)) {
       switch (event.type) {
@@ -284,8 +291,8 @@ export class ChatGptProvider implements AiProvider {
         }
         case 'response.completed':
         case 'response.incomplete': {
-          const completed = isRecord(event.response) ? event.response : {};
-          const usage = readUsage(completed.usage);
+          const completed: JsonRecord = isRecord(event.response) ? event.response : {};
+          const usage: AiUsage | undefined = readUsage(completed.usage);
 
           yield {
             type: 'done',
@@ -300,7 +307,7 @@ export class ChatGptProvider implements AiProvider {
           return;
         }
         case 'response.failed': {
-          const failed = isRecord(event.response) ? event.response : {};
+          const failed: JsonRecord = isRecord(event.response) ? event.response : {};
           throw this.errorFromCode(
             readErrorField(failed.error, 'code'),
             readErrorField(failed.error, 'message') ?? 'response.failed',
@@ -328,15 +335,13 @@ export class ChatGptProvider implements AiProvider {
     );
   }
 
-  // A request with a token that is fresh enough, refreshed first when it is not. A failing status
-  // is turned into the error the caller can act on before any body is read as a stream.
   private async send(
     path: string,
     init: RequestInit,
     failureCode: 'connection-failed' | 'generation-failed',
   ): Promise<Response> {
-    const tokens = await this.freshTokens();
-    const response = await this.fetch(`${baseUrl}${path}`, {
+    const tokens: OAuthTokens = await this.freshTokens();
+    const response: Response = await this.fetch(`${baseUrl}${path}`, {
       ...init,
       headers: {
         ...(init.headers as Record<string, string> | undefined),
@@ -357,12 +362,12 @@ export class ChatGptProvider implements AiProvider {
       return response;
     }
 
-    const bodyText = await response.text().catch(() => '');
+    const bodyText: string = await response.text().catch(() => '');
     let body: unknown = bodyText;
     try {
       body = JSON.parse(bodyText) as unknown;
     } catch {
-      // Admission failures may answer with plain text; it is shown as is.
+      body = bodyText;
     }
 
     throw this.errorFromCode(
@@ -387,7 +392,7 @@ export class ChatGptProvider implements AiProvider {
       return new AiProviderError('login-required', this.id, loginRequiredMessage(this.id));
     }
 
-    const described = [status === undefined ? undefined : `HTTP ${status}`, code, detail]
+    const described: string = [status === undefined ? undefined : `HTTP ${status}`, code, detail]
       .filter(Boolean)
       .join(' · ');
 
@@ -405,13 +410,12 @@ export class ChatGptProvider implements AiProvider {
       return this.connection.tokens;
     }
 
-    const refreshed = refreshTail.then(() => this.refresh());
+    const refreshed: Promise<OAuthTokens> = refreshTail.then(() => this.refresh());
     refreshTail = refreshed.catch(() => undefined);
     return await refreshed;
   }
 
   private async refresh(): Promise<OAuthTokens> {
-    // Another call may have refreshed while this one waited its turn.
     if (!shouldRefreshTokens(this.connection.tokens, this.now())) {
       return this.connection.tokens;
     }
@@ -419,19 +423,17 @@ export class ChatGptProvider implements AiProvider {
     const { registration, tokens } = this.connection;
 
     try {
-      const response = await refreshAccessToken(this.fetch, {
+      const response: TokenResponse = await refreshAccessToken(this.fetch, {
         clientId: registration.clientId,
         refreshToken: tokens.refreshToken,
       });
-      const next = tokensFromResponse(response, this.now());
+      const next: OAuthTokens = tokensFromResponse(response, this.now());
 
       this.connection = { ...this.connection, tokens: next };
       await this.saveConnection(this.connection);
       return next;
     } catch (error) {
       if (error instanceof ChatGptOAuthError && error.code === 'refresh-rejected') {
-        // SECURITY: a spent refresh token is cleared so no later call retries it; the registration
-        // stays so the next login reauthorizes the same client.
         await this.saveConnection({ hostId: this.connection.hostId, registration });
         throw new AiProviderError('login-required', this.id, loginRequiredMessage(this.id), error);
       }
@@ -447,13 +449,16 @@ export class ChatGptProvider implements AiProvider {
 }
 
 registerProviderFactory(providerId, async (context) => {
-  const config = context.configBridge.getProviderConfig(providerId);
-  const fetchImpl = context.clients.createChatGptFetch?.();
+  const config: ProviderModelConfig = context.configBridge.getProviderConfig(providerId);
+  const fetchImpl:
+    | ((input: string | URL | Request, init?: RequestInit) => Promise<Response>)
+    | undefined = context.clients.createChatGptFetch?.();
 
   return new ChatGptProvider({
     model: context.modelOverride ?? config.model,
     connection: await context.secretStore.getOAuthConnection(providerId),
-    saveConnection: (connection) => context.secretStore.setOAuthConnection(providerId, connection),
+    saveConnection: (connection: OAuthConnection): Promise<void> =>
+      context.secretStore.setOAuthConnection(providerId, connection),
     ...(fetchImpl === undefined ? {} : { fetch: fetchImpl }),
   });
 });

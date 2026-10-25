@@ -1,8 +1,10 @@
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 
-export const TraitsExtractionPrompt = {
+export const TraitsExtractionPrompt: PromptModule<
+  [script: string, characterName: string, aliases?: readonly string[], variant?: PromptVariantId]
+> = {
   config: promptTuning('traitsExtraction'),
   build(
     script: string,
@@ -21,4 +23,4 @@ export const TraitsExtractionPrompt = {
       },
     });
   },
-} as const;
+};

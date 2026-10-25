@@ -1,6 +1,6 @@
 import type { ProjectFormat } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface DraftRevisionInput {
@@ -12,7 +12,9 @@ export interface DraftRevisionInput {
   readonly characterCards?: readonly string[];
 }
 
-export const DraftRevisionPrompt = {
+export const DraftRevisionPrompt: PromptModule<
+  [input: DraftRevisionInput, variant?: PromptVariantId]
+> = {
   config: promptTuning('draftRevision'),
   build(input: DraftRevisionInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return renderPrompt('draftRevision', variant, {
@@ -28,4 +30,4 @@ export const DraftRevisionPrompt = {
       },
     });
   },
-} as const;
+};

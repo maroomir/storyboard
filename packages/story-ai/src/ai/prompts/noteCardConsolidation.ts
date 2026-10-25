@@ -6,7 +6,7 @@ import {
 } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 
 const cardKindLabels: Readonly<Record<NoteConsolidationTarget['type'], string>> = {
   character: '인물',
@@ -15,13 +15,14 @@ const cardKindLabels: Readonly<Record<NoteConsolidationTarget['type'], string>> 
 
 function renderLists(label: string, values: NoteConsolidatedValues): string[] {
   return noteConsolidatedFields.flatMap((field) => {
-    const list = values[field] ?? [];
+    const list: readonly string[] = values[field] ?? [];
     return list.length === 0 ? [] : [`${label} ${field}:`, ...list.map((value) => `- ${value}`)];
   });
 }
 
 function renderCarrier(carrier: NoteAliasCarrier): string {
-  const reads = carrier.readCount === undefined ? '기존 카드' : `${carrier.readCount}번 읽힘`;
+  const reads: string =
+    carrier.readCount === undefined ? '기존 카드' : `${carrier.readCount}번 읽힘`;
   return `${carrier.cardId} (${carrier.name}) ${reads}`;
 }
 
@@ -39,7 +40,9 @@ function renderTarget(target: NoteConsolidationTarget): string {
   ].join('\n');
 }
 
-export const NoteCardConsolidationPrompt = {
+export const NoteCardConsolidationPrompt: PromptModule<
+  [targets: readonly NoteConsolidationTarget[], variant?: PromptVariantId]
+> = {
   config: promptTuning('noteCardConsolidation'),
   build(
     targets: readonly NoteConsolidationTarget[],
@@ -49,4 +52,4 @@ export const NoteCardConsolidationPrompt = {
       view: { cards: targets.map(renderTarget).join('\n\n') },
     });
   },
-} as const;
+};

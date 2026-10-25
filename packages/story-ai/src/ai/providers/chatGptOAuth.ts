@@ -2,25 +2,19 @@ import { createHash, createPublicKey, randomBytes, randomUUID, verify } from 'no
 
 import type { OAuthTokens } from '#ai/ports/SecretStore';
 
-// The OAuth side of «Sign in with ChatGPT — ChatGPT plan usage» for an open-source, locally run
-// app (developers.openai.com/siwc/token-sharing-open-source, read 2026-10-24). Pure functions
-// over URLs, callbacks and token responses; the HTTP calls take the fetch they should use, so a
-// test hands in a fake and nothing here opens a port or a browser.
+export const chatGptAuthorizeUrl: string = 'https://auth.openai.com/api/accounts/authorize';
+export const chatGptTokenUrl: string = 'https://auth.openai.com/api/accounts/oauth/token';
+export const chatGptDiscoveryUrl: string =
+  'https://auth.openai.com/.well-known/openid-configuration';
+export const chatGptIssuer: string = 'https://auth.openai.com';
+export const chatGptResource: string = 'https://api.openai.com/v1';
+export const chatGptCallbackPath: string = '/auth/callback';
+export const chatGptPreferredCallbackPort: number = 1455;
 
-export const chatGptAuthorizeUrl = 'https://auth.openai.com/api/accounts/authorize';
-export const chatGptTokenUrl = 'https://auth.openai.com/api/accounts/oauth/token';
-export const chatGptDiscoveryUrl = 'https://auth.openai.com/.well-known/openid-configuration';
-export const chatGptIssuer = 'https://auth.openai.com';
-export const chatGptResource = 'https://api.openai.com/v1';
-export const chatGptCallbackPath = '/auth/callback';
-// The documented example port; a later login may listen on any other port with the same path.
-export const chatGptPreferredCallbackPort = 1455;
-
-// First-time registration goes through this entry point; the callback then issues the real id.
-const dynamicRegistrationClientId = 'dynamic_agent_client';
-const agentNameHint = 'Storyboard';
-const planUsageScope = 'chatgpt.tokens.use.direct';
-const requestedScopes = [
+const dynamicRegistrationClientId: string = 'dynamic_agent_client';
+const agentNameHint: string = 'Storyboard';
+const planUsageScope: string = 'chatgpt.tokens.use.direct';
+const requestedScopes: string[] = [
   'openid',
   'profile',
   'email',
@@ -73,7 +67,6 @@ function decodeBase64UrlJson(segment: string): JsonRecord | undefined {
   }
 }
 
-// One host id per machine, chosen before the first login and kept for every later one.
 export function createHostId(): string {
   return `urn:uuid:${randomUUID()}`;
 }
@@ -85,9 +78,7 @@ export function loopbackRedirectUri(port: number): string {
 export interface AuthorizationAttemptInput {
   readonly hostId: string;
   readonly redirectUri: string;
-  // The issued client id of an earlier registration; absent on the first login.
   readonly clientId?: string;
-  // Hints that skip the account selector on a returning login.
   readonly idTokenHint?: string;
   readonly loginHint?: string;
 }
@@ -102,13 +93,13 @@ export interface AuthorizationAttempt {
 }
 
 export function createAuthorizationAttempt(input: AuthorizationAttemptInput): AuthorizationAttempt {
-  const state = base64Url(randomBytes(24));
-  const nonce = base64Url(randomBytes(24));
-  const codeVerifier = base64Url(randomBytes(32));
-  const codeChallenge = base64Url(createHash('sha256').update(codeVerifier).digest());
-  const isRegistration = input.clientId === undefined;
+  const state: string = base64Url(randomBytes(24));
+  const nonce: string = base64Url(randomBytes(24));
+  const codeVerifier: string = base64Url(randomBytes(32));
+  const codeChallenge: string = base64Url(createHash('sha256').update(codeVerifier).digest());
+  const isRegistration: boolean = input.clientId === undefined;
 
-  const url = new URL(chatGptAuthorizeUrl);
+  const url: URL = new URL(chatGptAuthorizeUrl);
   url.searchParams.set('client_id', input.clientId ?? dynamicRegistrationClientId);
   if (isRegistration) {
     url.searchParams.set('agent_name_hint', agentNameHint);
@@ -141,12 +132,9 @@ export function createAuthorizationAttempt(input: AuthorizationAttemptInput): Au
 
 export interface AuthorizedCallback {
   readonly code: string;
-  // The id to exchange the code with: the issued one on a registration, the saved one otherwise.
   readonly clientId: string;
 }
 
-// The browser's return. The state must be this attempt's; a registration must hand back an issued
-// id; a reauthorization that names a different client is refused rather than rebinding the account.
 export function readAuthorizationCallback(
   query: URLSearchParams,
   attempt: AuthorizationAttempt,
@@ -158,7 +146,7 @@ export function readAuthorizationCallback(
     );
   }
 
-  const error = query.get('error');
+  const error: string | null = query.get('error');
   if (error !== null) {
     throw new ChatGptOAuthError(
       'access-denied',
@@ -168,12 +156,12 @@ export function readAuthorizationCallback(
     );
   }
 
-  const code = query.get('code');
+  const code: string | null = query.get('code');
   if (code === null || code.length === 0) {
     throw new ChatGptOAuthError('exchange-failed', '브라우저가 인가 코드를 돌려주지 않았습니다.');
   }
 
-  const callbackClientId = query.get('client_id') ?? undefined;
+  const callbackClientId: string | undefined = query.get('client_id') ?? undefined;
 
   if (attempt.clientId === undefined) {
     if (callbackClientId === undefined || callbackClientId === dynamicRegistrationClientId) {
@@ -222,7 +210,7 @@ function readTokenResponse(body: unknown, failureCode: ChatGptOAuthErrorCode): T
 }
 
 async function readJsonBody(response: Response): Promise<unknown> {
-  const text = await response.text();
+  const text: string = await response.text();
 
   try {
     return JSON.parse(text) as unknown;
@@ -232,8 +220,9 @@ async function readJsonBody(response: Response): Promise<unknown> {
 }
 
 function describeTokenFailure(status: number, body: unknown): string {
-  const code = isRecord(body) && typeof body.error === 'string' ? body.error : undefined;
-  const description =
+  const code: string | undefined =
+    isRecord(body) && typeof body.error === 'string' ? body.error : undefined;
+  const description: string =
     isRecord(body) && typeof body.error_description === 'string' ? body.error_description : '';
 
   return [`HTTP ${status}`, code, description].filter(Boolean).join(' · ');
@@ -260,7 +249,7 @@ export async function exchangeAuthorizationCode(
     readonly redirectUri: string;
   },
 ): Promise<TokenResponse> {
-  const response = await postForm(fetchImpl, chatGptTokenUrl, {
+  const response: Response = await postForm(fetchImpl, chatGptTokenUrl, {
     grant_type: 'authorization_code',
     client_id: input.clientId,
     code: input.code,
@@ -268,7 +257,7 @@ export async function exchangeAuthorizationCode(
     redirect_uri: input.redirectUri,
     resource: chatGptResource,
   });
-  const body = await readJsonBody(response);
+  const body: unknown = await readJsonBody(response);
 
   if (!response.ok) {
     throw new ChatGptOAuthError(
@@ -280,8 +269,7 @@ export async function exchangeAuthorizationCode(
   return readTokenResponse(body, 'exchange-failed');
 }
 
-// Every one of these means the refresh token is spent; the person signs in again.
-const unusableRefreshTokenCodes = new Set([
+const unusableRefreshTokenCodes: Set<string> = new Set([
   'invalid_grant',
   'invalid_refresh_token',
   'token_expired',
@@ -294,17 +282,17 @@ export async function refreshAccessToken(
   fetchImpl: FetchLike,
   input: { readonly clientId: string; readonly refreshToken: string },
 ): Promise<TokenResponse> {
-  const response = await postForm(fetchImpl, chatGptTokenUrl, {
+  const response: Response = await postForm(fetchImpl, chatGptTokenUrl, {
     grant_type: 'refresh_token',
     client_id: input.clientId,
     refresh_token: input.refreshToken,
     resource: chatGptResource,
   });
-  const body = await readJsonBody(response);
+  const body: unknown = await readJsonBody(response);
 
   if (!response.ok) {
-    const code = isRecord(body) && typeof body.error === 'string' ? body.error : '';
-    const isUnusable = unusableRefreshTokenCodes.has(code) || response.status === 400;
+    const code: string = isRecord(body) && typeof body.error === 'string' ? body.error : '';
+    const isUnusable: boolean = unusableRefreshTokenCodes.has(code) || response.status === 400;
 
     throw new ChatGptOAuthError(
       isUnusable ? 'refresh-rejected' : 'exchange-failed',
@@ -315,14 +303,14 @@ export async function refreshAccessToken(
   return readTokenResponse(body, 'refresh-rejected');
 }
 
-interface DiscoveryDocument {
+export interface DiscoveryDocument {
   readonly jwksUri: string;
   readonly revocationEndpoint: string | undefined;
 }
 
 export async function fetchDiscoveryDocument(fetchImpl: FetchLike): Promise<DiscoveryDocument> {
-  const response = await fetchImpl(chatGptDiscoveryUrl);
-  const body = await readJsonBody(response);
+  const response: Response = await fetchImpl(chatGptDiscoveryUrl);
+  const body: unknown = await readJsonBody(response);
 
   if (!response.ok || !isRecord(body) || typeof body.jwks_uri !== 'string') {
     throw new ChatGptOAuthError(
@@ -349,8 +337,8 @@ export async function fetchJsonWebKeys(
   fetchImpl: FetchLike,
   jwksUri: string,
 ): Promise<readonly SigningKey[]> {
-  const response = await fetchImpl(jwksUri);
-  const body = await readJsonBody(response);
+  const response: Response = await fetchImpl(jwksUri);
+  const body: unknown = await readJsonBody(response);
 
   if (!response.ok || !isRecord(body) || !Array.isArray(body.keys)) {
     throw new ChatGptOAuthError(
@@ -362,7 +350,6 @@ export async function fetchJsonWebKeys(
   return body.keys.filter(isRecord) as unknown as SigningKey[];
 }
 
-// An empty 200 is success, including for a token that was already invalid.
 export async function revokeRefreshToken(
   fetchImpl: FetchLike,
   input: {
@@ -371,7 +358,7 @@ export async function revokeRefreshToken(
     readonly refreshToken: string;
   },
 ): Promise<void> {
-  const response = await postForm(fetchImpl, input.revocationEndpoint, {
+  const response: Response = await postForm(fetchImpl, input.revocationEndpoint, {
     token: input.refreshToken,
     token_type_hint: 'refresh_token',
     client_id: input.clientId,
@@ -390,10 +377,12 @@ export interface IdTokenIdentity {
   readonly email: string | undefined;
 }
 
-// JWS algorithms the ID token may carry, mapped onto node:crypto's verify arguments.
-const signatureAlgorithms: Readonly<
-  Record<string, { readonly hash: string; readonly dsaEncoding?: 'ieee-p1363' }>
-> = {
+interface SignatureAlgorithm {
+  readonly hash: string;
+  readonly dsaEncoding?: 'ieee-p1363';
+}
+
+const signatureAlgorithms: Readonly<Record<string, SignatureAlgorithm>> = {
   RS256: { hash: 'sha256' },
   RS384: { hash: 'sha384' },
   RS512: { hash: 'sha512' },
@@ -405,8 +394,6 @@ function invalidIdToken(reason: string): ChatGptOAuthError {
   return new ChatGptOAuthError('invalid-id-token', `ID 토큰을 검증하지 못했습니다: ${reason}`);
 }
 
-// Signature against the published keys, then issuer, audience, expiry and this attempt's nonce.
-// What comes out is the account identity the registration is bound to.
 export function validateIdToken(
   idToken: string,
   expectation: {
@@ -427,19 +414,22 @@ export function validateIdToken(
     throw invalidIdToken('형식이 JWS 가 아닙니다');
   }
 
-  const header = decodeBase64UrlJson(headerSegment);
-  const payload = decodeBase64UrlJson(payloadSegment);
+  const header: JsonRecord | undefined = decodeBase64UrlJson(headerSegment);
+  const payload: JsonRecord | undefined = decodeBase64UrlJson(payloadSegment);
 
   if (header === undefined || payload === undefined) {
     throw invalidIdToken('머리말이나 본문을 읽을 수 없습니다');
   }
 
-  const algorithm = typeof header.alg === 'string' ? signatureAlgorithms[header.alg] : undefined;
+  const algorithm: SignatureAlgorithm | undefined =
+    typeof header.alg === 'string' ? signatureAlgorithms[header.alg] : undefined;
   if (algorithm === undefined) {
     throw invalidIdToken(`지원하지 않는 서명 알고리즘 ${String(header.alg)}`);
   }
 
-  const key = expectation.keys.find((candidate) => candidate.kid === header.kid);
+  const key: SigningKey | undefined = expectation.keys.find(
+    (candidate) => candidate.kid === header.kid,
+  );
   if (key === undefined) {
     throw invalidIdToken(`서명 키 ${String(header.kid)} 를 찾을 수 없습니다`);
   }
@@ -474,12 +464,12 @@ export function validateIdToken(
     throw invalidIdToken(`발급자가 ${String(payload.iss)} 입니다`);
   }
 
-  const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+  const audiences: unknown[] = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
   if (!audiences.includes(expectation.clientId)) {
     throw invalidIdToken('대상(aud)이 이 등록의 client id 가 아닙니다');
   }
 
-  const nowSeconds = Math.floor((expectation.now ?? new Date()).getTime() / 1000);
+  const nowSeconds: number = Math.floor((expectation.now ?? new Date()).getTime() / 1000);
   if (typeof payload.exp !== 'number' || payload.exp <= nowSeconds) {
     throw invalidIdToken('만료됐습니다');
   }
@@ -512,8 +502,7 @@ export function tokensFromResponse(response: TokenResponse, now: Date = new Date
   };
 }
 
-// Refresh a little before the hour is up, so a call that starts now does not outlive its token.
-const refreshLeadMilliseconds = 5 * 60 * 1000;
+const refreshLeadMilliseconds: number = 5 * 60 * 1000;
 
 export function shouldRefreshTokens(tokens: OAuthTokens, now: Date = new Date()): boolean {
   return new Date(tokens.expiresAt).getTime() - now.getTime() <= refreshLeadMilliseconds;

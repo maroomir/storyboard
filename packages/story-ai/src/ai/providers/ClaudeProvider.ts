@@ -52,29 +52,33 @@ interface ClaudeMessageRequest {
   readonly messages: ReadonlyArray<ClaudeConversationMessage>;
 }
 
+interface ClaudeUsage {
+  readonly input_tokens?: number;
+  readonly output_tokens?: number;
+  readonly cache_read_input_tokens?: number;
+  readonly cache_creation_input_tokens?: number;
+}
+
+type ClaudeRoleMessage = AiMessage & { readonly role: ClaudeMessageRole };
+
 interface ClaudeMessageResponse {
   readonly content: ReadonlyArray<{
     readonly type: string;
     readonly text?: string;
   }>;
-  readonly usage?: {
-    readonly input_tokens?: number;
-    readonly output_tokens?: number;
-    readonly cache_read_input_tokens?: number;
-    readonly cache_creation_input_tokens?: number;
-  };
+  readonly usage?: ClaudeUsage;
   readonly stop_reason?: string | null;
 }
 
 export class ClaudeProvider implements AiProvider {
   public readonly id: AiProviderId = 'claude';
-  public readonly displayName = getProviderDisplayName('claude');
+  public readonly displayName: string = getProviderDisplayName('claude');
   private readonly client: ClaudeClientLike;
   private readonly model: string;
 
   public constructor(options: ClaudeProviderOptions) {
-    const apiKey = options.apiKey?.trim();
-    const model = options.model?.trim();
+    const apiKey: string | undefined = options.apiKey?.trim();
+    const model: string | undefined = options.model?.trim();
 
     if (!apiKey) {
       throw new AiProviderError(
@@ -114,7 +118,7 @@ export class ClaudeProvider implements AiProvider {
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
       const { systemPrompt, messages } = splitClaudeMessages(request.messages);
-      const response = await this.client.messages.create({
+      const response: ClaudeMessageResponse = await this.client.messages.create({
         model: this.model,
         max_tokens: request.maxTokens ?? 4096,
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
@@ -135,8 +139,8 @@ export class ClaudeProvider implements AiProvider {
         messages,
       });
 
-      const text = extractClaudeText(response);
-      const usage = usageFromClaudeResponse(response);
+      const text: string = extractClaudeText(response);
+      const usage: AiUsage | undefined = usageFromClaudeResponse(response);
       return aiGenerateResponseWithUsage({
         providerId: this.id,
         model: this.model,
@@ -159,11 +163,11 @@ function splitClaudeMessages(messages: readonly AiMessage[]): {
   readonly systemPrompt: string | undefined;
   readonly messages: ReadonlyArray<ClaudeConversationMessage>;
 } {
-  const systemPrompt = messages
+  const systemPrompt: string = messages
     .filter((message) => message.role === 'system')
     .map((message) => message.content)
     .join('\n\n');
-  const conversationMessages = groupConsecutiveRoles(
+  const conversationMessages: ClaudeConversationMessage[] = groupConsecutiveRoles(
     messages.filter(isClaudeConversationMessage),
   ).map(toClaudeConversationMessage);
 
@@ -174,15 +178,13 @@ function splitClaudeMessages(messages: readonly AiMessage[]): {
   };
 }
 
-// NOTE: 같은 역할이 이어지면 한 메시지의 블록 여러 개로 합친다. 캐시 경계가 있는 메시지는 블록에
-// cache_control 을 달아 그 앞까지를 접두 캐시로 삼는다. 경계도 없고 하나뿐이면 예전처럼 문자열이다.
 function groupConsecutiveRoles(
-  messages: ReadonlyArray<AiMessage & { readonly role: ClaudeMessageRole }>,
-): ReadonlyArray<ReadonlyArray<AiMessage & { readonly role: ClaudeMessageRole }>> {
-  const groups: (AiMessage & { readonly role: ClaudeMessageRole })[][] = [];
+  messages: ReadonlyArray<ClaudeRoleMessage>,
+): ReadonlyArray<ReadonlyArray<ClaudeRoleMessage>> {
+  const groups: ClaudeRoleMessage[][] = [];
 
   for (const message of messages) {
-    const last = groups.at(-1);
+    const last: ClaudeRoleMessage[] | undefined = groups.at(-1);
     if (last !== undefined && last[0]?.role === message.role) {
       last.push(message);
     } else {
@@ -197,7 +199,7 @@ function toClaudeConversationMessage(
   group: ReadonlyArray<AiMessage & { readonly role: ClaudeMessageRole }>,
 ): ClaudeConversationMessage {
   const [first] = group;
-  const role = first?.role ?? 'user';
+  const role: "user" | "assistant" = first?.role ?? 'user';
   if (group.length === 1 && first !== undefined && first.cacheBoundary !== true) {
     return { role, content: first.content };
   }
@@ -228,7 +230,7 @@ function isClaudeConversationMessage(
 }
 
 function usageFromClaudeResponse(response: ClaudeMessageResponse): AiUsage | undefined {
-  const usage = response.usage;
+  const usage: ClaudeUsage | undefined = response.usage;
   if (!usage) {
     return undefined;
   }
@@ -249,7 +251,7 @@ function extractClaudeText(response: ClaudeMessageResponse): string {
 }
 
 function createDefaultClaudeClient(apiKey: string): ClaudeClientLike {
-  const client = new Anthropic({ apiKey });
+  const client: Anthropic = new Anthropic({ apiKey });
 
   return {
     messages: {

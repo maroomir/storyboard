@@ -1,5 +1,5 @@
 import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptVariantId } from './types';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
 export interface InlineCompletionPromptContext {
@@ -8,7 +8,9 @@ export interface InlineCompletionPromptContext {
   readonly sceneIntent?: string;
 }
 
-export const InlineCompletionPrompt = {
+export const InlineCompletionPrompt: PromptModule<
+  [prefix: string, context?: InlineCompletionPromptContext, variant?: PromptVariantId]
+> = {
   config: promptTuning('inlineCompletion'),
   build(
     prefix: string,
@@ -25,4 +27,4 @@ export const InlineCompletionPrompt = {
       },
     });
   },
-} as const;
+};
