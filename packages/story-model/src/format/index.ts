@@ -26,6 +26,7 @@ export * from './sceneContext';
 export * from './sceneLength';
 export * from './storyState';
 export * from './storyStateFacts';
+export * from './entityName';
 export * from './foreignScript';
 export * from './regExp';
 export * from './slug';

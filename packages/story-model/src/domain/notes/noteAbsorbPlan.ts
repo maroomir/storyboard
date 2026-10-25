@@ -22,6 +22,7 @@ import {
 } from '#model/shared/cardCollect';
 import type { NoteDocument, SkippedNote } from '#model/shared/noteAbsorb';
 import { slugify } from '#model/format/slug';
+import { normalizeEntityName } from '#model/format/entityName';
 
 export interface NoteCardPlan {
   readonly card: StoryboardCard;
@@ -74,10 +75,6 @@ export interface NoteAbsorbPlanInput {
 const slugPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 const roleRank: Readonly<Record<CharacterRole, number>> = { main: 3, supporting: 2, extra: 1 };
 
-function normalizeName(value: string): string {
-  return value.normalize('NFC').trim().toLocaleLowerCase('ko').replace(/\s+/g, ' ');
-}
-
 function union(left: readonly string[], right: readonly string[]): string[] {
   return [...new Set([...left, ...right])];
 }
@@ -99,9 +96,9 @@ function mergeEntity(
   const knownAttributeKeys: Set<string> = new Set(first.attributes.map((attribute) => attribute.key));
   const knownCanonKeys: Set<string> = new Set(first.canonFacts.map((fact) => fact.key));
   const knownRelationTargets: Set<string> = new Set(
-    first.relations.map((relation) => normalizeName(relation.target)),
+    first.relations.map((relation) => normalizeEntityName(relation.target)),
   );
-  const otherNames: string[] = normalizeName(second.name) === normalizeName(first.name) ? [] : [second.name];
+  const otherNames: string[] = normalizeEntityName(second.name) === normalizeEntityName(first.name) ? [] : [second.name];
 
   return {
     type: first.type,
@@ -123,7 +120,7 @@ function mergeEntity(
     relations: [
       ...first.relations,
       ...second.relations.filter(
-        (relation) => !knownRelationTargets.has(normalizeName(relation.target)),
+        (relation) => !knownRelationTargets.has(normalizeEntityName(relation.target)),
       ),
     ],
     canonFacts: [
@@ -153,7 +150,7 @@ function idsOf(entity: NoteExtractionEntity): string[] {
 }
 
 function namesOf(entity: NoteExtractionEntity): string[] {
-  return [entity.name, ...entity.aliases].map(normalizeName);
+  return [entity.name, ...entity.aliases].map(normalizeEntityName);
 }
 
 function hasOwnId(entity: NoteExtractionEntity): boolean {
@@ -165,8 +162,8 @@ function findSameSubject(
   entity: NoteExtractionEntity,
 ): number | undefined {
   const sameType: number[] = [...merged.keys()].filter((index) => merged[index]?.type === entity.type);
-  const name: string = normalizeName(entity.name);
-  const byName: number | undefined = sameType.find((index) => normalizeName(merged[index]?.name ?? '') === name);
+  const name: string = normalizeEntityName(entity.name);
+  const byName: number | undefined = sameType.find((index) => normalizeEntityName(merged[index]?.name ?? '') === name);
 
   if (byName !== undefined) {
     return byName;
@@ -190,7 +187,7 @@ function findAliasTarget(
     return undefined;
   }
 
-  const name: string = normalizeName(entity.name);
+  const name: string = normalizeEntityName(entity.name);
   const carriers: number[] = [...groups.keys()].filter((other) => {
     const known: NoteExtractionEntity | undefined = groups[other];
     return other !== index && known?.type === entity.type && namesOf(known).includes(name);
@@ -347,20 +344,20 @@ class CardNameIndex {
       return;
     }
 
-    const nameKey: string = normalizeName(card.name);
+    const nameKey: string = normalizeEntityName(card.name);
 
     if (!this.idsByName.has(nameKey)) {
       this.idsByName.set(nameKey, card.id);
     }
 
     for (const alias of [...(card.aliases ?? []), ...extraAliases]) {
-      const key: string = normalizeName(alias);
+      const key: string = normalizeEntityName(alias);
       this.idsByAlias.set(key, new Set([...(this.idsByAlias.get(key) ?? []), card.id]));
     }
   }
 
   public resolve(name: string): string | undefined {
-    const key: string = normalizeName(name);
+    const key: string = normalizeEntityName(name);
     const aliasIds: string[] = [...(this.idsByAlias.get(key) ?? [])];
 
     return this.idsByName.get(key) ?? (aliasIds.length === 1 ? aliasIds[0] : undefined);
@@ -576,7 +573,7 @@ function planScenes(
 } {
   const existingTitles: Set<string> = new Set(
     input.scenes.flatMap((scene) =>
-      scene.card.title === undefined ? [] : [normalizeName(scene.card.title)],
+      scene.card.title === undefined ? [] : [normalizeEntityName(scene.card.title)],
     ),
   );
   const takenSlugs: Set<string> = new Set(input.scenes.map((scene) => scene.slug));
@@ -586,7 +583,7 @@ function planScenes(
   const warnings: string[] = [];
 
   for (const scene of orderScenes(input.extractions, input.notes)) {
-    const titleKey: string = normalizeName(scene.title);
+    const titleKey: string = normalizeEntityName(scene.title);
 
     if (existingTitles.has(titleKey)) {
       skipped.push({ label: scene.title, reason: '같은 제목의 씬이 이미 있습니다' });
