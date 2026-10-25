@@ -25,8 +25,8 @@ function formatUsd(usd: number): string {
     return `$${usd.toFixed(2)}`;
   }
 
-  const raw = usd.toFixed(4);
-  const trimmed = raw.replace(/0+$/, '').replace(/\.$/, '');
+  const raw: string = usd.toFixed(4);
+  const trimmed: string = raw.replace(/0+$/, '').replace(/\.$/, '');
   return `$${trimmed}`;
 }
 
@@ -41,7 +41,7 @@ export function formatUsageBadgeLabel(usage: UsageAmount): string {
     return '—';
   }
 
-  const tokens = formatTokenCount(usage.tokens);
+  const tokens: string = formatTokenCount(usage.tokens);
 
   if (usage.hasUnpricedUsage && usage.costUsd <= 0) {
     return `${tokens} 토큰`;
@@ -55,7 +55,7 @@ export function formatUsageBadgeTooltip(usage: UsageAmount): string {
     return '아직 AI 사용 기록이 없습니다';
   }
 
-  const parts = [`입력+출력 ${Math.round(usage.tokens).toLocaleString()} 토큰`];
+  const parts: string[] = [`입력+출력 ${Math.round(usage.tokens).toLocaleString()} 토큰`];
 
   if (usage.costUsd > 0) {
     parts.unshift(`USD ${usage.costUsd.toFixed(6)}`);
@@ -66,7 +66,7 @@ export function formatUsageBadgeTooltip(usage: UsageAmount): string {
   }
 
   if (usage.cache !== undefined && usage.cache.promptTokens > 0 && usage.cache.cachedTokens > 0) {
-    const rate = Math.round((usage.cache.cachedTokens / usage.cache.promptTokens) * 100);
+    const rate: number = Math.round((usage.cache.cachedTokens / usage.cache.promptTokens) * 100);
     parts.push(`프롬프트 캐시 적중 ${rate}% · 절약 ${formatUsd(usage.cache.savedUsd)}`);
   }
 

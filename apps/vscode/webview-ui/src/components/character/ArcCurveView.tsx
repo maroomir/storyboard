@@ -2,29 +2,38 @@ import type React from 'react';
 
 import type { CharacterArc } from '@webview/lib/types';
 
-const VIEW_WIDTH = 400;
-const VIEW_HEIGHT = 140;
-const PADDING_X = 28;
-const PADDING_Y = 36;
+const VIEW_WIDTH: number = 400;
+const VIEW_HEIGHT: number = 140;
+const PADDING_X: number = 28;
+const PADDING_Y: number = 36;
 
-function buildCurvePath(points: readonly { readonly x: number; readonly y: number }[]): string {
+interface ChartPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+interface ArcStagePoint extends ChartPoint {
+  readonly item: CharacterArc;
+}
+
+function buildCurvePath(points: readonly ChartPoint[]): string {
   const [start] = points;
 
   if (!start) {
     return '';
   }
 
-  let path = `M ${start.x} ${start.y}`;
+  let path: string = `M ${start.x} ${start.y}`;
 
-  for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1];
-    const current = points[index];
+  for (let index: number = 1; index < points.length; index += 1) {
+    const previous: ChartPoint | undefined = points[index - 1];
+    const current: ChartPoint | undefined = points[index];
 
     if (!previous || !current) {
       continue;
     }
 
-    const controlX = (previous.x + current.x) / 2;
+    const controlX: number = (previous.x + current.x) / 2;
 
     path += ` C ${controlX} ${previous.y}, ${controlX} ${current.y}, ${current.x} ${current.y}`;
   }
@@ -37,7 +46,7 @@ export function ArcCurveView({
 }: {
   readonly arc: readonly CharacterArc[];
 }): React.ReactElement {
-  const stages = arc.filter((item) => item.stage.trim().length > 0);
+  const stages: CharacterArc[] = arc.filter((item) => item.stage.trim().length > 0);
 
   if (stages.length === 0) {
     return (
@@ -47,18 +56,18 @@ export function ArcCurveView({
     );
   }
 
-  const points = stages.map((item, index) => {
-    const x =
+  const points: ArcStagePoint[] = stages.map((item, index): ArcStagePoint => {
+    const x: number =
       stages.length === 1
         ? VIEW_WIDTH / 2
         : PADDING_X + (index / (stages.length - 1)) * (VIEW_WIDTH - PADDING_X * 2);
-    const wave = index % 2 === 0 ? -14 : 14;
-    const y = VIEW_HEIGHT / 2 + (stages.length > 2 ? wave : 0);
+    const wave: number = index % 2 === 0 ? -14 : 14;
+    const y: number = VIEW_HEIGHT / 2 + (stages.length > 2 ? wave : 0);
 
     return { x, y, item };
   });
 
-  const curvePath = buildCurvePath(points);
+  const curvePath: string = buildCurvePath(points);
 
   return (
     <div className="flex flex-col gap-2">

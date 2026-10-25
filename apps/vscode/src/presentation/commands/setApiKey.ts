@@ -3,10 +3,10 @@ import * as vscode from 'vscode';
 import { aiProviderIds, requiresApiKey } from '@storyboard/story-model';
 import { SecretStore } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-model';
-const setApiKeyCommand = 'storyboard.apiKey.set';
+const setApiKeyCommand: string = 'storyboard.apiKey.set';
 // Only the providers a key does anything for: storing one against ollama or a CLI provider would
 // look like it enabled something and change nothing.
-const apiKeyProviderIds = aiProviderIds.filter(requiresApiKey);
+const apiKeyProviderIds: AiProviderId[] = aiProviderIds.filter(requiresApiKey);
 
 export interface RegisterSetApiKeyCommandDependencies {
   readonly secretStore: SecretStore;
@@ -21,13 +21,13 @@ export function registerSetApiKeyCommand(
 }
 
 async function setApiKey(secretStore: SecretStore): Promise<void> {
-  const providerId = await pickProvider();
+  const providerId: AiProviderId | undefined = await pickProvider();
 
   if (!providerId) {
     return;
   }
 
-  const apiKey = await vscode.window.showInputBox({
+  const apiKey: string | undefined = await vscode.window.showInputBox({
     title: `${providerId} API Key`,
     prompt: '저장할 API 키를 입력하세요. 비워 두고 확인하면 기존 키를 삭제합니다.',
     password: true,
@@ -48,8 +48,12 @@ async function setApiKey(secretStore: SecretStore): Promise<void> {
   await vscode.window.showInformationMessage(`Storyboard ${providerId} API 키를 저장했습니다.`);
 }
 
+interface ProviderPick extends vscode.QuickPickItem {
+  readonly providerId: AiProviderId;
+}
+
 async function pickProvider(): Promise<AiProviderId | undefined> {
-  const selectedProvider = await vscode.window.showQuickPick(
+  const selectedProvider: ProviderPick | undefined = await vscode.window.showQuickPick(
     apiKeyProviderIds.map((providerId) => ({ label: providerId, providerId })),
     {
       title: 'API 키를 설정할 Provider 선택',

@@ -16,8 +16,8 @@ function PlaceholderArt({
 }: {
   readonly card: StoryboardCard;
   readonly variant: 'compact' | 'hero';
-}) {
-  const isHero = variant === 'hero';
+}): React.ReactElement {
+  const isHero: boolean = variant === 'hero';
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col items-center justify-center gap-2 p-3">
       <svg
@@ -56,8 +56,9 @@ export function CardImagePane({
   variant,
   className,
 }: CardImagePaneProps): React.ReactElement {
-  const isHero = variant === 'hero';
-  const baseBg = card.type === 'character' ? 'bg-cardCharacter' : 'bg-cardBackground';
+  const isHero: boolean = variant === 'hero';
+  const baseBg: 'bg-cardCharacter' | 'bg-cardBackground' =
+    card.type === 'character' ? 'bg-cardCharacter' : 'bg-cardBackground';
 
   return (
     <div

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ISettingsPanel } from '@/presentation/providers/SettingsPanelProvider';
 
-export const openSettingsCommand = 'storyboard.settings.open';
+export const openSettingsCommand: string = 'storyboard.settings.open';
 
 export function registerOpenSettingsCommand(
   context: vscode.ExtensionContext,

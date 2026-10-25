@@ -3,8 +3,11 @@ import React, { useCallback, useState } from 'react';
 import { createRequestId } from '@webview/lib/messaging';
 import type { SceneCard } from '@webview/lib/types';
 import { Button } from '../ui/Button';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
-type VscodeApi = ReturnType<NonNullable<typeof window.acquireVsCodeApi>>;
+interface SceneStructureResponse {
+  readonly proposal: SceneStructureProposal;
+}
 
 export interface SceneStructureProposal {
   readonly purpose?: string;
@@ -29,11 +32,11 @@ function callRpc<T>(
   method: string,
   payload: Record<string, unknown>,
 ): Promise<T> {
-  const id = createRequestId();
+  const id: string = createRequestId();
 
   return new Promise((resolve, reject) => {
     const handler = (event: MessageEvent): void => {
-      const data = event.data as RpcResponse<T> | undefined;
+      const data: RpcResponse<T> | undefined = event.data as RpcResponse<T> | undefined;
       if (!data || data.type !== 'response' || data.id !== id) {
         return;
       }
@@ -77,14 +80,14 @@ export function applyStructureProposal(
   let next: SceneCard = card;
 
   for (const { key } of SCALAR_LABELS) {
-    const proposed = proposal[key]?.trim();
+    const proposed: string | undefined = proposal[key]?.trim();
     if ((next[key]?.trim() ?? '') === '' && proposed !== undefined && proposed !== '') {
       next = { ...next, [key]: proposed };
     }
   }
 
   for (const { key } of LIST_LABELS) {
-    const proposed = proposal[key]?.filter((item) => item.trim() !== '') ?? [];
+    const proposed: string[] = proposal[key]?.filter((item) => item.trim() !== '') ?? [];
     if ((next[key] ?? []).length === 0 && proposed.length > 0) {
       next = { ...next, [key]: [...proposed] };
     }
@@ -116,9 +119,9 @@ export function SceneStructurePanel({
   const [proposal, setProposal] = useState<SceneStructureProposal | undefined>();
   const [isRequesting, setIsRequesting] = useState(false);
 
-  const canRequest = (card.summary?.trim() ?? '') !== '' && !isRequesting;
+  const canRequest: boolean = (card.summary?.trim() ?? '') !== '' && !isRequesting;
 
-  const requestProposal = useCallback(async (): Promise<void> => {
+  const requestProposal: () => Promise<void> = useCallback(async (): Promise<void> => {
     if (!vscodeApi) {
       return;
     }
@@ -127,7 +130,7 @@ export function SceneStructurePanel({
     onStatusChange('summary에서 구조 필드를 제안받는 중입니다…');
 
     try {
-      const response = await callRpc<{ readonly proposal: SceneStructureProposal }>(
+      const response: SceneStructureResponse = await callRpc<SceneStructureResponse>(
         vscodeApi,
         'cards.structureScene',
         { uri: documentUri },
@@ -151,7 +154,7 @@ export function SceneStructurePanel({
     }
   }, [documentUri, onStatusChange, vscodeApi]);
 
-  const applyProposal = useCallback((): void => {
+  const applyProposal: () => void = useCallback((): void => {
     if (!proposal) {
       return;
     }

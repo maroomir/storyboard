@@ -15,8 +15,8 @@ export type CostBadgeProps = {
 };
 
 export function CostBadge({ usage, className, tooltip }: CostBadgeProps): React.ReactElement {
-  const label = formatUsageBadgeLabel(usage);
-  const isPlaceholder = isEmptyUsageDisplay(usage);
+  const label: string = formatUsageBadgeLabel(usage);
+  const isPlaceholder: boolean = isEmptyUsageDisplay(usage);
 
   return (
     <span

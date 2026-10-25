@@ -3,19 +3,23 @@ import * as vscode from 'vscode';
 import type { ApplyDraftFormatResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { isDirectSceneCardFile, parseSceneFileName } from '@storyboard/story-model';
+import {
+  isDirectSceneCardFile,
+  parseSceneFileName,
+  type SceneFileNameParts,
+} from '@storyboard/story-model';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
+const applyDraftFormatCommand: string = 'storyboard.draft.applyFormat';
 
 function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   if (invokedUri && invokedUri.scheme === 'file') {
     return invokedUri;
   }
 
-  const doc = vscode.window.activeTextEditor?.document;
+  const doc: vscode.TextDocument | undefined = vscode.window.activeTextEditor?.document;
 
   if (!doc || doc.uri.scheme !== 'file') {
     return undefined;
@@ -64,7 +68,8 @@ async function runApplyDraftFormatForScene(
   sceneUri: vscode.Uri,
   dependencies: RegisterApplyDraftFormatCommandDependencies,
 ): Promise<void> {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(sceneUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(sceneUri);
 
   if (!workspaceFolder) {
     await vscode.window.showErrorMessage('씬 파일이 속한 워크스페이스 폴더를 찾을 수 없습니다.');
@@ -83,8 +88,8 @@ async function runApplyDraftFormatForScene(
     return;
   }
 
-  const fileName = sceneUri.path.split('/').pop() ?? '';
-  const nameParts = parseSceneFileName(fileName);
+  const fileName: string = sceneUri.path.split('/').pop() ?? '';
+  const nameParts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
 
   if (!nameParts) {
     await vscode.window.showErrorMessage('씬 파일명은 `NN-slug.card` 형식이어야 합니다.');
@@ -101,7 +106,7 @@ async function runApplyDraftFormatForScene(
       async (progress, token) => {
         progress.report({ message: '장르 포맷 적용 중…' });
 
-        const result = await dependencies.drafts.applyFormat({
+        const result: ApplyDraftFormatResult = await dependencies.drafts.applyFormat({
           workspaceRoot: workspaceFolder.uri,
           sceneStem: nameParts.stem,
           onSaving: () => progress.report({ message: '저장 중…' }),
@@ -113,7 +118,7 @@ async function runApplyDraftFormatForScene(
           return;
         }
 
-        const doc = await vscode.workspace.openTextDocument(result.draftUri);
+        const doc: vscode.TextDocument = await vscode.workspace.openTextDocument(result.draftUri);
         await vscode.window.showTextDocument(doc);
         progress.report({ message: '완료' });
         void vscode.window.showInformationMessage('장르 포맷을 적용해 초안을 저장했습니다.');
@@ -122,7 +127,7 @@ async function runApplyDraftFormatForScene(
   } catch (error) {
     dependencies.logger.error('Apply draft format failed', error);
     dependencies.logger.show();
-    const message = error instanceof Error ? error.message : String(error);
+    const message: string = error instanceof Error ? error.message : String(error);
     await showStoryboardFailure(`장르 포맷 적용에 실패했습니다: ${message}`);
   }
 }
@@ -131,7 +136,7 @@ async function runCommand(
   invokedUri: vscode.Uri | undefined,
   dependencies: RegisterApplyDraftFormatCommandDependencies,
 ): Promise<void> {
-  const sceneUri = resolveSceneUri(invokedUri);
+  const sceneUri: vscode.Uri | undefined = resolveSceneUri(invokedUri);
 
   if (!sceneUri) {
     await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);

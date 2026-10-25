@@ -3,8 +3,9 @@ import * as vscode from 'vscode';
 import type { NovelManager } from '@storyboard/story-app';
 import { parseScene } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
+import type { CompletedStoryScene, CompleteStoryScenesProposal } from '@storyboard/story-engine';
 
-const completeStoryCommand = 'storyboard.scene.completeStory';
+const completeStoryCommand: string = 'storyboard.scene.completeStory';
 
 export function registerCompleteStoryScenesCommand(
   context: vscode.ExtensionContext,
@@ -12,32 +13,32 @@ export function registerCompleteStoryScenesCommand(
   reviewService: ProposalReviewService,
 ): vscode.Disposable {
   return vscode.commands.registerCommand(completeStoryCommand, async (): Promise<void> => {
-    const workspaceRoot = resolveWorkspaceRoot();
+    const workspaceRoot: vscode.Uri | undefined = resolveWorkspaceRoot();
     if (!workspaceRoot) {
       await vscode.window.showErrorMessage('Storyboard 프로젝트 작업 공간을 열어주세요.');
       return;
     }
 
     try {
-      const proposal = await vscode.window.withProgress(
+      const proposal: CompleteStoryScenesProposal = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: '이야기 완결 씬 제안 생성 중...',
           cancellable: true,
         },
         async (_progress, token) => {
-          const result = await novel.completeScenes({ workspaceRoot });
+          const result: CompleteStoryScenesProposal = await novel.completeScenes({ workspaceRoot });
           if (token.isCancellationRequested) {
             throw new StoryCompletionCancelledError();
           }
           return result;
         },
       );
-      const selectedCount = await choosePrefix(proposal.scenes.length);
+      const selectedCount: number | undefined = await choosePrefix(proposal.scenes.length);
       if (!selectedCount) {
         return;
       }
-      const selected = proposal.scenes.slice(0, selectedCount);
+      const selected: CompletedStoryScene[] = proposal.scenes.slice(0, selectedCount);
       await reviewService.showDiffs(
         selected.map((scene) => ({
           original: undefined,
@@ -46,7 +47,7 @@ export function registerCompleteStoryScenesCommand(
           label: `${scene.fileName} ↔ 새 완결 씬`,
         })),
       );
-      const review = [
+      const review: string[] = [
         proposal.centralQuestion ? `중심 질문: ${proposal.centralQuestion}` : undefined,
         proposal.climaxChoice ? `클라이맥스 선택: ${proposal.climaxChoice}` : undefined,
         ...selected.flatMap((scene) => [
@@ -58,7 +59,7 @@ export function registerCompleteStoryScenesCommand(
             : undefined,
         ]),
       ].filter((line): line is string => line !== undefined);
-      const confirmation = await vscode.window.showWarningMessage(
+      const confirmation: '적용' | undefined = await vscode.window.showWarningMessage(
         `새 씬 ${selected.length}개를 추가합니다. 기존 씬은 변경하지 않습니다.${review.length > 0 ? `\n${review.join('\n')}` : ''}`,
         { modal: true },
         '적용',
@@ -73,9 +74,9 @@ export function registerCompleteStoryScenesCommand(
         return;
       }
 
-      const edit = new vscode.WorkspaceEdit();
+      const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
       for (const scene of selected) {
-        const uri = vscode.Uri.joinPath(workspaceRoot, 'scene', scene.fileName);
+        const uri: vscode.Uri = vscode.Uri.joinPath(workspaceRoot, 'scene', scene.fileName);
         edit.createFile(uri, { overwrite: false, ignoreIfExists: false });
         edit.insert(uri, new vscode.Position(0, 0), scene.content);
       }
@@ -86,8 +87,8 @@ export function registerCompleteStoryScenesCommand(
         return;
       }
       for (const scene of selected) {
-        const uri = vscode.Uri.joinPath(workspaceRoot, 'scene', scene.fileName);
-        const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
+        const uri: vscode.Uri = vscode.Uri.joinPath(workspaceRoot, 'scene', scene.fileName);
+        const text: string = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
         parseScene(text, scene.fileName);
       }
       await vscode.window.showInformationMessage(`완결 씬 ${selected.length}개를 추가했습니다.`);
@@ -102,8 +103,12 @@ export function registerCompleteStoryScenesCommand(
   });
 }
 
+interface PrefixChoice extends vscode.QuickPickItem {
+  readonly value: number;
+}
+
 async function choosePrefix(count: number): Promise<number | undefined> {
-  const choices = Array.from({ length: count }, (_, index) => ({
+  const choices: PrefixChoice[] = Array.from({ length: count }, (_, index) => ({
     label: `${index + 1}개 적용`,
     description: index === 0 ? '첫 완결 씬만 적용' : `첫 ${index + 1}개 씬을 연속으로 적용`,
     value: index + 1,

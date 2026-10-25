@@ -26,7 +26,7 @@ export interface StudioProposalActions {
 
 export type StudioFollowUpHandler = (followUp: StudioFollowUpTarget) => void;
 
-const bubbleClass =
+const bubbleClass: string =
   'flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2';
 
 export function StudioTurnView({

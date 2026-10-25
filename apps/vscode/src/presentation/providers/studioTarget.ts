@@ -14,13 +14,13 @@ import {
 
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
-import type { StudioTarget } from '@storyboard/story-model';
+import type { SceneFileNameParts, StoryUri, StudioTarget } from '@storyboard/story-model';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 
 // NOTE: the sessions live inside one workspace root already, so a constant key keeps the project
 // entity's directory name safe regardless of what the folder is called.
-const projectEntityKey = 'project';
+const projectEntityKey: string = 'project';
 
 export interface StudioFocus {
   readonly uri: vscode.Uri;
@@ -32,7 +32,7 @@ export interface StudioFocus {
 // the only signal that a card has focus. The text editor still wins when present because it is the
 // only source of the selection and the document body.
 export function resolveActiveStudioFocus(): StudioFocus | undefined {
-  const editor = vscode.window.activeTextEditor;
+  const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
 
   if (editor) {
     return {
@@ -42,7 +42,7 @@ export function resolveActiveStudioFocus(): StudioFocus | undefined {
     };
   }
 
-  const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+  const input: unknown = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
 
   if (input instanceof vscode.TabInputCustom || input instanceof vscode.TabInputText) {
     return { uri: input.uri, hasSelection: false };
@@ -52,7 +52,7 @@ export function resolveActiveStudioFocus(): StudioFocus | undefined {
 }
 
 export async function computeStudioTarget(focus: StudioFocus | undefined): Promise<StudioTarget> {
-  const workspaceFolder =
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
     focus && focus.uri.scheme === 'file'
       ? vscode.workspace.getWorkspaceFolder(focus.uri)
       : vscode.workspace.workspaceFolders?.[0];
@@ -66,11 +66,14 @@ export async function computeStudioTarget(focus: StudioFocus | undefined): Promi
   }
 
   const { uri, hasSelection } = focus;
-  const label = uri.path.split('/').pop();
+  const label: string | undefined = uri.path.split('/').pop();
 
   if (isDraftMarkdownFile(uri, workspaceFolder)) {
-    const sceneStem = resolveDraftSceneStem(uri);
-    const sceneUri = deriveSceneUri(workspaceFolder, focus.documentText ?? '');
+    const sceneStem: string | undefined = resolveDraftSceneStem(uri);
+    const sceneUri: vscode.Uri | undefined = deriveSceneUri(
+      workspaceFolder,
+      focus.documentText ?? '',
+    );
 
     return {
       kind: 'draft',
@@ -83,13 +86,15 @@ export async function computeStudioTarget(focus: StudioFocus | undefined): Promi
   }
 
   if (isDirectSceneCardFile(uri, workspaceFolder)) {
-    const parts = parseSceneFileName(uri.path.split('/').pop() ?? '');
+    const parts: SceneFileNameParts | undefined = parseSceneFileName(
+      uri.path.split('/').pop() ?? '',
+    );
 
     if (!parts) {
       return projectTarget(workspaceFolder);
     }
 
-    const draftUri = draftPath(workspaceFolder.uri, parts.stem);
+    const draftUri: StoryUri = draftPath(workspaceFolder.uri, parts.stem);
 
     return {
       kind: 'scene',
@@ -102,10 +107,13 @@ export async function computeStudioTarget(focus: StudioFocus | undefined): Promi
     };
   }
 
-  const cardKind = resolveCardTargetKind(uri, workspaceFolder);
+  const cardKind: 'character' | 'background' | undefined = resolveCardTargetKind(
+    uri,
+    workspaceFolder,
+  );
 
   if (cardKind) {
-    const cardId = resolveCardId(uri);
+    const cardId: string | undefined = resolveCardId(uri);
 
     if (!cardId) {
       return projectTarget(workspaceFolder);
@@ -135,8 +143,8 @@ function projectTarget(workspaceFolder: vscode.WorkspaceFolder): StudioTarget {
 // NOTE: draft/<stem>.md mirrors scene/<stem>.card, so the file name alone keys the shared entity
 // even when the draft body has lost its scene link.
 function resolveDraftSceneStem(draftUri: vscode.Uri): string | undefined {
-  const fileName = draftUri.path.split('/').pop() ?? '';
-  const stem = fileName.endsWith('.md') ? fileName.slice(0, -'.md'.length) : '';
+  const fileName: string = draftUri.path.split('/').pop() ?? '';
+  const stem: string = fileName.endsWith('.md') ? fileName.slice(0, -'.md'.length) : '';
 
   return sceneStemPattern.test(stem) ? stem : undefined;
 }
@@ -153,7 +161,7 @@ function resolveCardTargetKind(
 }
 
 function resolveCardId(uri: vscode.Uri): string | undefined {
-  const fileName = uri.path.split('/').pop() ?? '';
+  const fileName: string = uri.path.split('/').pop() ?? '';
 
   if (isIgnoredSampleCardFileName(fileName)) {
     return undefined;

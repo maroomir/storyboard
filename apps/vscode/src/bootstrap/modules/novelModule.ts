@@ -14,7 +14,7 @@ import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule
 import type { IPlatformServices } from './platformModule';
 
 export class NovelModule implements IApplicationModule {
-  private readonly disposables = new DisposableStore();
+  private readonly disposables: DisposableStore = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 

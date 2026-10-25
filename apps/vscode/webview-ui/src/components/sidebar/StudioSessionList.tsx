@@ -44,7 +44,7 @@ export function StudioSessionList({
 }
 
 function formatSessionTimestamp(value: string): string {
-  const date = new Date(value);
+  const date: Date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return value;

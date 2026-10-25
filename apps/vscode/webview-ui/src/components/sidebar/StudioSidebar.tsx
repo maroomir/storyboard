@@ -8,6 +8,7 @@ import {
   SquarePen,
   User,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -32,6 +33,7 @@ import type {
   StudioInitialData,
   StudioPendingFollowUp,
   StudioProposalTurn,
+  StudioSessionSnapshot,
   StudioSessionSummary,
   StudioStage,
   StudioTarget,
@@ -51,6 +53,8 @@ import {
 import { StudioSessionList } from './StudioSessionList';
 import { StudioToolMenu } from './StudioToolMenu';
 import { StudioTurnView, type StudioProposalActions } from './StudioTurnView';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
+import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 
 type StudioResponseMessage = {
   readonly type: 'response';
@@ -60,7 +64,7 @@ type StudioResponseMessage = {
   readonly payload?: unknown;
 };
 
-const stageLabelClass =
+const stageLabelClass: string =
   'm-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted';
 
 export function StudioSidebar({
@@ -68,7 +72,7 @@ export function StudioSidebar({
 }: {
   readonly initialData: StudioInitialData;
 }): React.ReactElement {
-  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
+  const vscodeApi: VscodeApi | undefined = useMemo(() => window.acquireVsCodeApi?.(), []);
   const [target, setTarget] = useState<StudioTarget>(initialData.target);
   const [sessionId, setSessionId] = useState(() => initialData.session?.id ?? createRequestId());
   const [createdAt, setCreatedAt] = useState(
@@ -86,18 +90,38 @@ export function StudioSidebar({
   const [draft, setDraft] = useState('');
   const [pinnedTool, setPinnedTool] = useState<StudioComposerTool | undefined>(undefined);
   const [menuIndex, setMenuIndex] = useState(0);
-  const logEndRef = useRef<HTMLDivElement>(null);
-  const listRequestIdRef = useRef<string | undefined>(undefined);
-  const loadRequestIdRef = useRef<string | undefined>(undefined);
-  const stageRequestIdRef = useRef<string | undefined>(undefined);
-  const latestRequestIdRef = useRef<string | undefined>(undefined);
-  const sendRequestIdRef = useRef<string | undefined>(undefined);
-  const updateCardRequestIdRef = useRef<string | undefined>(undefined);
-  const followUpRequestIdRef = useRef<string | undefined>(undefined);
-  const applyRequestsRef = useRef<Map<string, string>>(new Map());
-  const previewRequestIdRef = useRef<string | undefined>(undefined);
-  const loadedEntityRef = useRef<StudioTarget['entity']>(initialData.target.entity);
-  const startsFreshRef = useRef(false);
+  const logEndRef: React.RefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
+  const listRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
+    undefined,
+  );
+  const loadRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
+    undefined,
+  );
+  const stageRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
+    undefined,
+  );
+  const latestRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
+    undefined,
+  );
+  const sendRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
+    undefined,
+  );
+  const updateCardRequestIdRef: React.MutableRefObject<string | undefined> = useRef<
+    string | undefined
+  >(undefined);
+  const followUpRequestIdRef: React.MutableRefObject<string | undefined> = useRef<
+    string | undefined
+  >(undefined);
+  const applyRequestsRef: React.MutableRefObject<Map<string, string>> = useRef<Map<string, string>>(
+    new Map(),
+  );
+  const previewRequestIdRef: React.MutableRefObject<string | undefined> = useRef<
+    string | undefined
+  >(undefined);
+  const loadedEntityRef: React.MutableRefObject<StudioTarget['entity']> = useRef<
+    StudioTarget['entity']
+  >(initialData.target.entity);
+  const startsFreshRef: React.MutableRefObject<boolean> = useRef(false);
 
   const post = (method: string, payload: unknown, id = createRequestId()): string => {
     vscodeApi?.postMessage({ protocolVersion: '1.0.0', type: 'request', id, method, payload });
@@ -114,7 +138,7 @@ export function StudioSidebar({
 
       if (data.id === loadRequestIdRef.current) {
         loadRequestIdRef.current = undefined;
-        const snapshot = parseSessionLoadPayload(data.payload);
+        const snapshot: StudioSessionSnapshot | undefined = parseSessionLoadPayload(data.payload);
         if (snapshot) {
           setSessionId(snapshot.id);
           setCreatedAt(snapshot.createdAt);
@@ -126,7 +150,7 @@ export function StudioSidebar({
 
       if (data.id === latestRequestIdRef.current) {
         latestRequestIdRef.current = undefined;
-        const snapshot = parseSessionLoadPayload(data.payload);
+        const snapshot: StudioSessionSnapshot | undefined = parseSessionLoadPayload(data.payload);
         if (snapshot) {
           setSessionId(snapshot.id);
           setCreatedAt(snapshot.createdAt);
@@ -157,19 +181,19 @@ export function StudioSidebar({
       if (data.id === updateCardRequestIdRef.current) {
         updateCardRequestIdRef.current = undefined;
         setChatStage('idle');
-        const result = parseCardUpdatePayload(data.payload);
-        if (result.ok) {
+        const cardUpdate: CardUpdateInstruction = parseCardUpdatePayload(data.payload);
+        if (cardUpdate.ok) {
           // NOTE: the host opened the new card; the target switch starts its conversation and the
           // staged instruction survives it, exactly like a follow-up handoff.
           startsFreshRef.current = true;
-          setDraft(result.instruction ?? '');
+          setDraft(cardUpdate.instruction ?? '');
         }
         return;
       }
 
       if (data.id === previewRequestIdRef.current) {
         previewRequestIdRef.current = undefined;
-        const failure = parsePreviewFailure(data.payload);
+        const failure: string | undefined = parsePreviewFailure(data.payload);
         if (failure) {
           setTurns((prev) => [
             ...prev,
@@ -179,7 +203,7 @@ export function StudioSidebar({
         return;
       }
 
-      const settledTurnId = applyRequestsRef.current.get(data.id);
+      const settledTurnId: string | undefined = applyRequestsRef.current.get(data.id);
 
       if (settledTurnId !== undefined) {
         applyRequestsRef.current.delete(data.id);
@@ -191,7 +215,7 @@ export function StudioSidebar({
     const handleMessage = (
       event: MessageEvent<StoryboardEventMessage | StudioResponseMessage>,
     ): void => {
-      const data = event.data;
+      const data: StoryboardEventMessage | StudioResponseMessage = event.data;
 
       if (data.type === 'response' && 'id' in data) {
         handleResponse(data);
@@ -209,7 +233,7 @@ export function StudioSidebar({
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return (): void => window.removeEventListener('message', handleMessage);
   }, []);
 
   useEffect(() => {
@@ -297,7 +321,7 @@ export function StudioSidebar({
   };
 
   const sendInstruction = (text: string, tool = pinnedTool): void => {
-    const instruction = text.trim();
+    const instruction: string = text.trim();
 
     if (instruction.length === 0 || chatStage !== 'idle') {
       return;
@@ -314,7 +338,7 @@ export function StudioSidebar({
       return;
     }
 
-    const history = [...turns];
+    const history: StudioChatTurn[] = [...turns];
     setTurns([...history, { id: createRequestId(), role: 'user', text: instruction }]);
     setChatStage('thinking');
     setPinnedTool(undefined);
@@ -334,12 +358,12 @@ export function StudioSidebar({
 
   // NOTE: the menu opens only while the whole composer is a bare "/token", so a slash inside a
   // sentence is just text.
-  const menu = useMemo(() => {
+  const menu: readonly StudioToolEntry[] = useMemo(() => {
     if (pinnedTool !== undefined || !isToolTarget(target)) {
       return [];
     }
 
-    const token = slashToken(draft);
+    const token: string | undefined = slashToken(draft);
     return token === undefined ? [] : toolCandidates(token, target);
   }, [draft, pinnedTool, target.kind]);
 
@@ -380,7 +404,7 @@ export function StudioSidebar({
         return;
       }
 
-      const requestId = createRequestId();
+      const requestId: string = createRequestId();
       applyRequestsRef.current.set(requestId, turn.id);
       post('studio.proposal.apply', { entity: target.entity, turn }, requestId);
     },
@@ -393,8 +417,8 @@ export function StudioSidebar({
     },
   };
 
-  const isHistoryView = view === 'history';
-  const canChat = target.entity !== undefined && target.entity.kind !== 'project';
+  const isHistoryView: boolean = view === 'history';
+  const canChat: boolean = target.entity !== undefined && target.entity.kind !== 'project';
 
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
@@ -406,7 +430,7 @@ export function StudioSidebar({
             label={isHistoryView ? '대화로 돌아가기' : '대화 기록'}
             icon={History}
             isActive={isHistoryView}
-            onClick={isHistoryView ? () => setView('chat') : openHistory}
+            onClick={isHistoryView ? (): void => setView('chat') : openHistory}
           />
         </div>
       </div>
@@ -483,14 +507,15 @@ function settleProposal(
   result: { readonly status: 'applied' | 'failed'; readonly message: string },
 ): void {
   setTurns((prev) => {
-    const settled = prev.map((turn) =>
-      turn.id === turnId && turn.role === 'assistant' && turn.kind === 'proposal'
-        ? {
-            ...turn,
-            status: result.status,
-            ...(result.status === 'failed' ? { errorMessage: result.message } : {}),
-          }
-        : turn,
+    const settled: StudioChatTurn[] = prev.map(
+      (turn): StudioChatTurn =>
+        turn.id === turnId && turn.role === 'assistant' && turn.kind === 'proposal'
+          ? {
+              ...turn,
+              status: result.status,
+              ...(result.status === 'failed' ? { errorMessage: result.message } : {}),
+            }
+          : turn,
     );
 
     return result.status === 'applied'
@@ -609,8 +634,8 @@ function StageCard({
   readonly target: StudioTarget;
   readonly stage?: StudioStage;
 }): React.ReactElement {
-  const facts = stageFacts(stage);
-  const editTarget = editTargetFile(target);
+  const facts: readonly string[] = stageFacts(stage);
+  const editTarget: string | undefined = editTargetFile(target);
 
   return (
     <section
@@ -638,7 +663,7 @@ function StagePills({ stage }: { readonly stage?: StudioStage }): React.ReactEle
     return null;
   }
 
-  const pills =
+  const pills: StagePill[] =
     stage.kind === 'card'
       ? stage.relations.map((relation) => ({
           key: `relation-${relation.target}`,
@@ -719,7 +744,7 @@ function Composer({
   readonly onUnpinTool: () => void;
   readonly onSubmit: () => void;
 }): React.ReactElement {
-  const isMenuOpen = menu.length > 0;
+  const isMenuOpen: boolean = menu.length > 0;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (isMenuOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
@@ -729,7 +754,7 @@ function Composer({
     }
 
     if (isMenuOpen && (event.key === 'Enter' || event.key === 'Tab')) {
-      const picked = menu[menuIndex];
+      const picked: StudioToolEntry | undefined = menu[menuIndex];
       if (picked) {
         event.preventDefault();
         onPickTool(picked);
@@ -758,7 +783,8 @@ function Composer({
     }
   };
 
-  const pinned = pinnedTool === undefined ? undefined : findTool(pinnedTool);
+  const pinned: StudioToolEntry | undefined =
+    pinnedTool === undefined ? undefined : findTool(pinnedTool);
 
   return (
     <div className="flex flex-col">
@@ -828,14 +854,20 @@ function chatStageLabel(stage: StudioChatStage): string {
   }
 }
 
-function parseCardUpdatePayload(payload: unknown): {
+interface StagePill {
+  readonly key: string;
+  readonly tone: 'character' | 'background';
+  readonly icon: LucideIcon;
+  readonly text: string;
+}
+
+interface CardUpdateInstruction {
   readonly ok: boolean;
   readonly instruction?: string;
-} {
-  const data = (payload && typeof payload === 'object' ? payload : {}) as {
-    ok?: unknown;
-    instruction?: unknown;
-  };
+}
+
+function parseCardUpdatePayload(payload: unknown): CardUpdateInstruction {
+  const data: PayloadFields = readPayloadFields(payload);
 
   return {
     ok: data.ok === true,

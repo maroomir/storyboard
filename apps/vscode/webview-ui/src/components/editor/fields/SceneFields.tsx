@@ -4,7 +4,7 @@ import type { NarratorRosterEntry, SceneCard, SceneGrounding } from '@webview/li
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { ListField } from './ListField';
 
-const sceneTextareaClass = `${sbInputClass} min-h-20 resize-y leading-normal`;
+const sceneTextareaClass: string = `${sbInputClass} min-h-20 resize-y leading-normal`;
 
 const GROUNDING_FIELDS: readonly { key: keyof SceneGrounding; label: string }[] = [
   { key: 'incident', label: '사건' },
@@ -48,7 +48,7 @@ export function SceneFields({
       ...card.grounding,
       [key]: value === '' ? undefined : value,
     };
-    const hasAnyValue = Object.values(grounding).some((entry) => entry !== undefined);
+    const hasAnyValue: boolean = Object.values(grounding).some((entry) => entry !== undefined);
     updateCard({ ...card, grounding: hasAnyValue ? grounding : undefined });
   };
 
@@ -146,7 +146,7 @@ export function SceneFields({
             min={1}
             value={card.targetWordCount ?? ''}
             onChange={(event) => {
-              const parsed = Number.parseInt(event.target.value, 10);
+              const parsed: number = Number.parseInt(event.target.value, 10);
               updateCard({
                 ...card,
                 targetWordCount: Number.isInteger(parsed) && parsed > 0 ? parsed : undefined,

@@ -10,7 +10,10 @@ import {
   SecretStore,
 } from '@storyboard/story-ai';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
-import { migrateVscodeSettingsToHome } from '@/infrastructure/settings/migrateVscodeSettings';
+import {
+  migrateVscodeSettingsToHome,
+  type MigrateVscodeSettingsResult,
+} from '@/infrastructure/settings/migrateVscodeSettings';
 import {
   createStoryboardHomeStores,
   type StoryboardHomeStores,
@@ -54,33 +57,35 @@ export interface IPlatformServices extends Pick<
 // graph they feed is assembled once, for every app, by StoryboardApplication.
 export class PlatformModule implements IApplicationModule {
   private services: IPlatformServices | undefined;
-  private readonly disposables = new DisposableStore();
+  private readonly disposables: DisposableStore = new DisposableStore();
 
   public initialize(context: vscode.ExtensionContext): void {
     if (this.services) {
       throw new Error('PlatformModule is already initialized.');
     }
 
-    const logger = new OutputChannelLogger();
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    const homeStores = createStoryboardHomeStores({
+    const logger: OutputChannelLogger = new OutputChannelLogger();
+    const workspaceFolder: vscode.WorkspaceFolder | undefined =
+      vscode.workspace.workspaceFolders?.[0];
+    const homeStores: StoryboardHomeStores = createStoryboardHomeStores({
       workspaceRoot: workspaceFolder?.uri.fsPath,
       onInvalidFile: (error): void => reportInvalidConfigFile(error.file, error.message, logger),
       onUnknownKey: (warning): void => logger.warn(warning.message),
     });
-    const secretStore = new SecretStore(homeStores.secretStorage);
-    const configBridge = new ConfigBridge({
+    const secretStore: SecretStore = new SecretStore(homeStores.secretStorage);
+    const configBridge: ConfigBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => homeStores.configuration,
       onDidChangeConfiguration: homeStores.onDidChangeConfiguration,
     });
     void migrateLegacySettings(context, homeStores, logger);
-    const fileSystem = new VscodeFileSystem();
-    const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message): void =>
-      logger.warn(message),
+    const fileSystem: VscodeFileSystem = new VscodeFileSystem();
+    const usageRecorder: UsageRecorder = new UsageRecorder(
+      createVscodeUsageLedgerFileSystem(),
+      (message): void => logger.warn(message),
     );
-    const proposalReviewService = new ProposalReviewService(context);
+    const proposalReviewService: ProposalReviewService = new ProposalReviewService(context);
 
-    const application = new StoryboardApplication(
+    const application: StoryboardApplication = new StoryboardApplication(
       {
         fileSystem,
         workspaceLocator: new VscodeWorkspaceLocator(),
@@ -160,7 +165,7 @@ export class PlatformModule implements IApplicationModule {
 
 // NOTE: 숨은 프로바이더를 켜는 화면은 없다. 홈 설정 파일을 손으로 고쳐 켠 사람에게 위험 고지를
 // 보여 주고 답을 받는다. 닫거나 취소하면 «아니요» 이고, 그러면 다시 꺼진다.
-let isAskingHiddenProviderConsent = false;
+let isAskingHiddenProviderConsent: boolean = false;
 
 async function askHiddenProviderConsent(configBridge: ConfigBridge): Promise<void> {
   if (isAskingHiddenProviderConsent) {
@@ -183,7 +188,7 @@ async function askHiddenProviderConsent(configBridge: ConfigBridge): Promise<voi
 
 // A settings file the author broke by hand must not take the whole extension down, but it must
 // not be silent either: every read falls back to defaults and the author is told which file.
-const reportedInvalidFiles = new Set<string>();
+const reportedInvalidFiles: Set<string> = new Set<string>();
 
 function reportInvalidConfigFile(file: string, message: string, logger: IStoryboardLogger): void {
   logger.warn(message);
@@ -208,7 +213,7 @@ async function migrateLegacySettings(
   logger: IStoryboardLogger,
 ): Promise<void> {
   try {
-    const result = await migrateVscodeSettingsToHome({
+    const result: MigrateVscodeSettingsResult = await migrateVscodeSettingsToHome({
       vscodeConfiguration: vscode.workspace.getConfiguration('storyboard'),
       vscodeSecrets: context.secrets,
       homeConfiguration: homeStores.configuration,
@@ -223,7 +228,7 @@ async function migrateLegacySettings(
     logger.info(
       `VSCode 설정 ${result.movedSettings.length}개와 API 키 ${result.movedApiKeys.length}개를 ${homeStores.paths.home} 으로 옮겼습니다.`,
     );
-    const choice = await vscode.window.showInformationMessage(
+    const choice: '파일 열기' | undefined = await vscode.window.showInformationMessage(
       `Storyboard 설정을 ${homeStores.paths.configFile} 로 옮겼습니다. 이제 확장과 CLI 가 같은 설정을 씁니다.`,
       '파일 열기',
     );

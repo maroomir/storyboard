@@ -1,6 +1,7 @@
 import { aiProviderIds } from '@storyboard/story-model';
 import { createApiKeySecretKey } from '@storyboard/story-ai';
 import type {
+  ConfigurationInspection,
   StoryboardConfigurationLike,
   StoryboardSecretStorageLike,
 } from '@storyboard/story-ai';
@@ -42,10 +43,13 @@ export const legacyVscodeSettingKeys: readonly string[] = legacySettingMigration
   (entry) => entry.legacy,
 );
 
+export interface LegacySettingInspection<T> {
+  readonly globalValue?: T;
+  readonly workspaceValue?: T;
+}
+
 export interface LegacyVscodeConfigurationLike {
-  readonly inspect: <T>(
-    section: string,
-  ) => { readonly globalValue?: T; readonly workspaceValue?: T } | undefined;
+  readonly inspect: <T>(section: string) => LegacySettingInspection<T> | undefined;
   readonly update: (section: string, value: undefined, target: number) => PromiseLike<void>;
 }
 
@@ -72,13 +76,15 @@ export async function migrateVscodeSettingsToHome(
   const movedSettings: string[] = [];
 
   for (const { legacy: legacyKey, home: homeKey } of legacySettingMigrations) {
-    const legacy = deps.vscodeConfiguration.inspect<unknown>(legacyKey);
+    const legacy: LegacySettingInspection<unknown> | undefined =
+      deps.vscodeConfiguration.inspect<unknown>(legacyKey);
 
     if (!legacy) {
       continue;
     }
 
-    const home = deps.homeConfiguration.inspect?.<unknown>(homeKey);
+    const home: ConfigurationInspection<unknown> | undefined =
+      deps.homeConfiguration.inspect?.<unknown>(homeKey);
 
     if (legacy.globalValue !== undefined) {
       if (home?.globalValue === undefined) {
@@ -110,8 +116,8 @@ export async function migrateVscodeSettingsToHome(
   const movedApiKeys: string[] = [];
 
   for (const providerId of aiProviderIds) {
-    const secretKey = createApiKeySecretKey(providerId);
-    const legacyApiKey = await deps.vscodeSecrets.get(secretKey);
+    const secretKey: string = createApiKeySecretKey(providerId);
+    const legacyApiKey: string | undefined = await deps.vscodeSecrets.get(secretKey);
 
     if (legacyApiKey === undefined) {
       continue;

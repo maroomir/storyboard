@@ -1,11 +1,17 @@
 import * as vscode from 'vscode';
 
 import type { CardManager, NoteManager } from '@storyboard/story-app';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type {
+  IStoryboardLogger,
+  PrepareCardCandidatePromotionResult,
+  PrepareNoteCandidatePromotionResult,
+  PromoteCardCandidatesResult,
+  PromoteNoteCandidatesResult,
+} from '@storyboard/story-engine';
 import type { CardCandidateItem, MergedNoteCardCandidate } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 
-const promoteCommand = 'storyboard.cards.promoteCandidates';
+const promoteCommand: string = 'storyboard.cards.promoteCandidates';
 
 type CandidateQuickPickItem = vscode.QuickPickItem &
   (
@@ -33,7 +39,7 @@ async function runPromote(
   cards: Pick<CardManager, 'prepareCandidatePromotion' | 'promoteCandidates'>,
   notes: NoteCandidateManager,
 ): Promise<void> {
-  const folder = await getTargetWorkspaceFolder();
+  const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!folder) {
     await vscode.window.showErrorMessage('Storyboard 워크스페이스 폴더를 찾을 수 없습니다.');
@@ -45,8 +51,11 @@ async function runPromote(
     return;
   }
 
-  const preparation = await cards.prepareCandidatePromotion(folder.uri);
-  const notePreparation = await notes.prepareCandidatePromotion(folder.uri);
+  const preparation: PrepareCardCandidatePromotionResult = await cards.prepareCandidatePromotion(
+    folder.uri,
+  );
+  const notePreparation: PrepareNoteCandidatePromotionResult =
+    await notes.prepareCandidatePromotion(folder.uri);
 
   if (preparation.kind !== 'ready' && notePreparation.kind !== 'ready') {
     await vscode.window.showInformationMessage(
@@ -79,28 +88,35 @@ async function runPromote(
           candidate,
         }))
       : [];
-  const quickPickItems = [...draftItems, ...noteItems];
+  const quickPickItems: CandidateQuickPickItem[] = [...draftItems, ...noteItems];
 
-  const picked = await vscode.window.showQuickPick(quickPickItems, {
-    canPickMany: true,
-    title: '카드에 반영할 후보 선택',
-    placeHolder: '캐릭터 카드에 추가할 관계·아크·속성을 선택하세요.',
-  });
+  const picked: CandidateQuickPickItem[] | undefined = await vscode.window.showQuickPick(
+    quickPickItems,
+    {
+      canPickMany: true,
+      title: '카드에 반영할 후보 선택',
+      placeHolder: '캐릭터 카드에 추가할 관계·아크·속성을 선택하세요.',
+    },
+  );
 
   if (!picked || picked.length === 0) {
     return;
   }
 
-  const pickedDrafts = picked.flatMap((entry) => (entry.origin === 'draft' ? [entry.item] : []));
-  const pickedNotes = picked.flatMap((entry) => (entry.origin === 'note' ? [entry.candidate] : []));
-  const outcome = await vscode.window.withProgress(
+  const pickedDrafts: CardCandidateItem[] = picked.flatMap((entry) =>
+    entry.origin === 'draft' ? [entry.item] : [],
+  );
+  const pickedNotes: MergedNoteCardCandidate[] = picked.flatMap((entry) =>
+    entry.origin === 'note' ? [entry.candidate] : [],
+  );
+  const outcome: PromotionOutcome = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '카드에 반영 중…' },
     async () => {
-      const drafts =
+      const drafts: PromoteCardCandidatesResult | undefined =
         pickedDrafts.length > 0
           ? await cards.promoteCandidates(folder.uri, pickedDrafts)
           : undefined;
-      const noteResult =
+      const noteResult: PromoteNoteCandidatesResult | undefined =
         pickedNotes.length > 0 ? await notes.promoteCandidates(folder.uri, pickedNotes) : undefined;
       return { drafts, noteResult };
     },
@@ -112,12 +128,17 @@ async function runPromote(
     return;
   }
 
-  const updatedCardCount =
+  const updatedCardCount: number =
     (outcome.drafts?.kind === 'promoted' ? outcome.drafts.updatedCardCount : 0) +
     (outcome.noteResult?.updatedCardIds.length ?? 0);
   await vscode.window.showInformationMessage(
     `후보 ${picked.length}개를 카드 ${updatedCardCount}개에 반영했습니다.`,
   );
+}
+
+interface PromotionOutcome {
+  readonly drafts: PromoteCardCandidatesResult | undefined;
+  readonly noteResult: PromoteNoteCandidatesResult | undefined;
 }
 
 export function registerPromoteCardCandidatesCommand(dependencies: {

@@ -4,14 +4,14 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
 import type { DraftManager } from '@storyboard/story-app';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type { CheckDraftResult, IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, parseDraft } from '@storyboard/story-model';
 import { createDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ContinuityIssue } from '@storyboard/story-ai';
 
-const continuityCheckCommand = 'storyboard.draft.continuityCheck';
-const continuitySource = 'storyboard-continuity';
+const continuityCheckCommand: string = 'storyboard.draft.continuityCheck';
+const continuitySource: string = 'storyboard-continuity';
 
 export interface RegisterContinuityDiagnosticsProviderDependencies {
   readonly drafts: Pick<DraftManager, 'check'>;
@@ -31,13 +31,13 @@ export function mapContinuityIssuesToDiagnostics(
   issues: readonly ContinuityIssue[],
 ): vscode.Diagnostic[] {
   return issues.flatMap((issue) => {
-    const range = toContinuityRange(document, issue);
+    const range: vscode.Range | undefined = toContinuityRange(document, issue);
     if (!range) {
       return [];
     }
 
-    const message = `설정 불일치: ${issue.reason}`;
-    const severity =
+    const message: string = `설정 불일치: ${issue.reason}`;
+    const severity: vscode.DiagnosticSeverity.Warning | vscode.DiagnosticSeverity.Information =
       issue.severity === 'low'
         ? (vscode.DiagnosticSeverity?.Information ?? 2)
         : (vscode.DiagnosticSeverity?.Warning ?? 1);
@@ -48,7 +48,8 @@ export function mapContinuityIssuesToDiagnostics(
 }
 
 class ContinuityDiagnosticsController {
-  private readonly collection = vscode.languages.createDiagnosticCollection(continuitySource);
+  private readonly collection: vscode.DiagnosticCollection =
+    vscode.languages.createDiagnosticCollection(continuitySource);
   public constructor(
     private readonly dependencies: RegisterContinuityDiagnosticsProviderDependencies,
   ) {}
@@ -66,13 +67,15 @@ class ContinuityDiagnosticsController {
       return;
     }
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+      document.uri,
+    );
     if (!workspaceFolder) {
       this.collection.delete(document.uri);
       return;
     }
 
-    const result = await this.dependencies.drafts.check({
+    const result: CheckDraftResult = await this.dependencies.drafts.check({
       workspaceRoot: workspaceFolder.uri,
       sceneStem: resolveSceneStem(document),
       kind: 'continuity',
@@ -95,7 +98,9 @@ class ContinuityDiagnosticsController {
     if (document.uri.scheme !== 'file') {
       return false;
     }
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+      document.uri,
+    );
     if (!workspaceFolder) {
       return false;
     }
@@ -110,7 +115,7 @@ function resolveSceneStem(document: vscode.TextDocument): string {
   try {
     return parseDraft(document.getText()).sceneStem;
   } catch {
-    const fileName = document.uri.path.split('/').pop() ?? '';
+    const fileName: string = document.uri.path.split('/').pop() ?? '';
     return fileName.replace(/\.md$/i, '');
   }
 }
@@ -119,26 +124,28 @@ async function runContinuityCheckCommand(
   controller: ContinuityDiagnosticsController,
   uri?: vscode.Uri,
 ): Promise<void> {
-  const targetUri = uri ?? vscode.window.activeTextEditor?.document.uri;
+  const targetUri: vscode.Uri | undefined = uri ?? vscode.window.activeTextEditor?.document.uri;
   if (!targetUri) {
     await vscode.window.showErrorMessage('활성 드래프트 파일을 찾을 수 없습니다.');
     return;
   }
 
-  const document = await vscode.workspace.openTextDocument(targetUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(targetUri);
   await controller.runForDocument(document);
 }
 
 export function registerContinuityDiagnosticsProvider(
   dependencies: RegisterContinuityDiagnosticsProviderDependencies,
 ): vscode.Disposable {
-  const controller = new ContinuityDiagnosticsController(dependencies);
+  const controller: ContinuityDiagnosticsController = new ContinuityDiagnosticsController(
+    dependencies,
+  );
 
-  const commandRegistration = vscode.commands.registerCommand(
+  const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
     continuityCheckCommand,
     (uri?: vscode.Uri) => runContinuityCheckCommand(controller, uri),
   );
-  const closeListener = vscode.workspace.onDidCloseTextDocument((document) => {
+  const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
     controller.getDiagnosticsCollection().delete(document.uri);
   });
 

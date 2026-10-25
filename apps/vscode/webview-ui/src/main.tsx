@@ -64,7 +64,7 @@ function App(): React.ReactElement {
   return <SidebarPlaceholder />;
 }
 
-const rootElement = document.getElementById('root');
+const rootElement: HTMLElement | null = document.getElementById('root');
 
 if (!rootElement) {
   throw new Error('Root element not found');

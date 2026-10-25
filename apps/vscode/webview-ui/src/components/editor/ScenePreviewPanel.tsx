@@ -5,23 +5,25 @@ import { sceneBeatText } from '@storyboard/story-model/contracts';
 import type { SceneCard } from '@webview/lib/types';
 import { Pill } from '../ui/Pill';
 
-const previewShellClass =
+const previewShellClass: string =
   'relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-xl border border-sb-border/90 bg-gradient-to-b from-sb-bg-widget/50 via-sb-bg-sidebar to-sb-bg-sidebar/95 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.2)]';
 
-const GROUNDING_LABELS: readonly {
-  key: 'incident' | 'place' | 'relation' | 'time';
-  label: string;
-}[] = [
+interface FieldLabel<Key extends string> {
+  readonly key: Key;
+  readonly label: string;
+}
+
+type GroundingFieldKey = 'incident' | 'place' | 'relation' | 'time';
+type StructureFieldKey = 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | 'endState';
+
+const GROUNDING_LABELS: readonly FieldLabel<GroundingFieldKey>[] = [
   { key: 'incident', label: '사건' },
   { key: 'place', label: '장소' },
   { key: 'relation', label: '관계' },
   { key: 'time', label: '시점' },
 ];
 
-const STRUCTURE_LABELS: readonly {
-  key: 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | 'endState';
-  label: string;
-}[] = [
+const STRUCTURE_LABELS: readonly FieldLabel<StructureFieldKey>[] = [
   { key: 'purpose', label: '목적' },
   { key: 'conflict', label: '갈등' },
   { key: 'twist', label: '반전' },
@@ -36,8 +38,10 @@ export function ScenePreviewPanel({
   readonly card: SceneCard;
   readonly className?: string;
 }): React.ReactElement {
-  const structureEntries = STRUCTURE_LABELS.filter(({ key }) => card[key] !== undefined);
-  const groundingEntries = GROUNDING_LABELS.filter(
+  const structureEntries: FieldLabel<StructureFieldKey>[] = STRUCTURE_LABELS.filter(
+    ({ key }) => card[key] !== undefined,
+  );
+  const groundingEntries: FieldLabel<GroundingFieldKey>[] = GROUNDING_LABELS.filter(
     ({ key }) => card.grounding?.[key] !== undefined,
   );
 

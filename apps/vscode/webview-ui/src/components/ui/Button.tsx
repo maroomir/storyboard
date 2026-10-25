@@ -23,7 +23,7 @@ export function Button({
   type = 'button',
   ...rest
 }: ButtonProps): React.ReactElement {
-  const primaryFocus =
+  const primaryFocus: string =
     variant === 'primary'
       ? 'outline-none focus-visible:ring-1 focus-visible:ring-sb-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-sb-bg-sidebar'
       : '';

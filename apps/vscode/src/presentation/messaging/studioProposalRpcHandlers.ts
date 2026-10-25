@@ -19,14 +19,16 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import { hashBaseline } from '@storyboard/story-engine';
 import { readStudioEntityContext, type StudioSceneFocus } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
+import type { IStudioFollowUpRepository, StudioEntityContext } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {
   StoryboardResponsePayload,
+  StoryUri,
   StudioChatTurn,
   StudioEntity,
+  StudioPatchResult,
   StudioProposalTurn,
 } from '@storyboard/story-model';
 
@@ -39,7 +41,7 @@ export interface StudioProposalRpcHandlersDependencies {
   readonly createFollowUpId: () => string;
 }
 
-const staleBaselineMessage =
+const staleBaselineMessage: string =
   '제안을 만든 뒤 파일이 바뀌어서 적용하지 않았어요. 다시 요청해 주세요.';
 
 export function createStudioProposalRpcHandlers(
@@ -49,7 +51,7 @@ export function createStudioProposalRpcHandlers(
     'studio.proposal.preview': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.proposal.preview'>> => {
-      const prepared = await prepareApply(deps, payload.entity, payload.turn);
+      const prepared: PreparedApply = await prepareApply(deps, payload.entity, payload.turn);
 
       if (!prepared.ok) {
         // NOTE: a silent no-op here reads as a broken button, so the reason travels back to the chat.
@@ -71,7 +73,7 @@ export function createStudioProposalRpcHandlers(
     'studio.proposal.apply': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.proposal.apply'>> => {
-      const prepared = await prepareApply(deps, payload.entity, payload.turn);
+      const prepared: PreparedApply = await prepareApply(deps, payload.entity, payload.turn);
 
       if (!prepared.ok) {
         return { status: 'failed', message: prepared.message };
@@ -111,19 +113,19 @@ async function prepareApply(
   entity: StudioEntity,
   turn: StudioChatTurn,
 ): Promise<PreparedApply> {
-  const proposal = toProposalTurn(turn);
+  const proposal: StudioProposalTurn | undefined = toProposalTurn(turn);
 
   if (!proposal) {
     return { ok: false, message: '적용할 제안이 아닙니다.' };
   }
 
-  const root = await deps.getProjectRoot();
+  const root: vscode.Uri | undefined = await deps.getProjectRoot();
 
   if (!root) {
     return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
   }
 
-  const entityContext = await readStudioEntityContext(
+  const entityContext: StudioEntityContext | undefined = await readStudioEntityContext(
     vscodeFileSystem,
     root,
     entity,
@@ -144,17 +146,26 @@ async function prepareApply(
     return { ok: false, message: staleBaselineMessage };
   }
 
-  const isDraft = entityContext.patchTarget === 'draft';
-  const patchBaseline = isDraft ? extractDraftBody(entityContext.baseline) : entityContext.baseline;
+  const isDraft: boolean = entityContext.patchTarget === 'draft';
+  const patchBaseline: string = isDraft
+    ? extractDraftBody(entityContext.baseline)
+    : entityContext.baseline;
 
-  const result = applyStudioPatch(patchBaseline, proposal.patch, entityContext.patchTarget);
+  const result: StudioPatchResult = applyStudioPatch(
+    patchBaseline,
+    proposal.patch,
+    entityContext.patchTarget,
+  );
 
   if (!result.ok) {
     return { ok: false, message: result.message };
   }
 
   if (entityContext.patchTarget === 'sceneCard') {
-    const brokenReference = await findBrokenSceneReference(root, proposal.patch);
+    const brokenReference: string | undefined = await findBrokenSceneReference(
+      root,
+      proposal.patch,
+    );
 
     if (brokenReference !== undefined) {
       return { ok: false, message: brokenReference };
@@ -233,14 +244,14 @@ async function archiveDraftBeforeApply(
     return;
   }
 
-  const root = await deps.getProjectRoot();
+  const root: vscode.Uri | undefined = await deps.getProjectRoot();
 
   if (!root) {
     return;
   }
 
   try {
-    const historyDirectory = draftHistorySceneDirectory(root, entity.key);
+    const historyDirectory: StoryUri = draftHistorySceneDirectory(root, entity.key);
 
     await archiveExistingDraft({
       draftUri: prepared.targetUri,
@@ -260,8 +271,8 @@ async function recordFollowUps(
   origin: StudioEntity,
   turn: StudioChatTurn,
 ): Promise<void> {
-  const root = await deps.getProjectRoot();
-  const proposal = toProposalTurn(turn);
+  const root: vscode.Uri | undefined = await deps.getProjectRoot();
+  const proposal: StudioProposalTurn | undefined = toProposalTurn(turn);
 
   if (!root) {
     return;
@@ -269,7 +280,7 @@ async function recordFollowUps(
 
   await deps.followUpRepository.resolveFor(root, origin);
 
-  const createdAt = new Date().toISOString();
+  const createdAt: string = new Date().toISOString();
 
   await deps.followUpRepository.add(
     root,
@@ -299,12 +310,13 @@ function rewriteDraftBody(rawDraft: string, body: string): string {
 }
 
 function appliedMessage(prepared: Extract<PreparedApply, { readonly ok: true }>): string {
-  const delta =
+  const delta: string =
     prepared.lengthDelta === 0
       ? '분량 변화 없음'
       : `${prepared.lengthDelta > 0 ? '+' : ''}${prepared.lengthDelta.toLocaleString()}자`;
 
-  const fields = prepared.changedFields.length > 0 ? ` · ${prepared.changedFields.join(', ')}` : '';
+  const fields: string =
+    prepared.changedFields.length > 0 ? ` · ${prepared.changedFields.join(', ')}` : '';
 
   return `${prepared.targetFile} 적용됨${fields} · ${delta}`;
 }

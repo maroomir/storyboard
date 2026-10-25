@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 
 export class VirtualDocumentStore implements vscode.TextDocumentContentProvider, vscode.Disposable {
-  private readonly changeEmitter = new vscode.EventEmitter<vscode.Uri>();
-  private readonly contentByUri = new Map<string, string>();
+  private readonly changeEmitter: vscode.EventEmitter<vscode.Uri> =
+    new vscode.EventEmitter<vscode.Uri>();
+  private readonly contentByUri: Map<string, string> = new Map<string, string>();
 
-  public readonly onDidChange = this.changeEmitter.event;
+  public readonly onDidChange: vscode.Event<vscode.Uri> = this.changeEmitter.event;
 
   public provideTextDocumentContent(uri: vscode.Uri): string {
     return this.contentByUri.get(uri.toString()) ?? '';

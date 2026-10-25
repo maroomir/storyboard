@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { type NovelApprovalKind, type NovelPipelineResult } from '@storyboard/story-engine';
-import type { NovelManager, RunGate } from '@storyboard/story-app';
+import type { NovelManager, NovelRunResult, RunGate } from '@storyboard/story-app';
 import {
   validateGenerationContract,
   getStoryboardProjectPaths,
@@ -9,12 +9,17 @@ import {
   type NovelRunState,
 } from '@storyboard/story-model';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import type { ContractFieldKey } from '@storyboard/story-model';
+import type {
+  ContractFieldKey,
+  GenerationContractReadiness,
+  StoryboardProject,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
-const generateNovelCommand = 'storyboard.novel.generate';
+const generateNovelCommand: string = 'storyboard.novel.generate';
 
 const contractFieldLabels: Record<ContractFieldKey, string> = {
   genre: '장르',
@@ -46,21 +51,21 @@ export function registerGenerateNovelCommand(
 async function runGenerateNovel(
   dependencies: RegisterGenerateNovelCommandDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceRoot);
-  const project = await dependencies.novel.runState.loadProject(workspaceRoot);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+  const project: StoryboardProject = await dependencies.novel.runState.loadProject(workspaceRoot);
 
-  const readiness = validateGenerationContract(project.setting);
+  const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
   if (readiness.missing.length > 0) {
-    const openSettings = '설정 열기';
-    const labels = readiness.missing.map((key) => contractFieldLabels[key]).join(', ');
-    const choice = await vscode.window.showWarningMessage(
+    const openSettings: string = '설정 열기';
+    const labels: string = readiness.missing.map((key) => contractFieldLabels[key]).join(', ');
+    const choice: string | undefined = await vscode.window.showWarningMessage(
       `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
       openSettings,
     );
@@ -70,7 +75,7 @@ async function runGenerateNovel(
     return;
   }
 
-  const decision = await decideRun(dependencies.novel, workspaceRoot);
+  const decision: RunDecision | undefined = await decideRun(dependencies.novel, workspaceRoot);
   if (!decision) {
     return;
   }
@@ -83,7 +88,7 @@ async function runGenerateNovel(
         cancellable: true,
       },
       async (progress, token) => {
-        const result = await dependencies.novel.run({
+        const result: NovelRunResult = await dependencies.novel.run({
           workspaceUri: workspaceRoot,
           project,
           runMode: decision.runMode,
@@ -116,12 +121,14 @@ async function decideRun(
   novel: Pick<NovelManager, 'findResumableRun'>,
   workspaceRoot: vscode.Uri,
 ): Promise<RunDecision | undefined> {
-  const existing = await novel.findResumableRun(workspaceRoot, { holdsRunLock: false });
+  const existing: NovelRunState | undefined = await novel.findResumableRun(workspaceRoot, {
+    holdsRunLock: false,
+  });
 
   if (existing !== undefined) {
-    const resume = `이어서 진행 (${runModeLabels[existing.runMode]})`;
-    const restart = '처음부터 다시';
-    const choice = await vscode.window.showQuickPick([resume, restart], {
+    const resume: string = `이어서 진행 (${runModeLabels[existing.runMode]})`;
+    const restart: string = '처음부터 다시';
+    const choice: string | undefined = await vscode.window.showQuickPick([resume, restart], {
       placeHolder: '이전 실행이 중단되었습니다. 어떻게 할까요?',
     });
 
@@ -133,12 +140,16 @@ async function decideRun(
     }
   }
 
-  const runMode = await pickRunMode();
+  const runMode: NovelRunMode | undefined = await pickRunMode();
   return runMode ? { runMode } : undefined;
 }
 
+interface RunModePick extends vscode.QuickPickItem {
+  readonly mode: NovelRunMode;
+}
+
 async function pickRunMode(): Promise<NovelRunMode | undefined> {
-  const items: (vscode.QuickPickItem & { readonly mode: NovelRunMode })[] = [
+  const items: RunModePick[] = [
     { label: runModeLabels.auto, description: 'A~E를 끊김 없이 자동 실행', mode: 'auto' },
     {
       label: runModeLabels['outline-approval'],
@@ -157,15 +168,19 @@ async function pickRunMode(): Promise<NovelRunMode | undefined> {
     },
   ];
 
-  const picked = await vscode.window.showQuickPick(items, {
+  const picked: RunModePick | undefined = await vscode.window.showQuickPick(items, {
     placeHolder: '실행 모드를 선택하세요.',
   });
   return picked?.mode;
 }
 
 async function requestApproval(_kind: NovelApprovalKind, info: string): Promise<boolean> {
-  const proceed = '계속';
-  const choice = await vscode.window.showInformationMessage(info, { modal: true }, proceed);
+  const proceed: string = '계속';
+  const choice: string | undefined = await vscode.window.showInformationMessage(
+    info,
+    { modal: true },
+    proceed,
+  );
   return choice === proceed;
 }
 
@@ -175,7 +190,8 @@ async function reportResult(
 ): Promise<void> {
   if (result.outcome === 'completed') {
     if (await uriExists(manuscriptVolumeUri)) {
-      const document = await vscode.workspace.openTextDocument(manuscriptVolumeUri);
+      const document: vscode.TextDocument =
+        await vscode.workspace.openTextDocument(manuscriptVolumeUri);
       await vscode.window.showTextDocument(document);
     }
     await vscode.window.showInformationMessage('장편 생성을 완료했습니다 (manuscript/).');

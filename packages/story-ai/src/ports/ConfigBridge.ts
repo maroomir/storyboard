@@ -70,16 +70,16 @@ export interface TaskAiConfigResolved {
   readonly model: string;
 }
 
+export interface ConfigurationInspection<T> {
+  readonly globalValue?: T;
+  readonly workspaceValue?: T;
+  readonly workspaceFolderValue?: T;
+  readonly defaultValue?: T;
+}
+
 export interface StoryboardConfigurationLike {
   readonly get: <T>(section: string, defaultValue: T) => T;
-  readonly inspect?: <T>(section: string) =>
-    | {
-        readonly globalValue?: T;
-        readonly workspaceValue?: T;
-        readonly workspaceFolderValue?: T;
-        readonly defaultValue?: T;
-      }
-    | undefined;
+  readonly inspect?: <T>(section: string) => ConfigurationInspection<T> | undefined;
   readonly update?: <T>(
     section: string,
     value: T,

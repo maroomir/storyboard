@@ -16,6 +16,11 @@ import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
   joinUri,
+  type SceneFile,
+  type SceneContextWorkspacePaths,
+  type SceneContext,
+  type NarrativeContext,
+  type StoryUri,
 } from '@storyboard/story-model';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
@@ -30,8 +35,8 @@ import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const CONDENSE_DRAFT_COMMAND = 'storyboard.draft.condense';
-const CONDENSE_PREVIEW_SCHEME = 'storyboard-condense';
+const CONDENSE_DRAFT_COMMAND: string = 'storyboard.draft.condense';
+const CONDENSE_PREVIEW_SCHEME: string = 'storyboard-condense';
 
 export interface RegisterCondenseDraftCommandDependencies {
   readonly drafts: Pick<DraftManager, 'condense'>;
@@ -53,7 +58,7 @@ interface CondenseContext {
 }
 
 function previewUri(draftUri: vscode.Uri, version: 'before' | 'after'): vscode.Uri {
-  const baseName = (draftUri.path.split('/').at(-1) ?? 'draft.md').replace(/\.md$/, '');
+  const baseName: string = (draftUri.path.split('/').at(-1) ?? 'draft.md').replace(/\.md$/, '');
   return vscode.Uri.from({
     scheme: CONDENSE_PREVIEW_SCHEME,
     path: `/${baseName}-${version}.md`,
@@ -62,7 +67,7 @@ function previewUri(draftUri: vscode.Uri, version: 'before' | 'after'): vscode.U
 }
 
 async function resolveCondenseTarget(invokedUri?: vscode.Uri): Promise<CondenseTarget | undefined> {
-  const editor = vscode.window.activeTextEditor;
+  const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
 
   if (!editor || editor.document.uri.scheme !== 'file') {
     await vscode.window.showErrorMessage('활성 드래프트 파일을 열고 다시 시도해 주세요.');
@@ -75,7 +80,9 @@ async function resolveCondenseTarget(invokedUri?: vscode.Uri): Promise<CondenseT
     return undefined;
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+    editor.document.uri,
+  );
   if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
     await vscode.window.showErrorMessage(
       'Storyboard 프로젝트의 드래프트 파일에서만 원본 축소를 실행할 수 있습니다.',
@@ -103,20 +110,33 @@ async function resolveCondenseTarget(invokedUri?: vscode.Uri): Promise<CondenseT
 }
 
 async function loadCondenseContext(target: CondenseTarget): Promise<CondenseContext> {
-  const sceneUri = deriveSceneUri(target.workspaceFolder, target.documentText);
+  const sceneUri: vscode.Uri | undefined = deriveSceneUri(
+    target.workspaceFolder,
+    target.documentText,
+  );
   if (!sceneUri) {
     return {};
   }
 
   try {
-    const scene = await readSceneFile(
+    const scene: SceneFile = await readSceneFile(
       sceneUri,
       vscodeFsAdapter,
       sceneUri.path.split('/').at(-1) ?? '',
     );
-    const contextPaths = sceneContextPaths(getStoryboardProjectPaths(target.workspaceFolder.uri));
-    const context = await buildSceneContext(contextPaths, scene, sceneContextFileSystem);
-    const narrative = await buildNarrativeContext(contextPaths, context, sceneContextFileSystem);
+    const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(
+      getStoryboardProjectPaths(target.workspaceFolder.uri),
+    );
+    const context: SceneContext = await buildSceneContext(
+      contextPaths,
+      scene,
+      sceneContextFileSystem,
+    );
+    const narrative: NarrativeContext = await buildNarrativeContext(
+      contextPaths,
+      context,
+      sceneContextFileSystem,
+    );
 
     return {
       intent: scene.body,
@@ -135,8 +155,8 @@ async function showCondenseDiff(
   after: string,
   title: string,
 ): Promise<void> {
-  const beforeUri = previewUri(draftUri, 'before');
-  const afterUri = previewUri(draftUri, 'after');
+  const beforeUri: vscode.Uri = previewUri(draftUri, 'before');
+  const afterUri: vscode.Uri = previewUri(draftUri, 'after');
   previewProvider.setContent(beforeUri, before);
   previewProvider.setContent(afterUri, after);
   await vscode.commands.executeCommand('vscode.diff', beforeUri, afterUri, title, {
@@ -178,7 +198,7 @@ async function archiveDraftBeforeApply(
   }
 
   try {
-    const historyDirectory = draftHistorySceneDirectory(
+    const historyDirectory: StoryUri = draftHistorySceneDirectory(
       target.workspaceFolder.uri,
       target.draft.sceneStem,
     );
@@ -197,7 +217,7 @@ async function reportFailure(
   result: Exclude<CondenseDraftResult, { readonly ok: true }>,
 ): Promise<void> {
   if (result.kind === 'rejected') {
-    const reason =
+    const reason: string =
       result.reason === 'not-shorter'
         ? '축소되지 않았습니다.'
         : result.reason === 'too-short'
@@ -217,13 +237,13 @@ async function runCondenseDraft(
   previewProvider: VirtualDocumentStore,
   invokedUri?: vscode.Uri,
 ): Promise<void> {
-  const target = await resolveCondenseTarget(invokedUri);
+  const target: CondenseTarget | undefined = await resolveCondenseTarget(invokedUri);
   if (!target || target.draft.body.trim().length === 0) {
     return;
   }
 
-  const context = await loadCondenseContext(target);
-  const result = await vscode.window.withProgress(
+  const context: CondenseContext = await loadCondenseContext(target);
+  const result: CondenseDraftResult = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Storyboard 원본 축소',
@@ -245,9 +265,9 @@ async function runCondenseDraft(
     return;
   }
 
-  const labels = buildCondenseReviewLabels(result);
+  const labels: CondenseReviewLabels = buildCondenseReviewLabels(result);
 
-  const proposed = serializeDraft(
+  const proposed: string = serializeDraft(
     createDraft({
       sceneStem: target.draft.sceneStem,
       format: target.draft.format,
@@ -265,7 +285,7 @@ async function runCondenseDraft(
     labels.diffTitle,
   );
 
-  const decision = await vscode.window.showInformationMessage(
+  const decision: string | undefined = await vscode.window.showInformationMessage(
     labels.confirmPrompt,
     '적용',
     labels.cancelLabel,
@@ -275,13 +295,13 @@ async function runCondenseDraft(
   }
 
   await archiveDraftBeforeApply(target, dependencies.configBridge, dependencies.logger);
-  const fullRange = new vscode.Range(
+  const fullRange: vscode.Range = new vscode.Range(
     target.editor.document.positionAt(0),
     target.editor.document.positionAt(target.documentText.length),
   );
-  const edit = new vscode.WorkspaceEdit();
+  const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
   edit.replace(target.editor.document.uri, fullRange, proposed);
-  const applied = await vscode.workspace.applyEdit(edit);
+  const applied: boolean = await vscode.workspace.applyEdit(edit);
   if (!applied) {
     await vscode.window.showErrorMessage('축소 결과를 적용하지 못했습니다.');
     return;
@@ -294,7 +314,7 @@ async function runCondenseDraft(
 export function registerCondenseDraftCommand(
   dependencies: RegisterCondenseDraftCommandDependencies,
 ): vscode.Disposable {
-  const previewProvider = new VirtualDocumentStore();
+  const previewProvider: VirtualDocumentStore = new VirtualDocumentStore();
   return vscode.Disposable.from(
     previewProvider,
     vscode.workspace.registerTextDocumentContentProvider(CONDENSE_PREVIEW_SCHEME, previewProvider),

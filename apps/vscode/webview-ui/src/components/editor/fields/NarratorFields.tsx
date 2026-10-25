@@ -63,7 +63,7 @@ export function NarratorFields({
           value={card.tense ?? ''}
           onChange={(event) => {
             const { tense: _previousTense, ...rest } = card;
-            const value = event.target.value;
+            const value: string = event.target.value;
             updateCard(value === '' ? rest : { ...rest, tense: value as NarrativeTense });
           }}
         >
@@ -83,7 +83,7 @@ export function NarratorFields({
           placeholder="인물 카드 id (비우면 씬의 povCharacter)"
           onChange={(event) => {
             const { focal: _previousFocal, ...rest } = card;
-            const value = event.target.value;
+            const value: string = event.target.value;
             updateCard(value === '' ? rest : { ...rest, focal: value });
           }}
         />

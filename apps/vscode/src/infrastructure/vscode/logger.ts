@@ -3,7 +3,8 @@ import * as vscode from 'vscode';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 export class OutputChannelLogger implements IStoryboardLogger, vscode.Disposable {
-  private readonly outputChannel = vscode.window.createOutputChannel('Storyboard');
+  private readonly outputChannel: vscode.OutputChannel =
+    vscode.window.createOutputChannel('Storyboard');
 
   info(message: string): void {
     this.outputChannel.appendLine(`[info] ${message}`);

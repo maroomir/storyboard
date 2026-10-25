@@ -10,7 +10,11 @@ import { StudioSessionRepository, type IStudioSessionRepository } from '@storybo
 import { StudioFollowUpRepository, type IStudioFollowUpRepository } from '@storyboard/story-engine';
 import { readStudioStage } from '@storyboard/story-engine';
 import type { ProposalReviewService } from './proposalReviewService';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import {
+  createWebviewBridge,
+  type StoryboardRpcHandlers,
+  type StoryboardWebviewBridge,
+} from '@/presentation/messaging/bridge';
 import type {
   StoryboardResponsePayload,
   StudioSessionSnapshot,
@@ -71,11 +75,11 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async bootstrapWebview(webviewView: vscode.WebviewView): Promise<void> {
-    const target = await computeStudioTarget(resolveActiveStudioFocus());
+    const target: StudioTarget = await computeStudioTarget(resolveActiveStudioFocus());
     this.lastTargetKey = JSON.stringify(target);
 
-    const root = await resolveStoryboardWorkspaceRoot();
-    const session =
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    const session: StudioSessionSnapshot | undefined =
       root && target.entity
         ? await this.sessionRepository.loadLatest(root, target.entity)
         : undefined;
@@ -89,7 +93,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       initialData,
     });
 
-    const bridge = createWebviewBridge(webviewView.webview, this.createHandlers());
+    const bridge: StoryboardWebviewBridge = createWebviewBridge(
+      webviewView.webview,
+      this.createHandlers(),
+    );
     this.disposables.push(bridge);
 
     this.disposables.push(
@@ -113,13 +120,13 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   private createHandlers(): StoryboardRpcHandlers {
     return {
       'studio.stage': async (): Promise<StoryboardResponsePayload<'studio.stage'>> => {
-        const root = await resolveStoryboardWorkspaceRoot();
+        const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
         if (!root) {
           return {};
         }
 
-        const target = await computeStudioTarget(resolveActiveStudioFocus());
+        const target: StudioTarget = await computeStudioTarget(resolveActiveStudioFocus());
         return { stage: await readStudioStage(vscodeFileSystem, root, target) };
       },
       ...createStudioChatRpcHandlers({
@@ -167,8 +174,8 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async postTargetChanged(): Promise<void> {
-    const target = await computeStudioTarget(resolveActiveStudioFocus());
-    const key = JSON.stringify(target);
+    const target: StudioTarget = await computeStudioTarget(resolveActiveStudioFocus());
+    const key: string = JSON.stringify(target);
 
     if (key === this.lastTargetKey) {
       return;
@@ -193,8 +200,8 @@ export function registerSidebarStudioProvider(
   configBridge: ConfigBridge,
   logger: IStoryboardLogger,
 ): vscode.Disposable {
-  const toolDiagnostics = new StudioToolDiagnostics();
-  const provider = new SidebarStudioProvider(
+  const toolDiagnostics: StudioToolDiagnostics = new StudioToolDiagnostics();
+  const provider: SidebarStudioProvider = new SidebarStudioProvider(
     context.extensionUri,
     new StudioSessionRepository(vscodeFileSystem),
     studio,

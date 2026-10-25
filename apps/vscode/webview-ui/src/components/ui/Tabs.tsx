@@ -23,11 +23,11 @@ export function Tabs({
   activeId,
   onActiveIdChange,
 }: TabsProps): React.ReactElement {
-  const baseId = useId();
-  const firstId = items[0]?.id ?? '';
+  const baseId: string = useId();
+  const firstId: string = items[0]?.id ?? '';
   const [uncontrolledId, setUncontrolledId] = useState(initialId ?? firstId);
-  const selectedId = activeId ?? uncontrolledId;
-  const active = items.find((item) => item.id === selectedId) ?? items[0];
+  const selectedId: string = activeId ?? uncontrolledId;
+  const active: TabItem | undefined = items.find((item) => item.id === selectedId) ?? items[0];
 
   const selectTab = (id: string): void => {
     setUncontrolledId(id);
@@ -38,8 +38,8 @@ export function Tabs({
     <div className="flex min-h-0 min-w-0 flex-col gap-2">
       <div className="flex flex-wrap gap-1 border-b border-sb-border pb-1" role="tablist">
         {items.map((item) => {
-          const selected = item.id === active?.id;
-          const Icon = item.icon;
+          const selected: boolean = item.id === active?.id;
+          const Icon: LucideIcon | undefined = item.icon;
           return (
             <button
               key={item.id}

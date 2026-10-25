@@ -3,6 +3,12 @@ import React from 'react';
 
 import { originLabel, type ConfigValueOrigin, type ConnectionTestState } from './settingsSnapshot';
 
+interface ConnectionStateView {
+  readonly label: string;
+  readonly icon: React.JSX.Element;
+  readonly className: string;
+}
+
 export function StatusPill({
   tone,
   children,
@@ -10,7 +16,7 @@ export function StatusPill({
   readonly tone: 'neutral' | 'success' | 'warning' | 'error';
   readonly children: React.ReactNode;
 }): React.ReactElement {
-  const toneClass = {
+  const toneClass: string = {
     neutral: 'border-sb-border text-sb-fg-muted',
     success: 'border-sb-border-focus text-sb-fg',
     warning: 'border-sb-border-warning text-sb-fg',
@@ -35,8 +41,9 @@ export function OriginPill({
   readonly origin: ConfigValueOrigin;
   readonly file?: string;
 }): React.ReactElement {
-  const label = originLabel(origin);
-  const tone = origin === 'default' ? 'text-sb-fg-muted' : 'text-sb-fg';
+  const label: string = originLabel(origin);
+  const tone: 'text-sb-fg-muted' | 'text-sb-fg' =
+    origin === 'default' ? 'text-sb-fg-muted' : 'text-sb-fg';
 
   return (
     <span
@@ -59,8 +66,8 @@ export function ConnectionTestButton({
   readonly state: ConnectionTestState;
   readonly onClick: () => void;
 }): React.ReactElement {
-  const iconClass = 'h-4 w-4';
-  const stateView = {
+  const iconClass: string = 'h-4 w-4';
+  const stateView: ConnectionStateView = {
     idle: {
       label: '연결 테스트',
       icon: <PlugZap className={iconClass} aria-hidden />,

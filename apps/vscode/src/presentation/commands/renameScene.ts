@@ -6,6 +6,7 @@ import {
   scenePath,
   parseSceneFileName,
   parseSceneStem,
+  type SceneFileNameParts,
 } from '@storyboard/story-model';
 import {
   hasStoryboardProject,
@@ -13,8 +14,9 @@ import {
   uriExists,
 } from '@/infrastructure/vscode/workspace';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import type { RenameSceneResult } from '@storyboard/story-engine';
 
-const renameSceneCommand = 'storyboard.scene.rename';
+const renameSceneCommand: string = 'storyboard.scene.rename';
 
 export interface RegisterRenameSceneCommandDependencies {
   readonly drafts: Pick<DraftManager, 'renameScene'>;
@@ -33,14 +35,14 @@ async function renameScene(
   dependencies: RegisterRenameSceneCommandDependencies,
   invokedUri?: vscode.Uri,
 ): Promise<void> {
-  const target = await resolveTargetScene(invokedUri);
+  const target: TargetScene | undefined = await resolveTargetScene(invokedUri);
 
   if (!target) {
     return;
   }
 
   const { workspaceRoot, fromStem } = target;
-  const toStem = await vscode.window.showInputBox({
+  const toStem: string | undefined = await vscode.window.showInputBox({
     title: '씬 이름 변경',
     prompt:
       '새 이름을 NN-slug 형식으로 입력하세요. 초안·요약·기억·캐시가 함께 옮겨지고 원장과 정전의 참조도 고쳐집니다.',
@@ -57,7 +59,7 @@ async function renameScene(
   }
 
   await runHoldingWorkspaceLock(dependencies.runGate, workspaceRoot, '씬 이름 변경', async () => {
-    const result = await dependencies.drafts.renameScene({
+    const result: RenameSceneResult = await dependencies.drafts.renameScene({
       workspaceRoot,
       fromStem,
       toStem: toStem.trim(),
@@ -68,7 +70,9 @@ async function renameScene(
       return;
     }
 
-    const wasOpen = vscode.window.activeTextEditor?.document.uri.path.endsWith(`/${fromStem}.card`);
+    const wasOpen: boolean | undefined = vscode.window.activeTextEditor?.document.uri.path.endsWith(
+      `/${fromStem}.card`,
+    );
 
     if (wasOpen) {
       await vscode.commands.executeCommand(
@@ -95,19 +99,21 @@ interface TargetScene {
 // The explorer passes the card it was opened on; from the palette the active editor's scene is
 // used, and failing that the author picks one.
 async function resolveTargetScene(invokedUri?: vscode.Uri): Promise<TargetScene | undefined> {
-  const workspaceRoot = invokedUri
+  const workspaceRoot: vscode.Uri | undefined = invokedUri
     ? vscode.workspace.getWorkspaceFolder(invokedUri)?.uri
     : await resolveStoryboardWorkspaceRoot();
-  const workspaceFolder = workspaceRoot && vscode.workspace.getWorkspaceFolder(workspaceRoot);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    workspaceRoot && vscode.workspace.getWorkspaceFolder(workspaceRoot);
 
   if (!workspaceRoot || !workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
     await vscode.window.showWarningMessage('Storyboard 프로젝트가 아닙니다.');
     return undefined;
   }
 
-  const sceneDirectory = getStoryboardProjectPaths(workspaceRoot).sceneDirectory.path;
-  const candidateUri = invokedUri ?? vscode.window.activeTextEditor?.document.uri;
-  const candidateParts =
+  const sceneDirectory: string = getStoryboardProjectPaths(workspaceRoot).sceneDirectory.path;
+  const candidateUri: vscode.Uri | undefined =
+    invokedUri ?? vscode.window.activeTextEditor?.document.uri;
+  const candidateParts: SceneFileNameParts | undefined =
     candidateUri && candidateUri.path.startsWith(`${sceneDirectory}/`)
       ? parseSceneFileName(candidateUri.path.split('/').at(-1) ?? '')
       : undefined;
@@ -123,8 +129,8 @@ async function resolveTargetScene(invokedUri?: vscode.Uri): Promise<TargetScene 
     return undefined;
   }
 
-  const stems = await listSceneStems(workspaceRoot);
-  const picked = await vscode.window.showQuickPick(stems, {
+  const stems: string[] = await listSceneStems(workspaceRoot);
+  const picked: string | undefined = await vscode.window.showQuickPick(stems, {
     title: '씬 이름 변경',
     placeHolder: '이름을 바꿀 씬을 고르세요',
   });
@@ -133,13 +139,15 @@ async function resolveTargetScene(invokedUri?: vscode.Uri): Promise<TargetScene 
 }
 
 async function listSceneStems(workspaceRoot: vscode.Uri): Promise<string[]> {
-  const sceneDirectory = getStoryboardProjectPaths(workspaceRoot).sceneDirectory as vscode.Uri;
+  const sceneDirectory: vscode.Uri = getStoryboardProjectPaths(workspaceRoot)
+    .sceneDirectory as vscode.Uri;
 
   if (!(await uriExists(sceneDirectory))) {
     return [];
   }
 
-  const entries = await vscode.workspace.fs.readDirectory(sceneDirectory);
+  const entries: [string, vscode.FileType][] =
+    await vscode.workspace.fs.readDirectory(sceneDirectory);
 
   return entries
     .flatMap(([fileName]) => parseSceneFileName(fileName) ?? [])

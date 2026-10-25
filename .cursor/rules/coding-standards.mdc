@@ -63,7 +63,7 @@ for schema-first types and the error-class template. Generic readability and ver
   string-literal unions (`SyncState = 'clean' | 'no-remote' | …`); events and outcomes are
   discriminated unions on `kind`/`status`/`ok`.
 - **Ports are structural and host-ignorant**: never name a host type — use `uri: unknown`,
-  `PromiseLike`, or a hand-rolled `{ readonly dispose: () => void }`. Package code never imports
+  `PromiseLike`, or story-model's `DisposableHandle` (`{ readonly dispose: () => void }`). Package code never imports
   `vscode`, even type-only (`import('vscode').X` in a type position counts as a violation).
 - Dependency injection is constructor + a single `readonly` deps interface
   (`GenerateDraftUseCaseDependencies` pattern). Repository ports are declared next to the use case

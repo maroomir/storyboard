@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 
 import { listSelectableProviderIds, requiresApiKey } from '@storyboard/story-model';
-import type { AiProviderId } from '@storyboard/story-model';
+import type { AiProviderId, AiProviderStatus } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
 
-export const chooseProviderCommand = 'storyboard.provider.choose';
+export const chooseProviderCommand: string = 'storyboard.provider.choose';
 
 export interface ChooseProviderDependencies {
   readonly configBridge: ConfigBridge;
@@ -21,8 +21,8 @@ interface ProviderPickItem extends vscode.QuickPickItem {
 export async function chooseDefaultProvider(
   deps: ChooseProviderDependencies,
 ): Promise<AiProviderId | undefined> {
-  const statuses = await deps.registry.listProviders();
-  const current = deps.configBridge.isDefaultProviderConfigured()
+  const statuses: AiProviderStatus[] = await deps.registry.listProviders();
+  const current: AiProviderId | undefined = deps.configBridge.isDefaultProviderConfigured()
     ? deps.configBridge.getDefaultProvider()
     : undefined;
 
@@ -30,7 +30,9 @@ export async function chooseDefaultProvider(
     current,
     deps.configBridge.getEnabledHiddenProviderIds(),
   ).map((providerId) => {
-    const status = statuses.find((entry) => entry.providerId === providerId);
+    const status: AiProviderStatus | undefined = statuses.find(
+      (entry) => entry.providerId === providerId,
+    );
     const notes: string[] = [];
 
     if (providerId === current) {
@@ -55,7 +57,7 @@ export async function chooseDefaultProvider(
     };
   });
 
-  const picked = await vscode.window.showQuickPick(items, {
+  const picked: ProviderPickItem | undefined = await vscode.window.showQuickPick(items, {
     title: 'Storyboard 기본 AI 제공자',
     placeHolder: '초안·검수·Studio 가 기본으로 쓸 제공자를 고르세요',
     ignoreFocusOut: true,
@@ -68,7 +70,7 @@ export async function chooseDefaultProvider(
   await deps.configBridge.setDefaultProvider(picked.providerId);
 
   if (requiresApiKey(picked.providerId) && !(await deps.secretStore.hasApiKey(picked.providerId))) {
-    const apiKey = await vscode.window.showInputBox({
+    const apiKey: string | undefined = await vscode.window.showInputBox({
       title: `${picked.label} API 키`,
       prompt:
         '키를 입력하면 ~/.storyboard/secrets.json 에 저장됩니다. 비워 두면 나중에 설정에서 넣을 수 있습니다.',
@@ -98,7 +100,7 @@ export async function nudgeToChooseProvider(deps: ChooseProviderDependencies): P
     return;
   }
 
-  const choice = await vscode.window.showInformationMessage(
+  const choice: '제공자 선택' | '나중에' | undefined = await vscode.window.showInformationMessage(
     'Storyboard 가 쓸 AI 제공자를 아직 고르지 않았습니다. 고르기 전에는 초안 생성이 실행되지 않습니다.',
     '제공자 선택',
     '나중에',

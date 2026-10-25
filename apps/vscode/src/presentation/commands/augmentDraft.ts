@@ -18,10 +18,10 @@ import { resolveExpandRange } from './expandDraft';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const augmentDraftCommand = 'storyboard.draft.augment';
-const augmentSelectionCommand = 'storyboard.draft.augmentSelection';
-const editSelectionCommand = 'storyboard.draft.editSelection';
-const augmentPreviewScheme = 'storyboard-augment';
+const augmentDraftCommand: string = 'storyboard.draft.augment';
+const augmentSelectionCommand: string = 'storyboard.draft.augmentSelection';
+const editSelectionCommand: string = 'storyboard.draft.editSelection';
+const augmentPreviewScheme: string = 'storyboard-augment';
 
 export interface RegisterAugmentDraftCommandDependencies {
   readonly drafts: Pick<DraftManager, 'prepareAugmentation' | 'applyAugmentation'>;
@@ -29,7 +29,7 @@ export interface RegisterAugmentDraftCommandDependencies {
 }
 
 function augmentBeforeUri(draftUri: vscode.Uri): vscode.Uri {
-  const baseName = (draftUri.path.split('/').at(-1) ?? 'draft.md').replace(/\.md$/, '');
+  const baseName: string = (draftUri.path.split('/').at(-1) ?? 'draft.md').replace(/\.md$/, '');
   return vscode.Uri.from({
     scheme: augmentPreviewScheme,
     path: `/${baseName}-before.md`,
@@ -38,7 +38,7 @@ function augmentBeforeUri(draftUri: vscode.Uri): vscode.Uri {
 }
 
 function augmentAfterUri(draftUri: vscode.Uri): vscode.Uri {
-  const baseName = (draftUri.path.split('/').at(-1) ?? 'draft.md').replace(/\.md$/, '');
+  const baseName: string = (draftUri.path.split('/').at(-1) ?? 'draft.md').replace(/\.md$/, '');
   return vscode.Uri.from({
     scheme: augmentPreviewScheme,
     path: `/${baseName}-after.md`,
@@ -62,11 +62,11 @@ function buildReplacement(
     return { range: new vscode.Range(selectionRange.start, selectionRange.end), text: augmented };
   }
 
-  const fullRange = new vscode.Range(
+  const fullRange: vscode.Range = new vscode.Range(
     document.positionAt(0),
     document.positionAt(document.getText().length),
   );
-  const serialized = serializeDraft(
+  const serialized: string = serializeDraft(
     createDraft({
       sceneStem: draft.sceneStem,
       format: draft.format,
@@ -86,8 +86,8 @@ function applyReplacementToText(
   document: vscode.TextDocument,
   replacement: AugmentReplacement,
 ): string {
-  const startOffset = document.offsetAt(replacement.range.start);
-  const endOffset = document.offsetAt(replacement.range.end);
+  const startOffset: number = document.offsetAt(replacement.range.start);
+  const endOffset: number = document.offsetAt(replacement.range.end);
 
   return documentText.slice(0, startOffset) + replacement.text + documentText.slice(endOffset);
 }
@@ -112,7 +112,7 @@ interface AugmentEditorContext {
 async function resolveAugmentEditorContext(
   invokedDraftUri: vscode.Uri | undefined,
 ): Promise<AugmentEditorContext | undefined> {
-  const editor = vscode.window.activeTextEditor;
+  const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
 
   if (!editor || editor.document.uri.scheme !== 'file') {
     await vscode.window.showErrorMessage('활성 드래프트 파일을 열고 다시 시도해 주세요.');
@@ -126,7 +126,9 @@ async function resolveAugmentEditorContext(
     return undefined;
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+    editor.document.uri,
+  );
 
   if (!workspaceFolder) {
     await vscode.window.showErrorMessage('워크스페이스 폴더를 찾을 수 없습니다.');
@@ -143,7 +145,7 @@ async function resolveAugmentEditorContext(
     return undefined;
   }
 
-  const documentText = editor.document.getText();
+  const documentText: string = editor.document.getText();
 
   let draft: Draft;
   try {
@@ -170,7 +172,7 @@ async function resolveAugmentSelection(
   rangeArg: vscode.Range | undefined,
   instruction: string | undefined,
 ): Promise<AugmentSelection | undefined> {
-  const selectionRange = resolveExpandRange(editor, rangeArg);
+  const selectionRange: vscode.Selection | vscode.Range = resolveExpandRange(editor, rangeArg);
 
   if (scope === 'selection' && selectionRange.isEmpty) {
     await vscode.window.showInformationMessage(
@@ -179,7 +181,7 @@ async function resolveAugmentSelection(
     return undefined;
   }
 
-  const target =
+  const target: string =
     scope === 'selection' ? editor.document.getText(selectionRange).trim() : draft.body.trim();
 
   if (target.length === 0) {
@@ -197,7 +199,8 @@ async function resolveAugmentTarget(
   rangeArg: vscode.Range | undefined,
   instruction: string | undefined,
 ): Promise<AugmentTarget | undefined> {
-  const context = await resolveAugmentEditorContext(invokedDraftUri);
+  const context: AugmentEditorContext | undefined =
+    await resolveAugmentEditorContext(invokedDraftUri);
 
   if (!context) {
     return undefined;
@@ -205,13 +208,20 @@ async function resolveAugmentTarget(
 
   const { editor, workspaceFolder, documentText, draft } = context;
 
-  const selection = await resolveAugmentSelection(scope, editor, draft, rangeArg, instruction);
+  const selection: AugmentSelection | undefined = await resolveAugmentSelection(
+    scope,
+    editor,
+    draft,
+    rangeArg,
+    instruction,
+  );
 
   if (!selection) {
     return undefined;
   }
 
-  const sceneUri = invokedSceneUri ?? deriveSceneUri(workspaceFolder, documentText);
+  const sceneUri: vscode.Uri | undefined =
+    invokedSceneUri ?? deriveSceneUri(workspaceFolder, documentText);
 
   if (!sceneUri) {
     await vscode.window.showErrorMessage('연결된 씬 파일을 찾을 수 없습니다.');
@@ -249,7 +259,7 @@ export function buildAugmentLabels(
     };
   }
 
-  const isSelection = scope === 'selection';
+  const isSelection: boolean = scope === 'selection';
 
   return {
     progressTitle: isSelection ? 'Storyboard 선택 영역 보충' : 'Storyboard 초안 보충',
@@ -281,8 +291,8 @@ async function presentAugmentDiff(
   proposedFullText: string,
   diffTitle: string,
 ): Promise<void> {
-  const beforeUri = augmentBeforeUri(draftUri);
-  const afterUri = augmentAfterUri(draftUri);
+  const beforeUri: vscode.Uri = augmentBeforeUri(draftUri);
+  const afterUri: vscode.Uri = augmentAfterUri(draftUri);
 
   previewProvider.setContent(beforeUri, documentText);
   previewProvider.setContent(afterUri, proposedFullText);
@@ -304,9 +314,9 @@ async function applyAugmentation(
     workspaceRoot: target.workspaceFolder.uri,
   });
 
-  const edit = new vscode.WorkspaceEdit();
+  const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
   edit.replace(target.editor.document.uri, replacement.range, replacement.text);
-  const applied = await vscode.workspace.applyEdit(edit);
+  const applied: boolean = await vscode.workspace.applyEdit(edit);
 
   if (!applied) {
     await vscode.window.showErrorMessage('보충 결과를 적용하지 못했습니다.');
@@ -339,7 +349,7 @@ async function runAugmentDraft(
   rangeArg?: vscode.Range,
   instruction?: string,
 ): Promise<void> {
-  const target = await resolveAugmentTarget(
+  const target: AugmentTarget | undefined = await resolveAugmentTarget(
     scope,
     invokedSceneUri,
     invokedDraftUri,
@@ -352,24 +362,38 @@ async function runAugmentDraft(
   }
 
   const { editor, workspaceFolder, documentText, draft, selectionRange } = target;
-  const labels = buildAugmentLabels(scope, instruction);
+  const labels: AugmentLabels = buildAugmentLabels(scope, instruction);
 
-  const result = await runAugmentation(dependencies.drafts, labels.progressTitle, {
-    draftSceneStem: draft.sceneStem,
-    instruction,
-    sceneUri: target.sceneUri,
-    scope,
-    target: target.target,
-    workspaceRoot: workspaceFolder.uri,
-  });
+  const result: AugmentDraftResult = await runAugmentation(
+    dependencies.drafts,
+    labels.progressTitle,
+    {
+      draftSceneStem: draft.sceneStem,
+      instruction,
+      sceneUri: target.sceneUri,
+      scope,
+      target: target.target,
+      workspaceRoot: workspaceFolder.uri,
+    },
+  );
 
   if (!result.ok) {
     await reportAugmentFailure(dependencies, result);
     return;
   }
 
-  const replacement = buildReplacement(scope, editor.document, selectionRange, draft, result.text);
-  const proposedFullText = applyReplacementToText(documentText, editor.document, replacement);
+  const replacement: AugmentReplacement = buildReplacement(
+    scope,
+    editor.document,
+    selectionRange,
+    draft,
+    result.text,
+  );
+  const proposedFullText: string = applyReplacementToText(
+    documentText,
+    editor.document,
+    replacement,
+  );
 
   await presentAugmentDiff(
     previewProvider,
@@ -379,7 +403,11 @@ async function runAugmentDraft(
     labels.diffTitle,
   );
 
-  const decision = await vscode.window.showInformationMessage(labels.confirmPrompt, '적용', '취소');
+  const decision: '적용' | '취소' | undefined = await vscode.window.showInformationMessage(
+    labels.confirmPrompt,
+    '적용',
+    '취소',
+  );
 
   if (decision !== '적용') {
     return;
@@ -391,7 +419,7 @@ async function runAugmentDraft(
 export function registerAugmentDraftCommands(
   dependencies: RegisterAugmentDraftCommandDependencies,
 ): vscode.Disposable {
-  const previewProvider = new VirtualDocumentStore();
+  const previewProvider: VirtualDocumentStore = new VirtualDocumentStore();
 
   return vscode.Disposable.from(
     previewProvider,
@@ -414,7 +442,7 @@ export function registerAugmentDraftCommands(
         rangeArg?: vscode.Range,
         instructionArg?: string,
       ) => {
-        const instruction =
+        const instruction: string | undefined =
           instructionArg ??
           (await vscode.window.showInputBox({
             title: '선택 영역 편집',

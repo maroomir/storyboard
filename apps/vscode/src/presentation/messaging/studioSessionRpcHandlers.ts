@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@storyboard/story-model';
+import type {
+  StoryboardResponsePayload,
+  StudioSessionSnapshot,
+  StudioSessionSummary,
+} from '@storyboard/story-model';
 import type { IStudioSessionRepository } from '@storyboard/story-engine';
 
 export interface StudioSessionRpcHandlersDependencies {
@@ -18,7 +22,7 @@ export function createStudioSessionRpcHandlers(
     'studio.session.save': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.session.save'>> => {
-      const root = await getProjectRoot();
+      const root: vscode.Uri | undefined = await getProjectRoot();
 
       if (root) {
         await repository.save(root, {
@@ -36,24 +40,30 @@ export function createStudioSessionRpcHandlers(
     'studio.session.list': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.session.list'>> => {
-      const root = await getProjectRoot();
-      const sessions = root ? await repository.list(root, payload.entity) : [];
+      const root: vscode.Uri | undefined = await getProjectRoot();
+      const sessions: readonly StudioSessionSummary[] = root
+        ? await repository.list(root, payload.entity)
+        : [];
       return { sessions: [...sessions] };
     },
 
     'studio.session.latest': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.session.latest'>> => {
-      const root = await getProjectRoot();
-      const session = root ? await repository.loadLatest(root, payload.entity) : undefined;
+      const root: vscode.Uri | undefined = await getProjectRoot();
+      const session: StudioSessionSnapshot | undefined = root
+        ? await repository.loadLatest(root, payload.entity)
+        : undefined;
       return { session };
     },
 
     'studio.session.load': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.session.load'>> => {
-      const root = await getProjectRoot();
-      const session = root ? await repository.load(root, payload.entity, payload.id) : undefined;
+      const root: vscode.Uri | undefined = await getProjectRoot();
+      const session: StudioSessionSnapshot | undefined = root
+        ? await repository.load(root, payload.entity, payload.id)
+        : undefined;
       return { session };
     },
   };

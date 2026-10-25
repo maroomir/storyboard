@@ -19,7 +19,7 @@ const EDIT_BUTTON: vscode.QuickInputButton = {
   tooltip: '이 항목 수정',
 };
 
-const INLINE_VALUE_LIMIT = 40;
+const INLINE_VALUE_LIMIT: number = 40;
 
 // 생성 전에 확정될 씬 사실을 보여 주고 승인·항목별 수정·취소를 받는다.
 // `storyboard.grounding.autoApprove`가 켜져 있으면 이 흐름은 호출되지 않는다.
@@ -29,10 +29,16 @@ export const confirmSceneGrounding: ConfirmSceneGrounding = async ({
   proposedFields,
 }) => {
   const draft: Record<string, string> = { ...grounding };
-  const editedKeys = new Set<SceneGroundingFieldKey>();
+  const editedKeys: Set<'place' | 'time' | 'relation' | 'incident'> =
+    new Set<SceneGroundingFieldKey>();
 
   for (;;) {
-    const choice = await pickGroundingChoice(sceneStem, draft, proposedFields, editedKeys);
+    const choice: GroundingChoice | undefined = await pickGroundingChoice(
+      sceneStem,
+      draft,
+      proposedFields,
+      editedKeys,
+    );
 
     if (!choice || choice.kind === 'cancel') {
       return undefined;
@@ -42,7 +48,7 @@ export const confirmSceneGrounding: ConfirmSceneGrounding = async ({
       return draft;
     }
 
-    const value = await askFieldValue(choice.key, draft[choice.key]);
+    const value: string | undefined = await askFieldValue(choice.key, draft[choice.key]);
 
     if (value === undefined) {
       continue;
@@ -64,7 +70,7 @@ function pickGroundingChoice(
   proposedFields: readonly SceneGroundingFieldKey[],
   editedKeys: ReadonlySet<SceneGroundingFieldKey>,
 ): Promise<GroundingChoice | undefined> {
-  const picker = vscode.window.createQuickPick<GroundingItem>();
+  const picker: vscode.QuickPick<GroundingItem> = vscode.window.createQuickPick<GroundingItem>();
 
   picker.title = `장면 사실 확정 · ${sceneStem}`;
   picker.placeholder = '항목을 골라 수정하거나, 이대로 생성을 선택하세요.';
@@ -98,10 +104,10 @@ function buildItems(
   proposedFields: readonly SceneGroundingFieldKey[],
   editedKeys: ReadonlySet<SceneGroundingFieldKey>,
 ): GroundingItem[] {
-  const fieldItems = sceneGroundingFieldKeys.map((key) => {
-    const value = draft[key] ?? '';
-    const isProposed = proposedFields.includes(key) && !editedKeys.has(key);
-    const isInlineValue = value.length > 0 && value.length <= INLINE_VALUE_LIMIT;
+  const fieldItems: GroundingItem[] = sceneGroundingFieldKeys.map((key): GroundingItem => {
+    const value: string = draft[key] ?? '';
+    const isProposed: boolean = proposedFields.includes(key) && !editedKeys.has(key);
+    const isInlineValue: boolean = value.length > 0 && value.length <= INLINE_VALUE_LIMIT;
 
     return {
       label: `${isProposed ? '$(sparkle) ' : ''}${sceneGroundingFieldLabels[key]}`,

@@ -9,7 +9,11 @@ import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { refreshStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-model';
+import {
+  getStoryboardProjectPaths,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
+} from '@storyboard/story-model';
 import {
   ensureUriDoesNotExist,
   getTargetWorkspaceFolder,
@@ -17,7 +21,7 @@ import {
 } from '@/infrastructure/vscode/workspace';
 import { createDefaultProjectJson, writeProjectJson } from '@storyboard/story-engine';
 
-const initCommand = 'storyboard.init';
+const initCommand: string = 'storyboard.init';
 
 export interface RegisterInitCommandDependencies {
   readonly logger: IStoryboardLogger;
@@ -34,20 +38,20 @@ export function registerInitCommand(
 async function initializeStoryboardProject(
   dependencies: RegisterInitCommandDependencies,
 ): Promise<void> {
-  const workspaceFolder = await getTargetWorkspaceFolder();
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
 
   try {
     if (!(await validateCanInitialize(paths))) {
       return;
     }
 
-    const project = createDefaultProjectJson({ name: workspaceFolder.name });
+    const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
 
     await createStoryboardDirectories(vscodeFileSystem, paths);
     await writeProjectJson(vscodeFileSystem, paths.projectJson, project);

@@ -1,3 +1,4 @@
+import type * as vscode from 'vscode';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary, type StoryboardResponsePayload } from '@storyboard/story-model';
 import { type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
@@ -61,7 +62,7 @@ export function createUsageRpcHandlers(
 ): Pick<StoryboardRpcHandlers, 'usage.read'> {
   return {
     'usage.read': async (): Promise<StoryboardResponsePayload<'usage.read'>> => {
-      const root = await resolveStoryboardWorkspaceRoot();
+      const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
       if (!root) {
         return emptyUsageSummary();

@@ -1,13 +1,22 @@
 import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
-import type { IFileSystem, IStoryboardLogger } from '@storyboard/story-engine';
+import type {
+  IFileSystem,
+  IStoryboardLogger,
+  StoryStateAuditRequest,
+} from '@storyboard/story-engine';
 import { auditStoryMemory, readProjectJson, resealStoryMemory } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths, formatSceneOrderRanges } from '@storyboard/story-model';
+import {
+  getStoryboardProjectPaths,
+  formatSceneOrderRanges,
+  type StoryboardProjectPaths,
+  type StoryboardProject,
+} from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const resealStoryStateCommand = 'storyboard.state.reseal';
+const resealStoryStateCommand: string = 'storyboard.state.reseal';
 
 export type RegisterResealStoryStateCommandDependencies = {
   readonly configBridge: ConfigBridge;
@@ -22,7 +31,7 @@ export function registerResealStoryStateCommand(
 }
 
 async function runReseal(dependencies: RegisterResealStoryStateCommandDependencies): Promise<void> {
-  const workspaceFolder = await getTargetWorkspaceFolder();
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {
     return;
@@ -34,11 +43,11 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
   }
 
   const { configBridge, fileSystem, logger } = dependencies;
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
 
   try {
-    const project = await readProjectJson(fileSystem, paths.projectJson);
-    const request = {
+    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const request: StoryStateAuditRequest = {
       fileSystem,
       paths,
       format: project.format,
@@ -53,7 +62,7 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
 
     // NOTE: 봉인은 낡음 판정을 지운다. 초안을 다시 만들지 않기로 한 판단이 맞는지는 사람만 알 수
     // 있으므로 되돌릴 수 없는 편집임을 알리고 확인을 받는다.
-    const confirmed = await vscode.window.showWarningMessage(
+    const confirmed: '다시 봉인' | undefined = await vscode.window.showWarningMessage(
       `씬 ${formatSceneOrderRanges(audit.staleSceneOrders)}의 항목 ${audit.staleEntryCount}개를 지금의 카드·씬 기준으로 다시 봉인합니다. 초안은 다시 만들지 않습니다.`,
       { modal: true },
       '다시 봉인',
@@ -63,7 +72,7 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
       return;
     }
 
-    const resealed = await resealStoryMemory(request);
+    const resealed: readonly number[] = await resealStoryMemory(request);
 
     await vscode.window.showInformationMessage(
       `씬 ${formatSceneOrderRanges(resealed)}의 원장 항목을 다시 봉인했습니다.`,

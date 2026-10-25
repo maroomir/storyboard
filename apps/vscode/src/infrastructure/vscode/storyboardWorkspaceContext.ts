@@ -5,22 +5,25 @@ import { workspaceReadyContextKey } from '@/contributionIds';
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 export async function refreshStoryboardWorkspaceContext(): Promise<void> {
-  const ready = await anyStoryboardProjectInWorkspace();
+  const ready: boolean = await anyStoryboardProjectInWorkspace();
   await vscode.commands.executeCommand('setContext', workspaceReadyContextKey, ready);
 }
 
 export function registerStoryboardWorkspaceContext(
   context: vscode.ExtensionContext,
 ): vscode.Disposable {
-  let watcherBucket = vscode.Disposable.from();
+  let watcherBucket: vscode.Disposable = vscode.Disposable.from();
 
   const bindWatchers = (): void => {
     watcherBucket.dispose();
     const inner: vscode.Disposable[] = [];
 
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
-      const pattern = new vscode.RelativePattern(folder, STORYBOARD_RELATIVE_PATHS.projectJson);
-      const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+      const pattern: vscode.RelativePattern = new vscode.RelativePattern(
+        folder,
+        STORYBOARD_RELATIVE_PATHS.projectJson,
+      );
+      const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(pattern);
       inner.push(watcher);
 
       const scheduleRefresh = (): void => {
@@ -38,12 +41,12 @@ export function registerStoryboardWorkspaceContext(
   void refreshStoryboardWorkspaceContext();
   bindWatchers();
 
-  const folderChange = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+  const folderChange: vscode.Disposable = vscode.workspace.onDidChangeWorkspaceFolders(() => {
     bindWatchers();
     void refreshStoryboardWorkspaceContext();
   });
 
-  const composite = vscode.Disposable.from(
+  const composite: vscode.Disposable = vscode.Disposable.from(
     folderChange,
     new vscode.Disposable(() => watcherBucket.dispose()),
   );

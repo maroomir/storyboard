@@ -6,11 +6,17 @@ export function buildCharacterRosterLookup(
   return new Map(roster.map((entry) => [entry.id, entry]));
 }
 
+export interface CharacterDisplayName {
+  readonly displayName: string;
+  readonly isKnown: boolean;
+  readonly role?: CharacterRole;
+}
+
 export function resolveCharacterDisplayName(
   id: string,
   lookup: ReadonlyMap<string, CharacterRosterEntry>,
-): { readonly displayName: string; readonly isKnown: boolean; readonly role?: CharacterRole } {
-  const entry = lookup.get(id);
+): CharacterDisplayName {
+  const entry: CharacterRosterEntry | undefined = lookup.get(id);
 
   if (entry) {
     return {

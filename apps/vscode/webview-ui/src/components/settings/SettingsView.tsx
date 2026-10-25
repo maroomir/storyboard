@@ -5,7 +5,7 @@ import { createRequestId } from '@webview/lib/messaging';
 
 import { Button } from '../ui/Button';
 import { SectionHeader } from '../ui/SectionHeader';
-import { Tabs } from '../ui/Tabs';
+import { Tabs, type TabItem } from '../ui/Tabs';
 import { DefaultProviderSection } from './DefaultProviderSection';
 import { GenerationContractSection } from './GenerationContractSection';
 import { GenerationOptionsSection } from './GenerationOptionsSection';
@@ -21,15 +21,16 @@ import {
   type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
+import type { VscodeApi } from '@webview/lib/vscodeApi';
 
 interface SavedNotice {
   readonly message: string;
   readonly file?: string;
 }
 
-const savedNoticeDurationMs = 4000;
+const savedNoticeDurationMs: number = 4000;
 
-const settingsPanelClass = 'mx-auto flex w-full max-w-5xl flex-col gap-4';
+const settingsPanelClass: string = 'mx-auto flex w-full max-w-5xl flex-col gap-4';
 
 interface StoryboardRpcRequest {
   readonly protocolVersion: '1.0.0';
@@ -67,49 +68,48 @@ function useStoryboardRpc(): {
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly vscodeApi: { readonly postMessage: (message: unknown) => void } | undefined;
 } {
-  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
+  const vscodeApi: VscodeApi | undefined = useMemo(() => window.acquireVsCodeApi?.(), []);
 
-  const callRpc = useCallback(
-    (method: string, payload: Record<string, unknown>): Promise<unknown> => {
-      if (!vscodeApi) {
-        return Promise.reject(new Error('VS Code API를 사용할 수 없습니다.'));
-      }
+  const callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown> =
+    useCallback(
+      (method: string, payload: Record<string, unknown>): Promise<unknown> => {
+        if (!vscodeApi) {
+          return Promise.reject(new Error('VS Code API를 사용할 수 없습니다.'));
+        }
 
-      const id = createRequestId();
-      const request: StoryboardRpcRequest = {
-        protocolVersion: '1.0.0',
-        type: 'request',
-        id,
-        method,
-        payload,
-      };
-
-      return new Promise((resolve, reject) => {
-        const handler = (event: MessageEvent): void => {
-          const data = event.data as
-            | StoryboardRpcSuccessResponse
-            | StoryboardRpcErrorResponse
-            | undefined;
-          if (!data || data.type !== 'response' || data.id !== id) {
-            return;
-          }
-
-          window.removeEventListener('message', handler);
-
-          if (data.ok) {
-            resolve(data.payload);
-            return;
-          }
-
-          reject(new Error(data.error.message));
+        const id: string = createRequestId();
+        const request: StoryboardRpcRequest = {
+          protocolVersion: '1.0.0',
+          type: 'request',
+          id,
+          method,
+          payload,
         };
 
-        window.addEventListener('message', handler);
-        vscodeApi.postMessage(request);
-      });
-    },
-    [vscodeApi],
-  );
+        return new Promise((resolve, reject) => {
+          const handler = (event: MessageEvent): void => {
+            const data: StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined =
+              event.data as StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined;
+            if (!data || data.type !== 'response' || data.id !== id) {
+              return;
+            }
+
+            window.removeEventListener('message', handler);
+
+            if (data.ok) {
+              resolve(data.payload);
+              return;
+            }
+
+            reject(new Error(data.error.message));
+          };
+
+          window.addEventListener('message', handler);
+          vscodeApi.postMessage(request);
+        });
+      },
+      [vscodeApi],
+    );
 
   return { callRpc, vscodeApi };
 }
@@ -119,18 +119,23 @@ export function SettingsView({
 }: {
   readonly initialData: unknown;
 }): React.ReactElement {
-  const parsedInitial = useMemo(() => parseSettingsReadSnapshot(initialData), [initialData]);
+  const parsedInitial: SettingsReadSnapshot | undefined = useMemo(
+    () => parseSettingsReadSnapshot(initialData),
+    [initialData],
+  );
   const [snapshot, setSnapshot] = useState<SettingsReadSnapshot | undefined>(parsedInitial);
   const [loadError, setLoadError] = useState<string | null>(
     parsedInitial ? null : '설정을 불러오지 못했습니다.',
   );
   const [rpcError, setRpcError] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
-  const savedNoticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const savedNoticeTimer: React.MutableRefObject<number | undefined> = useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined);
   const [apiKeyDraft, setApiKeyDraft] = useState<Partial<Record<AiProviderId, string>>>({});
   const [ollamaBaseUrlDraft, setOllamaBaseUrlDraft] = useState<string | null>(null);
   const [baseUrlFocused, setBaseUrlFocused] = useState(false);
-  const baseUrlFocusedRef = useRef(baseUrlFocused);
+  const baseUrlFocusedRef: React.MutableRefObject<boolean> = useRef(baseUrlFocused);
   baseUrlFocusedRef.current = baseUrlFocused;
   const [connectionTest, setConnectionTest] = useState<
     Partial<Record<AiProviderId, ConnectionTestState>>
@@ -139,26 +144,32 @@ export function SettingsView({
 
   const { callRpc, vscodeApi } = useStoryboardRpc();
 
-  const onRpcError = useCallback((message: string): void => {
+  const onRpcError: (message: string) => void = useCallback((message: string): void => {
     setRpcError(message);
   }, []);
 
   // The native controls already show the new value optimistically, so without this line a save
   // and a no-op look identical; the notice names the layer the value landed in.
-  const onSaved = useCallback((label: string, target: SaveTarget): void => {
-    const where =
-      target.origin === undefined ? '' : ` · ${originLabel(target.origin)} 설정에 저장됨`;
-    setSavedNotice({ message: `${label}${where}`, ...(target.file ? { file: target.file } : {}) });
+  const onSaved: (label: string, target: SaveTarget) => void = useCallback(
+    (label: string, target: SaveTarget): void => {
+      const where: string =
+        target.origin === undefined ? '' : ` · ${originLabel(target.origin)} 설정에 저장됨`;
+      setSavedNotice({
+        message: `${label}${where}`,
+        ...(target.file ? { file: target.file } : {}),
+      });
 
-    if (savedNoticeTimer.current) {
-      clearTimeout(savedNoticeTimer.current);
-    }
+      if (savedNoticeTimer.current) {
+        clearTimeout(savedNoticeTimer.current);
+      }
 
-    savedNoticeTimer.current = setTimeout(() => setSavedNotice(null), savedNoticeDurationMs);
-  }, []);
+      savedNoticeTimer.current = setTimeout(() => setSavedNotice(null), savedNoticeDurationMs);
+    },
+    [],
+  );
 
   useEffect(
-    () => () => {
+    () => (): void => {
       if (savedNoticeTimer.current) {
         clearTimeout(savedNoticeTimer.current);
       }
@@ -171,7 +182,7 @@ export function SettingsView({
       return;
     }
 
-    const id = createRequestId();
+    const id: string = createRequestId();
     const request: StoryboardRpcRequest = {
       protocolVersion: '1.0.0',
       type: 'request',
@@ -181,10 +192,8 @@ export function SettingsView({
     };
 
     const handler = (event: MessageEvent): void => {
-      const data = event.data as
-        | StoryboardRpcSuccessResponse
-        | StoryboardRpcErrorResponse
-        | undefined;
+      const data: StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined =
+        event.data as StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined;
       if (!data || data.type !== 'response' || data.id !== id) {
         return;
       }
@@ -196,7 +205,7 @@ export function SettingsView({
         return;
       }
 
-      const next = parseSettingsReadSnapshot(data.payload);
+      const next: SettingsReadSnapshot | undefined = parseSettingsReadSnapshot(data.payload);
       if (!next) {
         setLoadError('설정 응답 형식이 올바르지 않습니다.');
         return;
@@ -209,19 +218,19 @@ export function SettingsView({
     window.addEventListener('message', handler);
     vscodeApi.postMessage(request);
 
-    return () => {
+    return (): void => {
       window.removeEventListener('message', handler);
     };
   }, [snapshot, vscodeApi]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent): void => {
-      const data = event.data as SettingsChangedEvent | undefined;
+      const data: SettingsChangedEvent | undefined = event.data as SettingsChangedEvent | undefined;
       if (!data || data.type !== 'event' || data.method !== 'settings.changed') {
         return;
       }
 
-      const next = parseSettingsReadSnapshot(data.payload);
+      const next: SettingsReadSnapshot | undefined = parseSettingsReadSnapshot(data.payload);
       if (!next) {
         return;
       }
@@ -234,7 +243,7 @@ export function SettingsView({
     };
 
     window.addEventListener('message', handleMessage);
-    return () => {
+    return (): void => {
       window.removeEventListener('message', handleMessage);
     };
   }, []);
@@ -253,7 +262,7 @@ export function SettingsView({
     );
   }
 
-  const settingsTabs = [
+  const settingsTabs: TabItem[] = [
     {
       id: 'defaults',
       label: '기본값',

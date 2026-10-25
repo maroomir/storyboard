@@ -61,7 +61,7 @@ function targetsForTool(tool: StudioComposerTool): readonly StudioToolTargetKind
     return createWizardTargets;
   }
 
-  const kinds = new Set<StudioToolTargetKind>();
+  const kinds: Set<StudioToolTargetKind> = new Set<StudioToolTargetKind>();
   for (const [shape, tools] of Object.entries(studioToolNamesByShape)) {
     if ((tools as readonly string[]).includes(tool)) {
       for (const kind of shapeTargetKinds[shape as keyof typeof studioToolNamesByShape]) {
@@ -157,12 +157,12 @@ export function isToolTarget(target: StudioTarget): boolean {
 }
 
 export function slashToken(value: string): string | undefined {
-  const match = /^\/(\S*)$/.exec(value);
+  const match: RegExpExecArray | null = /^\/(\S*)$/.exec(value);
   return match ? match[1] : undefined;
 }
 
 export function toolCandidates(token: string, target: StudioTarget): readonly StudioToolEntry[] {
-  const lowered = token.toLowerCase();
+  const lowered: string = token.toLowerCase();
 
   return studioTools.filter(
     (entry) =>

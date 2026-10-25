@@ -12,6 +12,9 @@ import {
   characterProfilePath,
   getStoryboardProjectPaths,
   parseCardIdFromPath,
+  type StoryboardProjectPaths,
+  type StoryboardCard,
+  type StoryUri,
 } from '@storyboard/story-model';
 import { uriExists } from './workspace';
 
@@ -26,8 +29,10 @@ function isSameWorkspaceFolder(
   oldUri: vscode.Uri,
   newUri: vscode.Uri,
 ): vscode.WorkspaceFolder | undefined {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(oldUri);
-  const newWorkspaceFolder = vscode.workspace.getWorkspaceFolder(newUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(oldUri);
+  const newWorkspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(newUri);
 
   if (
     !workspaceFolder ||
@@ -52,29 +57,29 @@ export function parseCardRenameCandidate(
     return undefined;
   }
 
-  const workspaceFolder = isSameWorkspaceFolder(oldUri, newUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = isSameWorkspaceFolder(oldUri, newUri);
 
   if (!workspaceFolder) {
     return undefined;
   }
 
-  const oldFileName = oldUri.path.split('/').at(-1) ?? '';
-  const newFileName = newUri.path.split('/').at(-1) ?? '';
+  const oldFileName: string = oldUri.path.split('/').at(-1) ?? '';
+  const newFileName: string = newUri.path.split('/').at(-1) ?? '';
 
   if (!isValidCardFileName(oldFileName) || !isValidCardFileName(newFileName)) {
     return undefined;
   }
 
-  const oldId = parseCardIdFromPath(oldUri);
-  const newId = parseCardIdFromPath(newUri);
+  const oldId: string | undefined = parseCardIdFromPath(oldUri);
+  const newId: string | undefined = parseCardIdFromPath(newUri);
 
   if (!oldId || !newId) {
     return undefined;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
-  const oldDirectory = oldUri.path.slice(0, -oldFileName.length);
-  const newDirectory = newUri.path.slice(0, -newFileName.length);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
+  const oldDirectory: string = oldUri.path.slice(0, -oldFileName.length);
+  const newDirectory: string = newUri.path.slice(0, -newFileName.length);
 
   if (oldDirectory !== newDirectory) {
     return undefined;
@@ -103,8 +108,8 @@ export async function buildCardRenameWorkspaceEdit(
   oldUri: vscode.Uri,
   newUri: vscode.Uri,
 ): Promise<vscode.WorkspaceEdit | undefined> {
-  const edit = new vscode.WorkspaceEdit();
-  const appended = await appendCardRenameWorkspaceEdit(edit, oldUri, newUri);
+  const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
+  const appended: boolean = await appendCardRenameWorkspaceEdit(edit, oldUri, newUri);
 
   return appended ? edit : undefined;
 }
@@ -114,26 +119,26 @@ export async function appendCardRenameWorkspaceEdit(
   oldUri: vscode.Uri,
   newUri: vscode.Uri,
 ): Promise<boolean> {
-  const candidate = parseCardRenameCandidate(oldUri, newUri);
+  const candidate: CardRenameCandidate | undefined = parseCardRenameCandidate(oldUri, newUri);
 
   if (!candidate) {
     return false;
   }
 
-  const validationMessage = validateCardRenameId(candidate.newId);
+  const validationMessage: string | undefined = validateCardRenameId(candidate.newId);
 
   if (validationMessage) {
     throw new CardRenameValidationError(validationMessage);
   }
 
-  const oldCardBytes = await vscode.workspace.fs.readFile(oldUri);
-  const oldCardText = new TextDecoder().decode(oldCardBytes);
-  let renamedCard;
+  const oldCardBytes: Uint8Array<ArrayBufferLike> = await vscode.workspace.fs.readFile(oldUri);
+  const oldCardText: string = new TextDecoder().decode(oldCardBytes);
+  let renamedCard: StoryboardCard;
 
   try {
     renamedCard = setCardId(parseCard(oldCardText), candidate.newId);
   } catch (error) {
-    const message =
+    const message: string =
       error instanceof CardParseError
         ? error.message
         : '카드 본문을 읽을 수 없어 rename을 적용할 수 없습니다.';
@@ -163,7 +168,7 @@ async function appendCharacterReferenceUpdates(
   oldUri: vscode.Uri,
   newUri: vscode.Uri,
 ): Promise<void> {
-  const characterUris = await vscode.workspace.findFiles(
+  const characterUris: vscode.Uri[] = await vscode.workspace.findFiles(
     new vscode.RelativePattern(candidate.workspaceRoot, STORYBOARD_GLOBS.characterCards),
   );
 
@@ -175,7 +180,7 @@ async function appendCharacterReferenceUpdates(
     await appendReferenceUpdateIfChanged(edit, cardUri, candidate.oldId, candidate.newId);
   }
 
-  const backgroundUris = await vscode.workspace.findFiles(
+  const backgroundUris: vscode.Uri[] = await vscode.workspace.findFiles(
     new vscode.RelativePattern(candidate.workspaceRoot, STORYBOARD_GLOBS.backgroundCards),
   );
 
@@ -190,27 +195,27 @@ async function appendReferenceUpdateIfChanged(
   oldId: string,
   newId: string,
 ): Promise<void> {
-  const fileName = cardUri.path.split('/').at(-1) ?? '';
+  const fileName: string = cardUri.path.split('/').at(-1) ?? '';
 
   if (isIgnoredSampleCardFileName(fileName)) {
     return;
   }
 
-  const cardBytes = await vscode.workspace.fs.readFile(cardUri);
-  const cardText = new TextDecoder().decode(cardBytes);
-  let card;
+  const cardBytes: Uint8Array<ArrayBufferLike> = await vscode.workspace.fs.readFile(cardUri);
+  const cardText: string = new TextDecoder().decode(cardBytes);
+  let card: StoryboardCard;
 
   try {
     card = parseCard(cardText);
   } catch (error) {
-    const message =
+    const message: string =
       error instanceof CardParseError
         ? error.message
         : '참조 카드를 읽을 수 없어 rename을 적용할 수 없습니다.';
     throw new CardRenameValidationError(message);
   }
 
-  const updatedCard = rewriteCardIdReferences(card, oldId, newId);
+  const updatedCard: StoryboardCard = rewriteCardIdReferences(card, oldId, newId);
 
   if (updatedCard === card) {
     return;
@@ -223,8 +228,8 @@ async function appendProfileImageRename(
   edit: vscode.WorkspaceEdit,
   candidate: CardRenameCandidate,
 ): Promise<void> {
-  const oldProfileUri = characterProfilePath(candidate.workspaceRoot, candidate.oldId);
-  const newProfileUri = characterProfilePath(candidate.workspaceRoot, candidate.newId);
+  const oldProfileUri: StoryUri = characterProfilePath(candidate.workspaceRoot, candidate.oldId);
+  const newProfileUri: StoryUri = characterProfilePath(candidate.workspaceRoot, candidate.newId);
 
   if (await uriExists(oldProfileUri)) {
     edit.renameFile(oldProfileUri, newProfileUri, { overwrite: false, ignoreIfExists: false });
@@ -237,9 +242,9 @@ function replaceFileText(
   nextText: string,
   currentText: string,
 ): void {
-  const lines = currentText.split('\n');
-  const endLine = Math.max(lines.length - 1, 0);
-  const endCharacter = lines.at(-1)?.length ?? 0;
+  const lines: string[] = currentText.split('\n');
+  const endLine: number = Math.max(lines.length - 1, 0);
+  const endCharacter: number = lines.at(-1)?.length ?? 0;
 
   edit.replace(
     uri,

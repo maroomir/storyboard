@@ -12,11 +12,16 @@ export type CardRoleBadgeProps = {
   readonly className?: string;
 };
 
-const roleLabelByValue = Object.fromEntries(
+const roleLabelByValue: Record<CharacterRole, string> = Object.fromEntries(
   CHARACTER_ROLE_OPTIONS.map((option) => [option.value, option.label]),
 ) as Record<CharacterRole, string>;
 
-const sizeClass: Record<CardRoleBadgeSize, { readonly shell: string; readonly glyph: string }> = {
+interface BadgeDimensions {
+  readonly shell: string;
+  readonly glyph: string;
+}
+
+const sizeClass: Record<CardRoleBadgeSize, BadgeDimensions> = {
   sm: { shell: 'h-6 w-6 text-[0.55rem]', glyph: 'h-2.5 w-2.5' },
   md: { shell: 'h-9 w-9 text-xs', glyph: 'h-4 w-4' },
 };
@@ -67,7 +72,7 @@ export function CardRoleBadge({
   size = 'md',
   className,
 }: CardRoleBadgeProps): React.ReactElement {
-  const dimensions = sizeClass[size];
+  const dimensions: BadgeDimensions = sizeClass[size];
 
   return (
     <span

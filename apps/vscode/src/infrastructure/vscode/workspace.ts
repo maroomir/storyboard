@@ -5,8 +5,13 @@ import {
   hasStoryboardProjectAt,
 } from '@storyboard/story-model';
 
+interface WorkspaceFolderPick extends vscode.QuickPickItem {
+  readonly folder: vscode.WorkspaceFolder;
+}
+
 export async function getTargetWorkspaceFolder(): Promise<vscode.WorkspaceFolder | undefined> {
-  const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+  const workspaceFolders: readonly vscode.WorkspaceFolder[] =
+    vscode.workspace.workspaceFolders ?? [];
 
   if (workspaceFolders.length === 0) {
     await vscode.window.showErrorMessage(
@@ -19,7 +24,7 @@ export async function getTargetWorkspaceFolder(): Promise<vscode.WorkspaceFolder
     return workspaceFolders[0];
   }
 
-  const selectedFolder = await vscode.window.showQuickPick(
+  const selectedFolder: WorkspaceFolderPick | undefined = await vscode.window.showQuickPick(
     workspaceFolders.map((folder) => ({ label: folder.name, folder })),
     { placeHolder: 'Storyboard 프로젝트를 초기화할 워크스페이스 폴더를 선택하세요.' },
   );

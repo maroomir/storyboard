@@ -2,12 +2,18 @@ import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type * as vscode from 'vscode';
 
 import { formatAugmentCards } from '@storyboard/story-ai';
-import type { ContinuityIssue, GrammarIssue } from '@storyboard/story-ai';
+import type { ContinuityIssue, GrammarIssue, StoryboardAiService } from '@storyboard/story-ai';
 import type {
   StudioAgentInvokeRequest,
   StudioAgentToolSpan,
   ProjectFormat,
   SceneContext,
+  StoryboardProjectPaths,
+  SceneFile,
+  SceneContextWorkspacePaths,
+  NarrativeContext,
+  StoryboardProject,
+  UsageAttribution,
 } from '@storyboard/story-model';
 import {
   buildNarrativeContext,
@@ -42,8 +48,8 @@ export interface StudioInvokeResolverInput {
   readonly baseline: string;
 }
 
-const maxReportedIssues = 10;
-const condenseTargetRatio = 0.7;
+const maxReportedIssues: number = 10;
+const condenseTargetRatio: number = 0.7;
 
 export function createStudioInvokeResolver(
   deps: StudioInvokeResolverDependencies,
@@ -70,19 +76,19 @@ async function runContinuityCheck(
   deps: StudioInvokeResolverDependencies,
   input: StudioInvokeResolverInput,
 ): Promise<string> {
-  const scene = await loadSceneContext(input);
+  const scene: LoadedSceneContext | undefined = await loadSceneContext(input);
 
   if (!scene) {
     return '[도구 결과: continuityCheck] 씬 자료를 읽지 못해 검사를 건너뛰었다.';
   }
 
-  const factLines = formatBibleFactLines(scene.sceneContext, scene.bibleFacts);
+  const factLines: string[] = formatBibleFactLines(scene.sceneContext, scene.bibleFacts);
 
   if (factLines.length === 0) {
     return '[도구 결과: continuityCheck] 대조할 설정 자료(canon)가 없어 검사할 수 없었다.';
   }
 
-  const issues = await deps.aiGateway
+  const issues: ContinuityIssue[] = await deps.aiGateway
     .createService(input.workspaceRoot)
     .checkContinuity(input.baseline, factLines, {
       providerId: deps.aiGateway.getTaskProvider('continuityCheck'),
@@ -106,7 +112,7 @@ async function runGrammarCheck(
   deps: StudioInvokeResolverDependencies,
   input: StudioInvokeResolverInput,
 ): Promise<string> {
-  const issues = await deps.aiGateway
+  const issues: GrammarIssue[] = await deps.aiGateway
     .createService(input.workspaceRoot)
     .checkGrammar(input.baseline, {
       providerId: deps.aiGateway.getTaskProvider('grammarCheck'),
@@ -131,19 +137,19 @@ async function runTransform(
   input: StudioInvokeResolverInput,
   request: StudioAgentInvokeRequest,
 ): Promise<string> {
-  const span = request.span;
+  const span: StudioAgentToolSpan | undefined = request.span;
 
   if (!span) {
     return `[도구 실패: ${request.tool}] span 없이 부를 수 없는 도구다.`;
   }
 
-  const body = extractDraftBody(input.baseline);
+  const body: string = extractDraftBody(input.baseline);
 
   if (body.slice(span.startOffset, span.endOffset) !== span.oldText) {
     return `[도구 실패: ${request.tool}] span이 본문과 일치하지 않아 실행하지 못했다. 오프셋과 oldText를 본문 그대로 다시 맞춰라.`;
   }
 
-  const text = await transformSpan(deps, input, request, span);
+  const text: string = await transformSpan(deps, input, request, span);
 
   if (text.trim().length === 0) {
     return `[도구 실패: ${request.tool}] 빈 결과가 돌아왔다. 도구 없이 직접 고쳐 propose하라.`;
@@ -161,8 +167,8 @@ async function transformSpan(
   request: StudioAgentInvokeRequest,
   span: StudioAgentToolSpan,
 ): Promise<string> {
-  const service = deps.aiGateway.createService(input.workspaceRoot);
-  const attribution = { primary: { kind: 'scene', id: input.sceneStem } } as const;
+  const service: StoryboardAiService = deps.aiGateway.createService(input.workspaceRoot);
+  const attribution: UsageAttribution = { primary: { kind: 'scene', id: input.sceneStem } };
 
   if (request.tool === 'expand') {
     return service.expandDraft(
@@ -175,7 +181,7 @@ async function transformSpan(
     );
   }
 
-  const scene = await loadSceneContext(input);
+  const scene: LoadedSceneContext | undefined = await loadSceneContext(input);
 
   if (request.tool === 'condense') {
     return service.condenseDraft(
@@ -216,23 +222,27 @@ interface LoadedSceneContext {
 async function loadSceneContext(
   input: StudioInvokeResolverInput,
 ): Promise<LoadedSceneContext | undefined> {
-  const paths = getStoryboardProjectPaths(input.workspaceRoot);
-  const sceneFileName = `${input.sceneStem}.card`;
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(input.workspaceRoot);
+  const sceneFileName: string = `${input.sceneStem}.card`;
 
   try {
-    const scene = await readSceneFile(
+    const scene: SceneFile = await readSceneFile(
       scenePath(input.workspaceRoot, input.sceneStem),
       vscodeFsAdapter,
       sceneFileName,
     );
-    const contextPaths = sceneContextPaths(paths);
-    const sceneContext = await buildSceneContext(contextPaths, scene, sceneContextFileSystem);
-    const narrative = await buildNarrativeContext(
+    const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
+    const sceneContext: SceneContext = await buildSceneContext(
+      contextPaths,
+      scene,
+      sceneContextFileSystem,
+    );
+    const narrative: NarrativeContext = await buildNarrativeContext(
       contextPaths,
       sceneContext,
       sceneContextFileSystem,
     );
-    const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
+    const project: StoryboardProject = await readProjectJson(vscodeFileSystem, paths.projectJson);
 
     return { sceneContext, bibleFacts: narrative.bibleFacts, format: project.format };
   } catch {
@@ -255,6 +265,6 @@ function overflowLine(total: number): string[] {
 }
 
 function excerpt(text: string): string {
-  const trimmed = text.trim().replace(/\s+/g, ' ');
+  const trimmed: string = text.trim().replace(/\s+/g, ' ');
   return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
 }

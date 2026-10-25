@@ -4,8 +4,9 @@ import type { DraftManager } from '@storyboard/story-app';
 import { isDirectSceneCardFile } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
+import type { GenerateSceneBeatsRequest, GenerateSceneBeatsResult } from '@storyboard/story-engine';
 
-const GENERATE_SCENE_BEATS_COMMAND = 'storyboard.scene.beats';
+const GENERATE_SCENE_BEATS_COMMAND: string = 'storyboard.scene.beats';
 
 export interface RegisterGenerateSceneBeatsCommandDependencies {
   readonly drafts: Pick<DraftManager, 'generateBeats'>;
@@ -16,7 +17,7 @@ function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | un
     return invokedUri;
   }
 
-  const document = vscode.window.activeTextEditor?.document;
+  const document: vscode.TextDocument | undefined = vscode.window.activeTextEditor?.document;
   return document?.uri.scheme === 'file' ? document.uri : undefined;
 }
 
@@ -24,21 +25,22 @@ async function runCommand(
   invokedUri: vscode.Uri | undefined,
   dependencies: RegisterGenerateSceneBeatsCommandDependencies,
 ): Promise<void> {
-  const sceneUri = resolveSceneUriFromInvocation(invokedUri);
-  const workspaceFolder = sceneUri && vscode.workspace.getWorkspaceFolder(sceneUri);
+  const sceneUri: vscode.Uri | undefined = resolveSceneUriFromInvocation(invokedUri);
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    sceneUri && vscode.workspace.getWorkspaceFolder(sceneUri);
 
   if (!sceneUri || !workspaceFolder || !isDirectSceneCardFile(sceneUri, workspaceFolder)) {
     await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);
     return;
   }
 
-  const fileName = sceneUri.path.split('/').pop() ?? '';
-  const request = {
+  const fileName: string = sceneUri.path.split('/').pop() ?? '';
+  const request: GenerateSceneBeatsRequest = {
     workspaceRoot: workspaceFolder.uri,
     sceneUri,
     fileName,
   };
-  const kept = await dependencies.drafts.generateBeats(request);
+  const kept: GenerateSceneBeatsResult = await dependencies.drafts.generateBeats(request);
   if (!kept.ok) {
     void showStoryboardFailure(kept.message);
     return;
@@ -49,8 +51,8 @@ async function runCommand(
     return;
   }
 
-  const overwriteLabel = '다시 뽑기';
-  const choice = await vscode.window.showWarningMessage(
+  const overwriteLabel: string = '다시 뽑기';
+  const choice: string | undefined = await vscode.window.showWarningMessage(
     `이미 비트 ${kept.beats.length}개가 있습니다. 다시 뽑아 덮어쓸까요?`,
     { modal: true },
     overwriteLabel,
@@ -59,7 +61,10 @@ async function runCommand(
     return;
   }
 
-  const forced = await dependencies.drafts.generateBeats({ ...request, force: true });
+  const forced: GenerateSceneBeatsResult = await dependencies.drafts.generateBeats({
+    ...request,
+    force: true,
+  });
   if (!forced.ok) {
     void showStoryboardFailure(forced.message);
     return;

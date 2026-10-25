@@ -4,7 +4,7 @@ import type { IApplicationModule } from './lifecycle/applicationModule';
 import { CardModule } from './modules/cardModule';
 import { DraftModule } from './modules/draftModule';
 import { NovelModule } from './modules/novelModule';
-import { PlatformModule } from './modules/platformModule';
+import { PlatformModule, type IPlatformServices } from './modules/platformModule';
 import { ProjectModule } from './modules/projectModule';
 import { WorkbenchModule } from './modules/workbenchModule';
 
@@ -21,12 +21,12 @@ export class StoryboardApplication implements vscode.Disposable {
       throw new Error(`StoryboardApplication cannot initialize from ${this.state.status}.`);
     }
 
-    const platformModule = new PlatformModule();
+    const platformModule: PlatformModule = new PlatformModule();
     const modules: IApplicationModule[] = [platformModule];
 
     try {
       platformModule.initialize(context);
-      const platform = platformModule.getServices();
+      const platform: IPlatformServices = platformModule.getServices();
 
       modules.push(
         new ProjectModule(platform),

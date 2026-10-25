@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 
-import type { GenerateAllDraftsProgress, GenerateAllDraftsSummary } from '@storyboard/story-engine';
+import type {
+  GenerateAllDraftsProgress,
+  GenerateAllDraftsResult,
+  GenerateAllDraftsSummary,
+} from '@storyboard/story-engine';
 import type { DraftManager, RunGate } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
@@ -8,7 +12,7 @@ import { stageProgressLabel } from './generateDraft';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
-const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';
+const GENERATE_ALL_DRAFTS_COMMAND: string = 'storyboard.draft.generateAll';
 
 export type RegisterGenerateAllDraftsCommandDependencies = {
   readonly runGate: Pick<RunGate, 'hold'>;
@@ -27,7 +31,7 @@ export function registerGenerateAllDraftsCommand(
 async function runGenerateAllDrafts(
   dependencies: RegisterGenerateAllDraftsCommandDependencies,
 ): Promise<void> {
-  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
@@ -42,7 +46,7 @@ async function runGenerateAllDrafts(
 async function generateAllDraftsWithProgress(
   dependencies: RegisterGenerateAllDraftsCommandDependencies,
 ): Promise<void> {
-  const result = await vscode.window.withProgress(
+  const result: GenerateAllDraftsResult = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Storyboard 전체 초안 생성',
@@ -68,12 +72,12 @@ async function generateAllDraftsWithProgress(
 }
 
 function formatProgress(event: GenerateAllDraftsProgress): string {
-  const prefix = `[${event.current}/${event.total}] ${event.label}`;
+  const prefix: string = `[${event.current}/${event.total}] ${event.label}`;
   if (event.kind === 'prepared') return `${prefix} — 준비 중…`;
   if (event.kind === 'saving') return `${prefix} — 저장 중…`;
   if (event.kind === 'revising') return `${prefix} — 검수·재작성 중…`;
-  const label = event.stage ? stageProgressLabel(event.stage) : '처리 중';
-  const suffix =
+  const label: string = event.stage ? stageProgressLabel(event.stage) : '처리 중';
+  const suffix: string =
     event.stageTotal && event.stageTotal > 1 ? ` (${event.stageCurrent}/${event.stageTotal})` : '';
   return `${prefix} — ${label}${suffix}…`;
 }
@@ -82,11 +86,11 @@ async function reportSummary(
   summary: GenerateAllDraftsSummary,
   logger: IStoryboardLogger,
 ): Promise<void> {
-  const parts = [
+  const parts: string[] = [
     `총 ${summary.sceneCount}개 씬 중 생성 ${summary.generated}건, 캐시 재사용 ${summary.cacheHits}건`,
   ];
   if (summary.failures > 0) parts.push(`실패 ${summary.failures}건`);
-  const text = parts.join(' · ');
+  const text: string = parts.join(' · ');
   if (summary.failures > 0) {
     await vscode.window.showWarningMessage(
       summary.failureLabels.length > 0 ? `${text}\n\n${summary.failureLabels.join('\n')}` : text,

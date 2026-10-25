@@ -40,14 +40,17 @@ function sortByKoreanName(left: SidebarCardSummary, right: SidebarCardSummary): 
 export function groupCharacterCardsByRole(
   cards: readonly SidebarCardSummary[],
 ): readonly CharacterSidebarSection[] {
-  const buckets = new Map<CharacterSidebarGroupKey, SidebarCardSummary[]>();
+  const buckets: Map<CharacterSidebarGroupKey, SidebarCardSummary[]> = new Map<
+    CharacterSidebarGroupKey,
+    SidebarCardSummary[]
+  >();
 
   for (const section of CHARACTER_SIDEBAR_SECTIONS) {
     buckets.set(section.key, []);
   }
 
   for (const card of cards) {
-    const key = characterRoleGroup(card.role);
+    const key: CharacterSidebarGroupKey = characterRoleGroup(card.role);
     buckets.get(key)?.push(card);
   }
 

@@ -7,11 +7,11 @@ import {
   createEmptyCharacter,
   cardIdPattern,
 } from '@storyboard/story-model';
-import type { StoryboardCard } from '@storyboard/story-model';
+import type { StoryboardCard, StoryUri } from '@storyboard/story-model';
 import { cardEditorViewType } from '@/contributionIds';
 
-const createCharacterCommand = 'storyboard.character.create';
-const createBackgroundCommand = 'storyboard.background.create';
+const createCharacterCommand: string = 'storyboard.character.create';
+const createBackgroundCommand: string = 'storyboard.background.create';
 export function registerCreateCardCommands(dependencies: {
   readonly cards: Pick<CardManager, 'exists' | 'write'>;
 }): vscode.Disposable {
@@ -29,13 +29,13 @@ async function createCard(
   cardType: StoryboardCard['type'],
   cards: Pick<CardManager, 'exists' | 'write'>,
 ): Promise<void> {
-  const workspaceFolder = await getTargetWorkspaceFolder();
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {
     return;
   }
 
-  const name = await vscode.window.showInputBox({
+  const name: string | undefined = await vscode.window.showInputBox({
     title: cardType === 'character' ? '새 캐릭터 이름' : '새 배경 이름',
     prompt: '카드에 표시할 이름을 입력하세요.',
     ignoreFocusOut: true,
@@ -46,7 +46,7 @@ async function createCard(
     return;
   }
 
-  const id = await vscode.window.showInputBox({
+  const id: string | undefined = await vscode.window.showInputBox({
     title: cardType === 'character' ? '새 캐릭터 ID' : '새 배경 ID',
     prompt:
       '파일명과 참조에 사용할 ID를 입력하세요. 영문 소문자, 숫자, 하이픈만 사용할 수 있습니다.',
@@ -59,13 +59,13 @@ async function createCard(
     return;
   }
 
-  const card = createEmptyCard(cardType, id, name);
+  const card: StoryboardCard = createEmptyCard(cardType, id, name);
   if (await cards.exists(workspaceFolder.uri, card.type, card.id)) {
     await vscode.window.showWarningMessage(`이미 존재하는 카드입니다: ${id}`);
     return;
   }
 
-  const cardUri = await cards.write(workspaceFolder.uri, card);
+  const cardUri: StoryUri = await cards.write(workspaceFolder.uri, card);
   await vscode.commands.executeCommand('vscode.openWith', cardUri, cardEditorViewType);
 }
 
@@ -86,7 +86,7 @@ function createEmptyCard(
 }
 
 export function validateCardId(value: string): string | undefined {
-  const id = value.trim();
+  const id: string = value.trim();
 
   if (id.length === 0) {
     return 'ID를 입력해 주세요.';
@@ -99,10 +99,10 @@ export function validateCardId(value: string): string | undefined {
   return undefined;
 }
 
-const fallbackCardId = 'new-card';
+const fallbackCardId: string = 'new-card';
 
 export function suggestCardId(name: string): string {
-  const normalizedName = name
+  const normalizedName: string = name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')

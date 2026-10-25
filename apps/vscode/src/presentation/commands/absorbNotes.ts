@@ -3,15 +3,23 @@ import * as vscode from 'vscode';
 import type { NoteManager, RunGate } from '@storyboard/story-app';
 import type {
   ApplyNoteAbsorbOutcome,
+  ApplyNoteAbsorbResult,
+  CollectNotesResult,
   IStoryboardLogger,
   NoteAbsorbEstimate,
   NoteLocation,
+  PlanNoteAbsorbResult,
 } from '@storyboard/story-engine';
-import { isNotionUrl, type NoteAbsorbPlan, type NoteBundle } from '@storyboard/story-model';
+import {
+  isNotionUrl,
+  type NoteAbsorbPlan,
+  type NoteBundle,
+  type NoteCardPlan,
+} from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
-const absorbCommand = 'storyboard.notes.absorb';
+const absorbCommand: string = 'storyboard.notes.absorb';
 
 export interface RegisterAbsorbNotesCommandDependencies {
   readonly logger: IStoryboardLogger;
@@ -50,20 +58,23 @@ export function registerAbsorbNotesCommand(
 }
 
 async function absorbNotes(dependencies: RegisterAbsorbNotesCommandDependencies): Promise<void> {
-  const folder = await getTargetWorkspaceFolder();
+  const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!folder || !(await hasStoryboardProject(folder))) {
     await vscode.window.showErrorMessage('Storyboard 프로젝트가 없습니다. 먼저 초기화해 주세요.');
     return;
   }
 
-  const location = await pickNoteLocation();
+  const location: NoteLocation | undefined = await pickNoteLocation();
 
   if (location === undefined) {
     return;
   }
 
-  const collected = await dependencies.notes.collect({ workspaceRoot: folder.uri, location });
+  const collected: CollectNotesResult = await dependencies.notes.collect({
+    workspaceRoot: folder.uri,
+    location,
+  });
 
   if (!collected.ok) {
     await vscode.window.showErrorMessage(collected.message);
@@ -71,8 +82,8 @@ async function absorbNotes(dependencies: RegisterAbsorbNotesCommandDependencies)
   }
 
   const { bundle } = collected;
-  const estimate = dependencies.notes.estimate(bundle);
-  const isEstimateAccepted = await vscode.window.showInformationMessage(
+  const estimate: NoteAbsorbEstimate = dependencies.notes.estimate(bundle);
+  const isEstimateAccepted: '정리' | undefined = await vscode.window.showInformationMessage(
     '노트를 AI 로 정리할까요?',
     { modal: true, detail: describeEstimate(bundle, estimate).join('\n') },
     '정리',
@@ -82,7 +93,7 @@ async function absorbNotes(dependencies: RegisterAbsorbNotesCommandDependencies)
     return;
   }
 
-  const planned = await vscode.window.withProgress(
+  const planned: PlanNoteAbsorbResult = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '노트를 정리하는 중…' },
     () => dependencies.notes.plan({ workspaceRoot: folder.uri, bundle }),
   );
@@ -92,7 +103,7 @@ async function absorbNotes(dependencies: RegisterAbsorbNotesCommandDependencies)
     return;
   }
 
-  const isPlanAccepted = await vscode.window.showInformationMessage(
+  const isPlanAccepted: '반영' | undefined = await vscode.window.showInformationMessage(
     '이대로 워크스페이스에 반영할까요?',
     { modal: true, detail: describePlan(planned.plan).join('\n') },
     '반영',
@@ -106,7 +117,7 @@ async function absorbNotes(dependencies: RegisterAbsorbNotesCommandDependencies)
   }
 
   await runHoldingWorkspaceLock(dependencies.runGate, folder.uri, '노트 흡수', async () => {
-    const applied = await vscode.window.withProgress(
+    const applied: ApplyNoteAbsorbResult = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: '노트를 반영하는 중…' },
       () =>
         dependencies.notes.apply({
@@ -129,7 +140,7 @@ async function absorbNotes(dependencies: RegisterAbsorbNotesCommandDependencies)
 }
 
 async function pickNoteLocation(): Promise<NoteLocation | undefined> {
-  const picked = await vscode.window.showQuickPick(locationPicks, {
+  const picked: LocationPickItem | undefined = await vscode.window.showQuickPick(locationPicks, {
     title: '노트 흡수',
     placeHolder: '어디에 적어 둔 노트인가요?',
   });
@@ -139,7 +150,7 @@ async function pickNoteLocation(): Promise<NoteLocation | undefined> {
   }
 
   if (picked.source === 'notion') {
-    const pageUrl = await vscode.window.showInputBox({
+    const pageUrl: string | undefined = await vscode.window.showInputBox({
       title: 'Notion 페이지 주소',
       prompt: '통합과 공유된 페이지의 주소를 붙여 넣으세요.',
       ignoreFocusOut: true,
@@ -150,7 +161,7 @@ async function pickNoteLocation(): Promise<NoteLocation | undefined> {
     return pageUrl === undefined ? undefined : { kind: 'notion', pageUrl: pageUrl.trim() };
   }
 
-  const isArchive = picked.source === 'notion-export';
+  const isArchive: boolean = picked.source === 'notion-export';
   const [uri] =
     (await vscode.window.showOpenDialog({
       title: isArchive ? 'Notion 내보내기 zip 고르기' : 'Obsidian 폴더나 노트 고르기',
@@ -168,7 +179,7 @@ async function pickNoteLocation(): Promise<NoteLocation | undefined> {
 }
 
 function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): string[] {
-  const cost =
+  const cost: string =
     estimate.costCeilingUsd === undefined
       ? '요금 정보 없음'
       : `최대 $${estimate.costCeilingUsd.toFixed(2)}`;
@@ -181,8 +192,8 @@ function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): str
 }
 
 function describePlan(plan: NoteAbsorbPlan): string[] {
-  const newCards = plan.cards.filter((card) => card.isNew);
-  const changedCards = plan.cards.filter((card) => !card.isNew);
+  const newCards: NoteCardPlan[] = plan.cards.filter((card) => card.isNew);
+  const changedCards: NoteCardPlan[] = plan.cards.filter((card) => !card.isNew);
 
   return [
     `새 카드 ${newCards.length}장${newCards.length > 0 ? `: ${newCards.map((card) => card.card.name).join(', ')}` : ''}`,
