@@ -148,7 +148,7 @@ export class TerminalPrompter implements IPrompter {
         } else if (key === keys.enter) {
           finish(request.options[selectedIndex]?.value);
         } else if (key === keys.up || key === keys.down) {
-          const step: 1 | -1 = key === keys.up ? -1 : 1;
+          const step: number = key === keys.up ? -1 : 1;
           selectedIndex = (selectedIndex + step + request.options.length) % request.options.length;
           draw();
         } else if (digit >= 1 && digit <= request.options.length) {
