@@ -9,10 +9,8 @@ export interface StoryboardHomePaths {
   readonly cacheDirectory: string;
 }
 
-export const workspaceConfigRelativePath = '.storyboard/config.json';
+export const workspaceConfigRelativePath: string = '.storyboard/config.json';
 
-// Node's fs does no shell tilde expansion, so a value like "~/story/novel" would otherwise create a
-// literal "~" directory in the CWD. `~user` is left untouched.
 export function expandHome(path: string): string {
   if (path === '~') {
     return homedir();
@@ -25,10 +23,8 @@ export function expandHome(path: string): string {
   return path;
 }
 
-// STORYBOARD_HOME moves the whole directory, which is what tests and alternate installs use. The
-// apps share this directory: one config, one secrets file, one place for usage and caches.
 export function resolveStoryboardHome(env: NodeJS.ProcessEnv = process.env): string {
-  const override = env.STORYBOARD_HOME?.trim();
+  const override: string | undefined = env.STORYBOARD_HOME?.trim();
 
   return override && override.length > 0 ? expandHome(override) : join(homedir(), '.storyboard');
 }
@@ -36,7 +32,7 @@ export function resolveStoryboardHome(env: NodeJS.ProcessEnv = process.env): str
 export function resolveStoryboardHomePaths(
   env: NodeJS.ProcessEnv = process.env,
 ): StoryboardHomePaths {
-  const home = resolveStoryboardHome(env);
+  const home: string = resolveStoryboardHome(env);
 
   return {
     home,

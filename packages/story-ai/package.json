@@ -29,6 +29,8 @@
   },
   "scripts": {
     "build:prompts": "node ../../scripts/build-prompt-resources.mjs",
-    "check:prompts": "node ../../scripts/build-prompt-resources.mjs --check"
+    "check:prompts": "node ../../scripts/build-prompt-resources.mjs --check",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.ts\" && npm run typecheck"
   }
 }

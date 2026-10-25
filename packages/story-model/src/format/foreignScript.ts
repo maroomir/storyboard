@@ -3,6 +3,7 @@
 const foreignScriptRanges =
   '\\u0400-\\u04FF\\u0500-\\u052F\\u0590-\\u05FF\\u0600-\\u06FF\\u0900-\\u097F\\u0980-\\u09FF\\u0E00-\\u0E7F';
 
+// eslint-disable-next-line no-misleading-character-class -- code point ranges, not combined characters
 export const foreignScriptPattern = new RegExp(`[${foreignScriptRanges}]`);
 
 export interface ForeignScriptSpan {
@@ -14,6 +15,7 @@ export interface ForeignScriptSpan {
 const excerptRadius = 30;
 
 export function findForeignScriptSpans(text: string): ForeignScriptSpan[] {
+  // eslint-disable-next-line no-misleading-character-class -- code point ranges, not combined characters
   const runPattern = new RegExp(`[${foreignScriptRanges}]+`, 'g');
   const spans: ForeignScriptSpan[] = [];
 
@@ -39,6 +41,7 @@ export function hasForeignScript(text: string): boolean {
 // NOTE: 오염된 원고의 꼬리가 다음 씬 프롬프트로 실려 같은 낱말이 되풀이 생성되는 경로가 확인됐다
 // (1화 말미의 아랍어가 2화에 그대로 재생산). 원고 자체는 건드리지 않고, 맥락으로 넘길 때만 걷어낸다.
 export function stripForeignScript(text: string): string {
+  // eslint-disable-next-line no-misleading-character-class -- code point ranges, not combined characters
   const runPattern = new RegExp(`[${foreignScriptRanges}]+`, 'g');
   return text.replace(runPattern, '').replace(/[ \t]{2,}/g, ' ');
 }

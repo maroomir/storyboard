@@ -31,6 +31,6 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:architecture": "node scripts/check-architecture.mjs",
-    "lint": "eslint \"src/{shared,domain,paths}/**/*.ts\" && npm run typecheck && npm run check:architecture"
+    "lint": "eslint \"src/**/*.ts\" && npm run typecheck && npm run check:architecture"
   }
 }

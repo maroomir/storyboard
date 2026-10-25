@@ -28,16 +28,23 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-// What an author may lay over the bundled defaults, and where inside a resource root (the home
-// `~/.storyboard` or a workspace's `.storyboard`) each piece lives. Later roots win.
-export const resourceLayout = {
+interface ResourceLayout {
+  readonly promptDirectory: string;
+  readonly craftContractFile: string;
+  readonly promptVariantsFile: string;
+  readonly compositionPresetsFile: string;
+  readonly scenePipelineFile: string;
+  readonly novelPipelineFile: string;
+}
+
+export const resourceLayout: ResourceLayout = {
   promptDirectory: 'prompts',
   craftContractFile: 'craftContract.json',
   promptVariantsFile: 'promptVariants.json',
   compositionPresetsFile: 'compositionPresets.json',
   scenePipelineFile: 'pipelines/scene.yaml',
   novelPipelineFile: 'pipelines/novel.yaml',
-} as const;
+};
 
 export type ResourceOverrideKind =
   | 'prompt'
@@ -64,17 +71,13 @@ export interface ResourceOverrideReport {
   readonly problems: readonly ResourceOverrideProblem[];
 }
 
-// Applies the author's files in every root over the bundled defaults, lowest precedence first. A
-// file that names nothing known or cannot be parsed is reported and skipped, so one typo does not
-// silence a whole generation run. Loading starts from the bundled state, so a second load (a
-// different workspace) never carries the previous one's files.
 export async function loadResourceOverrides(
   fileSystem: IFileSystem,
   roots: readonly StoryUri[],
 ): Promise<ResourceOverrideReport> {
   const applied: ResourceOverrideApplied[] = [];
   const problems: ResourceOverrideProblem[] = [];
-  const report = { applied, problems };
+  const report: MutableReport = { applied, problems };
 
   promptResources.clearOverrides();
   resetCraftContractDefaults();
@@ -164,12 +167,14 @@ async function loadPromptFiles(
   directory: StoryUri,
   report: MutableReport,
 ): Promise<void> {
-  const known = new Set(promptResourceKeys());
-  const names = await listDirectoryFileNames(fileSystem, directory, (name) => name.endsWith('.md'));
+  const known: Set<string> = new Set(promptResourceKeys());
+  const names: readonly string[] = await listDirectoryFileNames(fileSystem, directory, (name) =>
+    name.endsWith('.md'),
+  );
 
   for (const name of names) {
-    const key = name.slice(0, -'.md'.length);
-    const file = joinStoryPath(directory, name);
+    const key: string = name.slice(0, -'.md'.length);
+    const file: StoryUri = joinStoryPath(directory, name);
 
     if (!known.has(key)) {
       report.problems.push({ file, message: `알 수 없는 프롬프트 파일입니다: ${file.fsPath}` });
@@ -180,7 +185,7 @@ async function loadPromptFiles(
       promptResources.override(key, await readText(fileSystem, file));
       report.applied.push({ kind: 'prompt', key, file, root });
     } catch (error) {
-      const detail = error instanceof PromptResourceError ? error.message : String(error);
+      const detail: string = error instanceof PromptResourceError ? error.message : String(error);
       report.problems.push({
         file,
         message: `프롬프트 파일을 읽지 못했습니다: ${file.fsPath} (${detail})`,
@@ -189,19 +194,17 @@ async function loadPromptFiles(
   }
 }
 
-// The shape of a zod schema's safeParse, so this package needs no zod of its own.
+interface SchemaIssue {
+  readonly path: readonly PropertyKey[];
+  readonly message: string;
+}
+
+type SchemaParseResult<T> =
+  | { readonly success: true; readonly data: T }
+  | { readonly success: false; readonly error: { readonly issues: readonly SchemaIssue[] } };
+
 interface SchemaLike<T> {
-  safeParse(value: unknown):
-    | { readonly success: true; readonly data: T }
-    | {
-        readonly success: false;
-        readonly error: {
-          readonly issues: readonly {
-            readonly path: readonly PropertyKey[];
-            readonly message: string;
-          }[];
-        };
-      };
+  safeParse(value: unknown): SchemaParseResult<T>;
 }
 
 interface JsonResource<T> {
@@ -222,11 +225,13 @@ async function loadJsonFile<T>(
     return;
   }
 
-  const parsed = resource.schema.safeParse(await readJson(fileSystem, file));
+  const parsed: SchemaParseResult<T> = resource.schema.safeParse(await readJson(fileSystem, file));
 
   if (!parsed.success) {
-    const issue = parsed.error.issues[0];
-    const detail = [issue?.path.map(String).join('.'), issue?.message].filter(Boolean).join(' ');
+    const issue: SchemaIssue | undefined = parsed.error.issues[0];
+    const detail: string = [issue?.path.map(String).join('.'), issue?.message]
+      .filter(Boolean)
+      .join(' ');
     report.problems.push({
       file,
       message: `${resource.label}이 잘못되었습니다: ${file.fsPath} (${detail})`,
@@ -244,8 +249,6 @@ interface PipelineResource {
   readonly apply: (spec: PipelineSpec) => unknown;
 }
 
-// A pipeline spec is YAML and is checked against its stage catalog, so the reason a file cannot
-// drive a run (an unknown stage, a required one left out) is reported in the author's terms.
 async function loadPipelineFile(
   fileSystem: IFileSystem,
   root: StoryUri,
@@ -261,7 +264,7 @@ async function loadPipelineFile(
     resource.apply(parsePipelineSpec(await readText(fileSystem, file)));
     report.applied.push({ kind: resource.kind, file, root });
   } catch (error) {
-    const detail = error instanceof PipelineSpecError ? error.message : String(error);
+    const detail: string = error instanceof PipelineSpecError ? error.message : String(error);
     report.problems.push({
       file,
       message: `${resource.label}를 쓸 수 없습니다: ${file.fsPath} (${detail})`,
@@ -273,7 +276,6 @@ async function readText(fileSystem: IFileSystem, file: StoryUri): Promise<string
   return new TextDecoder().decode(await fileSystem.readFile(file));
 }
 
-// A file that is not JSON at all is reported as an invalid file, the same as one with a bad field.
 async function readJson(fileSystem: IFileSystem, file: StoryUri): Promise<unknown> {
   try {
     return JSON.parse(await readText(fileSystem, file)) as unknown;

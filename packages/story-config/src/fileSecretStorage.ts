@@ -7,13 +7,9 @@ import type {
 } from '@storyboard/story-ai';
 
 import { watchFiles } from '#config/fileWatch';
+import type { DisposableHandle } from '@storyboard/story-model';
 
-// SECURITY: API keys live in a 0600 file under the Storyboard home, and the directory is 0700. The
-// values are never logged, and the file is rewritten whole so a partial write cannot leak one key
-// into another's slot.
 export function createFileSecretStorage(secretsFile: string): StoryboardSecretStorageLike {
-  // A file that exists but will not parse is not an empty store — treating it as one would let the
-  // next write erase every key in it. Refuse instead and let the operator look.
   async function readAll(): Promise<Record<string, string>> {
     let raw: string;
 
@@ -32,10 +28,8 @@ export function createFileSecretStorage(secretsFile: string): StoryboardSecretSt
     return parsed as Record<string, string>;
   }
 
-  // Truncate-and-write loses every key if the process dies mid-write. Write a sibling at 0600 and
-  // rename, so the file is either the old set or the new one.
   async function writeAll(secrets: Record<string, string>): Promise<void> {
-    const temporary = `${secretsFile}.tmp-${process.pid.toString(36)}`;
+    const temporary: string = `${secretsFile}.tmp-${process.pid.toString(36)}`;
 
     await fs.mkdir(dirname(secretsFile), { recursive: true, mode: 0o700 });
 
@@ -49,21 +43,19 @@ export function createFileSecretStorage(secretsFile: string): StoryboardSecretSt
     }
   }
 
-  // A read-modify-write from two processes at once loses one key. Serialising within the process
-  // closes the common case; the file is per-user, so cross-process contention is not a real path.
   let pending: Promise<unknown> = Promise.resolve();
 
   function serialize<T>(operation: () => Promise<T>): Promise<T> {
-    const next = pending.then(operation, operation);
+    const next: Promise<T> = pending.then(operation, operation);
     pending = next.catch(() => undefined);
     return next;
   }
 
-  // The file does not say which key changed, so every listener is told about its own key and
-  // re-reads; the apps only ever ask "is there a key now", which that answers.
-  const listeners = new Set<(event: StoryboardSecretStorageChangeEvent) => void>();
-  let watcher: { readonly dispose: () => void } | undefined;
-  let knownKeys = new Set<string>();
+  const listeners: Set<(event: StoryboardSecretStorageChangeEvent) => void> = new Set<
+    (event: StoryboardSecretStorageChangeEvent) => void
+  >();
+  let watcher: DisposableHandle | undefined;
+  let knownKeys: Set<string> = new Set<string>();
 
   async function notifyAll(): Promise<void> {
     let current: Set<string>;
@@ -74,7 +66,7 @@ export function createFileSecretStorage(secretsFile: string): StoryboardSecretSt
       return;
     }
 
-    const changed = new Set([...knownKeys, ...current]);
+    const changed: Set<string> = new Set([...knownKeys, ...current]);
     knownKeys = current;
 
     for (const key of changed) {
@@ -92,11 +84,13 @@ export function createFileSecretStorage(secretsFile: string): StoryboardSecretSt
       }),
     delete: async (key) =>
       serialize(async () => {
-        const secrets = await readAll();
+        const secrets: Record<string, string> = await readAll();
         delete secrets[key];
         await writeAll(secrets);
       }),
-    onDidChange: (listener) => {
+    onDidChange: (
+      listener: (event: StoryboardSecretStorageChangeEvent) => void,
+    ): DisposableHandle => {
       listeners.add(listener);
 
       if (!watcher) {

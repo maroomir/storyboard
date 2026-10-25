@@ -1,4 +1,12 @@
-import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+  type Stats,
+} from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
@@ -11,25 +19,20 @@ import {
 import { ConfigFileError } from '#config/configFileError';
 import { validateConfigSettings, type ConfigKeyWarning } from '#config/configSchema';
 
-// The numbers match VSCode's ConfigurationTarget so a ConfigBridge written against the editor's
-// enum addresses the same layer here: 1 = the user's home file, 2 = the workspace file.
-export const configurationTargets = { user: 1, workspace: 2 } as const;
+interface ConfigurationTargets {
+  readonly user: 1;
+  readonly workspace: 2;
+}
 
-export type ConfigurationTarget = (typeof configurationTargets)[keyof typeof configurationTargets];
+export const configurationTargets: ConfigurationTargets = { user: 1, workspace: 2 };
+
+export type ConfigurationTarget = ConfigurationTargets[keyof ConfigurationTargets];
 
 export interface FileConfigurationOptions {
   readonly userConfigFile: string;
   readonly workspaceConfigFile?: string;
-  // Flags win over the workspace file, which wins over the user file — the same precedence order
-  // VSCode gives a workspace setting over a user setting, with the command line on top.
-  // Flag overrides are leaves, never sections to merge into: `--provider` clearing task routing
-  // must replace `tasks` outright, not deep-merge an empty object into what the file said.
   readonly overrides?: Readonly<Record<string, unknown>>;
-  // An unreadable file throws by default so a typo cannot silently turn into "all defaults". A
-  // host that must keep running (the editor) passes a reporter and gets `{}` for that file instead.
   readonly onInvalidFile?: (error: ConfigFileError) => void;
-  // A key nothing reads is kept but reported once per file read, so a misspelled setting is seen
-  // instead of silently leaving the default in force.
   readonly onUnknownKey?: (warning: ConfigKeyWarning) => void;
 }
 
@@ -40,7 +43,7 @@ interface CachedFile {
 
 function fileKey(file: string): string {
   try {
-    const stats = statSync(file);
+    const stats: Stats = statSync(file);
     return `${stats.mtimeMs}:${stats.size}`;
   } catch {
     return 'missing';
@@ -80,8 +83,6 @@ function parseConfigFile(file: string): Record<string, unknown> {
   return parsed;
 }
 
-// Keys are the dotted `storyboard.*` names minus the prefix, so a config file reads like the
-// settings UI. A file may spell a key flat ("revise.loop.maxIterations") or nested; both resolve.
 function lookup(settings: Record<string, unknown>, section: string): unknown {
   if (section in settings) {
     return settings[section];
@@ -97,8 +98,6 @@ function lookup(settings: Record<string, unknown>, section: string): unknown {
   return current;
 }
 
-// A shallow spread would let a workspace file that names one provider hide every provider the user
-// file configured. Merge section by section so a workspace override replaces only the keys it names.
 function mergeDeep(
   base: Record<string, unknown>,
   overlay: Record<string, unknown>,
@@ -106,7 +105,7 @@ function mergeDeep(
   const merged: Record<string, unknown> = { ...base };
 
   for (const [key, value] of Object.entries(overlay)) {
-    const existing = merged[key];
+    const existing: unknown = merged[key];
     merged[key] =
       isPlainObject(existing) && isPlainObject(value) ? mergeDeep(existing, value) : value;
   }
@@ -119,16 +118,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function assignNested(settings: Record<string, unknown>, section: string, value: unknown): void {
-  // A flat spelling of the same key would shadow the nested one on the next read.
   delete settings[section];
 
-  const parts = section.split('.');
-  const leaf = parts.pop() as string;
+  const parts: string[] = section.split('.');
+  const leaf: string = parts.pop() as string;
   const ancestors: Record<string, unknown>[] = [settings];
-  let current = settings;
+  let current: Record<string, unknown> = settings;
 
   for (const part of parts) {
-    const next = current[part];
+    const next: unknown = current[part];
 
     if (!isPlainObject(next)) {
       if (value === undefined) {
@@ -149,11 +147,9 @@ function assignNested(settings: Record<string, unknown>, section: string, value:
 
   delete current[leaf];
 
-  // Removing the last key of a section removes the section too, so a cleared setting does not
-  // leave `{ "ai": { "provider": {} } }` behind in the file.
-  for (let depth = parts.length; depth > 0; depth -= 1) {
-    const parent = ancestors[depth - 1] as Record<string, unknown>;
-    const child = ancestors[depth] as Record<string, unknown>;
+  for (let depth: number = parts.length; depth > 0; depth -= 1) {
+    const parent: Record<string, unknown> = ancestors[depth - 1] as Record<string, unknown>;
+    const child: Record<string, unknown> = ancestors[depth] as Record<string, unknown>;
 
     if (Object.keys(child).length > 0) {
       break;
@@ -163,10 +159,8 @@ function assignNested(settings: Record<string, unknown>, section: string, value:
   }
 }
 
-// Truncate-and-write loses the whole file if the process dies mid-write. Write a sibling and
-// rename, so the file is either the old settings or the new ones.
 function writeConfigFile(file: string, settings: Record<string, unknown>): void {
-  const temporary = `${file}.tmp-${process.pid.toString(36)}`;
+  const temporary: string = `${file}.tmp-${process.pid.toString(36)}`;
 
   try {
     mkdirSync(dirname(file), { recursive: true });
@@ -178,16 +172,12 @@ function writeConfigFile(file: string, settings: Record<string, unknown>): void 
   }
 }
 
-// SECURITY: only the user's home file may switch a hidden provider on; a workspace file is never
-// asked. Hosts that list provider names before a configuration exists (argument checks, shell
-// completion) read the same answer through this.
 export function readEnabledHiddenProviderIds(userConfigFile: string): AiProviderId[] {
   let userSettings: Record<string, unknown>;
 
   try {
     userSettings = parseConfigFile(userConfigFile);
   } catch {
-    // Whoever reads the file for its settings reports what is wrong with it.
     return [];
   }
 
@@ -203,18 +193,18 @@ export interface FileConfiguration extends StoryboardConfigurationLike {
 }
 
 export function createFileConfiguration(options: FileConfigurationOptions): FileConfiguration {
-  const overrides = options.overrides ?? {};
-  const cache = new Map<string, CachedFile>();
+  const overrides: Readonly<Record<string, unknown>> = options.overrides ?? {};
+  const cache: Map<string, CachedFile> = new Map<string, CachedFile>();
   let enabledHiddenProviders: { readonly key: string; readonly ids: AiProviderId[] } | undefined;
 
   function enabledHiddenProviderIds(): AiProviderId[] {
-    const key = fileKey(options.userConfigFile);
+    const key: string = fileKey(options.userConfigFile);
 
     if (enabledHiddenProviders?.key === key) {
       return enabledHiddenProviders.ids;
     }
 
-    const ids = readEnabledHiddenProviderIds(options.userConfigFile);
+    const ids: AiProviderId[] = readEnabledHiddenProviderIds(options.userConfigFile);
     enabledHiddenProviders = { key, ids };
     return ids;
   }
@@ -224,9 +214,9 @@ export function createFileConfiguration(options: FileConfigurationOptions): File
       return {};
     }
 
-    const enabledHiddenIds = enabledHiddenProviderIds();
-    const key = `${fileKey(file)}:${enabledHiddenIds.join(',')}`;
-    const cached = cache.get(file);
+    const enabledHiddenIds: AiProviderId[] = enabledHiddenProviderIds();
+    const key: string = `${fileKey(file)}:${enabledHiddenIds.join(',')}`;
+    const cached: CachedFile | undefined = cache.get(file);
 
     if (cached && cached.key === key) {
       return cached.value;
@@ -267,7 +257,7 @@ export function createFileConfiguration(options: FileConfigurationOptions): File
 
   return {
     get: <T>(section: string, defaultValue: T): T => {
-      const value = lookup(merged(), section);
+      const value: unknown = lookup(merged(), section);
       return value === undefined ? defaultValue : (value as T);
     },
     inspect: <T>(section: string) => ({
@@ -279,7 +269,7 @@ export function createFileConfiguration(options: FileConfigurationOptions): File
       value: T,
       target: number = configurationTargets.user,
     ): Promise<void> => {
-      const file = targetFile(target as ConfigurationTarget);
+      const file: string | undefined = targetFile(target as ConfigurationTarget);
 
       if (file === undefined) {
         throw new ConfigFileError(
@@ -289,7 +279,7 @@ export function createFileConfiguration(options: FileConfigurationOptions): File
         );
       }
 
-      const settings = structuredClone(parseConfigFile(file));
+      const settings: Record<string, unknown> = structuredClone(parseConfigFile(file));
       assignNested(settings, section, value);
       writeConfigFile(file, settings);
       cache.delete(file);

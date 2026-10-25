@@ -26,6 +26,6 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "npm run typecheck"
+    "lint": "eslint \"src/**/*.ts\" && npm run typecheck"
   }
 }

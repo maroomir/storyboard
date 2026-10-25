@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import type { UsageRecord, UsageSummaryByEntity, StoryUri } from '@storyboard/story-model';
+import type {
+  UsageRecord,
+  UsageSummaryByEntity,
+  StoryUri,
+  DisposableHandle,
+} from '@storyboard/story-model';
 
 import {
   appendLedgerEntryIfNew,
@@ -29,7 +34,7 @@ export class UsageLedgerRecorder {
     private readonly warn?: (message: string) => void,
   ) {}
 
-  public onChange(listener: () => void): { readonly dispose: () => void } {
+  public onChange(listener: () => void): DisposableHandle {
     this.listeners.add(listener);
     return { dispose: (): void => void this.listeners.delete(listener) };
   }

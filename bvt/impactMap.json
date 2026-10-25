@@ -267,6 +267,16 @@
       ]
     },
     {
+      "id": "lint-config",
+      "paths": [
+        "scripts/lint/**",
+        "packages/.eslintrc.cjs"
+      ],
+      "checks": [
+        "npm run lint"
+      ]
+    },
+    {
       "id": "bvt-scripts",
       "paths": [
         "scripts/bvt/**",

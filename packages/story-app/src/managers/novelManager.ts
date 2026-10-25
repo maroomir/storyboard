@@ -24,6 +24,7 @@ import {
   type UpdateProjectContractUseCase,
   type StoryFileSnapshot,
   type UsageMeter,
+  type UsageMeterSession,
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import {
@@ -33,6 +34,7 @@ import {
   type StoryUri,
   type UsageAmount,
   type UsageCacheAmount,
+  type WorkspaceRunLockRecord,
 } from '@storyboard/story-model';
 
 export interface NovelManagerDependencies {
@@ -50,11 +52,8 @@ export interface NovelManagerDependencies {
 }
 
 export interface NovelRunRequest extends Omit<NovelPipelineRunOptions, 'reviseMaxIterations'> {
-  // Defaults to the configured revise loop limit.
   readonly reviseMaxIterations?: number;
-  // What the run has spent so far, after every metered call; a host shows it live.
   readonly onSpendingChange?: (reading: UsageAmount) => void;
-  // Fired once, when the run first reaches its budget and starts stopping at the scene boundary.
   readonly onBudgetReached?: () => void;
 }
 
@@ -69,7 +68,6 @@ export interface NovelRunResult extends NovelPipelineResult {
   readonly spending: NovelRunSpending;
 }
 
-// The book-level verbs: plan the outline, run the whole novel pipeline, complete a story's scenes.
 export class NovelManager {
   public readonly runState: INovelRunStateRepository;
 
@@ -77,17 +75,15 @@ export class NovelManager {
     this.runState = deps.novelRunStateRepository;
   }
 
-  // Runs the pipeline under the configured per-run budget: the run pauses at the next scene
-  // boundary once the budget is reached, and the result says what it spent, so no host meters it.
   public async run(request: NovelRunRequest): Promise<NovelRunResult> {
     const { configBridge, usageMeter, novelPipeline } = this.deps;
-    const budgetUsd = configBridge.getRunBudgetUsd();
-    const spending = usageMeter.startSession(request.onSpendingChange);
+    const budgetUsd: number = configBridge.getRunBudgetUsd();
+    const spending: UsageMeterSession = usageMeter.startSession(request.onSpendingChange);
     const isOverBudget = (): boolean => isRunBudgetExceeded(spending.reading(), budgetUsd);
-    let hasReportedBudget = false;
+    let hasReportedBudget: boolean = false;
 
     try {
-      const result = await novelPipeline.run({
+      const pipelineRun: NovelPipelineResult = await novelPipeline.run({
         ...request,
         reviseMaxIterations: request.reviseMaxIterations ?? configBridge.getReviseMaxIterations(),
         shouldPause: (): boolean => {
@@ -105,7 +101,7 @@ export class NovelManager {
       });
 
       return {
-        ...result,
+        ...pipelineRun,
         spending: {
           costUsd: spending.reading().costUsd,
           budgetUsd,
@@ -118,14 +114,11 @@ export class NovelManager {
     }
   }
 
-  // The run a new one should continue from. A state left `running` while no app holds the run lock
-  // was cut off (its process died), so it continues like a paused one instead of rebuilding the
-  // outline. A host that already holds the lock knows no other run is alive.
   public async findResumableRun(
     workspaceRoot: StoryUri,
     options: { readonly holdsRunLock: boolean },
   ): Promise<NovelRunState | undefined> {
-    const state = await this.runState.readExisting(workspaceRoot);
+    const state: NovelRunState | undefined = await this.runState.readExisting(workspaceRoot);
 
     if (state?.status !== 'running') {
       return isResumable(state) ? state : undefined;
@@ -135,12 +128,14 @@ export class NovelManager {
       return state;
     }
 
-    const holder = await readWorkspaceRunLock({ fileSystem: this.deps.fileSystem, workspaceRoot });
+    const holder: WorkspaceRunLockRecord | undefined = await readWorkspaceRunLock({
+      fileSystem: this.deps.fileSystem,
+      workspaceRoot,
+    });
 
     return holder === undefined ? state : undefined;
   }
 
-  // The work itself: its name, format and the contract every generation reads.
   public readProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
     return this.deps.outlineRepository.loadProject(workspaceRoot);
   }
@@ -155,7 +150,6 @@ export class NovelManager {
     return this.deps.generateOutlineUseCase.execute(request);
   }
 
-  // Scene cards from the chapter plan `generateOutline` wrote.
   public seedScenes(request: SeedScenesRequest): Promise<SeedScenesResult> {
     return this.deps.seedScenesUseCase.execute(request);
   }
@@ -164,7 +158,6 @@ export class NovelManager {
     return this.deps.completeStoryScenesUseCase.execute(request);
   }
 
-  // Writes the scenes `completeScenes` proposed, leaving any file that already exists.
   public applyCompletedScenes(
     workspaceRoot: StoryUri,
     scenes: readonly CompletedStoryScene[],

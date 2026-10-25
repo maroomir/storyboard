@@ -21,8 +21,6 @@ import { promptVariantIds } from '@storyboard/story-ai';
 
 import { ConfigFileError } from '#config/configFileError';
 
-// A key the file spells that nothing reads. It is kept (a newer app may know it) but reported, so a
-// typo does not silently become "the default".
 export interface ConfigKeyWarning {
   readonly file: string;
   readonly key: string;
@@ -48,7 +46,7 @@ function boundedNumberSchema(
   definition: StoryboardSettingDefinition,
   base: z.ZodNumber,
 ): z.ZodNumber {
-  let schema = base;
+  let schema: z.ZodNumber = base;
   if (definition.minimum !== undefined) {
     schema = schema.min(definition.minimum);
   }
@@ -58,14 +56,14 @@ function boundedNumberSchema(
   return schema;
 }
 
-const providerIdSchema = z.enum(aiProviderIds);
-const nonEmptyString = z.string().trim().min(1);
+const providerIdSchema: z.ZodType<AiProviderId> = z.enum(aiProviderIds);
+const nonEmptyString: z.ZodString = z.string().trim().min(1);
 
-// Every dotted key a config file may carry, with the shape its value must have. The switches come
-// from the setting catalog; the provider, model and task routing keys are the ones ConfigBridge
-// reads by name.
 function buildKnownKeySchemas(): ReadonlyMap<string, z.ZodType> {
-  const schemas = new Map<string, z.ZodType>();
+  const schemas: Map<
+    string,
+    z.ZodType<unknown, unknown, z.core.$ZodTypeInternals<unknown, unknown>>
+  > = new Map<string, z.ZodType>();
 
   for (const definition of storyboardSettingCatalog) {
     schemas.set(definition.key, settingSchema(definition));
@@ -81,8 +79,6 @@ function buildKnownKeySchemas(): ReadonlyMap<string, z.ZodType> {
     schemas.set(`providers.${providerId}.model`, nonEmptyString);
   }
 
-  // The hidden providers' keys are not in the setting catalog, so no list or completion shows them.
-  // The risk acknowledgement and the executable keys belong to the program-run path alone.
   for (const providerId of hiddenProviderIds) {
     schemas.set(hiddenProviderEnabledKey(providerId), z.boolean());
 
@@ -104,17 +100,12 @@ function buildKnownKeySchemas(): ReadonlyMap<string, z.ZodType> {
   return schemas;
 }
 
-const knownKeySchemas = buildKnownKeySchemas();
+const knownKeySchemas: ReadonlyMap<string, z.ZodType> = buildKnownKeySchemas();
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-// Walks one file's settings. A key may be spelled flat ("generation.beats.minimum") or nested, so the walk
-// joins path segments and checks the joined key at every level: a known key is validated, an
-// object under an unknown key is descended into, anything else is an unknown key.
-// A provider name the file spells that is not one: repeat what was written and list what is
-// available, so the person knows what to put there. A hidden provider that is off is not listed.
 function describeUnknownProvider(
   value: unknown,
   enabledHiddenProviderIds: readonly AiProviderId[],
@@ -126,8 +117,6 @@ function describeUnknownProvider(
   ];
 }
 
-// A hidden provider that the home file has not switched on is an unknown name, exactly as it was
-// before the provider existed.
 export function validateConfigSettings(
   file: string,
   settings: Record<string, unknown>,
@@ -141,10 +130,12 @@ export function validateConfigSettings(
     !enabledHiddenProviderIds.includes(value as AiProviderId);
 
   const visit = (value: unknown, key: string): void => {
-    const schema = knownKeySchemas.get(key);
+    const schema:
+      | z.ZodType<unknown, unknown, z.core.$ZodTypeInternals<unknown, unknown>>
+      | undefined = knownKeySchemas.get(key);
 
     if (schema) {
-      const parsed = schema.safeParse(value);
+      const parsed: z.ZodSafeParseResult<unknown> = schema.safeParse(value);
 
       if (!parsed.success || isDisabledHiddenProvider(schema, value)) {
         throw new ConfigFileError(

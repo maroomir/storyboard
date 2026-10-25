@@ -56,6 +56,8 @@ import {
   type Draft,
   type SceneFile,
   type SceneListItem,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -84,8 +86,6 @@ export interface DraftManagerDependencies {
   readonly configBridge: ConfigBridge;
 }
 
-// Everything an app does to one scene's draft: generate it, revise it, reshape it, save an edit,
-// and rename the scene it belongs to.
 export class DraftManager {
   public readonly scenes: ISceneSidebarRepository;
 
@@ -93,8 +93,6 @@ export class DraftManager {
     this.scenes = deps.sceneSidebarRepository;
   }
 
-  // The scene cards in number order, each saying whether its draft is missing, current or older
-  // than the card. A workspace with no scene directory yet has no scenes.
   public async listScenes(workspaceRoot: StoryUri): Promise<SceneListItem[]> {
     const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
@@ -109,7 +107,7 @@ export class DraftManager {
     workspaceRoot: StoryUri,
     sceneStem: string,
   ): Promise<SceneFile | undefined> {
-    const uri = scenePath(workspaceRoot, sceneStem);
+    const uri: StoryUri = scenePath(workspaceRoot, sceneStem);
 
     if (!(await this.deps.fileSystem.exists(uri))) {
       return undefined;
@@ -122,13 +120,13 @@ export class DraftManager {
     workspaceRoot: StoryUri,
     sceneStem: string,
   ): Promise<DraftReading | undefined> {
-    const uri = draftPath(workspaceRoot, sceneStem);
+    const uri: StoryUri = draftPath(workspaceRoot, sceneStem);
 
     if (!(await this.deps.fileSystem.exists(uri))) {
       return undefined;
     }
 
-    const text = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
+    const text: string = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
     return { uri, draft: parseDraft(text) };
   }
 
@@ -148,7 +146,6 @@ export class DraftManager {
     return this.deps.reviseDraftUseCase.execute(request);
   }
 
-  // Runs the configured post-generation revision for a scene, or nothing when it is switched off.
   public reviseAfterGenerate(
     sceneUri: StoryUri,
     hooks: ReviseAfterGenerateHooks = {},
@@ -196,11 +193,6 @@ export class DraftManager {
     return this.deps.createSceneUseCase.execute(request);
   }
 
-  // Records "the cards changed but these drafts stand" in the story-state ledger: the stale entries
-  // of the given scenes (all stale ones when left out) are sealed against today's cards and scenes.
-  // Returns the scene numbers it resealed.
-  // Builds the story-state ledger from the drafts a work already has: every scene with a draft the
-  // ledger does not know, in number order, or the given scenes again with `force`.
   public generateStoryState(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     return this.deps.generateStoryStateUseCase.execute(request);
   }
@@ -209,8 +201,11 @@ export class DraftManager {
     workspaceRoot: StoryUri,
     sceneOrders?: readonly number[],
   ): Promise<readonly number[]> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const project: StoryboardProject = await readProjectJson(
+      this.deps.fileSystem,
+      paths.projectJson,
+    );
 
     return await resealStoryMemory({
       fileSystem: this.deps.fileSystem,
