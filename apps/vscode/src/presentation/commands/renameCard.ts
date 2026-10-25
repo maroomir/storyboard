@@ -87,8 +87,6 @@ async function renameCard(
   await moveStudioSessions(workspaceFolder.uri, kind, oldId, newId);
 }
 
-// NOTE: Studio keys its chat sessions by card id, so a rename must carry the directory along or
-// the card's history is orphaned under the old name.
 async function moveStudioSessions(
   workspaceRoot: vscode.Uri,
   kind: 'character' | 'background',

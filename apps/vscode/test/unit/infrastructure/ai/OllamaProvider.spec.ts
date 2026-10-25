@@ -24,7 +24,6 @@ describe("OllamaProvider", () => {
     expect(capturedPath).toBe("/api/tags")
   })
 
-  // 생각하는 모델은 상한 없이 생각하면 한 호출이 수십 분이 된다. 켜고 끄는 값이 그대로 가야 한다.
   it("passes the think flag through when one is set, and omits it otherwise", async () => {
     const bodies: Record<string, unknown>[] = []
     const client: OllamaClientLike = {
@@ -43,7 +42,6 @@ describe("OllamaProvider", () => {
     expect("think" in (bodies[1] ?? {})).toBe(false)
   })
 
-  // 생각으로 출력 상한을 다 쓰면 본문이 빈 채 돌아온다. 빈 본문을 넘기면 빈 뼈대가 조용히 저장된다.
   it("fails loudly when thinking used up the output and no content came back", async () => {
     const client: OllamaClientLike = {
       get: async (): Promise<Record<string, unknown>> => ({}),

@@ -33,10 +33,6 @@ import {
   resolveHarnessProviderId,
 } from './harnessProvider';
 
-// NOTE: Diagnostic — drives the REAL Studio chat agent and the REAL apply path against a real
-// workspace and a real CLI provider, so the prompt contract (say/ask/propose/lookup, follow-ups,
-// field limits), the baseline guard and the writes are verified against a model rather than a stub.
-// It WRITES to the workspace; run it on a git-clean tree and read the result with `git diff`.
 const workspace = process.env.STUDIO_WS ?? process.env.SCENE_WS ?? '';
 const providerId = resolveHarnessProviderId(
   process.env.STUDIO_PROVIDER ?? process.env.SCENE_PROVIDER,
@@ -275,8 +271,6 @@ function describeFollowUps(
 
 const followUpRepository = new StudioFollowUpRepository();
 
-// NOTE: the real apply handler is driven here (not applyStudioPatch directly) so the baseline guard,
-// the draft frontmatter rewrite and the follow-up bookkeeping are all exercised.
 const proposalHandlers = createStudioProposalRpcHandlers({
   reviewService: { showDiffs: async (): Promise<void> => undefined } as never,
   followUpRepository,
@@ -307,8 +301,6 @@ test('studio chat against a real workspace', async () => {
 
   const provider = await createHarnessProvider(providerId, model);
 
-  // NOTE: STUDIO_SEED runs only the card-seed extraction (kind/name/roman id) and exits — the
-  // cheapest way to watch the /create wizard's one AI call against a real provider.
   if (process.env.STUDIO_SEED) {
     const usage = createUsageSummary();
     const seed = await (

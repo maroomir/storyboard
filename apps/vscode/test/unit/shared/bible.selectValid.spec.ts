@@ -485,14 +485,11 @@ describe("selectInjectedFacts — revealFrom spoiler gate", () => {
   })
 })
 
-// 회상·액자 구성에서는 씬 순번과 사건 시점이 어긋난다. 유효 구간은 서사 시간으로 재고, 공개 시점은
-// 독자가 읽은 순서(씬 순번)로 잰다.
 describe("selectInjectedFacts — story time axis", () => {
   const alive = factOf({ id: "alive", key: "상태", value: "살아 있다", validUntil: 20 })
   const dead = factOf({ id: "dead", key: "상태", value: "죽었다", validFrom: 21 })
   const bible = bibleOf([alive, dead])
 
-  // 씬 25는 사건 시점이 3인 회상이다.
   const flashback = new Map([[25, 3]])
 
   it("uses the scene order as story time when no timeline is given", () => {
@@ -506,7 +503,6 @@ describe("selectInjectedFacts — story time axis", () => {
   })
 
   it("maps a bound's referenced scene through the timeline as well", () => {
-    // 구간 끝으로 적힌 20화가 사건 시점 40의 장면이면, 사건 시점 30인 26화는 아직 그 구간 안이다.
     const onlyAlive = bibleOf([alive])
     const timeline = new Map([
       [20, 40],

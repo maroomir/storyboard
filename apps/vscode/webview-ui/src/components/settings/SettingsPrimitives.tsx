@@ -32,8 +32,6 @@ export function StatusPill({
   );
 }
 
-// Tells the author which config layer a value is coming from; a default is dimmed because there
-// is nothing saved for it anywhere.
 export function OriginPill({
   origin,
   file,

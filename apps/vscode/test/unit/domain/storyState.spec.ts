@@ -128,7 +128,6 @@ describe("mergeStoryState", () => {
     expect(mergeStoryState(sampleState, [], 1, inputHash).throughSceneOrder).toBe(2)
   })
 
-  // 원장은 작품의 기억이므로 버리지 않는다. 프롬프트 예산은 주입 시점에 맞춘다.
   it("keeps every entry instead of evicting the oldest", () => {
     const additions: StoryStateEntry[] = Array.from({ length: 40 }, (_, index) => ({
       section: "facts" as const,
@@ -144,8 +143,6 @@ describe("mergeStoryState", () => {
 })
 
 describe("story state injection budget", () => {
-  // 실제 원장처럼 항목마다 다른 고유명사를 담는다. 낱말이 전부 같으면 관련도가 평평해져
-  // 최근 항목만 남는다.
   const subjects = Array.from({ length: 40 }, (_, index) => `대상${index}호`)
 
   function fortyFacts(): StoryState {
@@ -173,7 +170,6 @@ describe("story state injection budget", () => {
     expect(prompt).not.toContain("대상0호가 봉인되었다")
   })
 
-  // 1막에서 심은 사실이 3막 씬에 그 이름이 나오면 되살아나야 복선을 회수할 수 있다.
   it("revives an old entry that the scene text mentions", () => {
     const prompt = formatStoryStateForPrompt(fortyFacts(), undefined, "대상0호를 다시 꺼낸다")
 
@@ -249,7 +245,6 @@ describe("selectCharacterRelations", () => {
       "하나와 준은 서로 존댓말을 쓴다",
       "하나와 준은 이제 반말을 쓴다"
     ])
-    // 민이 한 말이라도 하나가 그 자리에 없었으면 하나의 관계 변화로 주지 않는다.
     expect(selectCharacterRelations(state, { id: "hana", names: ["하나"] }, 3)).toEqual([
       "하나와 준은 서로 존댓말을 쓴다",
       "하나와 준은 이제 반말을 쓴다"
@@ -467,7 +462,6 @@ describe("story state invalidation", () => {
     expect(parseStoryState(serialized)).toEqual(rewound)
   })
 
-  // 되감기: 21을 다시 만들면 22~32는 폐기된 판본을 전제로 뽑힌 항목이다.
   it("marks later scenes stale when an earlier scene is regenerated", () => {
     const rewound = mergeStoryState(ledgerThrough(5), [{ section: "facts", text: "새 3화" }], 3, inputHash)
 
@@ -497,7 +491,6 @@ describe("story state invalidation", () => {
     ])
   })
 
-  // 입력 해시: 카드나 씬을 고쳐 놓고 그 씬을 다시 만들지 않은 경우.
   it("marks a scene stale when its current input hash differs", () => {
     const audit = auditStoryState(ledgerThrough(3), new Map([[1, inputHash], [2, otherInputHash], [3, inputHash]]))
 
@@ -529,7 +522,6 @@ describe("story state invalidation", () => {
     expect(formatStoryStateStaleWarning(audit)).toContain("씬 4~5")
   })
 
-  // 0.8 이전 원장에는 해시가 없다. 대조할 근거가 없다고 사실을 버리지는 않는다.
   it("treats an unsealed scene as valid and reports it for sealing", () => {
     const legacy = parseStoryState("# 이야기 상태\n<!-- through-scene: 2 -->\n## 확정 사실\n- [1] 옛 사실\n- [2] 옛 사실 2\n")
 
@@ -594,7 +586,6 @@ describe("story state witnesses", () => {
     expect(prompt).not.toContain("준이 다리에서 기다렸다")
   })
 
-  // #104: 뼈대의 공용 맥락에는 씬 인물 모두가 아는 것만 둔다.
   it("keeps only facts every listed character witnessed", () => {
     const prompt = formatStoryStateForPrompt(witnessedState, 4, undefined, { witnessedByAll: ["hana", "jun"] })
 

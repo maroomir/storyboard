@@ -16,8 +16,6 @@ import {
 } from "../../../../../../packages/story-engine/src/application/drafts/storyStateAudit"
 import { toStoryStateEntries, updateStoryStateAfterGeneration } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
 
-// 원장 감사는 워크스페이스를 통째로 읽어 해시를 다시 계산한다. 카드·씬을 흉내 내면 그 계산이
-// 실제로 무엇에 반응하는지 검증할 수 없으므로, 진짜 파일 내용을 담은 메모리 파일 시스템을 쓴다.
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>()
 
@@ -135,7 +133,6 @@ describe("auditStoryMemory", () => {
     fileSystem.write("/ws/scene/03-third.card", sceneCard("03", "third", "복도에서 원고를 줍는다."))
   })
 
-  // 봉인이 없는 0.8 이전 원장. 대조할 근거가 없으므로 낡음으로 몰지 않는다.
   it("reports an unsealed ledger instead of calling it stale", async () => {
     fileSystem.write(
       paths.storyState.path,
@@ -160,8 +157,6 @@ describe("auditStoryMemory", () => {
     expect(result.needsMarking).toBe(false)
   })
 
-  // 21~32를 고쳐 놓고 25만 다시 만드는 경우. 25보다 앞의 낡은 항목이 프롬프트로 새면 새 설정과
-  // 옛 사실이 충돌한다.
   it("marks the scenes whose cards changed after the ledger was written", async () => {
     const hashes = await sealedLedger(fileSystem, [1, 2, 3])
     fileSystem.write(paths.storyState.path, ledger(hashes))
@@ -194,8 +189,6 @@ describe("auditStoryMemory", () => {
     expect(result.audit.staleSceneOrders).toEqual([2])
   })
 
-  // 뒤 씬의 낡은 항목은 어차피 이번 프롬프트에 실리지 않는다. 32씬을 순서대로 다시 만드는 동안
-  // 매 씬 경고가 뜨면 진짜 경고가 묻힌다.
   it("stays quiet about scenes that come after the one being generated", async () => {
     const hashes = await sealedLedger(fileSystem, [1, 2, 3])
     fileSystem.write(paths.storyState.path, ledger(hashes))
@@ -231,8 +224,6 @@ describe("auditStoryMemory", () => {
     expect(marked).toContain("- [1] 1화 사실")
   })
 
-  // 시점을 바꾸면 초안이 달라지므로 그 씬이 남긴 원장 항목도 낡는다. 해시에 narrator·thread·
-  // povCharacter 가 없으면 시점만 바꾼 씬은 영원히 최신으로 판정된다.
   it("marks a scene whose narrator changed", async () => {
     const hashes = await sealedLedger(fileSystem, [1, 2, 3])
     fileSystem.write(paths.storyState.path, ledger(hashes))
@@ -272,8 +263,6 @@ describe("auditStoryMemory", () => {
     expect(result.audit.staleSceneOrders).toEqual([2])
   })
 
-  // 줄기가 갈린 작품에서는 그 줄기의 원장만 감사하고 표시해야 한다. 기본 원장을 건드리면
-  // 다른 편의 사실이 이 편의 경고로 새어 나온다.
   it("audits and marks only the thread ledger it was given", async () => {
     const threadPaths = resolveThreadPaths(paths, "ep2")
     const hashes = await sealedLedger(fileSystem, [1, 2, 3])
@@ -292,7 +281,6 @@ describe("auditStoryMemory", () => {
     expect(fileSystem.read(paths.storyState.path)).toBe(mainLedger)
   })
 
-  // 순서 계약: 표시를 먼저 해야 곧이어 원장을 읽는 프롬프트가 낡은 항목을 빼고 받는다.
   it("keeps a stale fact in the prompt until the marks are written", async () => {
     const hashes = await sealedLedger(fileSystem, [1, 2, 3])
     fileSystem.write(paths.storyState.path, ledger(hashes))
@@ -338,7 +326,6 @@ describe("ledger updates after generation", () => {
   function generationInputs(order: number, hash: string): never {
     return {
       paths,
-      // 줄기를 선언하지 않은 작품에서는 threadPaths가 paths와 같다.
       threadPaths: paths,
       scene: { stem: `0${order}-scene`, order },
       context: { characters: [] },
@@ -381,7 +368,6 @@ describe("ledger updates after generation", () => {
     expect(String(logger.warn.mock.calls[0]?.[0])).toContain("낯선 이")
   })
 
-  // 원장 갱신에서 항목을 못 받아도 이번 판본이 기준이 되어야 다음 감사가 옳게 대조한다.
   it("records the hash even when the model returns no items", async () => {
     const fileSystem = new MemoryWorkspace()
     fileSystem.write(
@@ -419,8 +405,6 @@ describe("ledger updates after generation", () => {
     expect(mapping.unknownWitnesses).toEqual(["누구"])
   })
 
-  // 성을 뺀 이름("준" 대신 "이준"의 "준")이 섞이면 맞는 이름만 남기는 것이 아니라 전원으로 둔다. 맞는
-  // 이름만 남기면 실제로 그 자리에 있던 인물이 그 사실을 모르는 것으로 기록된다.
   it("keeps the whole cast when only some of the tagged names match a card", () => {
     const mapping = toStoryStateEntries(
       [{ section: "facts", text: "둘이 본 일", witnesses: ["김하나", "준"] }],
@@ -434,8 +418,6 @@ describe("ledger updates after generation", () => {
     expect(mapping.unknownWitnesses).toEqual(["준"])
   })
 
-  // 띄어 쓴 이름의 한 낱말은 그 낱말이 꼭 한 카드만 가리킬 때 그 카드다. 두 카드가 같은 낱말(같은 성)을
-  // 나눠 가지면 어느 쪽인지 알 수 없으므로 종전대로 전원이다.
   it("matches one word of a spaced name when only one card carries it", () => {
     const characters = [
       { id: "kaelen", name: "카일런 베인" },
@@ -502,8 +484,6 @@ describe("ledger updates after generation", () => {
   })
 })
 
-// 봉인 해시는 감사가 계산하는 값과 같아야 한다. 손으로 적는 대신 sealStoryMemory를 한 번 돌려
-// 원장에 기록된 값을 그대로 읽어 온다.
 async function sealedLedger(
   fileSystem: MemoryWorkspace,
   orders: readonly number[]

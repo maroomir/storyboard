@@ -52,7 +52,6 @@ async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
   return buildSnapshot(project, await readNarratorSummaries(root));
 }
 
-// 서술자 카드는 계약 탭에서 읽기만 한다. 만들고 고치는 자리는 카드 에디터다.
 async function readNarratorSummaries(
   root: StoryUri,
 ): Promise<{ id: string; name: string; summary: string }[]> {
@@ -105,7 +104,6 @@ async function updateContract(
   return buildSnapshot(nextProject, await readNarratorSummaries(root));
 }
 
-// 이미 있는 서술자는 손대지 않는다. 구성을 다시 고른다고 작가가 고친 목소리를 잃으면 안 된다.
 async function writePresetNarrators(
   narratorDirectory: StoryUri,
   cards: readonly NarratorCard[],

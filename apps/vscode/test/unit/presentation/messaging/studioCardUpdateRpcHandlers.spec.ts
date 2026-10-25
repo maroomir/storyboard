@@ -17,7 +17,6 @@ let shownDocuments: string[];
 
 beforeEach((): void => {
   shownDocuments = [];
-  // NOTE: the shared vscode mock has no showTextDocument, so it is installed by hand.
   (vscode.window as { showTextDocument?: unknown }).showTextDocument = async (
     uri: vscode.Uri,
   ): Promise<undefined> => {

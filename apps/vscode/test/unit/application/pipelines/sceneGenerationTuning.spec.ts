@@ -16,9 +16,6 @@ import {
 } from "@storyboard/story-engine"
 import { sectionViolationKinds } from "@storyboard/story-model"
 
-// 손잡이를 넓히면서 기본값이 한 칸이라도 움직였는지 보는 대조 테스트. 파이프라인 동작을 바꾸는
-// 커밋이 아니라 «주입 가능하게만 만드는» 커밋이라는 것을 이 파일이 증명한다.
-
 const defaults = resolveSceneGenerationTuning()
 
 describe("resolveSceneGenerationTuning", () => {
@@ -61,7 +58,6 @@ describe("resolveSceneGenerationTuning", () => {
     expect(resolveSceneGenerationTuning({})).toEqual(defaults)
   })
 
-  // 스칼라가 하나 늘었는데 손잡이를 안 뚫으면 그 값은 조용히 측정 밖으로 빠진다. 여기서 막는다.
   it("covers every scalar in the data file except the documented exclusion", () => {
     const leaves: string[] = []
 
@@ -77,7 +73,6 @@ describe("resolveSceneGenerationTuning", () => {
 
     walk(pipelineDefaults, "")
 
-    // context.maxSceneBreakNewlines 는 파이프라인이 아니라 엔진의 씬 입력 조립에서 쓰인다.
     const expected = leaves.filter((leaf) => leaf !== "context.maxSceneBreakNewlines")
     const exposed =
       Object.keys(defaults).length -
@@ -193,8 +188,6 @@ describe("pure validators are unchanged by an explicit default", () => {
   })
 })
 
-// 순수 함수가 같아도 파이프라인이 손잡이를 다른 자리에 꽂았으면 호출 순서나 인자가 달라진다.
-// 재시도 루프와 후보 저울까지 실제로 돌려 두 실행이 완전히 같은지 본다.
 describe("the whole pipeline is unchanged by an explicit default", () => {
   const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아", role: "main" }
 
@@ -213,8 +206,6 @@ describe("the whole pipeline is unchanged by an explicit default", () => {
     return { scene: sceneFile(), characters: [elia] }
   }
 
-  // 뼈대를 일부러 짧게 내보내 분량 미달 재시도를 돌리고, 살붙임에도 위반을 심어 후보 저울이
-  // 실제로 쓰이게 한다. 손잡이가 잘못 꽂히면 여기서 호출 수가 갈린다.
   function createScriptedAiService(log: string[]): SceneGenerationPipelineAiService {
     let skeletonCalls = 0
     let expandCalls = 0

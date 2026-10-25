@@ -2,9 +2,6 @@ import type { FileSystemDirectoryEntry, IFileSystem } from "@storyboard/story-en
 
 import { FileType, workspace, type UriLike } from "./vscode"
 
-// The engine takes its file system by injection, so a spec that used to lean on the ambient
-// `workspace.fs` stub passes this adapter instead. It stays a thin view over that same stub, so
-// tests keep configuring behaviour the way they always have.
 export const stubFileSystem: IFileSystem = {
   readFile: (uri) => workspace.fs.readFile(uri as UriLike),
   writeFile: (uri, content) => workspace.fs.writeFile(uri as UriLike, content),

@@ -2,10 +2,6 @@ import { ClaudeProvider, GoogleProvider, OpenAiProvider, SecretStore } from '@st
 import { getDefaultModelId, type AiProvider, type AiProviderId } from '@storyboard/story-model';
 import { createFileSecretStorage, resolveStoryboardHomePaths } from '@storyboard/story-config';
 
-// NOTE: 하네스는 앱이 아니라 진단 스크립트라 컨테이너를 세우지 않는다. 대신 두 앱이 쓰는 같은
-// 0600 시크릿 파일에서 키를 읽어 프로바이더 하나만 만든다. 키는 로그에 남기지 않는다.
-// 구독 CLI 경로는 두지 않는다 — 스크립트가 연달아 부르는 것은 각 제공자가 API 키로 하라고
-// 안내하는 프로그램적 호출이고, 진단 목적이라는 사실이 호출의 모양을 바꾸지 않는다.
 const harnessProviderIds = ['claude', 'openai', 'google'] as const;
 
 export type HarnessProviderId = (typeof harnessProviderIds)[number];

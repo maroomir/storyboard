@@ -61,7 +61,6 @@ describe("craft contract lines", () => {
 
     expect(lines.some((line) => line.includes("다시 설명하지 마라"))).toBe(true)
     expect(lines.some((line) => line.includes("3회를 넘겨 반복하지 마라"))).toBe(true)
-    // 후렴·반복 대사도 같은 상한에 걸려야 한다.
     expect(lines.some((line) => line.includes("대사·후렴구"))).toBe(true)
     expect(lines.some((line) => line.includes("어깨가 떨렸다"))).toBe(true)
     expect(lines.some((line) => line.includes("자기 목적이나 결점"))).toBe(true)

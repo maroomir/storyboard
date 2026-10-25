@@ -51,7 +51,6 @@ describe("GenerateAllDraftsUseCase", () => {
       sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
     }).execute()
 
-    // 무인 배치에서는 초안 앞머리의 경고를 아무도 열어보지 않는다.
     expect(currentLogger.warn).toHaveBeenCalledWith(
       "01-opening.txt: 1구간: 목표 3,000자에 크게 못 미칩니다"
     )

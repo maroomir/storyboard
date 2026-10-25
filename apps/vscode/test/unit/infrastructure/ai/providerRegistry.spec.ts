@@ -40,8 +40,6 @@ describe("AiProviderRegistry", () => {
     expect(response.providerId).toBe("mock")
   })
 
-  // A config still naming a subscription CLI is not quietly moved onto a metered provider: it
-  // reads as no choice at all, because the replacement would bill the author at a different rate.
   it("treats a retired subscription-CLI default as no choice, not as claude", async () => {
     const registry = createRegistry(new Map<string, unknown>([["ai.provider.default", "claude-code"]]))
 
@@ -126,8 +124,6 @@ describe("AiProviderRegistry", () => {
     })
   })
 
-  // A fresh install used to generate against `mock` and exit clean; with the guard on, the same
-  // call is refused until the author picks a provider, and a task override counts as a pick.
   it("refuses to resolve a task when no provider is configured and the guard is on", async () => {
     const guarded = createAiProviderRegistry({
       secretStore: new SecretStore(new FakeSecretStorage(new Map())),

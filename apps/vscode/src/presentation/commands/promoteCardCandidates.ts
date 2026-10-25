@@ -32,8 +32,6 @@ function describeItem(item: CardCandidateItem): string {
   }
 }
 
-// NOTE: the CLI's `card promote` reads both the drafts' and the notes' candidates; this command does
-// the same so the note import (#52) has nowhere its candidates are invisible.
 async function runPromote(
   logger: IStoryboardLogger,
   cards: Pick<CardManager, 'prepareCandidatePromotion' | 'promoteCandidates'>,

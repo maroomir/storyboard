@@ -139,8 +139,6 @@ describe("ReviewManuscriptUseCase", () => {
     expect(storage.saveReview).toHaveBeenCalledOnce()
   })
 
-  // 전권을 한 번에 넣지 않고 장마다 창을 만든다. 앞 장의 요약은 [설정] 줄로 실려 장 경계를 넘는
-  // 모순도 보이게 한다.
   it("reviews one chapter at a time with the earlier chapters as recap facts", async () => {
     const checkContinuity = vi.fn(async () => [])
     const storage = repository({

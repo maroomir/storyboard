@@ -210,8 +210,6 @@ function ReadinessBanner({
   );
 }
 
-// 프리셋이 만든 결과를 보여 주는 자리. 줄기와 서술자는 여기서 고치지 않는다 — 줄기는 구성이,
-// 서술자는 카드 에디터가 소유한다.
 function NarrationSummary({
   threads,
   narrators,

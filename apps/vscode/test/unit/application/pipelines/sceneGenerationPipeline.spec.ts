@@ -28,9 +28,6 @@ import {
   type SceneGenerationPipelineStage,
 } from '@storyboard/story-engine';
 
-// 검증의 최소 분량(목표의 절반)을 넘겨야 재시도가 돌지 않는다. 목 응답을 그 길이로 채우되, prefix 를
-// 씨앗으로 삼은 결정적 난수열로 채워 구간마다 다른 본문이 되게 한다. 같은 조각을 되풀이해 채우면
-// 직전 구간 재기술 검사와 되풀이 검사가(정당하게) 걸린다.
 function longProse(prefix: string, length = 3000): string {
   const syllables = "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허"
   let state = [...prefix].reduce((sum, char) => sum + char.charCodeAt(0), 1)
@@ -276,7 +273,6 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     expect(result.skeleton).toBe(thin)
   })
 
-  // #106: 재시도 뒤에도 짧은 뼈대가 경고 없이 통과해 살붙임 미달 경고만 남았다. 원인은 뼈대였다.
   it("warns when the kept skeleton is still under its floor after the retry", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValue(`“가자.” ${"짧다. ".repeat(10)}`)
@@ -574,7 +570,6 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
       "1. 장소: 집 식탁 → 집 부엌 / 시각: 아침 7시 ~ 아침 7시 20분",
       "2. 장소: 학교 교문 앞 / 시각: 오후 4시"
     ])
-    // 구간 쓰기는 대목 범위 한 줄만으로는 비트별 장소를 모른다(#122). 이번 구간의 대목 아래 비트 좌표가 간다.
     const expansion = ai.expandSceneSection.mock.calls[0]?.[0] as { sceneCoordinates: readonly string[] }
     expect(expansion.sceneCoordinates).toEqual([
       "1. 장소: 집 식탁 → 집 부엌 / 시각: 아침 7시 ~ 아침 7시 20분 ← 이번 구간",
@@ -653,7 +648,6 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(ai.checkSceneCoverage.mock.calls[0]?.[0]).toEqual(["밥을 먹는다", "설거지를 한다", "교문을 나선다"])
     const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
     expect(retry.retryReasons.join(" ")).toContain("사건 «설거지를 한다»이 뼈대에 없습니다")
-    // 남은 경고는 채택한 판의 것이라고 읽혀야 한다(#118).
     expect(result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»"))).toHaveLength(1)
   })
 
@@ -895,7 +889,6 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
     expect(result.warnings[0]).toContain("지훈")
   })
 
-  // #106: 첫 판의 «못 미친 채 끝내는 쪽이 낫다»가 미달 재시도의 길이 요구와 부딪쳤다.
   it("marks only a retry after a too-short attempt as an under-length retry", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
@@ -961,8 +954,6 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
   })
 })
 
-// 구간 상한은 설정으로 내려온다. 낮추면 같은 목표 분량이 더 많은 호출로 쪼개지고, 그것이 분량을
-// 늘리는 유일한 손잡이다.
 describe("runSceneGenerationPipeline — 구간 상한 설정", () => {
   const longSkeleton = Array.from({ length: 6 }, (_, i) => `문단${i} ${"가".repeat(300)}`).join(
     "\n\n"
@@ -1056,8 +1047,6 @@ describe("splitSkeletonIntoSections", () => {
 })
 
 describe("findRepeatedDialogueRun", () => {
-  // 뼈대가 같은 대사 묶음을 두 번 적으면 그 두 자리에 각각 다른 문장으로 살이 붙어, 살붙임
-  // 결과만 비교해서는 잡을 수 없다.
   it("finds a run of dialogue repeated in the same order", () => {
     const skeleton = [
       '진아가 말했다. "회수부터 하죠."',
@@ -1091,8 +1080,6 @@ describe("findRepeatedDialogueRun", () => {
     expect(validateSceneSkeleton(repeated)).toEqual([])
   })
 
-  // 실측(the-missing-summer 23씬): 뼈대가 목표 1,000자의 1/3(337~368자)만 나와 살붙임이 9배
-  // 확장을 떠안았고 최종 분량이 목표 절반에도 못 미쳤다. #106에서는 55%가 문턱 0.5를 넘어 통과했다.
   it("flags a skeleton under 80% of its target and tells it to add beats, not description", () => {
     const violations = validateSceneSkeleton("가".repeat(300), 1000)
 
@@ -1116,8 +1103,6 @@ describe("validateExpandedSection", () => {
     skeleton: "엘리아가 걷는다."
   }
 
-  // 구간마다 따로 보면 각 구간은 멀쩡하다. 앞 구간을 삼킨 판이 통과하면 원고 후반이
-  // 전반의 복사본이 된다.
   it("rejects an expansion that rewrites the previous section", () => {
     const previousSection = "엘리아는 골목을 빠져나왔다. ".repeat(30)
     const violations = validateExpandedSection({
@@ -1130,8 +1115,6 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("repeats-previous")
   })
 
-  // 살붙임은 구간마다 문장을 새로 쓴다. 같은 사건을 다시 다뤄도 서술이 겹치지 않으므로
-  // 축자 비교는 빠져나가고, 뼈대에서 온 대사만 같게 남는다.
   it("rejects an expansion that retells the previous section with fresh prose", () => {
     const previousSection = [
       '진아가 원고를 내려다봤다. "회수부터 하죠."',
@@ -1219,8 +1202,6 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
   })
 
-  // 실측(the-missing-summer 23씬): 살붙임이 한 턴을 두 문장으로 쪼개 호흡을 만들자 조각마다
-  // 유사도 0.60·0.53으로 소실 판정이 나 재시도를 태우고 경고까지 남겼다. 합치면 0.89다.
   it("accepts a skeleton turn the expansion split into consecutive fragments", () => {
     const violations = validateExpandedSection({
       ...base,
@@ -1253,8 +1234,6 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
   })
 
-  // 실측(the-missing-summer 23씬, 구간 상한 1000): 새 사건이 금지된 채 분량을 요구받자 앞 구간이
-  // 쪼개 쓴 대사 턴을 통째로 다시 쓰고 마무리 동작을 두 번 넣어 분량을 채웠다.
   it("flags a dialogue line written twice when the skeleton slice has it once", () => {
     const violations = validateExpandedSection({
       ...base,
@@ -1456,7 +1435,6 @@ describe("대사 다듬기 단계", () => {
     const names = ai.polishSceneDialogue.mock.calls.map(
       (call) => (call[0] as { character: { name: string } }).character.name
     )
-    // 첫 판은 두 인물, 둘째 판(재시도 한도 2)은 위반한 엘리아만.
     expect(names).toEqual(["엘리아", "지훈", "엘리아"])
     expect(result.skeleton).toBe("엘리아가 말했다. “가자, 지금.” 그가 답했다. “알았다니까.”")
     const polishWarnings = result.warnings.filter((warning) => warning.includes("다듬기"))
@@ -1468,8 +1446,6 @@ describe("대사 다듬기 단계", () => {
     expect(result.dialoguePolish).toEqual({ lineCount: 2, polishedCount: 1, contestedCount: 0 })
   })
 
-  // #106: 주인공의 대사 하나가 "응."으로 줄어 턴 수가 하나 모자라자 그 인물의 손질 전체가 뼈대로
-  // 돌아가 163개 중 39개만 손봤다. 이제 그 번호만 뼈대대로 두고 나머지는 받는다.
   it("keeps the skeleton line only for the number that broke, and the rest of the character's rewrites", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce(
@@ -1563,7 +1539,6 @@ describe("대사 다듬기 단계", () => {
   })
 })
 
-// #106: 입버릇은 반복 제한의 예외라 23,511자에 "세기의 철학자"가 46회 나왔다.
 describe("findCatchphraseOveruse", () => {
   const joker: CharacterCard = { ...eliaCard, catchphrases: ["세기의 철학자", "평민"] }
 
@@ -1616,7 +1591,6 @@ it("reports catchphrase overuse in the generated draft's warnings", async () => 
 describe("대사 화자 귀속 단계", () => {
   const skeletonWithDialogue = `엘리아가 문 앞에서 걸음을 멈췄다. "가자, 지금 당장." 지훈이 고개를 저었다. "아직은 아니야, 조금만 더." ${"복도는 조용했다. ".repeat(20)}`
 
-  // 살붙임이 뼈대에 없던 대사를 새로 만드는 상황. 귀속은 뼈대가 아니라 이 결과를 봐야 한다.
   function expandWithExtraDialogue(section: string): string {
     return `${section} "그럼 내가 먼저 간다." ${longProse("살붙인 본문")}`
   }
@@ -1650,7 +1624,6 @@ describe("대사 화자 귀속 단계", () => {
     expect(attributionInput.lines).toContain("그럼 내가 먼저 간다.")
     expect(attributionInput.candidates.map((candidate) => candidate.id)).toEqual(["elia", "jihoon"])
 
-    // 원고에 실린 대사가 하나도 빠지지 않아야 한다.
     const bodyLines = [...result.draftBody.matchAll(/[“"]([^”"\n]{4,})[”"]/g)].map((match) =>
       (match[1] ?? "").trim()
     )
@@ -1723,7 +1696,6 @@ describe("대사 화자 귀속 단계", () => {
     expect(polishInput.character.samples).toEqual(["값보다 내력이 먼저입니다."])
   })
 
-  // #104: 다른 인물의 말투 한 줄만 대비로 싣는다. 페르소나 전문과 아는 것은 싣지 않는다.
   it("shows each polish call the other characters' voice line", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “그래, 가자고.”")
@@ -1743,7 +1715,6 @@ describe("대사 화자 귀속 단계", () => {
     expect(inputs.find((input) => input.character.name === "지훈")?.otherVoices).toEqual({ 엘리아: "짧은 존댓말" })
   })
 
-  // #105-14: 첫 씬은 앞선 초안이 없다. 노트의 예시 대사가 그 자리를 채운다.
   it("fills the first scene's samples from the notes' quoted lines", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
@@ -1849,7 +1820,6 @@ describe("배경 묘사 갱신", () => {
     expect(ai.describeBackground).toHaveBeenCalledTimes(1)
     expect(ai.describeBackground.mock.calls[0]?.[2]).toBe("돌계단 아래 천막 좌판에서 부적을 살폈다.")
 
-    // 이 씬 한정 값이라 카드 키 슬롯에 저장하지 않는다. 저장하면 마지막 실행 씬이 정본을 덮어쓴다.
     expect(store.save).not.toHaveBeenCalled()
   })
 })
@@ -1996,7 +1966,6 @@ describe("runSceneGenerationPipeline — 배우 뼈대 단계", () => {
     { text: "지훈이 부두로 나간다", cast: ["jihoon"], place: "부두", time: "밤 9시 20분" }
   ]
 
-  // 모의 살붙임은 뼈대의 대사를 옮기지 않아 구간 경고가 따라붙는다. 이 단계의 경고만 본다.
   const stageWarnings = (warnings: readonly string[]): string[] =>
     warnings.filter((warning) => warning.startsWith("배우 뼈대"))
 

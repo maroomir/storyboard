@@ -32,9 +32,6 @@ export class ProjectModule implements IApplicationModule {
     void this.migrateOpenWorkspaces();
   }
 
-  // NOTE: AI memory moved out of the gitignored cache directory; a workspace created before that
-  // move is relocated on open. Failure only costs the workspace its carried-over memory, so it is
-  // logged rather than allowed to fail activation.
   private async migrateOpenWorkspaces(): Promise<void> {
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
       try {

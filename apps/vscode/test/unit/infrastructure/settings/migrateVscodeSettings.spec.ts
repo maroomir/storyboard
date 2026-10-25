@@ -78,8 +78,6 @@ describe("migrateVscodeSettingsToHome", () => {
     expect(legacy.workspace.size).toBe(0)
   })
 
-  // A value the author already put in the shared file after the move is the newer one; the stale
-  // VSCode copy is still cleared so it cannot resurface.
   it("keeps an existing config.json value over the legacy one", async () => {
     const legacy: Layers = { user: new Map([["defaultProvider", "mock"]]), workspace: new Map() }
     const home: Layers = { user: new Map([["ai.provider.default", "claude-code"]]), workspace: new Map() }

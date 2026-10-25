@@ -49,8 +49,6 @@ const locationPicks: readonly LocationPickItem[] = [
   },
 ];
 
-// The same steps as `storyboard notes absorb`: read, show the estimate, sort with the model, show the
-// plan, write. Nothing is spent before the first confirmation and nothing written before the second.
 export function registerAbsorbNotesCommand(
   dependencies: RegisterAbsorbNotesCommandDependencies,
 ): vscode.Disposable {

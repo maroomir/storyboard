@@ -259,8 +259,6 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftU
   } as never
 }
 
-// 디스크에 이미 있는 '우리가 쓴' 초안을 흉내 낸다. 본문 해시가 씬 캐시 기록과 맞으면 덮어써도
-// 잃을 것이 없다는 판정이 된다.
 const ourDraftBody = pipelineSuccessResult.draftBody
 const ourDraftBodyHash = computeDraftBodyHash(
   parseDraft(serializeDraft(createDraft({ sceneStem: fakeScene.stem, format: "novel", body: ourDraftBody }))).body
@@ -302,8 +300,6 @@ describe("GenerateDraftUseCase", () => {
     aiServiceStub.proposeSceneBeats.mockClear()
   })
 
-  // QA D5: an empty model response was saved over the existing draft and reported as success. No
-  // provider is trusted on this: an empty body never replaces a draft.
   describe("empty generation", () => {
     it.each(["", "  \n\n  "])("refuses to save a draft whose body is %j and keeps the old one", async (draftBody) => {
       pipelineRunMock.mockResolvedValue({ ...pipelineSuccessResult, draftBody })
@@ -350,8 +346,6 @@ describe("GenerateDraftUseCase", () => {
       expect(sceneCacheRepository.write).not.toHaveBeenCalled()
     })
 
-    // #100: 씬 캐시는 gitignore 대상이라 git으로 받은 작품에는 없다. 커밋되는 원장의 입력 해시가
-    // 같으면 그대로인 초안을 다시 생성하지 않는다.
     describe("without a scene cache", () => {
       const groundedHash = computeSceneInputHash({
         sceneBody: fakeScene.body,
@@ -405,8 +399,6 @@ describe("GenerateDraftUseCase", () => {
       })
     })
 
-    // force는 캐시 적중 판정을 건너뛴다. 덮어쓰기 전 출처 판정은 그와 별개로 여전히 수행하므로
-    // 여기서 캐시 기록을 읽는 것 자체는 정상이다 — 읽지 않으면 남이 쓴 초안을 보관 없이 지운다.
     it("bypasses the cache hit shortcut and regenerates when force is true", async () => {
       const sceneCacheRepository = createSceneCacheRepository()
       const draftRepository = createDraftRepository()
@@ -541,8 +533,6 @@ describe("GenerateDraftUseCase", () => {
       expect(archiveExistingDraftMock).not.toHaveBeenCalled()
     })
 
-    // 캐시 기록 없이 만들어진 초안은 출처 판정이 불가능하다. draft/는 기본 gitignore이고
-    // keepHistory 기본값이 꺼짐이라, 보관하지 않으면 되돌릴 곳이 없다.
     it("archives a draft it did not write even when keep-draft-history is disabled", async () => {
       const logger = createLogger()
       const dependencies = createDependencies({
@@ -730,7 +720,6 @@ describe("GenerateDraftUseCase", () => {
         expect.objectContaining({
           sceneBody: fakeScene.body,
           missingFields: ["incident", "place", "relation", "time"],
-          // 카드 id가 아니라 해석된 인물 이름으로 제안받아야 본문에 슬러그가 새지 않는다.
           characterNames: ["준서", "하나"]
         }),
         expect.anything()
@@ -741,7 +730,6 @@ describe("GenerateDraftUseCase", () => {
       })
     })
 
-    // 모델이 끝내 비워 둔 칸을 실행마다 다시 물어 초안을 캐시로 두는데도 비용이 들었다.
     describe("fields the model left blank", () => {
       function sceneThatRemembersItsGrounding(): { repository: unknown; changeBody: (body: string) => void } {
         let current: typeof fakeScene & { frontmatter: Record<string, unknown> } = { ...fakeScene }
@@ -879,14 +867,12 @@ describe("GenerateDraftUseCase", () => {
           sceneBody: "[목적]\n첫 만남\n",
           summary: "준서가 하나를 만난다.\n",
           characterNames: ["준서", "하나"],
-          // max(minBeats 5, ceil(3000 / 1500))
           beatCount: 5
         }),
         expect.objectContaining({ providerId: "provider:sceneBeats" })
       )
       expect(writeBeats).toHaveBeenCalledWith(sceneUri, ["첫 비트", "둘째 비트"])
       expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
-        // 비트가 생긴 뒤에도 요약 메모는 [창작자 요약] 설계 블록으로 남는다(#88-1).
         context: { scene: { body: "[목적]\n첫 만남\n\n[창작자 요약]\n준서가 하나를 만난다.\n\n첫 비트\n\n둘째 비트\n" } }
       })
     })

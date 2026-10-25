@@ -148,8 +148,6 @@ export function SettingsView({
     setRpcError(message);
   }, []);
 
-  // The native controls already show the new value optimistically, so without this line a save
-  // and a no-op look identical; the notice names the layer the value landed in.
   const onSaved: (label: string, target: SaveTarget) => void = useCallback(
     (label: string, target: SaveTarget): void => {
       const where: string =

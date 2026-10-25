@@ -34,8 +34,6 @@ export function isEmptyUsageDisplay(usage: UsageAmount): boolean {
   return usage.tokens <= 0 && usage.costUsd <= 0;
 }
 
-// NOTE: a subscription provider has tokens but no price, so the badge leads with tokens there and
-// never prints a misleading "$0.00" for spend that simply was not priced.
 export function formatUsageBadgeLabel(usage: UsageAmount): string {
   if (isEmptyUsageDisplay(usage)) {
     return '—';

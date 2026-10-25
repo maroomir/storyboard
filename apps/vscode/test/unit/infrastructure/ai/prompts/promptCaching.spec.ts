@@ -10,9 +10,6 @@ import {
   type PromptArtifact
 } from "@storyboard/story-ai"
 
-// #107: 한 씬 안에서 되풀이되는 재료(뼈대·본문)는 접두(user 첫 메시지, 캐시 경계)로 가고, 호출마다 바뀌는
-// 것(이번 인물·이번 구간·재시도 사유·목표 분량)은 꼬리로 간다. 접두 캐시는 바이트 단위 일치라, 호출 사이에
-// system 과 접두가 한 글자라도 다르면 그 뒤는 모두 무효다.
 describe("prompt resource prefix section", () => {
   it("reads a ## prefix section and its cache ttl from the front-matter", () => {
     const resource = parsePromptResource(

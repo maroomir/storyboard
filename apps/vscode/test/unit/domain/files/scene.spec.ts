@@ -270,7 +270,6 @@ describe("extractSceneNarrativeSource", () => {
 })
 
 describe("splitSceneNarrativeSource", () => {
-  // 비트·요약이 있으면 설계 블록이 통째로 버려져 뼈대가 목적·갈등·반전을 모르는 채 쓰였다.
   it("keeps the craft blocks as design instead of dropping them", () => {
     const cardText = [
       "type: scene",
@@ -287,7 +286,6 @@ describe("splitSceneNarrativeSource", () => {
     expect(parts.narrative).toBe("이준이 좌판을 정리한다. 하늘에 공지가 뜬다.")
     expect(parts.design).toContain("[목적]")
     expect(parts.design).toContain("[갈등]")
-    // 재료와 설계는 섞이지 않는다 — 섞이면 카드 메타가 그대로 산문에 실린다.
     expect(parts.narrative).not.toContain("[갈등]")
   })
 
@@ -333,8 +331,6 @@ describe("scene summary file and beats", () => {
     expect(scene.body).toBe(
       "[목표 분량]\n약 3,000자\n\n[창작자 요약]\n요약 산문 첫 문단.\n둘째 문단에는 말버릇 메모가 있다.\n\n샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다.\n"
     )
-    // 파이프라인 뼈대 단계는 이 narrativeSource 만 사건 재료로 쓰므로 비트가 그대로 들어가야 하고,
-    // 요약 메모는 설계 블록으로 따로 간다(#88-1: 비트가 있으면 메모가 통째로 버려졌다).
     expect(extractSceneNarrativeSource(scene.body)).toBe(
       "샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다."
     )
@@ -355,7 +351,6 @@ describe("scene summary file and beats", () => {
         "둘은 나란히 교문을 지난다.\n(출연: elia, jihoon)",
       ].join("\n\n")
     )
-    // 프롬프트에는 카드 id 대신 이름이 간다.
     expect(renderSceneCardBody(scene.card, undefined, (ref) => ({ elia: "엘리아", jihoon: "지훈" })[ref] ?? ref)).toContain(
       "(출연: 엘리아, 지훈)"
     )

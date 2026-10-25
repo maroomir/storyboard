@@ -118,8 +118,6 @@ export function ScenesSidebar({
     return (): void => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // The header carries the work's whole spend: the outline, summaries and the review belong to no
-  // scene, so a sum of the scene rows would hide them.
   const workUsage: UsageAmount = sidebarState.usage.total;
   const workUsageTooltip: string = `작품 전체 · ${formatUsageBadgeTooltip(workUsage)} · 씬 ${formatUsageBadgeLabel(sumUsageMap(sidebarState.usage.scenes))}`;
   const sceneUsage = (scene: SceneListItem): UsageAmount =>

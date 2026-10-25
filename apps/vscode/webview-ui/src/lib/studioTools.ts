@@ -16,8 +16,6 @@ export type StudioToolTargetKind =
   | 'project'
   | 'none';
 
-// NOTE: the composer can pin either an agent tool or the create wizard; only the former rides the
-// chat request as `tool`.
 export type StudioComposerTool = StudioToolName | 'updateCard';
 
 interface StudioToolPresentation {
@@ -25,8 +23,6 @@ interface StudioToolPresentation {
   readonly command: string;
   readonly label: string;
   readonly hint: string;
-  // NOTE: sent when the author pins a tool and presses enter with nothing typed, so a bare
-  // "/continuity" is a complete request rather than a rejected empty instruction.
   readonly defaultInstruction: string;
 }
 
@@ -35,8 +31,6 @@ export interface StudioToolEntry extends StudioToolPresentation {
   readonly targets: readonly StudioToolTargetKind[];
 }
 
-// 어떤 카드·초안에서 어떤 도구가 보이는지는 계약의 `studioToolNamesByShape` 가 정한다. 여기서는
-// 그 모양을 이 화면의 대상 종류로 옮기기만 한다.
 const shapeTargetKinds: Record<
   keyof typeof studioToolNamesByShape,
   readonly StudioToolTargetKind[]
@@ -46,7 +40,6 @@ const shapeTargetKinds: Record<
   sceneCard: ['scene'],
 };
 
-// 창작 마법사는 에이전트 도구가 아니라 어느 화면에서나 열리는 항목이라 계약에 없다.
 const createWizardTargets: readonly StudioToolTargetKind[] = [
   'draft',
   'scene',
@@ -77,8 +70,6 @@ function needsSelectionForTool(tool: StudioComposerTool): boolean {
   return tool !== 'updateCard' && isSpanRequiredTool(tool);
 }
 
-// NOTE: the command words are what the author types after "/", so they stay short and stable; the
-// tool names are the contract the host and the agent share.
 const studioToolPresentations: readonly StudioToolPresentation[] = [
   {
     tool: 'continuityCheck',
@@ -151,7 +142,6 @@ const studioTools: readonly StudioToolEntry[] = studioToolPresentations.map((pre
   targets: targetsForTool(presentation.tool),
 }));
 
-// NOTE: every target kind offers at least the create wizard, so the slash menu is always live.
 export function isToolTarget(target: StudioTarget): boolean {
   return toolCandidates('', target).length > 0;
 }

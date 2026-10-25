@@ -11,8 +11,6 @@ import type { AiGenerateResponse, AiProvider } from "@storyboard/story-model"
 import { createUsageSummary } from "./usageSummary"
 import { createHarnessProvider, defaultHarnessModel, resolveHarnessProviderId } from "./harnessProvider"
 
-// NOTE: Diagnostic — runs the new checkSceneCoverage feature against the current draft to verify
-// every source beat is dramatized in order. Re-extracts beats so it does not depend on stale cache.
 const workspace = process.env.SCENE_WS ?? process.env.GUERRILA_WS
 if (workspace === undefined) {
   throw new Error("Set SCENE_WS to the workspace this harness should read.")

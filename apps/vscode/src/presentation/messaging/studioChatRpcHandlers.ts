@@ -41,8 +41,6 @@ export interface StudioChatRpcHandlersDependencies {
 export function createStudioChatRpcHandlers(
   deps: StudioChatRpcHandlersDependencies,
 ): StoryboardRpcHandlers {
-  // NOTE: a provider call cannot be aborted mid-flight, so a cancel bumps the generation and the
-  // reply that eventually lands is dropped instead of appearing after the author moved on.
   let generation: number = 0;
 
   return {
@@ -65,8 +63,6 @@ export function createStudioChatRpcHandlers(
         return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
       }
 
-      // NOTE: the prompt tells the model a selection was given, so the selected text has to travel
-      // with it; a bare hasSelection flag would leave the model guessing which passage to rewrite.
       const selection: string | undefined = readSelectedDraftText(entityContext);
       const contextWithSelection: string = selection
         ? `${entityContext.context}\n\n[작가가 선택한 구간]\n${selection}`
@@ -106,8 +102,6 @@ export function createStudioChatRpcHandlers(
   };
 }
 
-// NOTE: without this the Studio's spend never reached the ledger, so the sidebar badges read as
-// if chatting were free.
 function usageAttributionFor(entity: StudioEntity): Pick<StudioChatRequest, 'attribution'> {
   if (entity.kind === 'project') {
     return {};
@@ -116,9 +110,6 @@ function usageAttributionFor(entity: StudioEntity): Pick<StudioChatRequest, 'att
   return { attribution: { primary: { kind: entity.kind, id: entity.key } } };
 }
 
-// NOTE: which resolver a conversation gets follows the file being edited — draft chats run the
-// draft tools, card chats the card tools; a target with no baseline gets none at all, and the
-// prompt then never advertises invoke.
 function toolResolverFor(
   deps: StudioChatRpcHandlersDependencies,
   root: vscode.Uri,
@@ -165,8 +156,6 @@ function toolResolverFor(
   };
 }
 
-// NOTE: only a draft edit can act on a selection, and the offsets the model must return are body
-// offsets, so the excerpt is reported the same way.
 function readSelectedDraftText(entityContext: StudioEntityContext): string | undefined {
   if (entityContext.patchTarget !== 'draft' || entityContext.baseline === undefined) {
     return undefined;
@@ -189,8 +178,6 @@ function readSelectedDraftText(entityContext: StudioEntityContext): string | und
   return `[${startOffset}-${startOffset + selected.length}]\n${selected}`;
 }
 
-// NOTE: a scene entity spans the seed card and its draft; whichever the author is looking at is
-// the one a proposal may rewrite.
 function sceneFocusOf(target: StudioTarget): StudioSceneFocus {
   return target.kind === 'scene' ? 'card' : 'draft';
 }

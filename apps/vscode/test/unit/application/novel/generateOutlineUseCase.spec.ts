@@ -73,7 +73,6 @@ describe("GenerateOutlineUseCase", () => {
     expect(repository.save).toHaveBeenCalledOnce()
   })
 
-  // 모델이 계약의 장 수를 어긴 계획은 저장하지 않는다. 저장되면 novel generate 가 매번 거부하는 작품이 된다.
   it("refuses a generated chapter plan whose chapter count is not the contract's", async () => {
     const repository: IOutlineRepository = {
       hasExisting: vi.fn(async () => false),

@@ -21,8 +21,6 @@ const EDIT_BUTTON: vscode.QuickInputButton = {
 
 const INLINE_VALUE_LIMIT: number = 40;
 
-// 생성 전에 확정될 씬 사실을 보여 주고 승인·항목별 수정·취소를 받는다.
-// `storyboard.grounding.autoApprove`가 켜져 있으면 이 흐름은 호출되지 않는다.
 export const confirmSceneGrounding: ConfirmSceneGrounding = async ({
   sceneStem,
   grounding,

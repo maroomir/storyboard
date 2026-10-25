@@ -152,7 +152,6 @@ describe("scene stem markers", () => {
 
     expect(manuscript.volumeMarkdown).toContain("<!-- scene: 01-arrival -->")
     expect(manuscript.volumeMarkdown).toContain("<!-- scene: 02-meeting -->")
-    // The marker precedes the body it labels, so an issue found in the body maps to the stem above.
     expect(manuscript.volumeMarkdown.indexOf("<!-- scene: 01-arrival -->")).toBeLessThan(
       manuscript.volumeMarkdown.indexOf("도착 본문")
     )

@@ -1,7 +1,3 @@
-// The contract is the engine's, not a copy of it. A second declaration here is how the two
-// drifted before: same names, no compiler linking them.
-// The contract is the engine's, not a copy of it. A second declaration here is how the two
-// drifted before: same names, no compiler linking them — and the swap found real gaps.
 import type {
   CardCollectProposal,
   SceneListItem,
@@ -150,8 +146,6 @@ export interface CardEditorInitialData {
   readonly error?: string;
 }
 
-// SECURITY: 사이드바가 부를 수 있는 명령 목록은 익스텐션 호스트가 검사하는 스키마가 갖는다.
-// 여기서 다시 적으면 웹뷰만 아는 명령이 생겨 그 검사를 지나칠 수 있다.
 export type { SidebarRunnableCommand } from '@storyboard/story-model/contracts';
 
 export interface UsageCacheAmount {

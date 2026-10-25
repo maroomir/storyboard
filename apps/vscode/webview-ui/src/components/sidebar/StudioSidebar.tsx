@@ -183,8 +183,6 @@ export function StudioSidebar({
         setChatStage('idle');
         const cardUpdate: CardUpdateInstruction = parseCardUpdatePayload(data.payload);
         if (cardUpdate.ok) {
-          // NOTE: the host opened the new card; the target switch starts its conversation and the
-          // staged instruction survives it, exactly like a follow-up handoff.
           startsFreshRef.current = true;
           setDraft(cardUpdate.instruction ?? '');
         }
@@ -246,9 +244,6 @@ export function StudioSidebar({
     followUpRequestIdRef.current = post('studio.followUp.list', { entity: target.entity });
   }, [target.entity?.kind, target.entity?.key, stageToken]);
 
-  // NOTE: a conversation belongs to one entity, so switching the open file swaps the whole chat —
-  // otherwise the previous entity's turns would be replayed as context and then saved under the new
-  // entity's key. The composer draft survives so a follow-up handoff can stage its instruction.
   useEffect(() => {
     if (!isEntityChanged(loadedEntityRef.current, target.entity)) {
       return;
@@ -264,8 +259,6 @@ export function StudioSidebar({
     setCreatedAt(new Date().toISOString());
     setView('chat');
 
-    // NOTE: a follow-up handoff is deliberately a new conversation, so it opts out of restoring
-    // whatever was last discussed about that entity.
     if (target.entity && !startsFreshRef.current) {
       latestRequestIdRef.current = post('studio.session.latest', { entity: target.entity });
     }
@@ -295,8 +288,6 @@ export function StudioSidebar({
   }, [turns]);
 
   const startNewSession = (): void => {
-    // NOTE: an in-flight reply belongs to the conversation being left behind, so its request is
-    // dropped here or the composer would stay locked on the new one.
     sendRequestIdRef.current = undefined;
     setChatStage('idle');
     setSessionId(createRequestId());
@@ -356,8 +347,6 @@ export function StudioSidebar({
     setMenuIndex(0);
   };
 
-  // NOTE: the menu opens only while the whole composer is a bare "/token", so a slash inside a
-  // sentence is just text.
   const menu: readonly StudioToolEntry[] = useMemo(() => {
     if (pinnedTool !== undefined || !isToolTarget(target)) {
       return [];
@@ -373,8 +362,6 @@ export function StudioSidebar({
       entity: { kind: followUp.kind, key: followUp.key },
       targetFile: followUp.targetFile,
     });
-    // NOTE: the editor switch retargets the panel on its own; the instruction is only staged so the
-    // author reads it before any request goes out.
     startNewSession();
     setDraft(followUp.instruction);
   };
@@ -768,7 +755,6 @@ function Composer({
       return;
     }
 
-    // NOTE: backspace on an empty composer takes the pin off, the way a chip-style input behaves.
     if (event.key === 'Backspace' && value.length === 0 && pinnedTool !== undefined) {
       event.preventDefault();
       onUnpinTool();

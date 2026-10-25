@@ -441,7 +441,6 @@ describe("readPreviousSceneContext", () => {
     expect(context).toContain("이전 씬의 마지막 문장입니다.")
   })
 
-  // #99: 본문이 짧으면 front matter까지 꼬리 1000자 안에 들어와 이전 장면 맥락에 섞였다.
   it("leaves the previous draft's front matter out of a short draft's tail", async () => {
     const fileSystem = new MockFileSystem()
     fileSystem.setDirectory("/mock/workspace/draft", [["01-prologue.md", { type: "file" }]])
@@ -600,7 +599,6 @@ describe("readPreviousSceneContext rolling summary", () => {
     const result = await readPrevious(mockPaths, 2, fileSystem)
 
     expect(result?.length).toBeLessThanOrEqual(8000)
-    // The opening chapter survives as its heading plus one line; the latest keeps its detail.
     expect(result).toContain("## 1장")
     expect(result).toContain("OPENING-MARKER")
     expect(result).toContain("LATEST-MARKER")

@@ -56,7 +56,6 @@ describe("ScenesSidebar usage.changed", () => {
     vi.unstubAllGlobals()
   })
 
-  // 머리 배지는 씬 합계만 더해, 아웃라인·요약·검수처럼 작품에 귀속된 비용이 어디에도 보이지 않았다.
   it("shows the work's whole spend in the header badge, scenes alone on the scene", async () => {
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage: vi.fn() }))
 

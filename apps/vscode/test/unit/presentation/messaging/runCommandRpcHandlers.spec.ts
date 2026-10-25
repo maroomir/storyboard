@@ -19,7 +19,6 @@ describe("workspace.runCommand", () => {
     expect(execute).toHaveBeenCalledWith("storyboard.init")
   })
 
-  // SECURITY: the webview must not be able to name arbitrary commands.
   it("rejects a command outside the sidebar allowlist at the schema boundary", () => {
     expect(
       workspaceRunCommandRequestPayloadSchema.safeParse({ command: "workbench.action.terminal.new" }).success
