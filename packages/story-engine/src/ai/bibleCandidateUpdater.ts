@@ -25,7 +25,7 @@ export interface UpdateBibleCandidatesFromDraftInput {
 }
 
 function dedupeFactsById(facts: readonly BibleFact[]): BibleFact[] {
-  const byId = new Map<string, BibleFact>();
+  const byId: Map<string, BibleFact> = new Map<string, BibleFact>();
 
   for (const fact of facts) {
     byId.set(fact.id, fact);
@@ -74,7 +74,7 @@ export async function updateBibleCandidatesFromDraft(
     return { candidateCount: 0 };
   }
 
-  const facts = detectedCharacterCards.flatMap((card) =>
+  const facts: BibleFact[] = detectedCharacterCards.flatMap((card) =>
     (extracted[card.name] ?? []).map((candidate) =>
       buildCandidateFact(
         { kind: 'character', id: card.id },

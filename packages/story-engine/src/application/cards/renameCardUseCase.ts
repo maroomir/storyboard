@@ -51,6 +51,11 @@ export interface RenameCardUseCaseDependencies {
 // Renaming a card is a workspace-wide edit: the file moves, its own id changes, and every card
 // that references it is rewritten. The writes are sequential, so a crash mid-rename leaves
 // references half-updated — run it on a clean tree.
+export interface ReferenceRewrite {
+  readonly rewrittenCount: number;
+  readonly unreadableFiles: readonly string[];
+}
+
 export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCardResult> {
   public constructor(private readonly deps: RenameCardUseCaseDependencies) {}
 
@@ -95,7 +100,7 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
     await fileSystem.delete(fromUri);
 
     // Only a character id is referenced from other cards; a background id is not.
-    const references =
+    const references: ReferenceRewrite =
       category === 'character'
         ? await this.rewriteReferences(
             [paths.characterDirectory, paths.backgroundDirectory],
@@ -113,7 +118,7 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
     renamedUri: StoryUri,
     fromId: string,
     toId: string,
-  ): Promise<{ readonly rewrittenCount: number; readonly unreadableFiles: readonly string[] }> {
+  ): Promise<ReferenceRewrite> {
     const { fileSystem } = this.deps;
     const unreadableFiles: string[] = [];
     let rewrittenCount: number = 0;

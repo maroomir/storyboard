@@ -56,6 +56,18 @@ import type {
 import type { GenerateDraftResult } from '#engine/application/drafts/generateDraftTypes';
 import type { ReviseDraftWorkflowResult } from '#engine/application/drafts/reviseDraftUseCase';
 
+interface SceneReviewIssues {
+  continuity: ContinuityIssueLike[];
+  critique: DraftCritiqueIssue[];
+}
+
+interface ChapterStemGroup {
+  title: string;
+  stems: string[];
+  actIndex: number;
+  chapterIndex: number;
+}
+
 export interface ChapterGroup {
   readonly title: string;
   readonly stems: readonly string[];
@@ -459,27 +471,19 @@ function groupHighIssuesByScene(
   critiqueIssues: readonly DraftCritiqueIssue[],
   knownStems: ReadonlySet<string>,
 ): ReviewTarget[] {
-  const byStem = new Map<
-    string,
-    { continuity: ContinuityIssueLike[]; critique: DraftCritiqueIssue[] }
-  >();
+  const byStem: Map<string, SceneReviewIssues> = new Map<string, SceneReviewIssues>();
 
-  const bucketFor = (
-    sceneStem: string | undefined,
-  ): { continuity: ContinuityIssueLike[]; critique: DraftCritiqueIssue[] } | undefined => {
+  const bucketFor = (sceneStem: string | undefined): SceneReviewIssues | undefined => {
     if (sceneStem === undefined || !knownStems.has(sceneStem)) {
       return undefined;
     }
 
-    const existing = byStem.get(sceneStem);
+    const existing: SceneReviewIssues | undefined = byStem.get(sceneStem);
     if (existing) {
       return existing;
     }
 
-    const created = {
-      continuity: [] as ContinuityIssueLike[],
-      critique: [] as DraftCritiqueIssue[],
-    };
+    const created: SceneReviewIssues = { continuity: [], critique: [] };
     byStem.set(sceneStem, created);
     return created;
   };
@@ -593,7 +597,7 @@ export function groupChapterStems(
 ): ChapterGroup[] {
   const seeds: GeneratedSceneSeed[] = buildSceneSeeds(plan, digitCount);
   const flat: FlatChapterScene[] = flattenChapterPlan(plan);
-  const groups: { title: string; stems: string[]; actIndex: number; chapterIndex: number }[] = [];
+  const groups: ChapterStemGroup[] = [];
 
   flat.forEach((flatScene, index) => {
     const stem: string | undefined = sceneStemsByOrder.get(index + 1) ?? seeds[index]?.stem;
@@ -601,7 +605,7 @@ export function groupChapterStems(
       return;
     }
 
-    const last = groups.at(-1);
+    const last: ChapterStemGroup | undefined = groups.at(-1);
     if (
       last &&
       last.actIndex === flatScene.actIndex &&

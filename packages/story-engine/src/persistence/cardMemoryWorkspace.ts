@@ -32,6 +32,7 @@ import type {
   BackgroundMemoryRecord,
   BackgroundFactConflictRecord,
   SceneDialogueTurn,
+  BackgroundFactConflict,
 } from '@storyboard/story-model';
 import type {
   IBackgroundFactConflictStore,
@@ -174,7 +175,7 @@ export function createBackgroundFactConflictStore(
   const promptFingerprint: string = promptResourceFingerprint('backgroundFactConflicts');
 
   return {
-    async load(card) {
+    async load(card: BackgroundCard): Promise<readonly BackgroundFactConflict[] | undefined> {
       const record: BackgroundFactConflictRecord | undefined = (
         await readBackgroundFactConflictRecords(fs, paths)
       )[card.id];
@@ -183,12 +184,12 @@ export function createBackgroundFactConflictStore(
 
       return isCurrent ? record?.conflicts : undefined;
     },
-    async save(card, conflicts) {
+    async save(card: BackgroundCard, conflicts: readonly BackgroundFactConflict[]): Promise<void> {
       const records: BackgroundFactConflictRecords = await readBackgroundFactConflictRecords(
         fs,
         paths,
       );
-      const next = {
+      const next: BackgroundFactConflictRecords = {
         ...records,
         [card.id]: {
           inputKey: computeBackgroundFactConflictKey(card, promptFingerprint),

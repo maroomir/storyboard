@@ -1,14 +1,28 @@
 import { critiqueCategories } from '@storyboard/story-model';
-import type { ContinuityIssueLike, DraftCritiqueIssue, Severity } from '@storyboard/story-model';
+import type {
+  ContinuityIssueLike,
+  CritiqueCategory,
+  DraftCritiqueIssue,
+  Severity,
+} from '@storyboard/story-model';
 
-export const reviewAgents = ['canon', 'persona', 'narrator', 'setting'] as const;
+export type ReviewAgent = 'canon' | 'persona' | 'narrator' | 'setting';
 
-export type ReviewAgent = (typeof reviewAgents)[number];
+export const reviewAgents: readonly [ReviewAgent, ...ReviewAgent[]] = [
+  'canon',
+  'persona',
+  'narrator',
+  'setting',
+];
 
 // 초안 비평 카테고리에 검수만 쓰는 두 가지를 더한 것이다. 비평 쪽이 늘면 여기도 함께 늘어야 한다.
-export const reviewCategories = [...critiqueCategories, 'continuity', 'grammar'] as const;
+export type ReviewCategory = CritiqueCategory | 'continuity' | 'grammar';
 
-export type ReviewCategory = (typeof reviewCategories)[number];
+export const reviewCategories: readonly ReviewCategory[] = [
+  ...critiqueCategories,
+  'continuity',
+  'grammar',
+];
 
 export interface IssueTarget {
   readonly agent: ReviewAgent;
@@ -95,16 +109,20 @@ export function adaptContinuityIssues(issues: readonly ContinuityIssueLike[]): R
   }));
 }
 
+type TargetedReviewIssue = ReviewIssue & { target: IssueTarget };
+
 export function routeReviewIssues(issues: readonly ReviewIssue[]): ReviewRouting {
   const global: ReviewIssue[] = issues.filter((issue) => !issue.target);
-  const targeted = issues.filter((issue): issue is ReviewIssue & { target: IssueTarget } =>
+  const targeted: TargetedReviewIssue[] = issues.filter((issue): issue is TargetedReviewIssue =>
     Boolean(issue.target),
   );
 
   const groups: RoutedIssueGroup[] = [];
 
   for (const agent of reviewAgents) {
-    const agentIssues = targeted.filter((issue) => issue.target.agent === agent);
+    const agentIssues: TargetedReviewIssue[] = targeted.filter(
+      (issue) => issue.target.agent === agent,
+    );
     if (agentIssues.length === 0) {
       continue;
     }

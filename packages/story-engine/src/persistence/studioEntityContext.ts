@@ -1,4 +1,6 @@
 import type {
+SceneFile,
+  StoryboardCard,
   StoryUri,
   StudioAgentFollowUp,
   StudioAgentLookupRequest,
@@ -87,7 +89,7 @@ export async function resolveStudioFollowUps(
   workspaceRoot: StoryUri,
   followUps: readonly StudioAgentFollowUp[],
 ): Promise<readonly StudioFollowUpTarget[]> {
-  const resolved = await Promise.all(
+  const resolved: (StudioFollowUpTarget | undefined)[] = await Promise.all(
     followUps
       .filter((followUp) => isSafeStudioEntityKey(followUp.key))
       .map(async (followUp) => {
@@ -213,7 +215,7 @@ async function readScenesFeaturingCard(
 
   const sections: (string | undefined)[] = await Promise.all(
     stems.map(async (stem) => {
-      const scene = await readSceneOrUndefined(fs, workspaceRoot, stem);
+      const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, stem);
 
       if (!scene || !sceneDeclaresCard(scene, cardId, cardKind)) {
         return undefined;
@@ -249,14 +251,14 @@ async function readLookupText(
   switch (request.kind) {
     case 'character':
     case 'background': {
-      const card = await readCardOrUndefined(
+      const card: StoryboardCard | undefined = await readCardOrUndefined(
         fs,
         cardPathFor(workspaceRoot, request.kind, request.key),
       );
       return card ? serializeCard(card).trim() : undefined;
     }
     case 'scene': {
-      const scene = await readSceneOrUndefined(fs, workspaceRoot, request.key);
+      const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, request.key);
       return scene ? scene.body.trim() : undefined;
     }
     case 'draft': {

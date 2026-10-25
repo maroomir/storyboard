@@ -2,15 +2,17 @@ import type { SceneDialogueRewrite } from '@storyboard/story-ai';
 import { quotedDialoguePatternFor } from './sceneSectionPlan';
 import type { ResolvedSceneGenerationTuning } from './sceneGenerationTuning';
 
+export interface NumberedDialogue {
+  readonly start: number;
+  readonly end: number;
+  readonly text: string;
+}
+
 export interface NumberedSkeleton {
   // 따옴표 대사마다 바로 앞에 ⟨n⟩을 단 뼈대. 인물별 다듬기 호출이 받는 본문이다.
   readonly text: string;
   // n번째 대사가 원래 뼈대에서 차지한 자리(따옴표 포함)와 안쪽 문장.
-  readonly dialogues: readonly {
-    readonly start: number;
-    readonly end: number;
-    readonly text: string;
-  }[];
+  readonly dialogues: readonly NumberedDialogue[];
 }
 
 // NOTE: 인물별 호출은 자기 대사를 번호로 가리켜 돌려준다. 번호는 뼈대의 따옴표 대사 순서이며
@@ -20,7 +22,7 @@ export function numberSkeletonDialogue(
   tuning: ResolvedSceneGenerationTuning,
 ): NumberedSkeleton {
   const pattern: RegExp = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
-  const dialogues: { start: number; end: number; text: string }[] = [];
+  const dialogues: NumberedDialogue[] = [];
   let text: string = '';
   let cursor: number = 0;
 
@@ -71,7 +73,7 @@ export function mergeDialogueRewrites(
 
   for (let index: number = numbered.dialogues.length; index >= 1; index -= 1) {
     const texts: string[] | undefined = claims.get(index);
-    const dialogue = numbered.dialogues[index - 1];
+    const dialogue: NumberedDialogue | undefined = numbered.dialogues[index - 1];
 
     if (texts === undefined || texts.length !== 1 || dialogue === undefined) {
       continue;

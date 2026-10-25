@@ -27,11 +27,12 @@ import {
   createSceneDialogueStore,
 } from '#engine/persistence/cardMemoryWorkspace';
 import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
-import type { StoryboardAiService } from '@storyboard/story-ai';
+import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/sceneGenerationPipeline';
 import {
   SceneGenerationPipelineCancelledError,
   type RunSceneGenerationPipelineResult,
+  type SceneGenerationPipelineTaskProviders,
 } from '#engine/pipeline/sceneGenerationTypes';
 import {
   emptyDraftBodyMessage,
@@ -199,7 +200,7 @@ async function persistGeneratedDraft(
     );
   }
 
-  const sceneDraftConfig = options.aiGateway.getTaskAiConfig('sceneDraft');
+  const sceneDraftConfig: TaskAiConfigResolved = options.aiGateway.getTaskAiConfig('sceneDraft');
   const draft: Draft = createDraft({
     sceneStem: scene.stem,
     format: project.format,
@@ -263,7 +264,7 @@ async function runAndPersistDraft(
   const { workspaceFolder, paths, threadPaths, scene, project, context, previousContext } = inputs;
 
   const aiService: StoryboardAiService = options.aiGateway.createService(workspaceFolder.uri);
-  const pipelineProviders = {
+  const pipelineProviders: SceneGenerationPipelineTaskProviders = {
     personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
     sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
     sceneBeatActor: options.aiGateway.getTaskProvider('sceneBeatActor'),

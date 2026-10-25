@@ -14,13 +14,4 @@ module.exports = {
     ...explicitTypeRules,
     'no-warning-comments': ['warn', { terms: ['xxx'], location: 'anywhere' }],
   },
-  overrides: [
-    {
-      files: ['story-engine/**'],
-      rules: {
-        'no-restricted-syntax': 'off',
-        '@typescript-eslint/explicit-function-return-type': 'off',
-      },
-    },
-  ],
 };

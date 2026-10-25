@@ -13,6 +13,12 @@ const COORDINATE_MARKER: RegExp = /⟪([^⟪⟫\n]*)⟫/g;
 const SCENE_BREAK_LINE: string = '---';
 
 // 대목은 --- 로 나뉜 장면의 토막이다. segments[i]는 i번째 대목의 좌표이고, 표식이 없던 대목은 비어 있다.
+
+interface SegmentRange {
+  readonly first: number;
+  readonly last: number;
+}
+
 export interface SceneCoordinateLedger {
   readonly segments: readonly (string | undefined)[];
   // 뼈대 표식에서 왔으면 대목 번호가 본문의 --- 와 맞는다. 비트에서 왔으면 순서만 맞는다.
@@ -21,10 +27,12 @@ export interface SceneCoordinateLedger {
   readonly beats?: readonly (readonly number[])[];
 }
 
-export function extractSceneCoordinates(skeleton: string): {
+export interface ExtractedSceneCoordinates {
   readonly text: string;
   readonly ledger: SceneCoordinateLedger;
-} {
+}
+
+export function extractSceneCoordinates(skeleton: string): ExtractedSceneCoordinates {
   const segments: (string | undefined)[] = [];
   let segmentIndex: number = 0;
   const keptLines: string[] = [];
@@ -109,7 +117,7 @@ function sectionSegmentRanges(sections: readonly string[]): SegmentRange[] {
     const breakCount: number = lines.filter((line) => line === SCENE_BREAK_LINE).length;
     // 분할기는 --- 뒤에서 자르기도 한다. 그 --- 다음 대목은 다음 구간에서 시작한다.
     const endsWithBreak: boolean = lines.filter((line) => line.length > 0).at(-1) === SCENE_BREAK_LINE;
-    const range = { first: firstSegment, last: firstSegment + breakCount - (endsWithBreak ? 1 : 0) };
+    const range: SegmentRange = { first: firstSegment, last: firstSegment + breakCount - (endsWithBreak ? 1 : 0) };
     firstSegment += breakCount;
     return range;
   });

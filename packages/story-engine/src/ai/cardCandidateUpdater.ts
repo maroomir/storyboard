@@ -58,7 +58,7 @@ function buildTargetResolver(
 }
 
 function dedupeRelations(relations: readonly CardRelationCandidate[]): CardRelationCandidate[] {
-  const byKey = new Map<string, CardRelationCandidate>();
+  const byKey: Map<string, CardRelationCandidate> = new Map<string, CardRelationCandidate>();
   for (const relation of relations) {
     byKey.set(`${relation.target}:${relation.type}`, relation);
   }
@@ -66,7 +66,7 @@ function dedupeRelations(relations: readonly CardRelationCandidate[]): CardRelat
 }
 
 function dedupeAttributes(attributes: readonly CardAttributeCandidate[]): CardAttributeCandidate[] {
-  const byKey = new Map<string, CardAttributeCandidate>();
+  const byKey: Map<string, CardAttributeCandidate> = new Map<string, CardAttributeCandidate>();
   for (const attribute of attributes) {
     byKey.set(attribute.key, attribute);
   }

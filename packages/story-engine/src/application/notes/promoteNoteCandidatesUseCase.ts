@@ -1,4 +1,5 @@
 import type {
+  CardCollectProposal,
   MergedNoteCardCandidate,
   NoteCandidateFile,
   StoryboardCard,
@@ -70,7 +71,7 @@ export class PromoteNoteCandidatesUseCase {
         candidate.cardId,
       );
       // The card may have been edited since the absorb; only what it still lacks is offered.
-      const changes =
+      const changes: CardCollectProposal[] =
         card === undefined
           ? []
           : candidate.changes.filter((change) => shouldProposeCardCollect(card, change));
@@ -123,7 +124,7 @@ export class PromoteNoteCandidatesUseCase {
     request: DiscardNoteCandidatesRequest,
   ): Promise<DiscardNoteCandidatesResult> {
     const file: NoteCandidateFile = await this.loadFile(workspaceRoot);
-    const next =
+    const next: NoteCandidateFile | undefined =
       request.kind === 'cards'
         ? removeNoteCandidateCards(file, request.cardIds)
         : removeNoteCandidateChange(file, request.cardId, request.ref);

@@ -37,12 +37,19 @@ export interface ExportNotesUseCaseDependencies {
 }
 
 // The folders Obsidian will show; the same folder imports into Notion as Markdown.
-export const noteExportFolders = {
+interface NoteExportFolders {
+  readonly characters: string;
+  readonly backgrounds: string;
+  readonly scenes: string;
+  readonly synopsis: string;
+}
+
+export const noteExportFolders: NoteExportFolders = {
   characters: '인물',
   backgrounds: '배경',
   scenes: '씬',
   synopsis: '시놉시스.md',
-} as const;
+};
 
 // NOTE: 노트 앱으로 나가는 쪽. AI 는 쓰지 않는다. 프런트매터의 `storyboard-id`·`storyboard-type` 과
 // 본문의 [[위키링크]]가 카드의 id·관계를 남기므로, 내보낸 폴더를 다시 `notes absorb` 하면 [기존 카드]

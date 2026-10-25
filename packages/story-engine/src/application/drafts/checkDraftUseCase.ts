@@ -15,6 +15,7 @@ import {
   type SlopFinding,
   type StoryboardProjectPaths,
   type StoryUri,
+  type UsageAttribution,
 } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -22,9 +23,13 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
-export const draftCheckKinds = ['grammar', 'continuity', 'slop'] as const;
+export type DraftCheckKind = 'grammar' | 'continuity' | 'slop';
 
-export type DraftCheckKind = (typeof draftCheckKinds)[number];
+export const draftCheckKinds: readonly [DraftCheckKind, ...DraftCheckKind[]] = [
+  'grammar',
+  'continuity',
+  'slop',
+];
 
 export interface CheckDraftRequest {
   readonly workspaceRoot: StoryUri;
@@ -69,7 +74,7 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
 
   private async check(request: CheckDraftRequest): Promise<CheckDraftResult> {
     const { aiGateway } = this.deps;
-    const attribution = { primary: { kind: 'scene' as const, id: request.sceneStem } };
+    const attribution: UsageAttribution = { primary: { kind: 'scene', id: request.sceneStem } };
 
     switch (request.kind) {
       case 'slop':

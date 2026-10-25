@@ -428,11 +428,16 @@ function describeConflicts(
   );
 }
 
+export interface NoteConsolidationOutcome {
+  readonly plan: NoteAbsorbPlan;
+  readonly warnings: readonly string[];
+}
+
 export function applyNoteConsolidation(
   plan: NoteAbsorbPlan,
   targets: readonly NoteConsolidationTarget[],
   answers: readonly NoteConsolidatedLists[],
-): { readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] } {
+): NoteConsolidationOutcome {
   const answerById: Map<string, NoteConsolidatedLists> = new Map(answers.map((answer) => [answer.cardId, answer]));
   const keptById: Map<string, Partial<Record<NoteConsolidatedField, Set<string>>>> = new Map<string, KeptValues>();
   const warnings: string[] = [];

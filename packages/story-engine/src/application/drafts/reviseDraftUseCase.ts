@@ -9,6 +9,7 @@ NarrativeContext,
 StoryState,
 Draft,
 SceneCacheRecord,
+ProjectSetting,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
@@ -67,16 +68,18 @@ async function readProjectIfPresent(
 
 // NOTE: 생성과 같은 규칙으로 줄기와 시점을 해석한다. 메인 원장과 `setting.pov`만 보면 옴니버스의
 // 다른 줄기 씬을 다른 줄기의 사실과 다른 서술자 기준으로 검수하게 된다.
+interface ReviseNarration {
+  readonly threadPaths: StoryboardProjectPaths;
+  readonly previousSceneOrder: number | undefined;
+  readonly narration: NarrationDirective | undefined;
+}
+
 async function resolveReviseNarration(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
   scene: Awaited<ReturnType<typeof readSceneFile>>,
   project: StoryboardProject | undefined,
-): Promise<{
-  readonly threadPaths: StoryboardProjectPaths;
-  readonly previousSceneOrder: number | undefined;
-  readonly narration: NarrationDirective | undefined;
-}> {
+): Promise<ReviseNarration> {
   if (project === undefined) {
     return {
       threadPaths: paths,
@@ -244,7 +247,7 @@ async function prepareReviseDraftContext(
   );
   const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, fs);
   const project: StoryboardProject | undefined = await readProjectIfPresent(fs, paths.projectJson);
-  const setting = project?.setting;
+  const setting: ProjectSetting | undefined = project?.setting;
   const { threadPaths, previousSceneOrder, narration } = await resolveReviseNarration(
     fs,
     paths,

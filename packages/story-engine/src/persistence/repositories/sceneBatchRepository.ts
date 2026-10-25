@@ -5,6 +5,7 @@ import {
   parseSceneFileName,
   getStoryboardProjectPaths,
   isHiddenSceneFileName,
+  type SceneFileNameParts,
 } from '@storyboard/story-model';
 import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
@@ -12,6 +13,11 @@ import type {
   BatchSceneList,
   ISceneBatchRepository,
 } from '#engine/application/drafts/generateAllDraftsUseCase';
+
+interface NumberedSceneCardFile {
+  name: string;
+  parts: SceneFileNameParts;
+}
 
 export class SceneBatchRepository implements ISceneBatchRepository {
   public constructor(
@@ -35,18 +41,13 @@ export class SceneBatchRepository implements ISceneBatchRepository {
 
   private async listOrdered(sceneDirectory: StoryUri): Promise<StoryUri[]> {
     const entries: FileSystemDirectoryEntry[] = await this.fileSystem.readDirectory(sceneDirectory);
-    const items = entries
+    const items: NumberedSceneCardFile[] = entries
       .filter(
         ([name, type]) =>
           type.type === 'file' && name.endsWith('.card') && !isHiddenSceneFileName(name),
       )
       .map(([name]) => ({ name, parts: parseSceneFileName(name) }))
-      .filter(
-        (
-          item,
-        ): item is { name: string; parts: NonNullable<ReturnType<typeof parseSceneFileName>> } =>
-          item.parts !== undefined,
-      )
+      .filter((item): item is NumberedSceneCardFile => item.parts !== undefined)
       .sort(
         (left, right) =>
           left.parts.order - right.parts.order || left.name.localeCompare(right.name),

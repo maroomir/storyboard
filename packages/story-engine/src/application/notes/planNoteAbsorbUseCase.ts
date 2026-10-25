@@ -34,6 +34,7 @@ import type {
   NoteSynthesis,
   NoteConsolidationTarget,
   NoteConsolidationResult,
+  NoteConsolidationOutcome,
 } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -111,6 +112,11 @@ function describeExtractionFailure(
 
 // The paid half of the import: the notes are read by the model, and what comes back is merged into
 // one plan. Nothing but the cached plan is written — applying it is a separate verb.
+export interface CardConsolidation {
+  readonly plan: NoteAbsorbPlan;
+  readonly warnings: readonly string[];
+}
+
 export class PlanNoteAbsorbUseCase implements IUseCase<
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult
@@ -207,7 +213,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         scenes: source.scenes,
         scenePrefixDigits: source.project.editor.scenePrefixDigits,
       });
-      const consolidation = await this.consolidateCards(
+      const consolidation: CardConsolidation = await this.consolidateCards(
         aiService,
         mergedPlan,
         chunks,
@@ -238,7 +244,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     plan: NoteAbsorbPlan,
     chunks: readonly (readonly NoteDocument[])[],
     cards: readonly StoryboardCard[],
-  ): Promise<{ readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] }> {
+  ): Promise<CardConsolidation> {
     const chunkByNoteId: Map<string, number> = new Map<string, number>();
     for (const [index, chunk] of chunks.entries()) {
       for (const note of chunk) {
@@ -281,7 +287,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       }
     }
 
-    const consolidated = applyNoteConsolidation(plan, targets, answers);
+    const consolidated: NoteConsolidationOutcome = applyNoteConsolidation(plan, targets, answers);
     warnings.push(...consolidated.warnings);
     warnings.forEach((warning) => this.deps.logger.warn(warning));
 

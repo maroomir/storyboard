@@ -5,6 +5,7 @@ import {
   type BackgroundCard,
   type BackgroundFactConflict,
   type CharacterCard,
+type AiProviderId,
 } from '@storyboard/story-model';
 import type { GenerateTextOptions, StoryboardAiService } from '@storyboard/story-ai';
 import {
@@ -21,7 +22,7 @@ export function buildGenerateOptions(
   providers: Readonly<SceneGenerationPipelineTaskProviders> | undefined,
   task: keyof SceneGenerationPipelineTaskProviders,
 ): GenerateTextOptions | undefined {
-  const providerId = providers?.[task];
+  const providerId: AiProviderId | undefined = providers?.[task];
   return providerId ? { providerId } : undefined;
 }
 
@@ -107,7 +108,7 @@ export async function buildScenePersonas(
   const characterCount: number = characters.length;
 
   for (let i: number = 0; i < characters.length; i++) {
-    const character = characters[i];
+    const character: CharacterCard | undefined = characters[i];
     if (!character) {
       continue;
     }

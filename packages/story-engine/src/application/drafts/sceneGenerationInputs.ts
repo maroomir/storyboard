@@ -48,6 +48,7 @@ import {
   auditChapterMemory,
   markStaleChapterSummaries,
   type ChapterMemoryAudit,
+  type ChapterSummaryAuditRequest,
 } from '#engine/application/manuscript/chapterSummaryAudit';
 
 export interface SceneGenerationInputs {
@@ -99,7 +100,12 @@ export function reportWorkflowFailure(
   return { ok: false, kind: 'failed', message: userMessage };
 }
 
-function inputsFailure(message: string): { ok: false; result: GenerateDraftResult } {
+interface InputsFailure {
+  ok: false;
+  result: GenerateDraftResult;
+}
+
+function inputsFailure(message: string): InputsFailure {
   return { ok: false, result: { ok: false, kind: 'failed', message } };
 }
 
@@ -313,7 +319,7 @@ async function loadSceneContextBundle(
   const scene: SceneFile = options.skipSceneBeats
     ? grounded.scene
     : await resolveSceneBeats(sceneUri, grounded.scene, builtContext.characters, options);
-  const context = { ...builtContext, scene };
+  const context: SceneContext = { ...builtContext, scene };
 
   const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
     paths,
@@ -353,7 +359,10 @@ async function loadSceneContextBundle(
   // 장별 요약도 그것을 낳은 초안에 매여 있다. 원장과 같은 이유로 서사 컨텍스트를 만들기 전에
   // 표시해야, 곧이어 요약을 읽는 buildNarrativeContext가 낡은 장을 프롬프트에서 뺀다. 요약도
   // 줄기별로 갈리므로 원장과 같은 스레드 경로로 감사한다.
-  const chapterAuditRequest = { fileSystem: options.fileSystem, paths: thread.threadPaths };
+  const chapterAuditRequest: ChapterSummaryAuditRequest = {
+    fileSystem: options.fileSystem,
+    paths: thread.threadPaths,
+  };
   const chapterAudit: ChapterMemoryAudit = await auditChapterMemory(chapterAuditRequest);
   await markStaleChapterSummaries(chapterAuditRequest, chapterAudit);
 

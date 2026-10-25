@@ -29,7 +29,7 @@ export function parseProjectJson(rawProjectJson: string): StoryboardProject {
 }
 
 export function serializeProjectJson(project: StoryboardProject): string {
-  const parsedProject = storyboardProjectSchema.parse(project);
+  const parsedProject: StoryboardProject = storyboardProjectSchema.parse(project);
   return `${JSON.stringify(parsedProject, null, 2)}\n`;
 }
 
