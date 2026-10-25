@@ -1,3 +1,5 @@
+const explicitTypeRules = require('../../scripts/lint/explicitTypeRules.cjs');
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -9,21 +11,7 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-inferrable-types': 'off',
-    '@typescript-eslint/explicit-function-return-type': 'error',
-    'no-restricted-syntax': [
-      'error',
-      {
-        selector:
-          "VariableDeclarator[id.type='Identifier'][id.typeAnnotation=undefined]:not(ForOfStatement > VariableDeclaration > VariableDeclarator, ForInStatement > VariableDeclaration > VariableDeclarator, [init.type='ArrowFunctionExpression'], [init.type='FunctionExpression'], [init.type='TSSatisfiesExpression'])",
-        message: 'Annotate the variable type; only a `satisfies` table derives its own.',
-      },
-      {
-        selector:
-          "PropertyDefinition[typeAnnotation=undefined]:not([value.type='ArrowFunctionExpression'], [value.type='FunctionExpression'])",
-        message: 'Annotate the field type.',
-      },
-    ],
+    ...explicitTypeRules,
     'no-warning-comments': ['warn', { terms: ['xxx'], location: 'anywhere' }],
   },
 };

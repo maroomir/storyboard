@@ -220,7 +220,9 @@ file; everything else derives from it.
   lists them; the map with one row per file is in `.claude/rules/coding-standards.md`.
 - Identifiers and enums stay TypeScript, declared type first (`type X = 'a' | 'b'`, then a table
   annotated with it; no `as const` declarations) — `providerCatalog`, `STORYBOARD_RELATIVE_PATHS`,
-  `pointOfViewCatalog`, `commandCatalog`. Never move an enum to JSON.
+  `pointOfViewCatalog`, `commandCatalog`. A table keyed by hundreds of names (UI messages, IPC
+  channels) uses `satisfies` and derives its key type instead. Never move an enum to JSON.
+- A zod schema follows its interface and is annotated with it (`z.ZodType<X>`).
 - Generation knobs layer as user setting → model profile → pipeline default. Setting defaults and
   bounds belong to `storyboardSettingCatalog` alone.
 - The webview reads the real tables through `@storyboard/story-model/contracts`, never a copy.
