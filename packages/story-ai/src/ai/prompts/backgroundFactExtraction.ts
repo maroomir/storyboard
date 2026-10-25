@@ -1,6 +1,7 @@
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
+import { coerceOptionalString, coerceStringList } from '@storyboard/story-model';
 
 export interface BackgroundFactExtraction {
   readonly description: readonly string[];
@@ -22,26 +23,6 @@ export const BackgroundFactExtractionPrompt: PromptModule<
     return renderPrompt('backgroundFactExtraction', variant, { view: { body, backgroundName } });
   },
 };
-
-function coerceStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const nonEmptyStrings: string[] = [];
-
-  for (const entry of value) {
-    if (typeof entry === 'string' && entry.trim().length > 0) {
-      nonEmptyStrings.push(entry.trim());
-    }
-  }
-
-  return nonEmptyStrings;
-}
-
-function coerceOptionalString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-}
 
 export function coerceBackgroundFactExtraction(
   value: Record<string, unknown> | null,

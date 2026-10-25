@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { decimalSettingStep, parseSettingNumberInput, novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, parseSettingNumberInput, novelRunModes, novelStageNames, type NovelRunMode, extractErrorMessage } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, WorkspaceOverview } from '@/shared/dto';
 
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { contractFieldLabel } from '@/renderer/lib/narrativeLabels';
 import { budgetProgress, formatUsd, stageRail } from '@/renderer/lib/runView';
@@ -47,7 +47,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
     try {
       props.onRunChange(await action());
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 

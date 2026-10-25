@@ -5,7 +5,6 @@ import { OriginPill, StatusPill } from './SettingsPrimitives';
 import {
   getProviderStatus,
   getValueOrigin,
-  isAiProviderId,
   listSnapshotSelectableProviderIds,
   parseSaveTarget,
   pickModelForTaskProvider,
@@ -14,7 +13,11 @@ import {
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { sbSelectClass, sectionCardClass } from './settingsStyles';
-import type { AiProviderId, ProviderModelOption } from '@storyboard/story-model/contracts';
+import {
+  isAiProviderId,
+  type AiProviderId,
+  type ProviderModelOption,
+} from '@storyboard/story-model/contracts';
 
 export function DefaultProviderSection({
   snapshot,

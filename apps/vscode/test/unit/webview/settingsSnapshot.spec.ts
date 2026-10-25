@@ -1,28 +1,26 @@
 import { describe, expect, it } from "vitest"
 
-import { aiProviderIds, requiresApiKey as engineRequiresApiKey } from "@storyboard/story-model"
+import { aiProviderIds } from "@storyboard/story-model"
 
 import {
-  AI_PROVIDER_IDS,
   formatResolvedTaskAi,
   parseSettingsReadSnapshot,
   pickModelForTaskProvider,
-  requiresApiKey,
   type SettingsReadSnapshot
 } from "@webview/components/settings/settingsSnapshot"
 
 function buildValidSnapshot(): SettingsReadSnapshot {
   const providerConfigs = Object.fromEntries(
-    AI_PROVIDER_IDS.map((id) => [id, { model: `${id}-model` }])
+    aiProviderIds.map((id) => [id, { model: `${id}-model` }])
   )
   const modelCatalog = Object.fromEntries(
-    AI_PROVIDER_IDS.map((id) => [id, [{ id: `${id}-model`, displayName: `${id} model` }]])
+    aiProviderIds.map((id) => [id, [{ id: `${id}-model`, displayName: `${id} model` }]])
   )
 
   return {
     defaultProvider: "claude",
     isDefaultProviderConfigured: true,
-    providers: AI_PROVIDER_IDS.map((id) => ({
+    providers: aiProviderIds.map((id) => ({
       providerId: id,
       displayName: id,
       hasApiKey: false,
@@ -80,18 +78,5 @@ describe("formatResolvedTaskAi", () => {
   it("resolves a default-provider task to the default provider and its model", () => {
     const snapshot = buildValidSnapshot()
     expect(formatResolvedTaskAi(snapshot, "sceneDialogue")).toBe("claude / claude model")
-  })
-
-  describe("provider lists read straight from the contract", () => {
-    it("reaches the settings panel with every provider the engine knows", () => {
-      expect([...AI_PROVIDER_IDS]).toEqual([...aiProviderIds])
-    })
-
-    it("agrees with the engine on which providers need an API key", () => {
-      for (const providerId of aiProviderIds) {
-        expect(requiresApiKey(providerId)).toBe(engineRequiresApiKey(providerId))
-      }
-    })
-
   })
 })

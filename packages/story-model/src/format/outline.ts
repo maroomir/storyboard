@@ -9,6 +9,7 @@ import {
   type ProjectSetting,
   type StoryboardProject,
 } from './project';
+import { coerceOptionalString, coerceStringList, isJsonRecord } from '#model/format/unknownValues';
 
 export const outlineVersion: string = '1.0.0';
 
@@ -224,25 +225,25 @@ export function coerceOutlineCharacters(
   raw: unknown,
   requestedIds: readonly string[],
 ): OutlineCharacterDraft[] {
-  const entries: unknown[] = isRecord(raw) ? asArray(raw.characters) : asArray(raw);
+  const entries: unknown[] = isJsonRecord(raw) ? asArray(raw.characters) : asArray(raw);
   const drafts: Map<string, OutlineCharacterDraft> = new Map<string, OutlineCharacterDraft>();
 
   for (const entry of entries) {
-    const record: Record<string, unknown> = isRecord(entry) ? entry : {};
-    const id: string | undefined = text(record.id);
+    const record: Record<string, unknown> = isJsonRecord(entry) ? entry : {};
+    const id: string | undefined = coerceOptionalString(record.id);
 
     if (id === undefined || !requestedIds.includes(id) || drafts.has(id)) {
       continue;
     }
 
-    const role: string | undefined = text(record.role)?.toLowerCase();
+    const role: string | undefined = coerceOptionalString(record.role)?.toLowerCase();
     drafts.set(id, {
       id,
-      name: text(record.name) ?? id,
+      name: coerceOptionalString(record.name) ?? id,
       ...(role !== undefined && (characterRoles as readonly string[]).includes(role)
         ? { role: role as CharacterRole }
         : {}),
-      description: textList(record.description),
+      description: coerceStringList(record.description),
     });
   }
 
@@ -281,6 +282,16 @@ export function flattenChapterPlan(plan: ChapterPlan): FlatChapterScene[] {
   return flatScenes;
 }
 
+export function collectChapterPlanCharacterIds(plan: ChapterPlan): string[] {
+  const ids: Set<string> = new Set<string>();
+  for (const flatScene of flattenChapterPlan(plan)) {
+    for (const id of flatScene.scene.characters) {
+      ids.add(id);
+    }
+  }
+  return [...ids];
+}
+
 export function toOutlineBrief(
   project: StoryboardProject,
   narratorIds: readonly string[] = [],
@@ -314,7 +325,7 @@ export function toOutlineBrief(
 }
 
 export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): OutlineSynopsis {
-  const record: Record<string, unknown> = isRecord(raw) ? raw : {};
+  const record: Record<string, unknown> = isJsonRecord(raw) ? raw : {};
   const parsed: z.ZodSafeParseResult<OutlineSynopsis> = outlineSynopsisSchema.safeParse(record);
 
   if (parsed.success) {
@@ -341,39 +352,41 @@ export function emptyOutlineSynopsis(): OutlineSynopsis {
 }
 
 export function coerceChapterPlan(raw: unknown): ChapterPlan {
-  const actsRaw: unknown[] = isRecord(raw) ? asArray(raw.acts) : asArray(raw);
+  const actsRaw: unknown[] = isJsonRecord(raw) ? asArray(raw.acts) : asArray(raw);
 
   const acts: ChapterPlan['acts'] = actsRaw.map((actRaw, actIndex) => {
-    const act: Record<string, unknown> = isRecord(actRaw) ? actRaw : {};
+    const act: Record<string, unknown> = isJsonRecord(actRaw) ? actRaw : {};
     const chaptersRaw: unknown[] = asArray(act.chapters);
 
     return {
-      id: text(act.id) ?? `act-${actIndex + 1}`,
-      title: text(act.title) ?? `${actIndex + 1}막`,
+      id: coerceOptionalString(act.id) ?? `act-${actIndex + 1}`,
+      title: coerceOptionalString(act.title) ?? `${actIndex + 1}막`,
       ...optionalText('summary', act.summary),
       chapters: chaptersRaw.map((chapterRaw, chapterIndex) => {
-        const chapter: Record<string, unknown> = isRecord(chapterRaw) ? chapterRaw : {};
+        const chapter: Record<string, unknown> = isJsonRecord(chapterRaw) ? chapterRaw : {};
         const scenesRaw: unknown[] = asArray(chapter.scenes);
 
         return {
-          id: text(chapter.id) ?? `chapter-${actIndex + 1}-${chapterIndex + 1}`,
-          title: text(chapter.title) ?? `${chapterIndex + 1}장`,
+          id: coerceOptionalString(chapter.id) ?? `chapter-${actIndex + 1}-${chapterIndex + 1}`,
+          title: coerceOptionalString(chapter.title) ?? `${chapterIndex + 1}장`,
           ...optionalText('summary', chapter.summary),
           ...optionalPositiveInt('targetWordCount', chapter.targetWordCount),
           scenes: scenesRaw.map((sceneRaw, sceneIndex) => {
-            const scene: Record<string, unknown> = isRecord(sceneRaw) ? sceneRaw : {};
+            const scene: Record<string, unknown> = isJsonRecord(sceneRaw) ? sceneRaw : {};
 
             return {
-              id: text(scene.id) ?? `scene-${actIndex + 1}-${chapterIndex + 1}-${sceneIndex + 1}`,
-              title: text(scene.title) ?? `씬 ${sceneIndex + 1}`,
-              purpose: text(scene.purpose) ?? '',
-              characters: textList(scene.characters),
+              id:
+                coerceOptionalString(scene.id) ??
+                `scene-${actIndex + 1}-${chapterIndex + 1}-${sceneIndex + 1}`,
+              title: coerceOptionalString(scene.title) ?? `씬 ${sceneIndex + 1}`,
+              purpose: coerceOptionalString(scene.purpose) ?? '',
+              characters: coerceStringList(scene.characters),
               ...optionalText('location', scene.location),
               ...optionalText('conflict', scene.conflict),
               ...optionalText('twist', scene.twist),
               ...optionalText('emotionalShift', scene.emotionalShift),
-              foreshadowing: textList(scene.foreshadowing),
-              neededCanon: textList(scene.neededCanon),
+              foreshadowing: coerceStringList(scene.foreshadowing),
+              neededCanon: coerceStringList(scene.neededCanon),
               ...optionalPositiveInt('targetWordCount', scene.targetWordCount),
             };
           }),
@@ -385,26 +398,12 @@ export function coerceChapterPlan(raw: unknown): ChapterPlan {
   return chapterPlanSchema.parse({ version: outlineVersion, acts });
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function text(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-function textList(value: unknown): string[] {
-  return asArray(value)
-    .map((item) => text(item))
-    .filter((item): item is string => item !== undefined);
-}
-
 function optionalText(key: string, value: unknown): Record<string, string> {
-  const trimmed: string | undefined = text(value);
+  const trimmed: string | undefined = coerceOptionalString(value);
   return trimmed !== undefined ? { [key]: trimmed } : {};
 }
 

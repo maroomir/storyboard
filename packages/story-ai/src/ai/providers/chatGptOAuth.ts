@@ -1,6 +1,7 @@
 import { createHash, createPublicKey, randomBytes, randomUUID, verify } from 'node:crypto';
 
 import type { OAuthTokens } from '#ai/ports/SecretStore';
+import { isJsonRecord, type JsonRecord } from '@storyboard/story-model';
 
 export const chatGptAuthorizeUrl: string = 'https://auth.openai.com/api/accounts/authorize';
 export const chatGptTokenUrl: string = 'https://auth.openai.com/api/accounts/oauth/token';
@@ -48,12 +49,6 @@ export class ChatGptOAuthError extends Error {
 
 export type FetchLike = typeof globalThis.fetch;
 
-type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function base64Url(bytes: Buffer): string {
   return bytes.toString('base64url');
 }
@@ -61,7 +56,7 @@ function base64Url(bytes: Buffer): string {
 function decodeBase64UrlJson(segment: string): JsonRecord | undefined {
   try {
     const parsed: unknown = JSON.parse(Buffer.from(segment, 'base64url').toString('utf8'));
-    return isRecord(parsed) ? parsed : undefined;
+    return isJsonRecord(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
@@ -193,7 +188,7 @@ export interface TokenResponse {
 
 function readTokenResponse(body: unknown, failureCode: ChatGptOAuthErrorCode): TokenResponse {
   if (
-    !isRecord(body) ||
+    !isJsonRecord(body) ||
     typeof body.access_token !== 'string' ||
     typeof body.refresh_token !== 'string'
   ) {
@@ -221,9 +216,9 @@ async function readJsonBody(response: Response): Promise<unknown> {
 
 function describeTokenFailure(status: number, body: unknown): string {
   const code: string | undefined =
-    isRecord(body) && typeof body.error === 'string' ? body.error : undefined;
+    isJsonRecord(body) && typeof body.error === 'string' ? body.error : undefined;
   const description: string =
-    isRecord(body) && typeof body.error_description === 'string' ? body.error_description : '';
+    isJsonRecord(body) && typeof body.error_description === 'string' ? body.error_description : '';
 
   return [`HTTP ${status}`, code, description].filter(Boolean).join(' · ');
 }
@@ -291,7 +286,7 @@ export async function refreshAccessToken(
   const body: unknown = await readJsonBody(response);
 
   if (!response.ok) {
-    const code: string = isRecord(body) && typeof body.error === 'string' ? body.error : '';
+    const code: string = isJsonRecord(body) && typeof body.error === 'string' ? body.error : '';
     const isUnusable: boolean = unusableRefreshTokenCodes.has(code) || response.status === 400;
 
     throw new ChatGptOAuthError(
@@ -312,7 +307,7 @@ export async function fetchDiscoveryDocument(fetchImpl: FetchLike): Promise<Disc
   const response: Response = await fetchImpl(chatGptDiscoveryUrl);
   const body: unknown = await readJsonBody(response);
 
-  if (!response.ok || !isRecord(body) || typeof body.jwks_uri !== 'string') {
+  if (!response.ok || !isJsonRecord(body) || typeof body.jwks_uri !== 'string') {
     throw new ChatGptOAuthError(
       'discovery-failed',
       `OpenAI 인증 서버의 설정 문서를 읽지 못했습니다 (HTTP ${response.status}).`,
@@ -340,14 +335,14 @@ export async function fetchJsonWebKeys(
   const response: Response = await fetchImpl(jwksUri);
   const body: unknown = await readJsonBody(response);
 
-  if (!response.ok || !isRecord(body) || !Array.isArray(body.keys)) {
+  if (!response.ok || !isJsonRecord(body) || !Array.isArray(body.keys)) {
     throw new ChatGptOAuthError(
       'discovery-failed',
       `OpenAI 의 서명 키 목록을 읽지 못했습니다 (HTTP ${response.status}).`,
     );
   }
 
-  return body.keys.filter(isRecord) as unknown as SigningKey[];
+  return body.keys.filter(isJsonRecord) as unknown as SigningKey[];
 }
 
 export async function revokeRefreshToken(

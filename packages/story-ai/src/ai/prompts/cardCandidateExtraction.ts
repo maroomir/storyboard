@@ -1,6 +1,7 @@
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
+import { coerceStringList } from '@storyboard/story-model';
 
 export interface CardCandidateExtraction {
   readonly attributes: readonly { readonly key: string; readonly value: string }[];
@@ -56,17 +57,6 @@ export function coerceCardCandidateExtraction(
     desire: coerceStringList(value.desire),
     ...coerceArc(value.arc),
   };
-}
-
-function coerceStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .filter((entry): entry is string => typeof entry === 'string')
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
 }
 
 function coerceStringRecords(

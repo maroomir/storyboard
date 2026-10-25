@@ -17,6 +17,7 @@ import type {
   StoryboardAiService,
 } from '@storyboard/story-ai';
 import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
+import { buildTargetResolver } from '#engine/ai/cardCandidateUpdater';
 
 interface ProposalWithScenes {
   partial: PartialProposal;
@@ -116,18 +117,6 @@ function resolveBefore(card: StoryboardCard, partial: PartialProposal): string |
   }
 
   return undefined;
-}
-
-function buildTargetResolver(
-  roster: readonly CollectRosterEntry[],
-): (rawTarget: string) => string | undefined {
-  const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
-  const ids: Set<string> = new Set(roster.map((entry) => entry.id));
-
-  return (rawTarget) => {
-    const target: string = rawTarget.trim();
-    return ids.has(target) ? target : idByName.get(target);
-  };
 }
 
 function attributionFor(primary: EntityRef, sceneStem: string): UsageAttribution {

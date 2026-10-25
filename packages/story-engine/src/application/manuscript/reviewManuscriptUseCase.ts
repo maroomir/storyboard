@@ -1,16 +1,11 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
-import type {
-  StoryUri,
-  ChapterPlan,
-  ChapterSummary,
-  AssembledManuscript,
-} from '@storyboard/story-model';
+import type { StoryUri, ChapterSummary, AssembledManuscript } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   assembleManuscript,
-  flattenChapterPlan,
   buildManuscriptReviewMarkdown,
+  collectChapterPlanCharacterIds,
 } from '@storyboard/story-model';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 import { reviewChapterWindows } from './reviewChapterWindows';
@@ -84,7 +79,7 @@ export class ReviewManuscriptUseCase implements IUseCase<
           projectName: source.projectName,
           annotateSceneStems: true,
         });
-        const characters: string[] = collectCharacterIds(source.plan);
+        const characters: string[] = collectChapterPlanCharacterIds(source.plan);
         const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
 
         const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
@@ -122,16 +117,4 @@ export class ReviewManuscriptUseCase implements IUseCase<
       },
     );
   }
-}
-
-function collectCharacterIds(plan: ChapterPlan): string[] {
-  const ids: Set<string> = new Set<string>();
-
-  for (const flatScene of flattenChapterPlan(plan)) {
-    for (const id of flatScene.scene.characters) {
-      ids.add(id);
-    }
-  }
-
-  return [...ids];
 }

@@ -1,22 +1,20 @@
 import * as vscode from 'vscode';
 
-import type { DraftManager } from '@storyboard/story-app';
-import type { CheckDraftResult, IStoryboardLogger } from '@storyboard/story-engine';
-import type { ConfigBridge } from '@storyboard/story-ai';
+import type { CheckDraftResult } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, parseDraft, type SlopFinding } from '@storyboard/story-model';
-import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
+import {
+  createDiagnostic,
+  createWarningDiagnostic,
+  runDiagnosticsCheckCommand,
+  toRange,
+  type DiagnosticsProviderDependencies,
+} from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { LatestRequestGuard } from './latestRequestGuard';
 
 const slopCheckCommand: string = 'storyboard.draft.slopCheck';
 const slopSource: string = 'storyboard-slop';
 const slopDebounceMs: number = 700;
-
-export interface RegisterSlopDiagnosticsProviderDependencies {
-  readonly drafts: Pick<DraftManager, 'check'>;
-  readonly configBridge: ConfigBridge;
-  readonly logger: IStoryboardLogger;
-}
 
 export function computeBodyOffset(documentText: string, body: string): number {
   const normalized: string = documentText.replace(/\r\n/g, '\n');
@@ -63,7 +61,7 @@ class SlopDiagnosticsController {
     vscode.languages.createDiagnosticCollection(slopSource);
   private readonly latestRequests: LatestRequestGuard = new LatestRequestGuard();
 
-  public constructor(private readonly dependencies: RegisterSlopDiagnosticsProviderDependencies) {}
+  public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {}
 
   public getDiagnosticsCollection(): vscode.DiagnosticCollection {
     return this.collection;
@@ -147,28 +145,14 @@ class SlopDiagnosticsController {
   }
 }
 
-async function runSlopCheckCommand(
-  controller: SlopDiagnosticsController,
-  uri?: vscode.Uri,
-): Promise<void> {
-  const targetUri: vscode.Uri | undefined = uri ?? vscode.window.activeTextEditor?.document.uri;
-  if (!targetUri) {
-    await vscode.window.showErrorMessage('활성 드래프트 파일을 찾을 수 없습니다.');
-    return;
-  }
-
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(targetUri);
-  await controller.runForDocument(document);
-}
-
 export function registerSlopDiagnosticsProvider(
-  dependencies: RegisterSlopDiagnosticsProviderDependencies,
+  dependencies: DiagnosticsProviderDependencies,
 ): vscode.Disposable {
   const controller: SlopDiagnosticsController = new SlopDiagnosticsController(dependencies);
 
   const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
     slopCheckCommand,
-    (uri?: vscode.Uri) => runSlopCheckCommand(controller, uri),
+    (uri?: vscode.Uri) => runDiagnosticsCheckCommand(controller, uri),
   );
   const saveListener: vscode.Disposable = vscode.workspace.onDidSaveTextDocument((document) => {
     if (!dependencies.configBridge.isSlopRealtimeEnabled()) {

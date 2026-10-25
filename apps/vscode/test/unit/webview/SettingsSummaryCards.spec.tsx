@@ -3,18 +3,19 @@ import React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { SettingsSummaryCards } from "@webview/components/settings/SettingsSummaryCards"
-import { AI_PROVIDER_IDS, type SettingsReadSnapshot } from "@webview/components/settings/settingsSnapshot"
+import { aiProviderIds } from "@storyboard/story-model/contracts"
+import type { SettingsReadSnapshot } from "@webview/components/settings/settingsSnapshot"
 
 function buildSnapshot(): SettingsReadSnapshot {
-  const providerConfigs = Object.fromEntries(AI_PROVIDER_IDS.map((id) => [id, { model: `${id}-model` }]))
+  const providerConfigs = Object.fromEntries(aiProviderIds.map((id) => [id, { model: `${id}-model` }]))
   const modelCatalog = Object.fromEntries(
-    AI_PROVIDER_IDS.map((id) => [id, [{ id: `${id}-model`, displayName: `${id} 모델` }]])
+    aiProviderIds.map((id) => [id, [{ id: `${id}-model`, displayName: `${id} 모델` }]])
   )
 
   return {
     defaultProvider: "claude",
     isDefaultProviderConfigured: true,
-    providers: AI_PROVIDER_IDS.map((id) => ({
+    providers: aiProviderIds.map((id) => ({
       providerId: id,
       displayName: id,
       hasApiKey: id === "claude",

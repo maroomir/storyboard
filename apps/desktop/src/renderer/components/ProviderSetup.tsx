@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import type { AiProviderId } from '@storyboard/story-model/contracts';
+import { extractErrorMessage, type AiProviderId } from '@storyboard/story-model/contracts';
 
 import type { ProviderOption } from '@/shared/dto';
 
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 
 export function ProviderSetup(props: { readonly onDone: () => void }): JSX.Element {
@@ -37,7 +37,7 @@ export function ProviderSetup(props: { readonly onDone: () => void }): JSX.Eleme
       props.onDone();
     } catch (failure) {
       setStatus('idle');
-      setMessage(messageOf(failure));
+      setMessage(extractErrorMessage(failure));
     }
   };
 

@@ -4,7 +4,12 @@ import type {
   StoryWorkspaceFolder,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import { draftPath, getStoryboardProjectPaths, parseSceneFileName } from '@storyboard/story-model';
+import {
+  draftPath,
+  extractErrorMessage,
+  getStoryboardProjectPaths,
+  parseSceneFileName,
+} from '@storyboard/story-model';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
@@ -88,7 +93,7 @@ export class ReviseAfterGenerateGate {
       });
     } catch (error) {
       this.deps.logger.warn(
-        `revision-plan.yaml 기록에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`,
+        `revision-plan.yaml 기록에 실패했습니다: ${extractErrorMessage(error)}`,
       );
     }
 

@@ -18,6 +18,7 @@ import {
   readBibleCandidateFile,
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
@@ -90,7 +91,7 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
   } catch (error) {
     dependencies.logger.error('Canon diff failed', error);
     dependencies.logger.show();
-    const message: string = error instanceof Error ? error.message : String(error);
+    const message: string = extractErrorMessage(error);
     await vscode.window.showErrorMessage(`Canon diff 생성에 실패했습니다: ${message}`);
   }
 }
@@ -117,9 +118,7 @@ async function readCandidateRecords(
     try {
       records.push(await readBibleCandidateFile(uri, fileSystem));
     } catch (error) {
-      logger.warn(
-        `Skipping unreadable bible candidate: ${name} (${error instanceof Error ? error.message : String(error)})`,
-      );
+      logger.warn(`Skipping unreadable bible candidate: ${name} (${extractErrorMessage(error)})`);
     }
   }
 

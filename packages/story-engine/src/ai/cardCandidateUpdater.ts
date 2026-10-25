@@ -42,7 +42,7 @@ export interface UpdateCardCandidatesFromDraftInput {
   readonly logger?: CardCandidateUpdateLogger;
 }
 
-function buildTargetResolver(
+export function buildTargetResolver(
   roster: readonly CardCandidateRosterEntry[],
 ): (rawTarget: string) => string | undefined {
   const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));

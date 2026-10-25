@@ -27,7 +27,3 @@ export async function call<C extends InvokeChannel>(
 
   return invocation.data;
 }
-
-export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}

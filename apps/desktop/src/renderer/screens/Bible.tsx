@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import {
   characterRoles,
+  extractErrorMessage,
   narrativeTenses,
   narratorKnowledges,
   narratorPersons,
@@ -14,7 +15,7 @@ import {
 import type { BibleCard, BibleCardKind, BibleCardSummary, CanonFact, RunSnapshot } from '@/shared/dto';
 
 import type { WorkspaceChange } from '@/renderer/lib/workspaceChange';
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n, type Translate } from '@/renderer/lib/i18n';
 import { knowledgeLabel, personLabel, tenseLabel } from '@/renderer/lib/narrativeLabels';
 
@@ -111,7 +112,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
   };
 
   useEffect(() => {
-    void loadList().catch((failure: unknown) => props.onError(messageOf(failure)));
+    void loadList().catch((failure: unknown) => props.onError(extractErrorMessage(failure)));
   }, [props.change.sequence]);
 
   useEffect(() => {
@@ -122,7 +123,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
     setNotice(undefined);
     void call('bible.read', { kind: props.kind, id: selectedId })
       .then(setCard)
-      .catch((failure: unknown) => props.onError(messageOf(failure)));
+      .catch((failure: unknown) => props.onError(extractErrorMessage(failure)));
   }, [selectedId]);
 
   const save = async (): Promise<void> => {
@@ -134,7 +135,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
       setNotice(translate('bible.saved'));
       await loadList();
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 
@@ -147,7 +148,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
       await loadList();
       setSelectedId(created.id);
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 
@@ -160,7 +161,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
       setSelectedId(undefined);
       await loadList();
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 
@@ -468,7 +469,7 @@ function Canon(props: { readonly isReadOnly: boolean; readonly change: Workspace
         setFacts(loaded);
         setSubjects([...characters, ...backgrounds]);
       })
-      .catch((failure: unknown) => props.onError(messageOf(failure)));
+      .catch((failure: unknown) => props.onError(extractErrorMessage(failure)));
   }, [props.change.sequence]);
 
   const save = async (fact: CanonFact): Promise<void> => {
@@ -477,7 +478,7 @@ function Canon(props: { readonly isReadOnly: boolean; readonly change: Workspace
     try {
       setFacts(await call('canon.save', { fact: stored }));
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 
@@ -485,7 +486,7 @@ function Canon(props: { readonly isReadOnly: boolean; readonly change: Workspace
     try {
       setFacts(await call('canon.delete', { id }));
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 

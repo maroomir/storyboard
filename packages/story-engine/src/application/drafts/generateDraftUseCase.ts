@@ -19,6 +19,7 @@ import {
   archiveExistingDraft,
   readStoryState,
   type SceneCacheRecord,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import {
   createBackgroundFactConflictStore,
@@ -322,7 +323,7 @@ async function runAndPersistDraft(
       return { ok: false, kind: 'failed', reason: 'usage-limit', message: error.message };
     }
 
-    const message: string = error instanceof Error ? error.message : String(error);
+    const message: string = extractErrorMessage(error);
     return reportWorkflowFailure(
       options,
       'Draft generation failed',

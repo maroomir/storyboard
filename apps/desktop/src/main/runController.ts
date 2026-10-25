@@ -16,6 +16,7 @@ import {
   type GenerationContractReadiness,
   type StoryUri,
   type SceneFile,
+extractErrorMessage,
 } from '@storyboard/story-model';
 import {
   describeReviseOutcome,
@@ -312,7 +313,7 @@ export class RunController {
     } catch (error) {
       this.dependencies.container.logger.error('Desktop run failed', error);
       outcome = 'failed';
-      message = error instanceof Error ? error.message : String(error);
+      message = extractErrorMessage(error);
     }
 
     run.spending.stop();

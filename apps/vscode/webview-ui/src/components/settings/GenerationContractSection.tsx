@@ -5,6 +5,7 @@ import {
   compositionCatalog,
   compositionKinds,
   contractFieldLabels,
+  isPointOfView,
   pointOfViewCatalog,
   pointOfViews,
   type CompositionKind,
@@ -93,10 +94,6 @@ interface ContractDraft {
   prohibitions: string[];
   styleConstraints: string[];
   qualityCriteria: string[];
-}
-
-function isPointOfView(value: string): value is PointOfView {
-  return (pointOfViews as readonly string[]).includes(value);
 }
 
 function isCompositionKind(value: string): value is CompositionKind {

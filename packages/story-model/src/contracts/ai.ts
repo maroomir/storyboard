@@ -122,7 +122,6 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'studioValidation', label: 'Studio 정합성 검사' },
 ];
 
-
 export const aiTaskNames: readonly [ AiTaskName, ...AiTaskName[], ] = aiTaskCatalog.map((task) => task.name) as unknown as readonly [
   AiTaskName,
   ...AiTaskName[],
@@ -155,6 +154,36 @@ export interface UsageSummaryByEntity {
   readonly characters: Readonly<Record<string, UsageAmount>>;
   readonly backgrounds: Readonly<Record<string, UsageAmount>>;
   readonly total: UsageAmount;
+}
+
+export function emptyUsageAmount(): UsageAmount {
+  return { costUsd: 0, tokens: 0, hasUnpricedUsage: false };
+}
+
+function addUsageCache(
+  base: UsageCacheAmount | undefined,
+  delta: UsageCacheAmount | undefined,
+): UsageCacheAmount | undefined {
+  if (base === undefined || delta === undefined) {
+    return base ?? delta;
+  }
+
+  return {
+    promptTokens: base.promptTokens + delta.promptTokens,
+    cachedTokens: base.cachedTokens + delta.cachedTokens,
+    savedUsd: base.savedUsd + delta.savedUsd,
+  };
+}
+
+export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
+  const cache: UsageCacheAmount | undefined = addUsageCache(base.cache, delta.cache);
+
+  return {
+    costUsd: base.costUsd + delta.costUsd,
+    tokens: base.tokens + delta.tokens,
+    hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
+    ...(cache === undefined ? {} : { cache }),
+  };
 }
 
 export function isAiProviderId(value: string): value is AiProviderId {

@@ -11,6 +11,7 @@ import {
   serializeCard,
   backgroundCardPath,
   characterCardPath,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import type { StoryboardCard, CardCollectProposal, StoryUri } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
@@ -131,7 +132,7 @@ export function registerBuildStoryCardsFromScenesCommand(
         return;
       }
       await vscode.window.showErrorMessage(
-        `씬 기반 카드 제안을 만들지 못했습니다: ${messageOf(error)}`,
+        `씬 기반 카드 제안을 만들지 못했습니다: ${extractErrorMessage(error)}`,
       );
     }
   });
@@ -231,10 +232,6 @@ async function askForCardId(
       return usedIds.has(value) ? '이미 사용 중인 ID입니다.' : undefined;
     },
   });
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 class StoryCardBuildCancelledError extends Error {}

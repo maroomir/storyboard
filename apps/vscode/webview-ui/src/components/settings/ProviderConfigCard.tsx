@@ -5,7 +5,6 @@ import { ConnectionTestButton, StatusPill } from './SettingsPrimitives';
 import {
   getProviderStatus,
   parseSaveTarget,
-  requiresApiKey,
   type AiProviderId,
   type AiProviderStatus,
   type ConnectionTestState,
@@ -14,6 +13,7 @@ import {
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { fieldGroupClass, sbInputClass } from './settingsStyles';
+import { requiresApiKey } from '@storyboard/story-model/contracts';
 
 interface ConnectionCheckResponse {
   readonly ok?: boolean;

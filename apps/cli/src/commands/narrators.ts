@@ -11,6 +11,7 @@ import {
   describeNarration,
   type NarrationDirective,
   type StoryboardProject,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 
 import { flagString } from '@/cliArguments';
@@ -148,7 +149,7 @@ export async function describeSceneNarration(
 
     return narration ? describeNarration(narration) : '지정 없음';
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return extractErrorMessage(error);
   }
 }
 

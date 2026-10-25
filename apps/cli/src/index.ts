@@ -12,6 +12,7 @@ import {
   pushWindowTitle,
 } from './terminal/signals';
 import { runTui } from './tui/index';
+import { extractErrorMessage } from '@storyboard/story-model';
 
 const version: string = '0.13.4';
 
@@ -133,7 +134,7 @@ void main(process.argv.slice(2))
     process.exitCode = code;
   })
   .catch((error: unknown) => {
-    const message: string = error instanceof Error ? error.message : String(error);
+    const message: string = extractErrorMessage(error);
 
     if (process.argv.includes('--json')) {
       process.stdout.write(`${JSON.stringify({ ok: false, message, data: null })}\n`);

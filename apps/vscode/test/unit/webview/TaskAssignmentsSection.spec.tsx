@@ -3,17 +3,18 @@ import React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { TaskAssignmentsSection } from "@webview/components/settings/TaskAssignmentsSection"
-import { AI_PROVIDER_IDS, type SettingsReadSnapshot } from "@webview/components/settings/settingsSnapshot"
+import { aiProviderIds } from "@storyboard/story-model/contracts"
+import type { SettingsReadSnapshot } from "@webview/components/settings/settingsSnapshot"
 
 function buildSnapshot(overrides: Partial<SettingsReadSnapshot> = {}): SettingsReadSnapshot {
-  const providerConfigs = Object.fromEntries(AI_PROVIDER_IDS.map((id) => [id, { model: `${id}-model` }]))
+  const providerConfigs = Object.fromEntries(aiProviderIds.map((id) => [id, { model: `${id}-model` }]))
   const modelCatalog = Object.fromEntries(
-    AI_PROVIDER_IDS.map((id) => [id, [{ id: `${id}-model`, displayName: `${id} model` }]])
+    aiProviderIds.map((id) => [id, [{ id: `${id}-model`, displayName: `${id} model` }]])
   )
 
   return {
     defaultProvider: "claude",
-    providers: AI_PROVIDER_IDS.map((id) => ({ providerId: id, displayName: id, hasApiKey: false, isAvailable: true })),
+    providers: aiProviderIds.map((id) => ({ providerId: id, displayName: id, hasApiKey: false, isAvailable: true })),
     providerConfigs,
     modelCatalog,
     taskAssignments: {

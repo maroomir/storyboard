@@ -1,3 +1,4 @@
+import { coerceOptionalString, coerceStringList } from '#model/format/unknownValues';
 import { parseJsonObject } from './aiResponseParser';
 
 type UntypedFields = Readonly<Record<string, unknown>>;
@@ -143,7 +144,7 @@ export function coerceStudioAgentAction(response: string): StudioAgentAction | u
 }
 
 function coerceSay(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const message: string | undefined = trimmedString(parsed['message']);
+  const message: string | undefined = coerceOptionalString(parsed['message']);
 
   if (!message) {
     return undefined;
@@ -172,9 +173,9 @@ function toFollowUp(value: unknown): StudioAgentFollowUp | undefined {
 
   const candidate: UntypedFields = value as UntypedFields;
 
-  const key: string | undefined = trimmedString(candidate.key);
-  const reason: string | undefined = trimmedString(candidate.reason);
-  const instruction: string | undefined = trimmedString(candidate.instruction);
+  const key: string | undefined = coerceOptionalString(candidate.key);
+  const reason: string | undefined = coerceOptionalString(candidate.reason);
+  const instruction: string | undefined = coerceOptionalString(candidate.instruction);
 
   if (!key || !reason || !instruction || !isFollowUpKind(candidate.kind)) {
     return undefined;
@@ -188,13 +189,17 @@ function isFollowUpKind(value: unknown): value is StudioAgentEntityKind {
 }
 
 function coerceAsk(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const question: string | undefined = trimmedString(parsed['question']);
+  const question: string | undefined = coerceOptionalString(parsed['question']);
 
   if (!question) {
     return undefined;
   }
 
-  return { kind: 'ask', question, options: stringList(parsed['options']).slice(0, maxAskOptions) };
+  return {
+    kind: 'ask',
+    question,
+    options: coerceStringList(parsed['options']).slice(0, maxAskOptions),
+  };
 }
 
 function coerceLookup(parsed: Record<string, unknown>): StudioAgentAction | undefined {
@@ -209,7 +214,7 @@ function coerceLookup(parsed: Record<string, unknown>): StudioAgentAction | unde
     return undefined;
   }
 
-  const reason: string | undefined = trimmedString(parsed['reason']);
+  const reason: string | undefined = coerceOptionalString(parsed['reason']);
 
   return reason ? { kind: 'lookup', requests, reason } : { kind: 'lookup', requests };
 }
@@ -220,7 +225,7 @@ function toLookupRequest(value: unknown): StudioAgentLookupRequest | undefined {
   }
 
   const candidate: UntypedFields = value as UntypedFields;
-  const key: string | undefined = trimmedString(candidate.key);
+  const key: string | undefined = coerceOptionalString(candidate.key);
 
   if (!key || !isLookupKind(candidate.kind)) {
     return undefined;
@@ -246,8 +251,8 @@ function coerceInvoke(parsed: Record<string, unknown>): StudioAgentAction | unde
     return undefined;
   }
 
-  const instruction: string | undefined = trimmedString(parsed['instruction']);
-  const reason: string | undefined = trimmedString(parsed['reason']);
+  const instruction: string | undefined = coerceOptionalString(parsed['instruction']);
+  const reason: string | undefined = coerceOptionalString(parsed['reason']);
 
   return {
     kind: 'invoke',
@@ -289,14 +294,14 @@ function toToolSpan(value: unknown): StudioAgentToolSpan | undefined {
 }
 
 function coercePropose(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const summary: string | undefined = trimmedString(parsed['summary']);
+  const summary: string | undefined = coerceOptionalString(parsed['summary']);
   const patch: StudioPatch | undefined = toPatch(parsed['patch']);
 
   if (!summary || !patch) {
     return undefined;
   }
 
-  const message: string | undefined = trimmedString(parsed['message']);
+  const message: string | undefined = coerceOptionalString(parsed['message']);
   const followUps: StudioAgentFollowUp[] = toFollowUps(parsed['followUps']);
 
   return {
@@ -344,7 +349,7 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
   }
 
   const candidate: UntypedFields = value as UntypedFields;
-  const field: string | undefined = trimmedString(candidate.field);
+  const field: string | undefined = coerceOptionalString(candidate.field);
 
   if (!field) {
     return undefined;
@@ -360,7 +365,7 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
 
   const objects: Readonly<Record<string, string>>[] | undefined = stringRecordList(candidate.value);
 
-  return objects ? { field, value: objects } : { field, value: stringList(candidate.value) };
+  return objects ? { field, value: objects } : { field, value: coerceStringList(candidate.value) };
 }
 
 function stringRecordList(
@@ -417,23 +422,4 @@ function toDraftReplacement(value: unknown): StudioDraftReplacement | undefined 
 
 function isNonNegativeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
-}
-
-function trimmedString(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-
-  const trimmed: string = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function stringList(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
-    .filter((entry) => entry.length > 0);
 }

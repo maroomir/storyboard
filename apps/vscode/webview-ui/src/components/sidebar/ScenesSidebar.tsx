@@ -11,7 +11,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   createRequestId,
   parseSidebarScenesInitialData,
-  emptyUsageAmount,
   parseUsageChangedPayload,
   sumUsageMap,
   usageAmountOf,
@@ -30,6 +29,7 @@ import { Button } from '../ui/Button';
 import { CostBadge } from '../ui/CostBadge';
 import { EmptyState } from '../ui/EmptyState';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
+import { emptyUsageAmount } from '@storyboard/story-model/contracts';
 
 function sceneStatusPresentation(status: SceneListItem['status']): {
   readonly Icon: LucideIcon;
@@ -157,7 +157,7 @@ export function ScenesSidebar({
             </p>
             <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
           </div>
-          <CostBadge usage={emptyUsageAmount} className="shrink-0" />
+          <CostBadge usage={emptyUsageAmount()} className="shrink-0" />
         </div>
         <EmptyState
           icon={FolderPlus}

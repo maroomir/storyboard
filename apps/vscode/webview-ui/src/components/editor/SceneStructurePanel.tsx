@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 
-import { createRequestId } from '@webview/lib/messaging';
 import type { SceneCard } from '@webview/lib/types';
 import { Button } from '../ui/Button';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
+import { callRpc } from '@webview/lib/rpcClient';
 
 interface SceneStructureResponse {
   readonly proposal: SceneStructureProposal;
@@ -17,43 +17,6 @@ export interface SceneStructureProposal {
   readonly endState?: string;
   readonly foreshadowing?: readonly string[];
   readonly neededCanon?: readonly string[];
-}
-
-type RpcResponse<T> = {
-  readonly type: 'response';
-  readonly id: string;
-  readonly ok: boolean;
-  readonly payload?: T;
-  readonly error?: { readonly message: string };
-};
-
-function callRpc<T>(
-  vscodeApi: VscodeApi,
-  method: string,
-  payload: Record<string, unknown>,
-): Promise<T> {
-  const id: string = createRequestId();
-
-  return new Promise((resolve, reject) => {
-    const handler = (event: MessageEvent): void => {
-      const response: RpcResponse<T> | undefined = event.data as RpcResponse<T> | undefined;
-      if (!response || response.type !== 'response' || response.id !== id) {
-        return;
-      }
-
-      window.removeEventListener('message', handler);
-
-      if (response.ok && response.payload !== undefined) {
-        resolve(response.payload);
-        return;
-      }
-
-      reject(new Error(response.error?.message ?? '요청을 처리하지 못했습니다.'));
-    };
-
-    window.addEventListener('message', handler);
-    vscodeApi.postMessage({ protocolVersion: '1.0.0', type: 'request', id, method, payload });
-  });
 }
 
 const SCALAR_LABELS: readonly {

@@ -208,7 +208,7 @@ function hasRelationBack(targetCardText: string, sourceId: string): boolean {
   }
 }
 
-async function cardExists(
+export async function cardExists(
   pathOf: (root: vscode.Uri, id: string) => vscode.Uri,
   root: vscode.Uri,
   id: string,

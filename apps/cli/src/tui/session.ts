@@ -1,5 +1,6 @@
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
+  extractErrorMessage,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
@@ -454,7 +455,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
 
         show(dispatched);
       } catch (error) {
-        sink.append('error', error instanceof Error ? error.message : String(error));
+        sink.append('error', extractErrorMessage(error));
       }
     },
   };

@@ -5,20 +5,12 @@ import { isDirectSceneCardFile } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import type { GenerateSceneBeatsRequest, GenerateSceneBeatsResult } from '@storyboard/story-engine';
+import { resolveSceneUriFromInvocation } from '@/presentation/commands/sceneInvocation';
 
 const GENERATE_SCENE_BEATS_COMMAND: string = 'storyboard.scene.beats';
 
 export interface RegisterGenerateSceneBeatsCommandDependencies {
   readonly drafts: Pick<DraftManager, 'generateBeats'>;
-}
-
-function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | undefined {
-  if (invokedUri?.scheme === 'file') {
-    return invokedUri;
-  }
-
-  const document: vscode.TextDocument | undefined = vscode.window.activeTextEditor?.document;
-  return document?.uri.scheme === 'file' ? document.uri : undefined;
 }
 
 async function runCommand(

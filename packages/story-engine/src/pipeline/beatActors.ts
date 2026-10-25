@@ -1,4 +1,5 @@
 import {
+escapeRegExp,
   formatSceneBeatCoordinates,
   sceneBeatCoordinateLabels,
   sceneBeatText,
@@ -18,7 +19,6 @@ const RETRY_SCORE_LIMIT: number = 3;
 
 const INNER_LINE_PREFIX: string = '(속)';
 const SCENE_BREAK_LINE: string = '---';
-
 
 interface CatchphraseCount {
   readonly phrase: string;
@@ -151,10 +151,6 @@ export function previousPassagesForJudge(
     .slice(-JUDGE_PREVIOUS_PASSAGES)
     .map((beat) => `[대목 ${beat.number}]\n${passages.get(beat.number) as string}`)
     .join('\n\n');
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function countCatchphrase(text: string, phrase: string): number {

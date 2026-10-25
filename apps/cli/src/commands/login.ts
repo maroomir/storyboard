@@ -7,7 +7,12 @@ import {
   type FetchLike,
   type SecretStore,
 } from '@storyboard/story-ai';
-import { getProviderDisplayName, requiresApiKey, type AiProviderId } from '@storyboard/story-model';
+import {
+  extractErrorMessage,
+  getProviderDisplayName,
+  requiresApiKey,
+  type AiProviderId,
+} from '@storyboard/story-model';
 
 import { availableProviderIds } from '@/adapters/availableProviders';
 import { openBrowser } from '@/adapters/openBrowser';
@@ -92,7 +97,7 @@ function describeLoginFailure(error: unknown): string {
     return error.message;
   }
 
-  const detail: string = error instanceof Error ? error.message : String(error);
+  const detail: string = extractErrorMessage(error);
   return `로그인을 마치지 못했습니다: ${detail}`;
 }
 
@@ -147,7 +152,7 @@ export async function signIn(
       data: { providerId, accountLabel: signedIn.accountLabel ?? null, verified: true },
     };
   } catch (error) {
-    const reason: string = error instanceof Error ? error.message : String(error);
+    const reason: string = extractErrorMessage(error);
     return {
       ok: true,
       message: `${saved}\n다만 연결 확인에 실패했습니다: ${reason}`,

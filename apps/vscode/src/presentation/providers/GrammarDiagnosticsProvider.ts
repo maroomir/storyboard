@@ -1,12 +1,16 @@
 import * as vscode from 'vscode';
 
-import type { DraftManager } from '@storyboard/story-app';
-import type { CheckDraftResult, IStoryboardLogger } from '@storyboard/story-engine';
+import type { CheckDraftResult } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, STORYBOARD_GLOBS, parseDraft } from '@storyboard/story-model';
-import { createWarningDiagnostic, toRange } from './diagnosticsShared';
+import {
+  createWarningDiagnostic,
+  runDiagnosticsCheckCommand,
+  toRange,
+  type DiagnosticsProviderDependencies,
+} from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { LatestRequestGuard } from './latestRequestGuard';
-import type { ConfigBridge, GrammarIssue } from '@storyboard/story-ai';
+import type { GrammarIssue } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
 const grammarCheckCommand: string = 'storyboard.draft.grammarCheck';
@@ -15,12 +19,6 @@ const grammarSource: string = 'storyboard-grammar';
 const grammarDebounceMs: number = 700;
 const quickFixKind: vscode.CodeActionKind = (vscode.CodeActionKind?.QuickFix ??
   'quickfix') as vscode.CodeActionKind;
-
-export interface RegisterGrammarDiagnosticsProviderDependencies {
-  readonly drafts: Pick<DraftManager, 'check'>;
-  readonly configBridge: ConfigBridge;
-  readonly logger: IStoryboardLogger;
-}
 
 export function toGrammarRange(
   document: vscode.TextDocument,
@@ -85,9 +83,7 @@ class GrammarDiagnosticsController {
     vscode.languages.createDiagnosticCollection(grammarSource);
   private readonly latestRequests: LatestRequestGuard = new LatestRequestGuard();
 
-  public constructor(
-    private readonly dependencies: RegisterGrammarDiagnosticsProviderDependencies,
-  ) {}
+  public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {}
 
   public getDiagnosticsCollection(): vscode.DiagnosticCollection {
     return this.collection;
@@ -172,20 +168,6 @@ class GrammarDiagnosticsController {
   }
 }
 
-async function runGrammarCheckCommand(
-  controller: GrammarDiagnosticsController,
-  uri?: vscode.Uri,
-): Promise<void> {
-  const targetUri: vscode.Uri | undefined = uri ?? vscode.window.activeTextEditor?.document.uri;
-  if (!targetUri) {
-    await vscode.window.showErrorMessage('활성 드래프트 파일을 찾을 수 없습니다.');
-    return;
-  }
-
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(targetUri);
-  await controller.runForDocument(document);
-}
-
 async function runApplyGrammarFix(
   uri: vscode.Uri,
   range: vscode.Range,
@@ -205,7 +187,7 @@ async function runApplyGrammarFix(
 }
 
 export function registerGrammarDiagnosticsProvider(
-  dependencies: RegisterGrammarDiagnosticsProviderDependencies,
+  dependencies: DiagnosticsProviderDependencies,
 ): vscode.Disposable {
   const controller: GrammarDiagnosticsController = new GrammarDiagnosticsController(dependencies);
   const selector: vscode.DocumentSelector = {
@@ -215,7 +197,7 @@ export function registerGrammarDiagnosticsProvider(
 
   const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
     grammarCheckCommand,
-    (uri?: vscode.Uri) => runGrammarCheckCommand(controller, uri),
+    (uri?: vscode.Uri) => runDiagnosticsCheckCommand(controller, uri),
   );
   const applyFixCommandRegistration: vscode.Disposable = vscode.commands.registerCommand(
     applyGrammarFixCommand,

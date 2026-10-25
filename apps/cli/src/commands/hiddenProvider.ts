@@ -1,5 +1,6 @@
 import {
   AiProviderError,
+  extractErrorMessage,
   getProviderTransport,
   hiddenProviderEnabledKey,
   hiddenProviderIds,
@@ -193,7 +194,7 @@ export async function collectHiddenProviderChecks(
       {
         status: 'fail',
         label: '구독 로그인',
-        detail: error instanceof Error ? error.message : String(error),
+        detail: extractErrorMessage(error),
       },
     ];
   }
@@ -245,7 +246,7 @@ async function collectLoginProviderChecks(
       {
         status: 'fail',
         label: '로그인',
-        detail: error instanceof Error ? error.message : String(error),
+        detail: extractErrorMessage(error),
         fix: loginFix,
       },
     ];

@@ -10,7 +10,6 @@ import {
   backgroundCardPath,
   characterCardPath,
   draftHistorySceneDirectory,
-  isSafeStudioEntityKey,
   joinUri,
 } from '@storyboard/story-model';
 
@@ -31,6 +30,7 @@ import type {
   StudioPatchResult,
   StudioProposalTurn,
 } from '@storyboard/story-model';
+import { cardExists } from '@/presentation/messaging/studioCardToolResolver';
 
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;
@@ -204,23 +204,6 @@ async function findBrokenSceneReference(
   }
 
   return undefined;
-}
-
-async function cardExists(
-  pathOf: (root: vscode.Uri, id: string) => vscode.Uri,
-  root: vscode.Uri,
-  id: string,
-): Promise<boolean> {
-  if (!isSafeStudioEntityKey(id)) {
-    return false;
-  }
-
-  try {
-    await vscode.workspace.fs.stat(pathOf(root, id));
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function archiveDraftBeforeApply(

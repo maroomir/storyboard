@@ -1,3 +1,4 @@
+import { reserveUniqueSlug, slugify } from '#model/format/slug';
 import { flattenChapterPlan } from './outline';
 import type { ChapterPlan, FlatChapterScene } from './outline';
 
@@ -203,29 +204,4 @@ function collectExtraDrafts(
     .filter(([order]) => order > plannedSceneCount)
     .sort(([a], [b]) => a - b)
     .map(([, draft]) => draft);
-}
-
-function slugify(value: string): string | undefined {
-  const slug: string = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : undefined;
-}
-
-function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
-  if (!usedSlugs.has(slug)) {
-    usedSlugs.add(slug);
-    return slug;
-  }
-
-  let suffix: number = 2;
-  while (usedSlugs.has(`${slug}-${suffix}`)) {
-    suffix += 1;
-  }
-
-  const uniqueSlug: string = `${slug}-${suffix}`;
-  usedSlugs.add(uniqueSlug);
-  return uniqueSlug;
 }

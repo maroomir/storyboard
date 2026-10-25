@@ -59,12 +59,3 @@ export function parseBeatJsonObject(response: string): Record<string, unknown> |
     parseJsonObject(response.replace(/,\s*"?\s*(?=[}\]])/g, ''))
   );
 }
-
-export function stringList(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value
-        .filter((item): item is string => typeof item === 'string')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0)
-    : [];
-}

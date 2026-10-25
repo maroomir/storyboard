@@ -1,12 +1,11 @@
 import {
   aiProviderIds,
-  requiresApiKey as providerRequiresApiKey,
+  isAiProviderId,
   type AiProviderId,
   type ConfigValueOrigin,
   type StoryboardSettingKind,
 } from '@storyboard/story-model/contracts';
 
-export const AI_PROVIDER_IDS: readonly AiProviderId[] = aiProviderIds;
 import { listSelectableProviderIds } from '@storyboard/story-model/contracts';
 import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 
@@ -124,10 +123,6 @@ export function getValueOrigin(snapshot: SettingsReadSnapshot, key: string): Con
   return snapshot.origins[key] ?? 'default';
 }
 
-export function isAiProviderId(value: string): value is AiProviderId {
-  return (AI_PROVIDER_IDS as readonly string[]).includes(value);
-}
-
 export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot | undefined {
   if (!value || typeof value !== 'object') {
     return undefined;
@@ -167,7 +162,7 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
     }
   }
 
-  for (const id of AI_PROVIDER_IDS) {
+  for (const id of aiProviderIds) {
     const cfg: unknown = (candidate.providerConfigs as Record<string, unknown>)[id];
     if (!cfg || typeof cfg !== 'object' || typeof (cfg as { model?: unknown }).model !== 'string') {
       return undefined;
@@ -222,10 +217,6 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
   }
 
   return candidate as SettingsReadSnapshot;
-}
-
-export function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerRequiresApiKey(providerId);
 }
 
 export function hasTaskOverride(snapshot: SettingsReadSnapshot, taskName: AiTaskName): boolean {

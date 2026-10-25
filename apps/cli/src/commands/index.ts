@@ -88,6 +88,8 @@ import {
   type LocationBackgroundCard,
   type NovelRunMode,
   type BibleSubjectKind,
+  slugify,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 
 import type { DraftAugmentScope, OAuthConnection } from '@storyboard/story-ai';
@@ -1263,16 +1265,6 @@ const renameScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-function slugify(name: string): string | undefined {
-  const slug: string = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return slug.length > 0 ? slug : undefined;
-}
-
 const applyDraftFormat: CommandHandler = async ({ container, args }) => {
   const stem: string | undefined = sceneStemFrom(args);
 
@@ -1807,7 +1799,7 @@ async function readContractInput(
       fromFile = (record.setting ?? record) as Partial<ProjectSetting>;
     } catch (error) {
       return {
-        message: `${fromPath} 를 읽지 못했습니다: ${error instanceof Error ? error.message : String(error)}`,
+        message: `${fromPath} 를 읽지 못했습니다: ${extractErrorMessage(error)}`,
       };
     }
   }
@@ -2008,7 +2000,7 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
       data: { providerId, verified: true },
     };
   } catch (error) {
-    const reason: string = error instanceof Error ? error.message : String(error);
+    const reason: string = extractErrorMessage(error);
     return {
       ok: true,
       message: [

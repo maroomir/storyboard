@@ -1,3 +1,4 @@
+import { extractErrorMessage } from '#model/contracts';
 import yaml from 'js-yaml';
 import { z } from 'zod';
 
@@ -55,7 +56,7 @@ export function parsePipelineSpec(text: string): PipelineSpec {
   try {
     loaded = yaml.load(text);
   } catch (error) {
-    const detail: string = error instanceof Error ? error.message : String(error);
+    const detail: string = extractErrorMessage(error);
     throw new PipelineSpecError(
       'invalid-yaml',
       `파이프라인 명세를 YAML로 읽을 수 없습니다: ${detail}`,

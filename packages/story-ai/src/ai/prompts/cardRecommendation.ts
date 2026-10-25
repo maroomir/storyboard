@@ -1,4 +1,4 @@
-import { isCharacterRole } from '@storyboard/story-model';
+import { coerceOptionalString, isCharacterRole } from '@storyboard/story-model';
 import type { BibleSubjectKind, CharacterRole } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
@@ -35,10 +35,6 @@ export const CardRecommendationPrompt: PromptModule<
     });
   },
 };
-
-function coerceOptionalString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-}
 
 function coerceRole(value: unknown): CharacterRole | undefined {
   if (typeof value !== 'string') {

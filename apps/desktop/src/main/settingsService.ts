@@ -1,4 +1,5 @@
 import {
+extractErrorMessage,
   findStoryboardSetting,
   isValidStoryboardSettingValue,
   providerCatalog,
@@ -153,7 +154,7 @@ export class SettingsService {
       await aiProviderRegistry.checkConnection(providerId);
       return succeed(await this.read());
     } catch (error) {
-      const reason: string = error instanceof Error ? error.message : String(error);
+      const reason: string = extractErrorMessage(error);
       return fail('provider-rejected', this.dependencies.translate('error.keyUnverified', { reason }));
     }
   }

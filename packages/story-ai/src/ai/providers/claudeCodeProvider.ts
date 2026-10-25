@@ -15,6 +15,8 @@ import {
   generationFailedMessage,
   getProviderDisplayName,
   missingModelMessage,
+  type JsonRecord,
+  isJsonRecord,
 } from '@storyboard/story-model';
 import { NodeCliRunner } from './nodeCliRunner';
 import type { CliProviderConfig, ProviderModelConfig } from '#ai/ports/ConfigBridge';
@@ -69,16 +71,10 @@ interface CliOutput {
   rateLimitResetsAt?: number;
 }
 
-type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function parseJsonLine(line: string): JsonRecord | undefined {
   try {
     const parsed: unknown = JSON.parse(line);
-    return isRecord(parsed) ? parsed : undefined;
+    return isJsonRecord(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
@@ -90,7 +86,7 @@ function readTokenCount(usage: JsonRecord, key: string): number {
 }
 
 function readUsage(value: unknown): AiUsage | undefined {
-  if (!isRecord(value)) {
+  if (!isJsonRecord(value)) {
     return undefined;
   }
 
@@ -104,14 +100,14 @@ function readUsage(value: unknown): AiUsage | undefined {
 }
 
 function readTextDelta(event: JsonRecord): string | undefined {
-  if (event.type !== 'stream_event' || !isRecord(event.event)) {
+  if (event.type !== 'stream_event' || !isJsonRecord(event.event)) {
     return undefined;
   }
 
   const delta: unknown = event.event.delta;
 
   return event.event.type === 'content_block_delta' &&
-    isRecord(delta) &&
+    isJsonRecord(delta) &&
     delta.type === 'text_delta' &&
     typeof delta.text === 'string'
     ? delta.text
@@ -119,7 +115,7 @@ function readTextDelta(event: JsonRecord): string | undefined {
 }
 
 function recordEvent(cliOutput: CliOutput, event: JsonRecord): void {
-  if (event.type === 'rate_limit_event' && isRecord(event.rate_limit_info)) {
+  if (event.type === 'rate_limit_event' && isJsonRecord(event.rate_limit_info)) {
     const { status, resetsAt } = event.rate_limit_info;
 
     if (status === 'rejected') {

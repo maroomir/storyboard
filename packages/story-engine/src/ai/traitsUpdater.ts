@@ -10,6 +10,7 @@ import {
   writeCardFile,
   parseBulletList,
   reconcileCharacterTraits,
+  escapeRegExp,
 } from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 interface TraitsUpdateLogger {
@@ -30,10 +31,6 @@ export interface UpdateCharacterTraitsFromDraftInput {
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
   readonly recentDialogueLimit?: number;
   readonly logger?: TraitsUpdateLogger;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function extractQuotedUtterancesForCharacter(

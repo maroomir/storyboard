@@ -5,10 +5,10 @@ import {
   renderBeatCharacterBlock,
   renderBeatDirective,
   renderNextBeats,
-  stringList,
   type SceneBeatCharacter,
   type SceneBeatDirective,
 } from './sceneBeatBlocks';
+import { coerceStringList } from '@storyboard/story-model';
 
 export interface SceneBeatActorInput {
   readonly character: SceneBeatCharacter;
@@ -71,7 +71,7 @@ export function coerceBeatProposal(
     const record: Record<string, unknown> = entry as Record<string, unknown>;
     const strategy: string = typeof record.strategy === 'string' ? record.strategy.trim() : '';
     const action: string = typeof record.action === 'string' ? record.action.trim() : '';
-    const lines: string[] = stringList(record.lines);
+    const lines: string[] = coerceStringList(record.lines);
 
     return action.length === 0 && lines.length === 0 ? [] : [{ strategy, action, lines }];
   });

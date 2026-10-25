@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { ExpandDraftResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { isDraftMarkdownFile, parseDraft } from '@storyboard/story-model';
+import { extractErrorMessage, isDraftMarkdownFile, parseDraft } from '@storyboard/story-model';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
@@ -154,7 +154,7 @@ async function runExpandDraftCommand(
   } catch (error) {
     dependencies.logger.error('Expand draft failed', error);
     dependencies.logger.show();
-    const message: string = error instanceof Error ? error.message : String(error);
+    const message: string = extractErrorMessage(error);
     await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${message}`);
   }
 }

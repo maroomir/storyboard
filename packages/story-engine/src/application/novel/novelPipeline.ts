@@ -2,6 +2,7 @@ import {
   getStoryboardProjectPaths,
   type StoryboardProjectPaths,
   resolveScenePrefixDigitCount,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import type { ChapterPlan, NovelRunState, NovelStageName } from '@storyboard/story-model';
 import {
@@ -408,7 +409,7 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     return { outcome: 'completed', message: '장편 생성을 완료했습니다.' };
   } catch (error) {
     options.deps.logger.error('Novel pipeline failed', error);
-    const message: string = error instanceof Error ? error.message : String(error);
+    const message: string = extractErrorMessage(error);
     await runContext.persist({ status: 'failed', lastError: message }).catch(() => undefined);
     return { outcome: 'failed', message };
   }

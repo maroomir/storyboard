@@ -2,6 +2,7 @@ import { flattenChapterPlan } from '#model/format/outline';
 import { serializeSceneCard } from '#model/format/files/scene';
 import type { ChapterPlan, FlatChapterScene, ScenePlan } from '#model/format/outline';
 import type { SceneCard } from '#model/format/scene';
+import { reserveUniqueSlug, slugify } from '#model/format/slug';
 
 export interface GeneratedSceneSeed {
   readonly stem: string;
@@ -29,31 +30,6 @@ export function buildSceneSeeds(plan: ChapterPlan, digitCount: number): Generate
 
 function deriveSlug(scene: ScenePlan, order: number): string {
   return slugify(scene.id) ?? slugify(scene.title) ?? `scene-${order}`;
-}
-
-function slugify(value: string): string | undefined {
-  const slug: string = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : undefined;
-}
-
-function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
-  if (!usedSlugs.has(slug)) {
-    usedSlugs.add(slug);
-    return slug;
-  }
-
-  let suffix: number = 2;
-  while (usedSlugs.has(`${slug}-${suffix}`)) {
-    suffix += 1;
-  }
-
-  const uniqueSlug: string = `${slug}-${suffix}`;
-  usedSlugs.add(uniqueSlug);
-  return uniqueSlug;
 }
 
 function buildSceneSeedCard(stem: string, flatScene: FlatChapterScene): SceneCard {

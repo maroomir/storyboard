@@ -6,6 +6,7 @@ import {
   parseScene,
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
+extractErrorMessage,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
@@ -204,5 +205,5 @@ function sha256(bytes: Uint8Array): string {
 }
 
 function formatParseError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return extractErrorMessage(error);
 }

@@ -29,6 +29,7 @@ import {
   type NarrationDirective,
   type RevisionPlan,
   type RevisionPlanEntry,
+extractErrorMessage,
 } from '@storyboard/story-model';
 import {
   groupChapterStems,
@@ -299,7 +300,7 @@ async function summarizeNarration(
       ...(narratorName === undefined ? {} : { narratorName }),
     };
   } catch (error) {
-    warnings.push(error instanceof Error ? error.message : String(error));
+    warnings.push(extractErrorMessage(error));
     return undefined;
   }
 }

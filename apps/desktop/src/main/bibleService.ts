@@ -20,6 +20,7 @@ import {
   type BibleFact,
   type StoryUri,
   type StoryBible,
+extractErrorMessage,
 } from '@storyboard/story-model';
 import { type IFileSystem } from '@storyboard/story-engine';
 import { ZodError, type ZodSafeParseResult, type ZodType } from 'zod';
@@ -137,7 +138,7 @@ export class BibleService {
     try {
       return succeed(parse(kind, new TextDecoder().decode(await this.fileSystem.readFile(uri))));
     } catch (error) {
-      return fail('invalid-request', this.describeInvalidCard(error instanceof Error ? error.message : String(error)));
+      return fail('invalid-request', this.describeInvalidCard(extractErrorMessage(error)));
     }
   }
 
