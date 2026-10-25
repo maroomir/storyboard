@@ -2,6 +2,12 @@ import type { CacheTtl, ReasoningEffort } from '@storyboard/story-model';
 
 export type PromptVariantId = 'generic' | 'xs' | 'rich';
 
+export const promptVariantIds: readonly [PromptVariantId, ...PromptVariantId[]] = [
+  'generic',
+  'xs',
+  'rich',
+];
+
 export interface PromptArtifact {
   readonly system: string;
   readonly userPrefix?: string;

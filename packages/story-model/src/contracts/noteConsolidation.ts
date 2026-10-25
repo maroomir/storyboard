@@ -1,3 +1,4 @@
+import type { NoteResponseFailure } from '#model/contracts/noteExtraction';
 import type { BibleSubjectKind } from '#model/format/bible';
 import { z } from 'zod';
 
@@ -54,11 +55,9 @@ export interface NoteConsolidatedLists {
   readonly conflicts?: readonly NoteConsolidationConflict[];
 }
 
-export type NoteConsolidationFailure = 'truncated' | 'unparsed';
-
 export interface NoteConsolidationResult {
   readonly consolidated: readonly NoteConsolidatedLists[];
-  readonly failure?: NoteConsolidationFailure;
+  readonly failure?: NoteResponseFailure;
 }
 
 interface AnswerId {

@@ -18,6 +18,7 @@ import {
   pointOfViewLabels,
   pointOfViews,
   type ProviderModelOptions,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 
 import {
@@ -30,7 +31,6 @@ import {
   globalFlagNames,
   initLanguages,
   noteSources,
-  type CardCategory,
   type CommandSpec,
   type FlagSpec,
 } from './catalog';
@@ -225,7 +225,7 @@ function positionalCompletions(
         }));
       }
 
-      const categories: CardCategory[] = cardCategories.filter(
+      const categories: BibleSubjectKind[] = cardCategories.filter(
         (category) => positionals[0] === undefined || category === positionals[0],
       );
       return categories.flatMap((category) =>

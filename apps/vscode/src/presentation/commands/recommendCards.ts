@@ -3,9 +3,8 @@ import * as vscode from 'vscode';
 import { type RecommendCardsResult } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import type { RecommendationCategory } from '@storyboard/story-ai';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
-import type { StoryboardCard } from '@storyboard/story-model';
+import type { BibleSubjectKind, StoryboardCard } from '@storyboard/story-model';
 import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -31,7 +30,7 @@ export function registerRecommendCardCommands(
 }
 
 async function recommendCards(
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
   dependencies: RecommendCardDependencies,
 ): Promise<void> {
   const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
@@ -93,7 +92,7 @@ async function recommendCards(
 }
 
 async function runCardRecommendation(
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
   workspaceRoot: vscode.Uri,
   dependencies: RecommendCardDependencies,
 ): Promise<RecommendCardsResult | undefined> {
@@ -118,7 +117,7 @@ interface RecommendationPick extends vscode.QuickPickItem {
 }
 
 async function pickRecommendations(
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
   recommendations: readonly RecommendedCard[],
 ): Promise<RecommendedCard[] | undefined> {
   const items: RecommendationPick[] = recommendations.map((recommendation) => ({
@@ -154,7 +153,7 @@ function buildRecommendationDetail(recommendation: RecommendedCard): string {
 
 async function createCardsFromRecommendations(
   workspaceRoot: vscode.Uri,
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
   recommendations: readonly RecommendedCard[],
   cards: Pick<CardManager, 'deriveUniqueId' | 'write'>,
 ): Promise<number> {
@@ -183,7 +182,7 @@ async function createCardsFromRecommendations(
 
 async function askCardIdBase(
   name: string,
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
 ): Promise<string | null | undefined> {
   if (!needsCardIdPrompt(name)) {
     return undefined;
@@ -201,7 +200,7 @@ async function askCardIdBase(
 }
 
 function buildCardFromRecommendation(
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
   id: string,
   recommendation: RecommendedCard,
 ): StoryboardCard {

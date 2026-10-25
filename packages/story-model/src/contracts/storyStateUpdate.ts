@@ -3,16 +3,17 @@ import { z } from 'zod';
 import { hasForeignScript } from '#model/format/foreignScript';
 
 import { parseJsonObject } from './aiResponseParser';
+import type { StoryStateSection } from '#model/format/storyState';
 
-export type StoryStateUpdateSection = 'facts' | 'relations' | 'revealed' | 'motifs';
-
-export const storyStateUpdateSections: readonly [
-  StoryStateUpdateSection,
-  ...StoryStateUpdateSection[],
-] = ['facts', 'relations', 'revealed', 'motifs'];
+export const storyStateUpdateSections: readonly [StoryStateSection, ...StoryStateSection[]] = [
+  'facts',
+  'relations',
+  'revealed',
+  'motifs',
+];
 
 export interface StoryStateUpdateItem {
-  readonly section: StoryStateUpdateSection;
+  readonly section: StoryStateSection;
   readonly text: string;
   readonly witnesses?: readonly string[];
 }
@@ -50,10 +51,7 @@ const sectionListSchema: z.ZodType<SectionList> = z.array(z.unknown()).optional(
 const maxItemsPerSection: number = 5;
 const maxItemLength: number = 200;
 
-function coerceSectionItems(
-  raw: unknown,
-  section: StoryStateUpdateSection,
-): StoryStateUpdateItem[] {
+function coerceSectionItems(raw: unknown, section: StoryStateSection): StoryStateUpdateItem[] {
   const parsed: z.ZodSafeParseResult<unknown[] | undefined> = sectionListSchema.safeParse(raw);
   if (!parsed.success || !parsed.data) {
     return [];

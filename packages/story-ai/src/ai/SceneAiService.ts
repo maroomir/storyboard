@@ -1,4 +1,10 @@
-import type { AiGenerateResponse, Background, Character, ProjectFormat } from '@storyboard/story-model';
+import type {
+  AiGenerateResponse,
+  Background,
+  Character,
+  ProjectFormat,
+  SceneStructureFieldKey,
+} from '@storyboard/story-model';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   toPromptMessages,
@@ -57,12 +63,13 @@ import {
   sceneGroundingFieldLabels,
   type SceneGrounding,
   type SceneGroundingFieldKey,
+isSceneStructureListField,
 } from '@storyboard/story-model';
 import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
 } from './prompts/sceneSectionExpansion';
-import { SceneStructurePrompt, type SceneStructureFieldKey } from './prompts/sceneStructure';
+import { SceneStructurePrompt } from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import type { PromptArtifact, PromptVariantId } from '#ai/ai/prompts/types';
 
@@ -393,8 +400,6 @@ export interface SceneStructureProposal {
   readonly neededCanon?: string[];
 }
 
-const sceneStructureListKeys: readonly SceneStructureFieldKey[] = ['foreshadowing', 'neededCanon'];
-
 function toSceneStructureProposal(
   parsed: Record<string, unknown> | null,
   requestedFields: readonly SceneStructureFieldKey[],
@@ -408,7 +413,7 @@ function toSceneStructureProposal(
   for (const key of requestedFields) {
     const value: unknown = parsed[key];
 
-    if (sceneStructureListKeys.includes(key)) {
+    if (isSceneStructureListField(key)) {
       if (Array.isArray(value)) {
         const items: string[] = value
           .filter((item): item is string => typeof item === 'string')

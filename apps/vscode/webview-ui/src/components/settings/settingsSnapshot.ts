@@ -2,6 +2,7 @@ import {
   aiProviderIds,
   requiresApiKey as providerRequiresApiKey,
   type AiProviderId,
+  type ConfigValueOrigin,
   type StoryboardSettingKind,
 } from '@storyboard/story-model/contracts';
 
@@ -51,8 +52,6 @@ export interface TaskCatalogItem {
   readonly name: AiTaskName;
   readonly label: string;
 }
-
-export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
 
 export type SettingValue = boolean | number | string;
 

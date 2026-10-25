@@ -1,4 +1,4 @@
-import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse, CharacterRole } from '@storyboard/story-model';
+import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse, CharacterRole, BibleSubjectKind } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
@@ -14,7 +14,6 @@ import {
 import type { IStoryFeatureRepository, StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import type { SidebarCardCategory } from '#engine/application/cards/cardSidebarRepository';
 
 const SCENE_CHUNK_SIZE: number = 40_000;
 const MAX_PARALLEL_REQUESTS: number = 4;
@@ -35,7 +34,7 @@ function textList(): z.ZodType<string[]> {
 }
 
 interface StoryCardEntity {
-  type: SidebarCardCategory;
+  type: BibleSubjectKind;
   name: string;
   aliases: string[];
   tags: string[];

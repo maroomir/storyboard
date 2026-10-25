@@ -199,18 +199,18 @@ function salvageList<T>(value: unknown, schema: z.ZodType<T>): T[] {
     : [];
 }
 
-export type NoteExtractionFailure = 'truncated' | 'unparsed';
+export type NoteResponseFailure = 'truncated' | 'unparsed';
 
 export interface NoteExtractionResult {
   readonly extraction: NoteExtraction;
   readonly responseText: string;
-  readonly failure?: NoteExtractionFailure;
+  readonly failure?: NoteResponseFailure;
 }
 
 export interface NoteExtractionResponse {
   readonly chunk: number;
   readonly noteIds: readonly string[];
-  readonly failure?: NoteExtractionFailure;
+  readonly failure?: NoteResponseFailure;
   readonly text: string;
 }
 
@@ -221,7 +221,7 @@ export function readNoteExtractionResponse(
   parsed: Record<string, unknown> | null,
   isTruncated: boolean,
 ): NoteExtractionResult {
-  const failure: NoteExtractionFailure | undefined = isTruncated
+  const failure: NoteResponseFailure | undefined = isTruncated
     ? 'truncated'
     : parsed === null || !extractionKeys.some((key) => key in parsed)
       ? 'unparsed'

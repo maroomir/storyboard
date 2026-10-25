@@ -3,6 +3,7 @@ import type React from 'react';
 import type { NarratorRosterEntry, SceneCard, SceneGrounding } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { ListField } from './ListField';
+import type { SceneStructureTextField } from '@storyboard/story-model/contracts';
 
 const sceneTextareaClass: string = `${sbInputClass} min-h-20 resize-y leading-normal`;
 
@@ -13,15 +14,13 @@ const GROUNDING_FIELDS: readonly { key: keyof SceneGrounding; label: string }[] 
   { key: 'time', label: '시점' },
 ];
 
-const STRUCTURE_FIELDS: readonly { key: SceneStructureKey; label: string }[] = [
+const STRUCTURE_FIELDS: readonly { key: SceneStructureTextField; label: string }[] = [
   { key: 'purpose', label: '목적' },
   { key: 'conflict', label: '갈등' },
   { key: 'twist', label: '반전' },
   { key: 'emotionalShift', label: '감정 변화' },
   { key: 'endState', label: '종료 지점' },
 ];
-
-type SceneStructureKey = 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | 'endState';
 
 export function SceneFields({
   card,
@@ -39,7 +38,7 @@ export function SceneFields({
     updateCard({ ...card, [key]: value === '' ? undefined : value });
   };
 
-  const updateStructureText = (key: SceneStructureKey, value: string): void => {
+  const updateStructureText = (key: SceneStructureTextField, value: string): void => {
     updateCard({ ...card, [key]: value === '' ? undefined : value });
   };
 

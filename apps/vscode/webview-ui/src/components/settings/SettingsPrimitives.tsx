@@ -1,7 +1,8 @@
 import { AlertCircle, CheckCircle2, LoaderCircle, PlugZap } from 'lucide-react';
 import React from 'react';
 
-import { originLabel, type ConfigValueOrigin, type ConnectionTestState } from './settingsSnapshot';
+import { originLabel, type ConnectionTestState } from './settingsSnapshot';
+import type { ConfigValueOrigin } from '@storyboard/story-model/contracts';
 
 interface ConnectionStateView {
   readonly label: string;

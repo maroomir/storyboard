@@ -1,7 +1,11 @@
 import clsx from 'clsx';
 import type React from 'react';
 
-import { sceneBeatText } from '@storyboard/story-model/contracts';
+import {
+  sceneBeatText,
+  type SceneGroundingFieldKey,
+  type SceneStructureTextField,
+} from '@storyboard/story-model/contracts';
 import type { SceneCard } from '@webview/lib/types';
 import { Pill } from '../ui/Pill';
 
@@ -13,17 +17,14 @@ interface FieldLabel<Key extends string> {
   readonly label: string;
 }
 
-type GroundingFieldKey = 'incident' | 'place' | 'relation' | 'time';
-type StructureFieldKey = 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | 'endState';
-
-const GROUNDING_LABELS: readonly FieldLabel<GroundingFieldKey>[] = [
+const GROUNDING_LABELS: readonly FieldLabel<SceneGroundingFieldKey>[] = [
   { key: 'incident', label: '사건' },
   { key: 'place', label: '장소' },
   { key: 'relation', label: '관계' },
   { key: 'time', label: '시점' },
 ];
 
-const STRUCTURE_LABELS: readonly FieldLabel<StructureFieldKey>[] = [
+const STRUCTURE_LABELS: readonly FieldLabel<SceneStructureTextField>[] = [
   { key: 'purpose', label: '목적' },
   { key: 'conflict', label: '갈등' },
   { key: 'twist', label: '반전' },
@@ -38,10 +39,10 @@ export function ScenePreviewPanel({
   readonly card: SceneCard;
   readonly className?: string;
 }): React.ReactElement {
-  const structureEntries: FieldLabel<StructureFieldKey>[] = STRUCTURE_LABELS.filter(
+  const structureEntries: FieldLabel<SceneStructureTextField>[] = STRUCTURE_LABELS.filter(
     ({ key }) => card[key] !== undefined,
   );
-  const groundingEntries: FieldLabel<GroundingFieldKey>[] = GROUNDING_LABELS.filter(
+  const groundingEntries: FieldLabel<SceneGroundingFieldKey>[] = GROUNDING_LABELS.filter(
     ({ key }) => card.grounding?.[key] !== undefined,
   );
 

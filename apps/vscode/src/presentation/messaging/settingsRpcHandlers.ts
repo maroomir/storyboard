@@ -5,6 +5,7 @@ import type {
   AiProviderStatus,
   AiProviderId,
   ProviderModelOptions,
+  ConfigValueOrigin,
 } from '@storyboard/story-model';
 import {
   aiProviderIds,
@@ -16,7 +17,6 @@ import {
 import type {
   AiProviderRegistry,
   ConfigBridge,
-  ConfigValueOrigin,
   ProviderModelConfig,
   SecretStore,
   TaskAiConfigOverride,

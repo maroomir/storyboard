@@ -8,11 +8,15 @@ import {
   promptResourceKeys,
   promptResources,
   type ConfigBridge,
-  type ConfigValueOrigin,
   type PromptConfig,
 } from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-engine';
-import type { AiProviderId, GenerationKnobs, StoryUri } from '@storyboard/story-model';
+import type {
+  AiProviderId,
+  ConfigValueOrigin,
+  GenerationKnobs,
+  StoryUri,
+} from '@storyboard/story-model';
 
 import type { ResourceOverrideApplied, ResourceOverrideReport } from './resourceOverrides';
 

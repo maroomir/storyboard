@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommandRpcHandlers';
 
-import type { ICardSidebarRepository, SidebarCardCategory } from '@storyboard/story-engine';
+import type { ICardSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary, STORYBOARD_GLOBS } from '@storyboard/story-model';
 import {
@@ -19,6 +19,7 @@ import type {
   UsageSummaryByEntity,
   SidebarCardSummary,
   StoryboardResponsePayload,
+  BibleSubjectKind,
 } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
@@ -26,13 +27,13 @@ import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string;
-  readonly cardType: SidebarCardCategory;
+  readonly cardType: BibleSubjectKind;
   readonly title: string;
   readonly cardGlob: string;
 }
 
 interface SidebarCardsInitialData {
-  readonly type: SidebarCardCategory;
+  readonly type: BibleSubjectKind;
   readonly title: string;
   readonly cards: readonly SidebarCardSummary[];
   readonly isStoryboardProject: boolean;

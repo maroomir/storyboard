@@ -18,7 +18,7 @@ import {
 import {
   ConfigBridge,
   type ConfigBridgeDependencies,
-  type PromptVariantOverride,
+  type PromptVariantId,
   SecretStore,
 } from '@storyboard/story-ai';
 
@@ -91,7 +91,7 @@ export interface CliContainerOptions {
     readonly contextTokens?: number;
     readonly think?: boolean;
   };
-  readonly promptVariant?: PromptVariantOverride;
+  readonly promptVariant?: PromptVariantId;
 }
 
 function createCommandLineConfigOverrides(options: CliContainerOptions): Record<string, unknown> {

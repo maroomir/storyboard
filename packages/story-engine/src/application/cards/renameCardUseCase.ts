@@ -7,6 +7,7 @@ import {
   rewriteCardIdReferences,
   serializeCard,
   setCardId,
+  type BibleSubjectKind,
   type StoryboardCard,
   type StoryboardProjectPaths,
   type StoryUri,
@@ -16,11 +17,10 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { listCardFileUris } from '#engine/persistence/cardFiles';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import type { SidebarCardCategory } from './cardSidebarRepository';
 
 export interface RenameCardRequest {
   readonly workspaceRoot: StoryUri;
-  readonly category: SidebarCardCategory;
+  readonly category: BibleSubjectKind;
   readonly fromId: string;
   readonly toId: string;
 }

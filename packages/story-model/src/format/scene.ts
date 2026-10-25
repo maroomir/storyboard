@@ -269,15 +269,32 @@ export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
   };
 }
 
-export type SceneSeedSection =
-  | 'purpose'
-  | 'conflict'
-  | 'twist'
-  | 'emotionalShift'
-  | 'endState'
-  | 'foreshadowing'
-  | 'neededCanon'
-  | 'targetWordCount';
+export type SceneStructureTextField = 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | 'endState';
+
+export type SceneStructureListField = 'foreshadowing' | 'neededCanon';
+
+export type SceneStructureFieldKey = SceneStructureTextField | SceneStructureListField;
+
+export const sceneStructureTextFields: readonly SceneStructureTextField[] = [
+  'purpose',
+  'conflict',
+  'twist',
+  'emotionalShift',
+  'endState',
+];
+
+export const sceneStructureListFields: readonly SceneStructureListField[] = [
+  'foreshadowing',
+  'neededCanon',
+];
+
+export function isSceneStructureListField(
+  key: SceneStructureFieldKey,
+): key is SceneStructureListField {
+  return (sceneStructureListFields as readonly SceneStructureFieldKey[]).includes(key);
+}
+
+export type SceneSeedSection = SceneStructureFieldKey | 'targetWordCount';
 
 export const sceneSeedSectionLabels: Readonly<Record<SceneSeedSection, string>> = {
   purpose: '목적',

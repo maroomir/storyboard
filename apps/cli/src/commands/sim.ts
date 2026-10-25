@@ -7,7 +7,11 @@ import {
   parseSceneFileName,
 } from '@storyboard/story-model';
 import type { AiProviderId, SceneCard, SceneFileNameParts } from '@storyboard/story-model';
-import type { AiProviderRegistry, PromptVariantId } from '@storyboard/story-ai';
+import {
+  promptVariantIds,
+  type AiProviderRegistry,
+  type PromptVariantId,
+} from '@storyboard/story-ai';
 import {
   appendRun,
   applyOverlay,
@@ -59,7 +63,6 @@ import {
   type PointScore,
   type RunRecord,
   type SimConfig,
-  type SimPromptVariant,
   type SimJudge,
   type TokenTotals,
   type BudgetEstimate,
@@ -78,7 +81,6 @@ import {
   type ProfileWriteResult,
   type Overlay,
   type BaselineSample,
-  simPromptVariants,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -269,7 +271,7 @@ async function loadOverlayPoint(
 interface Selection {
   readonly providerId: AiProviderId;
   readonly model: string;
-  readonly promptVariant?: SimPromptVariant;
+  readonly promptVariant?: PromptVariantId;
 }
 
 function generationRecord(
@@ -299,7 +301,7 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
     rawVariant === undefined ? undefined : promptVariantSchema.safeParse(rawVariant);
 
   if (variant !== undefined && !variant.success) {
-    return `프롬프트 변형을 모릅니다: ${rawVariant}\n쓸 수 있는 값: ${simPromptVariants.join(', ')}`;
+    return `프롬프트 변형을 모릅니다: ${rawVariant}\n쓸 수 있는 값: ${promptVariantIds.join(', ')}`;
   }
 
   const withVariant = (selection: Omit<Selection, 'promptVariant'>): Selection => ({

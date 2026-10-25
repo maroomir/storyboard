@@ -19,6 +19,7 @@ import type {
   SceneCoverageIssue,
   StoryStateUpdateItem,
   AiMessageRole,
+  BibleSubjectKind,
 } from '@storyboard/story-model';
 import {
   coerceChapterPlan,
@@ -64,7 +65,7 @@ import type { DraftCondenseInput } from './prompts/draftCondense';
 import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
 import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
-import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
+import { type RecommendedEntity } from './prompts/cardRecommendation';
 import {
   type NoteConsolidationResult,
   type NoteConsolidationTarget,
@@ -292,7 +293,7 @@ export class StoryboardAiService {
 
   public async extractCardRecommendations(
     body: string,
-    category: RecommendationCategory,
+    category: BibleSubjectKind,
     knownNames: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<RecommendedEntity[]> {
