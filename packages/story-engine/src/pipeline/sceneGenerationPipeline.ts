@@ -12,6 +12,7 @@ SceneNarrativeParts,
 SceneCoverageIssue,
 BackgroundCard,
 SceneCard,
+CharacterRef,
 } from '@storyboard/story-model';
 import {
   characterCatchphrases,
@@ -95,7 +96,7 @@ import {
   SECTION_OUTPUT_LIMIT,
   type SectionViolation,
 } from './sceneSectionPlan';
-import { selectRepresentativeDialogue } from './dialogueCorpus';
+import { selectRepresentativeDialogue, type VoiceSampleBounds } from './dialogueCorpus';
 import {
   applyPlannedSceneBreaks,
   countMissingSegmentMarkers,
@@ -119,20 +120,9 @@ import {
   type SceneGenerationPipelineTaskProviders,
 } from './sceneGenerationTypes';
 
-
 interface PartialRewrites {
   rewrites: readonly SceneDialogueRewrite[];
   heldBack: number;
-}
-
-interface VoiceSampleBounds {
-  readonly minimumLength: number;
-  readonly maximumLength: number;
-}
-
-interface DialogueCharacterCandidate {
-  readonly id: string;
-  readonly name: string;
 }
 
 interface BeatActorRequest {
@@ -472,7 +462,7 @@ function validatePlannedSceneBreaks(
       ];
 }
 
-interface SectionExpansion {
+interface CheckedSectionText {
   readonly text: string;
   readonly violations: readonly SectionViolation[];
 }
@@ -490,7 +480,7 @@ async function expandSectionWithRetries(input: {
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
-}): Promise<SectionExpansion> {
+}): Promise<CheckedSectionText> {
   let reasons: string[] = [];
   let isUnderLengthRetry: boolean = false;
   let best: {
@@ -828,7 +818,7 @@ async function buildDialogueRecord(input: {
   }
 
   const lines: string[] = extractDialogueLines(input.draftBody, input.tuning);
-  const candidates: DialogueCharacterCandidate[] = input.characters.map((character): DialogueCharacterCandidate => ({
+  const candidates: CharacterRef[] = input.characters.map((character): CharacterRef => ({
     id: character.id,
     name: character.name,
   }));
@@ -1330,17 +1320,12 @@ function backgroundFactLines(background: Background): string[] {
   ].filter((line) => line.trim().length > 0);
 }
 
-interface RunAheadTrim {
-  readonly text: string;
-  readonly violations: readonly SectionViolation[];
-}
-
 function trimRunAhead(
   skeleton: string,
   section: string,
   outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
   tuning: ResolvedSceneGenerationTuning,
-): RunAheadTrim {
+): CheckedSectionText {
   if (!outcome.violations.some((violation) => violation.kind === 'runs-ahead')) {
     return outcome;
   }
@@ -1363,15 +1348,10 @@ function trimRunAhead(
   };
 }
 
-interface RestoredSectionBreaks {
-  readonly text: string;
-  readonly violations: readonly SectionViolation[];
-}
-
 function restoreSectionBreaks(
   section: string,
   outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
-): RestoredSectionBreaks {
+): CheckedSectionText {
   if (!outcome.violations.some((violation) => violation.kind === 'scene-breaks')) {
     return outcome;
   }
@@ -1420,7 +1400,7 @@ const expandSectionStage: ISceneStage = {
     for (let index: number = 0; index < sections.length; index += 1) {
       executionContext.onProgress?.('expandSection', index + 1, sections.length);
 
-      const outcome: SectionExpansion = await expandSectionWithRetries({
+      const outcome: CheckedSectionText = await expandSectionWithRetries({
         aiService: executionContext.aiService,
         section: sections[index] as string,
         skeleton: state.polishedText,
@@ -1445,7 +1425,7 @@ const expandSectionStage: ISceneStage = {
         tuning: executionContext.tuning,
       });
 
-      const repaired: RestoredSectionBreaks = restoreSectionBreaks(
+      const repaired: CheckedSectionText = restoreSectionBreaks(
         sections[index] as string,
         trimRunAhead(state.polishedText, sections[index] as string, outcome, executionContext.tuning),
       );

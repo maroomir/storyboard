@@ -4,19 +4,18 @@ import {
   readDraftFile,
   getStoryboardProjectPaths,
   type Draft,
+  type CharacterRef,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { ICardCollectRepository } from '#engine/application/cards/collectCardProposalsUseCase';
 import { loadCharacterRoster } from '#engine/persistence/relationGraphData';
-import type { CollectDraft, CollectRosterEntry } from '#engine/ai/cardCollectBuilder';
+import type { CollectDraft } from '#engine/ai/cardCollectBuilder';
 
 export class CardCollectRepository implements ICardCollectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
-  public async loadCharacterRoster(
-    workspaceRoot: StoryUri,
-  ): Promise<readonly CollectRosterEntry[]> {
+  public async loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CharacterRef[]> {
     return await loadCharacterRoster(this.fileSystem, workspaceRoot);
   }
 

@@ -20,6 +20,7 @@ import type {
   StoryStateUpdateItem,
   AiMessageRole,
   BibleSubjectKind,
+  AttributeCandidate,
 } from '@storyboard/story-model';
 import {
   coerceChapterPlan,
@@ -49,7 +50,6 @@ import {
   StudioAgentService,
   type StudioAgentRunInput,
   type StudioAgentRunOptions,
-  type StudioValidationInput,
 } from './StudioAgentService';
 import type { SceneDialoguePolishResult } from './prompts/sceneDialoguePolish';
 import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
@@ -76,17 +76,12 @@ import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {
   toPromptMessages,
   type ContinuityIssue,
-  type FactCandidate,
   type GrammarIssue,
   type SituationWithCharacters,
 } from './aiResponseCoercion';
+import type { StudioValidationPromptInput } from '#ai/ai/prompts/studioValidation';
 
-export type {
-  ContinuityIssue,
-  FactCandidate,
-  GrammarIssue,
-  SituationWithCharacters,
-} from './aiResponseCoercion';
+export type { ContinuityIssue, GrammarIssue, SituationWithCharacters } from './aiResponseCoercion';
 export type {
   GenerateTextOptions,
   OnUsageRecordCallback,
@@ -130,7 +125,7 @@ export class StoryboardAiService {
   }
 
   public async validateStudioProposal(
-    input: StudioValidationInput,
+    input: StudioValidationPromptInput,
     options: GenerateTextOptions = {},
   ): Promise<StudioValidationVerdict> {
     return this.studioAgentService.validate(input, options);
@@ -271,7 +266,7 @@ export class StoryboardAiService {
     draftBody: string,
     characterNames: readonly string[],
     options: ExtractFactsByCharacterOptions = {},
-  ): Promise<Record<string, FactCandidate[]>> {
+  ): Promise<Record<string, AttributeCandidate[]>> {
     return this.cardAiService.extractFactsByCharacter(draftBody, characterNames, options);
   }
 

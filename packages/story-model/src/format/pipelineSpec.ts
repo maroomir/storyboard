@@ -1,4 +1,4 @@
-import { extractErrorMessage } from '#model/contracts';
+import { extractErrorMessage } from '#model/format/unknownValues';
 import yaml from 'js-yaml';
 import { z } from 'zod';
 

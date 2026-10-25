@@ -10,7 +10,7 @@ import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
   ManuscriptDraftEntry,
-  DraftFileSystem,
+  ReadWriteFileSystem,
   StoryboardProjectPaths,
   SceneFileNameParts,
   StoryUri,
@@ -19,7 +19,7 @@ import type {
 export async function collectDraftsByOrder(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
-  fileSystem: DraftFileSystem,
+  fileSystem: ReadWriteFileSystem,
   logger: Pick<IStoryboardLogger, 'warn'>,
 ): Promise<Map<number, ManuscriptDraftEntry>> {
   const draftsByOrder: Map<number, ManuscriptDraftEntry> = new Map<number, ManuscriptDraftEntry>();

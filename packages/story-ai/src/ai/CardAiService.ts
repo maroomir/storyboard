@@ -1,5 +1,5 @@
 import type { GenerateTextOptions } from './aiServiceTypes';
-import { toFactCandidate, toPromptMessages, type FactCandidate } from './aiResponseCoercion';
+import { toFactCandidate, toPromptMessages } from './aiResponseCoercion';
 import { AiTextGateway } from './AiTextGateway';
 import {
   BackgroundFactExtractionPrompt,
@@ -35,6 +35,7 @@ import type {
   UsageAttribution,
   AiTaskName,
   BibleSubjectKind,
+  AttributeCandidate,
 } from '@storyboard/story-model';
 import {
   parseBulletList,
@@ -101,7 +102,7 @@ export class CardAiService {
     draftBody: string,
     characterNames: readonly string[],
     options: ExtractFactsByCharacterOptions = {},
-  ): Promise<Record<string, FactCandidate[]>> {
+  ): Promise<Record<string, AttributeCandidate[]>> {
     return this.extractPerCharacter(
       characterNames,
       options,

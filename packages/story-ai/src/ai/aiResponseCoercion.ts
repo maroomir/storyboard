@@ -1,17 +1,11 @@
-import type { AiMessage, Severity, UsageAttribution } from '@storyboard/story-model';
+import type { AiMessage, AttributeCandidate, Severity, UsageAttribution } from '@storyboard/story-model';
 import type { PromptArtifact } from './prompts/types';
-
 
 type UntypedFields = Readonly<Record<string, unknown>>;
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[];
   readonly situation: string;
-}
-
-export interface FactCandidate {
-  readonly key: string;
-  readonly value: string;
 }
 
 export interface GrammarIssue {
@@ -90,7 +84,7 @@ export function toGrammarIssue(value: unknown): GrammarIssue[] {
   ];
 }
 
-export function toFactCandidate(value: unknown): FactCandidate[] {
+export function toFactCandidate(value: unknown): AttributeCandidate[] {
   if (!value || typeof value !== 'object') {
     return [];
   }

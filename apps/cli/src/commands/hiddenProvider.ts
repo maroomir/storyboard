@@ -159,7 +159,7 @@ export async function setHiddenProviderKey(
   };
 }
 
-export interface HiddenProviderCheck {
+export interface DoctorCheck {
   readonly status: 'ok' | 'warn' | 'fail' | 'info';
   readonly label: string;
   readonly detail: string;
@@ -170,7 +170,7 @@ export async function collectHiddenProviderChecks(
   container: CliContainer,
   providerId: AiProviderId,
   fetchImpl?: FetchLike,
-): Promise<HiddenProviderCheck[]> {
+): Promise<DoctorCheck[]> {
   if (!requiresSubscriptionRiskNotice(providerId)) {
     return collectLoginProviderChecks(container, providerId, fetchImpl);
   }
@@ -200,7 +200,7 @@ export async function collectHiddenProviderChecks(
   }
 }
 
-const previewCheck: HiddenProviderCheck = {
+const previewCheck: DoctorCheck = {
   status: 'info',
   label: '미리보기',
   detail:
@@ -211,7 +211,7 @@ async function collectLoginProviderChecks(
   container: CliContainer,
   providerId: AiProviderId,
   fetchImpl: FetchLike | undefined,
-): Promise<HiddenProviderCheck[]> {
+): Promise<DoctorCheck[]> {
   const { configBridge, secretStore } = container;
   const connection: OAuthConnection | undefined = await secretStore.getOAuthConnection(providerId);
   const model: string | undefined = configBridge.getProviderConfig(providerId).model;

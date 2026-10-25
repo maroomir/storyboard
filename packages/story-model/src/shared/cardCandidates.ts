@@ -1,21 +1,12 @@
+import type { AttributeCandidate, RelationLink } from '#model/format/card';
 import { z } from 'zod';
 
-export interface CardAttributeCandidate {
-  key: string;
-  value: string;
-}
-
-const cardAttributeCandidateSchema: z.ZodType<CardAttributeCandidate> = z.object({
+const cardAttributeCandidateSchema: z.ZodType<AttributeCandidate> = z.object({
   key: z.string().trim().min(1),
   value: z.string().trim().min(1),
 });
 
-export interface CardRelationCandidate {
-  target: string;
-  type: string;
-}
-
-const cardRelationCandidateSchema: z.ZodType<CardRelationCandidate> = z.object({
+const cardRelationCandidateSchema: z.ZodType<RelationLink> = z.object({
   target: z.string().trim().min(1),
   type: z.string().trim().min(1),
 });
@@ -34,8 +25,8 @@ const cardArcCandidateSchema: z.ZodType<CardArcCandidate> = z.object({
 
 export interface CardCandidateCharacter {
   cardId: string;
-  attributes: CardAttributeCandidate[];
-  relations: CardRelationCandidate[];
+  attributes: AttributeCandidate[];
+  relations: RelationLink[];
   arc: CardArcCandidate[];
 }
 

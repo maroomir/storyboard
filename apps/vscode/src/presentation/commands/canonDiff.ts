@@ -1,6 +1,6 @@
 import type {
   StoryUri,
-  BibleFileSystem,
+  ReadWriteFileSystem,
   StoryboardProject,
   CanonDiffResult,
   StoryBible,
@@ -16,7 +16,6 @@ import {
   createEmptyBible,
   readBibleFile,
   readBibleCandidateFile,
-  type BibleCandidateFileSystem,
   type BibleCandidateRecord,
   extractErrorMessage,
 } from '@storyboard/story-model';
@@ -26,7 +25,7 @@ import { readProjectJson } from '@storyboard/story-engine';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 const canonDiffCommand: string = 'storyboard.bible.canonDiff';
 
-const fileSystem: BibleFileSystem & BibleCandidateFileSystem = {
+const fileSystem: ReadWriteFileSystem & ReadWriteFileSystem = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
     vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri: StoryUri, content: Uint8Array): PromiseLike<void> =>

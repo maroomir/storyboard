@@ -93,11 +93,6 @@ export function listSceneCoordinates(ledger: SceneCoordinateLedger): string[] {
   );
 }
 
-interface SegmentRange {
-  readonly first: number;
-  readonly last: number;
-}
-
 function sectionSegmentRanges(sections: readonly string[]): SegmentRange[] {
   let firstSegment: number = 0;
 

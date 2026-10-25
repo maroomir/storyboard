@@ -18,30 +18,7 @@ const textList: z.ZodType<string[]> = z
   .optional()
   .transform((value) => value ?? []);
 
-interface NoteSynthesisPayloadSetting {
-  genre?: string;
-  audience?: string;
-  concept?: string;
-  description?: string;
-  pov?: PointOfView;
-}
-
-interface NoteSynthesisPayloadSynopsis {
-  mainConflicts: string[];
-  styleRules: string[];
-  logline?: string;
-  genrePromise?: string;
-  ending?: string;
-  theme?: string;
-  tone?: string;
-}
-
-interface NoteSynthesisPayload {
-  setting: NoteSynthesisPayloadSetting;
-  synopsis: NoteSynthesisPayloadSynopsis;
-}
-
-const noteSynthesisSchema: z.ZodType<NoteSynthesisPayload> = z.object({
+const noteSynthesisSchema: z.ZodType<NoteSynthesis> = z.object({
   setting: z
     .object({
       genre: optionalText,
@@ -96,7 +73,7 @@ export const emptyNoteSynthesis: NoteSynthesis = {
 };
 
 export function coerceNoteSynthesis(value: Record<string, unknown> | null): NoteSynthesis {
-  const parsed: z.ZodSafeParseResult<NoteSynthesisPayload> = noteSynthesisSchema.safeParse({
+  const parsed: z.ZodSafeParseResult<NoteSynthesis> = noteSynthesisSchema.safeParse({
     setting: value?.setting ?? {},
     synopsis: value?.synopsis ?? {},
   });

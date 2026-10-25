@@ -1,7 +1,7 @@
 import type { StoryUri, BibleFact, CharacterCard, UsageAttribution } from '@storyboard/story-model';
 import {
   buildCandidateFact,
-  type BibleCandidateFileSystem,
+  type ReadWriteFileSystem,
   writeBibleCandidateFile,
 } from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
@@ -18,7 +18,7 @@ export interface UpdateBibleCandidatesFromDraftInput {
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
   readonly aiService: Pick<StoryboardAiService, 'extractFactsByCharacter'>;
-  readonly fileSystem: BibleCandidateFileSystem;
+  readonly fileSystem: ReadWriteFileSystem;
   readonly resolveCandidateUri: (sceneStem: string) => StoryUri;
   readonly ensureDirectory?: () => Promise<void>;
   readonly logger?: BibleCandidateUpdateLogger;

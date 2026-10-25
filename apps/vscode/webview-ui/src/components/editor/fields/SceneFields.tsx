@@ -1,6 +1,6 @@
 import type React from 'react';
 
-import type { NarratorRosterEntry, SceneCard, SceneGrounding } from '@webview/lib/types';
+import type { NarratorSummary, SceneCard, SceneGrounding } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { ListField } from './ListField';
 import type { SceneStructureTextField } from '@storyboard/story-model/contracts';
@@ -29,7 +29,7 @@ export function SceneFields({
 }: {
   readonly card: SceneCard;
   readonly updateCard: (card: SceneCard) => void;
-  readonly narratorRoster?: readonly NarratorRosterEntry[];
+  readonly narratorRoster?: readonly NarratorSummary[];
 }): React.ReactElement {
   const updateOptionalText = (
     key: 'title' | 'location' | 'mood' | 'relationStage' | 'povCharacter' | 'thread',

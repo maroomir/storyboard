@@ -1,10 +1,13 @@
-import type { ConfigValueOrigin, DisposableHandle } from '@storyboard/story-model';
+import type {
+  ConfigValueOrigin,
+  DisposableHandle,
+  SettingsConfigFiles,
+} from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
 import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
-import type { SettingsConfigFiles } from '@/presentation/messaging/settingsRpcHandlers';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
 import type { AiProviderId } from '@storyboard/story-model';
 

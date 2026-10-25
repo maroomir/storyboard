@@ -8,15 +8,15 @@ import {
   listSnapshotSelectableProviderIds,
   parseSaveTarget,
   pickModelForTaskProvider,
-  type AiProviderStatus,
-  type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { sbSelectClass, sectionCardClass } from './settingsStyles';
 import {
   isAiProviderId,
   type AiProviderId,
+  type AiProviderStatus,
   type ProviderModelOption,
+  type SettingsMutationOkResponsePayload,
 } from '@storyboard/story-model/contracts';
 
 export function DefaultProviderSection({
@@ -28,7 +28,7 @@ export function DefaultProviderSection({
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
-  readonly onSaved: (label: string, target: SaveTarget) => void;
+  readonly onSaved: (label: string, target: SettingsMutationOkResponsePayload) => void;
 }): React.ReactElement {
   const [pending, setPending] = useState(false);
   const defaultProviderId: AiProviderId = snapshot.defaultProvider;

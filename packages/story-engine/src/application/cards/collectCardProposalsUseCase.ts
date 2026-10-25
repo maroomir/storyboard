@@ -1,14 +1,15 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IUseCase } from '#engine/application/useCase';
-import {
-  buildCardCollectProposals,
-  type CollectDraft,
-  type CollectRosterEntry,
-} from '#engine/ai/cardCollectBuilder';
-import type { StoryboardCard, StoryUri, CardCollectProposal } from '@storyboard/story-model';
+import { buildCardCollectProposals, type CollectDraft } from '#engine/ai/cardCollectBuilder';
+import type {
+  StoryboardCard,
+  StoryUri,
+  CardCollectProposal,
+  CharacterRef,
+} from '@storyboard/story-model';
 
 export interface ICardCollectRepository {
-  loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CollectRosterEntry[]>;
+  loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CharacterRef[]>;
   loadDrafts(workspaceRoot: StoryUri): Promise<readonly CollectDraft[]>;
 }
 

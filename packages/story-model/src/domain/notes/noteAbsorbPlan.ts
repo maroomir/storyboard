@@ -20,7 +20,7 @@ import {
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '#model/shared/cardCollect';
-import type { NoteDocument } from '#model/shared/noteAbsorb';
+import type { NoteDocument, SkippedNote } from '#model/shared/noteAbsorb';
 import { slugify } from '#model/format/slug';
 
 export interface NoteCardPlan {
@@ -35,11 +35,6 @@ export interface NoteScenePlan {
   readonly fileName: string;
   readonly card: SceneCard;
   readonly sourceNote?: string;
-}
-
-export interface NoteLeftOut {
-  readonly label: string;
-  readonly reason: string;
 }
 
 export interface UnclassifiedNote {
@@ -57,7 +52,7 @@ export interface NoteCanonCandidate {
 export interface NoteAbsorbPlan {
   readonly cards: readonly NoteCardPlan[];
   readonly scenes: readonly NoteScenePlan[];
-  readonly skippedScenes: readonly NoteLeftOut[];
+  readonly skippedScenes: readonly SkippedNote[];
   readonly setting: NoteSynthesisSetting;
   readonly synopsis?: OutlineSynopsis;
   readonly unclassifiedNotes: readonly UnclassifiedNote[];
@@ -576,7 +571,7 @@ function planScenes(
   backgrounds: CardNameIndex,
 ): {
   readonly plans: NoteScenePlan[];
-  readonly skipped: NoteLeftOut[];
+  readonly skipped: SkippedNote[];
   readonly warnings: string[];
 } {
   const existingTitles: Set<string> = new Set(
@@ -587,7 +582,7 @@ function planScenes(
   const takenSlugs: Set<string> = new Set(input.scenes.map((scene) => scene.slug));
   const lastOrder: number = Math.max(0, ...input.scenes.map((scene) => scene.order));
   const plans: NoteScenePlan[] = [];
-  const skipped: NoteLeftOut[] = [];
+  const skipped: SkippedNote[] = [];
   const warnings: string[] = [];
 
   for (const scene of orderScenes(input.extractions, input.notes)) {

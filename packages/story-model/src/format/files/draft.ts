@@ -4,16 +4,12 @@ import { ZodError, z } from 'zod';
 
 import type { Draft } from '#model/format/Draft';
 import { projectFormats, type ProjectFormat } from '#model/format/project';
+import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 export type DraftParseErrorCode =
   | 'missing-frontmatter'
   | 'invalid-frontmatter-yaml'
   | 'invalid-frontmatter-schema';
-
-export interface DraftFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
-}
 
 export class DraftParseError extends Error {
   public constructor(
@@ -36,17 +32,7 @@ interface DraftFrontmatter {
   readonly warnings?: readonly string[];
 }
 
-interface DraftFrontmatterPayload {
-  sceneStem: string;
-  format: ProjectFormat;
-  generatedAt: string;
-  generator?: string;
-  providerId?: string;
-  model?: string;
-  warnings?: string[];
-}
-
-const draftFrontmatterSchema: z.ZodType<DraftFrontmatterPayload> = z.object({
+const draftFrontmatterSchema: z.ZodType<DraftFrontmatter> = z.object({
   sceneStem: z.string().trim().min(1),
   format: z.enum(projectFormats),
   generatedAt: z.string().datetime(),
@@ -134,13 +120,16 @@ export function extractDraftBody(rawDraft: string): string {
 
 export async function writeDraftFile(
   uri: StoryUri,
-  fileSystem: DraftFileSystem,
+  fileSystem: ReadWriteFileSystem,
   draft: Draft,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeDraft(draft)));
 }
 
-export async function readDraftFile(uri: StoryUri, fileSystem: DraftFileSystem): Promise<string> {
+export async function readDraftFile(
+  uri: StoryUri,
+  fileSystem: ReadWriteFileSystem,
+): Promise<string> {
   const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return new TextDecoder().decode(bytes);
 }

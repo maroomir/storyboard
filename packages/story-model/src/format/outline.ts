@@ -8,6 +8,7 @@ import {
   type ProjectFormat,
   type ProjectSetting,
   type StoryboardProject,
+  type StoryThreadEntry,
 } from './project';
 import { coerceOptionalString, coerceStringList, isJsonRecord } from '#model/format/unknownValues';
 
@@ -162,14 +163,8 @@ export interface OutlineBrief {
   readonly styleConstraints: readonly string[];
   readonly qualityCriteria: readonly string[];
   readonly composition?: CompositionKind;
-  readonly threads: readonly OutlineThreadBrief[];
+  readonly threads: readonly StoryThreadEntry[];
   readonly narratorIds: readonly string[];
-}
-
-export interface OutlineThreadBrief {
-  readonly id: string;
-  readonly title: string;
-  readonly wraps?: readonly string[];
 }
 
 export interface OutlineCharacterBrief {

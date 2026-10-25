@@ -6,6 +6,7 @@ import type {
   AiProviderId,
   ProviderModelOptions,
   ConfigValueOrigin,
+  SettingsConfigFiles,
 } from '@storyboard/story-model';
 import {
   aiProviderIds,
@@ -21,11 +22,6 @@ import type {
   SecretStore,
   TaskAiConfigOverride,
 } from '@storyboard/story-ai';
-
-export interface SettingsConfigFiles {
-  readonly user: string;
-  readonly workspace?: string;
-}
 
 export interface SettingsRpcHandlersDependencies {
   readonly configBridge: ConfigBridge;

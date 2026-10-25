@@ -13,7 +13,6 @@ import type {
   StudioChatTurn,
   StudioFollowUpTarget,
   StudioPatch,
-  StudioValidation,
   StudioValidationVerdict,
   StudioAgentEntityKind,
 } from '@storyboard/story-model';
@@ -124,7 +123,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
     request: StudioChatRequest,
     action: Extract<StudioAgentAction, { readonly kind: 'propose' }>,
     patch: StudioPatch,
-  ): Promise<StudioValidation> {
+  ): Promise<StudioValidationVerdict> {
     if (!request.isValidationEnabled) {
       return { state: 'skipped', warnings: [] };
     }

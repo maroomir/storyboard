@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest"
 
 import { updateCardCandidatesFromDraft } from "@storyboard/story-engine"
 import type { CardCandidateExtraction, StoryboardAiService } from '@storyboard/story-ai';
-import type { CardCandidateFileSystem, CharacterCard } from "@storyboard/story-model"
+import type { ReadWriteFileSystem, CharacterCard } from "@storyboard/story-model"
 const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
 
-class CaptureFileSystem implements CardCandidateFileSystem {
+class CaptureFileSystem implements ReadWriteFileSystem {
   public readonly written = new Map<string, string>()
 
   public async readFile(uri: unknown): Promise<Uint8Array> {

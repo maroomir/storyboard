@@ -23,19 +23,13 @@ import type {
   UsageSummaryByEntity,
   StoryboardResponsePayload,
   SceneListItem,
+  SidebarScenesInitialData,
 } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
 
 const generateDraftCommand: string = 'storyboard.draft.generate';
-
-interface SidebarScenesInitialData {
-  readonly title: string;
-  readonly scenes: readonly SceneListItem[];
-  readonly isStoryboardProject: boolean;
-  readonly usage: UsageSummaryByEntity;
-}
 
 export interface SidebarScenesProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;

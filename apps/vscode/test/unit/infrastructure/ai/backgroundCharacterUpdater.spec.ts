@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { updateBackgroundCharactersFromScene } from "@storyboard/story-engine"
 import { parseCard, serializeCard } from '@storyboard/story-model';
-import type { BackgroundCard, CardFileSystem, CharacterCard } from '@storyboard/story-model';
+import type { BackgroundCard, ReadWriteFileSystem, CharacterCard } from '@storyboard/story-model';
 const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
 const jihoon: CharacterCard = { type: "character", id: "jihoon", name: "지훈" }
 
@@ -10,7 +10,7 @@ function backgroundCard(characterIds: string[]): BackgroundCard {
   return { type: "location", id: "school", name: "학교 정문", description: [], characterIds, tags: [], locationKind: "place" }
 }
 
-class MemoryCardFileSystem implements CardFileSystem {
+class MemoryCardFileSystem implements ReadWriteFileSystem {
   public constructor(public readonly files: Map<string, string>) {}
 
   public async readFile(uri: unknown): Promise<Uint8Array> {

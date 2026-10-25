@@ -17,6 +17,7 @@ import {
 } from '@/presentation/messaging/bridge';
 import type {
   StoryboardResponsePayload,
+  StudioInitialData,
   StudioSessionSnapshot,
   StudioTarget,
 } from '@storyboard/story-model';
@@ -32,12 +33,6 @@ import { createStudioSessionRpcHandlers } from '@/presentation/messaging/studioS
 import { computeStudioTarget, resolveActiveStudioFocus } from './studioTarget';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
-
-interface SidebarStudioInitialData {
-  readonly title: string;
-  readonly target: StudioTarget;
-  readonly session?: StudioSessionSnapshot;
-}
 
 export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   private webviewView: vscode.WebviewView | undefined;
@@ -84,7 +79,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         ? await this.sessionRepository.loadLatest(root, target.entity)
         : undefined;
 
-    const initialData: SidebarStudioInitialData = { title: 'Studio', target, session };
+    const initialData: StudioInitialData = { title: 'Studio', target, session };
 
     webviewView.webview.html = createWebviewHtml(webviewView.webview, {
       extensionUri: this.extensionUri,

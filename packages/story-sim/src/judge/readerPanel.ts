@@ -25,6 +25,7 @@ import {
   readQuoteLeniently,
   readRankingLeniently,
   readTurnLeniently,
+type LenientTurn,
 } from '#sim/judge/lenientAnswer';
 import { judgeManuscript, type CriticVerdict } from '#sim/judge/manuscriptCritic';
 import { isQuoteGrounded } from '#sim/judge/quoteCheck';
@@ -35,14 +36,7 @@ function readJsonObject(text: string | undefined): Record<string, unknown> | nul
   return typeof text === 'string' && text.length > 0 ? parseJsonObject(text) : null;
 }
 
-interface Turn {
-  engagement: number;
-  continueReading: boolean;
-  reason: string;
-  quote: string;
-}
-
-const turnSchema: z.ZodType<Turn> = z.object({
+const turnSchema: z.ZodType<LenientTurn> = z.object({
   engagement: z.number(),
   continueReading: z.boolean(),
   reason: z.string().min(1),
@@ -100,7 +94,7 @@ async function askTurn(
   const response: AiGenerateResponse = await judge.ask(
     buildReaderTurn({ persona, sceneNumber, sceneCount, draft: scene.draft, priorTurns }),
   );
-  const parsed: z.ZodSafeParseResult<Turn> = turnSchema.safeParse(
+  const parsed: z.ZodSafeParseResult<LenientTurn> = turnSchema.safeParse(
     readJsonObject(response.text) ?? readTurnLeniently(response.text ?? ''),
   );
 

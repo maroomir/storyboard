@@ -14,13 +14,15 @@ import {
   pickModelForTaskProvider,
   type AiProviderId,
   type AiTaskName,
-  type SaveTarget,
   type SettingsReadSnapshot,
-  type TaskCatalogItem,
   type TaskAiAssignment,
 } from './settingsSnapshot';
 import { sbInlineSelectClass, sbInputClass, sectionCardClass } from './settingsStyles';
-import { isAiProviderId } from '@storyboard/story-model/contracts';
+import {
+  isAiProviderId,
+  type AiTaskCatalogEntry,
+  type SettingsMutationOkResponsePayload,
+} from '@storyboard/story-model/contracts';
 
 export function TaskAssignmentsSection({
   snapshot,
@@ -31,17 +33,17 @@ export function TaskAssignmentsSection({
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
-  readonly onSaved: (label: string, target: SaveTarget) => void;
+  readonly onSaved: (label: string, target: SettingsMutationOkResponsePayload) => void;
 }): React.ReactElement {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
 
   const overrides: readonly TaskOverride[] = useMemo(() => listTaskOverrides(snapshot), [snapshot]);
-  const addableTasks: TaskCatalogItem[] = useMemo(
+  const addableTasks: AiTaskCatalogEntry[] = useMemo(
     () => snapshot.taskCatalog.filter((task) => !hasTaskOverride(snapshot, task.name)),
     [snapshot],
   );
-  const matchedTasks: readonly TaskCatalogItem[] = useMemo(
+  const matchedTasks: readonly AiTaskCatalogEntry[] = useMemo(
     () => filterTasksByQuery(addableTasks, pickerQuery),
     [addableTasks, pickerQuery],
   );
@@ -235,7 +237,7 @@ function OverrideRow({
 }
 
 interface TaskOverride {
-  readonly task: TaskCatalogItem;
+  readonly task: AiTaskCatalogEntry;
   readonly providerId: AiProviderId;
   readonly model: string | null;
 }
@@ -254,9 +256,9 @@ function listTaskOverrides(snapshot: SettingsReadSnapshot): readonly TaskOverrid
 }
 
 function filterTasksByQuery(
-  tasks: readonly TaskCatalogItem[],
+  tasks: readonly AiTaskCatalogEntry[],
   query: string,
-): readonly TaskCatalogItem[] {
+): readonly AiTaskCatalogEntry[] {
   const normalized: string = query.trim().toLowerCase();
   if (normalized.length === 0) {
     return tasks;

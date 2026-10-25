@@ -12,22 +12,14 @@ import {
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type {
-  StudioChatTurn,
   StudioEntity,
+  StudioSessionSaveRequestPayload,
   StudioSessionSnapshot,
   StudioSessionSummary,
 } from '@storyboard/story-model';
 
-export interface StudioSessionSaveInput {
-  readonly id: string;
-  readonly entity: StudioEntity;
-  readonly createdAt: string;
-  readonly hasAppliedChanges: boolean;
-  readonly turns: readonly StudioChatTurn[];
-}
-
 export interface IStudioSessionRepository {
-  save(workspaceRoot: StoryUri, input: StudioSessionSaveInput): Promise<void>;
+  save(workspaceRoot: StoryUri, input: StudioSessionSaveRequestPayload): Promise<void>;
   list(workspaceRoot: StoryUri, entity: StudioEntity): Promise<readonly StudioSessionSummary[]>;
   load(
     workspaceRoot: StoryUri,
@@ -45,7 +37,10 @@ const safeSessionIdPattern: RegExp = /^[A-Za-z0-9-]+$/;
 export class StudioSessionRepository implements IStudioSessionRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
-  public async save(workspaceRoot: StoryUri, input: StudioSessionSaveInput): Promise<void> {
+  public async save(
+    workspaceRoot: StoryUri,
+    input: StudioSessionSaveRequestPayload,
+  ): Promise<void> {
     const directory: StoryUri | undefined = studioSessionEntityDirectory(
       workspaceRoot,
       input.entity,

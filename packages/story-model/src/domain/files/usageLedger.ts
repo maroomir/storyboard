@@ -42,12 +42,7 @@ const entityRefSchema: z.ZodType<EntityRef> = z.object({
   id: z.string().trim().min(1),
 });
 
-interface UsageAttributionPayload {
-  primary?: EntityRef;
-  participants?: EntityRef[];
-}
-
-const usageAttributionSchema: z.ZodType<UsageAttributionPayload> = z.object({
+const usageAttributionSchema: z.ZodType<UsageAttribution> = z.object({
   primary: entityRefSchema.optional(),
   participants: z.array(entityRefSchema).optional(),
 });
@@ -64,7 +59,7 @@ interface UsageLedgerEntryPayload {
   recordedAt: string;
   taskName: AiTaskName;
   providerId: AiProviderId;
-  attribution: UsageAttributionPayload;
+  attribution: UsageAttribution;
   model?: string;
   usage?: AiUsage;
   costUsd?: number;
@@ -277,7 +272,7 @@ export function parseUsageLedgerBytes(
 
 interface SerializedUsageLedger {
   readonly version: UsageLedgerVersion;
-  readonly entries: SerializedLedgerEntry[];
+  readonly entries: UsageLedgerEntryPayload[];
 }
 
 export function serializeUsageLedger(entries: readonly UsageLedgerEntry[]): Uint8Array {
@@ -321,7 +316,7 @@ export function appendLedgerEntryIfNew(
   return { entries: [...entries, entry], appended: true };
 }
 
-function serializeLedgerEntry(entry: UsageLedgerEntry): SerializedLedgerEntry {
+function serializeLedgerEntry(entry: UsageLedgerEntry): UsageLedgerEntryPayload {
   return {
     id: entry.id,
     recordedAt: entry.recordedAt,
@@ -332,17 +327,6 @@ function serializeLedgerEntry(entry: UsageLedgerEntry): SerializedLedgerEntry {
     costUsd: entry.costUsd,
     attribution: entry.attribution,
   };
-}
-
-interface SerializedLedgerEntry {
-  readonly id: string;
-  readonly recordedAt: string;
-  readonly taskName: AiTaskName;
-  readonly providerId: AiProviderId;
-  readonly model?: string;
-  readonly usage?: AiUsage;
-  readonly costUsd?: number;
-  readonly attribution: UsageAttribution;
 }
 
 function toUsageLedgerEntry(value: z.infer<typeof usageLedgerEntrySchema>): UsageLedgerEntry {

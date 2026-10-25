@@ -14,7 +14,7 @@ import type {
   StudioFollowUpTarget,
   StudioPatch,
   StudioProposalTurn,
-  StudioValidation,
+  StudioValidationVerdict,
 } from '@webview/lib/types';
 import { Button } from '../ui/Button';
 
@@ -172,7 +172,7 @@ function ProposalCard({
 function ValidationBadge({
   validation,
 }: {
-  readonly validation: StudioValidation;
+  readonly validation: StudioValidationVerdict;
 }): React.ReactElement {
   if (validation.state === 'warn') {
     return (

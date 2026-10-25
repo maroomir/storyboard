@@ -6,7 +6,7 @@ import {
   resolveCharacterDisplayName,
   type CharacterDisplayName,
 } from '@webview/lib/characterRosterLookup';
-import type { CharacterRelation, CharacterRole, CharacterRosterEntry } from '@webview/lib/types';
+import type { RelationLink, CharacterRole, CharacterRosterEntry } from '@webview/lib/types';
 import { shortenLineSegment, type LineSegment } from '@webview/lib/lineSegment';
 
 const VIEW_WIDTH: number = 420;
@@ -55,7 +55,7 @@ interface RelationNodeStyle {
 }
 
 interface RelationTarget {
-  readonly relation: CharacterRelation;
+  readonly relation: RelationLink;
   readonly resolved: CharacterDisplayName;
   readonly x: number;
   readonly y: number;
@@ -160,14 +160,14 @@ export function CharacterRelationPreview({
   readonly characterName: string;
   readonly characterRole?: CharacterRole;
   readonly characterRoster?: readonly CharacterRosterEntry[];
-  readonly relations: readonly CharacterRelation[];
+  readonly relations: readonly RelationLink[];
 }): React.ReactElement {
   const rosterLookup: ReadonlyMap<string, CharacterRosterEntry> = useMemo(
     () => buildCharacterRosterLookup(characterRoster),
     [characterRoster],
   );
 
-  const linkedRelations: CharacterRelation[] = relations.filter(
+  const linkedRelations: RelationLink[] = relations.filter(
     (relation) => relation.target.trim().length > 0 && relation.type.trim().length > 0,
   );
 

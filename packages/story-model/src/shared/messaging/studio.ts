@@ -12,10 +12,12 @@ import {
 import { uriStringSchema } from './atoms';
 import type {
   StudioValidationState,
+  StudioValidationVerdict,
   StudioValidationWarning,
 } from '#model/contracts/studioValidation';
 import type { BibleSubjectKind } from '#model/format/bible';
 import type { EntityKind } from '#model/contracts/aiTypes';
+import type { RelationLink } from '#model/format/card';
 
 export const studioEntityKindSchema: z.ZodType<EntityKind> = z.enum([
   'character',
@@ -90,12 +92,7 @@ export interface StudioSceneStage {
 
 export const studioSceneStageSchema: z.ZodType<StudioSceneStage> = z.object(studioSceneStageShape);
 
-export interface StudioCardStageRelation {
-  target: string;
-  type: string;
-}
-
-export const studioCardStageRelationSchema: z.ZodType<StudioCardStageRelation> = z.object({
+export const studioCardStageRelationSchema: z.ZodType<RelationLink> = z.object({
   target: z.string().min(1),
   type: z.string().min(1),
 });
@@ -115,7 +112,7 @@ export interface StudioCardStage {
   cardKind: BibleSubjectKind;
   cardId: string;
   name: string;
-  relations: StudioCardStageRelation[];
+  relations: RelationLink[];
   appearsInScenes: string[];
   role?: string;
 }
@@ -152,7 +149,7 @@ export interface StudioStageResponsePayload {
         cardKind: BibleSubjectKind;
         cardId: string;
         name: string;
-        relations: StudioCardStageRelation[];
+        relations: RelationLink[];
         appearsInScenes: string[];
         role?: string;
       };
@@ -182,12 +179,7 @@ export const studioValidationWarningSchema: z.ZodType<StudioValidationWarning> =
   source: z.string().optional(),
 });
 
-export interface StudioValidation {
-  state: StudioValidationState;
-  warnings: StudioValidationWarning[];
-}
-
-export const studioValidationSchema: z.ZodType<StudioValidation> = z.object({
+export const studioValidationSchema: z.ZodType<StudioValidationVerdict> = z.object({
   state: studioValidationStateSchema,
   warnings: z.array(studioValidationWarningSchema),
 });
@@ -281,7 +273,7 @@ export interface StudioProposalTurn {
   targetFile: string;
   patch: StudioPatch;
   baselineHash: string;
-  validation: StudioValidation;
+  validation: StudioValidationVerdict;
   status: StudioProposalStatus;
   errorMessage?: string;
   followUps?: StudioFollowUpTarget[];

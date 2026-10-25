@@ -10,6 +10,7 @@ import type {
   StoryboardCard,
   EntityRef,
   UsageAttribution,
+  CharacterRef,
 } from '@storyboard/story-model';
 import type {
   BackgroundFactExtraction,
@@ -29,11 +30,6 @@ export interface CollectDraft {
   readonly body: string;
 }
 
-export interface CollectRosterEntry {
-  readonly id: string;
-  readonly name: string;
-}
-
 export type CardCollectAiService = Pick<
   StoryboardAiService,
   | 'extractCardCandidatesByCharacter'
@@ -45,7 +41,7 @@ export interface BuildCardCollectProposalsInput {
   readonly card: StoryboardCard;
   readonly drafts: readonly CollectDraft[];
   readonly aiService: CardCollectAiService;
-  readonly characterRoster: readonly CollectRosterEntry[];
+  readonly characterRoster: readonly CharacterRef[];
 }
 
 export function filterDraftsForCard(
@@ -127,7 +123,7 @@ async function buildCharacterProposals(
   card: CharacterCard,
   drafts: readonly CollectDraft[],
   aiService: CardCollectAiService,
-  roster: readonly CollectRosterEntry[],
+  roster: readonly CharacterRef[],
 ): Promise<CardCollectProposal[]> {
   const resolveTarget: (rawTarget: string) => string | undefined = buildTargetResolver(roster);
   const accumulator: ProposalAccumulator = new ProposalAccumulator();
@@ -200,7 +196,7 @@ async function buildBackgroundProposals(
   card: BackgroundCard,
   drafts: readonly CollectDraft[],
   aiService: CardCollectAiService,
-  roster: readonly CollectRosterEntry[],
+  roster: readonly CharacterRef[],
 ): Promise<CardCollectProposal[]> {
   const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
   const accumulator: ProposalAccumulator = new ProposalAccumulator();
