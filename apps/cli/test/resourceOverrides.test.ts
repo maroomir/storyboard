@@ -284,7 +284,6 @@ describe('loadResourceOverrides', () => {
     expect(resolveNovelPipelinePlan()).toEqual(novelStageNames);
   });
 
-  // characters 단계가 생기기 전에 쓴 파일이다. 예전에는 통째로 버려져 꺼 둔 유료 단계까지 돌았다.
   it('keeps the order of a novel.yaml written before the characters stage', async () => {
     const workspace = join(root, 'ws', '.storyboard');
     writePrompt(

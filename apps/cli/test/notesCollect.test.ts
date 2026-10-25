@@ -59,7 +59,6 @@ describe('ObsidianNoteSource', () => {
       title: '하나',
       path: ['달의 문', '인물'],
     });
-    // 세계관이 가리키는 「무관」은 두 단계째라 읽지 않는다.
     expect(notes.some((note) => note.id === '무관.md')).toBe(false);
     expect(skipped.map((entry) => entry.label)).toEqual(['없는 노트']);
   });
@@ -294,7 +293,6 @@ const notionRoutes: Record<string, unknown> = {
     },
   ]),
   [`GET /databases/${databaseId}`]: { object: 'database', id: databaseId, title: [text('인물 표')] },
-  // Notion은 정렬 없는 질의에 최근 행부터 준다.
   [`POST /databases/${databaseId}/query`]: list([
     page(rowId, '준', { 역할: { type: 'select', select: { name: '조력자' } } }),
     page(tenthRowId, '10 귀환'),
@@ -339,7 +337,6 @@ function createNotionFetch(options: { rateLimitOnce?: string } = {}): {
       };
     }
 
-    // Notion은 데이터베이스 id 로 페이지를 물으면 404 가 아니라 400 을 준다.
     if (route === `GET /pages/${databaseId}`) {
       return {
         status: 400,
@@ -381,7 +378,6 @@ describe('NotionNoteSource', () => {
     expect(notes[0]?.body).toBe('규칙은 세계관 참고.\n## 인물\n- 하나\n  - [x] 주인공');
     expect(notes[4]?.body).toBe('- 역할: 조력자');
     expect(notes[5]?.body).toBe('> 문은 만조에만 열린다.');
-    // 공유되지 않은 링크는 실패가 아니라 빠진 노트다.
     expect(skipped.map((entry) => entry.label)).toEqual([unsharedId]);
   });
 
@@ -442,8 +438,6 @@ describe('NotionNoteSource', () => {
   });
 });
 
-// #56: Notion 의 «Markdown & CSV» 내보내기 zip 을 통합 토큰 없이 읽는다. 파일·폴더 이름 끝의 32자리
-// id 를 떼고, 데이터베이스 CSV 는 행 페이지가 따로 있으면 건너뛰고 없으면 노트 하나로 만든다.
 describe('NotionExportNoteSource', () => {
   const fileSystem = new NodeFileSystem();
   let directory: string;
@@ -501,7 +495,6 @@ describe('NotionExportNoteSource', () => {
   });
 });
 
-// A zip with stored (or, when asked, deflated) entries — the shape Notion's export has.
 function buildZip(files: readonly { name: string; text: string; isDeflated?: boolean }[]): Buffer {
   const locals: Buffer[] = [];
   const centrals: Buffer[] = [];

@@ -5,22 +5,16 @@ import { describe, expect, it } from 'vitest';
 
 import { commands } from '../src/commands/index';
 
-// Storyboard's CLI is the reference implementation: a feature that exists only in the editor is a
-// feature other AI agents cannot reach. This test is the enforcement — add a command to the
-// extension without a CLI verb and the build fails.
 const manifest = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../vscode/package.json', import.meta.url)), 'utf8'),
 ) as { contributes: { commands: { command: string }[] } };
 
-// Editor surface that has no terminal meaning. Adding a line here is a deliberate, reviewable act —
-// it says "this capability is the editor's chrome", not "we skipped it".
 const editorOnlyCommands = new Set([
   'storyboard.relationGraph.open',
   'storyboard.settings.open',
   'storyboard.scene.openDraft',
 ]);
 
-// Verbs still to be written. This list must only ever shrink.
 const pendingVerbs = new Set([]);
 
 const commandToVerb: Readonly<Record<string, string>> = {

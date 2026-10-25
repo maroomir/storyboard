@@ -203,7 +203,6 @@ describe('buildNoteAbsorbPlan', () => {
 
     expect(plan.cards.map((card) => [card.card.id, card.isNew])).toEqual([
       ['hana', true],
-      // 한글 이름은 id 가 될 수 없어, 쓸 수 없는 제안은 순번 id 로 떨어진다.
       ['character-2', true],
     ]);
     expect(plan.cards[0]?.card).toMatchObject({ role: 'main' });
@@ -252,9 +251,7 @@ describe('buildNoteAbsorbPlan', () => {
 
     expect(valuesOf('jo-manjae')).toEqual(['궤변가', '엘리트']);
     expect(valuesOf('jeong-eunha')).toEqual(['엘리트', '갤럭시', '이해받고 싶다']);
-    // 두 사람에 붙은 별칭만으로는 누구인지 알 수 없어 따로 남는다.
     expect(plan.cards.find((card) => card.card.name === '엘리트')?.isNew).toBe(true);
-    // 이름이 아니라 별칭끼리만 겹치면 같은 사람이라 볼 근거가 없어 따로 남는다.
     expect(plan.cards.find((card) => card.card.name === '은하')?.isNew).toBe(true);
     expect(
       plan.cards
@@ -476,7 +473,6 @@ describe('buildNoteAbsorbPlan', () => {
 
     expect(plan.cards).toHaveLength(1);
     expect(plan.cards[0]).toMatchObject({ isNew: false, card: { id: 'hana' } });
-    // 이미 카드에 있는 설명 줄은 다시 제안하지 않는다.
     expect(plan.cards[0]?.changes).toEqual([
       expect.objectContaining({ kind: 'descriptionLine', value: '열아홉 살이 되었다.' }),
       expect.objectContaining({ kind: 'attribute', key: 'age', value: '19' }),
@@ -562,7 +558,6 @@ describe('buildNoteAbsorbPlan', () => {
             ],
           }).scenes,
         }),
-        // 한 노트가 두 요청에 나뉘어 읽히면 같은 출처의 씬이 다음 요청에서 또 온다.
         extraction({
           scenes: coerceNoteExtraction({
             scenes: [{ title: '집으로', summary: '함께 집으로 간다.', sourceNote: '에피소드/01.md' }],
@@ -638,7 +633,6 @@ describe('readNoteExtractionResponse', () => {
   });
 
   it('counts a broken response as unparsed even when an inner object parses', () => {
-    // 따옴표 하나가 이스케이프되지 않으면 바깥 객체는 깨지고, 안쪽 notes 항목만 균형이 맞는다.
     const broken = '{"notes":[{"id":"a.md","kinds":["scene"]}],"scenes":[{"summary":"그가 "안녕" 했다"}]}';
     const parsed = parseJsonObject(broken);
 

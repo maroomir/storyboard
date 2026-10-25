@@ -3,9 +3,6 @@ import { createSign, generateKeyPairSync, type KeyObject } from 'node:crypto';
 import { chatGptIssuer, chatGptTokenUrl, type FetchLike } from '@storyboard/story-ai';
 import type { StoryboardSecretStorageLike } from '@storyboard/story-ai';
 
-// The fake Sign in with ChatGPT server the CLI tests log into: the signing key, the ID tokens it
-// mints, a fetch that answers by URL, and the «browser» that returns to the loopback callback.
-
 export const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 export const signingKeyId = 'test-key';
 export const jwks = [{ ...publicKey.export({ format: 'jwk' }), kid: signingKeyId, alg: 'RS256' }];
@@ -51,7 +48,6 @@ export interface RecordedRequest {
   readonly body: string;
 }
 
-// A fetch that answers by URL and keeps every request it saw.
 export function fakeFetch(
   answer: (request: RecordedRequest) => Response | Promise<Response>,
 ): FetchLike & { readonly requests: RecordedRequest[] } {
@@ -127,8 +123,6 @@ export function createAuthorizationServer(
     return jsonResponse({ models: [] });
   });
 
-  // The «browser»: reads the authorization URL, then calls the loopback callback as the server
-  // would redirect to it, issuing a client id when this is a registration.
   const browser = async (authorizationUrl: string, outcome: 'authorize' | 'deny' = 'authorize') => {
     const url = new URL(authorizationUrl);
     const clientId = url.searchParams.get('client_id') ?? '';

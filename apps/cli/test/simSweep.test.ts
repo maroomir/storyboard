@@ -19,8 +19,6 @@ import {
   scoreRuns,
 } from '@storyboard/story-sim';
 
-// 스윕 계획은 돈을 쓰기 전에 전부 결정된다. 여기가 틀리면 수천 번의 호출이 헛돈다.
-
 const fourKnobs = knobRegistry.slice(0, 4);
 
 describe('screening design', () => {
@@ -56,7 +54,6 @@ describe('fractional grid', () => {
     expect(planFractionalGrid(fourKnobs, levels)).toHaveLength(9);
   });
 
-  // 직교성이 깨지면 주효과를 분해할 수 없고, 9점은 그냥 임의의 9점이 된다.
   it('gives every knob each level exactly three times', () => {
     const points = planFractionalGrid(fourKnobs, levels);
 
@@ -70,8 +67,6 @@ describe('fractional grid', () => {
     }
   });
 
-  // 수준 횟수만 맞아도 직교가 아닐 수 있다. 어느 두 손잡이를 골라도 아홉 조합이 한 번씩
-  // 나와야 두 손잡이의 효과가 서로 섞이지 않는다.
   it('gives every pair of knobs all nine level combinations exactly once', () => {
     const points = planFractionalGrid(fourKnobs, levels);
 
@@ -116,7 +111,6 @@ describe('pareto frontier', () => {
     expect(frontier).toHaveLength(2);
   });
 
-  // 스릴러 8씬과 무협 8씬은 다른 것을 잰 값이다. 한 평면에 올리면 싼 장르가 이긴 손잡이로 읽힌다.
   it('draws a separate frontier for each fixture', () => {
     const frontier = paretoFrontier([
       point('thriller/a', 0.9, 500),
@@ -124,11 +118,9 @@ describe('pareto frontier', () => {
       point('wuxia/a', 0.4, 10, 13, 'wuxia'),
     ]);
 
-    // 무협의 유일한 지점은 스릴러에 밀리지 않는다. 애초에 겨루지 않기 때문이다.
     expect(frontier.map((entry) => entry.label).sort()).toEqual(['thriller/a', 'wuxia/a']);
   });
 
-  // 사실을 더 놓치는 지점은 거래 대상이 아니라 탈락이다.
   it('excludes a point that recalls fewer facts than the baseline', () => {
     const baseline = point('baseline', 0.6, 100, 12);
     const kept = excludeBelowBaselineRecall(
@@ -146,7 +138,6 @@ describe('repetition statistics', () => {
     expect(median([1, 2, 3, 4])).toBe(2.5);
   });
 
-  // 씨앗이 없으므로 잡음 폭을 모르면 «4% 올랐다»가 반증 불가능한 문장이 된다.
   it('reports an infinite noise floor until the baseline was repeated', () => {
     expect(noiseFloor([0.5])).toBe(Number.POSITIVE_INFINITY);
     expect(noiseFloor([0.5, 0.58, 0.54])).toBeCloseTo(0.08);
@@ -186,7 +177,6 @@ describe('budget estimate', () => {
       baseline: { ...baseline, generationCallsPerScene: 1000 },
     });
 
-    // 1,000회 × (4,000 입력 + 1,500 출력) 토큰을 claude-sonnet-5 단가로.
     expect(estimate.estimatedUsd).toBeCloseTo((4_000_000 / 1e6) * 2 + (1_500_000 / 1e6) * 10);
   });
 
@@ -234,7 +224,6 @@ describe('budget estimate', () => {
       baseline,
     });
 
-    // 12지점 × 3회 = 36회.
     expect(withinCap(estimate, 20)).toBe(false);
     expect(withinCap(estimate, 36)).toBe(true);
     expect(withinCap(estimate, undefined)).toBe(true);
@@ -270,7 +259,6 @@ describe('point score', () => {
     };
   }
 
-  // 실측에서 유효 회차 둘이 0.12 를 냈는데 리포트가 0.000 을 찍었다. 폐기 셋을 0 으로 세었기 때문이다.
   it('takes the quality median over judged runs only', () => {
     const [point] = scoreRuns(
       [
@@ -288,7 +276,6 @@ describe('point score', () => {
     expect(point?.judged).toBe(2);
     expect(point?.gatePassed).toBe(1);
     expect(point?.runs).toBe(5);
-    // 비용은 폐기 회차도 실제로 썼다. [100, 100, 100, 700, 900] 의 중앙값.
     expect(point?.cost).toBe(100);
     expect(point?.judged).toBe(2);
   });
@@ -300,7 +287,6 @@ describe('point score', () => {
     expect(point?.auc).toBe(0);
   });
 
-  // 같은 지점이라도 생성 모델이나 프롬프트 변형이 다르면 다른 것을 잰 값이다.
   it('scores runs from a different generator or prompt variant separately', () => {
     const scored = scoreRuns(
       [
@@ -318,7 +304,6 @@ describe('point score', () => {
     ]);
   });
 
-  // 심판이 다르면 AUC 는 다른 눈금이다. 같은 지점·같은 생성이라도 따로 센다.
   it('scores runs judged by different judges separately and keeps the judge cost', () => {
     const scored = scoreRuns(
       [
@@ -337,7 +322,6 @@ describe('point score', () => {
     expect(scored.find((point) => point.judge === 'ollama:gemma3:12b')?.judgeCostUsd).toBeUndefined();
   });
 
-  // 엔진이나 트랙이 다르면 같은 지점 이름이라도 다른 것을 잰 값이다.
   it('scores runs from a different engine or track separately', () => {
     const scored = scoreRuns(
       [run({ auc: 0.1 }), run({ auc: 0.9, trackCommit: 't2' }), run({ auc: 0.5, engineCommit: 'e2' })],
@@ -369,7 +353,6 @@ describe('regression view', () => {
     };
   }
 
-  // 릴리즈마다 같은 지점을 돌려 앞 엔진과 견준다. 잡음 폭 안이면 움직인 것이 아니다.
   it('compares the latest engine with the previous one inside the noise floor', () => {
     const rows = regressionRows([
       run({ auc: 0.4, recalled: 8 }),
@@ -400,7 +383,6 @@ describe('regression view', () => {
     expect(single[0]?.verdict).toBe('undecidable');
   });
 
-  // 짠 심판은 AUC 가 0 근처에 뭉친다. 몰입도가 자기 잡음 폭을 넘으면 AUC 가 잡음 안이어도 «움직였다» 다.
   it('reports engagement and critic deltas and lets engagement alone flag a move', () => {
     const panel = (engagement: number) => ({ byReader: {}, curves: {}, dropOffScene: {}, engagement });
     const critic = (groundedTotal: number) => ({

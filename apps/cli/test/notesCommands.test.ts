@@ -56,15 +56,12 @@ function container() {
 
 type CliContainer = ReturnType<typeof container>;
 
-// A manager keeps its verbs on the prototype, so spreading one drops them.
 function stubManager<T extends object>(manager: T, overrides: Partial<T>): T {
   return new Proxy(manager, {
     get: (target, key) => (key in overrides ? overrides[key as keyof T] : Reflect.get(target, key)),
   });
 }
 
-// The mock provider sorts nothing, so the model's half is fixed here: what a model would return
-// for the fixture vault. Collection, merging, writing and promotion all run for real.
 const fixedExtraction = coerceNoteExtraction({
   notes: [
     { id: '달의 문/인물/하나.md', kinds: ['character'] },
@@ -124,7 +121,6 @@ const fixedExtraction = coerceNoteExtraction({
   premise: ['해양 미스터리'],
 });
 
-// 모델이 비워 둔 칸은 값이 undefined 인 키로 남는다.
 const fixedSynthesis = {
   setting: { genre: '해양 미스터리', audience: undefined, concept: '만조에만 열리는 문' },
   synopsis: { logline: '만조에만 열리는 문을 둘러싼 이야기.', mainConflicts: [], styleRules: [] },
@@ -308,13 +304,11 @@ describe('notes absorb', () => {
     expect(project.setting?.genre).toBeUndefined();
     expect(outcome.message).toContain("storyboard project set --genre '해양 미스터리'");
 
-    // #105-14: 노트의 예시 대사는 첫 씬의 말투 표본이 된다.
     expect(
       JSON.parse(readFileSync(join(workspace, '.storyboard', 'memory', 'voiceSeeds.json'), 'utf8')),
     ).toEqual({ characters: { hana: ['만조엔 문이 열려. 난 봤어.'] } });
     expect(outcome.message).toContain('노트의 예시 대사를 말투 표본으로 두었습니다');
 
-    // #55: 노트의 설정 사실은 캐넌에 바로 쓰지 않고 후보로 둔다. canon diff 가 초안 후보와 함께 보인다.
     expect(outcome.message).toContain('노트의 설정 사실 1건을 정전 후보로 두었습니다');
     const bibleCache = readdirSync(join(workspace, '.storyboard', 'cache', 'bible'));
     expect(bibleCache.filter((name) => name.startsWith('notes-'))).toHaveLength(1);
@@ -326,7 +320,6 @@ describe('notes absorb', () => {
     expect(existsSync(canonPath) && readFileSync(canonPath, 'utf8').includes('등대지기 집안')).toBe(false);
   });
 
-  // #54: 반대 방향. 카드·씬·시놉시스를 Obsidian 형식 폴더로 내보내고, 프런트매터의 id 로 다시 이어진다.
   it('exports cards, scenes and the synopsis as a Markdown folder with ids and wiki links', async () => {
     await run('notes absorb', absorbArgs({ yes: true }), withFixedModel(container()));
     const target = join(workspace, '..', `${workspace.split('/').at(-1) ?? 'ws'}-export`);
@@ -431,7 +424,6 @@ describe('notes absorb', () => {
 
     beforeEach(async () => {
       writeExistingCard('hana', '하나');
-      // The first absorb makes harbor.card, so a later absorb has a second existing card to touch.
       await absorbAt(vault, onlyCards('hana', 'harbor'));
     });
 

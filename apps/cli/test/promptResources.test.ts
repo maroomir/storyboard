@@ -11,8 +11,6 @@ import { renderPromptResourcesModule } from '../../../scripts/build-prompt-resou
 const repoRoot = join(__dirname, '..', '..', '..');
 
 describe('prompt resources', () => {
-  // The Markdown is the source; the generated module is what the apps bundle. A stale module would
-  // ship yesterday's wording under today's file.
   it('keeps the generated module in step with the Markdown files', () => {
     const generated = readFileSync(
       join(repoRoot, 'packages/story-ai/src/ai/prompts/resources.generated.ts'),

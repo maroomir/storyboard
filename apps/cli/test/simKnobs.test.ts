@@ -12,9 +12,6 @@ import {
   simDefaults,
 } from '@storyboard/story-sim';
 
-// 레지스트리가 데이터 파일과 어긋나면 스윕이 존재하지 않는 손잡이를 흔들거나, 있는 손잡이를
-// 빠뜨린 채 «영향 없음»으로 보고한다. 둘 다 조용히 틀린 결론이 된다.
-
 function leavesOf(value: unknown, path = ''): string[] {
   if (typeof value === 'object' && value !== null) {
     return Object.entries(value).flatMap(([key, child]) =>
@@ -47,8 +44,6 @@ describe('knob registry', () => {
     expect(findKnob(`generation.${excluded}`)).toBeUndefined();
   });
 
-  // 이 손잡이만 pipelineDefaults 가 아니라 설정 카탈로그에서 온다. tuning 이 아니라 파이프라인
-  // 입력의 별도 칸으로 들어가므로 오버레이도 따로 실어 보낸다.
   it('carries the section output limit even though it is not a pipeline default', () => {
     const knob = findKnob(sectionOutputLimitKnobId);
 
@@ -128,7 +123,6 @@ describe('overlay', () => {
     expect(refusals[0]).toContain('범위 밖');
   });
 
-  // 무효인 손잡이를 태우면 회차마다 같은 값이 나오고 «영향 없음»으로 읽힌다. 시작 전에 막는다.
   it('refuses a knob the generation provider ignores', () => {
     const base = knobRegistry[0] as (typeof knobRegistry)[number];
     const registry = [{ ...base, honouredBy: ['openai'] as const }];

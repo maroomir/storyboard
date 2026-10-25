@@ -33,8 +33,6 @@ function plan(files: readonly string[]): ImpactPlan {
 }
 
 describe('impact map', () => {
-  // The guard against rot: every file in the repository belongs to a row, so a change anywhere
-  // pulls in some check. A new folder must be given a row before it can ship.
   it('claims every tracked file', () => {
     const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repoRoot, encoding: 'utf8' })
       .split('\0')
@@ -43,7 +41,6 @@ describe('impact map', () => {
     expect(plan(tracked).unmapped).toEqual([]);
   });
 
-  // A target is a vitest filter: a file, a folder, or the prefix of several files (`test/sim`).
   function isTestTarget(target: string): boolean {
     return existsSync(target) || (existsSync(dirname(target)) && readdirSync(dirname(target)).some((name) => name.startsWith(basename(target))));
   }

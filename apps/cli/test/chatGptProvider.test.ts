@@ -51,8 +51,6 @@ import {
   sseResponse,
 } from './fixtures/chatGptAuthServer';
 
-// The signing key the fake authorization server uses; the ID tokens the tests mint are signed with
-// it and verified against its public JWK, exactly as the real flow verifies against OpenAI's JWKS.
 const connectedAt = new Date('2026-10-24T09:00:00Z');
 
 function connection(overrides: Partial<OAuthConnection> = {}): OAuthConnection {
@@ -623,7 +621,6 @@ describe('the ChatGPT plan provider: the registry gate', () => {
     home: Record<string, unknown>,
     fetchImpl: FetchLike,
     warnings: string[] = [],
-    // NOTE: The registry builds the provider on the real clock, so the token must outlive it.
     secretStorage = memorySecretStorage({
       'storyboard.oauth.chatgpt': JSON.stringify(
         connection({

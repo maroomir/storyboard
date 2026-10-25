@@ -2,9 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { parseFactLedger, recallSlotsOf, scoreFactRecall } from '@storyboard/story-sim';
 
-// 원장 채점은 리포트의 두 번째 숫자를 낸다. 표기 변형 때문에 멀쩡한 회수가 누락으로 잡히거나,
-// 뒤집힌 사실이 단순 누락으로 뭉개지면 그 숫자는 쓸모가 없다.
-
 const ledgerYaml = `
 facts:
   - id: F1
@@ -35,7 +32,6 @@ describe('fact ledger', () => {
     expect(recallSlotsOf(parseFactLedger(ledgerYaml))).toHaveLength(4);
   });
 
-  // 표기를 하나만 적으면 «아홉 시»가 누락으로 잡힌다. 그래서 이 두 종류는 patterns 를 요구한다.
   it('refuses a mechanical fact that carries no patterns', () => {
     const missingPatterns = `
 facts:
@@ -88,7 +84,6 @@ describe('fact recall scoring', () => {
 
     expect(report.slots.find((slot) => slot.factId === 'F4')?.status).toBe('contradicted');
     expect(report.contradicted).toBe(1);
-    // 모순은 회수로 세지 않되, 회수율 분모에는 남는다.
     expect(report.recalled).toBe(0);
     expect(report.total).toBe(4);
   });
@@ -106,7 +101,6 @@ describe('fact recall scoring', () => {
       judge,
     });
 
-    // F1 의 회수 자리 둘만 심판에게 간다. F4·F7 은 문자열 대조로 끝난다.
     expect(judge).toHaveBeenCalledTimes(2);
     expect(judge.mock.calls.every(([input]) => (input as { fact: { id: string } }).fact.id === 'F1')).toBe(true);
   });

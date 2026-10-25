@@ -19,7 +19,6 @@ const silentLogger = {
 const atTerminal: TerminalFacts = {
   stdout: { isTty: true, columns: 80 },
   stderr: { isTty: true, columns: 80 },
-  // A person at a terminal who turned color off: the marks stay, the escape codes go.
   env: { NO_COLOR: '1' },
 };
 

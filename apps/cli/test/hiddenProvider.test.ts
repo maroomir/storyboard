@@ -154,8 +154,6 @@ describe('the hidden subscription provider: who can see it', () => {
     expect(() => configBridge.isDefaultProviderConfigured()).toThrow(ConfigFileError);
   });
 
-  // QA D7: the refusal named only the key and the file, not what was wrong or how to fix it. It
-  // repeats the value the person wrote and lists what is available, never the hidden provider.
   it.each(['ai.provider.default', 'tasks.sceneDraft.provider'])(
     'says which name in %s is unknown and what to use instead',
     (key) => {
@@ -243,7 +241,6 @@ describe('the hidden subscription provider: what the CLI names', () => {
     expect(availableProviderIds(homeEnvironment({ [enabledKey]: true }))).toContain('claude-code');
   });
 
-  // QA D6: the model slot completed the hidden provider's models while it was off.
   it('completes no model for it while the switch is off', () => {
     const directory = mkdtempSync(join(tmpdir(), 'storyboard-hidden-home-'));
     const previousHome = process.env.STORYBOARD_HOME;
@@ -378,7 +375,6 @@ describe('the hidden subscription provider: the call', () => {
       providerId: 'claude-code',
       model: 'claude-sonnet-5',
       text: '빗물이 흘렀다.',
-      // Cache tokens are folded into the input: with no price, tokens are the only measure.
       usage: { inputTokens: 545, outputTokens: 129 },
     });
   });
@@ -442,7 +438,6 @@ describe('the hidden subscription provider: the call', () => {
     expect(error.message).toContain('providers.claude-code.command');
   });
 
-  // Measured with --bare on 2.1.289: exit 1, subtype "success", is_error true.
   it('says the login was not found even though the subtype reads success', async () => {
     const runner = new FakeRunner(
       [resultLine({ is_error: true, result: 'Not logged in · Please run /login' })],
@@ -491,7 +486,6 @@ describe('the hidden subscription provider: the call', () => {
     expect(error.message).toContain('boom');
   });
 
-  // QA D8: a normal result with a failing exit code put the whole draft into the error message.
   it('keeps the generated text out of the error when the exit code fails', async () => {
     const body = '빗물이 흘렀다. '.repeat(200);
     const runner = new FakeRunner([resultLine({ result: body })], { exitCode: 1, stderr: '' });
@@ -505,7 +499,6 @@ describe('the hidden subscription provider: the call', () => {
     expect(error.message).toContain('종료 코드 1');
   });
 
-  // QA D8: 1500 ms read as «2초».
   it.each([
     [1500, '1.5초'],
     [3000, '3초'],
@@ -565,8 +558,6 @@ describe('the Node CLI runner', () => {
     expect(lines).toEqual(['in:프롬프트', 'undefined|kept']);
   });
 
-  // Every ANTHROPIC_ variable is withheld (a key, a token, another endpoint); the subscription's own
-  // login, including a token the person made with `claude setup-token`, is the executable's business.
   it('withholds every variable that starts with a withheld prefix', async () => {
     const names = [
       'ANTHROPIC_API_KEY',
@@ -599,9 +590,6 @@ describe('the Node CLI runner', () => {
     expect(lines).toEqual(['-|-|-|value-of-CLAUDE_CODE_OAUTH_TOKEN']);
   });
 
-  // The executable finds CLAUDE.md by walking up from its working directory, so a child started in
-  // the work (whose init writes CLAUDE.md and AGENTS.md) carried those agent instructions into every
-  // generation. The API providers never see them; neither may this one.
   it('runs the child in an empty directory, never the host working directory', async () => {
     const lines: string[] = [];
 
@@ -647,7 +635,6 @@ describe('the Node CLI runner', () => {
     }
   }
 
-  // QA D1: a child that ignores SIGTERM kept the run (and the workspace lock) forever.
   it('ends a child that ignores SIGTERM within the grace period', async () => {
     const pidFile = join(mkdtempSync(join(tmpdir(), 'storyboard-runner-')), 'child.pid');
     const started = Date.now();
@@ -668,7 +655,6 @@ describe('the Node CLI runner', () => {
     expect(isAlive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
   }, 10_000);
 
-  // QA D1: a wrapper script's own child held the stdout pipe, so `close` never came.
   it('ends the whole process group, grandchildren included', async () => {
     const pidFile = join(mkdtempSync(join(tmpdir(), 'storyboard-runner-')), 'grandchild.pid');
     const grandchild = `"${process.execPath}" -e 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)' "${pidFile}"`;
@@ -695,8 +681,6 @@ describe('the Node CLI runner', () => {
     }
   }, 20_000);
 
-  // QA D2: a host killed by SIGTERM or SIGHUP left the child running. The CLI turns both into an
-  // orderly exit (apps/cli/src/index.ts), which runs the runner's exit hook.
   it('takes its child group down when a host turns SIGTERM or SIGHUP into an exit', async () => {
     for (const [signal, exitCode] of [
       ['SIGTERM', 143],

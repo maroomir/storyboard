@@ -48,7 +48,6 @@ afterEach(() => {
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-// A person types one key at a time; a whole string in one write reaches Ink as a single chunk.
 async function typeKeys(stdin: { write: (data: string) => void }, text: string): Promise<void> {
   for (const key of text) {
     stdin.write(key);
@@ -294,8 +293,6 @@ describe('draft reader', () => {
     expect(lastFrame()).toContain('"누구세요?"');
   });
 
-  // Keys can arrive faster than a render (a slow CI runner typed `draft show` as `draft how`): the
-  // editor must not read the line from a closure that a previous key already made stale.
   it('keeps every key when they arrive faster than a render', async () => {
     await writeReadableDraft();
     const { lastFrame, stdin } = render(
@@ -378,7 +375,6 @@ describe('StoryboardTui', () => {
     const { lastFrame, stdin } = render(
       <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
     );
-    // Ink attaches its input listener in an effect, after the first frame.
     await wait(50);
 
     await typeKeys(stdin, 'config s');

@@ -30,8 +30,6 @@ afterEach(() => {
 });
 
 describe('CLI configuration precedence', () => {
-  // A shallow merge would let a workspace file that names one provider hide every provider the
-  // user file configured — the settings would silently fall back to defaults.
   it('keeps user sections the workspace file does not name', () => {
     const user = write('user.json', { providers: { ollama: { baseUrl: 'http://x' } } });
     const workspace = write('workspace.json', { providers: { mock: { model: 'mock-default' } } });
@@ -61,8 +59,6 @@ describe('CLI configuration precedence', () => {
     expect(configuration.get('editor.draft.keepHistory', undefined)).toBe(true);
   });
 
-  // Naming a provider on the command line means "this run, everything" — otherwise task-level
-  // routing in the file silently wins and the flag looks broken.
   it('replaces a section outright when a flag overrides it', () => {
     const user = write('user.json', { tasks: { sceneDraft: { provider: 'openai' } } });
     const workspace = write('workspace.json', {});
@@ -96,8 +92,6 @@ describe('CLI configuration precedence', () => {
     });
   });
 
-  // A typo in a hand-edited file must not silently become "all defaults": the CLI exits loudly, the
-  // editor gets to report it and carry on.
   it('refuses an unparsable file unless a reporter takes it', () => {
     const user = join(home, 'user.json');
     writeFileSync(user, '{ "ai.provider.default": ');
@@ -162,8 +156,6 @@ describe('CLI configuration validation', () => {
     expect(unknown).toEqual(['providers.claude.color', 'experiment']);
   });
 
-  // The browser-login provider has a switch and nothing else: no executable to name, no risk
-  // notice to acknowledge. Those keys stay the program-run provider's own.
   it('accepts only the switch for the browser-login provider', () => {
     const user = write('user.json', {
       providers: {
@@ -249,8 +241,6 @@ describe('task routing across the two config files', () => {
     });
   }
 
-  // Writing the merged map would copy every home route into the work's file, and a route removed
-  // from the work would come back from the home file.
   it('writes one task into the chosen file without copying the other layer', async () => {
     const user = write('user.json', {
       tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } },

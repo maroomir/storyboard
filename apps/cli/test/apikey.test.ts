@@ -8,8 +8,6 @@ import type { ParsedArguments } from '../src/cliArguments';
 import { commands } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
-// 키는 값이 아니라 «있음/없음» 만 보여야 한다. 어디에도 값이 찍히면 안 된다.
-
 const silentLogger = { info: (): void => {}, warn: (): void => {}, error: (): void => {} };
 
 function args(path: string[], positionals: string[] = []): ParsedArguments {

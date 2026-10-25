@@ -42,8 +42,6 @@ describe('command catalog', () => {
     expect([...catalogVerbs].filter((verb) => !implemented.has(verb))).toEqual([]);
   });
 
-  // NOTE: doctor 의 fix 안내는 사용자가 그대로 복사해 실행한다. 존재하지 않는 verb 를 적으면
-  // 진단만 맞고 처방이 틀린 채로 통과한다.
   it('is the only source of the commands doctor and setup tell users to run', () => {
     const catalogVerbs = new Set(commandCatalog.map((spec) => spec.verb));
 
@@ -55,8 +53,6 @@ describe('command catalog', () => {
     }
   });
 
-  // NOTE: 작품 저장소의 AGENTS.md 는 에이전트가 그대로 실행하는 명령표다. verb 뒤에 종류 인자가
-  // 붙은 줄(card create character)도 가장 긴 일치로 찾고, 같은 줄의 플래그가 그 verb 의 것인지도 본다.
   it('is the only source of the commands the workspace agent guide names', () => {
     const verbsLongestFirst = commandCatalog
       .map((spec) => spec.verb)
@@ -128,7 +124,6 @@ describe('renderUsage', () => {
     for (const group of commandGroups) {
       expect(full).toContain(`\n${group}\n`);
     }
-    // A usage line wider than the screen wraps, so the verb is what is sure to appear whole.
     for (const spec of commandCatalog) {
       expect(full, spec.verb).toContain(`  ${spec.verb}`);
     }
@@ -168,7 +163,6 @@ describe('help layout', () => {
     const lines = screens(columns).flatMap((screen) => screen.split('\n'));
     const overflowing = lines.filter((line) => measureWidth(line) > columns);
 
-    // Examples are shell lines an author copies, so they are never broken.
     expect(overflowing.filter((line) => !line.trimStart().startsWith('storyboard '))).toEqual([]);
   });
 
@@ -213,7 +207,6 @@ describe('suggestVerbs', () => {
     expect(renderUnknownFlag('jsno')).toContain('혹시 →  --json');
   });
 
-  // 옛 이름은 별칭 없이 사라졌다. 그 이름을 친 에이전트가 새 이름을 제안에서 찾을 수 있어야 한다.
   it('leads a renamed command to its new name', () => {
     const renamed: Readonly<Record<string, string>> = {
       'scene generate': 'draft generate',
@@ -250,7 +243,6 @@ describe('suggestVerbs', () => {
     expect(renderUnknownCommand('draf generate')).toContain('혹시 →  storyboard draft generate');
   });
 
-  // 명령 전체가 한 토큰으로 넘어와도(따옴표로 묶은 하네스) 앞쪽 단어로 옛 이름을 찾는다.
   it('finds an old name at the front of one string and keeps the rest', () => {
     expect(renderUnknownCommand('scene generate --all')).toContain(
       '이름이 바뀌었습니다 →  storyboard draft generate --all',
@@ -262,8 +254,6 @@ describe('suggestVerbs', () => {
   });
 });
 
-// 옵션 목록·셸 목록·언어 목록이 도움말과 자동완성에 따로 적혀 있던 시절에는 «도움말에는 있는데
-// 완성되지 않는» 옵션이 생겼다. 이제 한 목록에서 나오는지 여기서 본다.
 describe('surfaces built from one list', () => {
   it('prints every global flag in the top-level help', () => {
     const usage = renderUsage();

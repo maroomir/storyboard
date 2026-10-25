@@ -15,8 +15,6 @@ import { chooseCostAxis } from '@storyboard/story-sim';
 import { commands } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
-// 로컬 LLM 경로. 요금이 0이고 모델 목록이 기계마다 다르며, 문맥이 조용히 잘리는 것이 가장 위험하다.
-
 let home: string;
 let workspace: string;
 
@@ -61,7 +59,6 @@ afterEach(() => {
 });
 
 describe('local model names', () => {
-  // 로컬은 받아 둔 모델이 기계마다 다르다. 카탈로그를 강제하면 이미 가진 모델을 못 쓴다.
   it('accepts an ollama model the catalog never heard of', async () => {
     const outcome = await configSet('providers.ollama.model', 'qwen3:30b-a3b');
 
@@ -121,8 +118,6 @@ describe('context window', () => {
     expect(outcome?.message).toContain('ollama');
   });
 
-  // NOTE: 이것이 조용한 실패다. num_ctx 를 안 보내면 ollama 가 모델 기본 문맥을 쓰고, 8화까지
-  // 누적한 프롬프트의 앞부분을 오류 없이 버린다. 그러면 후반 독자가 앞을 못 읽은 채 판정한다.
   it('sends the window to ollama so a long prompt is not silently truncated', async () => {
     const sent: unknown[] = [];
     const client: OllamaClientLike = {
@@ -164,7 +159,6 @@ describe('context window', () => {
 });
 
 describe('cost axis', () => {
-  // 로컬 모델은 요금이 0이라 금액으로는 모든 지점이 같아진다. 그때 아까운 것은 토큰과 시간이다.
   it('falls back to tokens when nothing was billed', () => {
     expect(chooseCostAxis(0)).toBe('tokens');
     expect(chooseCostAxis(undefined)).toBe('tokens');
@@ -175,9 +169,6 @@ describe('cost axis', () => {
   });
 });
 
-// 심판은 생성과 같은 로컬 런타임에서 돈다. 가짜 ollama 를 세워 두고, 심판 호출이 정말 그 주소로
-// 가는지와 num_ctx 가 실려 오는지를 본다. 둘 다 조용히 틀리는 종류다 — 주소가 기본값이면 그 기계에
-// ollama 가 있는 한 연결은 되고, num_ctx 가 빠지면 8화 누적 프롬프트의 앞이 오류 없이 잘린다.
 describe('the judge runs on the measured machine', () => {
   let stub: Server | undefined;
   let track: string | undefined;
@@ -198,7 +189,6 @@ describe('the judge runs on the measured machine', () => {
   async function startStub(): Promise<string> {
     bodies = [];
     stub = createServer((request, response) => {
-      // 실행기는 첫 호출 전에 태그 목록을 본다. 심판 모델이 있다고 답한다.
       if (request.method === 'GET' && request.url === '/api/tags') {
         response.writeHead(200, { 'content-type': 'application/json' });
         response.end(JSON.stringify({ models: [{ name: 'gemma3:12b' }] }));
@@ -210,7 +200,6 @@ describe('the judge runs on the measured machine', () => {
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
         bodies.push(body);
         const asked = JSON.stringify(body['messages']);
-        // 관문이면 기호로, 읽기면 계속 읽겠다고 답한다.
         const text = asked.includes('줄을 세워라')
           ? JSON.stringify({ ranking: ['가', '나'] })
           : JSON.stringify({ engagement: 5, continueReading: true, reason: '이유', quote: '문' });
@@ -249,7 +238,6 @@ describe('the judge runs on the measured machine', () => {
     return track;
   }
 
-  // 없는 모델은 호출마다 404 다. 실행기는 씬마다 실패를 적으며 끝까지 가므로 첫 호출 전에 막는다.
   it('refuses before the first call when the runtime lacks the model', async () => {
     const baseUrl = await startStub();
     const root = trackRepo(baseUrl);
@@ -309,7 +297,6 @@ describe('the judge runs on the measured machine', () => {
     });
 
     expect(outcome?.ok).toBe(true);
-    // 심판이 기본 주소가 아니라 프로필이 가리킨 가짜 서버로 갔다.
     expect(bodies.length).toBeGreaterThan(0);
     expect(bodies.every((body) => (body['options'] as Record<string, unknown>)['num_ctx'] === 32768)).toBe(true);
     expect(bodies.every((body) => body['model'] === 'gemma3:12b')).toBe(true);

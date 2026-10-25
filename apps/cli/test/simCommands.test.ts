@@ -11,8 +11,6 @@ import type { ParsedArguments } from '../src/cliArguments';
 import { commands } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
-// 이 동사들이 돈을 쓰기 전에 멈추는지를 본다. 여기서 새면 잘못된 조건으로 몇 시간이 돈다.
-
 let home: string;
 let track: string;
 
@@ -66,7 +64,6 @@ describe('sim run', () => {
     expect(await run('sim run', {})).toMatchObject({ ok: false });
   });
 
-  // 견적을 보여 주고 멈춘다. --yes 가 없으면 한 호출도 하지 않는다.
   it('prints the estimate and stops', async () => {
     const outcome = await run('sim run', { track, genre: 'thriller' });
 
@@ -82,10 +79,8 @@ describe('sim run', () => {
     expect(outcome?.message).toContain('프롬프트 변형');
   });
 
-  // 같은 지점이라도 무엇으로 썼는지가 기록에 없으면 다른 실험이 한 줄로 합쳐진다.
   it('records the forced prompt variant with the run', async () => {
     const out = join(home, 'runs.jsonl');
-    // 실행은 트랙의 커밋 해시를 적으므로 시험체가 git 저장소여야 한다.
     const git = (...gitArgs: string[]): void => {
       execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...gitArgs], { cwd: track });
     };
@@ -108,7 +103,6 @@ describe('sim run', () => {
     expect(record?.generation.promptVariant).toBe('generic');
   });
 
-  // 오버레이 여러 장을 한 파일에 쌓을 때 이름이 같으면 다른 손잡이 값이 한 지점으로 합쳐진다.
   it('records the overlay label as the point name', async () => {
     const out = join(home, 'runs.jsonl');
     const overlay = join(home, 'overlay.json');
@@ -149,7 +143,6 @@ describe('sim run', () => {
 });
 
 describe('track reading', () => {
-  // 목표 분량은 카드가 갖는다. 없으면 도달률의 분모가 없으므로 시작하지 않는다.
   it('refuses a scene card that carries no target length', async () => {
     writeFileSync(
       join(track, 'track', 'chain', 'thriller', 'scene', '02-b.card'),
@@ -159,7 +152,6 @@ describe('track reading', () => {
     await expect(run('sim run', { track, genre: 'thriller' })).rejects.toThrow(/targetWordCount/);
   });
 
-  // 하한선 관문이 없으면 심판이 쓰레기를 거르는지 알 수 없다. 돈을 쓰기 전에 막는다.
   it('refuses to judge a genre that has no corrupted draft', async () => {
     rmSync(join(track, 'track', 'chain', 'thriller', 'floor'), { recursive: true, force: true });
 
@@ -198,7 +190,6 @@ describe('axis track', () => {
     expect(outcome?.message).toContain('--yes');
   });
 
-  // 축 트랙은 씬마다 훼손본이 있어야 씬마다 눈금을 확인할 수 있다.
   it('refuses to judge the axis track when a scene has no corrupted draft', async () => {
     axisFixture(false);
 
@@ -231,8 +222,6 @@ describe('sim sweep', () => {
     expect(outcome?.message).toContain('--judge');
   });
 
-  // 심판이 생성과 같은 가중치면 그 지점만 점수가 들뜬다. --judge claude 는 모델을 안 주면
-  // 카탈로그 첫 모델로 떨어지고, 그것이 곧 생성 모델이다.
   it('refuses a judge that lands on the generation model', async () => {
     const outcome = await run('sim sweep', {
       track,
@@ -321,7 +310,6 @@ describe('sim report', () => {
     expect(outcome?.message).toContain('* rich');
   });
 
-  // 폐기 회차를 0 으로 세면 셋 중 둘이 폐기된 지점이 AUC 0 으로 읽힌다.
   it('leaves discarded runs out of the quality median and counts them', async () => {
     const out = join(home, 'runs.jsonl');
     const base = {
@@ -395,7 +383,6 @@ describe('sim rejudge', () => {
 });
 
 describe('sim apply', () => {
-  // 적는 곳은 엔진 소스의 프로필 파일이다. 시험에서는 --profiles 로 임시 파일을 준다.
   it('writes the point into the profile file with its provenance', async () => {
     const out = join(home, 'runs.jsonl');
     const profiles = join(home, 'modelProfiles.params.json');
@@ -441,7 +428,6 @@ describe('sim apply', () => {
     expect(outcome?.message).toContain('실행 기록이 없습니다');
   });
 
-  // 씨앗이 없어 한 회차의 값은 잡음과 구분되지 않는다.
   it('refuses a point that was only run once', async () => {
     const out = join(home, 'runs.jsonl');
     writeFileSync(

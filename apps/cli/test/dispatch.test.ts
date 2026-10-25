@@ -100,8 +100,6 @@ describe('dispatch', () => {
     expect(JSON.parse(noWorkspace.stdout).message).toContain('storyboard init --title');
   });
 
-  // 기존 작품의 AGENTS.md 에는 옛 이름이 남아 있다. 그것을 친 에이전트의 첫 안내가 비용이 드는
-  // 다른 명령이면 안 된다 — 변경 기록의 대응표 그대로, 인자를 이어 붙여 첫 줄에 준다.
   it('leads every renamed command to its new name first, keeping arguments and flags in order', async () => {
     const renamed: ReadonlyArray<readonly [string, string]> = [
       ['scene generate', 'draft generate'],
@@ -175,8 +173,6 @@ describe('dispatch', () => {
     expect(readFileSync(join(cwd, '.storyboard', 'config.json'), 'utf8')).toContain('300');
   });
 
-  // The issue's own command: --model here is the value config set saves, not a model for this run
-  // that needs a --provider beside it.
   it('takes --model on config set without a --provider', async () => {
     const result = await dispatch(
       [
@@ -197,8 +193,6 @@ describe('dispatch', () => {
     });
   });
 
-  // --provider replaces the routes in memory for the run, so a config verb would no longer see the
-  // stored route and would drop its model without a word.
   it('refuses the run flag --provider on config set and unset', async () => {
     const stored = {
       tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } },
