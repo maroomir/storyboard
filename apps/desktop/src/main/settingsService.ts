@@ -6,7 +6,7 @@ import {
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
-type StoryboardSettingDefinition,
+  type StoryboardSettingDefinition,
 } from '@storyboard/story-model';
 import {
   ConfigBridge,

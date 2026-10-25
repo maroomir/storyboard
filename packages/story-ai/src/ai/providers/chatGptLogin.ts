@@ -23,8 +23,8 @@ import {
   type AuthorizedCallback,
   type DiscoveryDocument,
   type FetchLike,
-type IdTokenIdentity,
-type TokenResponse,
+  type IdTokenIdentity,
+  type TokenResponse,
 } from './chatGptOAuth';
 
 const providerId: AiProviderId = 'chatgpt';

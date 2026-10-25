@@ -10,12 +10,12 @@ import {
   contractFieldLabels,
   readSceneFile,
   usageCacheHitRate,
-type UsageAmount,
-type StoryboardProjectPaths,
-type StoryboardProject,
-type GenerationContractReadiness,
-type StoryUri,
-type SceneFile,
+  type UsageAmount,
+  type StoryboardProjectPaths,
+  type StoryboardProject,
+  type GenerationContractReadiness,
+  type StoryUri,
+  type SceneFile,
 } from '@storyboard/story-model';
 import {
   describeReviseOutcome,
