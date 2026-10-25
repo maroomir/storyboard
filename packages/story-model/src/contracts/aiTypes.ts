@@ -20,9 +20,9 @@ export type AiMessageRole = 'system' | 'user' | 'assistant';
 
 // How long a cached prefix lives after its last use. The hour costs more to write (2× input instead
 // of 1.25×) and pays off only for a prefix read ten times or more across a long run.
-export const cacheTtls = ['5m', '1h'] as const;
+export type CacheTtl = '5m' | '1h';
 
-export type CacheTtl = (typeof cacheTtls)[number];
+export const cacheTtls: readonly [CacheTtl, ...CacheTtl[]] = ['5m', '1h'];
 
 export interface AiMessage {
   readonly role: AiMessageRole;
@@ -35,9 +35,13 @@ export interface AiMessage {
 }
 
 // How hard a thinking model may think before it answers. Its tokens come out of `maxTokens`.
-export const reasoningEfforts = ['low', 'medium', 'high'] as const;
+export type ReasoningEffort = 'low' | 'medium' | 'high';
 
-export type ReasoningEffort = (typeof reasoningEfforts)[number];
+export const reasoningEfforts: readonly [ReasoningEffort, ...ReasoningEffort[]] = [
+  'low',
+  'medium',
+  'high',
+];
 
 export interface AiGenerateRequest {
   readonly taskName: AiTaskName;

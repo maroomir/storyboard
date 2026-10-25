@@ -6,6 +6,7 @@ import {
   type StudioChatTurn,
   type StudioEntity,
   type StudioSessionSummary,
+  type StudioUserTurn,
 } from '#model/shared/messaging/studio';
 
 export const studioSessionVersion: string = '2.0.0';
@@ -55,7 +56,7 @@ export function serializeStudioSession(session: StudioSession): string {
 }
 
 export function deriveStudioSessionTitle(turns: readonly StudioChatTurn[]): string {
-  const firstUserTurn = turns.find((turn) => turn.role === 'user');
+  const firstUserTurn: StudioUserTurn | undefined = turns.find((turn) => turn.role === 'user');
   const text: string = firstUserTurn?.role === 'user' ? firstUserTurn.text.trim() : '';
 
   if (text.length === 0) {

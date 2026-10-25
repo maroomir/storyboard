@@ -6,7 +6,7 @@ export function parseJsonArray(response: string): unknown[] | null {
   }
 
   try {
-    const parsed = JSON.parse(match[0]);
+    const parsed: unknown = JSON.parse(match[0]);
     return Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
@@ -88,7 +88,7 @@ function findBalancedEnd(text: string, start: number): number {
 
 function toPlainObject(candidate: string): Record<string, unknown> | null {
   try {
-    const parsed = JSON.parse(candidate);
+    const parsed: unknown = JSON.parse(candidate);
 
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
@@ -106,7 +106,7 @@ export function parseJsonNestedArray(response: string): unknown[][] | null {
   }
 
   try {
-    const parsed = JSON.parse(match[0]);
+    const parsed: unknown = JSON.parse(match[0]);
 
     if (!Array.isArray(parsed)) {
       return null;

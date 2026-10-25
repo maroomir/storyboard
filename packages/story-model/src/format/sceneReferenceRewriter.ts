@@ -53,7 +53,7 @@ export function renumberStoryStateScene(state: StoryState, rename: SceneRename):
 export function rewriteBibleSceneReferences(bible: StoryBible, rename: SceneRename): StoryBible {
   let changed: boolean = false;
 
-  const facts = bible.facts.map((fact) => {
+  const facts: BibleFact[] = bible.facts.map((fact) => {
     const rewritten: BibleFact = rewriteFactSceneReferences(fact, rename);
     changed ||= rewritten !== fact;
     return rewritten;
@@ -179,7 +179,8 @@ export function parseSceneRenameJournal(raw: string): SceneRename | undefined {
     return undefined;
   }
 
-  const parsed = sceneRenameJournalSchema.safeParse(value);
+  const parsed: z.ZodSafeParseResult<SceneRenameJournal> =
+    sceneRenameJournalSchema.safeParse(value);
   const from: SceneFileNameParts | undefined = parsed.success
     ? parseSceneStem(parsed.data.fromStem)
     : undefined;

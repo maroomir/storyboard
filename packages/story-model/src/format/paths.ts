@@ -112,23 +112,38 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
 
 // 워크스페이스 파일의 확장자. 경로를 만드는 쪽과 판정하는 쪽이 같은 글자를 봐야 «만들 때는
 // .card, 찾을 때는 .cards» 같은 어긋남이 생기지 않는다.
-export const STORYBOARD_FILE_EXTENSIONS = {
+interface StoryboardFileExtensions {
+  readonly card: string;
+  readonly draft: string;
+  readonly profileImage: string;
+  readonly legacyScene: string;
+}
+
+export const STORYBOARD_FILE_EXTENSIONS: StoryboardFileExtensions = {
   card: '.card',
   draft: '.md',
   profileImage: '.png',
   // 마이그레이션 전용: 구형 씬 텍스트.
   legacyScene: '.txt',
-} as const;
+};
 
 // 확장자까지 붙은 글롭. 에디터 쪽 파일 감시자와 문서 선택자가 디렉터리 이름을 다시 적지 않게 한다.
-export const STORYBOARD_GLOBS = {
+interface StoryboardGlobs {
+  readonly characterCards: string;
+  readonly backgroundCards: string;
+  readonly sceneCards: string;
+  readonly draftMarkdown: string;
+  readonly anyDraftMarkdown: string;
+}
+
+export const STORYBOARD_GLOBS: StoryboardGlobs = {
   characterCards: `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
   backgroundCards: `${STORYBOARD_RELATIVE_PATHS.backgroundDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
   sceneCards: `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
   draftMarkdown: `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/**/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
   // 문서 선택자는 워크스페이스 어디에 있는 draft 폴더든 잡아야 한다.
   anyDraftMarkdown: `**/${STORYBOARD_RELATIVE_PATHS.draftDirectory}/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
-} as const;
+};
 
 // NOTE: 스레드는 연속성 줄기다. 기본 줄기('main')는 종전 경로를 그대로 쓰고, 나머지 줄기만
 // 하위 디렉터리로 갈라 이야기 상태·요약·인물 기억이 줄기 밖으로 새지 않게 한다.

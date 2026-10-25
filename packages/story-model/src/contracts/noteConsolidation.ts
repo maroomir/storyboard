@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-export const noteConsolidatedFields = [
+export type NoteConsolidatedField = 'aliases' | 'traits' | 'tags' | 'description' | 'voice' | 'desire' | 'senses';
+
+export const noteConsolidatedFields: readonly [NoteConsolidatedField, ...NoteConsolidatedField[]] = [
   'aliases',
   'traits',
   'tags',
@@ -8,9 +10,7 @@ export const noteConsolidatedFields = [
   'voice',
   'desire',
   'senses',
-] as const;
-
-export type NoteConsolidatedField = (typeof noteConsolidatedFields)[number];
+];
 
 // A field missing here was not sent, or was left out of the answer; an empty list is an answer.
 export type NoteConsolidatedValues = Partial<
@@ -110,7 +110,7 @@ function readConflicts(value: unknown): NoteConsolidationConflict[] {
 }
 
 function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
-  const id = answerIdSchema.safeParse(entry);
+  const id: z.ZodSafeParseResult<AnswerId> = answerIdSchema.safeParse(entry);
 
   if (!id.success) {
     return undefined;

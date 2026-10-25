@@ -66,7 +66,7 @@ export function addFollowUps(
   existing: readonly StudioFollowUp[],
   added: readonly StudioFollowUp[],
 ): readonly StudioFollowUp[] {
-  const kept = existing.filter(
+  const kept: StudioFollowUp[] = existing.filter(
     (followUp) =>
       !added.some(
         (candidate) =>

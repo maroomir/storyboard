@@ -3,14 +3,14 @@ import type { StoryUri } from './storyUri';
 // 전달되지 않아 씬 경계마다 상태가 리셋된다. 씬 생성 직후 이 원장을 갱신하고, 다음 씬 프롬프트에
 // [이야기 상태]로 주입해 장거리 연속성을 유지한다.
 
-export const storyStateSectionLabels = {
+export type StoryStateSection = 'facts' | 'relations' | 'revealed' | 'motifs';
+
+export const storyStateSectionLabels: Readonly<Record<StoryStateSection, string>> = {
   facts: '확정 사실',
   relations: '인물 관계와 말투',
   revealed: '공개된 정보',
   motifs: '살아 있는 모티프',
-} as const;
-
-export type StoryStateSection = keyof typeof storyStateSectionLabels;
+};
 
 export interface StoryStateEntry {
   readonly section: StoryStateSection;
@@ -50,6 +50,12 @@ const sectionEntries: [StoryStateSection, string][] = Object.entries(storyStateS
 const labelToSection: Map<string, 'relations' | 'facts' | 'revealed' | 'motifs'> = new Map(
   sectionEntries.map(([section, label]) => [label, section]),
 );
+
+interface RankedStoryStateEntry {
+  readonly entry: StoryStateEntry;
+  readonly position: number;
+  readonly score: number;
+}
 
 export function createEmptyStoryState(): StoryState {
   return { throughSceneOrder: 0, sceneInputHashes: new Map(), entries: [] };
@@ -310,12 +316,14 @@ function selectWithinBudget(
   }
 
   const sceneTextCompact: string = compactForOverlap(sceneText);
-  const ranked = entries
-    .map((entry, position) => ({
-      entry,
-      position,
-      score: countTextOverlap(entry.text, sceneTextCompact),
-    }))
+  const ranked: RankedStoryStateEntry[] = entries
+    .map(
+      (entry, position): RankedStoryStateEntry => ({
+        entry,
+        position,
+        score: countTextOverlap(entry.text, sceneTextCompact),
+      }),
+    )
     .sort((left, right) => right.score - left.score || right.position - left.position)
     .slice(0, budget);
 
@@ -590,7 +598,7 @@ export function resealStoryState(
     }
   }
 
-  const entries = state.entries.map((entry) => {
+  const entries: StoryStateEntry[] = state.entries.map((entry): StoryStateEntry => {
     if (entry.throughScene === undefined || !sceneOrders.has(entry.throughScene)) {
       return entry;
     }
@@ -608,7 +616,7 @@ export function formatSceneOrderRanges(orders: readonly number[]): string {
   const ranges: { start: number; end: number }[] = [];
 
   for (const order of sorted) {
-    const last = ranges[ranges.length - 1];
+    const last: { start: number; end: number } | undefined = ranges[ranges.length - 1];
 
     if (last !== undefined && order === last.end + 1) {
       last.end = order;

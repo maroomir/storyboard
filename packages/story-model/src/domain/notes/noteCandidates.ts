@@ -42,6 +42,12 @@ function noteChangeIdentity(change: CardCollectProposal): string {
 }
 
 // What `card discard --change` takes: the source that proposed a change and the change's id.
+
+interface SynopsisSection {
+  location: string;
+  lines: string[];
+}
+
 export function noteChangeRef(sourceId: string, change: CardCollectProposal): string {
   return `${sourceId}:${change.id}`;
 }
@@ -116,15 +122,17 @@ export function mergeNoteCandidateSources(
   return [...cards.values()].map(mergeCardOccurrences);
 }
 
+interface ChangeGroup {
+  change: CardCollectProposal;
+  occurrences: ChangeOccurrence[];
+}
+
 function mergeCardOccurrences(accumulator: CardAccumulator): MergedNoteCardCandidate {
-  const byIdentity = new Map<
-    string,
-    { change: CardCollectProposal; occurrences: ChangeOccurrence[] }
-  >();
+  const byIdentity: Map<string, ChangeGroup> = new Map<string, ChangeGroup>();
 
   for (const occurrence of accumulator.occurrences) {
     const identity: string = noteChangeIdentity(occurrence.change);
-    const existing = byIdentity.get(identity);
+    const existing: ChangeGroup | undefined = byIdentity.get(identity);
 
     if (existing === undefined) {
       byIdentity.set(identity, { change: occurrence.change, occurrences: [occurrence] });
@@ -137,13 +145,10 @@ function mergeCardOccurrences(accumulator: CardAccumulator): MergedNoteCardCandi
     existing.occurrences.push(occurrence);
   }
 
-  const groupsByKey = new Map<
-    string,
-    { change: CardCollectProposal; occurrences: ChangeOccurrence[] }[]
-  >();
+  const groupsByKey: Map<string, ChangeGroup[]> = new Map<string, ChangeGroup[]>();
 
   for (const group of byIdentity.values()) {
-    const groups = groupsByKey.get(group.change.id) ?? [];
+    const groups: ChangeGroup[] = groupsByKey.get(group.change.id) ?? [];
     groups.push(group);
     groupsByKey.set(group.change.id, groups);
   }
@@ -210,7 +215,7 @@ export function addNoteCandidateSource(
   absorbed: Omit<NoteCandidateSource, 'id'>,
   shouldReplaceAll: boolean,
 ): NoteCandidateFile {
-  const kept = shouldReplaceAll
+  const kept: NoteCandidateSource[] = shouldReplaceAll
     ? []
     : file.sources.filter((source) => source.location !== absorbed.location);
 
@@ -301,7 +306,7 @@ export function mergeNoteSynopsisCandidate(
   synopsisMarkdown: string | undefined,
 ): string {
   const preamble: string[] = [];
-  const sections: { location: string; lines: string[] }[] = [];
+  const sections: SynopsisSection[] = [];
 
   for (const line of (existing ?? '').split('\n')) {
     const marker: RegExpExecArray | null = synopsisSourceMarker.exec(line);
@@ -313,8 +318,8 @@ export function mergeNoteSynopsisCandidate(
     }
   }
 
-  const kept = sections.filter((section) => section.location !== location);
-  const added =
+  const kept: SynopsisSection[] = sections.filter((section) => section.location !== location);
+  const added: SynopsisSection[] =
     synopsisMarkdown === undefined ? [] : [{ location, lines: synopsisMarkdown.split('\n') }];
   const blocks: string[] = [
     preamble.join('\n').trim(),

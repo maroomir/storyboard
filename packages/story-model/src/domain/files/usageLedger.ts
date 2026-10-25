@@ -21,7 +21,9 @@ import {
   type ModelPricePerMillion,
 } from '#model/contracts/providerCatalog';
 import { aiTaskNames } from '#model/contracts/ai';
-const usageLedgerVersion = 1 as const;
+type UsageLedgerVersion = 1;
+
+const usageLedgerVersion: UsageLedgerVersion = 1;
 
 export type UsageLedgerEntry = UsageRecord & {
   readonly id: string;
@@ -202,9 +204,9 @@ export function mergeUsageLedgerEntryIntoSummary(
   summary: UsageSummaryByEntity,
   entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'attribution' | 'providerId' | 'model'>,
 ): UsageSummaryByEntity {
-  const nextScenes = { ...summary.scenes };
-  const nextCharacters = { ...summary.characters };
-  const nextBackgrounds = { ...summary.backgrounds };
+  const nextScenes: Record<string, UsageAmount> = { ...summary.scenes };
+  const nextCharacters: Record<string, UsageAmount> = { ...summary.characters };
+  const nextBackgrounds: Record<string, UsageAmount> = { ...summary.backgrounds };
 
   const add = (kind: EntityKind, entityId: string, delta: UsageAmount): void => {
     switch (kind) {
@@ -296,7 +298,7 @@ export function parseUsageLedgerBytes(
     return [];
   }
 
-  const decoded = usageLedgerFileSchema.safeParse(parsed);
+  const decoded: z.ZodSafeParseResult<UsageLedgerFile> = usageLedgerFileSchema.safeParse(parsed);
 
   if (!decoded.success) {
     warn?.(
@@ -308,8 +310,13 @@ export function parseUsageLedgerBytes(
   return decoded.data.entries.map(toUsageLedgerEntry);
 }
 
+interface SerializedUsageLedger {
+  readonly version: UsageLedgerVersion;
+  readonly entries: SerializedLedgerEntry[];
+}
+
 export function serializeUsageLedger(entries: readonly UsageLedgerEntry[]): Uint8Array {
-  const payload = {
+  const payload: SerializedUsageLedger = {
     version: usageLedgerVersion,
     entries: entries.map(serializeLedgerEntry),
   };

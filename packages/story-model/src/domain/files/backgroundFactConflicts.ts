@@ -49,7 +49,8 @@ export function computeBackgroundFactConflictKey(
 // A file that cannot be read is treated as empty: the worst case is one more check.
 export function parseBackgroundFactConflictRecords(raw: string): BackgroundFactConflictRecords {
   try {
-    const parsed = backgroundFactConflictRecordsSchema.safeParse(JSON.parse(raw));
+    const parsed: z.ZodSafeParseResult<BackgroundFactConflictRecordsPayload> =
+      backgroundFactConflictRecordsSchema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data.cards : {};
   } catch {
     return {};

@@ -28,7 +28,56 @@ export {
 
 import type { AiProviderId } from './providerCatalog';
 
-export const aiTaskCatalog = [
+export type AiTaskName =
+  | 'sceneGrounding'
+  | 'sceneBeats'
+  | 'sceneStructure'
+  | 'situationExtraction'
+  | 'personaGeneration'
+  | 'personaDialogue'
+  | 'backgroundDescription'
+  | 'backgroundFactConflicts'
+  | 'sceneDraft'
+  | 'sceneSkeleton'
+  | 'sceneDialoguePolish'
+  | 'sceneDialogueAttribution'
+  | 'sceneSectionExpansion'
+  | 'sceneBeatActor'
+  | 'sceneBeatArbiter'
+  | 'sceneBeatJudge'
+  | 'traitsExtraction'
+  | 'factExtraction'
+  | 'cardFactExtraction'
+  | 'cardFactVerification'
+  | 'backgroundFactExtraction'
+  | 'grammarCheck'
+  | 'continuityCheck'
+  | 'inlineCompletion'
+  | 'draftExpansion'
+  | 'draftAugment'
+  | 'outlineSynopsis'
+  | 'chapterPlan'
+  | 'outlineCharacters'
+  | 'draftCritique'
+  | 'draftRevision'
+  | 'chapterSummary'
+  | 'storyStateUpdate'
+  | 'sceneCoverage'
+  | 'cardRecommendation'
+  | 'storyCompletion'
+  | 'storyCardBuild'
+  | 'noteExtraction'
+  | 'noteSynthesis'
+  | 'noteCardConsolidation'
+  | 'studioAgent'
+  | 'studioValidation';
+
+export interface AiTaskCatalogEntry {
+  readonly name: AiTaskName;
+  readonly label: string;
+}
+
+export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'sceneGrounding', label: '씬 사실 시트' },
   { name: 'sceneBeats', label: '씬 비트 전개' },
   { name: 'sceneStructure', label: '씬 구조화' },
@@ -74,10 +123,8 @@ export const aiTaskCatalog = [
   { name: 'noteCardConsolidation', label: '노트 카드 목록·별칭 정리' },
   { name: 'studioAgent', label: 'Studio 대화' },
   { name: 'studioValidation', label: 'Studio 정합성 검사' },
-] as const;
+];
 
-export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number];
-export type AiTaskName = AiTaskCatalogEntry['name'];
 
 export const aiTaskNames: readonly [ AiTaskName, ...AiTaskName[], ] = aiTaskCatalog.map((task) => task.name) as unknown as readonly [
   AiTaskName,

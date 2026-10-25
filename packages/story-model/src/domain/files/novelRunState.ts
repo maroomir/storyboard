@@ -12,8 +12,14 @@ const novelRunStateVersion: string = '1.0.0';
 
 export { novelStageNames, type NovelRunMode, type NovelStageName };
 
-const novelRunStatuses = ['running', 'paused', 'done', 'failed'] as const;
-type NovelRunStatus = (typeof novelRunStatuses)[number];
+type NovelRunStatus = 'running' | 'paused' | 'done' | 'failed';
+
+const novelRunStatuses: readonly [NovelRunStatus, ...NovelRunStatus[]] = [
+  'running',
+  'paused',
+  'done',
+  'failed',
+];
 
 export interface NovelRunState {
   readonly version: typeof novelRunStateVersion;

@@ -37,7 +37,7 @@ export function coerceExpandedSceneBeats(rawText: string): ExpandedSceneBeat[] {
       return text.length > 0 ? [{ text, cast: [] }] : [];
     }
 
-    const parsed = proposalSchema.safeParse(item);
+    const parsed: z.ZodSafeParseResult<Proposal> = proposalSchema.safeParse(item);
     const text: string = parsed.success ? parsed.data.text.trim() : '';
     if (!parsed.success || text.length === 0) {
       return [];

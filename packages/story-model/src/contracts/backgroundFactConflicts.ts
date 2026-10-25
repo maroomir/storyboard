@@ -31,7 +31,8 @@ export function readBackgroundFactConflictResponse(
   raw: unknown,
   factLines: readonly string[],
 ): BackgroundFactConflict[] {
-  const parsed = backgroundFactConflictResponseSchema.safeParse(raw);
+  const parsed: z.ZodSafeParseResult<BackgroundFactConflictResponse> =
+    backgroundFactConflictResponseSchema.safeParse(raw);
   if (!parsed.success) {
     return [];
   }

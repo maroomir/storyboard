@@ -13,7 +13,7 @@ export interface ForeshadowingChapter {
 }
 
 export function collectForeshadowing(plan: ChapterPlan): ForeshadowingChapter[] {
-  const chapters: (ForeshadowingChapter & { actIndex: number; chapterIndex: number })[] = [];
+  const chapters: PositionedForeshadowingChapter[] = [];
 
   flattenChapterPlan(plan).forEach((flatScene, globalIndex) => {
     if (flatScene.scene.foreshadowing.length === 0) {
@@ -64,19 +64,29 @@ export function buildForeshadowingMarkdown(
   return `${sections.join('\n\n')}\n`;
 }
 
+type PositionedForeshadowingChapter = ForeshadowingChapter & {
+  actIndex: number;
+  chapterIndex: number;
+};
+
 function reserveChapter(
-  chapters: (ForeshadowingChapter & { actIndex: number; chapterIndex: number })[],
+  chapters: PositionedForeshadowingChapter[],
   actIndex: number,
   chapterIndex: number,
   chapterTitle: string,
 ): ForeshadowingChapter {
-  const last = chapters.at(-1);
+  const last: PositionedForeshadowingChapter | undefined = chapters.at(-1);
 
   if (last && last.actIndex === actIndex && last.chapterIndex === chapterIndex) {
     return last;
   }
 
-  const chapter = { chapterTitle, entries: [], actIndex, chapterIndex };
+  const chapter: PositionedForeshadowingChapter = {
+    chapterTitle,
+    entries: [],
+    actIndex,
+    chapterIndex,
+  };
   chapters.push(chapter);
   return chapter;
 }

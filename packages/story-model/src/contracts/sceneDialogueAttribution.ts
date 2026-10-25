@@ -26,7 +26,8 @@ export function coerceDialogueAttribution(
   const speakerByIndex: Map<number, string> = new Map<number, string>();
 
   for (const item of parsedArray) {
-    const parsed = dialogueAttributionSchema.safeParse(item);
+    const parsed: z.ZodSafeParseResult<DialogueAttribution> =
+      dialogueAttributionSchema.safeParse(item);
     if (!parsed.success || parsed.data.index > turnCount) {
       continue;
     }

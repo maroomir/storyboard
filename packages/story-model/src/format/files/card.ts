@@ -61,7 +61,7 @@ export function parseCard(rawCard: string): StoryboardCard {
 }
 
 export function serializeCard(card: StoryboardCard): string {
-  const parsedCard = cardSchema.parse(card);
+  const parsedCard: StoryboardCard = cardSchema.parse(card);
   const normalizedCard: StoryboardCard = normalizeCardForSerialization(parsedCard);
 
   return yaml.dump(normalizedCard, {
@@ -88,7 +88,7 @@ export function parseNarratorCard(rawCard: string): NarratorCard {
 }
 
 export function serializeNarratorCard(card: NarratorCard): string {
-  const parsedCard = narratorCardSchema.parse(card);
+  const parsedCard: NarratorCard = narratorCardSchema.parse(card);
 
   return yaml.dump(normalizeNarratorCard(parsedCard), {
     lineWidth: -1,
@@ -233,7 +233,7 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
 }
 
 function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
-  const base = {
+  const base: Omit<BackgroundCard, 'type'> = {
     id: card.id,
     name: card.name,
     ...(card.aliases === undefined ? {} : { aliases: card.aliases }),

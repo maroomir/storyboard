@@ -44,12 +44,12 @@ export interface SceneContextWorkspacePaths {
   readonly joinPath: (base: StoryUri, ...pathSegments: string[]) => StoryUri;
 }
 
+export type WorkspaceDirectoryEntry = [string, { type: 'file' | 'directory' }];
+
 export interface SceneContextWorkspaceFileSystem {
   readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
   readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
-  readonly readDirectory: (
-    uri: StoryUri,
-  ) => PromiseLike<[string, { type: 'file' | 'directory' }][]>;
+  readonly readDirectory: (uri: StoryUri) => PromiseLike<WorkspaceDirectoryEntry[]>;
 }
 
 export interface SceneContext {
@@ -186,12 +186,12 @@ async function readPreviousDraftTail(
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<string | undefined> {
   try {
-    const entries = await fileSystem.readDirectory(paths.draftDirectory);
-    const draftFiles = entries.filter(
+    const entries: WorkspaceDirectoryEntry[] = await fileSystem.readDirectory(paths.draftDirectory);
+    const draftFiles: WorkspaceDirectoryEntry[] = entries.filter(
       ([name, entry]) => entry.type === 'file' && name.endsWith('.md'),
     );
 
-    const previousFileName = draftFiles.find(([name]) => {
+    const previousFileName: WorkspaceDirectoryEntry | undefined = draftFiles.find(([name]) => {
       const match: RegExpExecArray | null = /^(\d+)-/.exec(name);
       return match && Number.parseInt(match[1] as string, 10) === previousOrder;
     });
@@ -513,12 +513,14 @@ async function listProjectCharacters(
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<readonly CharacterCard[]> {
   try {
-    const entries = await fileSystem.readDirectory(paths.characterDirectory);
-    const cardFiles = entries.filter(
+    const entries: WorkspaceDirectoryEntry[] = await fileSystem.readDirectory(
+      paths.characterDirectory,
+    );
+    const cardFiles: WorkspaceDirectoryEntry[] = entries.filter(
       ([name, entry]) => entry.type === 'file' && isWorkingCardFileName(name),
     );
 
-    const cards = await Promise.all(
+    const cards: (CharacterCard | undefined)[] = await Promise.all(
       cardFiles.map(async ([name]) => {
         const uri: StoryUri = paths.joinPath(paths.characterDirectory, name);
         try {
@@ -541,8 +543,10 @@ async function listProjectBackgrounds(
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<readonly BackgroundCard[]> {
   try {
-    const entries = await fileSystem.readDirectory(paths.backgroundDirectory);
-    const cardFiles = entries.filter(
+    const entries: WorkspaceDirectoryEntry[] = await fileSystem.readDirectory(
+      paths.backgroundDirectory,
+    );
+    const cardFiles: WorkspaceDirectoryEntry[] = entries.filter(
       ([name, entry]) => entry.type === 'file' && isWorkingCardFileName(name),
     );
 

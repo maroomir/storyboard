@@ -4,6 +4,7 @@ import { z } from 'zod';
 import {
   sceneGroundingFieldKeys,
   type SceneFile,
+  type SceneGrounding,
   type SceneGroundingFieldKey,
 } from '#model/format/scene';
 
@@ -40,7 +41,7 @@ export function computeSceneGroundingInputKey(
   scene: SceneFile,
   characterNames: readonly string[],
 ): string {
-  const grounding = scene.frontmatter.grounding ?? {};
+  const grounding: SceneGrounding = scene.frontmatter.grounding ?? {};
   const source: string = JSON.stringify({
     body: scene.body,
     grounding: Object.fromEntries(
@@ -57,7 +58,8 @@ export function computeSceneGroundingInputKey(
 // A file that cannot be read is treated as empty: the worst case is one more proposal.
 export function parseSceneGroundingGaps(raw: string): SceneGroundingGaps {
   try {
-    const parsed = sceneGroundingGapsSchema.safeParse(JSON.parse(raw));
+    const parsed: z.ZodSafeParseResult<SceneGroundingGapsPayload> =
+      sceneGroundingGapsSchema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data.scenes : {};
   } catch {
     return {};

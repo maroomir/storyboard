@@ -4,9 +4,12 @@ import { hasForeignScript } from '#model/format/foreignScript';
 
 import { parseJsonObject } from './aiResponseParser';
 
-export const storyStateUpdateSections = ['facts', 'relations', 'revealed', 'motifs'] as const;
+export type StoryStateUpdateSection = 'facts' | 'relations' | 'revealed' | 'motifs';
 
-export type StoryStateUpdateSection = (typeof storyStateUpdateSections)[number];
+export const storyStateUpdateSections: readonly [
+  StoryStateUpdateSection,
+  ...StoryStateUpdateSection[],
+] = ['facts', 'relations', 'revealed', 'motifs'];
 
 export interface StoryStateUpdateItem {
   readonly section: StoryStateUpdateSection;
@@ -30,7 +33,7 @@ function readTaggedItem(item: unknown): { text: string; witnesses?: string[] } |
     return { text: item.trim() };
   }
 
-  const tagged = taggedItemSchema.safeParse(item);
+  const tagged: z.ZodSafeParseResult<TaggedItem> = taggedItemSchema.safeParse(item);
   if (!tagged.success) {
     return undefined;
   }
@@ -59,7 +62,7 @@ function coerceSectionItems(
 
   return parsed.data
     .flatMap((item) => {
-      const tagged = readTaggedItem(item);
+      const tagged: ReturnType<typeof readTaggedItem> = readTaggedItem(item);
       return tagged === undefined ? [] : [tagged];
     })
     .filter((item) => item.text.length > 0 && !hasForeignScript(item.text))

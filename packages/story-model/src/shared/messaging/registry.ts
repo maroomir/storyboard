@@ -150,7 +150,7 @@ export const storyboardRequestPayloadSchemas = {
   'studio.session.load': studioSessionLoadRequestPayloadSchema,
   'usage.read': usageReadRequestPayloadSchema,
   'workspace.runCommand': workspaceRunCommandRequestPayloadSchema,
-} as const;
+} satisfies Readonly<Record<string, z.ZodType>>;
 
 export const storyboardResponsePayloadSchemas = {
   'cards.list': cardsListResponsePayloadSchema,
@@ -199,7 +199,7 @@ export const storyboardResponsePayloadSchemas = {
   'studio.session.load': studioSessionLoadResponsePayloadSchema,
   'usage.read': usageReadResponsePayloadSchema,
   'workspace.runCommand': workspaceRunCommandResponsePayloadSchema,
-} as const;
+} satisfies Readonly<Record<string, z.ZodType>>;
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas;
 export type StoryboardResponseMethod = keyof typeof storyboardResponsePayloadSchemas;

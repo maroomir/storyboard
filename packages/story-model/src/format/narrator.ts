@@ -6,20 +6,28 @@ import { pointOfViews, type PointOfView } from './project';
 // 시점을 이름 붙인 카드로 만들어 씬·장이 고를 수 있게 한다. 카드를 만들지 않은 프로젝트는
 // `setting.pov` 하나만으로 종전과 같이 동작한다 — 그 값에서 암묵 서술자를 파생한다.
 
-export const narratorPersons = ['first', 'second', 'third'] as const;
+export type NarratorPerson = 'first' | 'second' | 'third';
 
-export type NarratorPerson = (typeof narratorPersons)[number];
+export const narratorPersons: readonly [NarratorPerson, ...NarratorPerson[]] = [
+  'first',
+  'second',
+  'third',
+];
 
 // witnessed: 초점 인물이 직접 겪거나 지각한 것만 안다.
 // omniscient: 모든 인물의 내면과 아직 일어나지 않은 일까지 안다.
 // retrospective: 초점 인물이 결말을 이미 아는 자리에서 회고한다.
-export const narratorKnowledges = ['witnessed', 'omniscient', 'retrospective'] as const;
+export type NarratorKnowledge = 'witnessed' | 'omniscient' | 'retrospective';
 
-export type NarratorKnowledge = (typeof narratorKnowledges)[number];
+export const narratorKnowledges: readonly [NarratorKnowledge, ...NarratorKnowledge[]] = [
+  'witnessed',
+  'omniscient',
+  'retrospective',
+];
 
-export const narrativeTenses = ['past', 'present'] as const;
+export type NarrativeTense = 'past' | 'present';
 
-export type NarrativeTense = (typeof narrativeTenses)[number];
+export const narrativeTenses: readonly [NarrativeTense, ...NarrativeTense[]] = ['past', 'present'];
 
 export const narratorPersonLabels: Record<NarratorPerson, string> = {
   first: '1인칭',
@@ -155,7 +163,7 @@ function resolveNarratorCard(sources: NarrationSources): NarratorCard | undefine
     return undefined;
   }
 
-  const narrator = sources.narrators?.get(id);
+  const narrator: NarratorCard | undefined = sources.narrators?.get(id);
 
   // 없는 서술자를 조용히 기본값으로 떨어뜨리면 잘못된 시점으로 초안을 덮어쓴다. 씬 카드의 오타는
   // 생성 전에 계약 검증과 doctor가 잡고, 여기서는 소리 내어 실패한다.

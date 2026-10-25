@@ -23,7 +23,7 @@ export function seedPromotedFact(fact: BibleFact): BibleFact {
 }
 
 export function aggregateCandidateFacts(records: readonly BibleCandidateRecord[]): BibleFact[] {
-  const byId = new Map<string, BibleFact>();
+  const byId: Map<string, BibleFact> = new Map<string, BibleFact>();
 
   for (const record of records) {
     for (const fact of record.facts) {
@@ -44,7 +44,7 @@ export function selectNewCandidates(
 }
 
 export function mergeCanonFacts(canon: StoryBible, promoted: readonly BibleFact[]): StoryBible {
-  const byId = new Map(canon.facts.map((fact) => [fact.id, fact] as const));
+  const byId: Map<string, BibleFact> = new Map(canon.facts.map((fact) => [fact.id, fact] as const));
 
   for (const fact of promoted) {
     byId.set(fact.id, { ...fact, status: 'canon' });

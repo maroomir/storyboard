@@ -220,7 +220,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
   // NOTE: A draft cache hit skips the whole generation pipeline (incl. persona/background
   // regen), so every card field that reaches a generation prompt must be digested here or
   // edits to it would serve a stale draft.
-  const digestSource = {
+  const digestSource: Readonly<Record<string, unknown>> = {
     sceneBody: input.sceneBody,
     characters: input.characters.map((character) => ({
       id: character.id,

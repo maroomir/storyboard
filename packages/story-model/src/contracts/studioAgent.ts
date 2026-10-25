@@ -1,5 +1,7 @@
 import { parseJsonObject } from './aiResponseParser';
 
+type UntypedFields = Readonly<Record<string, unknown>>;
+
 export type StudioAgentEntityKind = 'character' | 'background' | 'scene';
 
 export interface StudioAgentLookupRequest {
@@ -7,7 +9,17 @@ export interface StudioAgentLookupRequest {
   readonly key: string;
 }
 
-export const studioAgentToolNames = [
+export type StudioAgentToolName =
+  | 'continuityCheck'
+  | 'grammarCheck'
+  | 'expand'
+  | 'condense'
+  | 'augment'
+  | 'collectFromDrafts'
+  | 'cardAudit'
+  | 'relationCheck';
+
+export const studioAgentToolNames: readonly [StudioAgentToolName, ...StudioAgentToolName[]] = [
   'continuityCheck',
   'grammarCheck',
   'expand',
@@ -16,9 +28,7 @@ export const studioAgentToolNames = [
   'collectFromDrafts',
   'cardAudit',
   'relationCheck',
-] as const;
-
-export type StudioAgentToolName = (typeof studioAgentToolNames)[number];
+];
 
 // NOTE: which tools a conversation may call follows the file being edited, so a card chat never
 // sees a draft transform and vice versa; the prompt, the composer menu and the resolver all key
@@ -169,12 +179,7 @@ function toFollowUp(value: unknown): StudioAgentFollowUp | undefined {
     return undefined;
   }
 
-  const candidate = value as {
-    readonly kind?: unknown;
-    readonly key?: unknown;
-    readonly reason?: unknown;
-    readonly instruction?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   const key: string | undefined = trimmedString(candidate.key);
   const reason: string | undefined = trimmedString(candidate.reason);
@@ -223,7 +228,7 @@ function toLookupRequest(value: unknown): StudioAgentLookupRequest | undefined {
     return undefined;
   }
 
-  const candidate = value as { readonly kind?: unknown; readonly key?: unknown };
+  const candidate: UntypedFields = value as UntypedFields;
   const key: string | undefined = trimmedString(candidate.key);
 
   if (!key || !isLookupKind(candidate.kind)) {
@@ -273,11 +278,7 @@ function toToolSpan(value: unknown): StudioAgentToolSpan | undefined {
     return undefined;
   }
 
-  const candidate = value as {
-    readonly startOffset?: unknown;
-    readonly endOffset?: unknown;
-    readonly oldText?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (
     !isNonNegativeInteger(candidate.startOffset) ||
@@ -321,11 +322,7 @@ function toPatch(value: unknown): StudioPatch | undefined {
     return undefined;
   }
 
-  const candidate = value as {
-    readonly target?: unknown;
-    readonly changes?: unknown;
-    readonly replacements?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (candidate.target === 'card') {
     const changes: StudioCardFieldChange[] = (
@@ -355,7 +352,7 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
     return undefined;
   }
 
-  const candidate = value as { readonly field?: unknown; readonly value?: unknown };
+  const candidate: UntypedFields = value as UntypedFields;
   const field: string | undefined = trimmedString(candidate.field);
 
   if (!field) {
@@ -409,12 +406,7 @@ function toDraftReplacement(value: unknown): StudioDraftReplacement | undefined 
     return undefined;
   }
 
-  const candidate = value as {
-    readonly startOffset?: unknown;
-    readonly endOffset?: unknown;
-    readonly oldText?: unknown;
-    readonly newText?: unknown;
-  };
+  const candidate: UntypedFields = value as UntypedFields;
 
   if (
     !isNonNegativeInteger(candidate.startOffset) ||

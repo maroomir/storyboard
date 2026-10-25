@@ -16,7 +16,7 @@ import {
 } from '@storyboard/story-ai';
 import {
   compositionPresetOverrideSchema,
-  craftContractOverrideSchema,
+  craftContractOverrideFileSchema,
   joinStoryPath,
   overrideCompositionPresetDefaults,
   parsePipelineSpec,
@@ -101,7 +101,7 @@ export async function loadResourceOverrides(
       {
         kind: 'craftContract',
         label: '작법 계약 파일',
-        schema: craftContractOverrideSchema.strict(),
+        schema: craftContractOverrideFileSchema,
         apply: overrideCraftContractDefaults,
       },
     );
@@ -125,7 +125,7 @@ export async function loadResourceOverrides(
       {
         kind: 'compositionPresets',
         label: '구성 프리셋 파일',
-        schema: compositionPresetOverrideSchema.strict(),
+        schema: compositionPresetOverrideSchema,
         apply: overrideCompositionPresetDefaults,
       },
     );

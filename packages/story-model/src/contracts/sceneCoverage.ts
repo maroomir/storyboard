@@ -2,9 +2,12 @@ import { z } from 'zod';
 
 import { parseJsonArray } from './aiResponseParser';
 
-export const coverageStatuses = ['missing', 'out-of-order'] as const;
+export type CoverageStatus = 'missing' | 'out-of-order';
 
-export type CoverageStatus = (typeof coverageStatuses)[number];
+export const coverageStatuses: readonly [CoverageStatus, ...CoverageStatus[]] = [
+  'missing',
+  'out-of-order',
+];
 
 export interface SceneCoverageIssue {
   readonly index: number;
@@ -27,7 +30,8 @@ export function coerceSceneCoverage(rawText: string, beatCount: number): SceneCo
 
   const seen: Set<string> = new Set<string>();
   return parsedArray.flatMap((item) => {
-    const parsed = sceneCoverageIssueSchema.safeParse(item);
+    const parsed: z.ZodSafeParseResult<SceneCoverageIssue> =
+      sceneCoverageIssueSchema.safeParse(item);
     if (!parsed.success || parsed.data.index > beatCount) {
       return [];
     }

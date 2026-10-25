@@ -1,5 +1,5 @@
-import type { CharacterCard } from '#model/format/card';
-import type { CardCandidateRecord } from '#model/shared/cardCandidates';
+import type { CharacterArc, CharacterCard, CharacterRelation } from '#model/format/card';
+import type { CardCandidateCharacter, CardCandidateRecord } from '#model/shared/cardCandidates';
 
 export type CardCandidateItem =
   | {
@@ -122,7 +122,7 @@ export function pruneRecordByPromotedKeys(
   record: CardCandidateRecord,
   promotedKeys: ReadonlySet<string>,
 ): CardCandidateRecord {
-  const characters = record.characters
+  const characters: CardCandidateCharacter[] = record.characters
     .map((character) => ({
       ...character,
       attributes: character.attributes.filter(
@@ -174,9 +174,11 @@ export function applyCardCandidateItems(
   card: CharacterCard,
   items: readonly CardCandidateItem[],
 ): CharacterCard {
-  const attributes = { ...(card.attributes ?? {}) };
-  const relations = [...(card.relations ?? [])];
-  const arc = [...(card.arc ?? [])];
+  const attributes: Record<string, string | number | boolean | null> = {
+    ...(card.attributes ?? {}),
+  };
+  const relations: CharacterRelation[] = [...(card.relations ?? [])];
+  const arc: CharacterArc[] = [...(card.arc ?? [])];
 
   for (const item of items) {
     if (item.cardId !== card.id) {

@@ -7,9 +7,9 @@ export const sceneSummaryFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\
 
 // 씬을 구체적인 사건으로 못박는 4개 사실. 가사·분위기 스케치처럼 추상적인 씬이 은유만으로
 // 생성되는 것을 막는다.
-export const sceneGroundingFieldKeys = ['incident', 'place', 'relation', 'time'] as const;
+export type SceneGroundingFieldKey = 'incident' | 'place' | 'relation' | 'time';
 
-export type SceneGroundingFieldKey = (typeof sceneGroundingFieldKeys)[number];
+export const sceneGroundingFieldKeys: readonly [SceneGroundingFieldKey, ...SceneGroundingFieldKey[]] = ['incident', 'place', 'relation', 'time'];
 
 export interface SceneGrounding {
   incident?: string;
@@ -57,7 +57,6 @@ export type SceneBeat = string | SceneBeatDetail;
 
 export const sceneBeatSchema: z.ZodType<SceneBeat> = z.union([z.string().trim().min(1), sceneBeatDetailSchema]);
 
-
 export function sceneBeatText(beat: SceneBeat): string {
   return typeof beat === 'string' ? beat : beat.text;
 }
@@ -92,7 +91,11 @@ export function findUnknownBeatCast(
   );
 }
 
-export const sceneBeatCoordinateLabels = { cast: '출연', place: '장소', time: '시각' } as const;
+export const sceneBeatCoordinateLabels: Readonly<Record<'cast' | 'place' | 'time', string>> = {
+  cast: '출연',
+  place: '장소',
+  time: '시각',
+};
 
 // 비트의 좌표 한 줄(«출연: … / 장소: … / 시각: …»). 문자열 비트나 좌표 없는 비트는 undefined.
 export function formatSceneBeatCoordinates(
@@ -282,7 +285,17 @@ export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
   };
 }
 
-export const sceneSeedSectionLabels = {
+export type SceneSeedSection =
+  | 'purpose'
+  | 'conflict'
+  | 'twist'
+  | 'emotionalShift'
+  | 'endState'
+  | 'foreshadowing'
+  | 'neededCanon'
+  | 'targetWordCount';
+
+export const sceneSeedSectionLabels: Readonly<Record<SceneSeedSection, string>> = {
   purpose: '목적',
   conflict: '갈등',
   twist: '반전',
@@ -291,7 +304,7 @@ export const sceneSeedSectionLabels = {
   foreshadowing: '회수할 복선',
   neededCanon: '필요 설정',
   targetWordCount: '목표 분량',
-} as const;
+};
 
 export const sceneSummaryLabel: string = '창작자 요약';
 
@@ -343,7 +356,7 @@ export function renderSceneCardBody(
     );
   }
 
-  const beats = card.beats ?? [];
+  const beats: SceneBeat[] = card.beats ?? [];
   const summary: string | undefined = summaryText?.trim();
   const hasSummary: boolean = summary !== undefined && summary.length > 0;
   if (beats.length > 0) {

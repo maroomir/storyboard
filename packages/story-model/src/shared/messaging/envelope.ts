@@ -75,13 +75,14 @@ const requestEnvelopeSchema: z.ZodType<RequestEnvelope> = z.object({
 });
 
 export function parseStoryboardRequestMessage(message: unknown): StoryboardRequestMessage {
-  const envelope = requestEnvelopeSchema.parse(message);
+  const envelope: RequestEnvelope = requestEnvelopeSchema.parse(message);
 
   if (!isStoryboardRequestMethod(envelope.method)) {
     throw new Error(`Unsupported Storyboard RPC method: ${envelope.method}`);
   }
 
-  const payload = storyboardRequestPayloadSchemas[envelope.method].parse(envelope.payload);
+  const payload: StoryboardRequestPayload<StoryboardRequestMethod> =
+    storyboardRequestPayloadSchemas[envelope.method].parse(envelope.payload);
 
   return {
     protocolVersion: envelope.protocolVersion,

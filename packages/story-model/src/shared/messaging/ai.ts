@@ -39,7 +39,8 @@ export const aiGenerateRequestPayloadSchema: z.ZodType<AiGenerateRequestPayload>
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().positive().optional(),
 });
-export const aiGenerateStreamRequestPayloadSchema = aiGenerateRequestPayloadSchema;
+export const aiGenerateStreamRequestPayloadSchema: z.ZodType<AiGenerateRequestPayload> =
+  aiGenerateRequestPayloadSchema;
 
 export const aiProviderStatusSchema: z.ZodType<AiProviderStatus> = z.object({
   providerId: providerIdSchema,
@@ -89,7 +90,8 @@ export const aiGenerateResponsePayloadSchema: z.ZodType<AiGenerateResponsePayloa
   usage: aiUsageSchema.optional(),
   costUsd: z.number().optional(),
 });
-export const aiGenerateStreamResponsePayloadSchema = aiGenerateResponsePayloadSchema;
+export const aiGenerateStreamResponsePayloadSchema: z.ZodType<AiGenerateResponsePayload> =
+  aiGenerateResponsePayloadSchema;
 export interface AiGenerateStreamChunkEventPayload {
   requestId: string;
   delta: string;

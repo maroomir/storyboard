@@ -3,7 +3,7 @@ import { z } from 'zod';
 const proposalBaseFields = {
   id: z.string().min(1),
   sourceScenes: z.array(z.string()),
-};
+} satisfies z.ZodRawShape;
 
 export type CardCollectProposal =
   | {

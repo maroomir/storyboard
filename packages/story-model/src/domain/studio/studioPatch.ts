@@ -1,8 +1,9 @@
-import { cardSchema } from '#model/format/card';
+import { cardSchema, type StoryboardCard } from '#model/format/card';
 import { parseCard, serializeCard } from '#model/format/files/card';
 import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
 
-import type { StudioPatch } from '#model/contracts/studioAgent';
+import type { StudioDraftReplacement, StudioPatch } from '#model/contracts/studioAgent';
+import type { ZodSafeParseResult } from 'zod';
 
 export type StudioPatchTarget = 'entityCard' | 'sceneCard' | 'draft';
 
@@ -81,7 +82,9 @@ function applyEntityCardPatch(
     return { ok: false, message: '카드를 읽을 수 없어 수정을 적용하지 못했습니다.' };
   }
 
-  const parsed = cardSchema.safeParse(mergeChanges(card, changes));
+  const parsed: ZodSafeParseResult<StoryboardCard> = cardSchema.safeParse(
+    mergeChanges(card, changes),
+  );
 
   if (!parsed.success) {
     return {
@@ -135,7 +138,7 @@ function mergeChanges(
   card: Record<string, unknown>,
   changes: readonly StudioCardFieldChange[],
 ): Record<string, unknown> {
-  const merged = { ...card };
+  const merged: Record<string, unknown> = { ...card };
 
   for (const change of changes) {
     merged[change.field] = Array.isArray(change.value) ? [...change.value] : change.value;
@@ -146,21 +149,18 @@ function mergeChanges(
 
 function applyDraftPatch(
   baseline: string,
-  replacements: readonly {
-    readonly startOffset: number;
-    readonly endOffset: number;
-    readonly oldText: string;
-    readonly newText: string;
-  }[],
+  replacements: readonly StudioDraftReplacement[],
 ): StudioPatchResult {
-  const ordered = [...replacements].sort((left, right) => left.startOffset - right.startOffset);
+  const ordered: StudioDraftReplacement[] = [...replacements].sort(
+    (left, right) => left.startOffset - right.startOffset,
+  );
 
   for (const [index, replacement] of ordered.entries()) {
     if (replacement.endOffset > baseline.length) {
       return { ok: false, message: '수정 범위가 본문을 벗어났습니다.' };
     }
 
-    const previous = ordered[index - 1];
+    const previous: StudioDraftReplacement | undefined = ordered[index - 1];
 
     if (previous && replacement.startOffset < previous.endOffset) {
       return { ok: false, message: '수정 범위가 서로 겹칩니다.' };

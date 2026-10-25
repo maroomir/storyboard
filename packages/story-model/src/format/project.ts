@@ -4,21 +4,32 @@ import { craftContractOverrideSchema } from './craftContract';
 
 export const storyboardProjectVersion: string = '1.0.0';
 
-export const projectFormats = ['novel', 'screenplay', 'play', 'essay', 'poem'] as const;
+export type ProjectFormat = 'novel' | 'screenplay' | 'play' | 'essay' | 'poem';
 
-export type ProjectFormat = (typeof projectFormats)[number];
+export const projectFormats: readonly [ProjectFormat, ...ProjectFormat[]] = [
+  'novel',
+  'screenplay',
+  'play',
+  'essay',
+  'poem',
+];
 
 // NOTE: 창작자가 고르는 시점 목록. 서술자 카드를 만들지 않아도 이 값 하나로 서술 인칭·지식 경계가
 // 정해진다(암묵 서술자). 값 추가는 하위 호환이다 — 기존 세 값의 의미는 그대로다.
-export const pointOfViews = [
+export type PointOfView =
+  | 'first'
+  | 'first-retrospective'
+  | 'second'
+  | 'third-limited'
+  | 'third-omniscient';
+
+export const pointOfViews: readonly [PointOfView, ...PointOfView[]] = [
   'first',
   'first-retrospective',
   'second',
   'third-limited',
   'third-omniscient',
-] as const;
-
-export type PointOfView = (typeof pointOfViews)[number];
+];
 
 // 이름이 쓰이는 자리가 둘이라 칸도 둘이다. `label` 은 아웃라인 본문처럼 «시점: » 뒤에 붙는 짧은
 // 이름이고, `optionLabel` 은 고르는 자리에서 혼자 서는 이름이다.
@@ -42,9 +53,14 @@ export const pointOfViewLabels: Record<PointOfView, string> = Object.fromEntries
   pointOfViews.map((pov) => [pov, pointOfViewCatalog[pov].label]),
 ) as Record<PointOfView, string>;
 
-export const contractFieldKeys = ['genre', 'audience', 'pov', 'targetWordCount'] as const;
+export type ContractFieldKey = 'genre' | 'audience' | 'pov' | 'targetWordCount';
 
-export type ContractFieldKey = (typeof contractFieldKeys)[number];
+export const contractFieldKeys: readonly [ContractFieldKey, ...ContractFieldKey[]] = [
+  'genre',
+  'audience',
+  'pov',
+  'targetWordCount',
+];
 
 export const contractFieldLabels: Record<ContractFieldKey, string> = {
   genre: '장르',
@@ -65,9 +81,14 @@ export const projectEditorSchema: z.ZodType<ProjectEditor> = z.object({
 
 // 구성. 스레드와 서술자를 어떻게 배치할지 정하는 프리셋이며, 실제 배치는 프리셋이 threads와
 // 아웃라인 지시로 풀어낸다.
-export const compositionKinds = ['linear', 'omnibus', 'alternating-pov', 'frame'] as const;
+export type CompositionKind = 'linear' | 'omnibus' | 'alternating-pov' | 'frame';
 
-export type CompositionKind = (typeof compositionKinds)[number];
+export const compositionKinds: readonly [CompositionKind, ...CompositionKind[]] = [
+  'linear',
+  'omnibus',
+  'alternating-pov',
+  'frame',
+];
 
 export const compositionCatalog: Record<CompositionKind, NarrativeChoiceLabels> = {
   linear: { label: '선형', optionLabel: '선형 — 한 줄기로 이어지는 이야기' },

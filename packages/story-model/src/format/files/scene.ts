@@ -149,7 +149,7 @@ async function readSceneSummaryText(
 }
 
 export function serializeSceneCard(card: SceneCard): string {
-  const parsedCard = sceneCardSchema.parse(card);
+  const parsedCard: SceneCard = sceneCardSchema.parse(card);
 
   return yaml.dump(normalizeSceneCardForSerialization(parsedCard), {
     lineWidth: -1,

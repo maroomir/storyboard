@@ -2,13 +2,17 @@ import { z } from 'zod';
 
 import { parseJsonArray } from './aiResponseParser';
 
-export const critiqueCategories = ['voice', 'purpose', 'repetition'] as const;
+export type CritiqueCategory = 'voice' | 'purpose' | 'repetition';
 
-export type CritiqueCategory = (typeof critiqueCategories)[number];
+export const critiqueCategories: readonly [CritiqueCategory, ...CritiqueCategory[]] = [
+  'voice',
+  'purpose',
+  'repetition',
+];
 
-export const severities = ['high', 'low'] as const;
+export type Severity = 'high' | 'low';
 
-export type Severity = (typeof severities)[number];
+export const severities: readonly [Severity, ...Severity[]] = ['high', 'low'];
 
 export interface DraftCritiqueIssue {
   readonly category: CritiqueCategory;
@@ -48,7 +52,8 @@ export function coerceCritiqueIssues(rawText: string): DraftCritiqueIssue[] {
   }
 
   return parsedArray.flatMap((item) => {
-    const parsed = draftCritiqueIssueSchema.safeParse(item);
+    const parsed: z.ZodSafeParseResult<DraftCritiqueIssue> =
+      draftCritiqueIssueSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
   });
 }
