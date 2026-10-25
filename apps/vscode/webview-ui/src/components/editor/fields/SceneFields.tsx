@@ -122,7 +122,6 @@ export function SceneFields({
                 {narrator.name} — {narrator.summary}
               </option>
             ))}
-            {/* 로스터에 없는 값이 카드에 적혀 있으면 선택이 조용히 지워지지 않게 남겨 둔다. */}
             {card.narrator !== undefined &&
             !narratorRoster.some((narrator) => narrator.id === card.narrator) ? (
               <option value={card.narrator}>{card.narrator} (카드 없음)</option>

@@ -27,7 +27,6 @@ describe("대사 다듬기 계약", () => {
     expect(system).toContain("[아는 것]에 적힌 정보만")
   })
 
-  // 반려 사유는 호출마다 다르므로 캐시되는 system 이 아니라 user 꼬리에 간다(#107).
   it("carries the rejection reasons only on a retry, in the per-call tail", () => {
     const first = SceneDialoguePolishPrompt.build(polishInput)
     const retry = SceneDialoguePolishPrompt.build({

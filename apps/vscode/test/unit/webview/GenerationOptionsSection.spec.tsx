@@ -96,7 +96,6 @@ describe("GenerationOptionsSection", () => {
     expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "revise.loop.maxIterations", value: 4 })
   })
 
-  // 비운 칸은 0(제한 없음)이 아니라 저장된 값을 그대로 둔다는 뜻이다.
   it("keeps the saved budget when its field is cleared", () => {
     const callRpc = vi.fn().mockResolvedValue({})
 

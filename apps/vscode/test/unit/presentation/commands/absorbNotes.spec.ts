@@ -4,8 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { registerAbsorbNotesCommand } from "@/presentation/commands/absorbNotes"
 import { commands, FileType, window, workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
-// #52: 익스텐션의 노트 흡수는 CLI 와 같은 네 단계다 — 읽기, 견적 확인, 정리, 계획 확인 뒤 반영. 첫 확인 전에는
-// 쓰지 않고 둘째 확인 전에는 아무것도 쓰지 않는다.
 describe("absorbNotes command", () => {
   const workspaceRoot = vscode.Uri.file("/ws/project")
   const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }

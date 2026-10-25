@@ -10,15 +10,11 @@ import {
   trimRunAheadDialogue
 } from "@storyboard/story-engine"
 
-// #106 실측: 장면 전환(---)이 잦은 뼈대에서 전환마다 예산의 절반만 차도 잘라 앞 구간이 일찍 닫히고,
-// 뼈대의 44~47%가 마지막 구간에 몰렸다. 그 구간의 몫은 출력 상한에 잘려 버려져 구간 목표의 합이
-// 씬 목표의 73%에 그쳤다 — 살붙임이 구간 목표를 다 채워도 분량이 닿지 않는 구조였다.
 describe("splitSkeletonIntoSections — 고른 분할", () => {
   const paragraph = (n: number): string => `문단${n} ${"가".repeat(200)}`
   const lengthsOf = (sections: readonly string[]): number[] => sections.map((section) => section.length)
 
   it("passes a scene break that comes too early when the next one sits closer to the budget", () => {
-    // 전환이 두 문단마다 있는 뼈대. 예산(세 구간)은 네 문단이라 첫 전환은 절반, 둘째 전환이 딱 맞다.
     const groups = Array.from({ length: 6 }, (_, group) => [paragraph(group * 2), paragraph(group * 2 + 1)])
     const skeleton = groups.map((pair) => pair.join("\n\n")).join("\n\n---\n\n")
 
@@ -32,8 +28,6 @@ describe("splitSkeletonIntoSections — 고른 분할", () => {
   })
 
   it("re-budgets from what is left so an early cut does not pile the rest on the last section", () => {
-    // 첫 전환이 예산의 절반을 겨우 넘기고 다음 전환은 멀어서 첫 구간이 얇게 닫힌다. 남은 두 구간은
-    // 남은 뼈대를 둘로 나눈 예산을 받아야 마지막 구간이 비대해지지 않는다.
     const skeleton = [
       paragraph(1),
       paragraph(2),
@@ -44,7 +38,6 @@ describe("splitSkeletonIntoSections — 고른 분할", () => {
     const [first, second, third] = lengthsOf(splitSkeletonIntoSections(skeleton, 3))
 
     expect(first).toBeLessThan(second as number)
-    // 문단 경계는 예산을 넘긴 첫 자리에서 자르므로 한 문단만큼 넘칠 수 있고, 마지막 구간이 그만큼 얇다.
     expect(Math.abs((second as number) - (third as number))).toBeLessThanOrEqual(paragraph(0).length * 2 + 2)
   })
 
@@ -70,7 +63,6 @@ describe("planSectionTargetLengths — 상한에 잘린 몫의 재분배", () =>
   it("hands the excess out in proportion to the uncapped slices", () => {
     const targets = planSectionTargetLengths(["가".repeat(800), "나".repeat(100), "다".repeat(100)], 12000)
 
-    // 비례 몫 9600·1200·1200 → 첫 구간 7000, 남는 2600을 1:1로 → 1200 + 1300 씩
     expect(targets).toEqual([7000, 2500, 2500])
   })
 
@@ -85,8 +77,6 @@ describe("planSectionTargetLengths — 상한에 잘린 몫의 재분배", () =>
   })
 })
 
-// 장면 전환이 드문 긴 대목은 문단 경계에서 잘린다. 대화 한복판에서 자르면 앞 구간이 대화를 마저 써
-// 다음 구간과 겹쳤다.
 describe("splitSkeletonIntoSections — 대화 한복판", () => {
   it("cuts only between two narration paragraphs once the budget is met", () => {
     const narration = (label: string): string => `${label} ${"서술".repeat(60)}`
@@ -133,8 +123,6 @@ describe("findRunAheadDialogue", () => {
   })
 })
 
-// #122: 구간 쓰기가 비트 사이에서 인물을 좌표에 없는 서재나 각자의 방으로 옮겼다. 좌표·공간 사실·뼈대
-// 어디에도 없는 공간 낱말만 위반이므로 작품이 쓰는 공간은 저절로 허용된다.
 describe("findPlacesOffCoordinates", () => {
   const section = "성재가 소파에 앉았다.\n\n“형은 누나한테 왜 그래.”"
   const sectionPlaces = ["집 거실", "집 현관과 거실"]
@@ -158,7 +146,6 @@ describe("findPlacesOffCoordinates", () => {
   })
 })
 
-// #120: 채울 재료가 바닥나면 모델은 직전 구간을 «아까 …»로 되짚는 쪽으로 수렴한다. 구간마다 세어 경고한다.
 describe("countRecapPhrases", () => {
   it("counts every recap phrase in the section", () => {
     expect(countRecapPhrases("아까 거실에서의 정적과는 달랐다. 아까 식탁에서 나를 몰아붙이던 표정과는…")).toBe(2)

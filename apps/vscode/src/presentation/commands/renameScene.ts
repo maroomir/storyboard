@@ -96,8 +96,6 @@ interface TargetScene {
   readonly fromStem: string;
 }
 
-// The explorer passes the card it was opened on; from the palette the active editor's scene is
-// used, and failing that the author picks one.
 async function resolveTargetScene(invokedUri?: vscode.Uri): Promise<TargetScene | undefined> {
   const workspaceRoot: vscode.Uri | undefined = invokedUri
     ? vscode.workspace.getWorkspaceFolder(invokedUri)?.uri

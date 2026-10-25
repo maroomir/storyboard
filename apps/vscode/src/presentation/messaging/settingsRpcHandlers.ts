@@ -110,8 +110,6 @@ export function createSettingsRpcHandlers(
   };
 }
 
-// A write goes to the workspace file only when that layer already held the key (ConfigBridge
-// picks the target), so the origin read back after the write is where the value now lives.
 function describeSaveTarget(
   deps: SettingsReadDependencies,
   key: string,

@@ -135,7 +135,6 @@ describe("buildSceneSeeds", () => {
     const scene = parseScene(first.content, first.fileName)
 
     expect(scene.frontmatter.summary).toBeUndefined()
-    // 안내 문구를 채워 두면 이 함수가 그 한 줄만 골라 계획 블록을 전부 버린다.
     expect(extractSceneNarrativeSource(scene.body)).toContain("주인공 소개")
   })
 

@@ -94,7 +94,6 @@ describe("ClaudeProvider", () => {
     expect(didCreateMessage).toBe(true)
   })
 
-  // 같은 역할이 이어지면 블록으로 합치고, 캐시 경계 메시지의 블록에만 cache_control 을 단다.
   it("merges consecutive same-role messages into blocks and marks the cache boundary", async () => {
     let capturedMessages: Parameters<ClaudeClientLike["messages"]["create"]>[0]["messages"] = []
     const provider = new ClaudeProvider({

@@ -125,8 +125,6 @@ async function runAudit(
   ].join('\n');
 }
 
-// NOTE: reference integrity is a filesystem fact, so this tool spends no AI call — it walks the
-// cards and reports dangling targets and one-way relations directly.
 async function runRelationCheck(input: StudioCardToolResolverInput): Promise<string> {
   const lines: string[] =
     input.entity.kind === 'scene'
@@ -177,7 +175,6 @@ async function checkCardRelations(input: StudioCardToolResolverInput): Promise<s
   }
 
   for (const relation of card.relations ?? []) {
-    // SECURITY: the target becomes a file path, so an unsafe id is reported broken, never read.
     const targetText: string | undefined = isSafeStudioEntityKey(relation.target)
       ? await readCardText(characterCardPath(input.workspaceRoot, relation.target))
       : undefined;

@@ -91,7 +91,6 @@ describe("ConfigBridge", () => {
     expect(providerOnly.getTaskAiConfig("sceneDraft")).toEqual({ providerId: "claude", model: "claude-sonnet-4-6" })
   })
 
-  // 로컬 태그는 사용자가 내려받은 것이다. 카탈로그에서 빠졌다고 다른 모델로 바꿔 부르면 안 된다.
   it("keeps a configured ollama model even when the catalog does not list it", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
@@ -211,8 +210,6 @@ describe("ConfigBridge", () => {
     expect(values.get("providers.ollama.baseUrl")).toBe("http://127.0.0.1:11434")
   })
 
-  // A config file written before the subscription CLIs left still names one. It now reads as no
-  // choice at all rather than as a different provider — the author picks again knowingly.
   it("reads a retired subscription-CLI provider as unconfigured", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
@@ -338,8 +335,6 @@ describe("ConfigBridge", () => {
     ).toBe(true)
   })
 
-  // A write lands in the layer the author is looking at: the workspace file only when it already
-  // holds the key, otherwise the shared home file.
   it("writes to the workspace layer only when the key already lives there", async () => {
     const targets: Array<[string, number | undefined]> = []
     const configuration: StoryboardConfigurationLike = {

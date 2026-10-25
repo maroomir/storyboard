@@ -3,8 +3,6 @@ import * as vscode from 'vscode';
 import { UsageLedgerRecorder } from '@storyboard/story-engine';
 import { type UsageLedgerFileSystem, type StoryUri } from '@storyboard/story-model';
 
-// The ledger itself lives in the engine so every app records cost the same way; the extension only
-// adds the dispose hook its lifecycle expects.
 export class UsageRecorder extends UsageLedgerRecorder implements vscode.Disposable {
   public dispose(): void {
     this.clearListeners();

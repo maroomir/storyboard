@@ -76,8 +76,6 @@ export function createStudioFollowUpRpcHandlers(
         return { opened: false };
       }
 
-      // SECURITY: the path arrives from the webview, so it is rebuilt from the validated entity
-      // rather than trusted as given.
       const targetFile: string | undefined = entityTargetFile(payload.entity);
 
       if (!targetFile || targetFile !== payload.targetFile) {
@@ -86,8 +84,6 @@ export function createStudioFollowUpRpcHandlers(
 
       try {
         const uri: vscode.Uri = vscode.Uri.joinPath(root, targetFile);
-        // NOTE: opened as a preview tab so walking a chain of follow-ups does not bury the author
-        // in editor tabs.
         await vscode.window.showTextDocument(uri, { preview: true });
         return { opened: true };
       } catch {

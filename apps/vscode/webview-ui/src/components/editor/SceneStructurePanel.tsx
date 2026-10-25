@@ -72,7 +72,6 @@ const LIST_LABELS: readonly { key: 'foreshadowing' | 'neededCanon'; label: strin
   { key: 'neededCanon', label: '필요 설정' },
 ];
 
-// NOTE: 제안은 비어 있는 필드에만 반영한다 — 사용자가 적어 둔 값이 항상 이긴다(grounding과 같은 규칙).
 export function applyStructureProposal(
   card: SceneCard,
   proposal: SceneStructureProposal,

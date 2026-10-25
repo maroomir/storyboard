@@ -3,9 +3,6 @@ import { describe, expect, it } from "vitest"
 import { ConfigBridge, type StoryboardConfigurationLike } from "@storyboard/story-ai"
 import { storyboardSettingCatalog, type StoryboardSettingDefinition } from "@storyboard/story-model"
 
-// 설정을 읽는 접근자마다 기본값과 허용 범위를 다시 적던 시절에는 설정 화면과 실제 생성이 서로 다른
-// 값을 쓰는 상태로 갈라질 수 있었다. 이 표는 카탈로그의 모든 키를 접근자에 이어 붙여, 새 설정이
-// 들어오면 행을 추가하게 만들고 접근자가 카탈로그를 벗어나면 실패한다.
 const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | number | string | undefined>> = {
   "revise.loop.afterGenerate": (bridge) => bridge.isReviseAfterGenerateEnabled(),
   "revise.loop.maxIterations": (bridge) => bridge.getReviseMaxIterations(),
@@ -53,7 +50,6 @@ describe("ConfigBridge against the setting catalog", () => {
     const bridge = bridgeReading({})
 
     for (const definition of storyboardSettingCatalog) {
-      // 장면 구분자는 구분자 사용이 꺼져 있으면 undefined 다. 그 조합은 아래에서 따로 본다.
       if (definition.key === "generation.sceneBreak.separator") {
         continue
       }

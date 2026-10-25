@@ -34,10 +34,6 @@ export interface StoryboardHomeStoresOptions {
   readonly onUnknownKey?: (warning: ConfigKeyWarning) => void;
 }
 
-// The extension reads the same `~/.storyboard/config.json` (and `<workspace>/.storyboard/config.json`)
-// the CLI reads, so a provider chosen in one app is the provider in both. A change
-// made by another process reaches the panel through the file watcher; a change made here is
-// announced right after the write so the UI never waits on the watcher's settle delay.
 export function createStoryboardHomeStores(
   options: StoryboardHomeStoresOptions,
 ): StoryboardHomeStores {

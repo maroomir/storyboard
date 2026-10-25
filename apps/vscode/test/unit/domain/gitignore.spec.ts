@@ -25,7 +25,6 @@ describe('mergeStoryboardGitignore', () => {
     );
   });
 
-  // 0.8 이전 워크스페이스는 마커만 있고 manuscript/ 가 없다.
   it('tops up only the missing entries when the marker is already there', () => {
     const stale = '# Storyboard generated files\n.storyboard/cache/\n.draft/\n';
 

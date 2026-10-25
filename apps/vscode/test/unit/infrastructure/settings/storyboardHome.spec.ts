@@ -33,8 +33,6 @@ describe("createStoryboardHomeStores", () => {
     stores.dispose()
   })
 
-  // The panel refreshes from this event, so a write made in the panel must announce itself without
-  // waiting for the file watcher.
   it("announces a change right after an update lands in the file", async () => {
     const stores = createStoryboardHomeStores({ workspaceRoot: workspace, onInvalidFile: () => undefined })
     const listener = vi.fn()

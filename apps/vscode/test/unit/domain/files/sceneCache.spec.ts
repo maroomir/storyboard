@@ -231,8 +231,6 @@ describe("scene input hash: narration fields", () => {
     format: "novel" as const
   }
 
-  // NOTE: narrator·thread·povCharacter 는 프롬프트를 바꾼다. digest 에 없으면 시점을 바꾼 뒤
-  // `draft generate` 가 캐시를 맞다고 판단해 옛 시점의 초안을 그대로 내놓는다.
   it("changes the hash when the scene names a different narrator", () => {
     const before = computeSceneInputHash({ ...base, narration: { narrator: "hana-first" } })
     const after = computeSceneInputHash({ ...base, narration: { narrator: "wide" } })
@@ -254,8 +252,6 @@ describe("scene input hash: narration fields", () => {
     expect(after).not.toBe(before)
   })
 
-  // 이 필드를 쓰지 않는 기존 워크스페이스의 해시는 그대로여야 한다. 바뀌면 업그레이드만으로
-  // 고치지 않은 씬까지 전부 다시 생성된다.
   it("keeps the pre-narration hash when the scene uses none of the fields", () => {
     const legacy = computeSceneInputHash(base)
 

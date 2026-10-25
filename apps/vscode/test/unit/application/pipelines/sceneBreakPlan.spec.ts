@@ -22,7 +22,6 @@ function beat(place: string, time: string, extra: Partial<Exclude<SceneBeat, str
   return { text: `${place}에서 ${time}에 일어난 일`, place, time, ...extra }
 }
 
-// 하루를 따라가는 42비트 카드와 같은 모양: 집 안에서 방을 옮겨 다니고, 학교·공원·옥상으로 나간다.
 const dayBeats: SceneBeat[] = [
   beat("집 거실, 발코니 앞", "아침 6시, 등교 전"),
   beat("집 거실, 발코니 앞 가림막", "아침 6시 10분"),
@@ -157,7 +156,6 @@ describe("planSkeletonCalls", () => {
   const plan = planSceneBreaks(dayBeats, name, 60)!
 
   it("bundles consecutive segments until a call's share of the target would pass the cap", () => {
-    // 25비트·목표 10,000자 → 비트당 400자. 대목 비트 수 [2,1,2,1,1,8,3,3,4].
     expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.markers)).toEqual([[1, 2, 3, 4, 5], [6], [7, 8], [9]])
     expect(planSkeletonCalls(plan, 10_000, 3_200).map((call) => call.beats.length)).toEqual([7, 8, 6, 4])
   })

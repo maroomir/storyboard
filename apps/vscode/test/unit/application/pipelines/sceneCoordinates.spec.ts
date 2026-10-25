@@ -104,7 +104,6 @@ describe('section scene coordinates', () => {
   });
 });
 
-// #122: 한 대목이 여러 비트에 걸치면 구간 쓰기는 비트별 장소를 알아야 인물을 좌표 밖의 방으로 옮기지 않는다.
 describe('section beat coordinates', () => {
   const beats: SceneBeat[] = [
     { text: '소파에서 성재와 말한다', place: '집 거실', time: '저녁 8시', cast: ['mj', 'sj'] },

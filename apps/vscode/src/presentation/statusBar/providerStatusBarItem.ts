@@ -47,8 +47,6 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): Pro
   };
 }
 
-// The one place outside the settings panel that shows which provider a generation will use, so an
-// author never has to open the panel just to confirm a change took.
 export function registerProviderStatusBarItem(
   deps: ProviderStatusBarDependencies,
 ): vscode.Disposable {

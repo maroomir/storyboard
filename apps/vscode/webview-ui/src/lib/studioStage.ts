@@ -15,8 +15,6 @@ export function stageTitle(target: StudioTarget, stage?: StudioStage): string {
   return `씬 ${order} · ${stage.title ?? stage.sceneStem}`;
 }
 
-// NOTE: mirrors the host's rule — a scene entity spans the seed card and its draft, and whichever
-// file the author has open is the one a proposal may rewrite.
 export function editTargetFile(target: StudioTarget): string | undefined {
   const entity: StudioTarget['entity'] = target.entity;
 

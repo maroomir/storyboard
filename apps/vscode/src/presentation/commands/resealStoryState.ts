@@ -60,8 +60,6 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
       return;
     }
 
-    // NOTE: 봉인은 낡음 판정을 지운다. 초안을 다시 만들지 않기로 한 판단이 맞는지는 사람만 알 수
-    // 있으므로 되돌릴 수 없는 편집임을 알리고 확인을 받는다.
     const confirmed: '다시 봉인' | undefined = await vscode.window.showWarningMessage(
       `씬 ${formatSceneOrderRanges(audit.staleSceneOrders)}의 항목 ${audit.staleEntryCount}개를 지금의 카드·씬 기준으로 다시 봉인합니다. 초안은 다시 만들지 않습니다.`,
       { modal: true },

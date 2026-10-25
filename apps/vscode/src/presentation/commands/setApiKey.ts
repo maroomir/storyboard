@@ -4,8 +4,6 @@ import { aiProviderIds, requiresApiKey } from '@storyboard/story-model';
 import { SecretStore } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-model';
 const setApiKeyCommand: string = 'storyboard.apiKey.set';
-// Only the providers a key does anything for: storing one against ollama or a CLI provider would
-// look like it enabled something and change nothing.
 const apiKeyProviderIds: AiProviderId[] = aiProviderIds.filter(requiresApiKey);
 
 export interface RegisterSetApiKeyCommandDependencies {

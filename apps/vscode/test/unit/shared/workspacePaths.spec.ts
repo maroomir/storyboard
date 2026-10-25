@@ -19,8 +19,6 @@ const manifestPath = path.resolve(
   "../../../package.json"
 )
 
-// 디렉터리 이름과 확장자가 앱마다 흩어져 있으면 한 곳만 고쳤을 때 감시자가 파일을 놓치고 사용자는
-// 이유를 알 수 없다. 만드는 경로와 찾는 글롭이 같은 표에서 나오는지 여기서 본다.
 describe("workspace path conventions", () => {
   it("builds card and draft paths under the directories the table names", () => {
     expect(characterCardRelativePath("hana")).toBe(

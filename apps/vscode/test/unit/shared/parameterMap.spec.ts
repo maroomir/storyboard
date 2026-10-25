@@ -16,8 +16,6 @@ function trackedParameterFiles(): readonly string[] {
   return listed.split("\n").filter((line) => line.length > 0)
 }
 
-// 파라미터 파일은 패키지마다 흩어져 있어도 좋지만, 어디에 무엇이 있는지는 한 곳에서 읽을 수 있어야
-// 한다. 새 파일이 지도에 오르지 않거나 스키마 없이 놓이면 여기서 잡는다.
 describe("parameter map", () => {
   const parameterFiles = trackedParameterFiles()
 

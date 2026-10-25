@@ -56,7 +56,6 @@ function collectPreviewUri(documentUri: vscode.Uri): vscode.Uri {
     /\.card$/,
     '',
   );
-  // NOTE: Use .yaml extension so VSCode doesn't route the virtual doc through CardCustomEditorProvider.
   return vscode.Uri.from({
     scheme: collectPreviewScheme,
     path: `/${baseName}.yaml`,
@@ -313,7 +312,6 @@ async function createInitialData(
       card.type === 'character'
         ? await loadCharacterRoster(vscodeFileSystem, workspaceRoot)
         : undefined;
-    // 씬 카드의 서술자 드롭다운은 워크스페이스의 서술자 카드에서 채운다.
     const narratorRoster: NarratorRosterEntry[] | undefined =
       card.type === 'scene' ? await loadNarratorRoster(workspaceRoot) : undefined;
 
@@ -393,8 +391,6 @@ function getDocumentWorkspaceRoot(document: vscode.TextDocument): vscode.Uri {
   return workspaceFolder?.uri ?? vscode.Uri.joinPath(document.uri, '..');
 }
 
-// NOTE: The editor shows summary prose, but the card on disk holds only `<stem>.summary.md`;
-// the prose lives in that sidecar so a creator's summary stays apart from machine-written beats.
 async function loadEditorCard(document: vscode.TextDocument): Promise<WorkspaceCard> {
   const card: WorkspaceCard = parseWorkspaceCard(document.getText());
   const summaryFileName: string | undefined =

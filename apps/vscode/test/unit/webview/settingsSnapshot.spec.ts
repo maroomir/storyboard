@@ -82,8 +82,6 @@ describe("formatResolvedTaskAi", () => {
     expect(formatResolvedTaskAi(snapshot, "sceneDialogue")).toBe("claude / claude model")
   })
 
-  // 웹뷰는 이 목록을 직접 계약에서 읽으므로 사본 대조는 더 이상 의미가 없다. 대신 계약이 실제로
-  // 브라우저 번들에 닿는지를 확인한다.
   describe("provider lists read straight from the contract", () => {
     it("reaches the settings panel with every provider the engine knows", () => {
       expect([...AI_PROVIDER_IDS]).toEqual([...aiProviderIds])

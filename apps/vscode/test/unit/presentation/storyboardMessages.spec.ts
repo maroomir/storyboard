@@ -21,8 +21,6 @@ const commandSources = readdirSync(commandsDirectory)
   .filter((name) => name.endsWith(".ts"))
   .map((name) => ({ name, text: readFileSync(path.join(commandsDirectory, name), "utf8") }))
 
-// 같은 안내를 열두 파일이 저마다 적어 두면 워크스페이스 규칙이 바뀔 때 일부만 고쳐진다. 문구가
-// 다시 흩어지는 순간을 여기서 잡는다.
 describe("shared command messages", () => {
   it("names the workspace marker the table defines", () => {
     expect(storyboardMessages.missingWorkspace).toContain(STORYBOARD_RELATIVE_PATHS.projectJson)
@@ -40,8 +38,6 @@ describe("shared command messages", () => {
     }
   })
 
-  // 호스트는 오류 코드가 아니라 문구로 «키가 없다»를 알아본다. 프로바이더가 내는 문장과 호스트가
-  // 찾는 조각이 같은 상수에서 나오는지 확인한다.
   it("recognises the missing-key notice a provider actually produces", () => {
     expect(missingApiKeyMessage("openai")).toContain(missingApiKeyMarker)
   })

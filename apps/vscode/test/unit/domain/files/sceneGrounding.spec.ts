@@ -150,7 +150,6 @@ describe("scene length budget", () => {
     expect(resolveSceneTargetLength(undefined, sceneSeed)).toBeUndefined()
   })
 
-  // 이 경로가 끊기면 목표 분량 없는 씬이 다시 무한정 길어진다.
   it("puts the derived budget into the generation prompt lines", () => {
     const directive = buildStyleDirective(undefined, undefined, undefined, sceneSeed)
 

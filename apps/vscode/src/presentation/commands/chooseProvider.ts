@@ -16,8 +16,6 @@ interface ProviderPickItem extends vscode.QuickPickItem {
   readonly providerId: AiProviderId;
 }
 
-// The first thing a new install has to decide. Picking a keyed provider flows straight into the
-// key prompt so the author is not sent to a second command to finish the job.
 export async function chooseDefaultProvider(
   deps: ChooseProviderDependencies,
 ): Promise<AiProviderId | undefined> {
@@ -93,8 +91,6 @@ export function registerChooseProviderCommand(deps: ChooseProviderDependencies):
   return vscode.commands.registerCommand(chooseProviderCommand, () => chooseDefaultProvider(deps));
 }
 
-// Shown once per activation in a Storyboard workspace that has never chosen a provider, so the
-// first "Generate" does not end in an error the author has to decode.
 export async function nudgeToChooseProvider(deps: ChooseProviderDependencies): Promise<void> {
   if (deps.configBridge.isDefaultProviderConfigured()) {
     return;

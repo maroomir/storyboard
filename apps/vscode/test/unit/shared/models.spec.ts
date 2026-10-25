@@ -13,8 +13,6 @@ describe("storyboardModelCatalog vs package.json defaults", () => {
     )
   })
 
-  // The extension contributes no VSCode configuration any more, so the defaults the bridge falls
-  // back to are the only ones there are — every one of them must be a catalog model.
   it("includes every provider model default the ConfigBridge falls back to", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => ({
@@ -35,8 +33,6 @@ describe("storyboardModelCatalog vs package.json defaults", () => {
   })
 })
 
-// The catalog is one table now, so what used to be spread over several files is an internal
-// consistency question: a typo in one column must fail here rather than at generation time.
 describe("providerCatalog internal consistency", () => {
   it("lists a default model that the provider actually offers", () => {
     for (const providerId of aiProviderIds) {
@@ -50,8 +46,6 @@ describe("providerCatalog internal consistency", () => {
     }
   })
 
-  // Every provider Storyboard speaks to is billed per token now, so a missing price would make a
-  // paid run look free rather than merely unknown.
   it("reaches every listed provider over http or the offline mock", () => {
     for (const providerId of listAvailableProviderIds()) {
       const entry = providerCatalog[providerId]
@@ -60,16 +54,12 @@ describe("providerCatalog internal consistency", () => {
     }
   })
 
-  // The subscription CLIs left in 0.9.2 and nothing maps onto them any more. A config naming one
-  // must fall through to "no provider chosen" so the author picks again — the model and the price
-  // are different, so choosing on their behalf would spend money they did not agree to.
   it("keeps the retired subscription CLIs out of every list a person is shown", () => {
     for (const retiredId of ["claude-code", "codex", "gemini-cli"]) {
       expect(listAvailableProviderIds(), `${retiredId} is still listed`).not.toContain(retiredId)
     }
   })
 
-  // The program-run provider and the browser-login provider exist only behind a home-file switch.
   it("hides every provider that spends a subscription", () => {
     for (const providerId of aiProviderIds) {
       if (["cli", "oauth"].includes(providerCatalog[providerId].transport)) {
@@ -86,7 +76,6 @@ describe("providerCatalog internal consistency", () => {
       expect(entry.models.length, `${providerId} has no model`).toBeGreaterThan(0)
       expect(new Set(ids).size, `${providerId} repeats a model id`).toBe(ids.length)
 
-      // A subscription login has no price: its usage must read as unpriced, never as free.
       if (entry.transport === "cli" || entry.transport === "oauth") {
         expect(storyboardModelPricing[providerId]).toEqual({})
         continue

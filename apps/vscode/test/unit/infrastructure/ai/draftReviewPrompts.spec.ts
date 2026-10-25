@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 
 import { DraftCritiquePrompt, DraftRevisionPrompt } from '@storyboard/story-ai';
 
-// 접두(캐시되는 공유 재료)와 꼬리(호출마다 다른 것)를 합친 user 전문(#107).
 const userText = (artifact: { userPrefix?: string; user: string }): string => [artifact.userPrefix ?? "", artifact.user].join("\n")
 
 describe("DraftCritiquePrompt", () => {

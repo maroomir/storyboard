@@ -166,7 +166,6 @@ describe("ReviseDraftUseCase", () => {
     )
   })
 
-  // #114: 초안은 이미 디스크에 있으므로 감수 중 프로바이더 타임아웃은 던지지 않고 결과로 돌려준다.
   it("returns a timed-out rewrite as a failure instead of throwing", async () => {
     checkContinuityMock.mockResolvedValue([blockingContinuity])
     reviseDraftMock.mockRejectedValueOnce(
@@ -205,7 +204,6 @@ describe("ReviseDraftUseCase", () => {
     await expect(runReviseDraftWorkflow(baseOptions())).rejects.toThrow("bug")
   })
 
-  // #113: 앞 회차가 무엇을 잡고 재작성이 무엇을 받았는지 남긴다.
   it("records every round in the cache and logs one line per round", async () => {
     checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
 
@@ -273,7 +271,6 @@ describe("ReviseDraftUseCase", () => {
     expect(result.passed).toBe(false)
     expect(result.revisionCount).toBe(2)
     expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
-    // 모든 타깃 지시를 한 번의 전체 재작성에 통합한다.
     expect(reviseDraftMock).toHaveBeenCalledTimes(2)
     expect(result.instructions.length).toBeGreaterThan(0)
   })
@@ -353,7 +350,6 @@ describe("ReviseDraftUseCase", () => {
 
     expect(result.passed).toBe(true)
     expect(result.revisionCount).toBe(1)
-    // continuity 단독 → canon 그룹 1개 → 스코프 호출 1회.
     expect(reviseDraftMock).toHaveBeenCalledTimes(1)
   })
 

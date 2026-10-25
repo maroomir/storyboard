@@ -18,8 +18,6 @@ import type { SceneFileNameParts, StoryUri, StudioTarget } from '@storyboard/sto
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 
-// NOTE: the sessions live inside one workspace root already, so a constant key keeps the project
-// entity's directory name safe regardless of what the folder is called.
 const projectEntityKey: string = 'project';
 
 export interface StudioFocus {
@@ -28,9 +26,6 @@ export interface StudioFocus {
   readonly documentText?: string;
 }
 
-// NOTE: `.card` files open in the custom editor, which is never a TextEditor, so the active tab is
-// the only signal that a card has focus. The text editor still wins when present because it is the
-// only source of the selection and the document body.
 export function resolveActiveStudioFocus(): StudioFocus | undefined {
   const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
 
@@ -140,8 +135,6 @@ function projectTarget(workspaceFolder: vscode.WorkspaceFolder): StudioTarget {
   };
 }
 
-// NOTE: draft/<stem>.md mirrors scene/<stem>.card, so the file name alone keys the shared entity
-// even when the draft body has lost its scene link.
 function resolveDraftSceneStem(draftUri: vscode.Uri): string | undefined {
   const fileName: string = draftUri.path.split('/').pop() ?? '';
   const stem: string = fileName.endsWith('.md') ? fileName.slice(0, -'.md'.length) : '';

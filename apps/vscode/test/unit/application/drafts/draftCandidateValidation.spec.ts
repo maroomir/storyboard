@@ -35,7 +35,6 @@ describe('draft candidate validation', () => {
     const original = '가'.repeat(600);
 
     expect(validateDraftCandidate(original, '나'.repeat(700), policy).accepted).toBe(true);
-    // #88-10: 목표 미달 원고의 감수 결과가 3% 줄었다고 통째로 기각되던 것을 막는다.
     expect(validateDraftCandidate(original, '나'.repeat(580), policy).accepted).toBe(true);
     expect(validateDraftCandidate(original, '나'.repeat(470), policy).reason).toBe('too-short');
   });

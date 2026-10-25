@@ -28,8 +28,6 @@ export interface RegisterCardDiagnosticsProviderDependencies {
   readonly logger: IStoryboardLogger;
 }
 
-// NOTE: 무효 카드는 씬 생성에서 조용히 탈락하므로(sceneContext), Problems 패널이 사용자에게 유일한
-// 신호다. ZodError.issues를 필드 단위 스팬으로 옮겨 어떤 키가 왜 틀렸는지 보여준다.
 export function mapCardErrorToSpans(text: string, error: unknown): CardDiagnosticSpan[] {
   if (error instanceof CardParseError) {
     if (error.code === 'invalid-card-schema' && error.cause instanceof ZodError) {

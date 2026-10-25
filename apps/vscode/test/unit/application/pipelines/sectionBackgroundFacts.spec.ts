@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { scopeBackgroundFacts } from '@storyboard/story-engine';
 
-// #119: 거실 발코니 앞의 가림막이 옥상 발코니 대목에 서 있었다. 두 자리가 «발코니»를 나눠 쓰므로 낱말 하나가
-// 겹치는 것으로는 같은 자리라 할 수 없다 — 이 구간 밖의 낱말을 언급하는 사실은 그 낱말을 앞에 밝힌다.
 describe('scopeBackgroundFacts', () => {
   const scenePlaces = ['집 거실, 발코니 앞 가림막', '형제 방', '학교 교문 앞', '옥상 발코니'];
   const facts = [

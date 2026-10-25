@@ -66,7 +66,6 @@ describe("computeCostUsd", () => {
     ).toBe(0)
   })
 
-  // Claude 는 캐시 토큰을 input_tokens 밖에서 센다. 쓰기 1.25배, 읽기 0.1배로 더해야 실제 청구액이다.
   it("bills Claude cache writes and reads on top of the billed input tokens", () => {
     expect(
       computeCostUsd({
@@ -82,7 +81,6 @@ describe("computeCostUsd", () => {
     ).toBeCloseTo((100 / 1_000_000) * 3.0 + 3.0 * 1.25 + 3.0 * 0.1, 12)
   })
 
-  // Opus 5.5 는 캐시 읽기가 0.1배가 아니라 0.05배($0.20)다. 공통 배율로 세면 캐시를 켠 실행이 비싸게 읽힌다.
   it("bills Claude Opus 5.5 cache reads at its own multiplier", () => {
     expect(
       computeCostUsd({

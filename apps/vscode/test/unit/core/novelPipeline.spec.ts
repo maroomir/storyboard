@@ -57,7 +57,6 @@ vi.mock("../../../../../packages/story-engine/src/persistence/characterBriefs", 
 vi.mock("../../../../../packages/story-engine/src/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
 vi.mock("@storyboard/story-model", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-model")>()),
-  // 검수는 장을 창으로 삼으므로 조립 결과에 장이 있어야 한다.
   assembleManuscript: (): unknown => ({
     chapters: [
       { fileName: "01-ch-1.md", actTitle: "1막", chapterTitle: "1장", markdown: "1장 본문" },
@@ -196,7 +195,6 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     } as never,
     outlineRepository: {
       hasChapterPlan: async (): Promise<boolean> => false,
-      // The sample plan casts only hero, so the cast stage has nothing to ask for.
       loadCharacterBriefs: async (): Promise<unknown[]> => [{ id: "hero", name: "주인공" }],
       loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
       loadSynopsis: async (): Promise<undefined> => undefined,
@@ -249,8 +247,6 @@ const expectedStageOrder: NovelStageName[] = [
   "summaries"
 ]
 
-// With no high-severity findings the revise stage emits no progress but still completes, so a
-// resume does not run the review a second time.
 const expectedCompletedStages: NovelStageName[] = [
   "outline",
   "characters",
@@ -317,7 +313,6 @@ describe("NovelPipeline", () => {
       .filter((chapterIndex) => chapterIndex !== undefined)
     expect(chapterIndexes).toEqual([0, 1])
 
-    // The final summaries stage still runs, resummarizing the whole manuscript.
     expect((summarizeChaptersMock.mock.calls.at(-1)?.[0] as { chapterIndex?: number }).chapterIndex).toBeUndefined()
   })
 
@@ -427,7 +422,6 @@ describe("NovelPipeline", () => {
     expect(harness.persistedStates.at(-1)?.status).toBe("paused")
   })
 
-  // 계약의 장 수를 바꾼 뒤 다시 돌리면 예전에는 경고 없이 옛 계획으로 돌았다. 돈이 드는 실행이라 거부한다.
   it("refuses to run a kept chapter plan whose chapter count the contract no longer matches", async () => {
     const harness = createHarness({ project: { ...project, setting: { chapterCount: 3 } } })
     harness.dependencies.outlineRepository.hasChapterPlan = async (): Promise<boolean> => true
@@ -441,7 +435,6 @@ describe("NovelPipeline", () => {
     expect(generateOutlineSynopsisMock).not.toHaveBeenCalled()
   })
 
-  // 모델이 계약의 장 수를 어긴 계획은 예전에는 그대로 저장돼 다음 실행마다 거부당했다. 저장 전에 돌려보낸다.
   it("refuses to save a generated chapter plan whose chapter count the contract did not get", async () => {
     const harness = createHarness({ project: { ...project, setting: { chapterCount: 3 } } })
     harness.dependencies.aiGateway.createService = (() => ({
@@ -460,7 +453,6 @@ describe("NovelPipeline", () => {
     expect(save).not.toHaveBeenCalled()
   })
 
-  // 손으로 쓴 장 계획이나 시놉시스만 지운 작품: 예전에는 계획만 보고 시놉시스를 영영 만들지 않았다.
   it("writes the synopsis a hand-written chapter plan lacks, without a new plan", async () => {
     const harness = createHarness()
     harness.dependencies.outlineRepository.hasChapterPlan = async (): Promise<boolean> => true
@@ -477,7 +469,6 @@ describe("NovelPipeline", () => {
     expect(generateOutlineSynopsisMock).toHaveBeenCalledTimes(1)
   })
 
-  // 예전에는 모델이 돌려주지 않은 인물도 조용히 넘어가 단계가 완료로 남았다.
   it("tells which cast the model left out and fails when it answered for nobody", async () => {
     const plan: ChapterPlan = {
       ...samplePlan,
@@ -514,8 +505,6 @@ describe("NovelPipeline", () => {
     expect(failed.message).toContain("인물 카드를 하나도 만들지 못했습니다: hero")
   })
 
-  // The subscription limit is the person's plan, not the scene: the run pauses in the provider's
-  // words, the chapter stays unfinished, and a rerun writes the scene that was not written.
   it("pauses at the plan limit instead of failing, with the provider's message", async () => {
     generateDraftMock.mockResolvedValueOnce({
       ok: false,
@@ -552,7 +541,6 @@ describe("NovelPipeline", () => {
   })
 
   describe("review feedback", () => {
-    // 한 번의 검수가 도는 호출 수 = 조립된 장 수(위 assembleManuscript 모의가 2장을 낸다).
     const callsPerReview = 2
 
     const highContinuityIssue = {

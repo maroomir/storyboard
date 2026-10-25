@@ -88,8 +88,6 @@ describe("usageLedger", () => {
     expect(summary.scenes["s1"]).toEqual({ costUsd: 0.25, tokens: 1_700, hasUnpricedUsage: true })
   })
 
-  // #107: 캐시 적중은 원장에 토큰 수로만 있었고 어디에도 비율·절약액이 없었다. 합계가 프롬프트 토큰(입력+캐시
-  // 읽기+캐시 쓰기)과 캐시 읽기, 입력 단가 대비 절약액을 갖는다.
   it("sums the prompt-cache share and what it saved against the input price", () => {
     const row = storyboardModelPricing.claude["claude-sonnet-5"]
     const summary = computeUsageSummaryFromEntries([

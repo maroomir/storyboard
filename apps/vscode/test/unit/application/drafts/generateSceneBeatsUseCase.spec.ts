@@ -82,8 +82,6 @@ describe("GenerateSceneBeatsUseCase", () => {
     })
   })
 
-  // 좌표가 달린 제안은 객체 비트가 되고 출연 이름은 카드 id 로 바뀐다. 카드와 맞지 않는 이름은 그대로
-  // 남아 생성·doctor 의 «비트 출연» 경고가 잡는다. 좌표 없는 제안은 종전대로 문자열 비트다.
   it("writes coordinate beats with the cast moved to card ids", async () => {
     const { useCase, proposeSceneBeats, writeBeats } = createUseCase(scene())
     proposeSceneBeats.mockResolvedValueOnce([
@@ -115,7 +113,6 @@ describe("GenerateSceneBeatsUseCase", () => {
         summary: "준서가 하나를 만난다.\n",
         grounding: undefined,
         characterNames: ["준서", "하나"],
-        // ceil(4000 / 1500) = 3 > minBeats 2
         beatCount: 3
       },
       { providerId: "provider:sceneBeats", attribution: { primary: { kind: "scene", id: "01-intro" } } }

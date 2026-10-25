@@ -7,8 +7,6 @@ import type {
 } from '@storyboard/story-ai';
 import { configurationTargets } from '@storyboard/story-config';
 
-// Every `storyboard.*` key the extension used to contribute to VSCode settings, and the
-// `config.json` key it lands on now. The list doubles as the migration manifest.
 interface LegacySettingMigration {
   readonly legacy: string;
   readonly home: string;
@@ -66,10 +64,6 @@ export interface MigrateVscodeSettingsResult {
   readonly movedApiKeys: readonly string[];
 }
 
-// One-way, one-time: a value found in VSCode settings is copied into the layer of `config.json`
-// that matches its scope — unless that layer already holds the key, because a value the author
-// set in the shared file after the move is the newer one — and then removed from VSCode settings
-// so it cannot come back as a stale duplicate on the next activation.
 export async function migrateVscodeSettingsToHome(
   deps: MigrateVscodeSettingsDependencies,
 ): Promise<MigrateVscodeSettingsResult> {

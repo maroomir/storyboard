@@ -56,10 +56,8 @@ export function createStudioCardUpdateRpcHandlers(
         seed.kind === 'character' ? 'character' : 'location';
       const instruction: string = fillInstruction(payload.description);
 
-      // NOTE: describing a card that already exists opens the existing file for an update
-      // conversation instead of quietly minting a "-2" duplicate.
       if (await deps.cards.exists(root, cardType, seed.id)) {
-        await openCard(root, seed);
+        await openCardLeavingInstructionStagedOnFailure(root, seed);
         return {
           ok: true,
           message: `${cardFile(seed)} 는 이미 있어 그 카드를 열었어요.`,
@@ -93,7 +91,10 @@ function cardFile(seed: StudioCardSeed): string {
   return `${seed.kind === 'character' ? 'character' : 'background'}/${seed.id}.card`;
 }
 
-async function openCard(root: vscode.Uri, seed: StudioCardSeed): Promise<void> {
+async function openCardLeavingInstructionStagedOnFailure(
+  root: vscode.Uri,
+  seed: StudioCardSeed,
+): Promise<void> {
   const directory: 'character' | 'background' =
     seed.kind === 'character' ? 'character' : 'background';
 
@@ -102,6 +103,6 @@ async function openCard(root: vscode.Uri, seed: StudioCardSeed): Promise<void> {
       preview: true,
     });
   } catch {
-    // NOTE: the conversation still stages the instruction; the author can open the card by hand.
+    return;
   }
 }

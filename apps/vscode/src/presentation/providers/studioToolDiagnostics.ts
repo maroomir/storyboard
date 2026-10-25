@@ -5,8 +5,6 @@ import type { ContinuityIssue, GrammarIssue } from '@storyboard/story-ai';
 import { mapContinuityIssuesToDiagnostics } from './ContinuityDiagnosticsProvider';
 import { mapGrammarIssuesToDiagnostics } from './GrammarDiagnosticsProvider';
 
-// NOTE: chat tool runs publish into their own collections but under the same sources as the
-// diagnostic commands, so squiggles and grammar quick fixes look identical either way.
 export class StudioToolDiagnostics implements vscode.Disposable {
   private readonly continuityCollection: vscode.DiagnosticCollection =
     vscode.languages.createDiagnosticCollection('storyboard-studio-continuity');

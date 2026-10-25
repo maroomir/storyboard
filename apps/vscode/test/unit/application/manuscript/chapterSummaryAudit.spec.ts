@@ -17,8 +17,6 @@ import {
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
 
-// 감사는 초안을 다시 조립해 해시를 계산한다. 초안 내용을 흉내 내면 그 계산이 무엇에 반응하는지
-// 검증할 수 없으므로 진짜 파일 내용을 담은 메모리 파일 시스템을 쓴다.
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>();
 
@@ -128,7 +126,6 @@ describe('chapter summary audit over a workspace', () => {
     writeDraft('01-first', '첫 장 본문');
     writeDraft('02-second', '둘째 장 본문');
 
-    // 지금의 초안으로 봉인된 요약을 만든다: 감사가 계산하는 해시를 그대로 기록한 상태.
     await sealSummaries();
   });
 

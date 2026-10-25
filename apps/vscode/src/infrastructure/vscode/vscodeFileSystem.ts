@@ -69,6 +69,4 @@ export class VscodeFileSystem implements IFileSystem {
   }
 }
 
-// The extension has exactly one file system, the same way it has exactly one `vscode.workspace.fs`.
-// Presentation code reaches for this instance; the engine never does — it is always injected.
 export const vscodeFileSystem: VscodeFileSystem = new VscodeFileSystem();

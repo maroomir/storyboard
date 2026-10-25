@@ -53,8 +53,6 @@ export interface IPlatformServices extends Pick<
   readonly proposalReviewService: ProposalReviewService;
 }
 
-// The extension's side of the composition: only the VSCode adapters are built here. The engine
-// graph they feed is assembled once, for every app, by StoryboardApplication.
 export class PlatformModule implements IApplicationModule {
   private services: IPlatformServices | undefined;
   private readonly disposables: DisposableStore = new DisposableStore();
@@ -155,7 +153,6 @@ export class PlatformModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    // NOTE: 확장 호스트가 내려갈 때 생성 중인 구독 CLI 자식도 함께 끝낸다.
     killRunningCliChildren();
     this.disposables.dispose();
 
@@ -163,8 +160,6 @@ export class PlatformModule implements IApplicationModule {
   }
 }
 
-// NOTE: 숨은 프로바이더를 켜는 화면은 없다. 홈 설정 파일을 손으로 고쳐 켠 사람에게 위험 고지를
-// 보여 주고 답을 받는다. 닫거나 취소하면 «아니요» 이고, 그러면 다시 꺼진다.
 let isAskingHiddenProviderConsent: boolean = false;
 
 async function askHiddenProviderConsent(configBridge: ConfigBridge): Promise<void> {
@@ -186,8 +181,6 @@ async function askHiddenProviderConsent(configBridge: ConfigBridge): Promise<voi
   }
 }
 
-// A settings file the author broke by hand must not take the whole extension down, but it must
-// not be silent either: every read falls back to defaults and the author is told which file.
 const reportedInvalidFiles: Set<string> = new Set<string>();
 
 function reportInvalidConfigFile(file: string, message: string, logger: IStoryboardLogger): void {

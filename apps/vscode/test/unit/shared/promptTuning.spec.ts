@@ -13,8 +13,6 @@ const promptsDirectory = path.resolve(
 
 const modulePath = (key: string): string => path.join(promptsDirectory, `${key}.ts`)
 
-// temperature 와 maxTokens 는 프롬프트 리소스 파일의 머리말에 있다. 머리말이 없거나 모듈이 값을
-// 직접 적기 시작하는 순간, 그리고 «검사류는 낮게, 창작류는 높게»의 범위를 벗어나는 순간을 잡는다.
 describe("prompt tuning front-matter", () => {
   it("names a real prompt module for every resource", () => {
     for (const key of promptResourceKeys()) {

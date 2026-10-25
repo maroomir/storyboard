@@ -46,7 +46,6 @@ describe('VscodeFileSystem', () => {
       ['nested', { type: 'directory' }],
     ]);
 
-    // 쓰기는 임시 파일 → 바꿔치기 순서라, 중간에 죽어도 잘린 파일이 목적지에 남지 않는다.
     const writtenUri = writeFile.mock.calls[0]?.[0] as { path: string };
     expect(writtenUri.path).toMatch(/^\/workspace\/file\.txt\.tmp-/);
     expect(writeFile.mock.calls[0]?.[1]).toBe(bytes);

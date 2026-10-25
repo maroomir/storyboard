@@ -54,7 +54,6 @@ export function createStudioProposalRpcHandlers(
       const prepared: PreparedApply = await prepareApply(deps, payload.entity, payload.turn);
 
       if (!prepared.ok) {
-        // NOTE: a silent no-op here reads as a broken button, so the reason travels back to the chat.
         return { shown: false, message: prepared.message };
       }
 
@@ -140,8 +139,6 @@ async function prepareApply(
     return { ok: false, message: `${proposal.targetFile} 를 더 이상 대상으로 삼을 수 없습니다.` };
   }
 
-  // SECURITY: other editors and tools share this workspace, so a patch derived from stale bytes
-  // is refused rather than overwriting whatever landed in the meantime.
   if (hashBaseline(entityContext.baseline) !== proposal.baselineHash) {
     return { ok: false, message: staleBaselineMessage };
   }
@@ -182,9 +179,6 @@ async function prepareApply(
   };
 }
 
-// SECURITY: characters/location values arrive from model output and become card lookups, so ids
-// are shape-checked before touching the filesystem; a fill may only point the scene at cards that
-// actually exist, keeping the generation pipeline free of dangling references.
 async function findBrokenSceneReference(
   root: vscode.Uri,
   patch: StudioProposalTurn['patch'],
@@ -229,8 +223,6 @@ async function cardExists(
   }
 }
 
-// NOTE: every other writer archives the previous draft before overwriting it, and draft/ has no
-// commit safety net, so a chat apply has to honour the same contract.
 async function archiveDraftBeforeApply(
   deps: StudioProposalRpcHandlersDependencies,
   entity: StudioEntity,
@@ -264,8 +256,6 @@ async function archiveDraftBeforeApply(
   }
 }
 
-// NOTE: an applied edit both raises the ripples it declares and answers whatever ripple was
-// waiting on this entity, so the reminder list never keeps a job the author already did.
 async function recordFollowUps(
   deps: StudioProposalRpcHandlersDependencies,
   origin: StudioEntity,
@@ -299,8 +289,6 @@ function sceneFocusOf(targetFile: string): StudioSceneFocus {
   return targetFile.startsWith('scene/') ? 'card' : 'draft';
 }
 
-// NOTE: patches address the body, so the frontmatter is re-serialized from the file rather than
-// being carried through the model.
 function rewriteDraftBody(rawDraft: string, body: string): string {
   try {
     return serializeDraft({ ...parseDraft(rawDraft), body });
