@@ -1,3 +1,4 @@
+import { assumedColumnsWithoutTerminal } from '@/terminal/profile';
 import { ConsoleLogger } from './adapters/consoleLogger';
 import { LiveArea } from './adapters/liveArea';
 import { PauseRequests } from './adapters/pauseRequests';
@@ -6,7 +7,7 @@ import { dispatch, type DispatchResult } from './commands/dispatch';
 import {
   bellSignal,
   createWindowTitle,
-  longRunMilliseconds,
+  bellAfterRunLongerThanMs,
   popWindowTitle,
   pushWindowTitle,
 } from './terminal/signals';
@@ -14,19 +15,59 @@ import { runTui } from './tui/index';
 
 const version: string = '0.13.4';
 
-const verbsWithoutSignals: Set<string> = new Set(['__complete', 'completion', 'help', 'tui']);
+const exitCodeOnInterrupt: number = 130;
+const exitCodeOnTermination: number = 143;
+const exitCodeOnHangup: number = 129;
+const runNameWordCount: number = 2;
+
+const verbsThatMustNotTouchWindowTitle: ReadonlySet<string> = new Set([
+  '__complete',
+  'completion',
+  'help',
+  'tui',
+]);
 
 function extractRunName(argv: readonly string[]): string | undefined {
-  const firstFlag: number = argv.findIndex((token) => token.startsWith('-'));
-  const words: string[] = (firstFlag === -1 ? argv : argv.slice(0, firstFlag)).slice(0, 2);
-  const isSignalled: boolean =
-    words.length > 0 &&
-    !verbsWithoutSignals.has(words[0] ?? '') &&
-    process.stderr.isTTY === true &&
-    process.env.TERM !== 'dumb' &&
-    !argv.includes('--json');
+  const firstFlagIndex: number = argv.findIndex((token: string) => token.startsWith('-'));
+  const hasNoFlag: boolean = firstFlagIndex === -1;
+  const wordsBeforeFlags: readonly string[] = hasNoFlag ? argv : argv.slice(0, firstFlagIndex);
+  const runWords: readonly string[] = wordsBeforeFlags.slice(0, runNameWordCount);
 
-  return isSignalled ? words.join(' ') : undefined;
+  const hasRunWords: boolean = runWords.length > 0;
+  const isVerbWithoutSignals: boolean = verbsThatMustNotTouchWindowTitle.has(runWords[0] ?? '');
+  const isDrawingTerminal: boolean = process.stderr.isTTY === true && process.env.TERM !== 'dumb';
+  const isJsonOutput: boolean = argv.includes('--json');
+  const shouldSignalRun: boolean =
+    hasRunWords && !isVerbWithoutSignals && isDrawingTerminal && !isJsonOutput;
+
+  return shouldSignalRun ? runWords.join(' ') : undefined;
+}
+
+function ignoreClosedPipeOnStdout(): void {
+  process.stdout.on('error', (error: NodeJS.ErrnoException) => {
+    const isReaderGone: boolean = error.code === 'EPIPE';
+    if (!isReaderGone) {
+      throw error;
+    }
+  });
+}
+
+function stopAtSceneBoundaryOnFirstInterrupt(
+  pauseRequests: PauseRequests,
+  liveArea: LiveArea,
+): void {
+  process.on('SIGINT', () => {
+    const hasPausableRun: boolean = pauseRequests.request();
+    if (!hasPausableRun) {
+      process.exit(exitCodeOnInterrupt);
+    }
+    liveArea.writeAbove('지금 씬을 마치고 멈춥니다. 바로 끝내려면 Ctrl+C 를 한 번 더 누르세요.\n');
+  });
+}
+
+function exitNormallyOnTerminationSoChildProcessesStop(): void {
+  process.on('SIGTERM', () => process.exit(exitCodeOnTermination));
+  process.on('SIGHUP', () => process.exit(exitCodeOnHangup));
 }
 
 async function main(argv: readonly string[]): Promise<number> {
@@ -37,24 +78,16 @@ async function main(argv: readonly string[]): Promise<number> {
     process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
   }
 
-  process.stdout.on('error', (error: NodeJS.ErrnoException) => {
-    if (error.code !== 'EPIPE') {
-      throw error;
-    }
-  });
+  ignoreClosedPipeOnStdout();
 
-  const liveArea: LiveArea = new LiveArea(process.stderr, () => process.stderr.columns || 80);
+  const liveArea: LiveArea = new LiveArea(
+    process.stderr,
+    () => process.stderr.columns || assumedColumnsWithoutTerminal,
+  );
   const pauseRequests: PauseRequests = new PauseRequests();
 
-  process.on('SIGINT', () => {
-    if (!pauseRequests.request()) {
-      process.exit(130);
-    }
-    liveArea.writeAbove('지금 씬을 마치고 멈춥니다. 바로 끝내려면 Ctrl+C 를 한 번 더 누르세요.\n');
-  });
-
-  process.on('SIGTERM', () => process.exit(143));
-  process.on('SIGHUP', () => process.exit(129));
+  stopAtSceneBoundaryOnFirstInterrupt(pauseRequests, liveArea);
+  exitNormallyOnTerminationSoChildProcessesStop();
 
   const isInteractive: boolean = process.stdin.isTTY === true && process.stderr.isTTY === true;
   const result: DispatchResult = await dispatch(argv, {
@@ -88,7 +121,7 @@ async function main(argv: readonly string[]): Promise<number> {
   process.stderr.write(result.stderr);
 
   if (runName !== undefined) {
-    const hasRunLong: boolean = Date.now() - startedAt >= longRunMilliseconds;
+    const hasRunLong: boolean = Date.now() - startedAt >= bellAfterRunLongerThanMs;
     process.stderr.write(`${popWindowTitle}${hasRunLong ? bellSignal : ''}`);
   }
 

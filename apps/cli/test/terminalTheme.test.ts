@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTerminalProfile, defaultColumns } from '../src/terminal/profile';
+import { createTerminalProfile, assumedColumnsWithoutTerminal } from '../src/terminal/profile';
 import { createTheme, plainTheme, shouldUseColor } from '../src/terminal/theme';
 
 const terminal = { isTty: true, env: {}, hasNoColorFlag: false, isJsonOutput: false };
@@ -47,7 +47,7 @@ describe('terminal profile', () => {
     const profile = createTerminalProfile(facts, { hasNoColorFlag: false, isJsonOutput: false });
 
     expect(profile.stdout.theme.isColorEnabled).toBe(false);
-    expect(profile.stdout.columns).toBe(defaultColumns);
+    expect(profile.stdout.columns).toBe(assumedColumnsWithoutTerminal);
     expect(profile.stderr.theme.isColorEnabled).toBe(true);
     expect(profile.stderr.columns).toBe(120);
   });
@@ -58,7 +58,7 @@ describe('terminal profile', () => {
       { hasNoColorFlag: false, isJsonOutput: false },
     );
 
-    expect(profile.stderr.columns).toBe(defaultColumns);
+    expect(profile.stderr.columns).toBe(assumedColumnsWithoutTerminal);
   });
 
   it('turns color off on both streams for --no-color', () => {

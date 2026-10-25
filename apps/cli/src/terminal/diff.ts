@@ -1,15 +1,11 @@
 import type { Theme } from './theme';
 
-// 산문의 diff 는 줄이 아니라 문장 단위다. 한 문단이 한 줄인 초안에서 줄 diff 는 «문단 전체가
-// 바뀌었다» 만 말해 준다.
-
 export type DiffLine =
   | { readonly kind: 'same'; readonly text: string }
   | { readonly kind: 'removed'; readonly text: string }
   | { readonly kind: 'added'; readonly text: string }
   | { readonly kind: 'gap'; readonly count: number };
 
-// A sentence ends at terminal punctuation (with any closing quote) or a line break.
 export function splitSentences(text: string): string[] {
   return text
     .split(/\n+|(?<=[.!?。…][”"’'」』)]*)\s+/u)
@@ -17,9 +13,10 @@ export function splitSentences(text: string): string[] {
     .filter((sentence) => sentence.length > 0);
 }
 
-// Longest common subsequence over sentences; drafts are a few hundred sentences, so the quadratic
-// table is small.
-function diffSequences(before: readonly string[], after: readonly string[]): DiffLine[] {
+function diffByLongestCommonSubsequence(
+  before: readonly string[],
+  after: readonly string[],
+): DiffLine[] {
   const rows: number = before.length;
   const columns: number = after.length;
   const table: number[][] = Array.from({ length: rows + 1 }, () =>
@@ -45,7 +42,6 @@ function diffSequences(before: readonly string[], after: readonly string[]): Dif
       i += 1;
       j += 1;
     } else if (i < rows && (j === columns || table[i + 1]![j]! >= table[i]![j + 1]!)) {
-      // Removed before added, as a reader expects «what was» above «what is».
       lines.push({ kind: 'removed', text: before[i]! });
       i += 1;
     } else {
@@ -57,12 +53,14 @@ function diffSequences(before: readonly string[], after: readonly string[]): Dif
   return lines;
 }
 
-// Changes with `context` unchanged sentences around each; longer unchanged runs fold into a gap.
-export function diffSentences(before: string, after: string, context = 1): DiffLine[] {
-  const lines: DiffLine[] = diffSequences(splitSentences(before), splitSentences(after));
+export function diffSentences(before: string, after: string, contextSentenceCount = 1): DiffLine[] {
+  const lines: DiffLine[] = diffByLongestCommonSubsequence(
+    splitSentences(before),
+    splitSentences(after),
+  );
   const isNearChange: boolean[] = lines.map((_, index) =>
     lines
-      .slice(Math.max(0, index - context), index + context + 1)
+      .slice(Math.max(0, index - contextSentenceCount), index + contextSentenceCount + 1)
       .some((line) => line.kind !== 'same'),
   );
   const shown: DiffLine[] = [];
@@ -96,7 +94,6 @@ export function countChanges(lines: readonly DiffLine[]): DiffCount {
   };
 }
 
-// The rendered view: a heading with the counts, then at most `limit` lines of the diff.
 export function renderSentenceDiff(
   title: string,
   lines: readonly DiffLine[],
