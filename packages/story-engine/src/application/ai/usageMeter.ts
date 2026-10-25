@@ -39,7 +39,7 @@ export class UsageMeter {
 
     return {
       reading: () => session.amount,
-      stop: () => {
+      stop: (): void => {
         this.sessions.delete(session);
       },
     };

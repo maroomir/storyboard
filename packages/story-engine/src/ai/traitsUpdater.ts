@@ -131,7 +131,7 @@ async function loadExistingTraits(
 
   for (const ref of detectedCharacterCards) {
     try {
-      const current = await readCharacterCard(ref);
+      const current: StoryboardCard = await readCharacterCard(ref);
 
       if (current.type === 'character') {
         existingTraits[ref.name] = current.traits ?? [];

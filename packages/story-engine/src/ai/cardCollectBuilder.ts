@@ -17,6 +17,12 @@ import type {
   StoryboardAiService,
 } from '@storyboard/story-ai';
 import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
+
+interface ProposalWithScenes {
+  partial: PartialProposal;
+  scenes: Set<string>;
+}
+
 export interface CollectDraft {
   readonly sceneStem: string;
   readonly body: string;
@@ -55,11 +61,11 @@ export function filterDraftsForCard(
 type PartialProposal = CardCollectProposalDraft;
 
 class ProposalAccumulator {
-  private readonly byId = new Map<string, { partial: PartialProposal; scenes: Set<string> }>();
+  private readonly byId: Map<string, ProposalWithScenes> = new Map<string, ProposalWithScenes>();
 
   public add(sceneStem: string, partial: PartialProposal): void {
     const id: string = cardCollectProposalId(partial);
-    const existing = this.byId.get(id);
+    const existing: ProposalWithScenes | undefined = this.byId.get(id);
 
     if (existing) {
       existing.scenes.add(sceneStem);

@@ -83,10 +83,10 @@ function buildFrameSetting(): CompositionPresetSetting {
 }
 
 function buildAlternatingPovPreset(request: CompositionPresetRequest): CompositionPreset {
-  const narratorCards = (request.povCharacters ?? []).map((characterId) =>
+  const narratorCards: NarratorCard[] = (request.povCharacters ?? []).map((characterId) =>
     buildNarratorCard(characterId, request.pov),
   );
-  const firstNarrator = narratorCards[0];
+  const firstNarrator: NarratorCard | undefined = narratorCards[0];
 
   return {
     setting: {
@@ -102,7 +102,7 @@ function buildAlternatingPovPreset(request: CompositionPresetRequest): Compositi
 
 // 시점에서 인칭·지식 경계를 뽑는 표는 story-model 이 갖는다. 여기서 다시 계산하던 시절에는
 // 2인칭이 3인칭 서술자로, 전지적 시점이 목격 서술자로 만들어졌다.
-const fallbackNarration = { person: 'third', knowledge: 'witnessed' } as const;
+const fallbackNarration: PointOfViewDerivation = { person: 'third', knowledge: 'witnessed' };
 
 function buildNarratorCard(characterId: string, pov: PointOfView | undefined): NarratorCard {
   const derived: PointOfViewDerivation = pov

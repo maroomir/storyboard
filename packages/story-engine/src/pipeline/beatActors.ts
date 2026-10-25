@@ -4,6 +4,7 @@ import {
   sceneBeatText,
   type CharacterCard,
   type SceneBeat,
+type SceneBeatDetail,
 } from '@storyboard/story-model';
 import type { SceneBeatDirective, SceneBeatProposal, SceneBeatVerdict } from '@storyboard/story-ai';
 
@@ -26,6 +27,12 @@ const RETRY_SCORE_LIMIT: number = 3;
 
 const INNER_LINE_PREFIX: string = '(속)';
 const SCENE_BREAK_LINE: string = '---';
+
+
+interface CatchphraseCount {
+  readonly phrase: string;
+  readonly count: number;
+}
 
 export interface ActedBeat {
   readonly number: number;
@@ -61,7 +68,7 @@ export function planActedBeats(
   let previousPlace: string | undefined;
 
   return (beats ?? []).map((beat, index) => {
-    const detail = typeof beat === 'string' ? undefined : beat;
+    const detail: SceneBeatDetail | undefined = typeof beat === 'string' ? undefined : beat;
     const named: string[] = [...new Set((detail?.cast ?? []).flatMap((ref) => nameOf(ref) ?? []))];
     const place: string | undefined = detail?.place?.trim();
     const isBreak: boolean =
@@ -180,7 +187,7 @@ export function findBeatCatchphraseOveruse(input: {
   readonly limit: number;
 }): string[] {
   return input.beat.cast.flatMap((name) => {
-    const counts = (input.catchphrases.get(name) ?? [])
+    const counts: CatchphraseCount[] = (input.catchphrases.get(name) ?? [])
       .filter((phrase) => phrase.length > 0 && !input.beat.text.includes(phrase))
       .map((phrase) => ({ phrase, count: countCatchphrase(input.passage, phrase) }))
       .filter((entry) => entry.count > 0);

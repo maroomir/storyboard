@@ -4,6 +4,7 @@ import {
   stripMarkdownExtension,
   stripNotionIdSuffix,
   type NoteDocument,
+  type NoteSourceKind,
   type SkippedNote,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -15,6 +16,11 @@ import {
 } from '#engine/application/notes/noteSource';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readZipEntries, ZipArchiveError, type ZipEntry } from './zipArchive';
+
+interface ZipNoteFile {
+  readonly entry: ZipEntry;
+  readonly segments: string[];
+}
 
 export interface NotionExportNoteSourceOptions {
   readonly fileSystem: IFileSystem;
@@ -29,7 +35,7 @@ const macResourceForkDirectory: string = '__MACOSX/';
 // Ids are stripped from titles and paths; a database CSV whose rows are pages of their own is left
 // out, the rest become one note each. No link following — the export already holds the whole tree.
 export class NotionExportNoteSource implements INoteSource {
-  public readonly kind = 'notion-export' as const;
+  public readonly kind: NoteSourceKind = 'notion-export';
 
   public constructor(private readonly options: NotionExportNoteSourceOptions) {}
 
@@ -50,9 +56,9 @@ export class NotionExportNoteSource implements INoteSource {
       throw error;
     }
 
-    const files = entries
+    const files: ZipNoteFile[] = entries
       .filter((entry) => !entry.name.startsWith(macResourceForkDirectory))
-      .map((entry) => ({ entry, segments: entry.name.normalize('NFC').split('/') }))
+      .map((entry): ZipNoteFile => ({ entry, segments: entry.name.normalize('NFC').split('/') }))
       .sort((left, right) => compareNoteNames(left.entry.name, right.entry.name));
     const folderStems: Set<string> = new Set(
       files.flatMap(({ segments }) => segments.slice(0, -1).map(stripNotionIdSuffix)),

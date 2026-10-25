@@ -22,7 +22,7 @@ export async function resolveSceneGrounding(
   characterNames: readonly string[],
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGroundingOutcome> {
-  const existing = scene.frontmatter.grounding;
+  const existing: SceneGrounding | undefined = scene.frontmatter.grounding;
   const missingFields: SceneGroundingFieldKey[] = missingSceneGroundingFields(existing);
 
   // NOTE: 사실 시트를 건너뛰라는 것과 사용자가 승인을 거절한 것은 다르다. 앞은 있는 값으로 그대로
@@ -55,9 +55,10 @@ export async function resolveSceneGrounding(
 
   const merged: SceneGrounding = mergeSceneGrounding(existing, proposed);
 
-  const approved = options.configBridge.isSceneGroundingAutoApproveEnabled()
-    ? merged
-    : await requestApproval(scene, merged, missingFields, options);
+  const approved: SceneGrounding | undefined =
+    options.configBridge.isSceneGroundingAutoApproveEnabled()
+      ? merged
+      : await requestApproval(scene, merged, missingFields, options);
 
   if (!approved) {
     return { kind: 'cancelled' };
@@ -69,7 +70,10 @@ export async function resolveSceneGrounding(
     options.logger.warn(`씬 사실 시트를 저장하지 못했습니다: ${String(error)}`);
   }
 
-  const groundedScene = { ...scene, frontmatter: { ...scene.frontmatter, grounding: approved } };
+  const groundedScene: SceneFile = {
+    ...scene,
+    frontmatter: { ...scene.frontmatter, grounding: approved },
+  };
   await recordGroundingGap(workspaceRoot, groundedScene, characterNames, options);
 
   return { kind: 'resolved', scene: groundedScene };
@@ -86,7 +90,7 @@ async function recordGroundingGap(
   const stillMissing: SceneGroundingFieldKey[] = missingSceneGroundingFields(
     scene.frontmatter.grounding,
   );
-  const gap =
+  const gap: SceneGroundingGap | undefined =
     stillMissing.length === 0
       ? undefined
       : { inputKey: computeSceneGroundingInputKey(scene, characterNames), fields: stillMissing };

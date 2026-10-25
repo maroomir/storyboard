@@ -2,6 +2,7 @@ import {
   renderSceneBeat,
   sceneBeatCoordinateLabels,
   type SceneBeat,
+  type SceneBeatDetail,
 } from '@storyboard/story-model';
 
 import { countSharedShingles, normalizeForMatch } from './textMatch';
@@ -14,6 +15,11 @@ const SCENE_BREAK_LINE: string = '---';
 const SEGMENT_MARKER: RegExp = /⟪\s*대목\s*(\d+)\s*⟫/g;
 const ANY_MARKER: RegExp = /⟪[^⟪⟫\n]*⟫/g;
 
+interface SkeletonCallBeats {
+  beats: number[];
+  markers: number[];
+}
+
 export interface PlannedSceneSegment {
   // 이 대목에 드는 비트 번호(0부터).
   readonly beats: readonly number[];
@@ -25,7 +31,12 @@ export interface SceneBreakPlan {
 }
 
 // 시간대 낱말과 그 순서. 둘 다 시:분이 읽히지 않는 시각은 이 순서가 바뀔 때 전환으로 본다.
-const dayPeriods = [
+interface DayPeriod {
+  readonly words: readonly string[];
+  readonly pm: boolean;
+}
+
+const dayPeriods: readonly DayPeriod[] = [
   { words: ['새벽'], pm: false },
   { words: ['아침'], pm: false },
   { words: ['오전'], pm: false },
@@ -33,7 +44,7 @@ const dayPeriods = [
   { words: ['오후', '방과 후', '하교'], pm: true },
   { words: ['해 질 녘', '해질녘', '노을', '저녁'], pm: true },
   { words: ['밤', '자정', '심야'], pm: true },
-] as const;
+];
 
 // 한 비트 안에서 시간이 흐른 시각(«오전부터 오후까지», «수업 동안», «경과»). 그 비트가 끝나면 전환이다.
 const timeSpanPattern: RegExp = /까지|경과|동안|내내/;
@@ -174,7 +185,7 @@ function formatSegmentCoordinate(
   beats: readonly SceneBeat[],
   castName: (ref: string) => string,
 ): string | undefined {
-  const details = beats.map(detailOf).filter((detail) => detail !== undefined);
+  const details: SceneBeatDetail[] = beats.map(detailOf).filter((detail) => detail !== undefined);
   const unique = (values: readonly (string | undefined)[]): string[] => [
     ...new Set(values.filter((value): value is string => value !== undefined)),
   ];
@@ -200,7 +211,7 @@ export function planSceneBreaks(
   castName: (ref: string) => string,
   jumpMinutes: number,
 ): SceneBreakPlan | undefined {
-  const list = beats ?? [];
+  const list: readonly SceneBeat[] = beats ?? [];
   const hasCoordinates: boolean = list.some((beat) => {
     const detail: Exclude<SceneBeat, string> | undefined = detailOf(beat);
     return detail?.place !== undefined || detail?.time !== undefined || detail?.break !== undefined;
@@ -214,7 +225,7 @@ export function planSceneBreaks(
   let placeWordSet: Set<string> = new Set<string>();
 
   list.forEach((beat, index) => {
-    const previous = list[index - 1];
+    const previous: SceneBeat | undefined = list[index - 1];
     if (previous === undefined || shouldBreakBefore(beat, previous, placeWordSet, jumpMinutes)) {
       groups.push([]);
       placeWordSet = new Set();
@@ -291,10 +302,10 @@ export function planSkeletonCalls(
   }
 
   const shareOf = (beatCount: number): number => (targetLength * beatCount) / totalBeats;
-  const calls: { beats: number[]; markers: number[] }[] = [];
+  const calls: SkeletonCallBeats[] = [];
 
   plan.segments.forEach((segment, index) => {
-    const last = calls.at(-1);
+    const last: SkeletonCallBeats | undefined = calls.at(-1);
     if (last !== undefined && shareOf(last.beats.length + segment.beats.length) <= charsPerCall) {
       last.beats.push(...segment.beats);
       last.markers.push(index + 1);

@@ -8,7 +8,7 @@ import {
   readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
-import type { GenerateDraftUseCaseDependencies } from './generateDraftTypes';
+import type { GenerateDraftUseCaseDependencies, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from './sceneGenerationInputs';
 import { recordStoryStateFromDraft } from './updateStoryState';
 import type { StoryboardAiService } from '@storyboard/story-ai';
@@ -48,11 +48,16 @@ export interface GenerateStoryStateResult {
 // Builds the story-state ledger from drafts that exist without one: a work written before the
 // ledger, or one whose drafts were brought in from outside. Scenes go in number order because each
 // call reads the state the earlier scenes left, exactly as generation does.
+export interface ScenesWithDrafts {
+  readonly targets: readonly { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri }[];
+  readonly withoutDraft: readonly string[];
+}
+
 export class GenerateStoryStateUseCase {
   public constructor(private readonly deps: GenerateStoryStateUseCaseDependencies) {}
 
   public async execute(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
-    const scenes = await this.listScenesWithDrafts(request);
+    const scenes: ScenesWithDrafts = await this.listScenesWithDrafts(request);
     const aiService: StoryboardAiService = this.deps.aiGateway.createService(request.workspaceRoot);
     const recorded: string[] = [];
     const kept: string[] = [];
@@ -88,7 +93,7 @@ export class GenerateStoryStateUseCase {
     scene: { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri },
     aiService: ReturnType<GenerateStoryStateUseCaseDependencies['aiGateway']['createService']>,
   ): Promise<'recorded' | 'kept'> {
-    const options = {
+    const options: GenerateDraftWorkflowOptions = {
       ...this.deps,
       sceneUri: scene.sceneUri,
       force: true,
@@ -125,10 +130,7 @@ export class GenerateStoryStateUseCase {
     return 'recorded';
   }
 
-  private async listScenesWithDrafts(request: GenerateStoryStateRequest): Promise<{
-    readonly targets: readonly { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri }[];
-    readonly withoutDraft: readonly string[];
-  }> {
+  private async listScenesWithDrafts(request: GenerateStoryStateRequest): Promise<ScenesWithDrafts> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
     const entries: never[] | FileSystemDirectoryEntry[] = await this.deps.fileSystem.readDirectory(paths.sceneDirectory).catch(() => []);
     const requested: readonly number[] | undefined = request.sceneOrders;

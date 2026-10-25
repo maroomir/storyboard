@@ -4,6 +4,7 @@ RevisionPlanEntry,
 SceneContext,
   StoryUri,
   StudioCardStage,
+  StudioEntity,
   StudioSceneStage,
   StudioStage,
   StudioStageCard,
@@ -42,7 +43,7 @@ export async function readStudioStage(
   workspaceRoot: StoryUri,
   target: StudioTarget,
 ): Promise<StudioStage | undefined> {
-  const entity = target.entity;
+  const entity: StudioEntity | undefined = target.entity;
 
   if (entity?.kind === 'character' || entity?.kind === 'background') {
     return readCardStage(fs, workspaceRoot, entity.kind, entity.key);
@@ -187,7 +188,7 @@ async function readStageCards(
 ): Promise<StudioStageCard[]> {
   try {
     const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, fs);
-    const characters = context.characters.map(
+    const characters: StudioStageCard[] = context.characters.map(
       (character): StudioStageCard => ({ kind: 'character', name: character.name }),
     );
 

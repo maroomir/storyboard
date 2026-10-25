@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { SceneCard, StoryUri } from '@storyboard/story-model';
 import {
   planSceneBeatCount,
   renderSceneCardBody,
@@ -128,7 +128,7 @@ export function toSceneBeat(
 }
 
 export function withSceneBeats(scene: SceneFile, beats: readonly SceneBeat[]): SceneFile {
-  const card = { ...scene.card, beats: [...beats] };
+  const card: SceneCard = { ...scene.card, beats: [...beats] };
 
   return { ...scene, card, body: renderSceneCardBody(card, scene.summaryText) };
 }

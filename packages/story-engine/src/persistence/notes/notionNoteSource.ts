@@ -17,7 +17,12 @@ import {
   type NotionBlockNode,
   type NotionRecord,
 } from '@storyboard/story-model';
-import type { NoteDocument, NoteOrigin, SkippedNote } from '@storyboard/story-model';
+import type {
+  NoteDocument,
+  NoteOrigin,
+  NoteSourceKind,
+  SkippedNote,
+} from '@storyboard/story-model';
 
 const notionApiBase: string = 'https://api.notion.com/v1';
 const notionApiVersion: string = '2022-06-28';
@@ -57,7 +62,7 @@ function defaultSleep(milliseconds: number): Promise<void> {
 // Reads a Notion page and everything under it — sub-pages and the rows of inline databases, in
 // page order — then the pages its text links to, one step and no further.
 export class NotionNoteSource implements INoteSource {
-  public readonly kind = 'notion' as const;
+  public readonly kind: NoteSourceKind = 'notion';
 
   private readonly notes: NoteDocument[] = [];
   private readonly skipped: SkippedNote[] = [];

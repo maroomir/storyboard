@@ -1,4 +1,4 @@
-import { backgroundCardPath, characterCardPath } from '@storyboard/story-model';
+import { backgroundCardPath, characterCardPath, type CharacterCard } from '@storyboard/story-model';
 import {
   bibleCandidateFilePath,
   ensureBibleCacheDirectory,
@@ -26,7 +26,7 @@ export function schedulePostGenerationUpdates(
     return;
   }
 
-  const detectedCharacterCards = context.characters.filter((card) =>
+  const detectedCharacterCards: CharacterCard[] = context.characters.filter((card) =>
     result.detectedCharacters.includes(card.name),
   );
 

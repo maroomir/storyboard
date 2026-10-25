@@ -5,6 +5,7 @@ import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import {
   resolveMinimumDraftLength,
   validateDraftCandidate,
+  type DraftCandidateLengthPolicy,
   type DraftCandidateRejectionReason,
   type DraftCandidateValidation,
 } from '#engine/pipeline/draftCandidateValidation';
@@ -49,7 +50,9 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
   public async execute(request: CondenseDraftRequest): Promise<CondenseDraftResult> {
     // NOTE: 압축은 원고를 원본보다 짧게 만드는 작업이라 씬 목표를 하한으로 쓰면 안 된다. 목표에
     // 미달한 원고에서는 하한이 원본 길이와 같아져 어떤 압축 결과도 통과하지 못한다.
-    const lengthPolicy = { maxCompressionPercent: request.maxCompressionPercent };
+    const lengthPolicy: DraftCandidateLengthPolicy = {
+      maxCompressionPercent: request.maxCompressionPercent,
+    };
     const minimumLength: number = resolveMinimumDraftLength(request.body.length, lengthPolicy);
 
     return await runUseCase<CondenseDraftResult>(

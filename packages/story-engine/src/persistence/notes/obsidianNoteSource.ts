@@ -14,10 +14,20 @@ import {
   type INoteSource,
 } from '#engine/application/notes/noteSource';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
-import type { NoteDocument, NoteOrigin, SkippedNote } from '@storyboard/story-model';
+import type {
+  NoteDocument,
+  NoteOrigin,
+  NoteSourceKind,
+  SkippedNote,
+} from '@storyboard/story-model';
 
 const vaultMarkerDirectory: string = '.obsidian';
 const outsideVaultReason: string = '볼트 밖을 가리키는 링크라 읽지 않았습니다';
+
+interface VaultIndexEntry {
+  readonly file: StoryUri;
+  readonly key: string;
+}
 
 export interface ObsidianNoteSourceOptions {
   readonly fileSystem: IFileSystem;
@@ -28,7 +38,7 @@ export interface ObsidianNoteSourceOptions {
 // Reads a folder of Markdown notes the way Obsidian lays them out: every note under the folder, in
 // name order, plus the notes their links point at elsewhere in the vault — one step, no further.
 export class ObsidianNoteSource implements INoteSource {
-  public readonly kind = 'obsidian' as const;
+  public readonly kind: NoteSourceKind = 'obsidian';
 
   public constructor(private readonly options: ObsidianNoteSourceOptions) {}
 
@@ -188,11 +198,13 @@ interface VaultIndex {
 // Obsidian resolves `[[Name]]` by note name anywhere in the vault and `[[folder/Name]]` by path
 // suffix. When two notes share a name the shallower one wins, which is the vault's own tie-break.
 function buildVaultIndex(vaultRoot: StoryUri, files: readonly StoryUri[]): VaultIndex {
-  const entries = files
-    .map((file) => ({
-      file,
-      key: normalizeNoteName(stripMarkdownExtension(relativePath(vaultRoot, file))),
-    }))
+  const entries: VaultIndexEntry[] = files
+    .map(
+      (file): VaultIndexEntry => ({
+        file,
+        key: normalizeNoteName(stripMarkdownExtension(relativePath(vaultRoot, file))),
+      }),
+    )
     .sort((left, right) => left.key.split('/').length - right.key.split('/').length);
 
   return {

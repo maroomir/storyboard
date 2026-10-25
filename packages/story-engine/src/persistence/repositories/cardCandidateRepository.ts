@@ -48,7 +48,7 @@ export class CardCandidateRepository implements ICardCandidateRepository {
     workspaceRoot: StoryUri,
     cardIds: ReadonlySet<string>,
   ): Promise<ReadonlyMap<string, CharacterCard>> {
-    const cardsById = new Map<string, CharacterCard>();
+    const cardsById: Map<string, CharacterCard> = new Map<string, CharacterCard>();
 
     for (const cardId of cardIds) {
       try {

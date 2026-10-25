@@ -30,7 +30,7 @@ export class SceneSidebarRepository implements ISceneSidebarRepository {
       .filter((name) => !isHiddenSceneFileName(name))
       .filter((name) => parseSceneFileName(name) !== undefined);
     const outlineMtime: number | undefined = await this.tryStatMtime(paths.outlineChapters);
-    const items = await Promise.all(
+    const items: SceneListItem[] = await Promise.all(
       names.map(async (name) => await this.toItem(workspaceRoot, name, outlineMtime)),
     );
     return items.sort((left, right) => left.order - right.order);

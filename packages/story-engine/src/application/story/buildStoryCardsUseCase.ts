@@ -26,7 +26,7 @@ const optionalText: z.ZodPreprocess<z.ZodOptional<z.ZodString>> = z.preprocess(
   z.string().trim().min(1).optional(),
 );
 
-function textList() {
+function textList(): z.ZodType<string[]> {
   return z.preprocess(
     (value) =>
       Array.isArray(value)
@@ -169,7 +169,7 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
       return responseSchema.parse(parseJsonObject(response.text)).entities;
     });
     const entities: StoryCardEntity[] = responses.flat();
-    const cardsById = new Map(source.cards.map((card) => [card.id, card]));
+    const cardsById: Map<string, StoryboardCard> = new Map(source.cards.map((card) => [card.id, card]));
     const cardsByName: Map<string, StoryboardCard> = buildCardNameIndex(source.cards);
     const targets: Map<string, StoryCardTarget> = new Map<string, StoryCardTarget>();
 
@@ -295,7 +295,7 @@ async function mapWithConcurrency<T, R>(
 }
 
 function buildCardNameIndex(cards: readonly StoryboardCard[]): Map<string, StoryboardCard> {
-  const index = new Map<string, StoryboardCard>();
+  const index: Map<string, StoryboardCard> = new Map<string, StoryboardCard>();
   for (const card of cards) {
     index.set(normalizeName(card.name), card);
     for (const alias of card.aliases ?? []) {
@@ -310,11 +310,11 @@ function findExistingCard(
   cardsById: ReadonlyMap<string, StoryboardCard>,
   cardsByName: ReadonlyMap<string, StoryboardCard>,
 ): StoryboardCard | undefined {
-  const byId = entity.existingId ? cardsById.get(entity.existingId) : undefined;
+  const byId: StoryboardCard | undefined = entity.existingId ? cardsById.get(entity.existingId) : undefined;
   if (byId && matchesEntityType(byId, entity.type)) {
     return byId;
   }
-  const byName = cardsByName.get(normalizeName(entity.name));
+  const byName: StoryboardCard | undefined = cardsByName.get(normalizeName(entity.name));
   return byName && matchesEntityType(byName, entity.type) ? byName : undefined;
 }
 

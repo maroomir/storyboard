@@ -15,7 +15,7 @@ export async function loadNarratorCards(
   paths: StoryboardProjectPaths,
   fileSystem: IFileSystem,
 ): Promise<ReadonlyMap<string, NarratorCard>> {
-  const cards = await readDirectoryFiles(fileSystem, paths.narratorDirectory, {
+  const cards: NarratorCard[] = await readDirectoryFiles(fileSystem, paths.narratorDirectory, {
     isEligible: (fileName) =>
       !isHiddenSceneFileName(fileName) && parseCardIdFromFileName(fileName) !== undefined,
     read: async (uri) => parseNarratorCard(await loadTextFile(fileSystem, uri)),

@@ -4,6 +4,17 @@ import type {
   StoryboardAiService,
 } from '@storyboard/story-ai';
 import type { UsageAttribution } from '@storyboard/story-model';
+
+interface EntityAccumulator {
+  entity: RecommendedEntity;
+  scenes: Set<string>;
+}
+
+interface SourceEntities {
+  readonly sceneStem: string;
+  readonly entities: RecommendedEntity[];
+}
+
 export interface RecommendationSource {
   readonly sceneStem: string;
   readonly text: string;
@@ -34,11 +45,11 @@ function sceneAttribution(sceneStem: string): UsageAttribution {
 }
 
 class RecommendationAccumulator {
-  private readonly byKey = new Map<string, { entity: RecommendedEntity; scenes: Set<string> }>();
+  private readonly byKey: Map<string, EntityAccumulator> = new Map<string, EntityAccumulator>();
 
   public add(sceneStem: string, entity: RecommendedEntity): void {
     const key: string = normalizeRecommendationKey(entity.name);
-    const existing = this.byKey.get(key);
+    const existing: EntityAccumulator | undefined = this.byKey.get(key);
 
     if (existing) {
       existing.scenes.add(sceneStem);
@@ -76,13 +87,15 @@ export async function buildCardRecommendations(
   const existingKeys: Set<string> = new Set(existingNames.map(normalizeRecommendationKey));
   const accumulator: RecommendationAccumulator = new RecommendationAccumulator();
 
-  const extractedBySource = await Promise.all(
-    sources.map(async (source) => ({
-      sceneStem: source.sceneStem,
-      entities: await aiService.extractCardRecommendations(source.text, category, existingNames, {
-        attribution: sceneAttribution(source.sceneStem),
+  const extractedBySource: SourceEntities[] = await Promise.all(
+    sources.map(
+      async (source): Promise<SourceEntities> => ({
+        sceneStem: source.sceneStem,
+        entities: await aiService.extractCardRecommendations(source.text, category, existingNames, {
+          attribution: sceneAttribution(source.sceneStem),
+        }),
       }),
-    })),
+    ),
   );
 
   for (const { sceneStem, entities } of extractedBySource) {

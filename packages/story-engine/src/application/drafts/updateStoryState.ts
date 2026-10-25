@@ -34,7 +34,7 @@ export function toStoryStateEntries(
   const idByName: Map<string, string> = witnessIdsByName(characters);
 
   const unknownWitnesses: Set<string> = new Set<string>();
-  const entries = items.map((item) => {
+  const entries: StoryStateUpdateItem[] = items.map((item): StoryStateUpdateItem => {
     const names: readonly string[] = item.witnesses ?? [];
     const unknown: string[] = names.filter((name) => !idByName.has(name));
     unknown.forEach((name) => unknownWitnesses.add(name));

@@ -82,7 +82,7 @@ export async function createWorkspace(request: CreateWorkspaceRequest): Promise<
     name: request.name,
     ...(request.language === undefined ? {} : { language: request.language }),
   });
-  const project = request.setting === undefined ? base : { ...base, setting: request.setting };
+  const project: StoryboardProject = request.setting === undefined ? base : { ...base, setting: request.setting };
 
   await fileSystem.createDirectory(paths.metadataDirectory);
   await createStoryboardDirectories(fileSystem, paths);

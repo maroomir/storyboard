@@ -5,12 +5,17 @@ import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSy
 // NOTE: `.storyboard/memory/` used to live under `.storyboard/cache/`, which the scaffold
 // gitignores. Everything moved here is LLM output that no committed input can reproduce, so it
 // belongs in version control. Workspaces created before the move are migrated when they open.
-const legacyMemoryLocations = [
+interface LegacyMemoryMove {
+  readonly legacy: string;
+  readonly current: string;
+}
+
+const legacyMemoryLocations: readonly LegacyMemoryMove[] = [
   { legacy: '.storyboard/cache/storyState.md', current: STORYBOARD_RELATIVE_PATHS.storyState },
   { legacy: 'manuscript/SUMMARY.md', current: STORYBOARD_RELATIVE_PATHS.chapterSummaries },
-] as const;
+];
 
-const legacyMemoryDirectories = [
+const legacyMemoryDirectories: readonly LegacyMemoryMove[] = [
   {
     legacy: '.storyboard/cache/dialogue',
     current: STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory,
@@ -23,7 +28,7 @@ const legacyMemoryDirectories = [
     legacy: '.storyboard/cache/backgrounds',
     current: STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory,
   },
-] as const;
+];
 
 export interface MemoryMigrationResult {
   // Workspace-relative paths written at the new location, for a host that has to commit them.

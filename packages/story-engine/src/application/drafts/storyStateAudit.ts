@@ -51,7 +51,7 @@ function memoizeFileReads(fileSystem: IFileSystem): IFileSystem {
   // NOTE: 어댑터는 클래스이고 비공개 필드를 쓸 수 있으므로 스프레드나 Object.create로 감싸면
   // 메서드나 this가 어긋난다. 위임을 하나씩 적는다.
   return {
-    readFile: (uri: StoryUri) => {
+    readFile: (uri: StoryUri): Promise<Uint8Array> => {
       const cached: Promise<Uint8Array<ArrayBufferLike>> | undefined = reads.get(uri.path);
       if (cached) {
         return cached;

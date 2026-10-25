@@ -216,13 +216,12 @@ interface ReviseSession {
   readonly ctx: ReviseLoopContext;
 }
 
-async function runReviewChecks(
-  session: ReviseSession,
-  body: string,
-): Promise<{
+interface ReviewCheckResults {
   continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>;
   critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>;
-}> {
+}
+
+async function runReviewChecks(session: ReviseSession, body: string): Promise<ReviewCheckResults> {
   const { aiService, registry, attribution, ctx } = session;
 
   const [continuityIssues, critiqueIssues] = await Promise.all([
@@ -248,11 +247,17 @@ async function runReviewChecks(
   return { continuityIssues, critiqueIssues };
 }
 
+interface ReviewEvaluation {
+  blocking: number;
+  instructions: string[];
+  passed: boolean;
+}
+
 function evaluateReviewResult(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[],
   threshold: number,
-): { blocking: number; instructions: string[]; passed: boolean } {
+): ReviewEvaluation {
   const blocking: number = countBlockingIssues(continuityIssues, critiqueIssues);
   const instructions: string[] = buildRevisionInstructions(continuityIssues, critiqueIssues);
   const score: CritiqueScore = scoreCritique(critiqueIssues);
@@ -418,10 +423,14 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
       ...checked.critiqueIssues,
       ...(seed?.critiqueIssues ?? []),
     ];
-    const review = evaluateReviewResult(continuityIssues, critiqueIssues, reviseScoreThreshold);
+    const review: ReviewEvaluation = evaluateReviewResult(
+      continuityIssues,
+      critiqueIssues,
+      reviseScoreThreshold,
+    );
     blocking = review.blocking;
     lastInstructions = review.instructions;
-    const checkedRound = {
+    const checkedRound: ReviseRound = {
       round,
       continuityIssues,
       critiqueIssues,

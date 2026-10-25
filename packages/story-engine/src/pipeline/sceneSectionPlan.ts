@@ -15,6 +15,20 @@ import type {
 
 // 한 번의 살붙임 호출이 낼 수 있는 최대 분량. 출력 한도에 걸려 뒷부분이 잘리는 것을 막는다.
 // 창작자가 고칠 수 있는 값이므로 기본값은 설정 카탈로그가 갖는다.
+
+interface LineSpan {
+  line: string;
+  skeletonStart: number;
+  skeletonEnd: number;
+  expandedStart: number;
+  expandedEnd: number;
+}
+
+interface PhraseCount {
+  readonly phrase: string;
+  readonly count: number;
+}
+
 export const SECTION_OUTPUT_LIMIT: number = integerSettingDefault('generation.section.outputLimit');
 
 // NOTE: 뼈대를 문단 경계에서 끊어 구간으로 나눈다. 구간 수는 목표 분량이 상한을 넘지 않는 최소값이라,
@@ -196,7 +210,7 @@ export interface SectionViolation {
 // 살붙임이 좌표에도 공간 사실에도 없는 자리를 세울 때 쓰는 공간 낱말. 실측에서 모델은 비트 사이에서
 // 인물을 «서재»나 각자의 방으로 옮겼다가 다음 비트에서 되돌렸다(#122). 집·거리의 흔한 공간만 둔다 —
 // 뼈대와 좌표·공간 사실 어디에도 없는 낱말만 위반이므로, 작품이 쓰는 공간은 저절로 허용된다.
-const spaceNouns = [
+const spaceNouns: readonly string[] = [
   '서재',
   '침실',
   '안방',
@@ -226,7 +240,7 @@ const spaceNouns = [
   '카페',
   '편의점',
   '골목',
-] as const;
+];
 
 // 앞 장면을 되짚는 표현. 채울 재료가 바닥나면 모델은 직전 구간을 «아까 …»로 다시 말하는 쪽으로
 // 수렴한다(#120). 재시도 사유가 아니라 경고다 — 되짚기 자체가 틀린 것은 아니고 잦은 것이 문제다.
@@ -823,7 +837,7 @@ export function findCatchphraseOveruse(input: {
   const warnings: string[] = [];
 
   for (const character of input.characters) {
-    const counts = (character.catchphrases ?? [])
+    const counts: PhraseCount[] = (character.catchphrases ?? [])
       .map((phrase) => ({ phrase, count: input.text.split(phrase).length - 1 }))
       .filter((entry) => entry.phrase.length > 0 && entry.count > 0);
     const total: number = counts.reduce((sum, entry) => sum + entry.count, 0);
@@ -853,13 +867,7 @@ export function findThinExpansionSpots(
   expanded: string,
   minimumQuotedLength: number,
 ): ThinExpansionSpot[] {
-  const found: {
-    line: string;
-    skeletonStart: number;
-    skeletonEnd: number;
-    expandedStart: number;
-    expandedEnd: number;
-  }[] = [];
+  const found: LineSpan[] = [];
   let searchFrom: number = 0;
 
   for (const match of section.matchAll(quotedDialoguePatternFor(minimumQuotedLength))) {
@@ -882,7 +890,7 @@ export function findThinExpansionSpots(
   return found
     .slice(0, -1)
     .map((current, index) => {
-      const next = found[index + 1] ?? current;
+      const next: LineSpan = found[index + 1] ?? current;
       const skeletonGap: number = next.skeletonStart - current.skeletonEnd;
       const expandedGap: number = next.expandedStart - current.expandedEnd;
       return { line: current.line, added: expandedGap - skeletonGap };

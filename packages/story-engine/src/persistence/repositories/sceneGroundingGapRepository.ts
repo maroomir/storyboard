@@ -3,6 +3,7 @@ import {
   parseSceneGroundingGaps,
   serializeSceneGroundingGaps,
   type SceneGroundingGap,
+  type SceneGroundingGaps,
   type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -31,7 +32,7 @@ export class SceneGroundingGapRepository implements ISceneGroundingGapRepository
     }
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const next = gap === undefined ? others : { ...others, [sceneStem]: gap };
+    const next: SceneGroundingGaps = gap === undefined ? others : { ...others, [sceneStem]: gap };
     await this.fileSystem.createDirectory(paths.cacheDirectory);
     await this.fileSystem.writeFile(
       paths.sceneGroundingGaps,

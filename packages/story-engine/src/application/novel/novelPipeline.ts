@@ -73,7 +73,9 @@ export interface INovelStage {
 
 function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(options.workspaceUri);
-  const completed = new Set<NovelStageName>(options.resumeState?.completedStages ?? []);
+  const completed: Set<NovelStageName> = new Set<NovelStageName>(
+    options.resumeState?.completedStages ?? [],
+  );
   const now = (): string => new Date().toISOString();
 
   const state: NovelRunState = {

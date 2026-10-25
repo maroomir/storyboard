@@ -10,6 +10,7 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   ChapterPlan,
   FlatChapterScene,
+  ProjectSetting,
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';
@@ -47,7 +48,7 @@ export async function resolveSceneNarration(
   chapterDefaults: ChapterNarrationDefaults,
   fileSystem: IFileSystem,
 ): Promise<NarrationDirective | undefined> {
-  const setting = project.setting;
+  const setting: ProjectSetting | undefined = project.setting;
   const sceneNarrator: string | undefined = scene.card.narrator;
   const defaultNarrator: string | undefined = setting?.narration?.defaultNarrator;
   const referencesNarratorCard: boolean =

@@ -1,7 +1,7 @@
 import type { StoryUri, AiProviderId, AiTaskName } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { StoryboardAiService } from '@storyboard/story-ai';
-import type { AiProviderRegistry } from '@storyboard/story-ai';
+import type { AiProviderRegistry, TaskAiConfigResolved } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 export class AiGateway {
   public constructor(
@@ -25,10 +25,7 @@ export class AiGateway {
     return this.providerRegistry.getTaskProvider(taskName);
   }
 
-  public getTaskAiConfig(taskName: AiTaskName): {
-    readonly providerId: AiProviderId;
-    readonly model: string;
-  } {
+  public getTaskAiConfig(taskName: AiTaskName): TaskAiConfigResolved {
     return this.providerRegistry.getTaskAiConfig(taskName);
   }
 }

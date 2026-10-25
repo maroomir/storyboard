@@ -17,6 +17,7 @@ import {
   writeDraftFile,
 } from '@storyboard/story-model';
 import { readProjectJson } from '#engine/persistence/projectJson';
+import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 
 export type ApplyDraftFormatRequest = {
   readonly workspaceRoot: StoryUri;
@@ -89,7 +90,8 @@ export class ApplyDraftFormatUseCase implements IUseCase<
         return { kind: 'cancelled', ok: false };
       }
 
-      const sceneDraftConfig = this.deps.aiGateway.getTaskAiConfig('sceneDraft');
+      const sceneDraftConfig: TaskAiConfigResolved =
+        this.deps.aiGateway.getTaskAiConfig('sceneDraft');
       const draft: Draft = createDraft({
         sceneStem: existing.sceneStem,
         format: project.format,

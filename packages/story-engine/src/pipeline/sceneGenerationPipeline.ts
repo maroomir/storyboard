@@ -11,6 +11,7 @@ import type {
 SceneNarrativeParts,
 SceneCoverageIssue,
 BackgroundCard,
+SceneCard,
 } from '@storyboard/story-model';
 import {
   characterCatchphrases,
@@ -65,6 +66,7 @@ import {
   sceneCoordinatesFromBeats,
   sectionPlaces,
   sectionSceneCoordinates,
+  type ExtractedSceneCoordinates,
   type SceneCoordinateLedger,
 } from './sceneCoordinates';
 import {
@@ -117,6 +119,43 @@ import {
   type SceneGenerationPipelineTaskProviders,
 } from './sceneGenerationTypes';
 
+
+interface PartialRewrites {
+  rewrites: readonly SceneDialogueRewrite[];
+  heldBack: number;
+}
+
+interface VoiceSampleBounds {
+  readonly minimumLength: number;
+  readonly maximumLength: number;
+}
+
+interface DialogueCharacterCandidate {
+  readonly id: string;
+  readonly name: string;
+}
+
+interface BeatActorRequest {
+  readonly character: SceneBeatCharacter;
+  readonly beat: SceneBeatDirective;
+  readonly nextBeats: readonly SceneBeatDirective[];
+}
+
+interface ActorLineCaps {
+  readonly lineMaxChars: number;
+  readonly lineMaxSentences: number;
+}
+
+interface CastProposal {
+  readonly name: string;
+  readonly proposal: SceneBeatProposal | undefined;
+}
+
+interface BeatReview {
+  readonly verdict: SceneBeatVerdict | undefined;
+  readonly reasons: string[];
+}
+
 export type {
   BackgroundFactConflictStore,
   BackgroundMemoryStore,
@@ -168,7 +207,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     renderNarrativeBodyWithCastNames(context) ?? body,
   );
   const tuning: ResolvedSceneGenerationTuning = resolveSceneGenerationTuning(input.tuning);
-  const beats = context.scene.card?.beats ?? [];
+  const beats: SceneBeat[] = context.scene.card?.beats ?? [];
   const breakPlan: SceneBreakPlan | undefined = planSceneBreaks(beats, castNameOf(context), tuning.sceneBreakTimeJumpMinutes);
 
   if (body.length === 0) {
@@ -241,7 +280,7 @@ function castNameOf(context: SceneContext): (ref: string) => string {
 }
 
 function renderNarrativeBodyWithCastNames(context: SceneContext): string | undefined {
-  const card = context.scene.card;
+  const card: SceneCard = context.scene.card;
   const hasCoordinates: boolean = (card?.beats ?? []).some((beat) => typeof beat !== 'string');
   if (card === undefined || !hasCoordinates) {
     return undefined;
@@ -462,6 +501,11 @@ function validatePlannedSceneBreaks(
       ];
 }
 
+interface SectionExpansion {
+  readonly text: string;
+  readonly violations: readonly SectionViolation[];
+}
+
 async function expandSectionWithRetries(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'expandSceneSection'>;
   readonly section: string;
@@ -475,7 +519,7 @@ async function expandSectionWithRetries(input: {
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
-}): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
+}): Promise<SectionExpansion> {
   let reasons: string[] = [];
   let isUnderLengthRetry: boolean = false;
   let best: {
@@ -580,6 +624,12 @@ function otherVoices(
   );
 }
 
+interface DialoguePolishOutcome {
+  readonly text: string;
+  readonly warnings: readonly string[];
+  readonly summary: DialoguePolishSummary | undefined;
+}
+
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
   readonly skeleton: string;
@@ -591,11 +641,7 @@ async function polishDialogueOrKeepSkeleton(input: {
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
   readonly onProgress: RunSceneGenerationPipelineInput['onProgress'];
-}): Promise<{
-  readonly text: string;
-  readonly warnings: readonly string[];
-  readonly summary: DialoguePolishSummary | undefined;
-}> {
+}): Promise<DialoguePolishOutcome> {
   const numbered: NumberedSkeleton = numberSkeletonDialogue(input.skeleton, input.tuning);
   const speakers: string[] = [...input.personas.keys()];
 
@@ -618,10 +664,7 @@ async function polishDialogueOrKeepSkeleton(input: {
   const accepted: Map<string, readonly SceneDialogueRewrite[]> = new Map<string, readonly SceneDialogueRewrite[]>();
   const rejected: Map<string, readonly SectionViolation[]> = new Map<string, readonly SectionViolation[]>();
   // 위반한 번호를 뺀 나머지가 씬 검증을 통과하면, 재시도가 끝내 실패해도 그 나머지는 받는다.
-  const partial = new Map<
-    string,
-    { rewrites: readonly SceneDialogueRewrite[]; heldBack: number }
-  >();
+  const partial: Map<string, PartialRewrites> = new Map<string, PartialRewrites>();
   const truncated: Set<string> = new Set<string>();
   let pending: string[] = speakers;
 
@@ -705,7 +748,7 @@ async function polishDialogueOrKeepSkeleton(input: {
   const warnings: string[] = [
     ...[...rejected.entries()].map(([name, violations]) => {
       const details: string = violations.map((violation) => violation.detail).join(' / ');
-      const kept = partial.get(name);
+      const kept: PartialRewrites | undefined = partial.get(name);
       return kept === undefined
         ? `${name}의 대사 다듬기를 되돌렸습니다 — ${details}`
         : `${name}의 대사 ${kept.heldBack}개를 뼈대대로 두었습니다 — ${details}`;
@@ -795,7 +838,7 @@ async function buildVoiceSamples(
 
   const corpus: readonly SceneDialogueRecord[] = await dialogueCorpus.loadCorpus();
   const seeds: Readonly<Record<string, readonly string[]>> = (await dialogueCorpus.loadVoiceSeeds?.())?.characters ?? {};
-  const bounds = {
+  const bounds: VoiceSampleBounds = {
     minimumLength: tuning.voiceSampleMinimumLength,
     maximumLength: tuning.voiceSampleMaximumLength,
   };
@@ -845,7 +888,7 @@ async function buildDialogueRecord(input: {
   }
 
   const lines: string[] = extractDialogueLines(input.draftBody, input.tuning);
-  const candidates = input.characters.map((character) => ({
+  const candidates: DialogueCharacterCandidate[] = input.characters.map((character): DialogueCharacterCandidate => ({
     id: character.id,
     name: character.name,
   }));
@@ -983,6 +1026,11 @@ type SkeletonCallInput = Parameters<SceneGenerationPipelineAiService['draftScene
 // 대목 묶음마다 한 호출(#111). 앞 호출까지의 뼈대를 그대로 보여 주고 이어 쓰게 하며, 다음 호출의 첫
 // 사건을 알려 거기까지 쓰지 않게 한다. 종료 지점은 마지막 호출만 받는다. 호출의 미달·되풀이는 그
 // 호출만 다시 부른다.
+interface CombinedSkeletonDraft {
+  readonly text: string;
+  readonly warnings: readonly string[];
+}
+
 async function draftSkeletonInCalls(input: {
   readonly ctx: ResolvedExecutionContext;
   readonly base: SkeletonCallInput;
@@ -991,7 +1039,7 @@ async function draftSkeletonInCalls(input: {
   readonly plan: SceneBreakPlan;
   readonly beats: readonly SceneBeat[];
   readonly targetLength: number;
-}): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
+}): Promise<CombinedSkeletonDraft> {
   const { ctx, base, options, calls, plan, beats, targetLength } = input;
   const castName: (ref: string) => string = castNameOf(ctx.context);
   const totalBeats: number = calls.reduce((sum, call) => sum + call.beats.length, 0);
@@ -1056,7 +1104,7 @@ const draftSkeletonStage: ISceneStage = {
   id: 'draftSkeleton',
   async run(state) {
     const { ctx, input } = state;
-    const beats = ctx.context.scene.card?.beats ?? [];
+    const beats: SceneBeat[] = ctx.context.scene.card?.beats ?? [];
     const targetLength: number | undefined = skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio);
     const endState: string | undefined = ctx.context.scene.card?.endState;
     const base: SkeletonCallInput = {
@@ -1139,7 +1187,7 @@ function adoptSkeleton(state: SceneRunState, skeletonText: string): void {
     return;
   }
 
-  const extracted = extractSceneCoordinates(skeletonText);
+  const extracted: ExtractedSceneCoordinates = extractSceneCoordinates(skeletonText);
   state.skeleton = extracted.text;
   const missingCoordinates: number = countMissingSceneCoordinates(extracted.ledger);
   if (hasSceneCoordinates(extracted.ledger) && missingCoordinates === 0) {
@@ -1167,7 +1215,7 @@ const actBeatsStage: ISceneStage = {
   id: 'actBeats',
   async run(state) {
     const { ctx, input } = state;
-    const sourceBeats = ctx.context.scene.card?.beats ?? [];
+    const sourceBeats: SceneBeat[] = ctx.context.scene.card?.beats ?? [];
     const beats: ActedBeat[] = planActedBeats(sourceBeats, ctx.context.characters);
 
     if (beats.length === 0) {
@@ -1205,8 +1253,8 @@ const actBeatsStage: ISceneStage = {
       directive: SceneBeatDirective,
       nextBeats: readonly SceneBeatDirective[],
     ): Promise<SceneBeatProposal | undefined> => {
-      const request = { character: characterFor(name, beat), beat: directive, nextBeats };
-      const caps = {
+      const request: BeatActorRequest = { character: characterFor(name, beat), beat: directive, nextBeats };
+      const caps: ActorLineCaps = {
         lineMaxChars: ctx.tuning.actorLineMaxChars,
         lineMaxSentences: ctx.tuning.actorLineMaxSentences,
       };
@@ -1239,13 +1287,13 @@ const actBeatsStage: ISceneStage = {
       );
       const isLast: boolean = index === beats.length - 1;
 
-      const proposals = await Promise.all(
-        beat.cast.map(async (name) => ({
+      const proposals: CastProposal[] = await Promise.all(
+        beat.cast.map(async (name): Promise<CastProposal> => ({
           name,
           proposal: await propose(name, beat, directive, nextBeats),
         })),
       );
-      const arbitrate = (retryReasons?: readonly string[]) =>
+      const arbitrate = (retryReasons?: readonly string[]): Promise<SceneBeatPassage> =>
         ctx.aiService.arbitrateBeat(
           {
             beat: directive,
@@ -1265,7 +1313,7 @@ const actBeatsStage: ISceneStage = {
           },
           optionsFor('sceneBeatArbiter'),
         );
-      const judge = (passage: string) =>
+      const judge = (passage: string): Promise<SceneBeatVerdict | undefined> =>
         ctx.aiService.judgeBeat(
           {
             characters: beat.cast.map((name) => characterFor(name, beat)),
@@ -1276,7 +1324,7 @@ const actBeatsStage: ISceneStage = {
           },
           optionsFor('sceneBeatJudge'),
         );
-      const review = async (passage: string) => {
+      const review = async (passage: string): Promise<BeatReview> => {
         const verdict: SceneBeatVerdict | undefined = await judge(passage);
         return {
           verdict,
@@ -1293,7 +1341,7 @@ const actBeatsStage: ISceneStage = {
       };
 
       let merged: SceneBeatPassage = await arbitrate();
-      let reviewed = await review(merged.passage);
+      let reviewed: BeatReview = await review(merged.passage);
 
       for (
         let attempt: number = 0;
@@ -1326,7 +1374,7 @@ const polishDialogueStage: ISceneStage = {
   id: 'polishDialogue',
   async run(state) {
     const { ctx } = state;
-    const polished = await polishDialogueOrKeepSkeleton({
+    const polished: DialoguePolishOutcome = await polishDialogueOrKeepSkeleton({
       aiService: ctx.aiService,
       skeleton: state.skeleton,
       personas: state.personasUsed,
@@ -1367,12 +1415,17 @@ function backgroundFactLines(background: Background): string[] {
 }
 
 // 재시도로도 다음 구간의 대사를 앞당겨 쓰면 그 자리부터 잘라 낸다. 다음 구간이 그 사건을 쓴다.
+interface RunAheadTrim {
+  readonly text: string;
+  readonly violations: readonly SectionViolation[];
+}
+
 function trimRunAhead(
   skeleton: string,
   section: string,
   outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
   tuning: ResolvedSceneGenerationTuning,
-): { readonly text: string; readonly violations: readonly SectionViolation[] } {
+): RunAheadTrim {
   if (!outcome.violations.some((violation) => violation.kind === 'runs-ahead')) {
     return outcome;
   }
@@ -1397,10 +1450,15 @@ function trimRunAhead(
 
 // 재시도로도 --- 수가 맞지 않으면 뼈대 조각을 기준으로 되살린다(#112). 자리를 찾으면 그 위반은
 // 경고 한 줄로 바뀌고, 못 찾으면 위반이 그대로 경고로 남는다.
+interface RestoredSectionBreaks {
+  readonly text: string;
+  readonly violations: readonly SectionViolation[];
+}
+
 function restoreSectionBreaks(
   section: string,
   outcome: { readonly text: string; readonly violations: readonly SectionViolation[] },
-): { readonly text: string; readonly violations: readonly SectionViolation[] } {
+): RestoredSectionBreaks {
   if (!outcome.violations.some((violation) => violation.kind === 'scene-breaks')) {
     return outcome;
   }
@@ -1433,7 +1491,7 @@ const expandSectionStage: ISceneStage = {
       planSectionCount(ctx.styleDirective?.targetWordCount ?? 0, outputLimit),
     );
     const targetLengths: number[] = sectionTargetLengths(ctx.styleDirective, sections, outputLimit);
-    const beats = ctx.context.scene.card?.beats ?? [];
+    const beats: SceneBeat[] = ctx.context.scene.card?.beats ?? [];
     const coordinatesBySection: string[][] = sectionSceneCoordinates(
       state.sceneCoordinates,
       sections,
@@ -1450,7 +1508,7 @@ const expandSectionStage: ISceneStage = {
     for (let index: number = 0; index < sections.length; index += 1) {
       ctx.onProgress?.('expandSection', index + 1, sections.length);
 
-      const outcome = await expandSectionWithRetries({
+      const outcome: SectionExpansion = await expandSectionWithRetries({
         aiService: ctx.aiService,
         section: sections[index] as string,
         skeleton: state.polishedText,
@@ -1475,7 +1533,7 @@ const expandSectionStage: ISceneStage = {
         tuning: ctx.tuning,
       });
 
-      const repaired = restoreSectionBreaks(
+      const repaired: RestoredSectionBreaks = restoreSectionBreaks(
         sections[index] as string,
         trimRunAhead(state.polishedText, sections[index] as string, outcome, ctx.tuning),
       );
@@ -1542,7 +1600,7 @@ async function executeSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput,
 ): Promise<RunSceneGenerationPipelineResult> {
   const ctx: ResolvedExecutionContext = resolveExecutionContext(input);
-  const plan = input.stages ?? resolveScenePipelinePlan();
+  const plan: readonly SceneStageId[] = input.stages ?? resolveScenePipelinePlan();
   const state: SceneRunState = {
     input,
     ctx,

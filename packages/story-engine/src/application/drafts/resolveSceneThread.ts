@@ -9,8 +9,14 @@ import {
   resolveThreadPaths,
   type StoryboardProjectPaths,
   type SceneFileNameParts,
+  type StoryThread,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+
+interface NumberedSceneFile {
+  readonly name: string;
+  readonly order: number;
+}
 
 export interface SceneThreadContext {
   readonly threadId: string;
@@ -49,7 +55,7 @@ export async function resolveSceneThread(
 }
 
 function hasDeclaredThreads(project: StoryboardProject): boolean {
-  const threads = project.setting?.threads;
+  const threads: Record<string, StoryThread> | undefined = project.setting?.threads;
   return threads !== undefined && Object.keys(threads).length > 0;
 }
 
@@ -67,11 +73,13 @@ async function findPreviousSceneOrderInThread(
     return undefined;
   }
 
-  const earlierScenes = entries
+  const earlierScenes: NumberedSceneFile[] = entries
     .filter(([name, entry]) => entry.type === 'file' && !isHiddenSceneFileName(name))
     .flatMap(([name]) => {
       const parsed: SceneFileNameParts | undefined = parseSceneFileName(name);
-      return parsed && parsed.order < scene.order ? [{ name, order: parsed.order }] : [];
+      return parsed && parsed.order < scene.order
+        ? [{ name, order: parsed.order } satisfies NumberedSceneFile]
+        : [];
     })
     .sort((left, right) => right.order - left.order);
 

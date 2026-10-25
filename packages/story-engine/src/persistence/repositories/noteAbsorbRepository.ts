@@ -37,6 +37,7 @@ import type {
 } from '@storyboard/story-model';
 import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ZodSafeParseResult } from 'zod';
 
 function encodeText(text: string): Uint8Array {
   return new TextEncoder().encode(text);
@@ -101,7 +102,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
       return { kind: 'legacy' };
     }
 
-    const parsed = noteCandidateFileSchema.safeParse(json);
+    const parsed: ZodSafeParseResult<NoteCandidateFile> = noteCandidateFileSchema.safeParse(json);
 
     if (!parsed.success) {
       throw unreadableCandidateFile(parsed.error);
