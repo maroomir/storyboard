@@ -13,6 +13,7 @@ after the first public release.
 ### Fixed
 
 - **The end-of-scene catchphrase warning no longer counts letters inside other words.** A catchphrase such as «이 몸» was also counted inside «윗사람이 몸소»; it now follows the actor loop's rule and counts only where the preceding character is not Hangul.
+- **Building cards from scenes recognises a name whose Hangul arrives decomposed.** A name in decomposed form (NFD, as macOS file names spell it) is normalised to NFC before it is matched, as the note import already did, so the same person no longer gets a second card.
 
 ### Internal
 

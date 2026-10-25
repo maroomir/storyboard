@@ -28,20 +28,21 @@ const verbsThatMustNotTouchWindowTitle: ReadonlySet<string> = new Set([
   'tui',
 ]);
 
-function extractRunName(argv: readonly string[]): string | undefined {
+function extractRunWords(argv: readonly string[]): readonly string[] {
   const firstFlagIndex: number = argv.findIndex((token: string) => token.startsWith('-'));
   const hasNoFlag: boolean = firstFlagIndex === -1;
   const wordsBeforeFlags: readonly string[] = hasNoFlag ? argv : argv.slice(0, firstFlagIndex);
-  const runWords: readonly string[] = wordsBeforeFlags.slice(0, runNameWordCount);
 
+  return wordsBeforeFlags.slice(0, runNameWordCount);
+}
+
+function shouldSignalRun(argv: readonly string[], runWords: readonly string[]): boolean {
   const hasRunWords: boolean = runWords.length > 0;
   const isVerbWithoutSignals: boolean = verbsThatMustNotTouchWindowTitle.has(runWords[0] ?? '');
   const isDrawingTerminal: boolean = process.stderr.isTTY === true && process.env.TERM !== 'dumb';
   const isJsonOutput: boolean = argv.includes('--json');
-  const shouldSignalRun: boolean =
-    hasRunWords && !isVerbWithoutSignals && isDrawingTerminal && !isJsonOutput;
 
-  return shouldSignalRun ? runWords.join(' ') : undefined;
+  return hasRunWords && !isVerbWithoutSignals && isDrawingTerminal && !isJsonOutput;
 }
 
 function ignoreClosedPipeOnStdout(): void {
@@ -72,10 +73,12 @@ function exitNormallyOnTerminationSoChildProcessesStop(): void {
 }
 
 async function main(argv: readonly string[]): Promise<number> {
-  const runName: string | undefined = extractRunName(argv);
+  const runWords: readonly string[] = extractRunWords(argv);
+  const isSignallingRun: boolean = shouldSignalRun(argv, runWords);
   const startedAt: number = Date.now();
 
-  if (runName !== undefined) {
+  if (isSignallingRun) {
+    const runName: string = runWords.join(' ');
     process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
   }
 
@@ -121,7 +124,7 @@ async function main(argv: readonly string[]): Promise<number> {
   process.stdout.write(dispatched.stdout);
   process.stderr.write(dispatched.stderr);
 
-  if (runName !== undefined) {
+  if (isSignallingRun) {
     const hasRunLong: boolean = Date.now() - startedAt >= bellAfterRunLongerThanMs;
     process.stderr.write(`${popWindowTitle}${hasRunLong ? bellSignal : ''}`);
   }

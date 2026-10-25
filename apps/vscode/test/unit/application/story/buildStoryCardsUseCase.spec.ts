@@ -112,6 +112,22 @@ describe('BuildStoryCardsUseCase', () => {
     });
   });
 
+  it('matches an existing card whose name arrives decomposed, as macOS file names spell it', async () => {
+    const decomposedName = '아리아'.normalize('NFD');
+    const proposal = await useCase({
+      entities: [
+        {
+          type: 'character',
+          name: decomposedName,
+          traits: ['용감함'],
+          sourceScenes: ['01-opening'],
+        },
+      ],
+    }).execute({ workspaceRoot });
+
+    expect(proposal.targets.map((target) => target.card.id)).toEqual(['aria']);
+  });
+
   it('rejects an entity whose evidence is not one of the supplied scenes', async () => {
     await expect(
       useCase({

@@ -1,7 +1,7 @@
 import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse, CharacterRole, BibleSubjectKind } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
-import { slugify } from '@storyboard/story-model';
+import { normalizeEntityName, slugify } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import {
@@ -295,9 +295,9 @@ async function mapWithConcurrency<T, R>(
 function buildCardNameIndex(cards: readonly StoryboardCard[]): Map<string, StoryboardCard> {
   const index: Map<string, StoryboardCard> = new Map<string, StoryboardCard>();
   for (const card of cards) {
-    index.set(normalizeName(card.name), card);
+    index.set(normalizeEntityName(card.name), card);
     for (const alias of card.aliases ?? []) {
-      index.set(normalizeName(alias), card);
+      index.set(normalizeEntityName(alias), card);
     }
   }
   return index;
@@ -312,7 +312,7 @@ function findExistingCard(
   if (byId && matchesEntityType(byId, entity.type)) {
     return byId;
   }
-  const byName: StoryboardCard | undefined = cardsByName.get(normalizeName(entity.name));
+  const byName: StoryboardCard | undefined = cardsByName.get(normalizeEntityName(entity.name));
   return byName && matchesEntityType(byName, entity.type) ? byName : undefined;
 }
 
@@ -326,7 +326,7 @@ function buildNewCard(
   cardsByName: ReadonlyMap<string, StoryboardCard>,
   sequence: number,
 ): StoryboardCard {
-  if (cardsByName.has(normalizeName(entity.name))) {
+  if (cardsByName.has(normalizeEntityName(entity.name))) {
     throw new StoryFeatureSourceError('card-name-conflict', `새 카드 이름이 기존 카드와 충돌합니다: ${entity.name}`);
   }
   const suggested: string = entity.existingId?.trim() ?? slugify(entity.name) ?? `new-card-${sequence}`;
@@ -452,13 +452,9 @@ function resolveCardId(
   cardsByName: ReadonlyMap<string, StoryboardCard>,
 ): string | undefined {
   return (
-    cardsByName.get(normalizeName(value))?.id ??
+    cardsByName.get(normalizeEntityName(value))?.id ??
     (/^[a-z0-9][a-z0-9-]*$/.test(value) ? value : undefined)
   );
-}
-
-function normalizeName(value: string): string {
-  return value.trim().toLocaleLowerCase('ko').replace(/\s+/g, ' ');
 }
 
 function changeLabel(proposal: CardCollectProposal): string {
