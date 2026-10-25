@@ -48,10 +48,12 @@ for schema-first types and the error-class template. Generic readability and ver
 ## Interfaces and Data Definitions
 
 - **Explicit types everywhere**: every local, class field and function return is annotated, even
-  when inferable; each project's eslint enforces it (`typedef`, `explicit-function-return-type`,
-  `no-inferrable-types` off). A long anonymous inferred shape gets a named `interface`/`type`.
+  when inferable; each project's eslint enforces it (`explicit-function-return-type`, a
+  `no-restricted-syntax` rule against unannotated variables and fields, `no-inferrable-types`
+  off). A long anonymous inferred shape gets a named `interface`/`type`.
 - **Schema-first at boundaries**: config files, RPC payloads, and workspace files (`.card` etc.)
-  are defined by zod schemas; types derive via `z.infer`, unions via `z.discriminatedUnion`.
+  are validated by zod schemas. The interface comes first and the schema is annotated with it
+  (`const xSchema: z.ZodType<X> = …`), so the compiler checks that the two agree.
 - `interface` = record shape (all fields `readonly`); `type` = union/alias. State machines are
   string-literal unions (`SyncState = 'clean' | 'no-remote' | …`); events and outcomes are
   discriminated unions on `kind`/`status`/`ok`.
@@ -127,7 +129,9 @@ exactly one file; everything else derives from it.
   Identifiers and enums stay TypeScript, declared type first: the literal union (or row interface)
   is written out and the table is annotated with it (`type CardCategory = 'character' | 'background';`
   `const cardCategories: readonly CardCategory[] = [...]`) — `providerCatalog`,
-  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. No `as const` declarations.
+  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. No `as const` declarations,
+  except that a table keyed by hundreds of names (UI messages, IPC channels) is checked with
+  `satisfies` and derives its key type (`keyof typeof table`).
   JSON loses literal types, so never move an enum into one.
 - **The layering for generation knobs** is user setting → model profile → pipeline default. A value
   that only one model needs belongs in the model profile, never in the shared default.

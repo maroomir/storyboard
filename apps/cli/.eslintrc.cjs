@@ -1,3 +1,5 @@
+const explicitTypeRules = require('../../scripts/lint/explicitTypeRules.cjs');
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -9,12 +11,7 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-inferrable-types': 'off',
-    '@typescript-eslint/explicit-function-return-type': 'error',
-    '@typescript-eslint/typedef': [
-      'error',
-      { variableDeclaration: true, memberVariableDeclaration: true, variableDeclarationIgnoreFunction: true },
-    ],
+    ...explicitTypeRules,
     'no-warning-comments': ['warn', { terms: ['xxx'], location: 'anywhere' }],
   },
 };

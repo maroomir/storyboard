@@ -21,8 +21,15 @@ and their tests.
 ## Types instead of explanation
 
 Every local variable, class field and function return carries an explicit type, even when it could
-be inferred. Each app's eslint enforces it (`@typescript-eslint/typedef` with
-`variableDeclaration` and `memberVariableDeclaration`, `explicit-function-return-type`, and
-`no-inferrable-types` off). When the inferred type is a long anonymous shape, give it a name
-(`interface`/`type`) rather than spelling the shape inline. A table is not `as const`: declare its
-literal union or row interface first and annotate the table with it.
+be inferred. Each project's eslint enforces it: `explicit-function-return-type`, a
+`no-restricted-syntax` rule that refuses an unannotated variable or field (function values,
+`for…of` variables and `satisfies` tables excepted), and `no-inferrable-types` off. When the
+inferred type is a long anonymous shape, give it a name (`interface`/`type`) rather than spelling
+the shape inline.
+
+- A table is not `as const`: declare its literal union or row interface first and annotate the
+  table with it.
+- A zod schema is written after its interface and annotated with it
+  (`const xSchema: z.ZodType<X> = z.object({ … })`), so the compiler checks that they agree.
+- A table keyed by hundreds of names (the UI messages, the IPC channels) is checked with
+  `satisfies` and its key type is derived (`keyof typeof table`), so the keys are written once.
