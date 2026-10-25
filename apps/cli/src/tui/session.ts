@@ -375,10 +375,13 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         const shellRun: ShellCommandRun = runShellCommand(trimmed.slice(1), options.cwd);
         stopShellCommand = shellRun.stop;
         sink.setEscapeHint('Esc 명령 중단');
-        const result: ShellCommandResult = await shellRun.result.finally(() => {
+        const shellOutcome: ShellCommandResult = await shellRun.result.finally(() => {
           stopShellCommand = undefined;
         });
-        sink.append(result.exitCode === 0 ? 'result' : 'error', describeShellOutput(result));
+        sink.append(
+          shellOutcome.exitCode === 0 ? 'result' : 'error',
+          describeShellOutput(shellOutcome),
+        );
         return;
       }
 
@@ -432,24 +435,24 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       const argv: string[] = splitCommandLine(trimmed);
 
       try {
-        const result: DispatchResult = await runArgv(
+        const dispatched: DispatchResult = await runArgv(
           argv.map((token) => (token.startsWith('@') ? token.slice(1) : token)),
         );
-        if ((result.costUsd ?? 0) > 0) {
-          spending.push({ line: trimmed, costUsd: result.costUsd ?? 0 });
+        if ((dispatched.costUsd ?? 0) > 0) {
+          spending.push({ line: trimmed, costUsd: dispatched.costUsd ?? 0 });
         }
 
         const isDraftShown: boolean =
           argv[0] === 'draft' &&
           argv[1] === 'show' &&
-          result.exitCode === 0 &&
+          dispatched.exitCode === 0 &&
           !argv.includes('--json');
         if (isDraftShown) {
-          sink.openReader(`draft/${(argv[2] ?? '').replace(/^@/, '')}.md`, result.stdout);
+          sink.openReader(`draft/${(argv[2] ?? '').replace(/^@/, '')}.md`, dispatched.stdout);
           return;
         }
 
-        show(result);
+        show(dispatched);
       } catch (error) {
         sink.append('error', error instanceof Error ? error.message : String(error));
       }

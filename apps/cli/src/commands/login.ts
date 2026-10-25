@@ -108,10 +108,10 @@ export async function signIn(
   }
 
   const displayName: string = getProviderDisplayName(providerId);
-  let result: { readonly accountLabel: string | undefined };
+  let signedIn: { readonly accountLabel: string | undefined };
 
   try {
-    result = await flow.login({
+    signedIn = await flow.login({
       secretStore: container.secretStore,
       openBrowser: deps.openBrowser,
       ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
@@ -136,7 +136,7 @@ export async function signIn(
     return { ok: false, message: describeLoginFailure(error) };
   }
 
-  const account: string = result.accountLabel === undefined ? '' : ` (${result.accountLabel})`;
+  const account: string = signedIn.accountLabel === undefined ? '' : ` (${signedIn.accountLabel})`;
   const saved: string = `${providerId} 에 로그인했습니다${account}: ${container.homePaths.secretsFile}`;
 
   try {
@@ -144,14 +144,14 @@ export async function signIn(
     return {
       ok: true,
       message: `${saved}\n연결을 확인했습니다.`,
-      data: { providerId, accountLabel: result.accountLabel ?? null, verified: true },
+      data: { providerId, accountLabel: signedIn.accountLabel ?? null, verified: true },
     };
   } catch (error) {
     const reason: string = error instanceof Error ? error.message : String(error);
     return {
       ok: true,
       message: `${saved}\n다만 연결 확인에 실패했습니다: ${reason}`,
-      data: { providerId, accountLabel: result.accountLabel ?? null, verified: false },
+      data: { providerId, accountLabel: signedIn.accountLabel ?? null, verified: false },
     };
   }
 }
@@ -177,21 +177,21 @@ export async function signOut(
     return { ok: false, message: `${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.` };
   }
 
-  const result: ChatGptLogoutResult = await flow.logout({
+  const logout: ChatGptLogoutResult = await flow.logout({
     secretStore: container.secretStore,
     ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
   });
 
-  if (!result.wasConnected) {
-    return { ok: true, message: `${providerId} 에 로그인돼 있지 않았습니다.`, data: result };
+  if (!logout.wasConnected) {
+    return { ok: true, message: `${providerId} 에 로그인돼 있지 않았습니다.`, data: logout };
   }
 
   return {
     ok: true,
-    message: result.isRevoked
+    message: logout.isRevoked
       ? `${providerId} 에서 로그아웃했습니다.`
       : `${providerId} 의 로그인 정보를 지웠습니다. 서버 쪽 세션 종료는 확인하지 못했으니 제공자의 계정 설정에서 앱 연결을 확인하세요.`,
-    data: result,
+    data: logout,
   };
 }
 

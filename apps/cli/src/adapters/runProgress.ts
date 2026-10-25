@@ -119,9 +119,9 @@ export class RailRunProgress implements IRunProgress {
   public describeLines(): string[] {
     const { paint } = this.deps.theme;
     const spinner: string = paint('accent', spinnerFrames[this.frame % spinnerFrames.length] ?? '');
-    const item: string =
+    const batchItemLabel: string =
       this.unit === undefined ? '' : `${this.unit.current}/${this.unit.total} ${this.unit.label}`;
-    const what: string = [item, this.step]
+    const what: string = [batchItemLabel, this.step]
       .filter((part) => part.length > 0)
       .join(paint('muted', ' · '));
     const cost: number = this.deps.readCostUsd();

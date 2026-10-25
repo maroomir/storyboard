@@ -302,19 +302,19 @@ export const exportNotes: CommandHandler = async ({ container, args }) => {
   }
 
   const target: NodeUri = NodeUri.file(resolve(rawTarget));
-  const result: ExportNotesResult = await container.notes.export({
+  const notesExport: ExportNotesResult = await container.notes.export({
     workspaceRoot: container.workspaceRoot,
     target,
   });
 
-  if (!result.ok) {
-    return { ok: false, message: result.message };
+  if (!notesExport.ok) {
+    return { ok: false, message: notesExport.message };
   }
 
   return {
     ok: true,
-    message: `${target.fsPath} 에 노트 ${result.written.length}장을 썼습니다. Obsidian 에서 폴더를 열거나 Notion 의 가져오기(Markdown)에 넣으세요. 다시 흡수하면 같은 카드로 이어집니다.`,
-    data: { target: target.fsPath, written: result.written },
+    message: `${target.fsPath} 에 노트 ${notesExport.written.length}장을 썼습니다. Obsidian 에서 폴더를 열거나 Notion 의 가져오기(Markdown)에 넣으세요. 다시 흡수하면 같은 카드로 이어집니다.`,
+    data: { target: target.fsPath, written: notesExport.written },
   };
 };
 

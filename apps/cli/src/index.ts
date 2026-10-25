@@ -90,7 +90,7 @@ async function main(argv: readonly string[]): Promise<number> {
   exitNormallyOnTerminationSoChildProcessesStop();
 
   const isInteractive: boolean = process.stdin.isTTY === true && process.stderr.isTTY === true;
-  const result: DispatchResult = await dispatch(argv, {
+  const dispatched: DispatchResult = await dispatch(argv, {
     version,
     cwd: process.cwd(),
     isInteractive,
@@ -113,19 +113,19 @@ async function main(argv: readonly string[]): Promise<number> {
     },
   });
 
-  if (result.launchTui) {
+  if (dispatched.launchTui) {
     return runTui({ version, cwd: process.cwd() });
   }
 
-  process.stdout.write(result.stdout);
-  process.stderr.write(result.stderr);
+  process.stdout.write(dispatched.stdout);
+  process.stderr.write(dispatched.stderr);
 
   if (runName !== undefined) {
     const hasRunLong: boolean = Date.now() - startedAt >= bellAfterRunLongerThanMs;
     process.stderr.write(`${popWindowTitle}${hasRunLong ? bellSignal : ''}`);
   }
 
-  return result.exitCode;
+  return dispatched.exitCode;
 }
 
 void main(process.argv.slice(2))
