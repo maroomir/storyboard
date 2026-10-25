@@ -1,7 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 
-// Hands a URL to the system browser without waiting for it. False when the launcher is missing
-// (a container, a headless server); the caller shows the URL either way.
 export function openBrowser(url: string): Promise<boolean> {
   const [command, args]: [string, string[]] =
     process.platform === 'darwin'

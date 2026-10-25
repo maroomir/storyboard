@@ -6,7 +6,6 @@ export interface CliPaths {
   readonly secretsFile: string;
 }
 
-// The extension and the CLI share one config and one secrets file under the Storyboard home.
 export function resolveCliPaths(env: NodeJS.ProcessEnv = process.env): CliPaths {
   const shared: StoryboardHomePaths = resolveStoryboardHomePaths(env);
 

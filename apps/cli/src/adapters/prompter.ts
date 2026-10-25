@@ -4,10 +4,9 @@ import { renderBox } from '@/terminal/layout';
 import type { TerminalStream } from '@/terminal/profile';
 import { wrapToWidth } from '@/terminal/width';
 
-import type { LiveArea } from './liveArea';
+import { liveAreaReservedColumns, type LiveArea } from './liveArea';
 
-// 사람에게 고르게 하는 질문 하나. 한 번 실행하는 명령은 stderr 에 상자를 그리고 키를 읽고, 대화형
-// 화면은 같은 질문을 자기 대화상자로 보여 준다.
+const eraseAnsweredQuestionLine: string = '\u001b[1A\u001b[2K';
 
 export interface ChoiceOption<T> {
   readonly label: string;
@@ -16,26 +15,19 @@ export interface ChoiceOption<T> {
 
 export interface ChoiceRequest<T> {
   readonly title: string;
-  // What the person needs to decide: the estimate, the target, the model.
   readonly details: readonly string[];
   readonly options: readonly ChoiceOption<T>[];
 }
 
 export interface TextRequest {
   readonly title: string;
-  // Shown beside the question: what an empty answer means, an example.
   readonly hint?: string;
 }
 
 export interface IPrompter {
-  // Undefined when the person backed out (Esc, Ctrl+C).
   choose<T>(request: ChoiceRequest<T>): Promise<T | undefined>;
-  // The typed line, trimmed; undefined when the person backed out.
   askText(request: TextRequest): Promise<string | undefined>;
-  // A line that stays on screen between questions, such as a wizard's answered steps.
   announce(line: string): void;
-  // The interactive screen asks before a paid batch run; a one-shot command was started on
-  // purpose and does not.
   readonly shouldConfirmPaidRuns: boolean;
 }
 
@@ -53,9 +45,7 @@ export function describeChoiceLines<T>(
 
   return [
     ...renderBox([...request.details, ...(request.details.length > 0 ? [''] : []), ...options], {
-      // The live area keeps the last column free so a line never wraps; a full-width frame would
-      // lose its right edge there.
-      availableWidth: stream.columns - 1,
+      availableWidth: stream.columns - liveAreaReservedColumns,
       title: request.title,
       paintFrame: (text) => paint('muted', text),
       paintTitle: (text) => paint('heading', text),
@@ -91,7 +81,6 @@ export interface KeyInput {
   pause(): unknown;
 }
 
-// Draws the choice in the live area at the bottom of stderr and reads keys from a raw stdin.
 export class TerminalPrompter implements IPrompter {
   public readonly shouldConfirmPaidRuns: boolean = false;
 
@@ -105,8 +94,6 @@ export class TerminalPrompter implements IPrompter {
     this.liveArea.writeAbove(`${line}\n`);
   }
 
-  // A cooked-mode line on the process's stdin, so the terminal's own editing and the IME handle
-  // Hangul input. Esc, Ctrl+C and Ctrl+D back out, as Esc and Ctrl+C do in a choice box.
   public async askText(request: TextRequest): Promise<string | undefined> {
     const { paint } = this.stream.theme;
     const hint: string = request.hint === undefined ? '' : paint('muted', ` (${request.hint})`);
@@ -126,8 +113,7 @@ export class TerminalPrompter implements IPrompter {
         `${paint('accent', '◆')}  ${request.title}${hint}  › `,
         { signal: backOut.signal },
       );
-      // The answered question line gives way to the caller's own record of the step.
-      process.stderr.write('\u001b[1A\u001b[2K');
+      process.stderr.write(eraseAnsweredQuestionLine);
       return answer.trim();
     } catch {
       process.stderr.write('\n');

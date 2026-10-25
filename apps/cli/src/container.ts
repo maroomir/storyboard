@@ -35,7 +35,6 @@ import {
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
-// The managers and infrastructure handles a verb may reach, plus what only a terminal run knows.
 export interface CliContainer extends Pick<
   StoryboardApplication,
   | 'drafts'
@@ -54,34 +53,23 @@ export interface CliContainer extends Pick<
 > {
   readonly workspaceRoot: StoryUri;
   readonly homePaths: StoryboardHomePaths;
-  // Lays the author's resource files (home, then this workspace) over the bundled defaults.
   readonly loadResourceOverrides: () => Promise<ResourceOverrideReport>;
-  // Every value an author can move, with its origin, for `params show`.
   readonly describeParameters: () => Promise<ParameterReport>;
-  // Where the work stands and which step is open next, for `status`.
   readonly describeWorkspace: () => Promise<WorkspaceStatus>;
   readonly workspaceConfigFile: string | undefined;
-  // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
   readonly configWriteFile: string;
-  // False inside the TUI, where stdin belongs to the screen and a readline prompt would fight it.
   readonly canPrompt: boolean;
   readonly fileSystem: NodeFileSystem;
-  // Where a long run reports how far it is: a rail at a terminal, log lines otherwise.
   readonly progress: IRunProgress;
-  // Ctrl+C (or Esc in the TUI) asking a run to stop at its next scene boundary.
   readonly pauseRequests: PauseRequests;
-  // A person to ask; absent in a pipe or for an agent, where a command must not wait for input.
   readonly prompter?: IPrompter;
-  // 측정 결과가 «무엇으로 쟀는지» 를 적으려면 실행한 버전을 되돌려 줘야 한다.
   readonly version: string;
 }
 
 export interface CliContainerOptions {
   readonly workspacePath: string;
   readonly logger: IStoryboardLogger;
-  // Left out, progress goes to the logger as lines.
   readonly progress?: IRunProgress;
-  // Left out, nothing ever asks a run to pause.
   readonly pauseRequests?: PauseRequests;
   readonly prompter?: IPrompter;
   readonly canPrompt: boolean;
@@ -89,42 +77,25 @@ export interface CliContainerOptions {
   readonly provider?: string;
   readonly model?: string;
   readonly reviseMaxIterations?: number;
-  // Which config file `setup`/`config set` write to. Decided from the run's location and
-  // `--global` before the container exists, so every writer here agrees on one answer.
   readonly configWriteTarget?: ConfigurationTarget;
-  // A caller that must account for every token brings its own ledger. A terminal run keeps the
-  // no-op: there is no usage panel to feed.
   readonly usageSink?: IUsageSink;
-  // Lets a measurement harness layer fixed generation knobs over the configured ones without the
-  // engine learning that a harness exists.
   readonly createConfigBridge?: (dependencies: ConfigBridgeDependencies) => ConfigBridge;
-  // Post-generation card updates rewrite the workspace's cards in unawaited background jobs. A
-  // measurement run must leave its fixture byte-identical and must not have those tokens land
-  // after the run is scored.
   readonly postGenerationUpdates?: boolean;
-  // A local runtime's address and usable context window. Machine properties, so a measurement
-  // profile hands them in per run instead of writing them into the fixture's own config.
   readonly localRuntime?: {
     readonly baseUrl?: string;
     readonly contextTokens?: number;
     readonly think?: boolean;
   };
-  // Forces one prompt variant for every task. A measurement harness uses it to separate the
-  // model's own ceiling from the compact prompt local models are routed to by name.
   readonly promptVariant?: 'generic' | 'xs' | 'rich';
 }
 
-// `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
-// they are layered onto the config rather than threaded through every call.
-function configOverrides(options: CliContainerOptions): Record<string, unknown> {
+function createCommandLineConfigOverrides(options: CliContainerOptions): Record<string, unknown> {
   const overrides: Record<string, unknown> = {};
 
   if (options.provider !== undefined) {
     overrides['ai.provider.default'] = options.provider;
-    // Task-level routing in the config file beats `defaultProvider`, so a `--provider` that only
-    // set the default would silently lose to a `tasks.sceneDraft.provider` the user configured.
-    // Naming a provider on the command line means "this run, everything".
-    overrides['tasks'] = {};
+    const everyTaskFollowsCommandLineProvider: Record<string, unknown> = {};
+    overrides['tasks'] = everyTaskFollowsCommandLineProvider;
 
     if (options.model !== undefined) {
       overrides[`providers.${options.provider}.model`] = options.model;
@@ -154,8 +125,6 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
   return overrides;
 }
 
-// The CLI's side of the composition: only the host adapters are built here. The engine graph they
-// feed is assembled once, for every app, by StoryboardApplication.
 export function createCliContainer(options: CliContainerOptions): CliContainer {
   const paths: CliPaths = resolveCliPaths(process.env);
   const homePaths: StoryboardHomePaths = resolveStoryboardHomePaths();
@@ -164,7 +133,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   const fileSystem: NodeFileSystem = new NodeFileSystem();
   const secretStore: SecretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
-  // A folder without a project is not a work, so it has no work settings to read or show.
   const isWorkspace: boolean = existsSync(
     join(options.workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson),
   );
@@ -174,7 +142,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const configuration: FileConfiguration = createFileConfiguration({
     userConfigFile: paths.configFile,
     ...(workspaceConfigFile === undefined ? {} : { workspaceConfigFile }),
-    overrides: configOverrides(options),
+    overrides: createCommandLineConfigOverrides(options),
     onUnknownKey: (warning) => options.logger.warn(warning.message),
   });
   const configBridgeDependencies: ConfigBridgeDependencies = {
@@ -185,8 +153,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     options.createConfigBridge?.(configBridgeDependencies) ??
     new ConfigBridge(configBridgeDependencies);
 
-  // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
-  // cost is reported per run instead of persisted.
   const application: StoryboardApplication = new StoryboardApplication(
     {
       fileSystem,

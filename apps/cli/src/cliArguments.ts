@@ -6,31 +6,21 @@ export interface ParsedArguments {
   readonly positionals: readonly string[];
 }
 
-// Bare tokens before the verb is resolved. `doctor`, `card create character` and `tui` have the
-// same shape, so only the command table can say where the verb ends.
 export interface RawArguments {
   readonly words: readonly string[];
   readonly flags: Readonly<Record<string, string | boolean>>;
 }
 
-// Which flags take a value comes from the catalog, so `--help` and the parser can never disagree.
-// Without the boolean list a boolean flag would swallow the token after it — `draft generate
-// --json 01-a` would lose the scene and silently leave JSON mode off.
 const booleanFlags: ReadonlySet<string> = booleanFlagNames;
 const valueFlags: ReadonlySet<string> = valueFlagNames;
 
-// The two short forms every CLI is expected to honour.
 const shortFlags: Readonly<Record<string, string>> = { '-h': '--help', '-v': '--version' };
 
 export interface ParseFailure {
   readonly message: string;
-  // Set when the failure is a flag the catalog does not know, so the caller can suggest a near one.
   readonly unknownFlag?: string;
 }
 
-// `storyboard draft generate 01-a --provider claude --json` splits into a verb path, positionals and
-// flags. Flags may appear anywhere, including before the verb. Deliberately hand-rolled: the
-// surface is small and the command catalog already describes every flag it accepts.
 export function parseArguments(argv: readonly string[]): RawArguments | ParseFailure {
   const words: string[] = [];
   const flags: Record<string, string | boolean> = {};
@@ -75,10 +65,15 @@ export function parseArguments(argv: readonly string[]): RawArguments | ParseFai
   return { words, flags };
 }
 
-// Longest verb wins: `draft check grammar 01-a` resolves to the two-word verb and leaves the kind
-// and the stem as positionals.
+const longestVerbWordCount: number = 3;
+const nounVerbWordCount: number = 2;
+
 export function resolveVerb(raw: RawArguments, verbs: readonly string[]): ParsedArguments {
-  for (let length: number = Math.min(3, raw.words.length); length > 0; length -= 1) {
+  for (
+    let length: number = Math.min(longestVerbWordCount, raw.words.length);
+    length > 0;
+    length -= 1
+  ) {
     const candidate: string = raw.words.slice(0, length).join(' ');
 
     if (verbs.includes(candidate)) {
@@ -90,11 +85,10 @@ export function resolveVerb(raw: RawArguments, verbs: readonly string[]): Parsed
     }
   }
 
-  // An unknown verb keeps its arguments so a renamed command's hint can repeat them.
   return {
-    path: raw.words.slice(0, 2),
+    path: raw.words.slice(0, nounVerbWordCount),
     flags: raw.flags,
-    positionals: raw.words.slice(2),
+    positionals: raw.words.slice(nounVerbWordCount),
   };
 }
 
