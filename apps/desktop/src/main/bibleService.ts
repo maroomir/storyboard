@@ -247,8 +247,8 @@ export class BibleService {
   }
 
   private async tryRead(kind: BibleCardKind, id: string): Promise<BibleCard | undefined> {
-    const result: ServiceResult<BibleCard> = await this.read(kind, id);
-    return result.ok ? result.data : undefined;
+    const cardReading: ServiceResult<BibleCard> = await this.read(kind, id);
+    return cardReading.ok ? cardReading.data : undefined;
   }
 
   private cardUri(kind: BibleCardKind, id: string): StoryUri {

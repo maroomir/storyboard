@@ -29,14 +29,14 @@ interface BibleProps {
 }
 
 export function Bible(props: BibleProps): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const [tab, setTab] = useState<BibleTab>('character');
   const isReadOnly: boolean = props.run !== undefined && props.run.status !== 'idle';
 
   return (
     <main className="workspace-page">
       <div className="workspace-page-inner">
-        <h1 className="page-title">{t('bible.title')}</h1>
+        <h1 className="page-title">{translate('bible.title')}</h1>
         <div className="tabs" role="tablist">
           {tabs.map((candidate) => (
             <button
@@ -47,13 +47,13 @@ export function Bible(props: BibleProps): JSX.Element {
               aria-selected={tab === candidate}
               onClick={() => setTab(candidate)}
             >
-              {candidate === 'canon' ? t('bible.canon') : t(`bible.kind.${candidate}`)}
+              {candidate === 'canon' ? translate('bible.canon') : translate(`bible.kind.${candidate}`)}
             </button>
           ))}
         </div>
         {isReadOnly ? (
           <p className="banner" role="status">
-            {t('bible.readOnly')}
+            {translate('bible.readOnly')}
           </p>
         ) : null}
         {tab === 'canon' ? (
@@ -66,7 +66,7 @@ export function Bible(props: BibleProps): JSX.Element {
   );
 }
 
-function detailLabel(t: Translate, language: 'ko' | 'en', summary: BibleCardSummary): string | undefined {
+function detailLabel(translate: Translate, language: 'ko' | 'en', summary: BibleCardSummary): string | undefined {
   if (summary.detail === undefined) {
     return undefined;
   }
@@ -74,7 +74,7 @@ function detailLabel(t: Translate, language: 'ko' | 'en', summary: BibleCardSumm
   switch (summary.kind) {
     case 'character':
       return characterRoles.includes(summary.detail as CharacterCard['role'] & string)
-        ? t(`bible.role.${summary.detail as 'main' | 'supporting' | 'extra'}`)
+        ? translate(`bible.role.${summary.detail as 'main' | 'supporting' | 'extra'}`)
         : undefined;
     case 'narrator':
       return narratorPersons.includes(summary.detail as NarratorCard['person'])
@@ -82,7 +82,7 @@ function detailLabel(t: Translate, language: 'ko' | 'en', summary: BibleCardSumm
         : undefined;
     case 'background':
       return ['location', 'temporal', 'social'].includes(summary.detail)
-        ? t(`bible.backgroundType.${summary.detail as 'location' | 'temporal' | 'social'}`)
+        ? translate(`bible.backgroundType.${summary.detail as 'location' | 'temporal' | 'social'}`)
         : undefined;
   }
 }
@@ -95,7 +95,7 @@ interface ShelfProps {
 }
 
 function CardShelf(props: ShelfProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const [summaries, setSummaries] = useState<readonly BibleCardSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
   const [card, setCard] = useState<BibleCard>();
@@ -105,9 +105,9 @@ function CardShelf(props: ShelfProps): JSX.Element {
   const [notice, setNotice] = useState<string>();
 
   const loadList = async (): Promise<void> => {
-    const list: readonly BibleCardSummary[] = await call('bible.list', { kind: props.kind });
-    setSummaries(list);
-    setSelectedId((current) => current ?? list[0]?.id);
+    const summaries: readonly BibleCardSummary[] = await call('bible.list', { kind: props.kind });
+    setSummaries(summaries);
+    setSelectedId((current) => current ?? summaries[0]?.id);
   };
 
   useEffect(() => {
@@ -131,7 +131,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
     }
     try {
       setCard(await call('bible.save', { kind: props.kind, card: card as unknown as Record<string, unknown> }));
-      setNotice(t('bible.saved'));
+      setNotice(translate('bible.saved'));
       await loadList();
     } catch (failure) {
       props.onError(messageOf(failure));
@@ -152,7 +152,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
   };
 
   const remove = async (): Promise<void> => {
-    if (card === undefined || !window.confirm(t('bible.deleteConfirm', { name: card.name }))) {
+    if (card === undefined || !window.confirm(translate('bible.deleteConfirm', { name: card.name }))) {
       return;
     }
     try {
@@ -168,7 +168,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
     <div className="split">
       <div className="stack">
         <ul className="list">
-          {summaries.length === 0 ? <li className="muted">{t('bible.empty')}</li> : null}
+          {summaries.length === 0 ? <li className="muted">{translate('bible.empty')}</li> : null}
           {summaries.map((summary) => (
             <li key={summary.id}>
               <button
@@ -178,7 +178,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
                 onClick={() => setSelectedId(summary.id)}
               >
                 <span>{summary.name}</span>
-                <span className="muted small">{detailLabel(t, language, summary)}</span>
+                <span className="muted small">{detailLabel(translate, language, summary)}</span>
               </button>
             </li>
           ))}
@@ -192,26 +192,26 @@ function CardShelf(props: ShelfProps): JSX.Element {
             }}
           >
             <label className="field">
-              <span className="field-label">{t('bible.nameLabel')}</span>
+              <span className="field-label">{translate('bible.nameLabel')}</span>
               <input className="input" value={newName} onChange={(event) => setNewName(event.target.value)} autoFocus />
             </label>
             <label className="field">
-              <span className="field-label">{t('bible.idLabel')}</span>
+              <span className="field-label">{translate('bible.idLabel')}</span>
               <input className="input" value={newId} pattern="[a-z0-9][a-z0-9-]*" onChange={(event) => setNewId(event.target.value)} />
-              <span className="field-hint">{t('bible.idHint')}</span>
+              <span className="field-hint">{translate('bible.idHint')}</span>
             </label>
             <div className="row">
               <button type="button" className="button button-quiet" onClick={() => setCreating(false)}>
-                {t('common.cancel')}
+                {translate('common.cancel')}
               </button>
               <button type="submit" className="button button-primary" disabled={newId.trim() === '' || newName.trim() === ''}>
-                {t('common.add')}
+                {translate('common.add')}
               </button>
             </div>
           </form>
         ) : (
           <button type="button" className="button" disabled={props.isReadOnly} onClick={() => setCreating(true)}>
-            {t('bible.new')}
+            {translate('bible.new')}
           </button>
         )}
       </div>
@@ -227,19 +227,19 @@ function CardShelf(props: ShelfProps): JSX.Element {
           }}
         >
           <fieldset disabled={props.isReadOnly} className="stack" style={{ border: 0, margin: 0, padding: 0 }}>
-            <TextInput label={t('bible.nameLabel')} value={card.name} onChange={(name) => setCard({ ...card, name })} />
+            <TextInput label={translate('bible.nameLabel')} value={card.name} onChange={(name) => setCard({ ...card, name })} />
             {card.type === 'character' ? <CharacterFields card={card} onChange={setCard} /> : null}
             {card.type === 'narrator' ? <NarratorFields card={card} onChange={setCard} /> : null}
             {card.type !== 'character' && card.type !== 'narrator' ? <BackgroundFields card={card} onChange={setCard} /> : null}
           </fieldset>
           <div className="spread">
             <button type="button" className="button button-danger" disabled={props.isReadOnly} onClick={() => void remove()}>
-              {t('common.delete')}
+              {translate('common.delete')}
             </button>
             <span className="row">
               {notice === undefined ? null : <span className="muted small">{notice}</span>}
               <button type="submit" className="button button-primary" disabled={props.isReadOnly}>
-                {t('common.save')}
+                {translate('common.save')}
               </button>
             </span>
           </div>
@@ -250,13 +250,13 @@ function CardShelf(props: ShelfProps): JSX.Element {
 }
 
 function CharacterFields(props: { readonly card: CharacterCard; readonly onChange: (card: CharacterCard) => void }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const { card } = props;
 
   return (
     <>
       <label className="field">
-        <span className="field-label">{t('bible.roleLabel')}</span>
+        <span className="field-label">{translate('bible.roleLabel')}</span>
         <select
           className="select"
           value={card.role ?? 'main'}
@@ -264,55 +264,55 @@ function CharacterFields(props: { readonly card: CharacterCard; readonly onChang
         >
           {characterRoles.map((role) => (
             <option key={role} value={role}>
-              {t(`bible.role.${role}`)}
+              {translate(`bible.role.${role}`)}
             </option>
           ))}
         </select>
       </label>
-      <ListInput label={t('bible.description')} value={card.description} onChange={(description) => props.onChange({ ...card, description })} />
-      <ListInput label={t('bible.traits')} value={card.traits} onChange={(traits) => props.onChange({ ...card, traits })} />
-      <ListInput label={t('bible.voice')} value={card.voice} onChange={(voice) => props.onChange({ ...card, voice })} />
-      <ListInput label={t('bible.catchphrases')} value={card.catchphrases} onChange={(catchphrases) => props.onChange({ ...card, catchphrases })} />
-      <ListInput label={t('bible.desire')} value={card.desire} onChange={(desire) => props.onChange({ ...card, desire })} />
-      <ListInput label={t('bible.aliases')} value={card.aliases} onChange={(aliases) => props.onChange({ ...card, aliases })} />
-      <ListInput label={t('bible.tags')} value={card.tags} onChange={(tags) => props.onChange({ ...card, tags })} />
+      <ListInput label={translate('bible.description')} value={card.description} onChange={(description) => props.onChange({ ...card, description })} />
+      <ListInput label={translate('bible.traits')} value={card.traits} onChange={(traits) => props.onChange({ ...card, traits })} />
+      <ListInput label={translate('bible.voice')} value={card.voice} onChange={(voice) => props.onChange({ ...card, voice })} />
+      <ListInput label={translate('bible.catchphrases')} value={card.catchphrases} onChange={(catchphrases) => props.onChange({ ...card, catchphrases })} />
+      <ListInput label={translate('bible.desire')} value={card.desire} onChange={(desire) => props.onChange({ ...card, desire })} />
+      <ListInput label={translate('bible.aliases')} value={card.aliases} onChange={(aliases) => props.onChange({ ...card, aliases })} />
+      <ListInput label={translate('bible.tags')} value={card.tags} onChange={(tags) => props.onChange({ ...card, tags })} />
       <RelationsInput card={card} onChange={props.onChange} />
     </>
   );
 }
 
 function RelationsInput(props: { readonly card: CharacterCard; readonly onChange: (card: CharacterCard) => void }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const relations: CharacterRelation[] = props.card.relations ?? [];
   const setRelations = (next: CharacterCard['relations']): void => props.onChange({ ...props.card, relations: next });
 
   return (
     <fieldset className="field" style={{ border: 0, margin: 0, padding: 0 }}>
-      <legend className="field-label">{t('bible.relations')}</legend>
+      <legend className="field-label">{translate('bible.relations')}</legend>
       {relations.map((relation, index) => (
         <div key={index} className="row">
           <input
             className="input"
-            aria-label={t('bible.relationTarget')}
-            placeholder={t('bible.relationTarget')}
+            aria-label={translate('bible.relationTarget')}
+            placeholder={translate('bible.relationTarget')}
             value={relation.target}
             onChange={(event) => setRelations(relations.map((item, at) => (at === index ? { ...item, target: event.target.value } : item)))}
           />
           <input
             className="input"
-            aria-label={t('bible.relationType')}
-            placeholder={t('bible.relationType')}
+            aria-label={translate('bible.relationType')}
+            placeholder={translate('bible.relationType')}
             value={relation.type}
             onChange={(event) => setRelations(relations.map((item, at) => (at === index ? { ...item, type: event.target.value } : item)))}
           />
           <button type="button" className="button button-quiet" onClick={() => setRelations(relations.filter((_, at) => at !== index))}>
-            {t('common.delete')}
+            {translate('common.delete')}
           </button>
         </div>
       ))}
       <div>
         <button type="button" className="button" onClick={() => setRelations([...relations, { target: '', type: '' }])}>
-          {t('common.add')}
+          {translate('common.add')}
         </button>
       </div>
     </fieldset>
@@ -320,13 +320,13 @@ function RelationsInput(props: { readonly card: CharacterCard; readonly onChange
 }
 
 function BackgroundFields(props: { readonly card: BackgroundCard; readonly onChange: (card: BackgroundCard) => void }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const { card } = props;
 
   return (
     <>
       <label className="field">
-        <span className="field-label">{t('bible.backgroundType')}</span>
+        <span className="field-label">{translate('bible.backgroundType')}</span>
         <select
           className="select"
           value={card.type}
@@ -340,29 +340,29 @@ function BackgroundFields(props: { readonly card: BackgroundCard; readonly onCha
         >
           {(['location', 'temporal', 'social'] as const).map((type) => (
             <option key={type} value={type}>
-              {t(`bible.backgroundType.${type}`)}
+              {translate(`bible.backgroundType.${type}`)}
             </option>
           ))}
         </select>
       </label>
-      <ListInput label={t('bible.description')} value={card.description} onChange={(description) => props.onChange({ ...card, description })} />
-      <TextInput label={t('bible.time')} value={card.time ?? ''} onChange={(time) => props.onChange(withOptional(card, 'time', time))} />
-      <TextInput label={t('bible.weather')} value={card.weather ?? ''} onChange={(weather) => props.onChange(withOptional(card, 'weather', weather))} />
-      <ListInput label={t('bible.senses')} value={card.senses} onChange={(senses) => props.onChange({ ...card, senses })} />
-      <ListInput label={t('bible.tags')} value={card.tags} onChange={(tags) => props.onChange({ ...card, tags })} />
+      <ListInput label={translate('bible.description')} value={card.description} onChange={(description) => props.onChange({ ...card, description })} />
+      <TextInput label={translate('bible.time')} value={card.time ?? ''} onChange={(time) => props.onChange(withOptional(card, 'time', time))} />
+      <TextInput label={translate('bible.weather')} value={card.weather ?? ''} onChange={(weather) => props.onChange(withOptional(card, 'weather', weather))} />
+      <ListInput label={translate('bible.senses')} value={card.senses} onChange={(senses) => props.onChange({ ...card, senses })} />
+      <ListInput label={translate('bible.tags')} value={card.tags} onChange={(tags) => props.onChange({ ...card, tags })} />
     </>
   );
 }
 
 function NarratorFields(props: { readonly card: NarratorCard; readonly onChange: (card: NarratorCard) => void }): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const { card } = props;
 
   return (
     <>
       <div className="form-row">
         <label className="field">
-          <span className="field-label">{t('bible.narratorPerson')}</span>
+          <span className="field-label">{translate('bible.narratorPerson')}</span>
           <select className="select" value={card.person} onChange={(event) => props.onChange({ ...card, person: event.target.value as NarratorCard['person'] })}>
             {narratorPersons.map((person) => (
               <option key={person} value={person}>
@@ -372,7 +372,7 @@ function NarratorFields(props: { readonly card: NarratorCard; readonly onChange:
           </select>
         </label>
         <label className="field">
-          <span className="field-label">{t('bible.narratorKnowledge')}</span>
+          <span className="field-label">{translate('bible.narratorKnowledge')}</span>
           <select
             className="select"
             value={card.knowledge}
@@ -386,7 +386,7 @@ function NarratorFields(props: { readonly card: NarratorCard; readonly onChange:
           </select>
         </label>
         <label className="field">
-          <span className="field-label">{t('bible.narratorTense')}</span>
+          <span className="field-label">{translate('bible.narratorTense')}</span>
           <select
             className="select"
             value={card.tense ?? ''}
@@ -407,8 +407,8 @@ function NarratorFields(props: { readonly card: NarratorCard; readonly onChange:
           </select>
         </label>
       </div>
-      <TextInput label={t('bible.narratorFocal')} value={card.focal ?? ''} onChange={(focal) => props.onChange(withOptional(card, 'focal', focal))} />
-      <ListInput label={t('bible.narratorVoice')} value={card.voice} onChange={(voice) => props.onChange({ ...card, voice })} />
+      <TextInput label={translate('bible.narratorFocal')} value={card.focal ?? ''} onChange={(focal) => props.onChange(withOptional(card, 'focal', focal))} />
+      <ListInput label={translate('bible.narratorVoice')} value={card.voice} onChange={(voice) => props.onChange({ ...card, voice })} />
     </>
   );
 }
@@ -437,7 +437,7 @@ function ListInput(props: {
   readonly value: readonly string[] | undefined;
   readonly onChange: (value: string[]) => void;
 }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const [text, setText] = useState((props.value ?? []).join('\n'));
 
   return (
@@ -452,13 +452,13 @@ function ListInput(props: {
           props.onChange(event.target.value.split('\n').map((line) => line.trim()).filter((line) => line.length > 0));
         }}
       />
-      <span className="field-hint">{t('bible.listHint')}</span>
+      <span className="field-hint">{translate('bible.listHint')}</span>
     </label>
   );
 }
 
 function Canon(props: { readonly isReadOnly: boolean; readonly change: WorkspaceChange; readonly onError: (message: string) => void }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const [facts, setFacts] = useState<readonly CanonFact[]>([]);
   const [subjects, setSubjects] = useState<readonly BibleCardSummary[]>([]);
 
@@ -493,8 +493,8 @@ function Canon(props: { readonly isReadOnly: boolean; readonly change: Workspace
 
   return (
     <section className="stack">
-      <p className="muted">{t('canon.intro')}</p>
-      {facts.length === 0 ? <p className="muted">{t('canon.empty')}</p> : null}
+      <p className="muted">{translate('canon.intro')}</p>
+      {facts.length === 0 ? <p className="muted">{translate('canon.empty')}</p> : null}
       {facts.map((fact) => (
         <FactRow key={fact.id} fact={fact} subjects={subjects} isReadOnly={props.isReadOnly} onSave={save} onDelete={remove} />
       ))}
@@ -517,7 +517,7 @@ function Canon(props: { readonly isReadOnly: boolean; readonly change: Workspace
             ])
           }
         >
-          {t('canon.add')}
+          {translate('canon.add')}
         </button>
       </div>
     </section>
@@ -531,7 +531,7 @@ function FactRow(props: {
   readonly onSave: (fact: CanonFact) => Promise<void>;
   readonly onDelete: (id: string) => Promise<void>;
 }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const [fact, setFact] = useState(props.fact);
   const subjectValue: string = `${fact.subject.kind}:${fact.subject.id}`;
   const isComplete: boolean = fact.key.trim() !== '' && fact.value.trim() !== '';
@@ -540,7 +540,7 @@ function FactRow(props: {
     <div className="fact">
       <select
         className="select"
-        aria-label={t('canon.subject')}
+        aria-label={translate('canon.subject')}
         value={subjectValue}
         disabled={props.isReadOnly}
         onChange={(event) => {
@@ -556,8 +556,8 @@ function FactRow(props: {
       </select>
       <input
         className="input"
-        aria-label={t('canon.key')}
-        placeholder={t('canon.key')}
+        aria-label={translate('canon.key')}
+        placeholder={translate('canon.key')}
         value={fact.key}
         disabled={props.isReadOnly}
         onChange={(event) => setFact({ ...fact, key: event.target.value })}
@@ -565,8 +565,8 @@ function FactRow(props: {
       />
       <input
         className="input"
-        aria-label={t('canon.value')}
-        placeholder={t('canon.value')}
+        aria-label={translate('canon.value')}
+        placeholder={translate('canon.value')}
         value={fact.value}
         disabled={props.isReadOnly}
         onChange={(event) => setFact({ ...fact, value: event.target.value })}
@@ -580,13 +580,13 @@ function FactRow(props: {
             disabled={props.isReadOnly || !isComplete}
             onClick={() => void props.onSave({ ...fact, status: 'canon' })}
           >
-            {t('canon.promote')}
+            {translate('canon.promote')}
           </button>
         ) : (
-          <span className="muted small">{t('canon.status.canon')}</span>
+          <span className="muted small">{translate('canon.status.canon')}</span>
         )}
         <button type="button" className="button button-quiet" disabled={props.isReadOnly} onClick={() => void props.onDelete(fact.id)}>
-          {t('common.delete')}
+          {translate('common.delete')}
         </button>
       </span>
     </div>

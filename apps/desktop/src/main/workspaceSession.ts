@@ -233,18 +233,18 @@ export class WorkspaceSession {
       reason === 'ai-edit'
         ? this.container.configBridge.isKeepDraftHistoryEnabled()
         : !this.archivedStems.has(stem);
-    const result: SaveDraftEditResult = await this.container.drafts.saveEdit({
+    const savedEdit: SaveDraftEditResult = await this.container.drafts.saveEdit({
       workspaceRoot: this.container.workspaceRoot,
       sceneStem: stem,
       body,
       archivePrevious,
     });
 
-    if (!result.ok) {
+    if (!savedEdit.ok) {
       return fail('not-found', this.options.translate('error.draftMissing'));
     }
 
-    if (result.kind === 'unchanged') {
+    if (savedEdit.kind === 'unchanged') {
       return succeed({ kind: 'unchanged' });
     }
 
@@ -276,18 +276,18 @@ export class WorkspaceSession {
     await this.endDraftSession(from);
 
     const title: string = await this.sceneTitle(from);
-    const result: RenameSceneResult = await this.container.drafts.renameScene({
+    const sceneRename: RenameSceneResult = await this.container.drafts.renameScene({
       workspaceRoot: this.container.workspaceRoot,
       fromStem: from,
       toStem: to,
     });
 
-    if (!result.ok) {
-      return fail(sceneRenameErrorCodes[result.kind], result.message);
+    if (!sceneRename.ok) {
+      return fail(sceneRenameErrorCodes[sceneRename.kind], sceneRename.message);
     }
 
-    await this.snapshot('snapshot.sceneRenamed', { title, from: result.fromStem, to: result.toStem });
-    return succeed({ stem: result.toStem });
+    await this.snapshot('snapshot.sceneRenamed', { title, from: sceneRename.fromStem, to: sceneRename.toStem });
+    return succeed({ stem: sceneRename.toStem });
   }
 
   public async sceneExists(stem: string): Promise<boolean> {
@@ -306,7 +306,7 @@ export class WorkspaceSession {
       return fail('provider-missing', translate('error.providerMissing'));
     }
 
-    const result: AugmentDraftResult = await container.drafts.prepareAugmentation({
+    const augmentation: AugmentDraftResult = await container.drafts.prepareAugmentation({
       draftSceneStem: stem,
       sceneUri: scenePath(container.workspaceRoot, stem),
       scope: 'selection',
@@ -315,13 +315,13 @@ export class WorkspaceSession {
       instruction,
     });
 
-    if (result.ok) {
-      return succeed({ text: result.text });
+    if (augmentation.ok) {
+      return succeed({ text: augmentation.text });
     }
 
-    return result.kind === 'empty'
+    return augmentation.kind === 'empty'
       ? fail('failed', translate('error.emptyProposal'))
-      : fail('failed', result.message);
+      : fail('failed', augmentation.message);
   }
 
   public async refuseWhileBusy(): Promise<ServiceFailure | undefined> {

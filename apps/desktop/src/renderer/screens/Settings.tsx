@@ -28,7 +28,7 @@ interface SettingsProps {
 }
 
 export function Settings(props: SettingsProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const [settings, setSettings] = useState<DesktopSettings>();
   const [showAdvancedProviders, setShowAdvancedProviders] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -62,7 +62,7 @@ export function Settings(props: SettingsProps): JSX.Element {
     try {
       setSettings(await call('settings.setApiKey', { providerId: selected.id, apiKey: apiKey.trim() }));
       setApiKey('');
-      setKeyMessage(t('provider.connected'));
+      setKeyMessage(translate('provider.connected'));
     } catch (failure) {
       setKeyMessage(messageOf(failure));
       setSettings(await call('settings.read', {}));
@@ -75,12 +75,12 @@ export function Settings(props: SettingsProps): JSX.Element {
   return (
     <main className="workspace-page">
       <div className="workspace-page-inner">
-        <h1 className="page-title">{t('settings.title')}</h1>
+        <h1 className="page-title">{translate('settings.title')}</h1>
 
         <section className="section stack">
-          <h2>{t('settings.ai')}</h2>
+          <h2>{translate('settings.ai')}</h2>
           <label className="field">
-            <span className="field-label">{t('settings.defaultProvider')}</span>
+            <span className="field-label">{translate('settings.defaultProvider')}</span>
             <select
               className="select"
               value={selected === undefined ? '' : selected.id}
@@ -98,12 +98,12 @@ export function Settings(props: SettingsProps): JSX.Element {
           </label>
           <label className="row small">
             <input type="checkbox" checked={showAdvancedProviders} onChange={(event) => setShowAdvancedProviders(event.target.checked)} />
-            {t('settings.showAdvancedProviders')}
+            {translate('settings.showAdvancedProviders')}
           </label>
           {selected === undefined ? null : (
             <>
               <label className="field">
-                <span className="field-label">{t('settings.model')}</span>
+                <span className="field-label">{translate('settings.model')}</span>
                 <select
                   className="select"
                   value={selected.model}
@@ -119,23 +119,23 @@ export function Settings(props: SettingsProps): JSX.Element {
               {selected.requiresApiKey ? (
                 <div className="field">
                   <span className="field-label">
-                    {t('settings.apiKey')} — {selected.hasApiKey ? t('settings.keyStored') : t('settings.keyMissing')}
+                    {translate('settings.apiKey')} — {selected.hasApiKey ? translate('settings.keyStored') : translate('settings.keyMissing')}
                   </span>
                   <div className="row">
                     <input
                       className="input"
                       type="password"
                       autoComplete="off"
-                      aria-label={t('settings.apiKey')}
+                      aria-label={translate('settings.apiKey')}
                       value={apiKey}
-                      placeholder={t('provider.keyPlaceholder')}
+                      placeholder={translate('provider.keyPlaceholder')}
                       onChange={(event) => setApiKey(event.target.value)}
                     />
                     <button type="button" className="button" disabled={apiKey.trim().length === 0} onClick={() => void saveKey()}>
-                      {t('settings.replaceKey')}
+                      {translate('settings.replaceKey')}
                     </button>
                   </div>
-                  <span className="field-hint">{t('provider.keyHint')}</span>
+                  <span className="field-hint">{translate('provider.keyHint')}</span>
                   {keyMessage === undefined ? null : <span className="small">{keyMessage}</span>}
                 </div>
               ) : (
@@ -149,19 +149,19 @@ export function Settings(props: SettingsProps): JSX.Element {
         </section>
 
         <section className="section">
-          <h2>{t('settings.notion')}</h2>
+          <h2>{translate('settings.notion')}</h2>
           <div className="field">
             <span className="field-label">
-              {t('settings.notion')} — {settings.hasNotionToken ? t('settings.keyStored') : t('settings.keyMissing')}
+              {translate('settings.notion')} — {settings.hasNotionToken ? translate('settings.keyStored') : translate('settings.keyMissing')}
             </span>
             <div className="row">
               <input
                 className="input"
                 type="password"
                 autoComplete="off"
-                aria-label={t('settings.notion')}
+                aria-label={translate('settings.notion')}
                 value={notionToken}
-                placeholder={t('settings.notionPlaceholder')}
+                placeholder={translate('settings.notionPlaceholder')}
                 onChange={(event) => setNotionToken(event.target.value)}
               />
               <button
@@ -176,20 +176,20 @@ export function Settings(props: SettingsProps): JSX.Element {
                   })
                 }
               >
-                {t('settings.saveToken')}
+                {translate('settings.saveToken')}
               </button>
             </div>
-            <span className="field-hint">{t('settings.notionHint')}</span>
+            <span className="field-hint">{translate('settings.notionHint')}</span>
           </div>
         </section>
 
         <section className="section">
-          <h2>{t('settings.language')}</h2>
+          <h2>{translate('settings.language')}</h2>
           <select
             className="select"
             style={{ width: 'auto' }}
             value={settings.language}
-            aria-label={t('settings.language')}
+            aria-label={translate('settings.language')}
             onChange={(event) => {
               const next: UiLanguage = event.target.value as UiLanguage;
               setSettings({ ...settings, language: next });
@@ -202,7 +202,7 @@ export function Settings(props: SettingsProps): JSX.Element {
         </section>
 
         <section className="section stack">
-          <h2>{t('settings.basic')}</h2>
+          <h2>{translate('settings.basic')}</h2>
           {settings.entries
             .filter((entry) => entry.isBasic)
             .map((entry) => (
@@ -216,8 +216,8 @@ export function Settings(props: SettingsProps): JSX.Element {
         </section>
 
         <details className="section">
-          <summary>{t('settings.advanced')}</summary>
-          <p className="muted small">{t('settings.advancedHint')}</p>
+          <summary>{translate('settings.advanced')}</summary>
+          <p className="muted small">{translate('settings.advancedHint')}</p>
           <div className="stack">
             {settings.entries
               .filter((entry) => !entry.isBasic)
@@ -238,12 +238,12 @@ export function Settings(props: SettingsProps): JSX.Element {
 }
 
 function OllamaAddress(props: { readonly initial: string; readonly onSave: (baseUrl: string) => void }): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const [value, setValue] = useState(props.initial);
 
   return (
     <label className="field">
-      <span className="field-label">{t('settings.ollama')}</span>
+      <span className="field-label">{translate('settings.ollama')}</span>
       <input
         className="input"
         value={value}

@@ -48,14 +48,14 @@ export class DesktopApp {
   public constructor(private readonly ports: DesktopAppPorts) {
     this.logger = new DesktopLogger(ports.logFile);
     this.state = new DesktopStateStore(join(ports.homePaths.home, 'desktop.json'), (backupFile) =>
-      ports.notify(this.t('dialog.discardedState', { file: backupFile })),
+      ports.notify(this.translate('dialog.discardedState', { file: backupFile })),
     );
     this.homeStores = createHomeSettingsStores(ports.homePaths, (error) => this.reportInvalidConfig(error));
     this.settings = new SettingsService({
       stores: (): SettingsStores => this.current?.container ?? this.homeStores,
       hasOpenWorkspace: (): boolean => this.current !== undefined,
       language: (): UiLanguage => this.language,
-      translate: (key: MessageKey, params?: MessageParams): string => this.t(key, params),
+      translate: (key: MessageKey, params?: MessageParams): string => this.translate(key, params),
     });
   }
 
@@ -67,7 +67,7 @@ export class DesktopApp {
     return this.current;
   }
 
-  public t(key: MessageKey, params?: MessageParams): string {
+  public translate(key: MessageKey, params?: MessageParams): string {
     return translate(this.language, key, params);
   }
 
@@ -93,15 +93,15 @@ export class DesktopApp {
   }
 
   public requireSession(): ServiceResult<WorkspaceSession> {
-    return this.current === undefined ? fail('no-workspace', this.t('error.noWorkspace')) : succeed(this.current);
+    return this.current === undefined ? fail('no-workspace', this.translate('error.noWorkspace')) : succeed(this.current);
   }
 
   public async openWorkspace(recentPath: string | undefined): Promise<ServiceResult<WorkspaceOverview | { readonly cancelled: true }>> {
     if (recentPath !== undefined && !this.state.isRecentWorkspace(recentPath)) {
-      return fail('invalid-request', this.t('error.invalidRequest'));
+      return fail('invalid-request', this.translate('error.invalidRequest'));
     }
 
-    const path: string | undefined = recentPath ?? (await this.ports.chooseDirectory(this.t('dialog.openWorkspace')));
+    const path: string | undefined = recentPath ?? (await this.ports.chooseDirectory(this.translate('dialog.openWorkspace')));
 
     if (path === undefined) {
       return succeed({ cancelled: true });
@@ -109,14 +109,14 @@ export class DesktopApp {
 
     if (recentPath !== undefined && !existsSync(path)) {
       this.state.forgetWorkspace(path);
-      return fail('not-found', this.t('error.recentMissing', { path }));
+      return fail('not-found', this.translate('error.recentMissing', { path }));
     }
 
     return await this.activate(() => WorkspaceSession.open(this.sessionOptions(path)));
   }
 
   public async chooseParentDirectory(): Promise<{ readonly directory?: string }> {
-    const directory: string | undefined = await this.ports.chooseDirectory(this.t('dialog.chooseParent'), this.defaultParentDirectory());
+    const directory: string | undefined = await this.ports.chooseDirectory(this.translate('dialog.chooseParent'), this.defaultParentDirectory());
 
     if (directory !== undefined) {
       this.offeredParentDirectories.add(resolve(directory));
@@ -128,8 +128,8 @@ export class DesktopApp {
   public async chooseNotesLocation(kind: 'folder' | 'zip'): Promise<{ readonly path?: string }> {
     const path: string | undefined =
       kind === 'folder'
-        ? await this.ports.chooseDirectory(this.t('dialog.chooseNotesFolder'))
-        : await this.ports.chooseFile(this.t('dialog.chooseNotesZip'), ['zip']);
+        ? await this.ports.chooseDirectory(this.translate('dialog.chooseNotesFolder'))
+        : await this.ports.chooseFile(this.translate('dialog.chooseNotesZip'), ['zip']);
 
     if (path !== undefined) {
       this.offeredNoteLocations.add(resolve(path));
@@ -149,7 +149,7 @@ export class DesktopApp {
     const parent: string = resolve(parentDirectory);
 
     if (parent !== resolve(this.defaultParentDirectory()) && !this.offeredParentDirectories.has(parent)) {
-      return fail('invalid-request', this.t('error.invalidRequest'));
+      return fail('invalid-request', this.translate('error.invalidRequest'));
     }
 
     const path: string = join(parent, workspaceFolderName(request.title));
@@ -210,7 +210,7 @@ export class DesktopApp {
 
     this.current = opened.data;
     await requestHiddenProviderConsent(opened.data.container.configBridge, (question) =>
-      this.ports.confirm({ ...question, declineLabel: this.t('common.cancel') }),
+      this.ports.confirm({ ...question, declineLabel: this.translate('common.cancel') }),
     );
     const overview: WorkspaceOverview = await opened.data.overview();
     this.state.rememberWorkspace(opened.data.path, overview.title);
@@ -225,7 +225,7 @@ export class DesktopApp {
       homePaths: this.ports.homePaths,
       logger: this.logger,
       version: this.ports.version,
-      translate: (key, params) => this.t(key, params),
+      translate: (key, params) => this.translate(key, params),
       onInvalidConfigFile: (error) => this.reportInvalidConfig(error),
       onRunChanged: (snapshot) => this.ports.emit('run.changed', snapshot),
       onWorkspaceChanged: (change) => this.ports.emit('workspace.changed', change),
@@ -241,7 +241,7 @@ export class DesktopApp {
 
     if (!this.reportedConfigFiles.has(error.file)) {
       this.reportedConfigFiles.add(error.file);
-      this.ports.notify(this.t('dialog.invalidConfig', { file: error.file, message: error.message }));
+      this.ports.notify(this.translate('dialog.invalidConfig', { file: error.file, message: error.message }));
     }
   }
 }

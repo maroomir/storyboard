@@ -60,13 +60,13 @@ export function tenseLabel(language: UiLanguage, tense: NarrativeTense): string 
   return language === 'ko' ? narrativeTenseLabels[tense] : englishTense[tense];
 }
 
-export function describeNarration(language: UiLanguage, t: Translate, narration: NarrationSummary): string {
+export function describeNarration(language: UiLanguage, translate: Translate, narration: NarrationSummary): string {
   return [
     narration.person === undefined ? undefined : personLabel(language, narration.person),
     narration.knowledge === undefined ? undefined : knowledgeLabel(language, narration.knowledge),
     narration.tense === undefined ? undefined : tenseLabel(language, narration.tense),
-    narration.focal === undefined ? undefined : t('notes.focal', { name: narration.focal }),
-    narration.narratorName === undefined ? undefined : t('notes.narrator', { name: narration.narratorName }),
+    narration.focal === undefined ? undefined : translate('notes.focal', { name: narration.focal }),
+    narration.narratorName === undefined ? undefined : translate('notes.narrator', { name: narration.narratorName }),
   ]
     .filter((part): part is string => part !== undefined)
     .join(' · ');

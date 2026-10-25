@@ -344,7 +344,7 @@ export class RunController {
   ): Promise<{ outcome: RunOutcome; message: string; snapshotMessage: string }> {
     const { container, translate } = this.dependencies;
     const shouldCancel = (): boolean => run.isPauseRequested;
-    const result: GenerateDraftResult = await container.drafts.generate({
+    const draftGeneration: GenerateDraftResult = await container.drafts.generate({
       sceneUri,
       force,
       confirmSceneGrounding: async ({ grounding }) => grounding,
@@ -354,13 +354,13 @@ export class RunController {
     });
     const snapshotMessage: string = translate('snapshot.sceneGenerated', { title });
 
-    if (!result.ok) {
-      return result.kind === 'cancelled'
+    if (!draftGeneration.ok) {
+      return draftGeneration.kind === 'cancelled'
         ? { outcome: 'cancelled', message: translate('log.sceneStopped', { title }), snapshotMessage }
-        : { outcome: 'failed', message: result.message, snapshotMessage };
+        : { outcome: 'failed', message: draftGeneration.message, snapshotMessage };
     }
 
-    if (result.kind === 'cache_hit') {
+    if (draftGeneration.kind === 'cache_hit') {
       return { outcome: 'completed', message: translate('log.sceneCached', { title }), snapshotMessage };
     }
 
@@ -410,11 +410,11 @@ export class RunController {
     this.appendLog(message, 'info', stage);
   }
 
-  private askApproval(run: ActiveRun, kind: NovelApprovalKind, info: string): Promise<boolean> {
-    this.appendLog(this.dependencies.translate('log.approvalAsked', { info }), 'warn');
+  private askApproval(run: ActiveRun, kind: NovelApprovalKind, approvalDetail: string): Promise<boolean> {
+    this.appendLog(this.dependencies.translate('log.approvalAsked', { info: approvalDetail }), 'warn');
 
     return new Promise<boolean>((resolve) => {
-      run.approval = { kind, info, resolve };
+      run.approval = { kind, info: approvalDetail, resolve };
       run.status = 'waiting-approval';
       this.emit();
     });

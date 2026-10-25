@@ -17,7 +17,7 @@ interface WizardProps {
 }
 
 export function Wizard(props: WizardProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const [stepIndex, setStepIndex] = useState(0);
   const [form, setForm] = useState<WorkspaceCreateRequest>(initialWizardForm);
   const [parentDirectory, setParentDirectory] = useState(props.defaultParentDirectory);
@@ -40,7 +40,7 @@ export function Wizard(props: WizardProps): JSX.Element {
 
   const advance = async (): Promise<void> => {
     if (!isStepComplete(step, form)) {
-      setError(t('wizard.fillAll'));
+      setError(translate('wizard.fillAll'));
       return;
     }
 
@@ -70,24 +70,24 @@ export function Wizard(props: WizardProps): JSX.Element {
         }}
       >
         <div className="spread">
-          <span className="field-label">{t('wizard.title')}</span>
-          <span className="muted small">{t('wizard.step', { current: stepIndex + 1, total: wizardSteps.length })}</span>
+          <span className="field-label">{translate('wizard.title')}</span>
+          <span className="muted small">{translate('wizard.step', { current: stepIndex + 1, total: wizardSteps.length })}</span>
         </div>
 
         {step === 'story' ? (
           <>
-            <h2>{t('wizard.story.heading')}</h2>
-            <TextField label={t('wizard.titleLabel')} value={form.title} onChange={(value) => update('title', value)} autoFocus />
+            <h2>{translate('wizard.story.heading')}</h2>
+            <TextField label={translate('wizard.titleLabel')} value={form.title} onChange={(value) => update('title', value)} autoFocus />
             <TextField
-              label={t('wizard.genreLabel')}
+              label={translate('wizard.genreLabel')}
               value={form.genre}
-              placeholder={t('wizard.genrePlaceholder')}
+              placeholder={translate('wizard.genrePlaceholder')}
               onChange={(value) => update('genre', value)}
             />
             <TextField
-              label={t('wizard.audienceLabel')}
+              label={translate('wizard.audienceLabel')}
               value={form.audience}
-              placeholder={t('wizard.audiencePlaceholder')}
+              placeholder={translate('wizard.audiencePlaceholder')}
               onChange={(value) => update('audience', value)}
             />
           </>
@@ -95,9 +95,9 @@ export function Wizard(props: WizardProps): JSX.Element {
 
         {step === 'telling' ? (
           <>
-            <h2>{t('wizard.telling.heading')}</h2>
+            <h2>{translate('wizard.telling.heading')}</h2>
             <label className="field">
-              <span className="field-label">{t('wizard.povLabel')}</span>
+              <span className="field-label">{translate('wizard.povLabel')}</span>
               <select className="select" value={form.pov} onChange={(event) => update('pov', event.target.value as WorkspaceCreateRequest['pov'])}>
                 {pointOfViews.map((pov) => (
                   <option key={pov} value={pov}>
@@ -107,7 +107,7 @@ export function Wizard(props: WizardProps): JSX.Element {
               </select>
             </label>
             <fieldset className="field" style={{ border: 0, margin: 0, padding: 0 }}>
-              <legend className="field-label">{t('wizard.compositionLabel')}</legend>
+              <legend className="field-label">{translate('wizard.compositionLabel')}</legend>
               <div className="choice-list">
                 {compositionKinds.map((composition) => (
                   <label key={composition} className="choice">
@@ -124,10 +124,10 @@ export function Wizard(props: WizardProps): JSX.Element {
               </div>
             </fieldset>
             <div className="form-row">
-              <NumberField label={t('wizard.chapterCount')} value={form.chapterCount} min={1} max={200} onChange={(value) => update('chapterCount', value)} />
-              <NumberField label={t('wizard.scenesPerChapter')} value={form.scenesPerChapter} min={1} max={20} onChange={(value) => update('scenesPerChapter', value)} />
+              <NumberField label={translate('wizard.chapterCount')} value={form.chapterCount} min={1} max={200} onChange={(value) => update('chapterCount', value)} />
+              <NumberField label={translate('wizard.scenesPerChapter')} value={form.scenesPerChapter} min={1} max={20} onChange={(value) => update('scenesPerChapter', value)} />
               <NumberField
-                label={t('wizard.targetWordCount')}
+                label={translate('wizard.targetWordCount')}
                 value={form.targetWordCount}
                 min={1_000}
                 max={2_000_000}
@@ -135,34 +135,34 @@ export function Wizard(props: WizardProps): JSX.Element {
                 onChange={(value) => update('targetWordCount', value)}
               />
             </div>
-            <p className="field-hint">{t('wizard.lengthHint', { scenes: hint.scenes, perScene: hint.perScene.toLocaleString(language) })}</p>
+            <p className="field-hint">{translate('wizard.lengthHint', { scenes: hint.scenes, perScene: hint.perScene.toLocaleString(language) })}</p>
           </>
         ) : null}
 
         {step === 'concept' ? (
           <>
-            <h2>{t('wizard.concept.heading')}</h2>
+            <h2>{translate('wizard.concept.heading')}</h2>
             <label className="field">
-              <span className="field-label">{t('wizard.conceptLabel')}</span>
+              <span className="field-label">{translate('wizard.conceptLabel')}</span>
               <textarea
                 className="textarea"
                 rows={6}
                 value={form.concept}
-                placeholder={t('wizard.conceptPlaceholder')}
+                placeholder={translate('wizard.conceptPlaceholder')}
                 onChange={(event) => update('concept', event.target.value)}
                 autoFocus
               />
             </label>
             <label className="row small">
               <input type="checkbox" checked={shouldAbsorbNotes} onChange={(event) => setAbsorbNotes(event.target.checked)} />
-              {t('wizard.fromNotes')}
+              {translate('wizard.fromNotes')}
             </label>
             <div className="field">
-              <span className="field-label">{t('wizard.locationLabel')}</span>
+              <span className="field-label">{translate('wizard.locationLabel')}</span>
               <div className="spread">
                 <span className="muted small">{parentDirectory}</span>
                 <button type="button" className="button" onClick={() => void chooseLocation()}>
-                  {t('wizard.changeLocation')}
+                  {translate('wizard.changeLocation')}
                 </button>
               </div>
             </div>
@@ -182,10 +182,10 @@ export function Wizard(props: WizardProps): JSX.Element {
             onClick={() => (stepIndex === 0 ? props.onCancel() : setStepIndex(stepIndex - 1))}
             disabled={isCreating}
           >
-            {stepIndex === 0 ? t('common.cancel') : t('common.back')}
+            {stepIndex === 0 ? translate('common.cancel') : translate('common.back')}
           </button>
           <button type="submit" className="button button-primary" disabled={isCreating}>
-            {isCreating ? t('wizard.creating') : isLastStep ? t('wizard.create') : t('common.next')}
+            {isCreating ? translate('wizard.creating') : isLastStep ? translate('wizard.create') : translate('common.next')}
           </button>
         </div>
       </form>

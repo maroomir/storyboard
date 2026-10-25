@@ -51,7 +51,7 @@ interface WorkbenchProps {
 }
 
 function Workbench(props: WorkbenchProps): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const [overview, setOverview] = useState<WorkspaceOverview>();
   const [isWizardOpen, setWizardOpen] = useState(false);
   const [isProviderSetupOpen, setProviderSetupOpen] = useState(!props.bootstrap.isProviderReady);
@@ -146,15 +146,15 @@ function Workbench(props: WorkbenchProps): JSX.Element {
         <div className="banner banner-error" role="alert">
           <span>{error}</span>
           <button type="button" className="button button-quiet" onClick={() => setError(undefined)}>
-            {t('common.close')}
+            {translate('common.close')}
           </button>
         </div>
       )}
       {updateVersion === undefined ? null : (
         <div className="banner" role="status">
-          <span>{t('update.ready', { version: updateVersion })}</span>
+          <span>{translate('update.ready', { version: updateVersion })}</span>
           <button type="button" className="button" onClick={() => void call('app.installUpdate', {})}>
-            {t('update.restart')}
+            {translate('update.restart')}
           </button>
         </div>
       )}

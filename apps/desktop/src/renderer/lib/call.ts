@@ -19,13 +19,13 @@ export async function call<C extends InvokeChannel>(
   channel: C,
   request: InvokeRequest<C>,
 ): Promise<InvokeResponses[C]> {
-  const result: InvokeResult<C> = await desktopBridge().invoke(channel, request);
+  const invocation: InvokeResult<C> = await desktopBridge().invoke(channel, request);
 
-  if (!result.ok) {
-    throw new BridgeError(result.error);
+  if (!invocation.ok) {
+    throw new BridgeError(invocation.error);
   }
 
-  return result.data;
+  return invocation.data;
 }
 
 export function messageOf(error: unknown): string {

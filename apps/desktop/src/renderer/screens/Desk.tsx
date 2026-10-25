@@ -29,7 +29,7 @@ function allScenes(overview: WorkspaceOverview): TocScene[] {
 }
 
 export function Desk(props: DeskProps): JSX.Element {
-  const { t, language } = useI18n();
+  const { translate, language } = useI18n();
   const scenes: TocScene[] = allScenes(props.overview);
   const [selectedStem, setSelectedStem] = useState<string | undefined>(props.requestedStem ?? scenes[0]?.stem);
   const [notes, setNotes] = useState<SceneNotes>();
@@ -79,10 +79,10 @@ export function Desk(props: DeskProps): JSX.Element {
     return (
       <main className="centered">
         <p className="muted" style={{ maxWidth: 420, textAlign: 'center' }}>
-          {t('desk.noScenes')}
+          {translate('desk.noScenes')}
         </p>
         <button type="button" className="button button-primary" onClick={props.onOpenDrawer}>
-          {t('run.start')}
+          {translate('run.start')}
         </button>
       </main>
     );
@@ -90,9 +90,9 @@ export function Desk(props: DeskProps): JSX.Element {
 
   const readOnlyReason: string | undefined =
     props.overview.foreignLock !== undefined
-      ? t('desk.readOnlyForeign', { message: props.overview.foreignLock.message })
+      ? translate('desk.readOnlyForeign', { message: props.overview.foreignLock.message })
       : isReadOnly
-        ? t('desk.readOnlyRun')
+        ? translate('desk.readOnlyRun')
         : undefined;
 
   return (
@@ -106,13 +106,13 @@ export function Desk(props: DeskProps): JSX.Element {
         )}
         {editor.hasConflict ? (
           <div className="banner" role="alert">
-            <span>{t('desk.externalChange')}</span>
+            <span>{translate('desk.externalChange')}</span>
             <span className="row">
               <button type="button" className="button" onClick={editor.keepMine}>
-                {t('desk.keepMine')}
+                {translate('desk.keepMine')}
               </button>
               <button type="button" className="button" onClick={() => void editor.loadDisk()}>
-                {t('desk.reload')}
+                {translate('desk.reload')}
               </button>
             </span>
           </div>
@@ -120,19 +120,19 @@ export function Desk(props: DeskProps): JSX.Element {
         <div className="page-inner">
           <div className="spread">
             <span className="page-kicker">
-              {[notes?.chapterTitle, selectedScene === undefined ? undefined : t('desk.sceneNumber', { order: selectedScene.order })]
+              {[notes?.chapterTitle, selectedScene === undefined ? undefined : translate('desk.sceneNumber', { order: selectedScene.order })]
                 .filter(Boolean)
                 .join(' · ')}
             </span>
             <span className="row">
               <button type="button" className="button button-quiet" disabled={isReadOnly} onClick={props.onAbsorbNotes}>
-                {t('desk.absorbNotes')}
+                {translate('desk.absorbNotes')}
               </button>
               <button type="button" className="button button-quiet" disabled={isReadOnly} onClick={() => setRenaming(true)}>
-                {t('desk.renameScene')}
+                {translate('desk.renameScene')}
               </button>
               <button type="button" className="button" disabled={isReadOnly} onClick={() => void writeScene()}>
-                {editor.document?.exists === true ? t('desk.rewriteScene') : t('desk.writeScene')}
+                {editor.document?.exists === true ? translate('desk.rewriteScene') : translate('desk.writeScene')}
               </button>
             </span>
           </div>
@@ -149,7 +149,7 @@ export function Desk(props: DeskProps): JSX.Element {
             />
           ) : null}
           <h1 id="manuscript-title" className="page-title">
-            {selectedScene?.title ?? t('common.untitled')}
+            {selectedScene?.title ?? translate('common.untitled')}
           </h1>
           {editor.document === undefined ? null : editor.document.exists ? (
             <Manuscript
@@ -163,9 +163,9 @@ export function Desk(props: DeskProps): JSX.Element {
             />
           ) : (
             <div className="empty-draft">
-              <p className="muted">{t('desk.emptyDraft')}</p>
+              <p className="muted">{translate('desk.emptyDraft')}</p>
               <button type="button" className="button button-primary" disabled={isReadOnly} onClick={() => void writeScene()}>
-                {t('desk.writeScene')}
+                {translate('desk.writeScene')}
               </button>
               {notes !== undefined && notes.stem === selectedStem ? <SceneCardPreview key={notes.stem} notes={notes} /> : null}
             </div>
@@ -174,13 +174,13 @@ export function Desk(props: DeskProps): JSX.Element {
         <div className="page-status">
           <span>
             {selectedScene?.targetLength === undefined
-              ? t('common.characters', { count: editor.text.trim().length.toLocaleString(language) })
-              : t('desk.lengthOfTarget', {
+              ? translate('common.characters', { count: editor.text.trim().length.toLocaleString(language) })
+              : translate('desk.lengthOfTarget', {
                   length: editor.text.trim().length.toLocaleString(language),
                   target: selectedScene.targetLength.toLocaleString(language),
                 })}
           </span>
-          <span aria-live="polite">{editor.saveState === 'saved' ? t('desk.saved') : t('desk.saving')}</span>
+          <span aria-live="polite">{editor.saveState === 'saved' ? translate('desk.saved') : translate('desk.saving')}</span>
         </div>
       </main>
       <MarginNotes notes={notes} />
@@ -197,7 +197,7 @@ interface SceneRenameFormProps {
 }
 
 function SceneRenameForm(props: SceneRenameFormProps): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const current: SceneFileNameParts | undefined = parseSceneStem(props.stem);
   const [orderText, setOrderText] = useState(String(current?.order ?? ''));
   const [slug, setSlug] = useState(current?.slug ?? '');
@@ -230,21 +230,21 @@ function SceneRenameForm(props: SceneRenameFormProps): JSX.Element {
     >
       <div className="row">
         <label className="field" style={{ width: 96 }}>
-          <span className="field-label">{t('desk.renameOrder')}</span>
+          <span className="field-label">{translate('desk.renameOrder')}</span>
           <input className="input" inputMode="numeric" value={orderText} onChange={(event) => setOrderText(event.target.value)} autoFocus />
         </label>
         <label className="field" style={{ flex: 1 }}>
-          <span className="field-label">{t('desk.renameSlug')}</span>
+          <span className="field-label">{translate('desk.renameSlug')}</span>
           <input className="input" value={slug} onChange={(event) => setSlug(event.target.value)} />
         </label>
       </div>
-      <span className="field-hint">{nextStem === undefined ? t('desk.renameInvalid') : t('desk.renameHint')}</span>
+      <span className="field-hint">{nextStem === undefined ? translate('desk.renameInvalid') : translate('desk.renameHint')}</span>
       <div className="spread">
         <button type="button" className="button button-quiet" onClick={props.onCancel}>
-          {t('common.cancel')}
+          {translate('common.cancel')}
         </button>
         <button type="submit" className="button button-primary" disabled={isSaving || nextStem === undefined || nextStem === props.stem}>
-          {t('desk.renameApply')}
+          {translate('desk.renameApply')}
         </button>
       </div>
     </form>
@@ -262,7 +262,7 @@ interface ManuscriptProps {
 }
 
 function Manuscript(props: ManuscriptProps): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const area: React.RefObject<HTMLTextAreaElement> = useRef<HTMLTextAreaElement>(null);
   const [selection, setSelection] = useState<TextSelection>();
   const [editRequest, setEditRequest] = useState<{ readonly selection: TextSelection; readonly original: string }>();
@@ -310,7 +310,7 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
     }
     const next: string | undefined = replaceSelection(props.text, editRequest.selection, editRequest.original, proposal);
     if (next === undefined) {
-      props.onError(t('desk.externalChange'));
+      props.onError(translate('desk.externalChange'));
       return;
     }
     try {
@@ -331,7 +331,7 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
               className="button"
               onClick={() => setEditRequest({ selection, original: props.text.slice(selection.start, selection.end) })}
             >
-              {t('edit.askAi')}
+              {translate('edit.askAi')}
             </button>
           ) : null}
         </div>
@@ -344,11 +344,11 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
           }}
         >
           <label className="field">
-            <span className="sr-only">{t('edit.askAi')}</span>
+            <span className="sr-only">{translate('edit.askAi')}</span>
             <input
               className="input"
               value={instruction}
-              placeholder={t('edit.instructionPlaceholder')}
+              placeholder={translate('edit.instructionPlaceholder')}
               onChange={(event) => setInstruction(event.target.value)}
               autoFocus
             />
@@ -356,26 +356,26 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
           {proposal === undefined ? null : (
             <div className="proposal">
               <div>
-                <span className="field-label">{t('edit.current')}</span>
+                <span className="field-label">{translate('edit.current')}</span>
                 <p className="proposal-text">{editRequest.original}</p>
               </div>
               <div>
-                <span className="field-label">{t('edit.proposal')}</span>
+                <span className="field-label">{translate('edit.proposal')}</span>
                 <p className="proposal-text">{proposal}</p>
               </div>
             </div>
           )}
           <div className="spread">
             <button type="button" className="button button-quiet" onClick={closeEdit}>
-              {t('edit.discard')}
+              {translate('edit.discard')}
             </button>
             <span className="row">
               <button type="submit" className="button" disabled={isProposing || instruction.trim().length === 0}>
-                {isProposing ? t('edit.proposing') : t('edit.propose')}
+                {isProposing ? translate('edit.proposing') : translate('edit.propose')}
               </button>
               {proposal === undefined ? null : (
                 <button type="button" className="button button-primary" onClick={() => void apply()}>
-                  {t('edit.apply')}
+                  {translate('edit.apply')}
                 </button>
               )}
             </span>

@@ -21,7 +21,7 @@ interface TopBarProps {
 }
 
 export function TopBar(props: TopBarProps): JSX.Element {
-  const { t } = useI18n();
+  const { translate } = useI18n();
   const status: RunStatus = props.run?.status ?? 'idle';
 
   return (
@@ -39,23 +39,23 @@ export function TopBar(props: TopBarProps): JSX.Element {
             aria-current={props.view === view ? 'page' : undefined}
             onClick={() => props.onViewChange(view)}
           >
-            {t(label)}
+            {translate(label)}
           </button>
         ))}
         <button type="button" className="button" onClick={props.onOpenDrawer}>
-          {t('desk.run')}
+          {translate('desk.run')}
           {status === 'idle' ? null : (
             <>
               {' '}
               <span className="pill">
                 <span className="pill-dot" aria-hidden="true" />
-                {t(`run.status.${status}`)}
+                {translate(`run.status.${status}`)}
               </span>
             </>
           )}
         </button>
         <button type="button" className="button button-quiet" onClick={props.onClose}>
-          {t('desk.closeWork')}
+          {translate('desk.closeWork')}
         </button>
       </nav>
     </header>

@@ -33,8 +33,8 @@ function startDesktopApp(): DesktopApp {
         properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[],
         ...(defaultPath === undefined ? {} : { defaultPath }),
       };
-      const result: Electron.OpenDialogReturnValue = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
-      return result.canceled ? undefined : result.filePaths[0];
+      const dialogChoice: Electron.OpenDialogReturnValue = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
+      return dialogChoice.canceled ? undefined : dialogChoice.filePaths[0];
     },
     chooseFile: async (title: string, extensions: readonly string[]): Promise<string | undefined> => {
       const options: Electron.OpenDialogOptions = {
@@ -42,8 +42,8 @@ function startDesktopApp(): DesktopApp {
         properties: ['openFile'] as 'openFile'[],
         filters: [{ name: extensions.join(', '), extensions: [...extensions] }],
       };
-      const result: Electron.OpenDialogReturnValue = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
-      return result.canceled ? undefined : result.filePaths[0];
+      const dialogChoice: Electron.OpenDialogReturnValue = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
+      return dialogChoice.canceled ? undefined : dialogChoice.filePaths[0];
     },
     emit: (event, payload) => mainWindow?.webContents.send(ipcEventChannelName(event), payload),
     notify: (message: string): void => {
@@ -71,8 +71,8 @@ function startDesktopApp(): DesktopApp {
   });
 
   const route: (message: unknown) => Promise<InvokeResult<InvokeChannel>> = createIpcRouter(createInvokeHandlers(desktop), desktop.logger, {
-    invalidRequest: () => desktop.t('error.invalidRequest'),
-    internal: (message) => desktop.t('error.internal', { message }),
+    invalidRequest: () => desktop.translate('error.invalidRequest'),
+    internal: (message) => desktop.translate('error.internal', { message }),
   });
 
   ipcMain.handle(ipcInvokeChannelName, async (event, message: unknown) =>
@@ -89,9 +89,9 @@ async function confirmClose(desktop: DesktopApp): Promise<'finish-scene' | 'now'
 
   const options: Electron.MessageBoxOptions = {
     type: 'question' as const,
-    message: desktop.t('quit.runningTitle'),
-    detail: desktop.t('quit.runningDetail'),
-    buttons: [desktop.t('quit.pauseAndClose'), desktop.t('quit.closeNow'), desktop.t('common.cancel')],
+    message: desktop.translate('quit.runningTitle'),
+    detail: desktop.translate('quit.runningDetail'),
+    buttons: [desktop.translate('quit.pauseAndClose'), desktop.translate('quit.closeNow'), desktop.translate('common.cancel')],
     defaultId: 0,
     cancelId: 2,
   };
