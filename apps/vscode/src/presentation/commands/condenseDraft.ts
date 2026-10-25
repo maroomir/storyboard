@@ -171,12 +171,12 @@ export interface CondenseReviewLabels {
 }
 
 export function buildCondenseReviewLabels(
-  result: Extract<CondenseDraftResult, { readonly ok: true }>,
+  condensed: Extract<CondenseDraftResult, { readonly ok: true }>,
 ): CondenseReviewLabels {
-  if (result.kind === 'review-required') {
+  if (condensed.kind === 'review-required') {
     return {
       diffTitle: '안전 기준 미달 · 초안 ↔ 축소 제안',
-      confirmPrompt: `축소안이 안전 기준보다 짧습니다 (후보 ${result.candidateLength}자 / 최소 ${result.minimumLength}자). 검토 후 적용하시겠습니까?`,
+      confirmPrompt: `축소안이 안전 기준보다 짧습니다 (후보 ${condensed.candidateLength}자 / 최소 ${condensed.minimumLength}자). 검토 후 적용하시겠습니까?`,
       cancelLabel: '원본 유지',
     };
   }
@@ -214,22 +214,22 @@ async function archiveDraftBeforeApply(
 }
 
 async function reportFailure(
-  result: Exclude<CondenseDraftResult, { readonly ok: true }>,
+  failure: Exclude<CondenseDraftResult, { readonly ok: true }>,
 ): Promise<void> {
-  if (result.kind === 'rejected') {
+  if (failure.kind === 'rejected') {
     const reason: string =
-      result.reason === 'not-shorter'
+      failure.reason === 'not-shorter'
         ? '축소되지 않았습니다.'
-        : result.reason === 'too-short'
-          ? `너무 짧습니다 (${result.candidateLength}자 / 최소 ${result.minimumLength}자).`
-          : result.reason === 'scene-breaks-changed'
+        : failure.reason === 'too-short'
+          ? `너무 짧습니다 (${failure.candidateLength}자 / 최소 ${failure.minimumLength}자).`
+          : failure.reason === 'scene-breaks-changed'
             ? '장면 구분(---)의 수가 바뀌었습니다.'
             : '본문으로 적용할 수 없는 응답입니다.';
     await vscode.window.showWarningMessage(`원본을 유지했습니다: ${reason}`);
     return;
   }
 
-  await showStoryboardFailure(`원본 축소에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`원본 축소에 실패했습니다: ${failure.message}`);
 }
 
 async function runCondenseDraft(
@@ -243,7 +243,7 @@ async function runCondenseDraft(
   }
 
   const context: CondenseContext = await loadCondenseContext(target);
-  const result: CondenseDraftResult = await vscode.window.withProgress(
+  const condensation: CondenseDraftResult = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Storyboard 원본 축소',
@@ -260,18 +260,18 @@ async function runCondenseDraft(
       }),
   );
 
-  if (!result.ok) {
-    await reportFailure(result);
+  if (!condensation.ok) {
+    await reportFailure(condensation);
     return;
   }
 
-  const labels: CondenseReviewLabels = buildCondenseReviewLabels(result);
+  const labels: CondenseReviewLabels = buildCondenseReviewLabels(condensation);
 
   const proposed: string = serializeDraft(
     createDraft({
       sceneStem: target.draft.sceneStem,
       format: target.draft.format,
-      body: result.text,
+      body: condensation.text,
       generator: target.draft.generator,
       providerId: target.draft.providerId,
       model: target.draft.model,

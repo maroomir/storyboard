@@ -94,14 +94,14 @@ class SlopDiagnosticsController {
       return;
     }
 
-    const result: CheckDraftResult = await this.dependencies.drafts.check({
+    const draftCheck: CheckDraftResult = await this.dependencies.drafts.check({
       workspaceRoot: workspaceFolder.uri,
       sceneStem: document.uri.path.split('/').pop()?.replace(/\.md$/i, '') ?? '',
       kind: 'slop',
       text: body,
     });
 
-    if (result.kind !== 'slop') {
+    if (draftCheck.kind !== 'slop') {
       this.collection.delete(document.uri);
       return;
     }
@@ -109,7 +109,7 @@ class SlopDiagnosticsController {
     const bodyOffset: number = computeBodyOffset(documentText, body);
     this.collection.set(
       document.uri,
-      mapSlopFindingsToDiagnostics(document, result.findings, bodyOffset),
+      mapSlopFindingsToDiagnostics(document, draftCheck.findings, bodyOffset),
     );
   }
 

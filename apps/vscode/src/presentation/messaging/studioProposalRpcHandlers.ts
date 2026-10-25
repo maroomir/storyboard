@@ -148,14 +148,14 @@ async function prepareApply(
     ? extractDraftBody(entityContext.baseline)
     : entityContext.baseline;
 
-  const result: StudioPatchResult = applyStudioPatch(
+  const patchOutcome: StudioPatchResult = applyStudioPatch(
     patchBaseline,
     proposal.patch,
     entityContext.patchTarget,
   );
 
-  if (!result.ok) {
-    return { ok: false, message: result.message };
+  if (!patchOutcome.ok) {
+    return { ok: false, message: patchOutcome.message };
   }
 
   if (entityContext.patchTarget === 'sceneCard') {
@@ -173,9 +173,9 @@ async function prepareApply(
     ok: true,
     targetUri: entityContext.targetUri,
     targetFile: entityContext.targetFile,
-    text: isDraft ? rewriteDraftBody(entityContext.baseline, result.text) : result.text,
-    changedFields: result.changedFields,
-    lengthDelta: result.text.trim().length - patchBaseline.trim().length,
+    text: isDraft ? rewriteDraftBody(entityContext.baseline, patchOutcome.text) : patchOutcome.text,
+    changedFields: patchOutcome.changedFields,
+    lengthDelta: patchOutcome.text.trim().length - patchBaseline.trim().length,
   };
 }
 

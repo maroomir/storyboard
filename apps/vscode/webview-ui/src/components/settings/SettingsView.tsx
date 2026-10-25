@@ -88,20 +88,20 @@ function useStoryboardRpc(): {
 
         return new Promise((resolve, reject) => {
           const handler = (event: MessageEvent): void => {
-            const data: StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined =
+            const response: StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined =
               event.data as StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined;
-            if (!data || data.type !== 'response' || data.id !== id) {
+            if (!response || response.type !== 'response' || response.id !== id) {
               return;
             }
 
             window.removeEventListener('message', handler);
 
-            if (data.ok) {
-              resolve(data.payload);
+            if (response.ok) {
+              resolve(response.payload);
               return;
             }
 
-            reject(new Error(data.error.message));
+            reject(new Error(response.error.message));
           };
 
           window.addEventListener('message', handler);
@@ -190,20 +190,20 @@ export function SettingsView({
     };
 
     const handler = (event: MessageEvent): void => {
-      const data: StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined =
+      const response: StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined =
         event.data as StoryboardRpcSuccessResponse | StoryboardRpcErrorResponse | undefined;
-      if (!data || data.type !== 'response' || data.id !== id) {
+      if (!response || response.type !== 'response' || response.id !== id) {
         return;
       }
 
       window.removeEventListener('message', handler);
 
-      if (!data.ok) {
-        setLoadError(data.error.message);
+      if (!response.ok) {
+        setLoadError(response.error.message);
         return;
       }
 
-      const next: SettingsReadSnapshot | undefined = parseSettingsReadSnapshot(data.payload);
+      const next: SettingsReadSnapshot | undefined = parseSettingsReadSnapshot(response.payload);
       if (!next) {
         setLoadError('설정 응답 형식이 올바르지 않습니다.');
         return;
@@ -222,13 +222,21 @@ export function SettingsView({
   }, [snapshot, vscodeApi]);
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent): void => {
-      const data: SettingsChangedEvent | undefined = event.data as SettingsChangedEvent | undefined;
-      if (!data || data.type !== 'event' || data.method !== 'settings.changed') {
+    const receiveSettingsChange = (event: MessageEvent): void => {
+      const settingsChange: SettingsChangedEvent | undefined = event.data as
+        | SettingsChangedEvent
+        | undefined;
+      if (
+        !settingsChange ||
+        settingsChange.type !== 'event' ||
+        settingsChange.method !== 'settings.changed'
+      ) {
         return;
       }
 
-      const next: SettingsReadSnapshot | undefined = parseSettingsReadSnapshot(data.payload);
+      const next: SettingsReadSnapshot | undefined = parseSettingsReadSnapshot(
+        settingsChange.payload,
+      );
       if (!next) {
         return;
       }
@@ -240,9 +248,9 @@ export function SettingsView({
       }
     };
 
-    window.addEventListener('message', handleMessage);
+    window.addEventListener('message', receiveSettingsChange);
     return (): void => {
-      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('message', receiveSettingsChange);
     };
   }, []);
 

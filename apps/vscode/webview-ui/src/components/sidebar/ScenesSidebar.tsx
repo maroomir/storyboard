@@ -76,7 +76,7 @@ export function ScenesSidebar({
   >({});
 
   useEffect(() => {
-    const handleMessage = (
+    const receiveHostMessage = (
       event: MessageEvent<
         StoryboardEventMessage | { readonly type: 'response'; readonly id: string }
       >,
@@ -114,8 +114,8 @@ export function ScenesSidebar({
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return (): void => window.removeEventListener('message', handleMessage);
+    window.addEventListener('message', receiveHostMessage);
+    return (): void => window.removeEventListener('message', receiveHostMessage);
   }, []);
 
   const workUsage: UsageAmount = sidebarState.usage.total;

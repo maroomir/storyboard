@@ -34,7 +34,7 @@ export function createWebviewBridge(
   handlers: StoryboardRpcHandlers,
 ): StoryboardWebviewBridge {
   const disposable: DisposableHandle = webview.onDidReceiveMessage((message) =>
-    handleIncomingMessage(webview, handlers, message),
+    answerWebviewRequest(webview, handlers, message),
   );
 
   return {
@@ -42,7 +42,7 @@ export function createWebviewBridge(
   };
 }
 
-async function handleIncomingMessage(
+async function answerWebviewRequest(
   webview: StoryboardWebviewLike,
   handlers: StoryboardRpcHandlers,
   message: unknown,

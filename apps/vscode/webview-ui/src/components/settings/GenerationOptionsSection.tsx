@@ -187,9 +187,9 @@ function groupDefinitions(
   const byGroup: Map<string, SettingDefinition[]> = new Map<string, SettingDefinition[]>();
 
   for (const definition of catalog) {
-    const list: SettingDefinition[] = byGroup.get(definition.group) ?? [];
-    list.push(definition);
-    byGroup.set(definition.group, list);
+    const definitionsInGroup: SettingDefinition[] = byGroup.get(definition.group) ?? [];
+    definitionsInGroup.push(definition);
+    byGroup.set(definition.group, definitionsInGroup);
   }
 
   return [...byGroup.entries()];

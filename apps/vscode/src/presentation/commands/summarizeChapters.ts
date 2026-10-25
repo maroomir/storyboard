@@ -31,7 +31,7 @@ async function runSummarizeChapters(
     return;
   }
 
-  const result: SummarizeChaptersResult = await vscode.window.withProgress(
+  const chapterSummaries: SummarizeChaptersResult = await vscode.window.withProgress(
     {
       cancellable: true,
       location: vscode.ProgressLocation.Notification,
@@ -46,33 +46,37 @@ async function runSummarizeChapters(
       }),
   );
 
-  if (!result.ok) {
-    await reportFailure(result, dependencies.logger);
+  if (!chapterSummaries.ok) {
+    await reportFailure(chapterSummaries, dependencies.logger);
     return;
   }
 
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.summaryUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+    chapterSummaries.summaryUri,
+  );
   await vscode.window.showTextDocument(document);
-  await vscode.window.showInformationMessage(`장 ${result.summaryCount}개를 요약했습니다.`);
+  await vscode.window.showInformationMessage(
+    `장 ${chapterSummaries.summaryCount}개를 요약했습니다.`,
+  );
 }
 
 async function reportFailure(
-  result: Exclude<SummarizeChaptersResult, { readonly ok: true }>,
+  failure: Exclude<SummarizeChaptersResult, { readonly ok: true }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
-  if (result.kind === 'cancelled') return;
-  if (result.kind === 'missing_outline') {
+  if (failure.kind === 'cancelled') return;
+  if (failure.kind === 'missing_outline') {
     await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
     return;
   }
-  if (result.kind === 'missing_drafts') {
+  if (failure.kind === 'missing_drafts') {
     await vscode.window.showInformationMessage(
       '요약할 초안이 없습니다. 먼저 Generate (All) Drafts를 실행해 주세요.',
     );
     return;
   }
 
-  logger.error('Chapter summarize failed', new Error(result.message));
+  logger.error('Chapter summarize failed', new Error(failure.message));
   logger.show();
-  await showStoryboardFailure(`장별 요약에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`장별 요약에 실패했습니다: ${failure.message}`);
 }

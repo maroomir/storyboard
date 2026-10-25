@@ -77,18 +77,22 @@ async function runExportManuscript(
     return;
   }
 
-  const result: ExportManuscriptResult = await vscode.window.withProgress(
+  const manuscriptExport: ExportManuscriptResult = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '원고 내보내는 중…' },
     () => dependencies.manuscript.writeExport(targetUri, source.markdown, picked.format),
   );
-  if (!result.ok) {
-    await reportFailure(result.message, dependencies.logger);
+  if (!manuscriptExport.ok) {
+    await reportFailure(manuscriptExport.message, dependencies.logger);
     return;
   }
 
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.targetUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+    manuscriptExport.targetUri,
+  );
   await vscode.window.showTextDocument(document);
-  await vscode.window.showInformationMessage(`원고를 내보냈습니다: ${result.targetUri.fsPath}`);
+  await vscode.window.showInformationMessage(
+    `원고를 내보냈습니다: ${manuscriptExport.targetUri.fsPath}`,
+  );
 }
 
 async function reportFailure(message: string, logger: IStoryboardLogger): Promise<void> {

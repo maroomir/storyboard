@@ -73,16 +73,13 @@ async function runReviseDraft(
     },
     async (progress, token) => {
       try {
-        const result: ReviseDraftWorkflowResult | undefined = await dependencies.drafts.reviseScene(
-          workspaceFolder.uri,
-          sceneStem,
-          {
+        const revision: ReviseDraftWorkflowResult | undefined =
+          await dependencies.drafts.reviseScene(workspaceFolder.uri, sceneStem, {
             onProgress: (message) => progress.report({ message }),
             shouldCancel: () => token.isCancellationRequested,
-          },
-        );
+          });
 
-        if (!result) {
+        if (!revision) {
           await vscode.window.showInformationMessage(
             '초안이 없습니다. 먼저 Generate Draft를 실행해 주세요.',
           );
@@ -91,7 +88,7 @@ async function runReviseDraft(
 
         const document: vscode.TextDocument = await vscode.workspace.openTextDocument(draftUri);
         await vscode.window.showTextDocument(document);
-        await reportResult(result);
+        await reportResult(revision);
       } catch (error) {
         dependencies.logger.error('Draft revise loop failed', error);
         dependencies.logger.show();
@@ -102,7 +99,7 @@ async function runReviseDraft(
   );
 }
 
-async function reportResult(result: {
+async function reportResult(revision: {
   readonly passed: boolean;
   readonly revisionCount: number;
   readonly remainingBlocking: number;
@@ -114,30 +111,30 @@ async function reportResult(result: {
     readonly candidateLength: number;
   };
 }): Promise<void> {
-  if (result.preservedOriginal && result.rejection) {
+  if (revision.preservedOriginal && revision.rejection) {
     await vscode.window.showWarningMessage(
-      `재작성 결과가 분량·본문 형식·장면 구분(---) 기준을 통과하지 않아 원본을 유지했습니다 (${result.rejection.candidateLength}자 / 원본 ${result.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
+      `재작성 결과가 분량·본문 형식·장면 구분(---) 기준을 통과하지 않아 원본을 유지했습니다 (${revision.rejection.candidateLength}자 / 원본 ${revision.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
     );
     return;
   }
 
-  if (result.cancelled && !result.passed) {
+  if (revision.cancelled && !revision.passed) {
     await vscode.window.showWarningMessage(
-      `검수·재작성을 취소했습니다. (재작성 ${result.revisionCount}회)`,
+      `검수·재작성을 취소했습니다. (재작성 ${revision.revisionCount}회)`,
     );
     return;
   }
 
-  if (result.passed) {
+  if (revision.passed) {
     await vscode.window.showInformationMessage(
-      result.revisionCount === 0
+      revision.revisionCount === 0
         ? '검수를 통과했습니다. 수정할 항목이 없습니다.'
-        : `검수를 통과했습니다. 초안을 ${result.revisionCount}회 재작성했습니다.`,
+        : `검수를 통과했습니다. 초안을 ${revision.revisionCount}회 재작성했습니다.`,
     );
     return;
   }
 
   await vscode.window.showWarningMessage(
-    `재작성 ${result.revisionCount}회 후에도 차단 이슈 ${result.remainingBlocking}개가 남았습니다. 초안을 직접 검토해 주세요.`,
+    `재작성 ${revision.revisionCount}회 후에도 차단 이슈 ${revision.remainingBlocking}개가 남았습니다. 초안을 직접 검토해 주세요.`,
   );
 }

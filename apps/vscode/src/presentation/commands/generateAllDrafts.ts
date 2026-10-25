@@ -46,7 +46,7 @@ async function runGenerateAllDrafts(
 async function generateAllDraftsWithProgress(
   dependencies: RegisterGenerateAllDraftsCommandDependencies,
 ): Promise<void> {
-  const result: GenerateAllDraftsResult = await vscode.window.withProgress(
+  const batchGeneration: GenerateAllDraftsResult = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Storyboard 전체 초안 생성',
@@ -59,8 +59,8 @@ async function generateAllDraftsWithProgress(
       }),
   );
 
-  if (!result.ok) {
-    if (result.kind === 'no_projects') {
+  if (!batchGeneration.ok) {
+    if (batchGeneration.kind === 'no_projects') {
       await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
     } else {
       await vscode.window.showInformationMessage('처리할 `scene/*.card` 파일이 없습니다.');
@@ -68,7 +68,7 @@ async function generateAllDraftsWithProgress(
     return;
   }
 
-  await reportSummary(result.summary, dependencies.logger);
+  await reportSummary(batchGeneration.summary, dependencies.logger);
 }
 
 function formatProgress(event: GenerateAllDraftsProgress): string {

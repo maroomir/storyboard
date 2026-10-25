@@ -104,16 +104,16 @@ async function resolveExpandTarget(
 }
 
 async function reportExpandFailure(
-  result: Extract<ExpandDraftResult, { ok: false }>,
+  failure: Extract<ExpandDraftResult, { ok: false }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
-  if (result.kind === 'empty') {
+  if (failure.kind === 'empty') {
     await vscode.window.showWarningMessage('확장 결과가 비어 있어 적용하지 않았습니다.');
     return;
   }
 
   logger.show();
-  await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${failure.message}`);
 }
 
 async function runExpandDraftCommand(
@@ -135,19 +135,19 @@ async function runExpandDraftCommand(
         cancellable: false,
       },
       async () => {
-        const result: ExpandDraftResult = await dependencies.drafts.expand({
+        const expansion: ExpandDraftResult = await dependencies.drafts.expand({
           workspaceRoot: target.workspaceFolder.uri,
           selectedText: target.selectedText,
           sceneStem: target.sceneStem,
         });
 
-        if (!result.ok) {
-          await reportExpandFailure(result, dependencies.logger);
+        if (!expansion.ok) {
+          await reportExpandFailure(expansion, dependencies.logger);
           return;
         }
 
         await target.editor.edit((editBuilder) => {
-          editBuilder.replace(target.targetRange, result.text);
+          editBuilder.replace(target.targetRange, expansion.text);
         });
       },
     );

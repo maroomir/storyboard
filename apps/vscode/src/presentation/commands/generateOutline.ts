@@ -34,9 +34,13 @@ async function runGenerateOutline(
     return;
   }
 
-  let result: GenerateOutlineResult = await runWithProgress(workspaceRoot, dependencies, false);
+  let outlineGeneration: GenerateOutlineResult = await runWithProgress(
+    workspaceRoot,
+    dependencies,
+    false,
+  );
 
-  if (!result.ok && result.kind === 'existing') {
+  if (!outlineGeneration.ok && outlineGeneration.kind === 'existing') {
     const overwrite: '덮어쓰기' | undefined = await vscode.window.showWarningMessage(
       '이미 아웃라인 파일이 있습니다. 덮어쓸까요?',
       { modal: true },
@@ -47,10 +51,10 @@ async function runGenerateOutline(
       return;
     }
 
-    result = await runWithProgress(workspaceRoot, dependencies, true);
+    outlineGeneration = await runWithProgress(workspaceRoot, dependencies, true);
   }
 
-  await reportResult(result, dependencies.logger);
+  await reportResult(outlineGeneration, dependencies.logger);
 }
 
 async function runWithProgress(
@@ -74,12 +78,12 @@ async function runWithProgress(
 }
 
 async function reportResult(
-  result: GenerateOutlineResult,
+  outlineGeneration: GenerateOutlineResult,
   logger: IStoryboardLogger,
 ): Promise<void> {
-  if (result.ok) {
+  if (outlineGeneration.ok) {
     const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
-      result.synopsisUri,
+      outlineGeneration.synopsisUri,
     );
     await vscode.window.showTextDocument(document);
     await vscode.window.showInformationMessage(
@@ -88,9 +92,11 @@ async function reportResult(
     return;
   }
 
-  if (result.kind === 'missing_contract') {
+  if (outlineGeneration.kind === 'missing_contract') {
     const openSettings: string = '설정 열기';
-    const labels: string = result.missing.map((key) => contractFieldLabels[key]).join(', ');
+    const labels: string = outlineGeneration.missing
+      .map((key) => contractFieldLabels[key])
+      .join(', ');
     const choice: string | undefined = await vscode.window.showWarningMessage(
       `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
       openSettings,
@@ -101,9 +107,9 @@ async function reportResult(
     return;
   }
 
-  if (result.kind === 'failed') {
-    logger.error('Outline generation failed', new Error(result.message));
+  if (outlineGeneration.kind === 'failed') {
+    logger.error('Outline generation failed', new Error(outlineGeneration.message));
     logger.show();
-    await showStoryboardFailure(`아웃라인 생성에 실패했습니다: ${result.message}`);
+    await showStoryboardFailure(`아웃라인 생성에 실패했습니다: ${outlineGeneration.message}`);
   }
 }

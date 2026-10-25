@@ -171,7 +171,7 @@ async function buildSettingsReadSnapshot(
 function buildProviderConfigsPayload(
   configBridge: ConfigBridge,
 ): StoryboardResponsePayload<'settings.read'>['providerConfigs'] {
-  const result: StoryboardResponsePayload<'settings.read'>['providerConfigs'] =
+  const providerConfigs: StoryboardResponsePayload<'settings.read'>['providerConfigs'] =
     {} as StoryboardResponsePayload<'settings.read'>['providerConfigs'];
 
   for (const id of aiProviderIds) {
@@ -181,13 +181,14 @@ function buildProviderConfigsPayload(
 
     if (id === 'ollama') {
       const baseUrl: string | undefined = runtime.baseUrl?.trim();
-      result[id] = baseUrl !== undefined && baseUrl.length > 0 ? { model, baseUrl } : { model };
+      providerConfigs[id] =
+        baseUrl !== undefined && baseUrl.length > 0 ? { model, baseUrl } : { model };
     } else {
-      result[id] = { model };
+      providerConfigs[id] = { model };
     }
   }
 
-  return result;
+  return providerConfigs;
 }
 
 function resolveConfiguredModel(configured: string | undefined, fallbackId: string): string {

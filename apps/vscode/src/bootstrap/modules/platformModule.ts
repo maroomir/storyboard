@@ -206,7 +206,7 @@ async function migrateLegacySettings(
   logger: IStoryboardLogger,
 ): Promise<void> {
   try {
-    const result: MigrateVscodeSettingsResult = await migrateVscodeSettingsToHome({
+    const migration: MigrateVscodeSettingsResult = await migrateVscodeSettingsToHome({
       vscodeConfiguration: vscode.workspace.getConfiguration('storyboard'),
       vscodeSecrets: context.secrets,
       homeConfiguration: homeStores.configuration,
@@ -214,12 +214,12 @@ async function migrateLegacySettings(
       hasWorkspaceConfigFile: homeStores.workspaceConfigFile !== undefined,
     });
 
-    if (result.movedSettings.length === 0 && result.movedApiKeys.length === 0) {
+    if (migration.movedSettings.length === 0 && migration.movedApiKeys.length === 0) {
       return;
     }
 
     logger.info(
-      `VSCode 설정 ${result.movedSettings.length}개와 API 키 ${result.movedApiKeys.length}개를 ${homeStores.paths.home} 으로 옮겼습니다.`,
+      `VSCode 설정 ${migration.movedSettings.length}개와 API 키 ${migration.movedApiKeys.length}개를 ${homeStores.paths.home} 으로 옮겼습니다.`,
     );
     const choice: '파일 열기' | undefined = await vscode.window.showInformationMessage(
       `Storyboard 설정을 ${homeStores.paths.configFile} 로 옮겼습니다. 이제 확장과 CLI 가 같은 설정을 씁니다.`,

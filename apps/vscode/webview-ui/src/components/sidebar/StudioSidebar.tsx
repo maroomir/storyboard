@@ -129,7 +129,7 @@ export function StudioSidebar({
   };
 
   useEffect(() => {
-    const handleResponse = (data: StudioResponseMessage): void => {
+    const receiveStudioResponse = (data: StudioResponseMessage): void => {
       if (data.id === listRequestIdRef.current) {
         listRequestIdRef.current = undefined;
         setSessions(parseSessionListPayload(data.payload));
@@ -210,28 +210,28 @@ export function StudioSidebar({
       }
     };
 
-    const handleMessage = (
+    const receiveHostMessage = (
       event: MessageEvent<StoryboardEventMessage | StudioResponseMessage>,
     ): void => {
-      const data: StoryboardEventMessage | StudioResponseMessage = event.data;
+      const hostMessage: StoryboardEventMessage | StudioResponseMessage = event.data;
 
-      if (data.type === 'response' && 'id' in data) {
-        handleResponse(data);
+      if (hostMessage.type === 'response' && 'id' in hostMessage) {
+        receiveStudioResponse(hostMessage);
         return;
       }
 
-      if (data.type === 'event' && data.method === 'studio.targetChanged') {
-        setTarget(parseStudioTarget(data.payload));
+      if (hostMessage.type === 'event' && hostMessage.method === 'studio.targetChanged') {
+        setTarget(parseStudioTarget(hostMessage.payload));
         return;
       }
 
-      if (data.type === 'event' && data.method === 'studio.chat.progress') {
-        setChatStage(parseProgressPayload(data.payload));
+      if (hostMessage.type === 'event' && hostMessage.method === 'studio.chat.progress') {
+        setChatStage(parseProgressPayload(hostMessage.payload));
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return (): void => window.removeEventListener('message', handleMessage);
+    window.addEventListener('message', receiveHostMessage);
+    return (): void => window.removeEventListener('message', receiveHostMessage);
   }, []);
 
   useEffect(() => {
@@ -491,7 +491,7 @@ function isEntityChanged(left: StudioTarget['entity'], right: StudioTarget['enti
 function settleProposal(
   setTurns: React.Dispatch<React.SetStateAction<readonly StudioChatTurn[]>>,
   turnId: string,
-  result: { readonly status: 'applied' | 'failed'; readonly message: string },
+  proposalOutcome: { readonly status: 'applied' | 'failed'; readonly message: string },
 ): void {
   setTurns((prev) => {
     const settled: StudioChatTurn[] = prev.map(
@@ -499,20 +499,22 @@ function settleProposal(
         turn.id === turnId && turn.role === 'assistant' && turn.kind === 'proposal'
           ? {
               ...turn,
-              status: result.status,
-              ...(result.status === 'failed' ? { errorMessage: result.message } : {}),
+              status: proposalOutcome.status,
+              ...(proposalOutcome.status === 'failed'
+                ? { errorMessage: proposalOutcome.message }
+                : {}),
             }
           : turn,
     );
 
-    return result.status === 'applied'
+    return proposalOutcome.status === 'applied'
       ? [
           ...settled,
           {
             id: createRequestId(),
             role: 'assistant' as const,
             kind: 'result' as const,
-            message: result.message,
+            message: proposalOutcome.message,
           },
         ]
       : settled;
@@ -733,7 +735,7 @@ function Composer({
 }): React.ReactElement {
   const isMenuOpen: boolean = menu.length > 0;
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+  const respondToComposerKey = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (isMenuOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
       event.preventDefault();
       onMoveMenu(event.key === 'ArrowDown' ? 1 : -1);
@@ -810,7 +812,7 @@ function Composer({
             placeholder={placeholder}
             value={value}
             onChange={(event) => onChange(event.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={respondToComposerKey}
           />
         </div>
         <Button
@@ -853,11 +855,11 @@ interface CardUpdateInstruction {
 }
 
 function parseCardUpdatePayload(payload: unknown): CardUpdateInstruction {
-  const data: PayloadFields = readPayloadFields(payload);
+  const fields: PayloadFields = readPayloadFields(payload);
 
   return {
-    ok: data.ok === true,
-    ...(typeof data.instruction === 'string' ? { instruction: data.instruction } : {}),
+    ok: fields.ok === true,
+    ...(typeof fields.instruction === 'string' ? { instruction: fields.instruction } : {}),
   };
 }
 

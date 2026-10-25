@@ -97,7 +97,7 @@ export function RelationGraph({
   const [, setRenderVersion] = useState(0);
 
   useEffect(() => {
-    const handleMessage = (
+    const receiveHostMessage = (
       event: MessageEvent<{
         readonly type?: string;
         readonly method?: string;
@@ -111,8 +111,8 @@ export function RelationGraph({
       setData(parseRelationGraphInitialData(event.data.payload));
     };
 
-    window.addEventListener('message', handleMessage);
-    return (): void => window.removeEventListener('message', handleMessage);
+    window.addEventListener('message', receiveHostMessage);
+    return (): void => window.removeEventListener('message', receiveHostMessage);
   }, []);
 
   useEffect(() => {
