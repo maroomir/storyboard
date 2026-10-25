@@ -21,7 +21,6 @@ export interface ManuscriptManagerDependencies {
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
 }
 
-// The whole-manuscript verbs: stitch the drafts into a volume, review it, summarize it, export it.
 export class ManuscriptManager {
   public constructor(private readonly deps: ManuscriptManagerDependencies) {}
 

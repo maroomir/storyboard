@@ -1,15 +1,10 @@
+import type { DisposableHandle } from '@storyboard/story-model';
 import { existsSync, watch, type FSWatcher } from 'node:fs';
 import { basename, dirname } from 'node:path';
 
-const settleDelayMs = 150;
+const settleDelayMs: number = 150;
 
-// Watches the parent directories rather than the files, because an atomic rename replaces the
-// inode and a watcher pinned to the old file goes quiet. A directory that does not exist yet is
-// skipped: the first write creates it, and the next `watchFiles` (or process) picks it up.
-export function watchFiles(
-  files: readonly string[],
-  listener: () => void,
-): { readonly dispose: () => void } {
+export function watchFiles(files: readonly string[], listener: () => void): DisposableHandle {
   const watchers: FSWatcher[] = [];
   let timer: NodeJS.Timeout | undefined;
 
@@ -24,11 +19,11 @@ export function watchFiles(
     }, settleDelayMs);
   };
 
-  const byDirectory = new Map<string, Set<string>>();
+  const byDirectory: Map<string, Set<string>> = new Map<string, Set<string>>();
 
   for (const file of files) {
-    const directory = dirname(file);
-    const names = byDirectory.get(directory) ?? new Set<string>();
+    const directory: string = dirname(file);
+    const names: Set<string> = byDirectory.get(directory) ?? new Set<string>();
     names.add(basename(file));
     byDirectory.set(directory, names);
   }
@@ -39,7 +34,7 @@ export function watchFiles(
     }
 
     try {
-      const watcher = watch(directory, (_eventType, fileName) => {
+      const watcher: FSWatcher = watch(directory, (_eventType, fileName) => {
         if (fileName === null || names.has(String(fileName))) {
           schedule();
         }
@@ -47,7 +42,7 @@ export function watchFiles(
       watcher.on('error', () => undefined);
       watchers.push(watcher);
     } catch {
-      // A platform without recursive/dir watch support degrades to no live refresh.
+      continue;
     }
   }
 

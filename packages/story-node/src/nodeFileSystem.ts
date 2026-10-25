@@ -1,14 +1,11 @@
-import { promises as fs } from 'node:fs';
+import { promises as fs, type Dirent } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
 import type { StoryUri } from '@storyboard/story-model';
 
-// NOTE: a truncating write leaves a half-file behind when the process dies mid-draft, and a
-// truncated draft is silently dropped by manuscript assembly. Write to a sibling and rename, the
-// same rule the extension's atomic write follows.
 async function writeAtomically(target: string, content: Uint8Array): Promise<void> {
-  const temporary = `${target}.tmp-${Date.now().toString(36)}`;
+  const temporary: string = `${target}.tmp-${Date.now().toString(36)}`;
 
   try {
     await fs.mkdir(dirname(target), { recursive: true });
@@ -43,12 +40,12 @@ export class NodeFileSystem implements IFileSystem {
   }
 
   public async listFileNames(uri: StoryUri): Promise<readonly string[]> {
-    const entries = await fs.readdir(pathOf(uri), { withFileTypes: true });
+    const entries: Dirent[] = await fs.readdir(pathOf(uri), { withFileTypes: true });
     return entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
   }
 
   public async readDirectory(uri: StoryUri): Promise<FileSystemDirectoryEntry[]> {
-    const entries = await fs.readdir(pathOf(uri), { withFileTypes: true });
+    const entries: Dirent[] = await fs.readdir(pathOf(uri), { withFileTypes: true });
     return entries.map((entry) => [
       entry.name,
       { type: entry.isDirectory() ? ('directory' as const) : ('file' as const) },
@@ -72,7 +69,7 @@ export class NodeFileSystem implements IFileSystem {
       fs.realpath(pathOf(uri)),
       fs.realpath(pathOf(root)),
     ]);
-    const fromRoot = relative(realRoot, realTarget);
+    const fromRoot: string = relative(realRoot, realTarget);
 
     return fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot);
   }

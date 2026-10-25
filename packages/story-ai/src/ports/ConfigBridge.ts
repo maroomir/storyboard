@@ -25,7 +25,7 @@ import {
   isValidStoryboardSettingValue,
   stringSettingDefault,
 } from '@storyboard/story-model';
-import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-model';
+import type { DisposableHandle, ScenePrefixDigitsInspectLike } from '@storyboard/story-model';
 
 // The same numbers VSCode's ConfigurationTarget uses, which the file-backed configuration honours
 // too: a write lands in the workspace file only when that layer already holds the key, so the value
@@ -95,7 +95,7 @@ export interface ConfigBridgeDependencies {
   readonly getConfiguration: () => StoryboardConfigurationLike;
   readonly onDidChangeConfiguration?: (
     listener: (event: StoryboardConfigurationChangeEventLike) => void,
-  ) => { readonly dispose: () => void };
+  ) => DisposableHandle;
   // NOTE: 어느 층에 쓸지 호스트가 못박을 때 쓴다. CLI 는 git 처럼 실행 위치로 정하므로 한 번
   // 정해진 값을 넘기고, 생략하면 그 키가 이미 있던 층을 따른다.
   readonly writeTarget?: number;
@@ -532,7 +532,7 @@ export class ConfigBridge {
     );
   }
 
-  public onDidChange(listener: () => void): { readonly dispose: () => void } {
+  public onDidChange(listener: () => void): DisposableHandle {
     if (!this.dependencies.onDidChangeConfiguration) {
       return { dispose: (): void => undefined };
     }

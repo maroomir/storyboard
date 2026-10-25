@@ -30,10 +30,6 @@ export interface NoteManagerDependencies {
   readonly secretStore: SecretStore;
 }
 
-// Bringing an author's notes (an Obsidian vault, a Notion page) into the workspace: read them,
-// let the model sort them into cards, scenes and the contract, then write what is new. The steps
-// are separate verbs so a host can show the estimate and the plan before anything is spent or
-// written.
 export class NoteManager {
   public constructor(private readonly deps: NoteManagerDependencies) {}
 
@@ -70,8 +66,6 @@ export class NoteManager {
     return this.deps.promoteNoteCandidatesUseCase.promote(workspaceRoot, candidates);
   }
 
-  // The other direction: cards, scenes and the synopsis as a Markdown folder for Obsidian or a
-  // Notion import. No AI; re-absorbing the folder maps back to the same cards.
   public export(request: ExportNotesRequest): Promise<ExportNotesResult> {
     return this.deps.exportNotesUseCase.execute(request);
   }

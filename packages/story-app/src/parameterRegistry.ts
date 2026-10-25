@@ -4,20 +4,20 @@ import {
   generationParameterCatalog,
   storyboardSettingCatalog,
 } from '@storyboard/story-model';
-import { promptResourceKeys, promptResources, type ConfigBridge } from '@storyboard/story-ai';
+import {
+  promptResourceKeys,
+  promptResources,
+  type ConfigBridge,
+  type ConfigValueOrigin,
+  type PromptConfig,
+} from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-engine';
-import type { StoryUri } from '@storyboard/story-model';
+import type { AiProviderId, GenerationKnobs, StoryUri } from '@storyboard/story-model';
 
-import type { ResourceOverrideReport } from './resourceOverrides';
+import type { ResourceOverrideApplied, ResourceOverrideReport } from './resourceOverrides';
 
-// Every value an author can move, in one list with where its current value comes from: the
-// settings (`config.json`), the generation knobs (model profile over pipeline default) and each
-// prompt's sampling config (the author's prompt file over the bundled front-matter).
 export type ParameterKind = 'setting' | 'generation' | 'prompt';
 
-// Where the value in force was set. `user` is the home layer, `workspace` the work's own, `model`
-// a measured model profile, `default` the bundled value. `provider-unsupported` means the value is
-// set but the default provider's model does not take it, so it is dropped from every call.
 export type ParameterOrigin = 'workspace' | 'user' | 'model' | 'default' | 'provider-unsupported';
 
 export interface ParameterEntry {
@@ -37,7 +37,6 @@ export interface ParameterReport {
 export interface DescribeParametersInput {
   readonly configBridge: ConfigBridge;
   readonly resources: ResourceOverrideReport;
-  // The resource roots in precedence order; the first is the home layer, any later one the workspace.
   readonly roots: readonly StoryUri[];
 }
 
@@ -54,8 +53,8 @@ export function describeParameters(input: DescribeParametersInput): ParameterRep
 
 function settingEntries(configBridge: ConfigBridge): ParameterEntry[] {
   return storyboardSettingCatalog.map((definition) => {
-    const modelDefault = configBridge.getModelProfileDefault(definition.key);
-    const origin = configBridge.getValueOrigin(definition.key);
+    const modelDefault: number | undefined = configBridge.getModelProfileDefault(definition.key);
+    const origin: ConfigValueOrigin = configBridge.getValueOrigin(definition.key);
 
     return {
       kind: 'setting',
@@ -69,11 +68,11 @@ function settingEntries(configBridge: ConfigBridge): ParameterEntry[] {
 }
 
 function generationEntries(configBridge: ConfigBridge): ParameterEntry[] {
-  const profileKnobs = configBridge.getSceneGenerationTuning();
+  const profileKnobs: GenerationKnobs = configBridge.getSceneGenerationTuning();
 
   return generationParameterCatalog.map((definition) => {
-    const defaultValue = generationParameterDefault(definition.id);
-    const measured = profileKnobs[definition.id];
+    const defaultValue: number = generationParameterDefault(definition.id);
+    const measured: number | undefined = profileKnobs[definition.id];
 
     return {
       kind: 'generation',
@@ -86,14 +85,14 @@ function generationEntries(configBridge: ConfigBridge): ParameterEntry[] {
   });
 }
 
-// Which sampling values the default provider's model takes. A knob it refuses is shown as such,
-// whatever file set it, so a person does not tune a number that never leaves the machine.
-function unsupportedSamplingKnobs(configBridge: ConfigBridge): {
+interface UnsupportedSamplingKnobs {
   readonly temperature: boolean;
   readonly maxTokens: boolean;
-} {
-  const providerId = configBridge.getDefaultProvider();
-  const model = configBridge.getProviderConfig(providerId).model ?? '';
+}
+
+function unsupportedSamplingKnobs(configBridge: ConfigBridge): UnsupportedSamplingKnobs {
+  const providerId: AiProviderId = configBridge.getDefaultProvider();
+  const model: string = configBridge.getProviderConfig(providerId).model ?? '';
 
   return {
     temperature: !acceptsTemperature(providerId, model),
@@ -106,12 +105,12 @@ function promptEntries(
   roots: readonly StoryUri[],
   configBridge: ConfigBridge,
 ): ParameterEntry[] {
-  const unsupported = unsupportedSamplingKnobs(configBridge);
+  const unsupported: UnsupportedSamplingKnobs = unsupportedSamplingKnobs(configBridge);
 
   return promptResourceKeys().flatMap((key) => {
-    const config = promptResources.config(key);
-    const bundled = promptResources.bundledConfig(key);
-    const origin = promptOrigin(key, resources, roots);
+    const config: PromptConfig = promptResources.config(key);
+    const bundled: PromptConfig = promptResources.bundledConfig(key);
+    const origin: ParameterOrigin = promptOrigin(key, resources, roots);
 
     return [
       {
@@ -154,13 +153,12 @@ function promptEntries(
   });
 }
 
-// The last applied file for a prompt is the one in force; its root says which layer that is.
 function promptOrigin(
   key: string,
   resources: ResourceOverrideReport,
   roots: readonly StoryUri[],
 ): ParameterOrigin {
-  const applied = [...resources.applied]
+  const applied: ResourceOverrideApplied | undefined = [...resources.applied]
     .reverse()
     .find((entry) => entry.kind === 'prompt' && entry.key === key);
 
@@ -168,7 +166,7 @@ function promptOrigin(
     return 'default';
   }
 
-  const index = roots.findIndex((root) => root.fsPath === applied.root.fsPath);
+  const index: number = roots.findIndex((root) => root.fsPath === applied.root.fsPath);
 
   return index <= 0 ? 'user' : 'workspace';
 }

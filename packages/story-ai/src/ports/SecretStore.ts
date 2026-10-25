@@ -1,4 +1,4 @@
-import { type AiProviderId } from '@storyboard/story-model';
+import { type AiProviderId, type DisposableHandle } from '@storyboard/story-model';
 import { z } from 'zod';
 
 // What a browser login leaves behind. The registration (the issued client id and the account it is
@@ -37,9 +37,9 @@ export interface StoryboardSecretStorageLike {
   readonly get: (key: string) => PromiseLike<string | undefined>;
   readonly store: (key: string, value: string) => PromiseLike<void>;
   readonly delete: (key: string) => PromiseLike<void>;
-  readonly onDidChange?: (listener: (event: StoryboardSecretStorageChangeEvent) => void) => {
-    readonly dispose: () => void;
-  };
+  readonly onDidChange?: (
+    listener: (event: StoryboardSecretStorageChangeEvent) => void,
+  ) => DisposableHandle;
 }
 
 export class SecretStore {
@@ -110,10 +110,7 @@ export class SecretStore {
     return this.secretStorage.get(notionTokenSecretKey);
   }
 
-  public onDidChangeApiKey(
-    providerId: AiProviderId,
-    listener: () => void,
-  ): { readonly dispose: () => void } {
+  public onDidChangeApiKey(providerId: AiProviderId, listener: () => void): DisposableHandle {
     if (!this.secretStorage.onDidChange) {
       return { dispose: (): void => undefined };
     }

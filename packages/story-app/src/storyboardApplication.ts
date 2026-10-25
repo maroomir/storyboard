@@ -66,6 +66,7 @@ import {
   type IUsageSink,
   type IWorkspaceLocator,
   type NoteHttpFetch,
+  type GenerateDraftUseCaseDependencies,
 } from '@storyboard/story-engine';
 import { type WorkspaceRunLockOwner } from '@storyboard/story-model';
 import {
@@ -86,33 +87,20 @@ import { loadResourceOverrides, type ResourceOverrideReport } from './resourceOv
 import { describeWorkspaceStatus, type WorkspaceStatus } from './workspaceStatus';
 import type { StoryUri } from '@storyboard/story-model';
 
-// What a host must supply before the engine can run: the six adapters that differ between the
-// extension, the CLI and the desktop app. Everything else is built here, once, the same way.
 export interface StoryboardApplicationDependencies {
   readonly fileSystem: IFileSystem;
   readonly workspaceLocator: IWorkspaceLocator;
   readonly logger: IStoryboardLogger;
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
-  // Where a paid call's token cost is persisted. A host without a usage panel leaves it out and
-  // only the per-run meter sees the cost.
   readonly usageLedger?: IUsageSink;
-  // The roots holding the author's own resource files (prompts, the craft contract), lowest
-  // precedence first: the home `~/.storyboard`, then the workspace's `.storyboard`.
-  // `loadResourceOverrides` reads them; a host without any leaves this out.
   readonly resourceRoots?: readonly StoryUri[];
-  // How the note import reaches Notion. Every host runs on Node 20 or later, whose global `fetch`
-  // is the default; a test hands in recorded responses.
   readonly fetch?: NoteHttpFetch;
 }
 
 export interface StoryboardApplicationOptions {
-  // Stamped into every file the engine writes, so a draft says which app and version produced it.
   readonly generator: string;
-  // How the workspace run lock names this app to the others.
   readonly lockOwner: WorkspaceRunLockOwner;
-  // Post-generation card updates rewrite the workspace's cards in unawaited background jobs. A
-  // measurement run must leave its fixture byte-identical, so it turns them off.
   readonly postGenerationUpdates?: boolean;
 }
 
@@ -123,7 +111,6 @@ interface EngineGraph {
   readonly secretStore: SecretStore;
   readonly fileSystem: IFileSystem;
   readonly logger: IStoryboardLogger;
-  // What a run has spent so far, for the per-run budget. Every AI call passes through it.
   readonly usageMeter: UsageMeter;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly bibleCandidateRepository: BibleCandidateRepository;
@@ -171,8 +158,11 @@ interface EngineGraph {
   readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
 }
 
-// The one place the engine's object graph is assembled. Each app builds its adapters, hands them
-// in, and drives the engine through the managers; none of them wires a use case on its own.
+type DraftUseCaseSharedDependencies = Omit<
+  GenerateDraftUseCaseDependencies,
+  'postGenerationUpdates'
+>;
+
 export class StoryboardApplication {
   public readonly drafts: DraftManager;
   public readonly manuscript: ManuscriptManager;
@@ -194,7 +184,7 @@ export class StoryboardApplication {
     dependencies: StoryboardApplicationDependencies,
     options: StoryboardApplicationOptions,
   ) {
-    const services = buildServices(dependencies, options);
+    const services: EngineGraph = buildServices(dependencies, options);
 
     this.drafts = new DraftManager(services);
     this.manuscript = new ManuscriptManager(services);
@@ -214,16 +204,12 @@ export class StoryboardApplication {
     this.postGenerationUpdates = services.postGenerationUpdates;
   }
 
-  // Applies the author's resource files over the bundled defaults. Call it before the first
-  // generation; the report says what was replaced and which files could not be used.
   public loadResourceOverrides(): Promise<ResourceOverrideReport> {
     return loadResourceOverrides(this.fileSystem, this.resourceRoots);
   }
 
-  // Every value an author can move, with where its current value comes from. Reloads the
-  // resource files first so the report matches what the next generation would use.
   public async describeParameters(): Promise<ParameterReport> {
-    const resources = await this.loadResourceOverrides();
+    const resources: ResourceOverrideReport = await this.loadResourceOverrides();
 
     return describeParameters({
       configBridge: this.configBridge,
@@ -232,8 +218,6 @@ export class StoryboardApplication {
     });
   }
 
-  // Where the work stands — contract, outline, cards, scenes, drafts, manuscript — and which step
-  // is open next. Reads only; it never takes the run lock.
   public describeWorkspace(workspaceRoot: StoryUri): Promise<WorkspaceStatus> {
     return describeWorkspaceStatus({
       workspaceRoot,
@@ -256,47 +240,59 @@ function buildServices(
   const { fileSystem, workspaceLocator, logger, secretStore, configBridge } = dependencies;
   const { generator } = options;
 
-  const aiProviderRegistry = createAiProviderRegistry({
+  const aiProviderRegistry: AiProviderRegistry = createAiProviderRegistry({
     secretStore,
     configBridge,
     requireConfiguredProvider: true,
     onRiskWarning: (message) => logger.warn(message),
   });
-  const usageMeter = new UsageMeter();
-  const usageSink = usageMeter.wrap(guardUsageLedger(dependencies.usageLedger, logger));
-  const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
-  const postGenerationUpdates = new PostGenerationUpdateManager();
+  const usageMeter: UsageMeter = new UsageMeter();
+  const usageSink: IUsageSink = usageMeter.wrap(
+    recordUsageWithoutFailingPaidGeneration(dependencies.usageLedger, logger),
+  );
+  const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
+  const postGenerationUpdates: PostGenerationUpdateManager = new PostGenerationUpdateManager();
 
-  const draftRepository = new DraftRepository(fileSystem);
-  const projectRepository = new ProjectRepository(fileSystem);
-  const sceneRepository = new SceneRepository(fileSystem);
-  const sceneCacheRepository = new SceneCacheRepository(fileSystem);
-  const sceneSeedRepository = new SceneSeedRepository(fileSystem);
-  const sceneBatchRepository = new SceneBatchRepository(fileSystem, workspaceLocator);
-  const sceneSidebarRepository = new SceneSidebarRepository(fileSystem);
-  const outlineRepository = new OutlineRepository(fileSystem);
-  const novelRunStateRepository = new NovelRunStateRepository(fileSystem);
-  const novelReviewRepository = new NovelReviewRepository(fileSystem);
-  const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository(fileSystem);
-  const cardWriterRepository = new CardWriterRepository(fileSystem);
-  const cardCandidateRepository = new CardCandidateRepository(fileSystem, logger);
-  const cardCollectRepository = new CardCollectRepository(fileSystem);
-  const cardRecommendationRepository = new CardRecommendationRepository(fileSystem);
-  const cardSidebarRepository = new CardSidebarRepository(fileSystem);
-  const bibleCandidateRepository = new BibleCandidateRepository(fileSystem);
-  const storyFeatureRepository = new StoryFeatureRepository(fileSystem);
-  const noteAbsorbRepository = new NoteAbsorbRepository(fileSystem);
+  const draftRepository: DraftRepository = new DraftRepository(fileSystem);
+  const projectRepository: ProjectRepository = new ProjectRepository(fileSystem);
+  const sceneRepository: SceneRepository = new SceneRepository(fileSystem);
+  const sceneCacheRepository: SceneCacheRepository = new SceneCacheRepository(fileSystem);
+  const sceneSeedRepository: SceneSeedRepository = new SceneSeedRepository(fileSystem);
+  const sceneBatchRepository: SceneBatchRepository = new SceneBatchRepository(
+    fileSystem,
+    workspaceLocator,
+  );
+  const sceneSidebarRepository: SceneSidebarRepository = new SceneSidebarRepository(fileSystem);
+  const outlineRepository: OutlineRepository = new OutlineRepository(fileSystem);
+  const novelRunStateRepository: NovelRunStateRepository = new NovelRunStateRepository(fileSystem);
+  const novelReviewRepository: NovelReviewRepository = new NovelReviewRepository(fileSystem);
+  const manuscriptAssemblyRepository: ManuscriptAssemblyRepository =
+    new ManuscriptAssemblyRepository(fileSystem);
+  const cardWriterRepository: CardWriterRepository = new CardWriterRepository(fileSystem);
+  const cardCandidateRepository: CardCandidateRepository = new CardCandidateRepository(
+    fileSystem,
+    logger,
+  );
+  const cardCollectRepository: CardCollectRepository = new CardCollectRepository(fileSystem);
+  const cardRecommendationRepository: CardRecommendationRepository =
+    new CardRecommendationRepository(fileSystem);
+  const cardSidebarRepository: CardSidebarRepository = new CardSidebarRepository(fileSystem);
+  const bibleCandidateRepository: BibleCandidateRepository = new BibleCandidateRepository(
+    fileSystem,
+  );
+  const storyFeatureRepository: StoryFeatureRepository = new StoryFeatureRepository(fileSystem);
+  const noteAbsorbRepository: NoteAbsorbRepository = new NoteAbsorbRepository(fileSystem);
 
-  const assembleManuscriptUseCase = new AssembleManuscriptUseCase({
+  const assembleManuscriptUseCase: AssembleManuscriptUseCase = new AssembleManuscriptUseCase({
     logger,
     repository: manuscriptAssemblyRepository,
   });
-  const summarizeChaptersUseCase = new SummarizeChaptersUseCase({
+  const summarizeChaptersUseCase: SummarizeChaptersUseCase = new SummarizeChaptersUseCase({
     aiGateway,
     logger,
     repository: manuscriptAssemblyRepository,
   });
-  const draftUseCaseDependencies = {
+  const draftUseCaseDependencies: DraftUseCaseSharedDependencies = {
     aiGateway,
     configBridge,
     draftRepository,
@@ -309,11 +305,11 @@ function buildServices(
     sceneRepository,
     workspaceLocator,
   };
-  const generateDraftUseCase = new GenerateDraftUseCase({
+  const generateDraftUseCase: GenerateDraftUseCase = new GenerateDraftUseCase({
     ...draftUseCaseDependencies,
     ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
   });
-  const reviseDraftUseCase = new ReviseDraftUseCase({
+  const reviseDraftUseCase: ReviseDraftUseCase = new ReviseDraftUseCase({
     aiProviderRegistry,
     usageSink,
     fileSystem,
@@ -321,7 +317,7 @@ function buildServices(
     generator,
     sceneCacheRepository,
   });
-  const reviseAfterGenerateGate = new ReviseAfterGenerateGate({
+  const reviseAfterGenerateGate: ReviseAfterGenerateGate = new ReviseAfterGenerateGate({
     fileSystem,
     workspaceLocator,
     configBridge,
@@ -468,9 +464,10 @@ function buildServices(
   };
 }
 
-// NOTE: accounting must never fail a generation the author already paid for, so a ledger write that
-// throws is logged and swallowed here rather than surfacing to the pipeline.
-function guardUsageLedger(ledger: IUsageSink | undefined, logger: IStoryboardLogger): IUsageSink {
+function recordUsageWithoutFailingPaidGeneration(
+  ledger: IUsageSink | undefined,
+  logger: IStoryboardLogger,
+): IUsageSink {
   if (!ledger) {
     return { record: async (): Promise<void> => undefined };
   }

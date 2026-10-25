@@ -27,6 +27,7 @@ import type {
   SidebarCardCategory,
   StoryCardTarget,
   StoryFileSnapshot,
+  IBackgroundFactConflictStore,
 } from '@storyboard/story-engine';
 import { createBackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
@@ -71,8 +72,6 @@ export interface CardManagerDependencies {
   readonly fileSystem: IFileSystem;
 }
 
-// The story bible's cards and canon: create and list cards, and move what generation proposed
-// (card candidates, canon facts, recommendations) into them.
 export class CardManager {
   public readonly sidebar: ICardSidebarRepository;
   public readonly bibleCandidates: IBibleCandidateRepository;
@@ -89,18 +88,17 @@ export class CardManager {
     return this.sidebar.list(workspaceRoot, category);
   }
 
-  // A card by id alone: a character is looked for first, then a background.
   public async read(workspaceRoot: StoryUri, id: string): Promise<CardReading | undefined> {
     const candidates: readonly CardReading['category'][] = ['character', 'background'];
 
     for (const category of candidates) {
-      const uri =
+      const uri: StoryUri =
         category === 'character'
           ? characterCardPath(workspaceRoot, id)
           : backgroundCardPath(workspaceRoot, id);
 
       if (await this.deps.fileSystem.exists(uri)) {
-        const text = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
+        const text: string = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
         return { category, uri, card: parseCard(text) };
       }
     }
@@ -108,24 +106,22 @@ export class CardManager {
     return undefined;
   }
 
-  // What generation's conflict check found on the background cards as they are now. A card changed
-  // since its check, or never checked, has no answer yet; reading costs nothing.
   public async listBackgroundFactConflicts(
     workspaceRoot: StoryUri,
   ): Promise<BackgroundFactConflictReport[]> {
-    const store = createBackgroundFactConflictStore(
+    const store: IBackgroundFactConflictStore = createBackgroundFactConflictStore(
       this.deps.fileSystem,
       getStoryboardProjectPaths(workspaceRoot),
     );
     const reports: BackgroundFactConflictReport[] = [];
 
     for (const summary of await this.list(workspaceRoot, 'background')) {
-      const reading = await this.read(workspaceRoot, summary.id);
+      const reading: CardReading | undefined = await this.read(workspaceRoot, summary.id);
       if (reading === undefined || reading.card.type === 'character') {
         continue;
       }
 
-      const conflicts = (await store.load(reading.card)) ?? [];
+      const conflicts: readonly BackgroundFactConflict[] = (await store.load(reading.card)) ?? [];
       if (conflicts.length > 0) {
         reports.push({ cardId: reading.card.id, name: reading.card.name, conflicts });
       }
@@ -138,7 +134,6 @@ export class CardManager {
     return this.deps.narratorCardRepository.list(workspaceRoot);
   }
 
-  // Refuses an id another narrator card already holds rather than overwriting it.
   public createNarrator(
     workspaceRoot: StoryUri,
     card: NarratorCard,
@@ -222,7 +217,6 @@ export class CardManager {
     return this.deps.buildStoryCardsUseCase.execute(request);
   }
 
-  // Writes every change `buildFromScenes` proposed; new cards with no derivable id are named back.
   public applyBuildTargets(
     workspaceRoot: StoryUri,
     targets: readonly StoryCardTarget[],
