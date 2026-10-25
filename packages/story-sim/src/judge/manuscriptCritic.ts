@@ -1,21 +1,16 @@
 import { z } from 'zod';
 
-import type { AiMessage } from '@storyboard/story-model';
+import type { AiGenerateResponse, AiMessage } from '@storyboard/story-model';
 
 import { readCritiqueLeniently } from '#sim/judge/lenientAnswer';
 import { isQuoteGrounded } from '#sim/judge/quoteCheck';
 import type { SceneDraft } from '#sim/judge/readerPanel';
 import type { SimJudge } from '#sim/ports/judge';
 
-// NOTE: 독자 패널은 화 하나씩 읽으며 «계속 읽을까» 만 답한다. 인물 아크·통일성·복선 회수·완결성처럼
-// 8화를 다 읽어야 보이는 것은 원고 전체를 한 번에 읽는 비평가가 따로 채점한다. 이 점수는 AUC 에
-// 섞지 않는다 — 이탈 곡선과 절대 점수는 다른 눈금이다.
-
 export interface CriticCriterion {
   readonly id: string;
   readonly name: string;
   readonly question: string;
-  // 본문의 한 구절로 증명할 수 있는 기준인가. 주제·독창성은 그렇지 않아 인용 없이 «의견» 으로만 받는다.
   readonly grounded: boolean;
 }
 
@@ -58,17 +53,10 @@ export const criticCriteria: readonly CriticCriterion[] = [
   },
 ];
 
-export const criticScoreMax = 5;
-// 관문의 최소 격차. 격차 없이 «더 높으면 통과» 로 두면 훼손본에 늘 8점(기준마다 2점)을 주던
-// gemma3 가 2~4점 차이로 넘어갔다. 그렇다고 4 로 두면 열린 결말 트랙(해소 0·회수 0~2 가 시험체의
-// 성질)에서 깨끗한 원고가 근거 5~7점에 갇혀, 잡음 한 칸에 무너졌다. Sonnet 5 실측 10건의 격차는
-// 3~6, gemma3 는 0 이었으므로 2 면 «구분 못 하는 심판» 만 거른다.
-export const criticGateMargin = 2;
+export const criticScoreMax: number = 5;
+export const criticGateMargin: number = 2;
 
-// 점수의 뜻을 앞에 못박는다. 없으면 작은 심판은 무엇이든 2~3점으로 준다.
-// NOTE: 훼손의 종류(작가 메모, 뒤바뀐 이름)를 여기 적으면 안 된다. 적었더니 심판이 멀쩡한 생성본에서도
-// 그것을 «찾아내» 대사 한 줄을 지시문이라며 1점을 줬다. 기준은 중립적으로 두고, 훼손본은 훼손의 세기로 가른다.
-const scoreRubric = [
+const scoreRubric: string[] = [
   '0: 기준을 전혀 못 지켰다.',
   '1: 기준을 거의 못 지켰고 결함이 여럿이다.',
   '2: 결함이 눈에 띈다.',
@@ -82,14 +70,12 @@ export interface CriticScore {
   readonly score: number;
   readonly reason: string;
   readonly quote?: string;
-  // 인용을 요구하지 않은 기준(의견)이거나, 요구했는데 본문에 없는 구절을 든 경우.
   readonly opinion: boolean;
   readonly ungrounded?: boolean;
 }
 
 export interface CriticVerdict {
   readonly scores: readonly CriticScore[];
-  // 인용으로 지킨 기준의 합(최대 20)과 의견 기준의 합(최대 10).
   readonly groundedTotal: number;
   readonly opinionTotal: number;
   readonly gate: {
@@ -107,17 +93,13 @@ export function joinManuscript(scenes: readonly SceneDraft[]): string {
 }
 
 function stripFrontMatter(draft: string): string {
-  const match = /^---\n[\s\S]*?\n---\n?/u.exec(draft);
+  const match: RegExpExecArray | null = /^---\n[\s\S]*?\n---\n?/u.exec(draft);
   return match === null ? draft : draft.slice(match[0].length);
 }
 
-// NOTE: 비평가의 눈금을 믿으려면 «망가진 원고를 낮게 주는가» 를 봐야 한다. 훼손본은 사람이 8화를 새로
-// 쓰는 대신 생성본을 기계적으로 부순다 — 이름 뒤바꾸기, 문단 순서 뒤집기, 화 순서 바꾸기, 다른 화의
-// 문단 끼워 넣기, 작가 메모 남기기, 문단 되풀이, 마지막 화 잘라내기(완결을 없앤다). 씨앗 없이
-// 결정적이라 같은 원고에는 같은 훼손본이 나온다. 처음 판본은 이보다 약해서 심판이 늘 8/20 을 줬다.
 export function corruptManuscript(scenes: readonly SceneDraft[], names: readonly string[]): string {
-  const swapped = swapNames(scenes.map((scene) => stripFrontMatter(scene.draft)), names);
-  const reordered = [...swapped];
+  const swapped: readonly string[] = swapNames(scenes.map((scene) => stripFrontMatter(scene.draft)), names);
+  const reordered: string[] = [...swapped];
 
   if (reordered.length >= 6) {
     [reordered[2], reordered[5]] = [reordered[5] as string, reordered[2] as string];
@@ -126,7 +108,7 @@ export function corruptManuscript(scenes: readonly SceneDraft[], names: readonly
     [reordered[0], reordered[3]] = [reordered[3] as string, reordered[0] as string];
   }
 
-  const notes = [
+  const notes: string[] = [
     '[작가 메모: 이 장면은 뼈대만 있음. 나중에 다시 씀]',
     '[여기서 회상 장면을 추가할 것. 감각 묘사 3문장 이상]',
     '[TODO: 이 화의 장소가 어디인지 카드 확인]',
@@ -134,20 +116,18 @@ export function corruptManuscript(scenes: readonly SceneDraft[], names: readonly
   ];
   const paragraphsOf = (draft: string): string[] =>
     draft.split(/\n{2,}/u).filter((paragraph) => paragraph.trim().length > 0);
-  const all = reordered.map(paragraphsOf);
+  const all: string[][] = reordered.map(paragraphsOf);
 
   return all
     .map((paragraphs, index) => {
-      const shuffled = index % 2 === 0 ? [...paragraphs].reverse() : [...paragraphs];
-      // 다른 화의 문단을 한가운데에 끼운다. 통일성·복선이 같이 무너진다.
-      const foreign = all[(index + 3) % all.length]?.[0];
+      const shuffled: string[] = index % 2 === 0 ? [...paragraphs].reverse() : [...paragraphs];
+      const foreign: string | undefined = all[(index + 3) % all.length]?.[0];
       if (foreign !== undefined && shuffled.length > 1) {
         shuffled.splice(Math.floor(shuffled.length / 2), 0, foreign);
       }
-      const withNote = [notes[index % notes.length] as string, ...shuffled];
-      const repeated = shuffled.length > 0 ? [...withNote, shuffled[0] as string] : withNote;
-      // 마지막 화는 첫 문단만 남긴다. 결말이 사라진다.
-      const body = index === all.length - 1 ? repeated.slice(0, 2) : repeated;
+      const withNote: string[] = [notes[index % notes.length] as string, ...shuffled];
+      const repeated: string[] = shuffled.length > 0 ? [...withNote, shuffled[0] as string] : withNote;
+      const body: string[] = index === all.length - 1 ? repeated.slice(0, 2) : repeated;
       return `## ${index + 1}화\n\n${body.join('\n\n')}`;
     })
     .join('\n\n');
@@ -155,19 +135,25 @@ export function corruptManuscript(scenes: readonly SceneDraft[], names: readonly
 
 function swapNames(drafts: readonly string[], names: readonly string[]): readonly string[] {
   const pairs: (readonly [string, string])[] = [];
-  for (let index = 0; index + 1 < names.length; index += 2) {
+  for (let index: number = 0; index + 1 < names.length; index += 2) {
     pairs.push([names[index] as string, names[index + 1] as string]);
   }
 
   return drafts.map((draft) =>
     pairs.reduce((text, [left, right]) => {
-      const marker = `\u0000${left}\u0000`;
+      const marker: string = `\u0000${left}\u0000`;
       return text.split(left).join(marker).split(right).join(left).split(marker).join(right);
     }, draft),
   );
 }
 
-const critiqueSchema = z.object({
+interface Critique {
+  score: number;
+  reason: string;
+  quote?: string;
+}
+
+const critiqueSchema: z.ZodType<Critique> = z.object({
   score: z.number(),
   reason: z.string().min(1),
   quote: z.string().optional(),
@@ -179,8 +165,6 @@ export function buildCritique(input: {
   readonly criterion: CriticCriterion;
 }): readonly AiMessage[] {
   const { criterion } = input;
-  // NOTE: 원고 전문이 기준 여섯 개 호출에 그대로 되풀이된다. 기준에 따라 달라지는 말은 전부 원고
-  // 뒤에 두고 원고까지를 캐시 경계로 표시해야, Claude 가 둘째 호출부터 원고를 캐시에서 읽는다.
   return [
     {
       role: 'system',
@@ -209,17 +193,22 @@ export function buildCritique(input: {
   ];
 }
 
+interface ManuscriptScoring {
+  readonly scores: CriticScore[];
+  readonly problems: string[];
+}
+
 async function scoreManuscript(
   judge: SimJudge,
   genre: string,
   manuscript: string,
-): Promise<{ readonly scores: CriticScore[]; readonly problems: string[] }> {
+): Promise<ManuscriptScoring> {
   const scores: CriticScore[] = [];
   const problems: string[] = [];
 
   for (const criterion of criticCriteria) {
-    const response = await judge.ask(buildCritique({ genre, manuscript, criterion }));
-    const parsed = critiqueSchema.safeParse(
+    const response: AiGenerateResponse = await judge.ask(buildCritique({ genre, manuscript, criterion }));
+    const parsed: z.ZodSafeParseResult<Critique> = critiqueSchema.safeParse(
       readJson(response.text) ?? readCritiqueLeniently(response.text ?? ''),
     );
 
@@ -228,9 +217,9 @@ async function scoreManuscript(
       continue;
     }
 
-    const score = Math.min(Math.max(Math.round(parsed.data.score), 0), criticScoreMax);
-    const quote = parsed.data.quote?.trim();
-    const ungrounded = criterion.grounded && (quote === undefined || !isQuoteGrounded(quote, manuscript));
+    const score: number = Math.min(Math.max(Math.round(parsed.data.score), 0), criticScoreMax);
+    const quote: string | undefined = parsed.data.quote?.trim();
+    const ungrounded: boolean = criterion.grounded && (quote === undefined || !isQuoteGrounded(quote, manuscript));
 
     scores.push({
       criterion: criterion.id,
@@ -249,7 +238,7 @@ function readJson(text: string | undefined): unknown {
   if (typeof text !== 'string') {
     return null;
   }
-  const match = /\{[\s\S]*\}/u.exec(text);
+  const match: RegExpExecArray | null = /\{[\s\S]*\}/u.exec(text);
   if (match === null) {
     return null;
   }
@@ -272,24 +261,22 @@ function opinionTotal(scores: readonly CriticScore[]): number {
     .reduce((sum, entry) => sum + entry.score, 0);
 }
 
-// 생성본과 훼손본을 각각 채점한다. 절대 점수라 차례 편향은 없고, 후하게 주는 버릇만 남는다 — 훼손본이
-// 생성본보다 낮지 않으면 이 회차의 비평 점수는 심판을 못 믿은 채 낸 값이다.
 export async function judgeManuscript(input: {
   readonly judge: SimJudge;
   readonly genre: string;
   readonly scenes: readonly SceneDraft[];
   readonly names: readonly string[];
 }): Promise<CriticVerdict> {
-  const generated = await scoreManuscript(input.judge, input.genre, joinManuscript(input.scenes));
-  const corrupted = await scoreManuscript(
+  const generated: ManuscriptScoring = await scoreManuscript(input.judge, input.genre, joinManuscript(input.scenes));
+  const corrupted: ManuscriptScoring = await scoreManuscript(
     input.judge,
     input.genre,
     corruptManuscript(input.scenes, input.names),
   );
 
-  const generatedGrounded = groundedTotal(generated.scores);
-  const corruptedGrounded = groundedTotal(corrupted.scores);
-  const passed = generatedGrounded - corruptedGrounded >= criticGateMargin;
+  const generatedGrounded: number = groundedTotal(generated.scores);
+  const corruptedGrounded: number = groundedTotal(corrupted.scores);
+  const passed: boolean = generatedGrounded - corruptedGrounded >= criticGateMargin;
 
   return {
     scores: generated.scores,

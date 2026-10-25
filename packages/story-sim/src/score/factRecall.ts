@@ -14,20 +14,22 @@ export interface FactRecallReport {
   readonly slots: readonly RecallResult[];
   readonly recalled: number;
   readonly total: number;
-  // NOTE: 회수율에 접지 않는다. 사실을 거꾸로 쓴 원고는 잊은 원고보다 나쁜데, 둘을 한 비율로
-  // 평균 내면 그 차이가 사라진다.
   readonly contradicted: number;
 }
 
-// 심판이 판정해야 하는 자리. number·alias 는 여기 오지 않는다.
+export interface RecallVerdict {
+  readonly status: RecallStatus;
+  readonly evidence?: string;
+}
+
 export type JudgeRecall = (input: {
   readonly fact: Fact;
   readonly sceneStem: string;
   readonly draft: string;
-}) => Promise<{ readonly status: RecallStatus; readonly evidence?: string }>;
+}) => Promise<RecallVerdict>;
 
 function scoreMechanically(fact: Fact, draft: string): RecallResult['status'] {
-  const contradicted = (fact.antiPatterns ?? []).some((pattern) => draft.includes(pattern));
+  const contradicted: boolean = (fact.antiPatterns ?? []).some((pattern) => draft.includes(pattern));
   if (contradicted) {
     return 'contradicted';
   }
@@ -40,12 +42,12 @@ export async function scoreFactRecall(input: {
   readonly draftsByScene: ReadonlyMap<string, string>;
   readonly judge: JudgeRecall;
 }): Promise<FactRecallReport> {
-  const factsById = new Map(input.ledger.facts.map((fact) => [fact.id, fact]));
+  const factsById: Map<string, Fact> = new Map(input.ledger.facts.map((fact) => [fact.id, fact]));
   const slots: RecallResult[] = [];
 
   for (const slot of recallSlotsOf(input.ledger)) {
-    const fact = factsById.get(slot.factId) as Fact;
-    const draft = input.draftsByScene.get(slot.sceneStem);
+    const fact: Fact = factsById.get(slot.factId) as Fact;
+    const draft: string | undefined = input.draftsByScene.get(slot.sceneStem);
 
     if (draft === undefined) {
       slots.push({ ...slot, status: 'unverified', evidence: '회수 씬의 원고가 없습니다.' });
@@ -57,7 +59,7 @@ export async function scoreFactRecall(input: {
       continue;
     }
 
-    const verdict = await input.judge({ fact, sceneStem: slot.sceneStem, draft });
+    const verdict: RecallVerdict = await input.judge({ fact, sceneStem: slot.sceneStem, draft });
     slots.push({
       ...slot,
       status: verdict.status,

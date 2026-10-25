@@ -78,6 +78,7 @@ import {
   type ProfileWriteResult,
   type Overlay,
   type BaselineSample,
+  simPromptVariants,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -298,7 +299,7 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
     rawVariant === undefined ? undefined : promptVariantSchema.safeParse(rawVariant);
 
   if (variant !== undefined && !variant.success) {
-    return `프롬프트 변형을 모릅니다: ${rawVariant}\n쓸 수 있는 값: ${promptVariantSchema.options.join(', ')}`;
+    return `프롬프트 변형을 모릅니다: ${rawVariant}\n쓸 수 있는 값: ${simPromptVariants.join(', ')}`;
   }
 
   const withVariant = (selection: Omit<Selection, 'promptVariant'>): Selection => ({

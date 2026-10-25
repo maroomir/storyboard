@@ -3,7 +3,6 @@ import type { AiProviderId } from '@storyboard/story-model';
 
 import { simDefaults } from '#sim/simDefaults';
 
-// 실행 전에 «얼마나 드는지»를 숫자로 보여 주고 멈춘다. 승인 없이는 한 호출도 하지 않는다.
 export interface BudgetEstimate {
   readonly points: number;
   readonly repeats: number;
@@ -13,7 +12,6 @@ export interface BudgetEstimate {
   readonly estimatedOutputTokens: number;
   readonly estimatedUsd: number | undefined;
   readonly estimatedWallClockHours: number;
-  // 견적이 어떤 실측에 기댔는지. 없으면 숫자를 믿을 근거가 없다.
   readonly assumptions: readonly string[];
 }
 
@@ -36,17 +34,19 @@ export interface BudgetInput {
 }
 
 export function estimateBudget(input: BudgetInput): BudgetEstimate {
-  const repeats = input.repeats ?? simDefaults.run.repeats;
-  const sceneCount = input.sceneCount ?? simDefaults.run.sceneCount;
-  const runs = input.points * repeats;
+  const repeats: number = input.repeats ?? simDefaults.run.repeats;
+  const sceneCount: number = input.sceneCount ?? simDefaults.run.sceneCount;
+  const runs: number = input.points * repeats;
 
-  const generationCalls = Math.round(runs * sceneCount * input.baseline.generationCallsPerScene);
-  const judgeCalls = runs * input.judgeCallsPerRun;
+  const generationCalls: number = Math.round(
+    runs * sceneCount * input.baseline.generationCallsPerScene,
+  );
+  const judgeCalls: number = runs * input.judgeCallsPerRun;
 
-  const estimatedInputTokens = generationCalls * input.baseline.inputTokensPerCall;
-  const estimatedOutputTokens = generationCalls * input.baseline.outputTokensPerCall;
+  const estimatedInputTokens: number = generationCalls * input.baseline.inputTokensPerCall;
+  const estimatedOutputTokens: number = generationCalls * input.baseline.outputTokensPerCall;
 
-  const estimatedUsd = computeCostUsd({
+  const estimatedUsd: number | undefined = computeCostUsd({
     providerId: input.generationProvider,
     model: input.generationModel,
     usage: { inputTokens: estimatedInputTokens, outputTokens: estimatedOutputTokens },
@@ -60,7 +60,6 @@ export function estimateBudget(input: BudgetInput): BudgetEstimate {
     estimatedInputTokens,
     estimatedOutputTokens,
     estimatedUsd,
-    // 심판 호출은 비용 축에서 빠지지만 시간은 똑같이 든다.
     estimatedWallClockHours:
       ((generationCalls + judgeCalls) * input.baseline.secondsPerCall) / 3600,
     assumptions: [
@@ -72,7 +71,6 @@ export function estimateBudget(input: BudgetInput): BudgetEstimate {
       estimatedUsd === undefined
         ? `${input.generationModel} 의 요금을 몰라 금액을 낼 수 없습니다`
         : `${input.generationModel} 요금으로 환산`,
-      // 심판 호출은 비용 축에서 빠지므로 위 금액에 들어 있지 않다.
       `심판 호출 ${judgeCalls.toLocaleString()}회는 금액에서 제외 (시간에는 포함)`,
     ],
   };

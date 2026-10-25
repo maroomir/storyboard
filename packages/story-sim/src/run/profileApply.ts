@@ -3,11 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { findKnob } from '#sim/knobs/knobRegistry';
 import type { RunRecord } from '#sim/run/runStore';
 import { median } from '#sim/sweep/pareto';
-
-// NOTE: 실측값이 들어가는 곳은 엔진의 modelProfiles.params.json 이다. 사람이 손으로 옮기면 어느
-// 실행에서 온 값인지 반년 뒤에 아무도 모르므로, 여기서 손잡이 → 프로필 칸을 기계적으로 옮기고
-// 출처(날짜·트랙·회차·도달률·AUC)를 measured 에 함께 적는다. 이미 있는 프로필은 --force 없이
-// 덮어쓰지 않는다 — 몇 시간짜리 실행 끝에 사람이 자리를 비운 사이 나쁜 숫자가 들어가면 안 된다.
+import type { SceneMetrics } from '#sim/score/deterministic';
 
 export interface ProfileFields {
   readonly fields: Record<string, unknown>;
@@ -18,7 +14,6 @@ export function profileFieldsFor(knobs: Readonly<Record<string, number>>): Profi
   const fields: Record<string, unknown> = {};
   const unsupported: string[] = [];
 
-  // 프로필 칸의 이름이 손잡이 id 그대로라 옮겨 적을 것이 없다.
   for (const [id, value] of Object.entries(knobs)) {
     if (findKnob(id)?.applyTarget !== 'modelProfile') {
       unsupported.push(id);
@@ -43,18 +38,17 @@ export interface ProfileMeasurement {
 }
 
 function meanReach(run: RunRecord): number {
-  const scenes = run.scenes.filter((scene) => scene.reach > 0);
+  const scenes: SceneMetrics[] = run.scenes.filter((scene) => scene.reach > 0);
   return scenes.length === 0 ? 0 : scenes.reduce((sum, scene) => sum + scene.reach, 0) / scenes.length;
 }
 
-// 유효 회차만 받는다. 어느 트랙에서 잰 값인지 남겨야 트랙이 바뀌었을 때 «다시 재야 할 항목» 을 가린다.
 export function measurementFor(
   judged: readonly RunRecord[],
   input: { readonly date: string; readonly judge?: string },
 ): ProfileMeasurement {
-  const first = judged[0] as RunRecord;
-  const aucs = judged.map((run) => run.auc).filter((auc): auc is number => auc !== undefined);
-  const recalled = judged
+  const first: RunRecord = judged[0] as RunRecord;
+  const aucs: number[] = judged.map((run) => run.auc).filter((auc): auc is number => auc !== undefined);
+  const recalled: number[] = judged
     .map((run) => run.recalled)
     .filter((count): count is number => count !== undefined);
 
@@ -83,9 +77,9 @@ export async function writeModelProfile(
   measured: ProfileMeasurement,
   options: { readonly force?: boolean } = {},
 ): Promise<ProfileWriteResult> {
-  const raw = JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
-  const previous = raw[key];
-  const profile = { ...(typeof previous === 'object' && previous !== null ? previous : {}), ...fields, measured };
+  const raw: Record<string, unknown> = JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
+  const previous: unknown = raw[key];
+  const profile: Record<string, unknown> = { ...(typeof previous === 'object' && previous !== null ? previous : {}), ...fields, measured };
 
   if (previous !== undefined && options.force !== true) {
     return { written: false, previous, profile };

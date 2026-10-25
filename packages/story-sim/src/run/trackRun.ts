@@ -3,7 +3,7 @@ import type { PromptTuningOverrides } from '@storyboard/story-ai';
 import type { UsageRecord } from '@storyboard/story-model';
 import type { SceneGenerationTuning } from '@storyboard/story-engine';
 
-import type { ISimWorkspaceFactory } from '#sim/ports/workspaceFactory';
+import type { ISimWorkspaceFactory, SceneGenerationOutcome, SimSceneGenerator } from '#sim/ports/workspaceFactory';
 import { summarizeUsage, type TokenTotals } from '#sim/run/usageLedger';
 import { measureScene, summarizeScenes, type SceneMetrics, type TrackMetrics } from '#sim/score/deterministic';
 
@@ -27,13 +27,12 @@ export interface TrackRunResult {
   readonly metrics: TrackMetrics;
   readonly tokens: TokenTotals;
   readonly drafts: ReadonlyMap<string, string>;
-  // 생성이 실패한 씬. 원고가 없으므로 심판도 원장도 그 씬은 판정할 수 없다.
   readonly failures: readonly string[];
   readonly wallClockMs: number;
 }
 
 export class TrackRunCancelledError extends Error {
-  public readonly code = 'cancelled';
+  public readonly code: "cancelled" = 'cancelled';
 
   public constructor() {
     super('측정을 취소했습니다.');
@@ -41,16 +40,13 @@ export class TrackRunCancelledError extends Error {
   }
 }
 
-// 트랙 한 벌을 한 지점으로 돌린다. 씬은 순서대로 돌아야 한다 — 연쇄 트랙은 앞 씬이 남긴 상태를
-// 뒤 씬이 읽으므로, 순서를 바꾸면 연속성 자체가 측정 대상에서 빠진다.
 export async function runTrack(input: TrackRunInput): Promise<TrackRunResult> {
-  const startedAt = Date.now();
+  const startedAt: number = Date.now();
 
-  // 프롬프트 손잡이는 전역 덮개로 간다. 한 프로세스가 한 지점만 돌린다는 전제이고, 끝나면 되돌린다.
   applyPromptTuningOverrides(input.promptOverrides);
 
   try {
-    const generator = await input.factory.open({
+    const generator: SimSceneGenerator = await input.factory.open({
       workspacePath: input.workspacePath,
       tuning: input.tuning,
       ...(input.sectionOutputLimit === undefined
@@ -59,7 +55,7 @@ export async function runTrack(input: TrackRunInput): Promise<TrackRunResult> {
     });
 
     const sceneMetrics: SceneMetrics[] = [];
-    const drafts = new Map<string, string>();
+    const drafts: Map<string, string> = new Map<string, string>();
     const usage: UsageRecord[] = [];
     const failures: string[] = [];
 
@@ -70,7 +66,7 @@ export async function runTrack(input: TrackRunInput): Promise<TrackRunResult> {
 
       input.onProgress?.(scene.sceneStem, index + 1, input.scenes.length);
 
-      const outcome = await generator.generate(scene.sceneStem);
+      const outcome: SceneGenerationOutcome = await generator.generate(scene.sceneStem);
       usage.push(...generator.drainUsage());
 
       if (!outcome.ok) {
@@ -78,7 +74,7 @@ export async function runTrack(input: TrackRunInput): Promise<TrackRunResult> {
         continue;
       }
 
-      const draft = await generator.readDraft(scene.sceneStem);
+      const draft: string = await generator.readDraft(scene.sceneStem);
       drafts.set(scene.sceneStem, draft);
       sceneMetrics.push(
         measureScene({
