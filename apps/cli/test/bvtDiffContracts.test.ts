@@ -85,9 +85,24 @@ describe('diff contracts', () => {
   });
 
   it('requires the English strings beside the Korean ones', () => {
-    expect(statusOf({ changed: ['apps/desktop/src/shared/i18n/ko.ts'] }, 'desktop-i18n')).toBe('failed');
-    expect(statusOf({ changed: ['apps/desktop/src/shared/i18n/ko.ts', 'apps/desktop/src/shared/i18n/en.ts'] }, 'desktop-i18n')).toBe('passed');
-    expect(statusOf({ changed: ['apps/desktop/src/shared/i18n/en.ts'] }, 'desktop-i18n')).toBe('skipped');
+    const ko = 'apps/desktop/src/shared/i18n/ko.ts';
+    const en = 'apps/desktop/src/shared/i18n/en.ts';
+    const base = { [ko]: "export const koMessages = {\n  'common.save': '저장',\n};\n" };
+    const changedText = { [ko]: "export const koMessages = {\n  'common.save': '저장하기',\n};\n" };
+    const addedKey = { [ko]: "export const koMessages = {\n  'common.save': '저장',\n  'common.close': '닫기',\n};\n" };
+
+    expect(statusOf({ changed: [ko], base, head: changedText }, 'desktop-i18n')).toBe('failed');
+    expect(statusOf({ changed: [ko], base, head: addedKey }, 'desktop-i18n')).toBe('failed');
+    expect(statusOf({ changed: [ko, en], base, head: changedText }, 'desktop-i18n')).toBe('passed');
+    expect(statusOf({ changed: [en], base, head: base }, 'desktop-i18n')).toBe('skipped');
+  });
+
+  it('lets a Korean table change that touches no message pass without the English one', () => {
+    const ko = 'apps/desktop/src/shared/i18n/ko.ts';
+    const base = { [ko]: "// 화면 문자열의 원본\nexport const koMessages = {\n  'common.save': '저장',\n};\n" };
+    const head = { [ko]: "export const koMessages = {\n  'common.save':   '저장',\n};\n" };
+
+    expect(statusOf({ changed: [ko], base, head }, 'desktop-i18n')).toBe('skipped');
   });
 
   it('requires the Cursor mirror beside a Claude rule change', () => {
