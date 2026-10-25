@@ -4,15 +4,15 @@ export function normalizeForMatch(text: string): string {
   return text.replace(/[\s"'“”‘’「」『』.,!?…·~\-—()[\]]/g, '');
 }
 
-const shingleLength = 4;
+const shingleLength: number = 4;
 
 // How many distinct four-character runs of the needle the haystack contains. Both are expected to
 // be normalized already.
 export function countSharedShingles(needle: string, haystack: string): number {
-  const seen = new Set<string>();
+  const seen: Set<string> = new Set<string>();
 
-  for (let index = 0; index + shingleLength <= needle.length; index += 1) {
-    const shingle = needle.slice(index, index + shingleLength);
+  for (let index: number = 0; index + shingleLength <= needle.length; index += 1) {
+    const shingle: string = needle.slice(index, index + shingleLength);
     if (haystack.includes(shingle)) {
       seen.add(shingle);
     }

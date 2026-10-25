@@ -1,4 +1,8 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type {
+  StoryboardProjectPaths,
+  StoryUri,
+  StoryWorkspaceFolder,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { draftPath, getStoryboardProjectPaths, parseSceneFileName } from '@storyboard/story-model';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
@@ -35,8 +39,10 @@ export class ReviseAfterGenerateGate {
       return undefined;
     }
 
-    const folder = this.deps.workspaceLocator.folderFor(sceneUri);
-    const sceneStem = parseSceneFileName(sceneUri.path.split('/').at(-1) ?? '')?.stem;
+    const folder: StoryWorkspaceFolder | undefined = this.deps.workspaceLocator.folderFor(sceneUri);
+    const sceneStem: string | undefined = parseSceneFileName(
+      sceneUri.path.split('/').at(-1) ?? '',
+    )?.stem;
 
     if (!folder || !sceneStem) {
       return undefined;
@@ -51,14 +57,14 @@ export class ReviseAfterGenerateGate {
     sceneStem: string,
     hooks: ReviseGateHooks = {},
   ): Promise<ReviseDraftWorkflowResult | undefined> {
-    const paths = getStoryboardProjectPaths(workspaceUri);
-    const draftUri = draftPath(workspaceUri, sceneStem);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceUri);
+    const draftUri: StoryUri = draftPath(workspaceUri, sceneStem);
 
     if (!(await this.deps.fileSystem.exists(draftUri))) {
       return undefined;
     }
 
-    const result = await this.deps.reviseDraftUseCase.execute({
+    const result: ReviseDraftWorkflowResult = await this.deps.reviseDraftUseCase.execute({
       workspaceUri,
       paths,
       draftUri,

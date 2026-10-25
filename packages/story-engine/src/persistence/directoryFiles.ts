@@ -1,5 +1,5 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 
 // The plain files in a directory, by name. A directory that is missing or unreadable lists as
 // empty: for every caller here "no files yet" and "no directory yet" mean the same thing.
@@ -8,7 +8,7 @@ export async function listDirectoryFileNames(
   directory: StoryUri,
   isEligible: (name: string) => boolean = (): boolean => true,
 ): Promise<readonly string[]> {
-  let entries;
+  let entries: FileSystemDirectoryEntry[];
 
   try {
     entries = await fileSystem.readDirectory(directory);
@@ -38,7 +38,10 @@ export async function readDirectoryFiles<T>(
 
   for (const name of await listDirectoryFileNames(fileSystem, directory, options.isEligible)) {
     try {
-      const value = await options.read(joinStoryPath(directory, name), name);
+      const value: Awaited<T> | undefined = await options.read(
+        joinStoryPath(directory, name),
+        name,
+      );
 
       if (value !== undefined) {
         results.push(value);

@@ -34,7 +34,7 @@ export function serializeProjectJson(project: StoryboardProject): string {
 }
 
 export async function readProjectJson(fs: IFileSystem, uri: StoryUri): Promise<StoryboardProject> {
-  const bytes = await fs.readFile(uri);
+  const bytes: Uint8Array = await fs.readFile(uri);
   return parseProjectJson(new TextDecoder().decode(bytes));
 }
 

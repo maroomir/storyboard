@@ -20,8 +20,15 @@ import {
   sceneNarrationHashInput,
   sceneContextPaths,
 } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths } from '@storyboard/story-model';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type {
+  BibleFact,
+  SceneContext,
+  SceneContextWorkspacePaths,
+  SceneFile,
+  SceneFileNameParts,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 
 export interface StoryStateAuditRequest {
   readonly fileSystem: IFileSystem;
@@ -36,18 +43,21 @@ export interface StoryStateAuditRequest {
 // 이 감사가 도는 동안만 읽기를 기억해 둔다. 감사가 끝나면 버려지므로 워크스페이스 변경과 어긋나지
 // 않는다.
 function memoizeFileReads(fileSystem: IFileSystem): IFileSystem {
-  const reads = new Map<string, Promise<Uint8Array>>();
+  const reads: Map<string, Promise<Uint8Array<ArrayBufferLike>>> = new Map<
+    string,
+    Promise<Uint8Array>
+  >();
 
   // NOTE: 어댑터는 클래스이고 비공개 필드를 쓸 수 있으므로 스프레드나 Object.create로 감싸면
   // 메서드나 this가 어긋난다. 위임을 하나씩 적는다.
   return {
     readFile: (uri: StoryUri) => {
-      const cached = reads.get(uri.path);
+      const cached: Promise<Uint8Array<ArrayBufferLike>> | undefined = reads.get(uri.path);
       if (cached) {
         return cached;
       }
 
-      const pending = fileSystem.readFile(uri);
+      const pending: Promise<Uint8Array> = fileSystem.readFile(uri);
       reads.set(uri.path, pending);
       return pending;
     },
@@ -66,15 +76,17 @@ async function listSceneFileNamesByOrder(
   fileSystem: IFileSystem,
   sceneDirectory: StoryUri,
 ): Promise<Map<number, string>> {
-  const byOrder = new Map<number, string>();
+  const byOrder: Map<number, string> = new Map<number, string>();
 
-  const entries = await fileSystem.readDirectory(sceneDirectory).catch(() => []);
+  const entries: never[] | FileSystemDirectoryEntry[] = await fileSystem
+    .readDirectory(sceneDirectory)
+    .catch(() => []);
   for (const [fileName, entry] of entries) {
     if (entry.type !== 'file' || !fileName.endsWith('.card')) {
       continue;
     }
 
-    const parsed = parseSceneFileName(fileName);
+    const parsed: SceneFileNameParts | undefined = parseSceneFileName(fileName);
     if (parsed) {
       byOrder.set(parsed.order, fileName);
     }
@@ -91,11 +103,15 @@ async function computeCurrentSceneInputHash(
   const { paths, format, sceneBreakJoiner } = request;
 
   try {
-    const sceneUri = joinStoryPath(paths.sceneDirectory, fileName);
-    const scene = await readSceneFile(sceneUri, fileSystem, fileName);
-    const ctxPaths = sceneContextPaths(paths);
-    const context = await buildSceneContext(ctxPaths, scene, fileSystem);
-    const bibleFacts = await resolveSceneBibleFacts(ctxPaths, context, fileSystem);
+    const sceneUri: StoryUri = joinStoryPath(paths.sceneDirectory, fileName);
+    const scene: SceneFile = await readSceneFile(sceneUri, fileSystem, fileName);
+    const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
+    const context: SceneContext = await buildSceneContext(ctxPaths, scene, fileSystem);
+    const bibleFacts: readonly BibleFact[] = await resolveSceneBibleFacts(
+      ctxPaths,
+      context,
+      fileSystem,
+    );
 
     return computeSceneInputHash({
       sceneBody: context.scene.body,
@@ -121,9 +137,9 @@ export interface StoryMemoryAudit {
 }
 
 export async function auditStoryMemory(request: StoryStateAuditRequest): Promise<StoryMemoryAudit> {
-  const fileSystem = memoizeFileReads(request.fileSystem);
-  const state = await readStoryState(request.paths.storyState, fileSystem);
-  const audit = await auditAgainstCurrentScenes(request, fileSystem, state);
+  const fileSystem: IFileSystem = memoizeFileReads(request.fileSystem);
+  const state: StoryState = await readStoryState(request.paths.storyState, fileSystem);
+  const audit: StoryStateAudit = await auditAgainstCurrentScenes(request, fileSystem, state);
 
   return {
     audit,
@@ -151,7 +167,7 @@ async function auditAgainstCurrentScenes(
   fileSystem: IFileSystem,
   state: StoryState,
 ): Promise<StoryStateAudit> {
-  const currentHashes = await collectCurrentSceneInputHashes(
+  const currentHashes: Map<number, string> = await collectCurrentSceneInputHashes(
     request,
     fileSystem,
     storyStateSceneOrders(state),
@@ -163,9 +179,9 @@ async function auditAgainstCurrentScenes(
 // 0.8 이전 원장에는 대조할 해시가 없다. 봉인은 지금의 카드·씬을 기준으로 삼아 그 근거를 만드는
 // 일회성 조치이므로, 봉인한 뒤에 고친 것부터 낡음으로 잡힌다.
 export async function sealStoryMemory(request: StoryStateAuditRequest): Promise<readonly number[]> {
-  const fileSystem = memoizeFileReads(request.fileSystem);
-  const state = await readStoryState(request.paths.storyState, fileSystem);
-  const unsealedOrders = storyStateSceneOrders(state).filter(
+  const fileSystem: IFileSystem = memoizeFileReads(request.fileSystem);
+  const state: StoryState = await readStoryState(request.paths.storyState, fileSystem);
+  const unsealedOrders: number[] = storyStateSceneOrders(state).filter(
     (order) => !state.sceneInputHashes.has(order),
   );
 
@@ -173,7 +189,11 @@ export async function sealStoryMemory(request: StoryStateAuditRequest): Promise<
     return [];
   }
 
-  const currentHashes = await collectCurrentSceneInputHashes(request, fileSystem, unsealedOrders);
+  const currentHashes: Map<number, string> = await collectCurrentSceneInputHashes(
+    request,
+    fileSystem,
+    unsealedOrders,
+  );
   await writeStoryState(
     request.paths.storyState,
     sealStoryState(state, currentHashes),
@@ -193,15 +213,15 @@ export interface ResealStoryMemoryRequest extends StoryStateAuditRequest {
 export async function resealStoryMemory(
   request: ResealStoryMemoryRequest,
 ): Promise<readonly number[]> {
-  const fileSystem = memoizeFileReads(request.fileSystem);
-  const state = await readStoryState(request.paths.storyState, fileSystem);
-  const currentHashes = await collectCurrentSceneInputHashes(
+  const fileSystem: IFileSystem = memoizeFileReads(request.fileSystem);
+  const state: StoryState = await readStoryState(request.paths.storyState, fileSystem);
+  const currentHashes: Map<number, string> = await collectCurrentSceneInputHashes(
     request,
     fileSystem,
     storyStateSceneOrders(state),
   );
-  const requested = request.sceneOrders;
-  const targets = auditStoryState(state, currentHashes).staleSceneOrders.filter(
+  const requested: readonly number[] | undefined = request.sceneOrders;
+  const targets: number[] = auditStoryState(state, currentHashes).staleSceneOrders.filter(
     (order) => requested === undefined || requested.includes(order),
   );
 
@@ -223,22 +243,29 @@ async function collectCurrentSceneInputHashes(
   fileSystem: IFileSystem,
   orders: readonly number[],
 ): Promise<Map<number, string>> {
-  const currentHashes = new Map<number, string>();
+  const currentHashes: Map<number, string> = new Map<number, string>();
 
   if (orders.length === 0) {
     return currentHashes;
   }
 
-  const sceneFileNames = await listSceneFileNamesByOrder(fileSystem, request.paths.sceneDirectory);
+  const sceneFileNames: Map<number, string> = await listSceneFileNamesByOrder(
+    fileSystem,
+    request.paths.sceneDirectory,
+  );
 
   await Promise.all(
     orders.map(async (order) => {
-      const fileName = sceneFileNames.get(order);
+      const fileName: string | undefined = sceneFileNames.get(order);
       if (fileName === undefined) {
         return;
       }
 
-      const hash = await computeCurrentSceneInputHash(request, fileSystem, fileName);
+      const hash: string | undefined = await computeCurrentSceneInputHash(
+        request,
+        fileSystem,
+        fileName,
+      );
       if (hash !== undefined) {
         currentHashes.set(order, hash);
       }

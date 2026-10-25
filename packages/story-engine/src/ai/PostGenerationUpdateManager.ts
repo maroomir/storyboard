@@ -16,16 +16,16 @@ import {
 } from './traitsUpdater';
 
 class KeyedTaskQueue {
-  private readonly chains = new Map<string, Promise<unknown>>();
-  private isDisposed = false;
+  private readonly chains: Map<string, Promise<unknown>> = new Map<string, Promise<unknown>>();
+  private isDisposed: boolean = false;
 
   public enqueue<T>(key: string, task: () => Promise<T>): Promise<T> {
     if (this.isDisposed) {
       return Promise.reject(new Error('Post-generation updates have been disposed.'));
     }
 
-    const previous = this.chains.get(key) ?? Promise.resolve();
-    const next = previous.catch(() => undefined).then(task) as Promise<T>;
+    const previous: Promise<unknown> = this.chains.get(key) ?? Promise.resolve();
+    const next: Promise<T> = previous.catch(() => undefined).then(task) as Promise<T>;
     this.chains.set(key, next);
     void next.then(
       () => this.clearCompletedChain(key, next),
@@ -48,7 +48,7 @@ class KeyedTaskQueue {
 }
 
 export class PostGenerationUpdateManager {
-  private readonly queue = new KeyedTaskQueue();
+  private readonly queue: KeyedTaskQueue = new KeyedTaskQueue();
 
   public scheduleCharacterTraits(input: ScheduleCharacterTraitsUpdateInput): void {
     const { queueKey, onComplete, logger, ...rest } = input;

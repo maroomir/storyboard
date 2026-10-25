@@ -1,4 +1,4 @@
-import type { StoryUri, SceneFile, StoryboardCard } from '@storyboard/story-model';
+import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
@@ -11,15 +11,17 @@ import {
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '@storyboard/story-model';
-import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
+import type { IStoryFeatureRepository, StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
+import type { StoryboardAiService } from '@storyboard/story-ai';
+import type { SidebarCardCategory } from '#engine/application/cards/cardSidebarRepository';
 
-const SCENE_CHUNK_SIZE = 40_000;
-const MAX_PARALLEL_REQUESTS = 4;
+const SCENE_CHUNK_SIZE: number = 40_000;
+const MAX_PARALLEL_REQUESTS: number = 4;
 
 // 모델은 "모르는 값"을 빈 문자열로 적어 보낸다. 그걸 오류로 세면 32씬을 다 읽고 온 응답이
 // weather: "" 한 칸 때문에 통째로 버려진다. 빈 값은 안 적은 것으로 읽고, 목록에서는 걸러 낸다.
-const optionalText = z.preprocess(
+const optionalText: z.ZodPreprocess<z.ZodOptional<z.ZodString>> = z.preprocess(
   (value) => (typeof value === 'string' && value.trim().length === 0 ? undefined : value),
   z.string().trim().min(1).optional(),
 );
@@ -34,7 +36,28 @@ function textList() {
   );
 }
 
-const entitySchema = z.object({
+interface StoryCardEntity {
+  type: SidebarCardCategory;
+  name: string;
+  aliases: string[];
+  tags: string[];
+  attributes: { key: string; value: string; }[];
+  traits: string[];
+  description: string[];
+  voice: string[];
+  desire: string[];
+  relations: { target: string; type: string; }[];
+  arc: { summary: string; stage?: string | undefined; sceneRef?: string | undefined; }[];
+  senses: string[];
+  characterIds: string[];
+  sourceScenes: string[];
+  existingId?: string;
+  role?: 'main' | 'supporting' | 'extra';
+  time?: string;
+  weather?: string;
+}
+
+const entitySchema: z.ZodType<StoryCardEntity> = z.object({
   type: z.enum(['character', 'background']),
   name: z.string().trim().min(1),
   existingId: optionalText,
@@ -67,8 +90,11 @@ const entitySchema = z.object({
   sourceScenes: z.array(z.string().trim().min(1)).min(1),
 });
 
-const responseSchema = z.object({ entities: z.array(entitySchema) });
-type StoryCardEntity = z.infer<typeof entitySchema>;
+interface ResponsePayload {
+  entities: StoryCardEntity[];
+}
+
+const responseSchema: z.ZodType<ResponsePayload> = z.object({ entities: z.array(entitySchema) });
 
 interface StoryCardChange {
   readonly proposal: CardCollectProposal;
@@ -103,16 +129,16 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
 
   public async execute(request: BuildStoryCardsRequest): Promise<BuildStoryCardsProposal> {
     const { workspaceRoot } = request;
-    const source = await this.deps.repository.load(workspaceRoot);
+    const source: StoryFeatureSource = await this.deps.repository.load(workspaceRoot);
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('no-valid-scenes', '카드를 구성할 유효한 씬이 없습니다.');
     }
 
-    const sceneStems = new Set(source.scenes.map((scene) => scene.stem));
-    const chunks = groupScenes(source.scenes);
-    const aiService = this.deps.aiGateway.createService(workspaceRoot);
-    const responses = await mapWithConcurrency(chunks, MAX_PARALLEL_REQUESTS, async (chunk) => {
-      const response = await aiService.generateText(
+    const sceneStems: Set<string> = new Set(source.scenes.map((scene) => scene.stem));
+    const chunks: SceneFile[][] = groupScenes(source.scenes);
+    const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+    const responses: StoryCardEntity[][] = await mapWithConcurrency(chunks, MAX_PARALLEL_REQUESTS, async (chunk) => {
+      const response: AiGenerateResponse = await aiService.generateText(
         'storyCardBuild',
         [
           {
@@ -142,18 +168,18 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
       );
       return responseSchema.parse(parseJsonObject(response.text)).entities;
     });
-    const entities = responses.flat();
+    const entities: StoryCardEntity[] = responses.flat();
     const cardsById = new Map(source.cards.map((card) => [card.id, card]));
-    const cardsByName = buildCardNameIndex(source.cards);
-    const targets = new Map<string, StoryCardTarget>();
+    const cardsByName: Map<string, StoryboardCard> = buildCardNameIndex(source.cards);
+    const targets: Map<string, StoryCardTarget> = new Map<string, StoryCardTarget>();
 
     for (const entity of entities) {
       validateSourceScenes(entity, sceneStems);
-      const existing = findExistingCard(entity, cardsById, cardsByName);
+      const existing: StoryboardCard | undefined = findExistingCard(entity, cardsById, cardsByName);
       if (existing) {
-        const changes = changesForExistingCard(existing, entity, cardsByName);
+        const changes: StoryCardChange[] = changesForExistingCard(existing, entity, cardsByName);
         if (changes.length > 0) {
-          const current = targets.get(existing.id);
+          const current: StoryCardTarget | undefined = targets.get(existing.id);
           targets.set(
             existing.id,
             mergeTarget(current, existing, false, changes, entity.sourceScenes),
@@ -162,8 +188,8 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
         continue;
       }
 
-      const newCard = buildNewCard(entity, cardsById, cardsByName, targets.size + 1);
-      const current = targets.get(newCard.id);
+      const newCard: StoryboardCard = buildNewCard(entity, cardsById, cardsByName, targets.size + 1);
+      const current: StoryCardTarget | undefined = targets.get(newCard.id);
       targets.set(
         newCard.id,
         mergeTarget(
@@ -229,9 +255,9 @@ function cardIdentity(card: StoryboardCard): Record<string, unknown> {
 function groupScenes(scenes: readonly SceneFile[]): SceneFile[][] {
   const chunks: SceneFile[][] = [];
   let current: SceneFile[] = [];
-  let size = 0;
+  let size: number = 0;
   for (const scene of scenes) {
-    const sceneSize = JSON.stringify(sceneForPrompt(scene)).length;
+    const sceneSize: number = JSON.stringify(sceneForPrompt(scene)).length;
     if (current.length > 0 && size + sceneSize > SCENE_CHUNK_SIZE) {
       chunks.push(current);
       current = [];
@@ -252,12 +278,12 @@ async function mapWithConcurrency<T, R>(
   mapper: (item: T) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
-  let cursor = 0;
+  let cursor: number = 0;
   const worker = async (): Promise<void> => {
     while (cursor < items.length) {
-      const index = cursor;
+      const index: number = cursor;
       cursor += 1;
-      const item = items[index];
+      const item: T | undefined = items[index];
       if (item === undefined) {
         return;
       }
@@ -305,8 +331,8 @@ function buildNewCard(
   if (cardsByName.has(normalizeName(entity.name))) {
     throw new StoryFeatureSourceError('card-name-conflict', `새 카드 이름이 기존 카드와 충돌합니다: ${entity.name}`);
   }
-  const suggested = entity.existingId?.trim() ?? slugify(entity.name) ?? `new-card-${sequence}`;
-  const id = cardsById.has(suggested) ? `new-card-${sequence}` : suggested;
+  const suggested: string = entity.existingId?.trim() ?? slugify(entity.name) ?? `new-card-${sequence}`;
+  const id: string = cardsById.has(suggested) ? `new-card-${sequence}` : suggested;
   if (entity.type === 'character') {
     return { type: 'character', id, name: entity.name, role: entity.role ?? 'extra' };
   }
@@ -357,7 +383,7 @@ function toChanges(
       ...entity.desire.map((value) => ({ kind: 'desireLine' as const, value })),
     );
     for (const relation of entity.relations) {
-      const target = resolveCardId(relation.target, cardsByName);
+      const target: string | undefined = resolveCardId(relation.target, cardsByName);
       if (target && target !== card.id) {
         drafts.push({ kind: 'relation', target, type: relation.type });
       }
@@ -379,7 +405,7 @@ function toChanges(
       drafts.push({ kind: 'scalar', field: 'weather', after: entity.weather });
     }
     for (const value of entity.characterIds) {
-      const id = resolveCardId(value, cardsByName);
+      const id: string | undefined = resolveCardId(value, cardsByName);
       if (id) {
         drafts.push({ kind: 'characterId', value: id });
       }
@@ -403,8 +429,8 @@ function mergeTarget(
   sourceScenes: readonly string[],
   requiresIdConfirmation = false,
 ): StoryCardTarget {
-  const combined = [...(previous?.changes ?? []), ...changes];
-  const byId = new Map(combined.map((change) => [change.proposal.id, change]));
+  const combined: StoryCardChange[] = [...(previous?.changes ?? []), ...changes];
+  const byId: Map<string, StoryCardChange> = new Map(combined.map((change) => [change.proposal.id, change]));
   return {
     card,
     uriId: card.id,
@@ -438,7 +464,7 @@ function normalizeName(value: string): string {
 }
 
 function slugify(value: string): string | undefined {
-  const slug = value
+  const slug: string = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');

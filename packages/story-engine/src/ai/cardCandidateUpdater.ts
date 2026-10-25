@@ -11,7 +11,7 @@ import {
   type CardCandidateFileSystem,
   writeCardCandidateFile,
 } from '@storyboard/story-model';
-import type { StoryboardAiService } from '@storyboard/story-ai';
+import type { CardCandidateExtraction, StoryboardAiService } from '@storyboard/story-ai';
 interface CardCandidateRosterEntry {
   readonly id: string;
   readonly name: string;
@@ -45,11 +45,11 @@ export interface UpdateCardCandidatesFromDraftInput {
 function buildTargetResolver(
   roster: readonly CardCandidateRosterEntry[],
 ): (rawTarget: string) => string | undefined {
-  const idByName = new Map(roster.map((entry) => [entry.name, entry.id]));
-  const ids = new Set(roster.map((entry) => entry.id));
+  const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
+  const ids: Set<string> = new Set(roster.map((entry) => entry.id));
 
   return (rawTarget) => {
-    const target = rawTarget.trim();
+    const target: string = rawTarget.trim();
     if (ids.has(target)) {
       return target;
     }
@@ -96,7 +96,7 @@ async function verifyCandidates(
   card: CharacterCard,
   candidates: VerifiableCandidates,
 ): Promise<VerifiableCandidates> {
-  const statements = buildCandidateStatements(candidates);
+  const statements: string[] = buildCandidateStatements(candidates);
 
   if (statements.length === 0) {
     return candidates;
@@ -125,9 +125,9 @@ async function verifyCandidates(
     return candidates;
   }
 
-  const approved = new Set(approvedIndices);
-  const relationOffset = candidates.attributes.length;
-  const arcOffset = relationOffset + candidates.relations.length;
+  const approved: Set<number> = new Set(approvedIndices);
+  const relationOffset: number = candidates.attributes.length;
+  const arcOffset: number = relationOffset + candidates.relations.length;
 
   return {
     attributes: candidates.attributes.filter((_, index) => approved.has(index)),
@@ -156,14 +156,14 @@ export async function updateCardCandidatesFromDraft(
   let extracted: Awaited<ReturnType<StoryboardAiService['extractCardCandidatesByCharacter']>>;
 
   try {
-    const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]));
+    const characterIdByName: Map<string, string> = new Map(detectedCharacterCards.map((card) => [card.name, card.id]));
 
     extracted = await aiService.extractCardCandidatesByCharacter(
       draftBody,
       detectedCharacterCards.map((card) => card.name),
       {
         attributionForCharacter: (name: string): UsageAttribution | undefined => {
-          const characterId = characterIdByName.get(name);
+          const characterId: string | undefined = characterIdByName.get(name);
 
           if (!characterId) {
             return undefined;
@@ -182,26 +182,26 @@ export async function updateCardCandidatesFromDraft(
     return { characterCount: 0, candidateCount: 0 };
   }
 
-  const resolveTarget = buildTargetResolver(characterRoster);
+  const resolveTarget: (rawTarget: string) => string | undefined = buildTargetResolver(characterRoster);
 
   const characters: CardCandidateCharacter[] = [];
 
   for (const card of detectedCharacterCards) {
-    const candidate = extracted[card.name];
+    const candidate: CardCandidateExtraction | undefined = extracted[card.name];
     if (!candidate) {
       continue;
     }
 
-    const relations = dedupeRelations(
+    const relations: CardRelationCandidate[] = dedupeRelations(
       candidate.relations
         .map((relation) => {
-          const target = resolveTarget(relation.target);
+          const target: string | undefined = resolveTarget(relation.target);
           return target && target !== card.id ? { target, type: relation.type } : undefined;
         })
         .filter((relation): relation is CardRelationCandidate => relation !== undefined),
     );
 
-    const attributes = dedupeAttributes(
+    const attributes: CardAttributeCandidate[] = dedupeAttributes(
       candidate.attributes.map((attribute) => ({ ...attribute })),
     );
 
@@ -209,7 +209,7 @@ export async function updateCardCandidatesFromDraft(
       ? [{ summary: candidate.arc.summary, sceneRef: sceneStem }]
       : [];
 
-    const verified = input.verify
+    const verified: VerifiableCandidates = input.verify
       ? await verifyCandidates(input, card, { attributes, relations, arc })
       : { attributes, relations, arc };
 
@@ -225,7 +225,7 @@ export async function updateCardCandidatesFromDraft(
     }
   }
 
-  const candidateCount = characters.reduce(
+  const candidateCount: number = characters.reduce(
     (total, character) => total + countCandidates(character),
     0,
   );

@@ -11,7 +11,7 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-model';
 
-import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureTypes';
+import type { IStoryFeatureRepository, StoryFeatureSource } from '#engine/application/story/storyFeatureTypes';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
@@ -52,13 +52,13 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
 
   public async execute(request: ExportNotesRequest): Promise<ExportNotesResult> {
     return await runUseCase(this.deps.logger, '노트를 내보내지 못했습니다.', async () => {
-      const source = await this.deps.storyRepository.load(request.workspaceRoot);
-      const synopsis = await this.deps.synopsis.loadSynopsis(request.workspaceRoot);
-      const nameOf = cardNameResolver(source.cards);
+      const source: StoryFeatureSource = await this.deps.storyRepository.load(request.workspaceRoot);
+      const synopsis: OutlineSynopsis | undefined = await this.deps.synopsis.loadSynopsis(request.workspaceRoot);
+      const nameOf: (id: string) => string = cardNameResolver(source.cards);
       const written: string[] = [];
 
       const write = async (folder: string | undefined, fileName: string, text: string): Promise<void> => {
-        const directory = folder === undefined ? request.target : joinStoryPath(request.target, folder);
+        const directory: StoryUri = folder === undefined ? request.target : joinStoryPath(request.target, folder);
         await this.deps.fileSystem.createDirectory(directory);
         await this.deps.fileSystem.writeFile(
           joinStoryPath(directory, fileName),
@@ -67,7 +67,7 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
         written.push(folder === undefined ? fileName : `${folder}/${fileName}`);
       };
 
-      const fileNames = uniqueNoteFileNames(source.cards);
+      const fileNames: Map<string, string> = uniqueNoteFileNames(source.cards);
       for (const card of source.cards) {
         if (card.type === 'character') {
           await write(noteExportFolders.characters, fileNames.get(card.id) ?? `${card.id}.md`, renderCharacterNote(card, nameOf));
@@ -77,7 +77,7 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
       }
 
       for (const scene of source.scenes) {
-        const summary = await this.readSceneSummary(request.workspaceRoot, scene);
+        const summary: string | undefined = await this.readSceneSummary(request.workspaceRoot, scene);
         await write(noteExportFolders.scenes, `${scene.stem}.md`, renderSceneNote(scene, nameOf, summary));
       }
 
@@ -94,14 +94,14 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
     if (scene.summaryText !== undefined) {
       return scene.summaryText;
     }
-    const reference = scene.card.summary;
+    const reference: string | undefined = scene.card.summary;
     if (reference === undefined) {
       return undefined;
     }
     if (!/\.md$/i.test(reference)) {
       return reference;
     }
-    const uri = joinStoryPath(getStoryboardProjectPaths(workspaceRoot).sceneDirectory, reference);
+    const uri: StoryUri = joinStoryPath(getStoryboardProjectPaths(workspaceRoot).sceneDirectory, reference);
     return (await this.deps.fileSystem.exists(uri))
       ? new TextDecoder().decode(await this.deps.fileSystem.readFile(uri))
       : undefined;
@@ -109,13 +109,13 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
 }
 
 function cardNameResolver(cards: readonly StoryboardCard[]): (id: string) => string {
-  const names = new Map(cards.map((card) => [card.id, card.name]));
+  const names: Map<string, string> = new Map(cards.map((card) => [card.id, card.name]));
   return (id) => names.get(id) ?? id;
 }
 
 // A note is named after the card; two cards sharing a name get their ids appended so neither is lost.
 function uniqueNoteFileNames(cards: readonly StoryboardCard[]): Map<string, string> {
-  const counts = new Map<string, number>();
+  const counts: Map<string, number> = new Map<string, number>();
   for (const card of cards) {
     counts.set(card.name, (counts.get(card.name) ?? 0) + 1);
   }
@@ -133,7 +133,7 @@ function safeFileStem(name: string): string {
 }
 
 function frontMatter(fields: Readonly<Record<string, string | readonly string[] | undefined>>): string {
-  const lines = Object.entries(fields).flatMap(([key, value]) => {
+  const lines: string[] = Object.entries(fields).flatMap(([key, value]) => {
     if (value === undefined || (Array.isArray(value) && value.length === 0)) {
       return [];
     }
@@ -150,7 +150,7 @@ function yamlScalar(value: string): string {
 }
 
 function section(title: string, lines: readonly string[] | undefined): string[] {
-  const items = (lines ?? []).filter((line) => line.trim().length > 0);
+  const items: string[] = (lines ?? []).filter((line) => line.trim().length > 0);
   return items.length === 0 ? [] : [`## ${title}`, ...items.map((line) => `- ${line}`), ''];
 }
 
@@ -159,10 +159,10 @@ function wikiLink(name: string): string {
 }
 
 export function renderCharacterNote(card: CharacterCard, nameOf: (id: string) => string): string {
-  const attributes = Object.entries(card.attributes ?? {}).map(
+  const attributes: string[] = Object.entries(card.attributes ?? {}).map(
     ([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : String(value)}`,
   );
-  const relations = (card.relations ?? []).map(
+  const relations: string[] = (card.relations ?? []).map(
     (relation) =>
       `${wikiLink(nameOf(relation.target))}: ${relation.type}${relation.speech === undefined ? '' : ` (말투: ${relation.speech})`}`,
   );
@@ -213,8 +213,8 @@ export function renderSceneNote(
   summary: string | undefined,
 ): string {
   const { card } = scene;
-  const beats = (card.beats ?? []).map((beat) => sceneBeatText(beat));
-  const details = [
+  const beats: string[] = (card.beats ?? []).map((beat) => sceneBeatText(beat));
+  const details: string[] = [
     card.purpose === undefined ? undefined : `목적: ${card.purpose}`,
     card.mood === undefined ? undefined : `분위기: ${card.mood}`,
     card.conflict === undefined ? undefined : `갈등: ${card.conflict}`,

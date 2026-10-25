@@ -5,6 +5,8 @@ import type {
   NoteAbsorbPlan,
   NoteLeftOut,
   NoteCardCandidate,
+NoteCandidateFile,
+StoryboardProject,
 } from '@storyboard/story-model';
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
@@ -19,7 +21,7 @@ import {
   serializeSynopsisMarkdown,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { INoteAbsorbRepository } from './noteAbsorbRepository';
+import type { INoteAbsorbRepository, NoteCandidateLoad } from './noteAbsorbRepository';
 
 export interface ApplyNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;
@@ -72,13 +74,13 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     return await runUseCase(this.deps.logger, '노트 정리 결과를 반영하지 못했습니다.', async () => {
       const cards = await this.applyCards(request);
       const scenes = await this.applyScenes(request);
-      const synopsis = await this.applySynopsis(request);
+      const synopsis: 'written' | 'candidate' | 'none' = await this.applySynopsis(request);
       const setting = await this.applySetting(request);
-      const seededCharacters = Object.keys(request.plan.voiceSeeds);
+      const seededCharacters: string[] = Object.keys(request.plan.voiceSeeds);
       if (seededCharacters.length > 0) {
         await this.deps.noteRepository.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
       }
-      const canonCandidates = await this.applyCanonCandidates(request);
+      const canonCandidates: number = await this.applyCanonCandidates(request);
 
       return {
         ok: true as const,
@@ -114,7 +116,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   }> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
     // Read before any card is written, so a file that cannot be read leaves the workspace as it was.
-    const loaded = await this.deps.noteRepository.loadCandidates(workspaceRoot);
+    const loaded: NoteCandidateLoad = await this.deps.noteRepository.loadCandidates(workspaceRoot);
 
     if (loaded.kind === 'legacy') {
       this.deps.logger.warn(
@@ -126,9 +128,9 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     const candidates: NoteCardCandidate[] = [];
 
     for (const entry of plan.cards) {
-      const cardType = entry.card.type === 'character' ? 'character' : 'background';
+      const cardType: "character" | "background" = entry.card.type === 'character' ? 'character' : 'background';
       // A card written between planning and applying is the author's now; the notes only propose.
-      const isStillNew =
+      const isStillNew: boolean =
         entry.isNew &&
         !(await this.deps.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));
 
@@ -152,7 +154,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       }
     }
 
-    const file = addNoteCandidateSource(
+    const file: NoteCandidateFile = addNoteCandidateSource(
       loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile,
       { location, absorbedAt: new Date().toISOString(), candidates },
       shouldReplaceCandidates,
@@ -195,14 +197,14 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   ): Promise<'written' | 'candidate' | 'none'> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
     const { noteRepository } = this.deps;
-    const isCandidate =
+    const isCandidate: boolean =
       plan.synopsis !== undefined && (await noteRepository.synopsisExists(workspaceRoot));
 
     if (plan.synopsis !== undefined && !isCandidate) {
       await noteRepository.writeSynopsis(workspaceRoot, plan.synopsis);
     }
 
-    const existing = await noteRepository.loadSynopsisCandidate(workspaceRoot);
+    const existing: string | undefined = await noteRepository.loadSynopsisCandidate(workspaceRoot);
 
     if (existing !== undefined || isCandidate) {
       await noteRepository.saveSynopsisCandidate(
@@ -229,13 +231,13 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     readonly settingProposals: NoteSynthesisSetting;
   }> {
     const { workspaceRoot, plan, shouldFillContract } = request;
-    const project = await this.deps.noteRepository.loadProject(workspaceRoot);
+    const project: StoryboardProject = await this.deps.noteRepository.loadProject(workspaceRoot);
     const current: Partial<ProjectSetting> = project.setting ?? {};
     const filled: Record<string, string> = {};
     const proposals: Record<string, string> = {};
 
     for (const key of settingKeys) {
-      const proposed = plan.setting[key];
+      const proposed: string | undefined = plan.setting[key];
 
       if (proposed === undefined || current[key] === proposed) {
         continue;

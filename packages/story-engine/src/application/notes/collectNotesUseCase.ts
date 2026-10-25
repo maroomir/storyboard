@@ -2,7 +2,13 @@ import { canonicalNotionPageUrl, type StoryUri, type NoteBundle } from '@storybo
 
 import { failedResult, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
-import { NoteSourceError, type INoteSourceProvider, type NoteLocation } from './noteSource';
+import {
+  NoteSourceError,
+  type CollectedNotes,
+  type INoteSource,
+  type INoteSourceProvider,
+  type NoteLocation,
+} from './noteSource';
 
 export interface CollectNotesRequest {
   readonly workspaceRoot: StoryUri;
@@ -27,8 +33,8 @@ export class CollectNotesUseCase implements IUseCase<CollectNotesRequest, Collec
     const { workspaceRoot, location } = request;
 
     try {
-      const source = await this.deps.sources.open(location);
-      const collected = await source.collect();
+      const source: INoteSource = await this.deps.sources.open(location);
+      const collected: CollectedNotes = await source.collect();
 
       if (collected.notes.length === 0) {
         return failedResult(new Error('읽을 노트가 없습니다.'));

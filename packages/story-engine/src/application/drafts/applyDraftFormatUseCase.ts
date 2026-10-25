@@ -1,6 +1,11 @@
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { StoryUri } from '@storyboard/story-model';
+import type {
+  Draft,
+  StoryboardProject,
+  StoryboardProjectPaths,
+  StoryUri,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { failedResult, type IUseCase } from '#engine/application/useCase';
 import {
@@ -42,10 +47,10 @@ export class ApplyDraftFormatUseCase implements IUseCase<
   public constructor(private readonly deps: ApplyDraftFormatUseCaseDependencies) {}
 
   public async execute(request: ApplyDraftFormatRequest): Promise<ApplyDraftFormatResult> {
-    const paths = getStoryboardProjectPaths(request.workspaceRoot);
-    const draftUri = draftPath(request.workspaceRoot, request.sceneStem);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
+    const draftUri: StoryUri = draftPath(request.workspaceRoot, request.sceneStem);
 
-    let project;
+    let project: StoryboardProject;
     try {
       project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
     } catch (error) {
@@ -60,7 +65,7 @@ export class ApplyDraftFormatUseCase implements IUseCase<
       return { kind: 'draft_missing', ok: false };
     }
 
-    let existing;
+    let existing: Draft;
     try {
       existing = parseDraft(rawDraft);
     } catch (error) {
@@ -73,7 +78,7 @@ export class ApplyDraftFormatUseCase implements IUseCase<
         return { kind: 'cancelled', ok: false };
       }
 
-      const formattedBody = await this.deps.aiGateway
+      const formattedBody: string = await this.deps.aiGateway
         .createService(request.workspaceRoot)
         .applyGenreFormat(existing.body, project.format, {
           providerId: this.deps.aiGateway.getTaskProvider('sceneDraft'),
@@ -85,7 +90,7 @@ export class ApplyDraftFormatUseCase implements IUseCase<
       }
 
       const sceneDraftConfig = this.deps.aiGateway.getTaskAiConfig('sceneDraft');
-      const draft = createDraft({
+      const draft: Draft = createDraft({
         sceneStem: existing.sceneStem,
         format: project.format,
         body: formattedBody,

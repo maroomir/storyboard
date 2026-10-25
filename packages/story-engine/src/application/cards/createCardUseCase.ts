@@ -18,9 +18,9 @@ export class CreateCardUseCase {
     suggestedId: string,
     fallbackId: string,
   ): Promise<string> {
-    const base = suggestedId === 'new-card' ? fallbackId : suggestedId;
-    let candidate = base;
-    let suffix = 2;
+    const base: string = suggestedId === 'new-card' ? fallbackId : suggestedId;
+    let candidate: string = base;
+    let suffix: number = 2;
 
     while (await this.deps.repository.exists(workspaceRoot, cardType, candidate)) {
       candidate = `${base}-${suffix}`;

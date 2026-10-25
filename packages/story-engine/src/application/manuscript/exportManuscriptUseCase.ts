@@ -53,7 +53,7 @@ export class ExportManuscriptUseCase {
     format: ManuscriptExportFormat,
   ): Promise<ExportManuscriptResult> {
     try {
-      const content = renderManuscriptExport(markdown, format);
+      const content: string = renderManuscriptExport(markdown, format);
       await this.deps.repository.saveExport(targetUri, content);
 
       return { kind: 'exported', ok: true, targetUri };

@@ -27,6 +27,13 @@ import {
   resolveThreadPaths,
   scenePath,
   type StoryboardProjectPaths,
+  type SceneFileNameParts,
+  type StoryState,
+  type StoryBible,
+  type RevisionPlan,
+  type RevisionPlanEntry,
+  type StoryboardCard,
+  type CharacterCard,
 } from '@storyboard/story-model';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
@@ -68,13 +75,13 @@ interface PlannedWrite {
   readonly content: string | Uint8Array;
 }
 
-const sceneStemFieldNames = new Set([
+const sceneStemFieldNames: Set<string> = new Set([
   'sceneStem',
   'sourceScene',
   'sceneRef',
   'updatedThroughScene',
 ]);
-const sceneEntityKeyFieldNames = new Set(['id', 'key']);
+const sceneEntityKeyFieldNames: Set<string> = new Set(['id', 'key']);
 
 // Scenes are keyed by their file stem: the card, its summary, the draft and its history, every
 // cache and memory file is named after it, and the ledgers and canon refer to it by stem or by
@@ -90,8 +97,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   }
 
   private async rename(request: RenameSceneRequest): Promise<RenameSceneResult> {
-    const from = parseSceneStem(request.fromStem);
-    const to = parseSceneStem(request.toStem);
+    const from: SceneFileNameParts | undefined = parseSceneStem(request.fromStem);
+    const to: SceneFileNameParts | undefined = parseSceneStem(request.toStem);
 
     if (from === undefined || to === undefined) {
       return {
@@ -105,18 +112,18 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       return { ok: false, kind: 'invalid-stem', message: '바꿀 이름이 지금 이름과 같습니다.' };
     }
 
-    const root = request.workspaceRoot;
+    const root: StoryUri = request.workspaceRoot;
 
     if (!(await this.deps.fileSystem.exists(scenePath(root, from.stem)))) {
       return { ok: false, kind: 'missing', message: `씬이 없습니다: ${from.stem}` };
     }
 
-    const paths = getStoryboardProjectPaths(root);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
     const rename: SceneRename = { from, to };
-    const memoryScopes = await this.listMemoryScopes(paths);
-    const moves = await this.planMoves(paths, memoryScopes, rename);
-    const isResuming = await this.isInterruptedRename(paths, rename, moves);
-    const occupant = await this.findSceneWithOrder(
+    const memoryScopes: readonly StoryboardProjectPaths[] = await this.listMemoryScopes(paths);
+    const moves: PlannedWrite[] = await this.planMoves(paths, memoryScopes, rename);
+    const isResuming: boolean = await this.isInterruptedRename(paths, rename, moves);
+    const occupant: string | undefined = await this.findSceneWithOrder(
       paths,
       to.order,
       isResuming ? [from.stem, to.stem] : [from.stem],
@@ -130,7 +137,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       };
     }
 
-    const rewrites = await this.planRewrites(paths, memoryScopes, rename);
+    const rewrites: PlannedWrite[] = await this.planRewrites(paths, memoryScopes, rename);
 
     await this.deps.fileSystem.writeFile(
       paths.sceneRenameJournal,
@@ -170,8 +177,9 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     rename: SceneRename,
     moves: readonly PlannedWrite[],
   ): Promise<boolean> {
-    const journal = await this.readTextIfExists(paths.sceneRenameJournal);
-    const journaled = journal === undefined ? undefined : parseSceneRenameJournal(journal);
+    const journal: string | undefined = await this.readTextIfExists(paths.sceneRenameJournal);
+    const journaled: SceneRename | undefined =
+      journal === undefined ? undefined : parseSceneRenameJournal(journal);
 
     if (
       journaled?.from.stem !== rename.from.stem ||
@@ -182,7 +190,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
 
     for (const move of moves) {
-      const written = await this.readTextIfExists(move.to);
+      const written: string | undefined = await this.readTextIfExists(move.to);
 
       if (written !== undefined && written !== move.content) {
         return false;
@@ -198,7 +206,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     exceptStems: readonly string[],
   ): Promise<string | undefined> {
     for (const fileName of await this.listFileNames(paths.sceneDirectory)) {
-      const parts = parseSceneFileName(fileName);
+      const parts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
 
       if (parts !== undefined && parts.order === order && !exceptStems.includes(parts.stem)) {
         return parts.stem;
@@ -212,7 +220,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   private async listMemoryScopes(
     paths: StoryboardProjectPaths,
   ): Promise<readonly StoryboardProjectPaths[]> {
-    const threadIds = (await this.listEntries(paths.threadMemoryDirectory))
+    const threadIds: string[] = (await this.listEntries(paths.threadMemoryDirectory))
       .filter(([, entry]) => entry.type === 'directory')
       .map(([name]) => name);
 
@@ -224,7 +232,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     memoryScopes: readonly StoryboardProjectPaths[],
     rename: SceneRename,
   ): Promise<PlannedWrite[]> {
-    const root = paths.workspaceRoot;
+    const root: StoryUri = paths.workspaceRoot;
     const { from, to } = rename;
     const moves: PlannedWrite[] = [];
 
@@ -233,7 +241,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       target: StoryUri,
       transform: (raw: string) => string,
     ): Promise<void> => {
-      const raw = await this.readTextIfExists(source);
+      const raw: string | undefined = await this.readTextIfExists(source);
 
       if (raw !== undefined) {
         moves.push({ from: source, to: target, content: transform(raw) });
@@ -254,8 +262,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       serializeDraft({ ...parseDraft(raw), sceneStem: to.stem }),
     );
 
-    const historyFrom = draftHistorySceneDirectory(root, from.stem);
-    const historyTo = draftHistorySceneDirectory(root, to.stem);
+    const historyFrom: StoryUri = draftHistorySceneDirectory(root, from.stem);
+    const historyTo: StoryUri = draftHistorySceneDirectory(root, to.stem);
 
     for (const fileName of await this.listFileNames(historyFrom)) {
       await planMove(joinUri(historyFrom, fileName), joinUri(historyTo, fileName), (raw) =>
@@ -278,8 +286,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       );
     }
 
-    const sessionsFrom = joinUri(paths.studioSessionDirectory, 'scene', from.stem);
-    const sessionsTo = joinUri(paths.studioSessionDirectory, 'scene', to.stem);
+    const sessionsFrom: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', from.stem);
+    const sessionsTo: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', to.stem);
 
     for (const fileName of await this.listFileNames(sessionsFrom)) {
       await planMove(joinUri(sessionsFrom, fileName), joinUri(sessionsTo, fileName), rewriteJson);
@@ -299,8 +307,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       uri: StoryUri,
       rewrite: (raw: string) => string | undefined,
     ): Promise<void> => {
-      const raw = await this.readTextIfExists(uri);
-      const rewritten = raw === undefined ? undefined : rewrite(raw);
+      const raw: string | undefined = await this.readTextIfExists(uri);
+      const rewritten: string | undefined = raw === undefined ? undefined : rewrite(raw);
 
       if (rewritten !== undefined && rewritten !== raw) {
         rewrites.push({ to: uri, content: rewritten });
@@ -310,8 +318,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     for (const scope of memoryScopes) {
       await planRewrite(scope.storyState, (raw) => {
-        const state = parseStoryState(raw);
-        const renumbered = renumberStoryStateScene(state, rename);
+        const state: StoryState = parseStoryState(raw);
+        const renumbered: StoryState = renumberStoryStateScene(state, rename);
 
         return renumbered === state ? undefined : serializeStoryState(renumbered);
       });
@@ -326,8 +334,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
 
     await planRewrite(paths.bibleCanon, (raw) => {
-      const bible = parseBible(raw);
-      const rewritten = rewriteBibleSceneReferences(bible, rename);
+      const bible: StoryBible = parseBible(raw);
+      const rewritten: StoryBible = rewriteBibleSceneReferences(bible, rename);
 
       return rewritten === bible ? undefined : serializeBible(rewritten);
     });
@@ -337,8 +345,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
         return undefined;
       }
 
-      const plan = parseRevisionPlan(raw);
-      const entries = plan.entries
+      const plan: RevisionPlan = parseRevisionPlan(raw);
+      const entries: RevisionPlanEntry[] = plan.entries
         .map((entry) =>
           entry.sceneStem === rename.from.stem ? { ...entry, sceneStem: rename.to.stem } : entry,
         )
@@ -363,13 +371,13 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
           return undefined;
         }
 
-        const card = parseCard(raw);
+        const card: StoryboardCard = parseCard(raw);
 
         if (card.type !== 'character') {
           return undefined;
         }
 
-        const rewritten = rewriteCharacterArcSceneRefs(card, rename);
+        const rewritten: CharacterCard = rewriteCharacterArcSceneRefs(card, rename);
 
         return rewritten === card ? undefined : serializeCard(rewritten);
       });
@@ -430,7 +438,7 @@ function rewriteArchivedDraftStem(raw: string, toStem: string): string {
 // `sceneRef`, `updatedThroughScene`, and the `id`/`key` of a `{ kind: 'scene' }` reference.
 // Returns undefined when nothing changed, so an untouched file keeps its bytes.
 function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undefined {
-  let changed = false;
+  let changed: boolean = false;
 
   const visit = (value: unknown): unknown => {
     if (Array.isArray(value)) {
@@ -441,12 +449,12 @@ function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undef
       return value;
     }
 
-    const record = value as Record<string, unknown>;
-    const isSceneEntity = record.kind === 'scene';
+    const record: Record<string, unknown> = value as Record<string, unknown>;
+    const isSceneEntity: boolean = record.kind === 'scene';
 
     return Object.fromEntries(
       Object.entries(record).map(([key, field]) => {
-        const isStemField =
+        const isStemField: boolean =
           sceneStemFieldNames.has(key) || (isSceneEntity && sceneEntityKeyFieldNames.has(key));
 
         if (isStemField && field === rename.from.stem) {
@@ -459,7 +467,7 @@ function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undef
     );
   };
 
-  const rewritten = visit(JSON.parse(raw));
+  const rewritten: unknown = visit(JSON.parse(raw));
 
   if (!changed) {
     return undefined;

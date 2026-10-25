@@ -5,6 +5,7 @@ import type {
   UsageSummaryByEntity,
   StoryUri,
   DisposableHandle,
+  StoryboardProjectPaths,
 } from '@storyboard/story-model';
 
 import {
@@ -25,9 +26,15 @@ interface WorkspaceUsageCache {
 // The workspace's cost ledger (`.storyboard/cache/usage.json`). Writes for one workspace are
 // serialised so two calls finishing together cannot drop each other's entry.
 export class UsageLedgerRecorder {
-  private readonly cacheByWorkspaceKey = new Map<string, WorkspaceUsageCache>();
-  private readonly chainByWorkspaceKey = new Map<string, Promise<void>>();
-  private readonly listeners = new Set<() => void>();
+  private readonly cacheByWorkspaceKey: Map<string, WorkspaceUsageCache> = new Map<
+    string,
+    WorkspaceUsageCache
+  >();
+  private readonly chainByWorkspaceKey: Map<string, Promise<void>> = new Map<
+    string,
+    Promise<void>
+  >();
+  private readonly listeners: Set<() => void> = new Set<() => void>();
 
   public constructor(
     private readonly fileSystem: UsageLedgerFileSystem,
@@ -40,9 +47,9 @@ export class UsageLedgerRecorder {
   }
 
   public async record(workspaceRoot: StoryUri, record: UsageRecord): Promise<void> {
-    const key = workspaceRoot.fsPath;
-    const previous = this.chainByWorkspaceKey.get(key) ?? Promise.resolve();
-    const next = previous
+    const key: string = workspaceRoot.fsPath;
+    const previous: Promise<void> = this.chainByWorkspaceKey.get(key) ?? Promise.resolve();
+    const next: Promise<void> = previous
       .catch(() => undefined)
       .then(() => this.recordSerialized(workspaceRoot, record));
     this.chainByWorkspaceKey.set(key, next);
@@ -51,7 +58,7 @@ export class UsageLedgerRecorder {
   }
 
   public async getSummary(workspaceRoot: StoryUri): Promise<UsageSummaryByEntity> {
-    const cache = await this.ensureLoaded(workspaceRoot);
+    const cache: WorkspaceUsageCache = await this.ensureLoaded(workspaceRoot);
     return cache.summary;
   }
 
@@ -60,8 +67,8 @@ export class UsageLedgerRecorder {
   }
 
   private async recordSerialized(workspaceRoot: StoryUri, record: UsageRecord): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const cache = await this.ensureLoaded(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const cache: WorkspaceUsageCache = await this.ensureLoaded(workspaceRoot);
 
     const entry: UsageLedgerEntry = {
       ...stripRecordId(record),
@@ -87,15 +94,19 @@ export class UsageLedgerRecorder {
   }
 
   private async ensureLoaded(workspaceRoot: StoryUri): Promise<WorkspaceUsageCache> {
-    const key = workspaceRoot.fsPath;
-    const existing = this.cacheByWorkspaceKey.get(key);
+    const key: string = workspaceRoot.fsPath;
+    const existing: WorkspaceUsageCache | undefined = this.cacheByWorkspaceKey.get(key);
 
     if (existing) {
       return existing;
     }
 
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const loaded = await readUsageLedgerFromUri(this.fileSystem, paths.usageLedger, this.warn);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const loaded: UsageLedgerEntry[] = await readUsageLedgerFromUri(
+      this.fileSystem,
+      paths.usageLedger,
+      this.warn,
+    );
     const cache: WorkspaceUsageCache = {
       entries: [...loaded],
       summary: computeUsageSummaryFromEntries(loaded),

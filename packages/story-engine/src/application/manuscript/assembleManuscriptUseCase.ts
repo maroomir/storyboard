@@ -1,4 +1,4 @@
-import type { StoryUri, ChapterPlan } from '@storyboard/story-model';
+import type { StoryUri, ChapterPlan, ForeshadowingChapter } from '@storyboard/story-model';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
@@ -72,7 +72,7 @@ export class AssembleManuscriptUseCase implements IUseCase<
           return { kind: 'missing_outline', ok: false };
         }
 
-        const source = await this.deps.repository.loadAssemblySource(
+        const source: ManuscriptAssemblySource = await this.deps.repository.loadAssemblySource(
           workspaceRoot,
           this.deps.logger,
         );
@@ -80,13 +80,13 @@ export class AssembleManuscriptUseCase implements IUseCase<
           return { kind: 'missing_drafts', ok: false };
         }
 
-        const manuscript = assembleManuscript({
+        const manuscript: AssembledManuscript = assembleManuscript({
           draftsByOrder: source.draftsByOrder,
           plan: source.plan,
           projectName: source.projectName,
         });
-        const foreshadowing = collectForeshadowing(source.plan);
-        const volumeUri = await this.deps.repository.saveAssembly(
+        const foreshadowing: ForeshadowingChapter[] = collectForeshadowing(source.plan);
+        const volumeUri: StoryUri = await this.deps.repository.saveAssembly(
           workspaceRoot,
           manuscript,
           buildForeshadowingMarkdown(source.projectName, foreshadowing),

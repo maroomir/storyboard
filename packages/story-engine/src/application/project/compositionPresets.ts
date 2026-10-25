@@ -5,10 +5,12 @@ import {
 } from '@storyboard/story-model';
 import type {
   CompositionKind,
+  CompositionPresetDefaults,
   NarratorCard,
   NarratorKnowledge,
   NarratorPerson,
   PointOfView,
+  PointOfViewDerivation,
   ProjectSetting,
   StoryThread,
 } from '@storyboard/story-model';
@@ -48,15 +50,15 @@ export function buildCompositionPreset(request: CompositionPresetRequest): Compo
 }
 
 function buildOmnibusSetting(request: CompositionPresetRequest): CompositionPresetSetting {
-  const defaults = resolveCompositionPresetDefaults();
-  const episodeCount = Math.max(
+  const defaults: CompositionPresetDefaults = resolveCompositionPresetDefaults();
+  const episodeCount: number = Math.max(
     defaults.minimumOmnibusEpisodes,
     request.episodeCount ?? defaults.omnibusEpisodeCount,
   );
   const threads: Record<string, StoryThread> = {};
 
-  for (let episode = 1; episode <= episodeCount; episode += 1) {
-    const threadId = `${defaults.episodeThreadIdPrefix}${episode}`;
+  for (let episode: number = 1; episode <= episodeCount; episode += 1) {
+    const threadId: string = `${defaults.episodeThreadIdPrefix}${episode}`;
     threads[threadId] = { title: `${episode}${defaults.episodeTitleSuffix}` };
   }
 
@@ -64,7 +66,7 @@ function buildOmnibusSetting(request: CompositionPresetRequest): CompositionPres
 }
 
 function buildFrameSetting(): CompositionPresetSetting {
-  const defaults = resolveCompositionPresetDefaults();
+  const defaults: CompositionPresetDefaults = resolveCompositionPresetDefaults();
 
   return {
     composition: 'frame',
@@ -103,7 +105,9 @@ function buildAlternatingPovPreset(request: CompositionPresetRequest): Compositi
 const fallbackNarration = { person: 'third', knowledge: 'witnessed' } as const;
 
 function buildNarratorCard(characterId: string, pov: PointOfView | undefined): NarratorCard {
-  const derived = pov ? deriveNarrationFromPointOfView(pov) : fallbackNarration;
+  const derived: PointOfViewDerivation = pov
+    ? deriveNarrationFromPointOfView(pov)
+    : fallbackNarration;
   const person: NarratorPerson = derived.person;
   const knowledge: NarratorKnowledge = derived.knowledge;
 

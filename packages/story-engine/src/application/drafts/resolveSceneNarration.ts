@@ -7,7 +7,11 @@ import {
   type StoryboardProject,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths } from '@storyboard/story-model';
+import type {
+  ChapterPlan,
+  FlatChapterScene,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';
 
 // 장이 씬에 물려주는 값. 씬 카드가 같은 필드를 가지면 씬이 이긴다.
@@ -24,8 +28,8 @@ export async function readChapterNarrationDefaults(
   fileSystem: IFileSystem,
 ): Promise<ChapterNarrationDefaults> {
   try {
-    const plan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
-    const placement = flattenChapterPlan(plan)[sceneOrder - 1];
+    const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
+    const placement: FlatChapterScene | undefined = flattenChapterPlan(plan)[sceneOrder - 1];
 
     return {
       ...(placement?.chapterNarrator === undefined ? {} : { narrator: placement.chapterNarrator }),
@@ -44,9 +48,9 @@ export async function resolveSceneNarration(
   fileSystem: IFileSystem,
 ): Promise<NarrationDirective | undefined> {
   const setting = project.setting;
-  const sceneNarrator = scene.card.narrator;
-  const defaultNarrator = setting?.narration?.defaultNarrator;
-  const referencesNarratorCard =
+  const sceneNarrator: string | undefined = scene.card.narrator;
+  const defaultNarrator: string | undefined = setting?.narration?.defaultNarrator;
+  const referencesNarratorCard: boolean =
     sceneNarrator !== undefined ||
     chapterDefaults.narrator !== undefined ||
     defaultNarrator !== undefined;

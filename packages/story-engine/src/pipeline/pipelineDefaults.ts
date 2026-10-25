@@ -1,3 +1,4 @@
+import type { ViolationWeights } from '@storyboard/story-model';
 import { z } from 'zod';
 
 import defaultsData from './pipelineDefaults.params.json';
@@ -7,10 +8,61 @@ import defaultsData from './pipelineDefaults.params.json';
 // 값을 바꾸면 모든 모델의 생성 결과가 함께 움직이므로, 한 모델에서만 관찰한 값은 여기가 아니라
 // 모델 프로필에 적는다.
 
-const ratio = z.number().positive().max(1);
-const positiveInt = z.number().int().positive();
+const ratio: z.ZodNumber = z.number().positive().max(1);
+const positiveInt: z.ZodNumber = z.number().int().positive();
 
-const pipelineDefaultsSchema = z.object({
+export interface PipelineDefaultsSection {
+  retryLimit: number;
+  minimumLengthRatio: number;
+  repeatedRunWindow: number;
+  repeatedRunLimit: number;
+  recapPhraseLimit: number;
+}
+
+export interface PipelineDefaultsSkeleton {
+  lengthRatio: number;
+  retryLimit: number;
+  minimumLengthRatio: number;
+  thinDialogueTurns: number;
+  requestedDialogueTurns: number;
+  charsPerCall: number;
+}
+
+export interface PipelineDefaultsDialogue {
+  preservedRatio: number;
+  splitLimit: number;
+  repeatedRunLimit: number;
+  minimumLineLength: number;
+  minimumQuotedLength: number;
+}
+
+export interface PipelineDefaultsActors {
+  retryLimit: number;
+  lineMaxChars: number;
+  lineMaxSentences: number;
+}
+
+export interface PipelineDefaultsVoiceSamples {
+  limit: number;
+  minimumLength: number;
+  maximumLength: number;
+}
+
+export interface PipelineDefaults {
+  section: PipelineDefaultsSection;
+  skeleton: PipelineDefaultsSkeleton;
+  sceneBreak: { timeJumpMinutes: number };
+  dialogue: PipelineDefaultsDialogue;
+  polish: { lengthLimitRatio: number; retryLimit: number };
+  catchphrase: { perBeatLimit: number };
+  actors: PipelineDefaultsActors;
+  padding: { paragraphRatio: number; paragraphMinimumLength: number };
+  voiceSamples: PipelineDefaultsVoiceSamples;
+  context: { condensedMaxChars: number; maxSceneBreakNewlines: number };
+  violationWeights: ViolationWeights;
+}
+
+const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
   section: z.object({
     // 한 구간을 다시 부르는 횟수.
     retryLimit: z.number().int().nonnegative(),
@@ -103,7 +155,5 @@ const pipelineDefaultsSchema = z.object({
     'missing-beats': positiveInt,
   }),
 });
-
-export type PipelineDefaults = z.infer<typeof pipelineDefaultsSchema>;
 
 export const pipelineDefaults: PipelineDefaults = pipelineDefaultsSchema.parse(defaultsData);

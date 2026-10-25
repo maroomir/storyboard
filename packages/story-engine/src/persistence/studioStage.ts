@@ -1,4 +1,7 @@
 import type {
+RevisionPlan,
+RevisionPlanEntry,
+SceneContext,
   StoryUri,
   StudioCardStage,
   StudioSceneStage,
@@ -45,7 +48,7 @@ export async function readStudioStage(
     return readCardStage(fs, workspaceRoot, entity.kind, entity.key);
   }
 
-  const sceneStem = entity?.kind === 'scene' ? entity.key : resolveSceneStem(target);
+  const sceneStem: string | undefined = entity?.kind === 'scene' ? entity.key : resolveSceneStem(target);
 
   return sceneStem ? readSceneStage(fs, workspaceRoot, sceneStem) : undefined;
 }
@@ -55,8 +58,8 @@ async function readSceneStage(
   workspaceRoot: StoryUri,
   sceneStem: string,
 ): Promise<StudioSceneStage> {
-  const paths = getStoryboardProjectPaths(workspaceRoot);
-  const scene = await readSceneOrUndefined(fs, workspaceRoot, sceneStem);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+  const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, sceneStem);
 
   const [cards, draft, review] = await Promise.all([
     scene ? readStageCards(fs, paths, scene) : Promise.resolve([]),
@@ -73,13 +76,13 @@ async function readCardStage(
   cardKind: 'character' | 'background',
   cardId: string,
 ): Promise<StudioCardStage | undefined> {
-  const paths = getStoryboardProjectPaths(workspaceRoot);
-  const cardUri =
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+  const cardUri: StoryUri =
     cardKind === 'character'
       ? characterCardPath(workspaceRoot, cardId)
       : backgroundCardPath(workspaceRoot, cardId);
 
-  const card = await readCardOrUndefined(fs, cardUri);
+  const card: StoryboardCard | undefined = await readCardOrUndefined(fs, cardUri);
 
   if (!card) {
     return undefined;
@@ -120,19 +123,19 @@ async function findScenesFeaturingCard(
   sceneDirectory: StoryUri,
   card: StoryboardCard,
 ): Promise<string[]> {
-  const names = await listDirectoryFileNames(
+  const names: readonly string[] = await listDirectoryFileNames(
     fs,
     sceneDirectory,
     (name) => !isIgnoredSampleCardFileName(name),
   );
-  const stems = names
+  const stems: string[] = names
     .map((name) => parseSceneFileName(name)?.stem)
     .filter((stem): stem is string => stem !== undefined)
     .sort();
 
-  const matches = await Promise.all(
+  const matches: (string | undefined)[] = await Promise.all(
     stems.map(async (stem) => {
-      const scene = await readSceneOrUndefined(fs, workspaceRoot, stem);
+      const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, stem);
       return scene && sceneFeaturesCard(scene, card) ? stem : undefined;
     }),
   );
@@ -161,7 +164,7 @@ function resolveSceneStem(target: StudioTarget): string | undefined {
     return undefined;
   }
 
-  const fileName = target.sceneUri.split('/').pop() ?? '';
+  const fileName: string = target.sceneUri.split('/').pop() ?? '';
   return parseSceneFileName(fileName)?.stem;
 }
 
@@ -183,7 +186,7 @@ async function readStageCards(
   scene: SceneFile,
 ): Promise<StudioStageCard[]> {
   try {
-    const context = await buildSceneContext(sceneContextPaths(paths), scene, fs);
+    const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, fs);
     const characters = context.characters.map(
       (character): StudioStageCard => ({ kind: 'character', name: character.name }),
     );
@@ -201,7 +204,7 @@ async function readDraftFacts(
   workspaceRoot: StoryUri,
   sceneStem: string,
 ): Promise<DraftFacts> {
-  const uri = draftPath(workspaceRoot, sceneStem);
+  const uri: StoryUri = draftPath(workspaceRoot, sceneStem);
 
   try {
     const [modifiedAt, bytes] = await Promise.all([fs.modifiedTime(uri), fs.readFile(uri)]);
@@ -230,11 +233,11 @@ async function readDraftRevision(
   sceneStem: string,
 ): Promise<number | undefined> {
   try {
-    const fileNames = await fs.listFileNames(draftHistorySceneDirectory(workspaceRoot, sceneStem));
+    const fileNames: readonly string[] = await fs.listFileNames(draftHistorySceneDirectory(workspaceRoot, sceneStem));
 
     // NOTE: Archives hold the *previous* drafts, so the live draft is one past the highest
     // archived revision. With no archive the draft is unversioned, not v1.
-    const currentRevision = nextDraftHistoryRevision(fileNames);
+    const currentRevision: number = nextDraftHistoryRevision(fileNames);
 
     return currentRevision > 1 ? currentRevision : undefined;
   } catch {
@@ -248,8 +251,8 @@ async function readReviewState(
   sceneStem: string,
 ): Promise<StudioSceneStage['review']> {
   try {
-    const plan = await readRevisionPlanFile(revisionPlanUri, fs);
-    const entry = plan.entries.find((candidate) => candidate.sceneStem === sceneStem);
+    const plan: RevisionPlan = await readRevisionPlanFile(revisionPlanUri, fs);
+    const entry: RevisionPlanEntry | undefined = plan.entries.find((candidate) => candidate.sceneStem === sceneStem);
 
     if (!entry) {
       return 'unreviewed';

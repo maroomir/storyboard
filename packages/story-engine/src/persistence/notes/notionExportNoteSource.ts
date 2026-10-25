@@ -22,7 +22,7 @@ export interface NotionExportNoteSourceOptions {
   readonly archive: StoryUri;
 }
 
-const macResourceForkDirectory = '__MACOSX/';
+const macResourceForkDirectory: string = '__MACOSX/';
 
 // Reads a Notion export zip: every page is a Markdown file named `Title <id>.md`, sub-pages sit in a
 // folder of the same name, and a database comes as `Title <id>.csv` beside a folder of its row pages.
@@ -54,31 +54,31 @@ export class NotionExportNoteSource implements INoteSource {
       .filter((entry) => !entry.name.startsWith(macResourceForkDirectory))
       .map((entry) => ({ entry, segments: entry.name.normalize('NFC').split('/') }))
       .sort((left, right) => compareNoteNames(left.entry.name, right.entry.name));
-    const folderStems = new Set(
+    const folderStems: Set<string> = new Set(
       files.flatMap(({ segments }) => segments.slice(0, -1).map(stripNotionIdSuffix)),
     );
     const notes: NoteDocument[] = [];
     const skipped: SkippedNote[] = [];
-    const decoder = new TextDecoder();
+    const decoder: InstanceType<typeof TextDecoder> = new TextDecoder();
 
     for (const { entry, segments } of files) {
-      const fileName = segments.at(-1) ?? entry.name;
-      const path = segments.slice(0, -1).map(stripNotionIdSuffix);
-      const id = [...path, fileName.replace(/\s[0-9a-f]{32}(?=\.[a-z]+$)/i, '')].join('/');
+      const fileName: string = segments.at(-1) ?? entry.name;
+      const path: string[] = segments.slice(0, -1).map(stripNotionIdSuffix);
+      const id: string = [...path, fileName.replace(/\s[0-9a-f]{32}(?=\.[a-z]+$)/i, '')].join('/');
 
       if (/\.md$/i.test(fileName)) {
-        const body = decoder.decode(entry.data);
-        const fallback = stripNotionIdSuffix(stripMarkdownExtension(fileName));
+        const body: string = decoder.decode(entry.data);
+        const fallback: string = stripNotionIdSuffix(stripMarkdownExtension(fileName));
         notes.push({ id, title: extractNoteTitle(body, fallback), path, body, origin: 'tree' });
         continue;
       }
 
       if (/\.csv$/i.test(fileName)) {
-        const stem = fileName.replace(/\.csv$/i, '');
+        const stem: string = fileName.replace(/\.csv$/i, '');
         if (/_all$/i.test(stem) || folderStems.has(stripNotionIdSuffix(stem))) {
           continue;
         }
-        const title = stripNotionIdSuffix(stem);
+        const title: string = stripNotionIdSuffix(stem);
         notes.push({
           id,
           title,
@@ -99,18 +99,18 @@ export class NotionExportNoteSource implements INoteSource {
 // A database export is one table; each row becomes a heading with its properties, which reads like
 // the page Notion would show for it.
 export function renderCsvAsNote(title: string, csv: string): string {
-  const rows = parseCsv(csv.replace(/^\uFEFF/, ''));
+  const rows: string[][] = parseCsv(csv.replace(/^\uFEFF/, ''));
   const [header, ...records] = rows;
 
   if (header === undefined) {
     return `# ${title}\n`;
   }
 
-  const sections = records
+  const sections: string[] = records
     .filter((record) => record.some((cell) => cell.trim().length > 0))
     .map((record) => {
       const [first, ...rest] = record;
-      const properties = rest
+      const properties: string[] = rest
         .map((cell, index) => ({ key: header[index + 1] ?? '', value: cell.trim() }))
         .filter(({ key, value }) => key.length > 0 && value.length > 0)
         .map(({ key, value }) => `- ${key}: ${value}`);
@@ -123,11 +123,11 @@ export function renderCsvAsNote(title: string, csv: string): string {
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
-  let cell = '';
-  let isQuoted = false;
+  let cell: string = '';
+  let isQuoted: boolean = false;
 
-  for (let index = 0; index < text.length; index += 1) {
-    const char = text[index] as string;
+  for (let index: number = 0; index < text.length; index += 1) {
+    const char: string = text[index] as string;
 
     if (isQuoted) {
       if (char === '"' && text[index + 1] === '"') {

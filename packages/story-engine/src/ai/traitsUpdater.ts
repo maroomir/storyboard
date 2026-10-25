@@ -3,6 +3,7 @@ import type {
   CardFileSystem,
   CharacterCard,
   UsageAttribution,
+  StoryboardCard,
 } from '@storyboard/story-model';
 import {
   readCardFile,
@@ -41,13 +42,15 @@ export function extractQuotedUtterancesForCharacter(
   aliases?: readonly string[],
 ): string[] {
   const utterances: string[] = [];
-  const speakerNames = [characterName, ...(aliases ?? [])]
+  const speakerNames: string[] = [characterName, ...(aliases ?? [])]
     .map((name) => name.trim())
     .filter((name) => name.length > 0);
-  const speaker = new RegExp(`^\\s*(?:${speakerNames.map(escapeRegExp).join('|')})\\s*:\\s*(.+)$`);
+  const speaker: RegExp = new RegExp(
+    `^\\s*(?:${speakerNames.map(escapeRegExp).join('|')})\\s*:\\s*(.+)$`,
+  );
 
   for (const rawLine of script.split(/\r?\n/)) {
-    const match = speaker.exec(rawLine);
+    const match: RegExpExecArray | null = speaker.exec(rawLine);
 
     if (!match) {
       continue;
@@ -60,13 +63,13 @@ export function extractQuotedUtterancesForCharacter(
 }
 
 function collectQuotedStrings(text: string, out: string[]): void {
-  const quotePatterns = [/"([^"]+)"/g, /「([^」]+)」/g, /'([^']+)'/g];
+  const quotePatterns: RegExp[] = [/"([^"]+)"/g, /「([^」]+)」/g, /'([^']+)'/g];
 
   for (const pattern of quotePatterns) {
     let match: RegExpExecArray | null;
 
     while ((match = pattern.exec(text)) !== null) {
-      const raw = (match[1] ?? '').trim();
+      const raw: string = (match[1] ?? '').trim();
 
       if (raw.length >= 2) {
         out.push(raw);
@@ -87,8 +90,10 @@ async function extractTraitsForCards(
   input: UpdateCharacterTraitsFromDraftInput,
 ): Promise<Record<string, string[]> | undefined> {
   const { draftBody, detectedCharacterCards, aiService, logger } = input;
-  const sceneStem = input.sceneStem;
-  const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]));
+  const sceneStem: string | undefined = input.sceneStem;
+  const characterIdByName: Map<string, string> = new Map(
+    detectedCharacterCards.map((card) => [card.name, card.id]),
+  );
 
   try {
     return await aiService.extractTraitsByCharacter(
@@ -98,7 +103,7 @@ async function extractTraitsForCards(
         ? {}
         : {
             attributionForCharacter: (name: string): UsageAttribution | undefined => {
-              const characterId = characterIdByName.get(name);
+              const characterId: string | undefined = characterIdByName.get(name);
 
               if (!characterId) {
                 return undefined;
@@ -150,19 +155,19 @@ async function applyTraitsToCard(args: {
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
 }): Promise<TraitsCardOutcome> {
   const { ref, processed, draftBody, limit, fileSystem, resolveCharacterCardUri } = args;
-  const cardUri = resolveCharacterCardUri(ref);
-  const current = await readCardFile(cardUri, fileSystem);
+  const cardUri: StoryUri = resolveCharacterCardUri(ref);
+  const current: StoryboardCard = await readCardFile(cardUri, fileSystem);
 
   if (current.type !== 'character') {
     return 'noop';
   }
 
-  const additions = processed[current.name] ?? [];
-  const quoted = extractQuotedUtterancesForCharacter(draftBody, current.name);
-  const mergedTraits = [...(current.traits ?? []), ...additions];
-  const mergedRecent = [...(current.recentDialogues ?? []), ...quoted].slice(-limit);
-  const traitsUnchanged = sameStringArray(mergedTraits, current.traits ?? []);
-  const recentUnchanged = sameStringArray(mergedRecent, current.recentDialogues ?? []);
+  const additions: string[] = processed[current.name] ?? [];
+  const quoted: string[] = extractQuotedUtterancesForCharacter(draftBody, current.name);
+  const mergedTraits: string[] = [...(current.traits ?? []), ...additions];
+  const mergedRecent: string[] = [...(current.recentDialogues ?? []), ...quoted].slice(-limit);
+  const traitsUnchanged: boolean = sameStringArray(mergedTraits, current.traits ?? []);
+  const recentUnchanged: boolean = sameStringArray(mergedRecent, current.recentDialogues ?? []);
 
   if (traitsUnchanged && recentUnchanged) {
     return 'skipped';
@@ -182,7 +187,7 @@ async function applyTraitsToCard(args: {
 export async function updateCharacterTraitsFromDraft(
   input: UpdateCharacterTraitsFromDraftInput,
 ): Promise<TraitsUpdateSummary> {
-  const limit = input.recentDialogueLimit ?? 8;
+  const limit: number = input.recentDialogueLimit ?? 8;
   const { draftBody, detectedCharacterCards, fileSystem, logger } = input;
 
   const readCharacterCard = (ref: CharacterCard): ReturnType<typeof readCardFile> =>
@@ -192,20 +197,23 @@ export async function updateCharacterTraitsFromDraft(
     return { updatedCardCount: 0, skippedUnchangedCount: 0 };
   }
 
-  const extracted = await extractTraitsForCards(input);
+  const extracted: Record<string, string[]> | undefined = await extractTraitsForCards(input);
   if (extracted === undefined) {
     return { updatedCardCount: 0, skippedUnchangedCount: 0 };
   }
 
-  const existingTraits = await loadExistingTraits(detectedCharacterCards, readCharacterCard);
-  const processed = reconcileCharacterTraits(extracted, existingTraits);
+  const existingTraits: Record<string, readonly string[]> = await loadExistingTraits(
+    detectedCharacterCards,
+    readCharacterCard,
+  );
+  const processed: Record<string, string[]> = reconcileCharacterTraits(extracted, existingTraits);
 
-  let updatedCardCount = 0;
-  let skippedUnchangedCount = 0;
+  let updatedCardCount: number = 0;
+  let skippedUnchangedCount: number = 0;
 
   for (const ref of detectedCharacterCards) {
     try {
-      const outcome = await applyTraitsToCard({
+      const outcome: TraitsCardOutcome = await applyTraitsToCard({
         ref,
         processed,
         draftBody,
@@ -245,7 +253,7 @@ export function applyTraitsFromExtractedBullets(input: {
       const result: Record<string, string[]> = {};
 
       for (const name of names) {
-        const raw = input.rawResponsesByCharacter[name];
+        const raw: string | undefined = input.rawResponsesByCharacter[name];
 
         if (raw !== undefined) {
           result[name] = parseBulletList(raw);

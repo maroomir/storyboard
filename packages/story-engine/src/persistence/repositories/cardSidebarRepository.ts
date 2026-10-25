@@ -6,7 +6,13 @@ import {
   parseCard,
 } from '@storyboard/story-model';
 import { listCardFileUris } from '#engine/persistence/cardFiles';
-import type { StoryUri, CardType, SidebarCardSummary } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  CardType,
+  SidebarCardSummary,
+  StoryboardProjectPaths,
+  StoryboardCard,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   ICardSidebarRepository,
@@ -20,11 +26,11 @@ export class CardSidebarRepository implements ICardSidebarRepository {
     workspaceRoot: StoryUri,
     category: SidebarCardCategory,
   ): Promise<SidebarCardSummary[]> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const directory =
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const directory: StoryUri =
       category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const uris = await listCardFileUris(this.fileSystem, directory);
-    const summaries = await Promise.all(
+    const uris: StoryUri[] = await listCardFileUris(this.fileSystem, directory);
+    const summaries: SidebarCardSummary[] = await Promise.all(
       uris
         .filter((uri) => !isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? ''))
         .map(async (uri) => await this.toSummary(uri, category)),
@@ -38,13 +44,16 @@ export class CardSidebarRepository implements ICardSidebarRepository {
     category: SidebarCardCategory,
   ): Promise<SidebarCardSummary> {
     try {
-      const card = parseCard(new TextDecoder().decode(await this.fileSystem.readFile(uri)));
+      const card: StoryboardCard = parseCard(
+        new TextDecoder().decode(await this.fileSystem.readFile(uri)),
+      );
 
       if (this.toCategory(card.type) !== category) {
         return this.errorSummary(uri, category, `Expected ${category} card, got ${card.type}.`);
       }
 
-      const role = card.type === 'character' && isCharacterRole(card.role) ? card.role : undefined;
+      const role: 'main' | 'supporting' | 'extra' | undefined =
+        card.type === 'character' && isCharacterRole(card.role) ? card.role : undefined;
       return {
         type: card.type,
         id: card.id,

@@ -19,14 +19,14 @@ export function numberSkeletonDialogue(
   skeleton: string,
   tuning: ResolvedSceneGenerationTuning,
 ): NumberedSkeleton {
-  const pattern = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
+  const pattern: RegExp = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
   const dialogues: { start: number; end: number; text: string }[] = [];
-  let text = '';
-  let cursor = 0;
+  let text: string = '';
+  let cursor: number = 0;
 
   for (const match of skeleton.matchAll(pattern)) {
-    const start = match.index ?? 0;
-    const end = start + match[0].length;
+    const start: number = match.index ?? 0;
+    const end: number = start + match[0].length;
     dialogues.push({ start, end, text: (match[1] ?? '').trim() });
     text += `${skeleton.slice(cursor, start)}⟨${dialogues.length}⟩`;
     cursor = start;
@@ -42,7 +42,7 @@ export interface DialogueRewriteMerge {
   readonly contestedIndices: readonly number[];
 }
 
-const forbiddenRewriteCharacters = /[“”"\n⟨⟩]/;
+const forbiddenRewriteCharacters: RegExp = /[“”"\n⟨⟩]/;
 
 // 번호 하나를 한 인물만 가져갔고, 돌려준 문장이 따옴표·줄바꿈·번호 표시 없는 한 문장일 때만 바꿔 넣는다.
 export function mergeDialogueRewrites(
@@ -50,11 +50,11 @@ export function mergeDialogueRewrites(
   numbered: NumberedSkeleton,
   rewritesByCharacter: ReadonlyMap<string, readonly SceneDialogueRewrite[]>,
 ): DialogueRewriteMerge {
-  const claims = new Map<number, string[]>();
+  const claims: Map<number, string[]> = new Map<number, string[]>();
 
   for (const rewrites of rewritesByCharacter.values()) {
     for (const rewrite of rewrites) {
-      const text = claimableRewriteText(rewrite, numbered);
+      const text: string | undefined = claimableRewriteText(rewrite, numbered);
 
       if (text !== undefined) {
         claims.set(rewrite.index, [...(claims.get(rewrite.index) ?? []), text]);
@@ -62,22 +62,22 @@ export function mergeDialogueRewrites(
     }
   }
 
-  const contestedIndices = [...claims.entries()]
+  const contestedIndices: number[] = [...claims.entries()]
     .filter(([, texts]) => texts.length > 1)
     .map(([index]) => index)
     .sort((left, right) => left - right);
-  let text = skeleton;
-  let replacedCount = 0;
+  let text: string = skeleton;
+  let replacedCount: number = 0;
 
-  for (let index = numbered.dialogues.length; index >= 1; index -= 1) {
-    const texts = claims.get(index);
+  for (let index: number = numbered.dialogues.length; index >= 1; index -= 1) {
+    const texts: string[] | undefined = claims.get(index);
     const dialogue = numbered.dialogues[index - 1];
 
     if (texts === undefined || texts.length !== 1 || dialogue === undefined) {
       continue;
     }
 
-    const replacement = texts[0] as string;
+    const replacement: string = texts[0] as string;
     if (replacement === dialogue.text) {
       continue;
     }
@@ -94,7 +94,7 @@ export function claimableRewriteText(
   rewrite: SceneDialogueRewrite,
   numbered: NumberedSkeleton,
 ): string | undefined {
-  const text = stripOuterQuotes(rewrite.text);
+  const text: string = stripOuterQuotes(rewrite.text);
 
   if (
     numbered.dialogues[rewrite.index - 1] === undefined ||
@@ -109,7 +109,7 @@ export function claimableRewriteText(
 
 // NOTE: 모델은 받은 뼈대의 ⟨n⟩ 번호를 문장 앞에 그대로 붙여 돌려주기도 한다. 그대로 넣으면 어느
 // 검증도 잡지 못하고 원고까지 번호가 남는다.
-const dialogueNumberMarker = /⟨\d+⟩/g;
+const dialogueNumberMarker: RegExp = /⟨\d+⟩/g;
 
 function stripOuterQuotes(text: string): string {
   return text

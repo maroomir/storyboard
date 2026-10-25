@@ -5,9 +5,9 @@ import { pipelineDefaults } from './pipelineDefaults';
 export function dedupeSituations(
   items: readonly SituationWithCharacters[],
 ): SituationWithCharacters[] {
-  const seen = new Set<string>();
+  const seen: Set<string> = new Set<string>();
   return items.filter((item) => {
-    const key = (item.situation || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const key: string = (item.situation || '').replace(/\s+/g, ' ').trim().toLowerCase();
     if (!key) {
       return false;
     }
@@ -23,7 +23,7 @@ export function mergeSituationsToSourceBlockLimit(
   items: readonly SituationWithCharacters[],
   sourceBody: string,
 ): SituationWithCharacters[] {
-  const blocks = sourceBody
+  const blocks: string[] = sourceBody
     .split(/\n\s*\n+/)
     .map((block) => block.trim())
     .filter((block) => block.length > 0);
@@ -31,29 +31,29 @@ export function mergeSituationsToSourceBlockLimit(
     return [...items];
   }
 
-  const limit = Math.max(1, blocks.length);
-  const merged = [...items];
+  const limit: number = Math.max(1, blocks.length);
+  const merged: SituationWithCharacters[] = [...items];
 
   while (merged.length > limit) {
-    let mergeIndex = 0;
-    let smallestLength = Number.POSITIVE_INFINITY;
+    let mergeIndex: number = 0;
+    let smallestLength: number = Number.POSITIVE_INFINITY;
 
-    for (let index = 0; index < merged.length - 1; index += 1) {
-      const first = merged[index];
-      const second = merged[index + 1];
+    for (let index: number = 0; index < merged.length - 1; index += 1) {
+      const first: SituationWithCharacters | undefined = merged[index];
+      const second: SituationWithCharacters | undefined = merged[index + 1];
       if (!first || !second) {
         continue;
       }
 
-      const length = first.situation.length + second.situation.length;
+      const length: number = first.situation.length + second.situation.length;
       if (length < smallestLength) {
         smallestLength = length;
         mergeIndex = index;
       }
     }
 
-    const first = merged[mergeIndex];
-    const second = merged[mergeIndex + 1];
+    const first: SituationWithCharacters | undefined = merged[mergeIndex];
+    const second: SituationWithCharacters | undefined = merged[mergeIndex + 1];
     if (!first || !second) {
       break;
     }
@@ -73,7 +73,7 @@ export function chunkDialoguePiecesByBudget(
 ): string[][] {
   const chunks: string[][] = [];
   let current: string[] = [];
-  let currentChars = 0;
+  let currentChars: number = 0;
 
   for (const piece of pieces) {
     if (current.length > 0 && currentChars + piece.length > maxChars) {
@@ -92,17 +92,17 @@ export function chunkDialoguePiecesByBudget(
   return chunks;
 }
 
-const MAX_SCENE_BREAK_NEWLINE_COUNT = pipelineDefaults.context.maxSceneBreakNewlines;
+const MAX_SCENE_BREAK_NEWLINE_COUNT: number = pipelineDefaults.context.maxSceneBreakNewlines;
 
 export function resolveSceneBreakJoiner(rawSeparator: string | undefined): string | undefined {
-  const separator = rawSeparator?.trim();
+  const separator: string | undefined = rawSeparator?.trim();
 
   if (!separator) {
     return undefined;
   }
 
   if (/^\d+$/.test(separator)) {
-    const newlineCount = Math.min(Number.parseInt(separator, 10), MAX_SCENE_BREAK_NEWLINE_COUNT);
+    const newlineCount: number = Math.min(Number.parseInt(separator, 10), MAX_SCENE_BREAK_NEWLINE_COUNT);
     return newlineCount > 0 ? '\n'.repeat(newlineCount) : undefined;
   }
 
@@ -112,9 +112,9 @@ export function resolveSceneBreakJoiner(rawSeparator: string | undefined): strin
 // NOTE: 청크 포맷 호출이 소설 본문 대신 "분량 한계라 연재형/압축형 중 고르라"는 메타 안내를 돌려보내는
 // 경우가 있어, 그게 원고에 박히지 않도록 감지한다. 길이 핑계와 선택지 제시가 함께 있을 때만 메타로 본다.
 export function looksLikeFormatMetaLeak(text: string): boolean {
-  const hasLengthExcuse =
+  const hasLengthExcuse: boolean =
     /분량[^\n]{0,8}(한계|제한|많|길)|한 ?번에 (다|모두|전부)|토큰 ?(한계|제한|수)/.test(text);
-  const offersOptions =
+  const offersOptions: boolean =
     /연재형|압축형|다음 중|어느 (쪽|것|걸)|선택해|골라|옵션|원하시(는|면)|알려 ?주(세요|시면)/.test(
       text,
     );
@@ -142,7 +142,7 @@ export function condensePreviousContext(
     return previousContext;
   }
 
-  const condensed = previousContext
+  const condensed: string = previousContext
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)

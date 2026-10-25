@@ -3,6 +3,12 @@ import type {
   NarrationDirective,
   StoryboardProject,
   UsageAttribution,
+SceneFile,
+SceneContext,
+NarrativeContext,
+StoryState,
+Draft,
+SceneCacheRecord,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
@@ -30,10 +36,10 @@ import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { readProjectJson } from '#engine/persistence/projectJson';
-import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
-import { resolveSceneThread } from './resolveSceneThread';
+import { readChapterNarrationDefaults, resolveSceneNarration, type ChapterNarrationDefaults } from './resolveSceneNarration';
+import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
 import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
-import type { AiProviderRegistry } from '@storyboard/story-ai';
+import type { AiProviderRegistry, TaskAiConfigResolved } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
 import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
@@ -43,6 +49,7 @@ import {
   runReviseLoop,
   type ReviseLoopContext,
   type ReviseLoopFailure,
+  type ReviseLoopResult,
   type ReviseRound,
   type ReviseSeedIssues,
 } from '#engine/pipeline/reviseLoop';
@@ -78,9 +85,9 @@ async function resolveReviseNarration(
     };
   }
 
-  const chapterDefaults = await readChapterNarrationDefaults(paths, scene.order, fs);
-  const thread = await resolveSceneThread(paths, scene, project, fs, chapterDefaults.thread);
-  const narration = await resolveSceneNarration(paths, scene, project, chapterDefaults, fs);
+  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(paths, scene.order, fs);
+  const thread: SceneThreadContext = await resolveSceneThread(paths, scene, project, fs, chapterDefaults.thread);
+  const narration: NarrationDirective | undefined = await resolveSceneNarration(paths, scene, project, chapterDefaults, fs);
 
   return {
     threadPaths: thread.threadPaths,
@@ -152,10 +159,10 @@ export interface ReviseOutcome {
 // reads the same in the CLI's json, the desktop log and the extension's notice.
 export function describeReviseOutcome(result: ReviseDraftWorkflowResult): ReviseOutcome {
   const { revisionCount } = result;
-  const kept = revisionCount > 0 ? `재작성 ${revisionCount}회는 반영했습니다` : '초안은 생성된 그대로입니다';
+  const kept: string = revisionCount > 0 ? `재작성 ${revisionCount}회는 반영했습니다` : '초안은 생성된 그대로입니다';
 
   if (result.failure) {
-    const stage = result.failure.stage === 'check' ? '검사' : '재작성';
+    const stage: "검사" | "재작성" = result.failure.stage === 'check' ? '검사' : '재작성';
     return {
       status: result.failure.kind === 'timeout' ? 'timeout' : 'failed',
       revisionCount,
@@ -201,7 +208,7 @@ async function loadSceneCoordinateLines(
   let recorded: readonly string[] | undefined;
 
   if (repository) {
-    const cacheUri = sceneCacheFilePath(paths, scene.stem);
+    const cacheUri: StoryUri = sceneCacheFilePath(paths, scene.stem);
     // A record that cannot be read is no record: the cache never blocks a review.
     try {
       recorded = (await fs.exists(cacheUri))
@@ -212,8 +219,8 @@ async function loadSceneCoordinateLines(
     }
   }
 
-  const nameById = new Map(characters.map((character) => [character.id, character.name]));
-  const coordinates =
+  const nameById: Map<string, string> = new Map(characters.map((character) => [character.id, character.name]));
+  const coordinates: readonly string[] =
     recorded ??
     listSceneCoordinates(
       sceneCoordinatesFromBeats(scene.card?.beats, (ref) => nameById.get(ref) ?? ref),
@@ -229,14 +236,14 @@ async function prepareReviseDraftContext(
   sceneStem: string,
   sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<ReviseDraftContext> {
-  const sceneFileName = `${sceneStem}.card`;
-  const scene = await readSceneFile(
+  const sceneFileName: string = `${sceneStem}.card`;
+  const scene: SceneFile = await readSceneFile(
     joinUri(paths.sceneDirectory, sceneFileName),
     fs,
     sceneFileName,
   );
-  const context = await buildSceneContext(sceneContextPaths(paths), scene, fs);
-  const project = await readProjectIfPresent(fs, paths.projectJson);
+  const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, fs);
+  const project: StoryboardProject | undefined = await readProjectIfPresent(fs, paths.projectJson);
   const setting = project?.setting;
   const { threadPaths, previousSceneOrder, narration } = await resolveReviseNarration(
     fs,
@@ -244,22 +251,22 @@ async function prepareReviseDraftContext(
     scene,
     project,
   );
-  const narrative = await buildNarrativeContext(sceneContextPaths(threadPaths), context, fs, {
+  const narrative: NarrativeContext = await buildNarrativeContext(sceneContextPaths(threadPaths), context, fs, {
     ...(previousSceneOrder === undefined ? {} : { previousSceneOrder }),
     ...(narration?.knowledge === 'witnessed' && narration.focal
       ? { focalFilter: { focal: narration.focal } }
       : {}),
   });
-  const canonFactLines = formatBibleFactLines(context, narrative.bibleFacts);
+  const canonFactLines: string[] = formatBibleFactLines(context, narrative.bibleFacts);
   // NOTE: 앞 씬이 확립한 사실·이미 공개된 정보와의 모순도 캐넌과 같은 기준으로 검사한다.
-  const priorState = await readStoryState(threadPaths.storyState, fs);
-  const factLines = [
+  const priorState: StoryState = await readStoryState(threadPaths.storyState, fs);
+  const factLines: string[] = [
     ...canonFactLines,
     ...storyStateFactLines(priorState, scene.order, scene.body),
     ...(await loadSceneCoordinateLines(fs, sceneCacheRepository, paths, scene, context.characters)),
   ];
 
-  const draft = parseDraft(await readDraftFile(draftUri, fs));
+  const draft: Draft = parseDraft(await readDraftFile(draftUri, fs));
 
   return {
     draft,
@@ -289,7 +296,7 @@ async function runReviseDraftWorkflow(
   const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
     options;
 
-  const aiService = new StoryboardAiService(options.aiProviderRegistry, {
+  const aiService: StoryboardAiService = new StoryboardAiService(options.aiProviderRegistry, {
     onUsage: (record): void => {
       void options.usageSink
         .record(options.workspaceUri, record)
@@ -297,7 +304,7 @@ async function runReviseDraftWorkflow(
     },
   });
   const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
-  const ctx = await prepareReviseDraftContext(
+  const ctx: ReviseDraftContext = await prepareReviseDraftContext(
     options.fileSystem,
     paths,
     draftUri,
@@ -305,7 +312,7 @@ async function runReviseDraftWorkflow(
     options.sceneCacheRepository,
   );
 
-  const result = await runReviseLoop({
+  const result: ReviseLoopResult = await runReviseLoop({
     aiService,
     registry: options.aiProviderRegistry,
     attribution,
@@ -328,8 +335,8 @@ async function runReviseDraftWorkflow(
   }
 
   if (result.revisionCount > 0 && !result.rejection && !result.cancelled) {
-    const revisionConfig = options.aiProviderRegistry.getTaskAiConfig('draftRevision');
-    const revised = createDraft({
+    const revisionConfig: TaskAiConfigResolved = options.aiProviderRegistry.getTaskAiConfig('draftRevision');
+    const revised: Draft = createDraft({
       sceneStem,
       format: ctx.draft.format,
       body: result.body,
@@ -366,16 +373,16 @@ async function refreshSceneCacheBodyHash(
   sceneStem: string,
   revised: ReturnType<typeof createDraft>,
 ): Promise<void> {
-  const repository = options.sceneCacheRepository;
+  const repository: ISceneCacheRepository | undefined = options.sceneCacheRepository;
 
   if (!repository) {
     return;
   }
 
-  const cacheUri = sceneCacheFilePath(options.paths, sceneStem);
+  const cacheUri: StoryUri = sceneCacheFilePath(options.paths, sceneStem);
 
   try {
-    const record = await repository.read(cacheUri);
+    const record: SceneCacheRecord = await repository.read(cacheUri);
     await repository.write(cacheUri, {
       ...record,
       bodyHash: computeDraftBodyHash(parseDraft(serializeDraft(revised)).body),

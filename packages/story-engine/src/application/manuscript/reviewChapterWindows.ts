@@ -4,6 +4,7 @@ import type {
   ContinuityIssueLike,
   DraftCritiqueIssue,
   ChapterSummary,
+  AssembledChapter,
 } from '@storyboard/story-model';
 
 export interface ChapterWindowReviewAiService {
@@ -55,12 +56,12 @@ export async function reviewChapterWindows(
 ): Promise<ChapterWindowReviewResult> {
   const continuityIssues: ContinuityIssueLike[] = [];
   const critiqueIssues: DraftCritiqueIssue[] = [];
-  const chapters = input.manuscript.chapters;
+  const chapters: AssembledChapter[] = input.manuscript.chapters;
 
   for (const [index, chapter] of chapters.entries()) {
     input.onProgress?.(chapter.chapterTitle, index + 1, chapters.length);
 
-    const facts = [
+    const facts: string[] = [
       ...input.canonFactLines,
       ...buildStorySoFarLines(chapters.slice(0, index), input.storySoFar),
     ];
@@ -97,12 +98,12 @@ function buildStorySoFarLines(
   precedingChapters: readonly { readonly chapterTitle: string }[],
   storySoFar: readonly ChapterSummary[],
 ): string[] {
-  const summaryByTitle = new Map(
+  const summaryByTitle: Map<string, string> = new Map(
     storySoFar.map((chapter) => [chapter.chapterTitle, chapter.summary]),
   );
 
   return precedingChapters.flatMap((chapter) => {
-    const summary = summaryByTitle.get(chapter.chapterTitle);
+    const summary: string | undefined = summaryByTitle.get(chapter.chapterTitle);
 
     return summary === undefined
       ? []

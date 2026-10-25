@@ -25,10 +25,22 @@ import {
   selectNoteConsolidationTargets,
   STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
-import type { NoteDocument, StoryUri, StoryboardCard, NoteBundle } from '@storyboard/story-model';
+import type {
+  NoteDocument,
+  StoryUri,
+  StoryboardCard,
+  NoteBundle,
+  NoteExtractionResult,
+  NoteSynthesis,
+  NoteConsolidationTarget,
+  NoteConsolidationResult,
+} from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureTypes';
+import type {
+  IStoryFeatureRepository,
+  StoryFeatureSource,
+} from '#engine/application/story/storyFeatureTypes';
 import {
   failedResult,
   runUseCase,
@@ -91,7 +103,8 @@ function describeExtractionFailure(
   position: string,
 ): string {
   const [first] = chunk;
-  const titles = chunk.length > 1 ? `${first?.title} 외 ${chunk.length - 1}장` : `${first?.title}`;
+  const titles: string =
+    chunk.length > 1 ? `${first?.title} 외 ${chunk.length - 1}장` : `${first?.title}`;
 
   return `노트 묶음 ${position} (${titles})은 ${failureDescriptions[failure]} 아무것도 옮기지 못했습니다.`;
 }
@@ -106,12 +119,12 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
 
   public estimate(bundle: NoteBundle): NoteAbsorbEstimate {
     const { providerId, model } = this.deps.aiGateway.getTaskAiConfig('noteExtraction');
-    const workload = measureNoteAbsorbWorkload(bundle.notes, {
+    const workload: NoteAbsorbWorkload = measureNoteAbsorbWorkload(bundle.notes, {
       extractionMaxTokens: NoteExtractionPrompt.config.maxTokens,
       synthesisMaxTokens: NoteSynthesisPrompt.config.maxTokens,
       consolidationMaxTokens: NoteCardConsolidationPrompt.config.maxTokens,
     });
-    const costCeilingUsd = computeCostUsd({
+    const costCeilingUsd: number | undefined = computeCostUsd({
       providerId,
       model,
       usage: { inputTokens: workload.inputTokens, outputTokens: workload.outputTokenCeiling },
@@ -133,19 +146,19 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       // before any request is paid for.
       await this.deps.noteRepository.loadCandidates(workspaceRoot);
 
-      const source = await this.deps.storyRepository.load(workspaceRoot);
-      const aiService = this.deps.aiGateway.createService(workspaceRoot);
-      const knownCards = source.cards.map(toKnownCard);
-      const chunks = groupNotesIntoChunks(bundle.notes);
+      const source: StoryFeatureSource = await this.deps.storyRepository.load(workspaceRoot);
+      const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+      const knownCards: NoteExtractionKnownCard[] = source.cards.map(toKnownCard);
+      const chunks: NoteDocument[][] = groupNotesIntoChunks(bundle.notes);
       const extractions: NoteExtraction[] = [];
       const responses: NoteExtractionResponse[] = [];
       const failureWarnings: string[] = [];
 
       for (const [index, chunk] of chunks.entries()) {
-        const position = `${index + 1}/${chunks.length}`;
+        const position: string = `${index + 1}/${chunks.length}`;
         this.deps.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
 
-        const result = await aiService.extractNotes(
+        const result: NoteExtractionResult = await aiService.extractNotes(
           chunk,
           listKnownNoteEntities(extractions, knownCards),
         );
@@ -158,7 +171,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         });
 
         if (result.failure !== undefined) {
-          const warning = describeExtractionFailure(result.failure, chunk, position);
+          const warning: string = describeExtractionFailure(result.failure, chunk, position);
           this.deps.logger.warn(warning);
           failureWarnings.push(warning);
         }
@@ -166,7 +179,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
 
       await this.deps.noteRepository.saveExtractionResponses(workspaceRoot, responses);
 
-      const responsesHint = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
+      const responsesHint: string = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
 
       if (failureWarnings.length > 0 && failureWarnings.length === chunks.length) {
         return failedResult(
@@ -174,17 +187,19 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         );
       }
 
-      const premise = [...new Set(extractions.flatMap((extraction) => extraction.premise))];
-      const castNames = extractions
+      const premise: string[] = [
+        ...new Set(extractions.flatMap((extraction) => extraction.premise)),
+      ];
+      const castNames: string[] = extractions
         .flatMap((extraction) => extraction.entities)
         .filter((entity) => entity.type === 'character')
         .map((entity) => entity.name);
-      const synthesis =
+      const synthesis: NoteSynthesis =
         premise.length === 0
           ? emptyNoteSynthesis
           : await aiService.synthesizeNotePremise(premise, [...new Set(castNames)]);
 
-      const mergedPlan = buildNoteAbsorbPlan({
+      const mergedPlan: NoteAbsorbPlan = buildNoteAbsorbPlan({
         notes: bundle.notes,
         extractions,
         synthesis,
@@ -198,13 +213,13 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         chunks,
         source.cards,
       );
-      const plan = consolidation.plan;
+      const plan: NoteAbsorbPlan = consolidation.plan;
 
-      const leadingWarnings = [
+      const leadingWarnings: string[] = [
         ...(failureWarnings.length === 0 ? [] : [...failureWarnings, responsesHint]),
         ...consolidation.warnings,
       ];
-      const checkedPlan =
+      const checkedPlan: NoteAbsorbPlan =
         leadingWarnings.length === 0
           ? plan
           : { ...plan, warnings: [...leadingWarnings, ...plan.warnings] };
@@ -224,7 +239,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     chunks: readonly (readonly NoteDocument[])[],
     cards: readonly StoryboardCard[],
   ): Promise<{ readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] }> {
-    const chunkByNoteId = new Map<string, number>();
+    const chunkByNoteId: Map<string, number> = new Map<string, number>();
     for (const [index, chunk] of chunks.entries()) {
       for (const note of chunk) {
         if (!chunkByNoteId.has(note.id)) {
@@ -233,12 +248,16 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       }
     }
 
-    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId, cards);
+    const targets: NoteConsolidationTarget[] = selectNoteConsolidationTargets(
+      plan,
+      chunkByNoteId,
+      cards,
+    );
     if (targets.length === 0) {
       return { plan, warnings: [] };
     }
 
-    const requests = groupNoteConsolidationTargets(targets);
+    const requests: NoteConsolidationTarget[][] = groupNoteConsolidationTargets(targets);
     const answers: NoteConsolidatedLists[] = [];
     const warnings: string[] = [];
     this.deps.logger.info(
@@ -246,15 +265,15 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     );
 
     for (const request of requests) {
-      const result = await aiService.consolidateNoteCards(request);
-      const answeredIds = new Set(result.consolidated.map((answer) => answer.cardId));
-      const unansweredNames = request
+      const result: NoteConsolidationResult = await aiService.consolidateNoteCards(request);
+      const answeredIds: Set<string> = new Set(result.consolidated.map((answer) => answer.cardId));
+      const unansweredNames: string[] = request
         .filter((target) => !answeredIds.has(target.cardId))
         .map((target) => target.name);
       answers.push(...result.consolidated);
 
       if (unansweredNames.length > 0) {
-        const reason =
+        const reason: string =
           result.failure === undefined
             ? '정리 응답에 빠져'
             : consolidationFailureDescriptions[result.failure];

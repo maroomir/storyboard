@@ -1,4 +1,4 @@
-import type { StoryUri, StoryboardProject } from '@storyboard/story-model';
+import type { StoryUri, StoryboardProject, StoryboardProjectPaths } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { INovelRunStateRepository } from '#engine/application/novel/novelPipeline';
 import {
@@ -33,7 +33,7 @@ export class NovelRunStateRepository implements INovelRunStateRepository {
   }
 
   public async save(workspaceRoot: StoryUri, state: NovelRunState): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.cacheDirectory);
     await writeNovelRunState(paths.novelRunState, this.fileSystem, state);
   }

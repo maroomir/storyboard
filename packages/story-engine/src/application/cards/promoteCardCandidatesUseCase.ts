@@ -33,17 +33,19 @@ export class PromoteCardCandidatesUseCase {
   public constructor(private readonly deps: PromoteCardCandidatesUseCaseDependencies) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareCardCandidatePromotionResult> {
-    const items = collectCardCandidateItems(await this.deps.repository.loadRecords(workspaceRoot));
+    const items: CardCandidateItem[] = collectCardCandidateItems(
+      await this.deps.repository.loadRecords(workspaceRoot),
+    );
 
     if (items.length === 0) {
       return { kind: 'no_candidates' };
     }
 
-    const cards = await this.deps.repository.loadCards(
+    const cards: ReadonlyMap<string, CharacterCard> = await this.deps.repository.loadCards(
       workspaceRoot,
       new Set(items.map((item) => item.cardId)),
     );
-    const newItems = selectNewCardCandidateItems(items, cards);
+    const newItems: CardCandidateItem[] = selectNewCardCandidateItems(items, cards);
 
     return newItems.length === 0
       ? { kind: 'no_new_candidates' }
@@ -54,7 +56,7 @@ export class PromoteCardCandidatesUseCase {
     workspaceRoot: StoryUri,
     items: readonly CardCandidateItem[],
   ): Promise<PromoteCardCandidatesResult> {
-    const updatedCardCount = await this.deps.repository.apply(workspaceRoot, items);
+    const updatedCardCount: number = await this.deps.repository.apply(workspaceRoot, items);
 
     if (updatedCardCount === 0) {
       return { kind: 'save_failed', updatedCardCount };
@@ -71,7 +73,7 @@ export class PromoteCardCandidatesUseCase {
     workspaceRoot: StoryUri,
     cardIds: ReadonlySet<string> | undefined,
   ): Promise<number> {
-    const items = collectCardCandidateItems(
+    const items: CardCandidateItem[] = collectCardCandidateItems(
       await this.deps.repository.loadRecords(workspaceRoot),
     ).filter((item) => cardIds === undefined || cardIds.has(item.cardId));
 

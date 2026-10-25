@@ -5,7 +5,12 @@ import {
   parseCard,
 } from '@storyboard/story-model';
 import { listCardFileUris } from './cardFiles';
-import type { StoryUri, CharacterRole, RelationListCharacter } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  CharacterRole,
+  RelationListCharacter,
+  StoryboardCard,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
 export interface CharacterRosterEntry {
@@ -18,7 +23,7 @@ export async function loadCharacterRoster(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
 ): Promise<CharacterRosterEntry[]> {
-  const characters = await loadRelationListCharacters(fs, workspaceRoot);
+  const characters: RelationListCharacter[] = await loadRelationListCharacters(fs, workspaceRoot);
 
   return characters.map((character) => ({
     id: character.id,
@@ -33,7 +38,7 @@ export async function loadRelationListCharacters(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
 ): Promise<RelationListCharacter[]> {
-  const uris = await listCardFileUris(
+  const uris: StoryUri[] = await listCardFileUris(
     fs,
     getStoryboardProjectPaths(workspaceRoot).characterDirectory,
   );
@@ -45,8 +50,8 @@ export async function loadRelationListCharacters(
     }
 
     try {
-      const raw = new TextDecoder().decode(await fs.readFile(uri));
-      const card = parseCard(raw);
+      const raw: string = new TextDecoder().decode(await fs.readFile(uri));
+      const card: StoryboardCard = parseCard(raw);
 
       if (card.type !== 'character') {
         continue;

@@ -14,7 +14,7 @@ import {
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type { ICardCandidateRepository } from '#engine/application/cards/promoteCardCandidatesUseCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { CharacterCard, CardCandidateRecord } from '@storyboard/story-model';
+import type { CharacterCard, CardCandidateRecord, StoryboardCard } from '@storyboard/story-model';
 
 export class CardCandidateRepository implements ICardCandidateRepository {
   public constructor(
@@ -24,7 +24,7 @@ export class CardCandidateRepository implements ICardCandidateRepository {
 
   public async loadRecords(workspaceRoot: StoryUri): Promise<readonly CardCandidateRecord[]> {
     const { cardCacheDirectory } = getStoryboardProjectPaths(workspaceRoot);
-    const entries = await this.readDirectorySafely(cardCacheDirectory);
+    const entries: FileSystemDirectoryEntry[] = await this.readDirectorySafely(cardCacheDirectory);
     const records: CardCandidateRecord[] = [];
 
     for (const [name, fileType] of entries) {
@@ -52,7 +52,10 @@ export class CardCandidateRepository implements ICardCandidateRepository {
 
     for (const cardId of cardIds) {
       try {
-        const card = await readCardFile(characterCardPath(workspaceRoot, cardId), this.fileSystem);
+        const card: StoryboardCard = await readCardFile(
+          characterCardPath(workspaceRoot, cardId),
+          this.fileSystem,
+        );
         if (card.type === 'character') {
           cardsById.set(cardId, card);
         }
@@ -68,21 +71,21 @@ export class CardCandidateRepository implements ICardCandidateRepository {
     workspaceRoot: StoryUri,
     items: readonly CardCandidateItem[],
   ): Promise<number> {
-    const itemsByCardId = new Map<string, CardCandidateItem[]>();
+    const itemsByCardId: Map<string, CardCandidateItem[]> = new Map<string, CardCandidateItem[]>();
 
     for (const item of items) {
-      const cardItems = itemsByCardId.get(item.cardId) ?? [];
+      const cardItems: CardCandidateItem[] = itemsByCardId.get(item.cardId) ?? [];
       cardItems.push(item);
       itemsByCardId.set(item.cardId, cardItems);
     }
 
-    let updatedCardCount = 0;
+    let updatedCardCount: number = 0;
 
     for (const [cardId, cardItems] of itemsByCardId) {
-      const cardUri = characterCardPath(workspaceRoot, cardId);
+      const cardUri: StoryUri = characterCardPath(workspaceRoot, cardId);
 
       try {
-        const card = await readCardFile(cardUri, this.fileSystem);
+        const card: StoryboardCard = await readCardFile(cardUri, this.fileSystem);
         if (card.type !== 'character') {
           continue;
         }
@@ -99,18 +102,18 @@ export class CardCandidateRepository implements ICardCandidateRepository {
 
   public async prune(workspaceRoot: StoryUri, promotedKeys: ReadonlySet<string>): Promise<void> {
     const { cardCacheDirectory } = getStoryboardProjectPaths(workspaceRoot);
-    const entries = await this.readDirectorySafely(cardCacheDirectory);
+    const entries: FileSystemDirectoryEntry[] = await this.readDirectorySafely(cardCacheDirectory);
 
     for (const [name, fileType] of entries) {
       if (fileType.type !== 'file' || !name.endsWith('.json')) {
         continue;
       }
 
-      const fileUri = joinStoryPath(cardCacheDirectory, name);
+      const fileUri: StoryUri = joinStoryPath(cardCacheDirectory, name);
 
       try {
-        const record = await readCardCandidateFile(fileUri, this.fileSystem);
-        const pruned = pruneRecordByPromotedKeys(record, promotedKeys);
+        const record: CardCandidateRecord = await readCardCandidateFile(fileUri, this.fileSystem);
+        const pruned: CardCandidateRecord = pruneRecordByPromotedKeys(record, promotedKeys);
 
         if (this.countCandidates(pruned) === this.countCandidates(record)) {
           continue;

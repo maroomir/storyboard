@@ -28,6 +28,10 @@ import type {
   CharacterCard,
   SceneDialogueRecord,
   VoiceSeeds,
+  PersonaMemoryRecord,
+  BackgroundMemoryRecord,
+  BackgroundFactConflictRecord,
+  SceneDialogueTurn,
 } from '@storyboard/story-model';
 import type {
   IBackgroundFactConflictStore,
@@ -62,8 +66,8 @@ function backgroundMemoryFilePath(paths: StoryboardProjectPaths, cardId: string)
 // 담고 있고(스포일러), N을 다시 만든다면 그 기억이 전제한 판본이 폐기된다. 원장의 되감기와 같은
 // 판정이다. 씬 번호를 읽을 수 없으면 근거가 없으므로 그대로 쓴다.
 function isMemoryAheadOfScene(updatedThroughScene: string, sceneStem: string): boolean {
-  const memoryOrder = parseSceneStem(updatedThroughScene)?.order;
-  const currentOrder = parseSceneStem(sceneStem)?.order;
+  const memoryOrder: number | undefined = parseSceneStem(updatedThroughScene)?.order;
+  const currentOrder: number | undefined = parseSceneStem(sceneStem)?.order;
 
   return memoryOrder !== undefined && currentOrder !== undefined && memoryOrder >= currentOrder;
 }
@@ -75,19 +79,19 @@ export function createPersonaMemoryStore(
 ): IPersonaMemoryStore {
   // NOTE: 페르소나는 personaGeneration 프롬프트의 산출물이다. 그 문구(작가의 덮어쓰기 포함)를 키에
   // 넣어야 프롬프트를 고친 뒤에도 옛 문구로 만든 페르소나가 재사용되지 않는다.
-  const promptFingerprint = promptResourceFingerprint('personaGeneration');
+  const promptFingerprint: string = promptResourceFingerprint('personaGeneration');
 
   return {
     async load(card: CharacterCard): Promise<string | undefined> {
-      const uri = personaMemoryFilePath(paths, card.id);
+      const uri: StoryUri = personaMemoryFilePath(paths, card.id);
 
       if (!(await fs.exists(uri))) {
         return undefined;
       }
 
       try {
-        const record = await readPersonaMemoryFile(uri, fs);
-        const isReusable =
+        const record: PersonaMemoryRecord = await readPersonaMemoryFile(uri, fs);
+        const isReusable: boolean =
           record.cardHash === computePersonaCardHash(card, promptFingerprint) &&
           !isMemoryAheadOfScene(record.updatedThroughScene, sceneStem);
 
@@ -115,15 +119,15 @@ export function createBackgroundMemoryStore(
 ): IBackgroundMemoryStore {
   return {
     async load(card: BackgroundCard): Promise<string | undefined> {
-      const uri = backgroundMemoryFilePath(paths, card.id);
+      const uri: StoryUri = backgroundMemoryFilePath(paths, card.id);
 
       if (!(await fs.exists(uri))) {
         return undefined;
       }
 
       try {
-        const record = await readBackgroundMemoryFile(uri, fs);
-        const isReusable =
+        const record: BackgroundMemoryRecord = await readBackgroundMemoryFile(uri, fs);
+        const isReusable: boolean =
           record.cardHash === computeBackgroundCardHash(card) &&
           !isMemoryAheadOfScene(record.updatedThroughScene, sceneStem);
 
@@ -154,7 +158,7 @@ export async function readBackgroundFactConflictRecords(
   }
 
   try {
-    const raw = new TextDecoder().decode(await fs.readFile(paths.backgroundFactConflicts));
+    const raw: string = new TextDecoder().decode(await fs.readFile(paths.backgroundFactConflicts));
     return parseBackgroundFactConflictRecords(raw);
   } catch {
     return {};
@@ -167,18 +171,23 @@ export function createBackgroundFactConflictStore(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
 ): IBackgroundFactConflictStore {
-  const promptFingerprint = promptResourceFingerprint('backgroundFactConflicts');
+  const promptFingerprint: string = promptResourceFingerprint('backgroundFactConflicts');
 
   return {
     async load(card) {
-      const record = (await readBackgroundFactConflictRecords(fs, paths))[card.id];
-      const isCurrent =
+      const record: BackgroundFactConflictRecord | undefined = (
+        await readBackgroundFactConflictRecords(fs, paths)
+      )[card.id];
+      const isCurrent: boolean =
         record?.inputKey === computeBackgroundFactConflictKey(card, promptFingerprint);
 
       return isCurrent ? record?.conflicts : undefined;
     },
     async save(card, conflicts) {
-      const records = await readBackgroundFactConflictRecords(fs, paths);
+      const records: BackgroundFactConflictRecords = await readBackgroundFactConflictRecords(
+        fs,
+        paths,
+      );
       const next = {
         ...records,
         [card.id]: {
@@ -209,11 +218,15 @@ export function createSceneDialogueStore(
       await writeSceneDialogueFile(sceneDialogueFilePath(paths, record.sceneStem), fs, record);
     },
     async loadCorpus(): Promise<readonly SceneDialogueRecord[]> {
-      const records = await readDirectoryFiles(fs, paths.sceneDialogueDirectory, {
-        isEligible: (name) => name.endsWith('.json'),
-        read: async (uri) =>
-          await reconcileWithDraft(fs, paths, await readSceneDialogueFile(uri, fs)),
-      });
+      const records: SceneDialogueRecord[] = await readDirectoryFiles(
+        fs,
+        paths.sceneDialogueDirectory,
+        {
+          isEligible: (name) => name.endsWith('.json'),
+          read: async (uri) =>
+            await reconcileWithDraft(fs, paths, await readSceneDialogueFile(uri, fs)),
+        },
+      );
 
       return records;
     },
@@ -235,7 +248,7 @@ async function reconcileWithDraft(
   paths: StoryboardProjectPaths,
   record: SceneDialogueRecord,
 ): Promise<SceneDialogueRecord | undefined> {
-  const draftUri = joinStoryPath(paths.draftDirectory, `${record.sceneStem}.md`);
+  const draftUri: StoryUri = joinStoryPath(paths.draftDirectory, `${record.sceneStem}.md`);
 
   let body: string;
   try {
@@ -248,6 +261,6 @@ async function reconcileWithDraft(
     return record;
   }
 
-  const surviving = record.turns.filter((turn) => body.includes(turn.text));
+  const surviving: SceneDialogueTurn[] = record.turns.filter((turn) => body.includes(turn.text));
   return surviving.length > 0 ? { ...record, turns: surviving } : undefined;
 }

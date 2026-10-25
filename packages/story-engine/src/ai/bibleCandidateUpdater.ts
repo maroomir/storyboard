@@ -46,14 +46,16 @@ export async function updateBibleCandidatesFromDraft(
   let extracted: Record<string, { key: string; value: string }[]>;
 
   try {
-    const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]));
+    const characterIdByName: Map<string, string> = new Map(
+      detectedCharacterCards.map((card) => [card.name, card.id]),
+    );
 
     extracted = await aiService.extractFactsByCharacter(
       draftBody,
       detectedCharacterCards.map((card) => card.name),
       {
         attributionForCharacter: (name: string): UsageAttribution | undefined => {
-          const characterId = characterIdByName.get(name);
+          const characterId: string | undefined = characterIdByName.get(name);
 
           if (!characterId) {
             return undefined;
@@ -82,7 +84,7 @@ export async function updateBibleCandidatesFromDraft(
       ),
     ),
   );
-  const deduped = dedupeFactsById(facts);
+  const deduped: BibleFact[] = dedupeFactsById(facts);
 
   if (deduped.length === 0) {
     return { candidateCount: 0 };

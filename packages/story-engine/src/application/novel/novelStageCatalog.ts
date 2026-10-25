@@ -41,8 +41,8 @@ export function overrideNovelPipelinePlan(spec: PipelineSpec): readonly NovelSta
 // NOTE: `characters` arrived after authors had written their novel.yaml. A file that does not name
 // it runs it right after `outline`, so an upgrade keeps the author's order instead of dropping it.
 function insertCharactersStage(spec: PipelineSpec): PipelineSpec {
-  const ids = pipelineStageEntries(spec).map((entry) => entry.id);
-  const outlineIndex = ids.indexOf('outline');
+  const ids: string[] = pipelineStageEntries(spec).map((entry) => entry.id);
+  const outlineIndex: number = ids.indexOf('outline');
 
   if (ids.includes('characters') || outlineIndex === -1) {
     return spec;

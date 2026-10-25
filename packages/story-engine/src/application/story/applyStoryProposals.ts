@@ -4,6 +4,7 @@ import {
   getStoryboardProjectPaths,
   joinStoryPath,
   serializeCard,
+  type StoryboardCard,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -47,11 +48,11 @@ export class ApplyStoryProposals {
         continue;
       }
 
-      const card = applyStoryCardChanges(
+      const card: StoryboardCard = applyStoryCardChanges(
         target,
         target.changes.map((change) => change.proposal),
       );
-      const uri =
+      const uri: StoryUri =
         card.type === 'character'
           ? characterCardPath(workspaceRoot, card.id)
           : backgroundCardPath(workspaceRoot, card.id);
@@ -75,7 +76,7 @@ export class ApplyStoryProposals {
     await fileSystem.createDirectory(sceneDirectory);
 
     for (const scene of scenes) {
-      const uri = joinStoryPath(sceneDirectory, scene.fileName);
+      const uri: StoryUri = joinStoryPath(sceneDirectory, scene.fileName);
 
       if (await fileSystem.exists(uri)) {
         skippedFileNames.push(scene.fileName);

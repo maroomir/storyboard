@@ -29,7 +29,12 @@ import {
   type INoteAbsorbRepository,
   type NoteCandidateLoad,
 } from '#engine/application/notes/noteAbsorbRepository';
-import type { NoteAbsorbPlan } from '@storyboard/story-model';
+import type {
+  NoteAbsorbPlan,
+  SceneSummaryExtraction,
+  StoryboardProjectPaths,
+  VoiceSeeds,
+} from '@storyboard/story-model';
 import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
@@ -43,7 +48,7 @@ function encodeJson(value: unknown): Uint8Array {
 
 // A location is a path or a URL; the record file needs a short stable name for it.
 function hashLocation(location: string): string {
-  let hash = 5381;
+  let hash: number = 5381;
   for (const char of location) {
     hash = (hash * 33 + (char.codePointAt(0) ?? 0)) >>> 0;
   }
@@ -77,13 +82,13 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
   }
 
   public async loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateLoad> {
-    const uri = getStoryboardProjectPaths(workspaceRoot).noteCandidates;
+    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).noteCandidates;
 
     if (!(await this.fileSystem.exists(uri))) {
       return { kind: 'none' };
     }
 
-    const text = new TextDecoder().decode(await this.fileSystem.readFile(uri));
+    const text: string = new TextDecoder().decode(await this.fileSystem.readFile(uri));
     let json: unknown;
 
     try {
@@ -119,7 +124,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     cardType: 'character' | 'background',
     id: string,
   ): Promise<StoryboardCard | undefined> {
-    const uri =
+    const uri: StoryUri =
       cardType === 'character'
         ? characterCardPath(workspaceRoot, id)
         : backgroundCardPath(workspaceRoot, id);
@@ -140,7 +145,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     fileName: string,
     card: SceneCard,
   ): Promise<void> {
-    const extraction = extractInlineSceneSummary(card);
+    const extraction: SceneSummaryExtraction | undefined = extractInlineSceneSummary(card);
 
     if (extraction !== undefined) {
       await this.fileSystem.writeFile(
@@ -167,7 +172,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
   }
 
   public async loadSynopsisCandidate(workspaceRoot: StoryUri): Promise<string | undefined> {
-    const uri = getStoryboardProjectPaths(workspaceRoot).noteSynopsisCandidate;
+    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).noteSynopsisCandidate;
 
     if (!(await this.fileSystem.exists(uri))) {
       return undefined;
@@ -189,8 +194,8 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     workspaceRoot: StoryUri,
     seeds: Readonly<Record<string, readonly string[]>>,
   ): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const existing = (await this.fileSystem.exists(paths.voiceSeeds))
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const existing: VoiceSeeds = (await this.fileSystem.exists(paths.voiceSeeds))
       ? await readVoiceSeedsFile(paths.voiceSeeds, this.fileSystem)
       : { characters: {} };
 
@@ -218,8 +223,11 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     location: string,
     facts: readonly BibleFact[],
   ): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const uri = joinStoryPath(paths.bibleCacheDirectory, `notes-${hashLocation(location)}.json`);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const uri: StoryUri = joinStoryPath(
+      paths.bibleCacheDirectory,
+      `notes-${hashLocation(location)}.json`,
+    );
 
     if (facts.length === 0) {
       if (await this.fileSystem.exists(uri)) {
@@ -250,7 +258,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
       | 'noteExtractionResponses',
     content: Uint8Array,
   ): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
 
     await this.fileSystem.createDirectory(paths.noteCacheDirectory);
     await this.fileSystem.writeFile(paths[key], content);

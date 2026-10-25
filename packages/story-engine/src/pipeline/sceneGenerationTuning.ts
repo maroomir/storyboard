@@ -62,10 +62,10 @@ export interface ResolvedSceneGenerationTuning {
 // from drifting apart.
 export function generationParameterDefault(id: string): number {
   const [prefix, group, leaf] = id.split('.');
-  const section = (pipelineDefaults as unknown as Record<string, Record<string, number>>)[
-    group ?? ''
-  ];
-  const value = section?.[leaf ?? ''];
+  const section: Record<string, number> | undefined = (
+    pipelineDefaults as unknown as Record<string, Record<string, number>>
+  )[group ?? ''];
+  const value: number | undefined = section?.[leaf ?? ''];
 
   if (prefix !== 'generation' || typeof value !== 'number') {
     throw new Error(`알 수 없는 생성 손잡이입니다: ${id}`);

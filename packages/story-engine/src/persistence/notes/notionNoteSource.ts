@@ -19,11 +19,11 @@ import {
 } from '@storyboard/story-model';
 import type { NoteDocument, NoteOrigin, SkippedNote } from '@storyboard/story-model';
 
-const notionApiBase = 'https://api.notion.com/v1';
-const notionApiVersion = '2022-06-28';
-const pageSize = 100;
-const maximumRateLimitRetries = 5;
-const untitledNoteTitle = '제목 없음';
+const notionApiBase: string = 'https://api.notion.com/v1';
+const notionApiVersion: string = '2022-06-28';
+const pageSize: number = 100;
+const maximumRateLimitRetries: number = 5;
+const untitledNoteTitle: string = '제목 없음';
 
 // The shape of `fetch` this source needs. A host passes the platform's own; a test passes recorded
 // responses.
@@ -61,13 +61,13 @@ export class NotionNoteSource implements INoteSource {
 
   private readonly notes: NoteDocument[] = [];
   private readonly skipped: SkippedNote[] = [];
-  private readonly visitedIds = new Set<string>();
+  private readonly visitedIds: Set<string> = new Set<string>();
   private readonly linkedIds: string[] = [];
 
   public constructor(private readonly options: NotionNoteSourceOptions) {}
 
   public async collect(): Promise<CollectedNotes> {
-    const rootId = parseNotionPageId(this.options.pageUrl);
+    const rootId: string | undefined = parseNotionPageId(this.options.pageUrl);
 
     if (rootId === undefined) {
       throw new NoteSourceError(
@@ -134,10 +134,10 @@ export class NotionNoteSource implements INoteSource {
 
     this.visitedIds.add(id);
 
-    const page = loadedPage ?? (await this.request('GET', `/pages/${id}`));
-    const title = notionPageTitle(page) || untitledNoteTitle;
-    const blocks = await this.loadBlockTree(id);
-    const body = [renderNotionProperties(page), renderNotionBlocks(blocks)]
+    const page: NotionRecord = loadedPage ?? (await this.request('GET', `/pages/${id}`));
+    const title: string = notionPageTitle(page) || untitledNoteTitle;
+    const blocks: NotionBlockNode[] = await this.loadBlockTree(id);
+    const body: string = [renderNotionProperties(page), renderNotionBlocks(blocks)]
       .filter((part) => part.length > 0)
       .join('\n\n');
 
@@ -173,19 +173,19 @@ export class NotionNoteSource implements INoteSource {
 
     this.visitedIds.add(id);
 
-    const title =
+    const title: string =
       knownTitle ||
       notionRichText((await this.request('GET', `/databases/${id}`)).title).trim() ||
       untitledNoteTitle;
 
     // NOTE: a query without sorts returns rows newest first, and the view's own order is not exposed,
     // so rows are read in title order — the order a vault's notes are read in.
-    const rows = (await this.listAll('POST', `/databases/${id}/query`)).sort((left, right) =>
-      compareNoteNames(notionPageTitle(left), notionPageTitle(right)),
+    const rows: NotionRecord[] = (await this.listAll('POST', `/databases/${id}/query`)).sort(
+      (left, right) => compareNoteNames(notionPageTitle(left), notionPageTitle(right)),
     );
 
     for (const row of rows) {
-      const rowId = typeof row.id === 'string' ? normalizeNotionId(row.id) : '';
+      const rowId: string = typeof row.id === 'string' ? normalizeNotionId(row.id) : '';
 
       if (rowId.length === 0) {
         continue;
@@ -203,10 +203,10 @@ export class NotionNoteSource implements INoteSource {
     const nodes: NotionBlockNode[] = [];
 
     for (const block of await this.listAll('GET', `/blocks/${blockId}/children`)) {
-      const type = typeof block.type === 'string' ? block.type : '';
-      const ownsNestedBlocks =
+      const type: string = typeof block.type === 'string' ? block.type : '';
+      const ownsNestedBlocks: boolean =
         block.has_children === true && type !== 'child_page' && type !== 'child_database';
-      const children =
+      const children: NotionBlockNode[] =
         ownsNestedBlocks && typeof block.id === 'string' ? await this.loadBlockTree(block.id) : [];
 
       nodes.push({ block, children });
@@ -220,7 +220,7 @@ export class NotionNoteSource implements INoteSource {
     let cursor: string | undefined;
 
     do {
-      const page =
+      const page: NotionRecord =
         method === 'GET'
           ? await this.request(
               'GET',
@@ -232,7 +232,7 @@ export class NotionNoteSource implements INoteSource {
             });
 
       for (const item of Array.isArray(page.results) ? page.results : []) {
-        const record = asNotionRecord(item);
+        const record: NotionRecord | undefined = asNotionRecord(item);
 
         if (record !== undefined) {
           results.push(record);
@@ -253,9 +253,9 @@ export class NotionNoteSource implements INoteSource {
     path: string,
     body?: Readonly<Record<string, unknown>>,
   ): Promise<NotionRecord> {
-    const sleep = this.options.sleep ?? defaultSleep;
+    const sleep: (milliseconds: number) => Promise<void> = this.options.sleep ?? defaultSleep;
 
-    for (let attempt = 0; ; attempt += 1) {
+    for (let attempt: number = 0; ; attempt += 1) {
       let response: NoteHttpResponse;
 
       try {
@@ -273,12 +273,13 @@ export class NotionNoteSource implements INoteSource {
       }
 
       if (response.status === 429 && attempt < maximumRateLimitRetries) {
-        const retryAfterSeconds = Number(response.headers.get('retry-after') ?? '1');
+        const retryAfterSeconds: number = Number(response.headers.get('retry-after') ?? '1');
         await sleep((Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : 1) * 1000);
         continue;
       }
 
-      const payload = asNotionRecord(await response.json().catch(() => undefined)) ?? {};
+      const payload: NotionRecord =
+        asNotionRecord(await response.json().catch(() => undefined)) ?? {};
 
       if (response.status >= 200 && response.status < 300) {
         return payload;
@@ -311,7 +312,7 @@ function toNoteSourceError(status: number, payload: NotionRecord): NoteSourceErr
     );
   }
 
-  const message = typeof payload.message === 'string' ? payload.message : '';
+  const message: string = typeof payload.message === 'string' ? payload.message : '';
 
   // NOTE: Notion answers a database id on /pages with 400 validation_error, not 404, and the
   // message is the only thing that tells it apart from a malformed request.
@@ -319,7 +320,7 @@ function toNoteSourceError(status: number, payload: NotionRecord): NoteSourceErr
     return new NoteSourceError('not-a-page', '페이지가 아니라 데이터베이스입니다.');
   }
 
-  const detail = message.length > 0 ? `: ${message}` : '';
+  const detail: string = message.length > 0 ? `: ${message}` : '';
 
   return new NoteSourceError('request-failed', `Notion 요청이 실패했습니다 (${status})${detail}`);
 }

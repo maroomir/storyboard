@@ -4,6 +4,8 @@ import {
   resolveScenePrefixDigitCount,
   sceneFilePath,
   serializeSceneCard,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -43,20 +45,26 @@ export class CreateSceneUseCase implements IUseCase<CreateSceneRequest, CreateSc
 
   private async create(request: CreateSceneRequest): Promise<CreateSceneResult> {
     const { fileSystem } = this.deps;
-    const paths = getStoryboardProjectPaths(request.workspaceRoot);
-    const project = await readProjectJson(fileSystem, paths.projectJson);
-    const existing = await listDirectoryFileNames(fileSystem, paths.sceneDirectory);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
+    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const existing: readonly string[] = await listDirectoryFileNames(
+      fileSystem,
+      paths.sceneDirectory,
+    );
 
-    const highestOrder = existing
+    const highestOrder: number = existing
       .map((fileName) => parseSceneFileName(fileName)?.order)
       .filter((order): order is number => order !== undefined)
       .reduce((highest, order) => Math.max(highest, order), 0);
-    const order = highestOrder + 1;
-    const digitCount = resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined);
-    const prefix = String(order).padStart(digitCount, '0');
-    const slug = request.slug ?? `scene-${order}`;
-    const stem = `${prefix}-${slug}`;
-    const uri = sceneFilePath(request.workspaceRoot, prefix, slug);
+    const order: number = highestOrder + 1;
+    const digitCount: number = resolveScenePrefixDigitCount(
+      project.editor.scenePrefixDigits,
+      undefined,
+    );
+    const prefix: string = String(order).padStart(digitCount, '0');
+    const slug: string = request.slug ?? `scene-${order}`;
+    const stem: string = `${prefix}-${slug}`;
+    const uri: StoryUri = sceneFilePath(request.workspaceRoot, prefix, slug);
 
     if (await fileSystem.exists(uri)) {
       return { ok: false, kind: 'exists', message: `이미 있습니다: ${stem}.card` };

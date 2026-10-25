@@ -42,13 +42,16 @@ export interface IStudioSessionRepository {
 
 // SECURITY: session ids arrive from the webview and are used as file names; reject anything
 // that could escape the sessions directory.
-const safeSessionIdPattern = /^[A-Za-z0-9-]+$/;
+const safeSessionIdPattern: RegExp = /^[A-Za-z0-9-]+$/;
 
 export class StudioSessionRepository implements IStudioSessionRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async save(workspaceRoot: StoryUri, input: StudioSessionSaveInput): Promise<void> {
-    const directory = studioSessionEntityDirectory(workspaceRoot, input.entity);
+    const directory: StoryUri | undefined = studioSessionEntityDirectory(
+      workspaceRoot,
+      input.entity,
+    );
 
     if (!directory || !safeSessionIdPattern.test(input.id)) {
       return;
@@ -79,7 +82,9 @@ export class StudioSessionRepository implements IStudioSessionRepository {
     workspaceRoot: StoryUri,
     entity: StudioEntity,
   ): Promise<readonly StudioSessionSummary[]> {
-    const sessions = await this.readAll(studioSessionEntityDirectory(workspaceRoot, entity));
+    const sessions: readonly StudioSession[] = await this.readAll(
+      studioSessionEntityDirectory(workspaceRoot, entity),
+    );
 
     return sessions
       .map(toSummary)
@@ -91,13 +96,15 @@ export class StudioSessionRepository implements IStudioSessionRepository {
     entity: StudioEntity,
     id: string,
   ): Promise<StudioSessionSnapshot | undefined> {
-    const directory = studioSessionEntityDirectory(workspaceRoot, entity);
+    const directory: StoryUri | undefined = studioSessionEntityDirectory(workspaceRoot, entity);
 
     if (!directory || !safeSessionIdPattern.test(id)) {
       return undefined;
     }
 
-    const session = await this.readSession(sessionFileUri(directory, id));
+    const session: StudioSession | undefined = await this.readSession(
+      sessionFileUri(directory, id),
+    );
 
     return session ? toSnapshot(session) : undefined;
   }
@@ -106,16 +113,20 @@ export class StudioSessionRepository implements IStudioSessionRepository {
     workspaceRoot: StoryUri,
     entity: StudioEntity,
   ): Promise<StudioSessionSnapshot | undefined> {
-    const sessions = [...(await this.readAll(studioSessionEntityDirectory(workspaceRoot, entity)))];
+    const sessions: StudioSession[] = [
+      ...(await this.readAll(studioSessionEntityDirectory(workspaceRoot, entity))),
+    ];
 
-    const latest = sessions.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+    const latest: StudioSession | undefined = sessions.sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt),
+    )[0];
 
     return latest ? toSnapshot(latest) : undefined;
   }
 
   private async prune(directory: StoryUri): Promise<void> {
-    const sessions = await this.readAll(directory);
-    const prunedIds = selectSessionsToPrune(sessions);
+    const sessions: readonly StudioSession[] = await this.readAll(directory);
+    const prunedIds: readonly string[] = selectSessionsToPrune(sessions);
 
     await Promise.all(
       prunedIds.map((id) =>
@@ -131,10 +142,12 @@ export class StudioSessionRepository implements IStudioSessionRepository {
       return [];
     }
 
-    const names = await listDirectoryFileNames(this.fileSystem, directory, (name) =>
-      name.endsWith('.json'),
+    const names: readonly string[] = await listDirectoryFileNames(
+      this.fileSystem,
+      directory,
+      (name) => name.endsWith('.json'),
     );
-    const sessions = await Promise.all(
+    const sessions: (StudioSession | undefined)[] = await Promise.all(
       names.map((name) => this.readSession(joinStoryPath(directory, name))),
     );
 
@@ -143,7 +156,7 @@ export class StudioSessionRepository implements IStudioSessionRepository {
 
   private async readSession(uri: StoryUri): Promise<StudioSession | undefined> {
     try {
-      const bytes = await this.fileSystem.readFile(uri);
+      const bytes: Uint8Array = await this.fileSystem.readFile(uri);
       return parseStudioSession(new TextDecoder().decode(bytes));
     } catch {
       return undefined;

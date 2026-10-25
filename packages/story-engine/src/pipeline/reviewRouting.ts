@@ -60,8 +60,8 @@ function resolveCardIdFromExcerpt(
     return undefined;
   }
 
-  const matches = characters.filter((character) => {
-    const tokens = [character.name, ...(character.aliases ?? [])];
+  const matches: RoutingCharacter[] = characters.filter((character) => {
+    const tokens: string[] = [character.name, ...(character.aliases ?? [])];
     return tokens.some((token) => token.length > 0 && excerpt.includes(token));
   });
 
@@ -73,12 +73,12 @@ export function adaptCritiqueIssues(
   characters: readonly RoutingCharacter[],
 ): ReviewIssue[] {
   return issues.flatMap((issue) => {
-    const agent = resolveAgent(issue.category);
+    const agent: ReviewAgent | undefined = resolveAgent(issue.category);
     if (!agent) {
       return [{ severity: issue.severity, category: issue.category, note: issue.comment }];
     }
 
-    const cardId =
+    const cardId: string | undefined =
       agent === 'persona' ? resolveCardIdFromExcerpt(issue.excerpt, characters) : undefined;
     const target: IssueTarget = cardId ? { agent, cardId } : { agent };
 
@@ -96,7 +96,7 @@ export function adaptContinuityIssues(issues: readonly ContinuityIssueLike[]): R
 }
 
 export function routeReviewIssues(issues: readonly ReviewIssue[]): ReviewRouting {
-  const global = issues.filter((issue) => !issue.target);
+  const global: ReviewIssue[] = issues.filter((issue) => !issue.target);
   const targeted = issues.filter((issue): issue is ReviewIssue & { target: IssueTarget } =>
     Boolean(issue.target),
   );
@@ -109,7 +109,7 @@ export function routeReviewIssues(issues: readonly ReviewIssue[]): ReviewRouting
       continue;
     }
 
-    const cardIds = [
+    const cardIds: string[] = [
       ...new Set(
         agentIssues
           .map((issue) => issue.target.cardId)
@@ -137,7 +137,7 @@ export function buildScopedInstructions(
   const instructions: string[] = [agentScopeLines[group.agent]];
 
   if (group.agent === 'persona' && group.cardIds.length > 0) {
-    const names = group.cardIds.map((cardId) => resolveCardName?.(cardId) ?? cardId);
+    const names: string[] = group.cardIds.map((cardId) => resolveCardName?.(cardId) ?? cardId);
     instructions.push(`대상 캐릭터: ${names.join(', ')}`);
   }
 

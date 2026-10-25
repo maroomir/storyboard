@@ -22,12 +22,16 @@ import type {
 } from '#engine/application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { AssembledManuscript } from '@storyboard/story-model';
+import type {
+  AssembledManuscript,
+  StoryBible,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { readProjectJson } from '#engine/persistence/projectJson';
 
 // The final review's report, beside the assembled volume.
-export const manuscriptReviewFileName = 'REVIEW.md';
+export const manuscriptReviewFileName: string = 'REVIEW.md';
 
 export class ManuscriptAssemblyRepository
   implements
@@ -47,7 +51,7 @@ export class ManuscriptAssemblyRepository
   }
 
   public async loadVolume(workspaceRoot: StoryUri): Promise<ManuscriptExportSource> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, volumeBytes] = await Promise.all([
       readProjectJson(this.fileSystem, paths.projectJson),
       this.fileSystem.readFile(paths.manuscriptVolume),
@@ -64,7 +68,7 @@ export class ManuscriptAssemblyRepository
     workspaceRoot: StoryUri,
     logger?: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptAssemblySource> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder] = await Promise.all([
       readProjectJson(this.fileSystem, paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
@@ -83,7 +87,7 @@ export class ManuscriptAssemblyRepository
     workspaceRoot: StoryUri,
     logger: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptReviewSource> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder, canonFactLines, chapterSummaries] = await Promise.all([
       readProjectJson(this.fileSystem, paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
@@ -102,15 +106,15 @@ export class ManuscriptAssemblyRepository
   }
 
   public async saveReview(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.manuscriptDirectory);
-    const reportUri = joinStoryPath(paths.manuscriptDirectory, manuscriptReviewFileName);
+    const reportUri: StoryUri = joinStoryPath(paths.manuscriptDirectory, manuscriptReviewFileName);
     await this.fileSystem.writeFile(reportUri, new TextEncoder().encode(markdown));
     return reportUri;
   }
 
   public async readChapterSummaries(workspaceRoot: StoryUri): Promise<string | undefined> {
-    const summaryUri = getStoryboardProjectPaths(workspaceRoot).chapterSummaries;
+    const summaryUri: StoryUri = getStoryboardProjectPaths(workspaceRoot).chapterSummaries;
 
     if (!(await this.fileSystem.exists(summaryUri))) {
       return undefined;
@@ -120,9 +124,9 @@ export class ManuscriptAssemblyRepository
   }
 
   public async saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.memoryDirectory);
-    const summaryUri = paths.chapterSummaries;
+    const summaryUri: StoryUri = paths.chapterSummaries;
     await this.fileSystem.writeFile(summaryUri, new TextEncoder().encode(markdown));
     return summaryUri;
   }
@@ -132,7 +136,7 @@ export class ManuscriptAssemblyRepository
     manuscript: AssembledManuscript,
     foreshadowingMarkdown: string,
   ): Promise<StoryUri> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.manuscriptDirectory);
 
     for (const chapter of manuscript.chapters) {
@@ -155,7 +159,7 @@ export class ManuscriptAssemblyRepository
 
   // 낡은 요약은 폐기된 판본의 줄거리이므로 검수 창에도 실을 수 없다.
   private async loadFreshChapterSummaries(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
-    const markdown = await this.readChapterSummaries(workspaceRoot);
+    const markdown: string | undefined = await this.readChapterSummaries(workspaceRoot);
 
     return markdown === undefined
       ? []
@@ -167,7 +171,7 @@ export class ManuscriptAssemblyRepository
       return [];
     }
 
-    const bible = await readBibleFile(bibleCanonUri, this.fileSystem);
+    const bible: StoryBible = await readBibleFile(bibleCanonUri, this.fileSystem);
     return bible.facts
       .filter((fact) => fact.status === 'canon')
       .map((fact) => `${fact.subject.id} — ${fact.key}: ${fact.value}`);

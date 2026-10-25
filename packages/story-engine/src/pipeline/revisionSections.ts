@@ -36,7 +36,7 @@ export function splitDraftSections(body: string): DraftSections {
 export function joinDraftSections(split: DraftSections): string {
   return split.sections
     .map((section, index) => {
-      const breakLine = split.breakLines[index];
+      const breakLine: string | undefined = split.breakLines[index];
       return breakLine === undefined ? section : `${section}\n${breakLine}\n`;
     })
     .join('');
@@ -45,13 +45,13 @@ export function joinDraftSections(split: DraftSections): string {
 // The rewrite answers with the section's text alone; the blank lines around it belong to the
 // joins, so the original's are kept and a section never grows or loses the gap to its neighbours.
 export function replaceSectionText(original: string, rewritten: string): string {
-  const leading = /^\s*/.exec(original)?.[0] ?? '';
-  const trailing = /\s*$/.exec(original)?.[0] ?? '';
+  const leading: string = /^\s*/.exec(original)?.[0] ?? '';
+  const trailing: string = /\s*$/.exec(original)?.[0] ?? '';
   return `${leading}${rewritten.trim()}${trailing}`;
 }
 
 function longestFragment(quote: string): string {
-  const fragments = quote
+  const fragments: string[] = quote
     .split(/…|\.\.\./)
     .map((fragment) => fragment.trim())
     .filter((fragment) => fragment.length > 0);
@@ -69,32 +69,32 @@ export function locateQuoteSection(
   sections: readonly string[],
   quote: string | undefined,
 ): number | undefined {
-  const fragment = longestFragment(quote ?? '');
+  const fragment: string = longestFragment(quote ?? '');
   if (fragment.length === 0) {
     return undefined;
   }
 
-  const verbatim = sections.findIndex((section) => section.includes(fragment));
+  const verbatim: number = sections.findIndex((section) => section.includes(fragment));
   if (verbatim >= 0) {
     return verbatim;
   }
 
-  const needle = normalizeForMatch(fragment);
+  const needle: string = normalizeForMatch(fragment);
   if (needle.length === 0) {
     return undefined;
   }
 
-  const normalizedSections = sections.map(normalizeForMatch);
-  const normalized = normalizedSections.findIndex((section) => section.includes(needle));
+  const normalizedSections: string[] = sections.map(normalizeForMatch);
+  const normalized: number = normalizedSections.findIndex((section) => section.includes(needle));
   if (normalized >= 0) {
     return normalized;
   }
 
   let bestIndex: number | undefined;
-  let bestScore = 0;
+  let bestScore: number = 0;
 
   normalizedSections.forEach((section, index) => {
-    const score = countSharedShingles(needle, section);
+    const score: number = countSharedShingles(needle, section);
     if (score > bestScore) {
       bestScore = score;
       bestIndex = index;

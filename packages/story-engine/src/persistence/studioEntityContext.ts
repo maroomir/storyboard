@@ -39,7 +39,7 @@ export interface StudioEntityContext {
 // proposal may rewrite; the other one stays in the prompt as read-only material.
 export type StudioSceneFocus = 'card' | 'draft';
 
-const missingDraftNote =
+const missingDraftNote: string =
   '이 씬에는 아직 초안이 없다. 초안을 만들기 전에는 고칠 대상이 없으니 propose하지 말고 say로 알려라.';
 
 export async function readStudioEntityContext(
@@ -68,11 +68,11 @@ export async function resolveStudioLookups(
   requests: readonly StudioAgentLookupRequest[],
 ): Promise<string> {
   // SECURITY: lookup keys are model output, so an invented path is refused rather than read.
-  const safeRequests = requests.filter((request) => isSafeStudioEntityKey(request.key));
+  const safeRequests: StudioAgentLookupRequest[] = requests.filter((request) => isSafeStudioEntityKey(request.key));
 
-  const sections = await Promise.all(
+  const sections: string[] = await Promise.all(
     safeRequests.map(async (request) => {
-      const text = await readLookupText(fs, workspaceRoot, request);
+      const text: string | undefined = await readLookupText(fs, workspaceRoot, request);
       return `[조회: ${request.kind}/${request.key}]\n${text ?? '찾을 수 없음'}`;
     }),
   );
@@ -91,8 +91,8 @@ export async function resolveStudioFollowUps(
     followUps
       .filter((followUp) => isSafeStudioEntityKey(followUp.key))
       .map(async (followUp) => {
-        const targetFile = followUpTargetFile(followUp);
-        const exists = await fs.exists(followUpUri(workspaceRoot, followUp));
+        const targetFile: string = followUpTargetFile(followUp);
+        const exists: boolean = await fs.exists(followUpUri(workspaceRoot, followUp));
 
         return exists ? { ...followUp, targetFile } : undefined;
       }),
@@ -119,14 +119,14 @@ async function readCardContext(
   cardKind: 'character' | 'background',
   cardId: string,
 ): Promise<StudioEntityContext | undefined> {
-  const targetUri = cardPathFor(workspaceRoot, cardKind, cardId);
-  const baseline = await readTextOrUndefined(fs, targetUri);
+  const targetUri: StoryUri = cardPathFor(workspaceRoot, cardKind, cardId);
+  const baseline: string | undefined = await readTextOrUndefined(fs, targetUri);
 
   if (baseline === undefined) {
     return undefined;
   }
 
-  const relatedScenes = await readScenesFeaturingCard(fs, workspaceRoot, cardId, cardKind);
+  const relatedScenes: string[] = await readScenesFeaturingCard(fs, workspaceRoot, cardId, cardKind);
 
   return {
     agentEntityKind: cardKind,
@@ -151,18 +151,18 @@ async function readSceneContext(
   sceneStem: string,
   sceneFocus: StudioSceneFocus,
 ): Promise<StudioEntityContext | undefined> {
-  const sceneUri = scenePath(workspaceRoot, sceneStem);
-  const sceneText = await readTextOrUndefined(fs, sceneUri);
+  const sceneUri: StoryUri = scenePath(workspaceRoot, sceneStem);
+  const sceneText: string | undefined = await readTextOrUndefined(fs, sceneUri);
 
   if (sceneText === undefined) {
     return undefined;
   }
 
-  const draftUri = draftPath(workspaceRoot, sceneStem);
-  const draftText = await readTextOrUndefined(fs, draftUri);
-  const draftBody = draftText === undefined ? undefined : extractDraftBody(draftText);
+  const draftUri: StoryUri = draftPath(workspaceRoot, sceneStem);
+  const draftText: string | undefined = await readTextOrUndefined(fs, draftUri);
+  const draftBody: string | undefined = draftText === undefined ? undefined : extractDraftBody(draftText);
 
-  const context = [
+  const context: string = [
     `[씬 시드: scene/${sceneStem}.card]`,
     sceneText.trim(),
     '',
@@ -201,17 +201,17 @@ async function readScenesFeaturingCard(
 ): Promise<string[]> {
   const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
-  const names = await listDirectoryFileNames(
+  const names: readonly string[] = await listDirectoryFileNames(
     fs,
     sceneDirectory,
     (name) => !isIgnoredSampleCardFileName(name),
   );
-  const stems = names
+  const stems: string[] = names
     .map((name) => parseSceneFileName(name)?.stem)
     .filter((stem): stem is string => stem !== undefined)
     .sort();
 
-  const sections = await Promise.all(
+  const sections: (string | undefined)[] = await Promise.all(
     stems.map(async (stem) => {
       const scene = await readSceneOrUndefined(fs, workspaceRoot, stem);
 
@@ -260,7 +260,7 @@ async function readLookupText(
       return scene ? scene.body.trim() : undefined;
     }
     case 'draft': {
-      const draft = await readTextOrUndefined(fs, draftPath(workspaceRoot, request.key));
+      const draft: string | undefined = await readTextOrUndefined(fs, draftPath(workspaceRoot, request.key));
       return draft === undefined ? undefined : extractDraftBody(draft);
     }
   }

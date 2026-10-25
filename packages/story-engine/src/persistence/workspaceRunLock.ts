@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { StoryUri } from '@storyboard/story-model';
+import type { StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
 import {
   createWorkspaceRunLockRecord,
   isWorkspaceRunLockStale,
@@ -51,9 +51,12 @@ async function writeLockFile(
 export async function readWorkspaceRunLock(
   options: WorkspaceRunLockOptions,
 ): Promise<WorkspaceRunLockRecord | undefined> {
-  const now = options.now ?? ((): Date => new Date());
-  const lockUri = getStoryboardProjectPaths(options.workspaceRoot).runLock;
-  const record = await readLockFile(options.fileSystem, lockUri);
+  const now: () => Date = options.now ?? ((): Date => new Date());
+  const lockUri: StoryUri = getStoryboardProjectPaths(options.workspaceRoot).runLock;
+  const record: WorkspaceRunLockRecord | undefined = await readLockFile(
+    options.fileSystem,
+    lockUri,
+  );
 
   return record === undefined || isWorkspaceRunLockStale(record, now()) ? undefined : record;
 }
@@ -65,20 +68,24 @@ export async function acquireWorkspaceRunLock(
   options: WorkspaceRunLockOptions & { readonly holder: WorkspaceRunLockHolder },
 ): Promise<AcquireWorkspaceRunLockResult> {
   const { fileSystem } = options;
-  const now = options.now ?? ((): Date => new Date());
-  const paths = getStoryboardProjectPaths(options.workspaceRoot);
-  const existing = await readWorkspaceRunLock(options);
+  const now: () => Date = options.now ?? ((): Date => new Date());
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(options.workspaceRoot);
+  const existing: WorkspaceRunLockRecord | undefined = await readWorkspaceRunLock(options);
 
   if (existing !== undefined) {
     return { ok: false, heldBy: existing };
   }
 
-  const record = createWorkspaceRunLockRecord(options.holder, randomUUID(), now());
+  const record: WorkspaceRunLockRecord = createWorkspaceRunLockRecord(
+    options.holder,
+    randomUUID(),
+    now(),
+  );
 
   await fileSystem.createDirectory(paths.cacheDirectory);
   await writeLockFile(fileSystem, paths.runLock, record);
 
-  const winner = await readLockFile(fileSystem, paths.runLock);
+  const winner: WorkspaceRunLockRecord | undefined = await readLockFile(fileSystem, paths.runLock);
 
   if (winner?.token !== record.token) {
     return winner === undefined ? { ok: false, heldBy: record } : { ok: false, heldBy: winner };
@@ -93,10 +100,10 @@ function holdLock(
   record: WorkspaceRunLockRecord,
   now: () => Date,
 ): WorkspaceRunLock {
-  let isReleased = false;
+  let isReleased: boolean = false;
 
   const beat = async (): Promise<void> => {
-    const current = await readLockFile(fileSystem, lockUri);
+    const current: WorkspaceRunLockRecord | undefined = await readLockFile(fileSystem, lockUri);
 
     if (isReleased || current?.token !== record.token) {
       return;
@@ -107,7 +114,7 @@ function holdLock(
 
   // NOTE: 박동 한 번을 놓쳐도 잠금이 곧바로 풀리지는 않는다(staleAfterMs 가 간격의 몇 배다).
   // 여기서 실패를 던지면 잠금을 쥔 생성 작업 전체가 죽으므로 삼킨다.
-  const timer = setInterval(() => {
+  const timer: NodeJS.Timeout = setInterval(() => {
     void beat().catch(() => undefined);
   }, workspaceRunLockTiming.heartbeatIntervalMs);
   timer.unref?.();
@@ -122,7 +129,7 @@ function holdLock(
       isReleased = true;
       clearInterval(timer);
 
-      const current = await readLockFile(fileSystem, lockUri);
+      const current: WorkspaceRunLockRecord | undefined = await readLockFile(fileSystem, lockUri);
 
       if (current?.token === record.token) {
         await fileSystem.delete(lockUri);

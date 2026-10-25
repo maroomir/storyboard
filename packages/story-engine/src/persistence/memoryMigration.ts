@@ -1,6 +1,6 @@
 import { STORYBOARD_RELATIVE_PATHS, joinStoryPath, type StoryUri } from '@storyboard/story-model';
 import type { StoryboardProjectPaths } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 
 // NOTE: `.storyboard/memory/` used to live under `.storyboard/cache/`, which the scaffold
 // gitignores. Everything moved here is LLM output that no committed input can reproduce, so it
@@ -37,16 +37,16 @@ export async function migrateLegacyMemory(
   fileSystem: IFileSystem,
   paths: StoryboardProjectPaths,
 ): Promise<MemoryMigrationResult> {
-  const workspaceRoot = paths.workspaceRoot;
+  const workspaceRoot: StoryUri = paths.workspaceRoot;
   const movedPaths: string[] = [];
 
   for (const location of legacyMemoryLocations) {
-    const legacyUri = resolve(workspaceRoot, location.legacy);
+    const legacyUri: StoryUri = resolve(workspaceRoot, location.legacy);
     if (!(await fileSystem.exists(legacyUri))) {
       continue;
     }
 
-    const currentUri = resolve(workspaceRoot, location.current);
+    const currentUri: StoryUri = resolve(workspaceRoot, location.current);
     if (!(await fileSystem.exists(currentUri))) {
       await fileSystem.createDirectory(paths.memoryDirectory);
       await fileSystem.writeFile(currentUri, await fileSystem.readFile(legacyUri));
@@ -57,12 +57,12 @@ export async function migrateLegacyMemory(
   }
 
   for (const location of legacyMemoryDirectories) {
-    const legacyUri = resolve(workspaceRoot, location.legacy);
+    const legacyUri: StoryUri = resolve(workspaceRoot, location.legacy);
     if (!(await fileSystem.exists(legacyUri))) {
       continue;
     }
 
-    const currentUri = resolve(workspaceRoot, location.current);
+    const currentUri: StoryUri = resolve(workspaceRoot, location.current);
     movedPaths.push(
       ...(await moveDirectoryFiles(fileSystem, legacyUri, currentUri, location.current)),
     );
@@ -78,8 +78,10 @@ async function moveDirectoryFiles(
   currentUri: StoryUri,
   currentRelativePath: string,
 ): Promise<string[]> {
-  const entries = await fileSystem.readDirectory(legacyUri);
-  const fileNames = entries.filter(([, stat]) => stat.type === 'file').map(([name]) => name);
+  const entries: FileSystemDirectoryEntry[] = await fileSystem.readDirectory(legacyUri);
+  const fileNames: string[] = entries
+    .filter(([, stat]) => stat.type === 'file')
+    .map(([name]) => name);
   if (fileNames.length === 0) {
     return [];
   }
@@ -90,8 +92,8 @@ async function moveDirectoryFiles(
   // deletes it — a host whose delete is non-recursive would otherwise fail on a full directory.
   const moved: string[] = [];
   for (const fileName of fileNames) {
-    const legacyFileUri = joinStoryPath(legacyUri, fileName);
-    const targetUri = joinStoryPath(currentUri, fileName);
+    const legacyFileUri: StoryUri = joinStoryPath(legacyUri, fileName);
+    const targetUri: StoryUri = joinStoryPath(currentUri, fileName);
 
     if (!(await fileSystem.exists(targetUri))) {
       await fileSystem.writeFile(targetUri, await fileSystem.readFile(legacyFileUri));

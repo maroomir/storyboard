@@ -26,7 +26,7 @@ export class NarratorCardRepository implements INarratorCardRepository {
     card: NarratorCard,
   ): Promise<CreateNarratorCardResult> {
     const { narratorDirectory } = getStoryboardProjectPaths(workspaceRoot);
-    const uri = joinStoryPath(narratorDirectory, `${card.id}.card`);
+    const uri: StoryUri = joinStoryPath(narratorDirectory, `${card.id}.card`);
 
     if (await this.fileSystem.exists(uri)) {
       return { ok: false, kind: 'exists', uri };
@@ -39,7 +39,7 @@ export class NarratorCardRepository implements INarratorCardRepository {
   }
 
   public async remove(workspaceRoot: StoryUri, id: string): Promise<RemoveNarratorCardResult> {
-    const uri = joinStoryPath(
+    const uri: StoryUri = joinStoryPath(
       getStoryboardProjectPaths(workspaceRoot).narratorDirectory,
       `${id}.card`,
     );

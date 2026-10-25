@@ -7,7 +7,7 @@ export class ProjectRepository implements IProjectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async read(uri: StoryUri): Promise<StoryboardProject> {
-    const bytes = await this.fileSystem.readFile(uri);
+    const bytes: Uint8Array = await this.fileSystem.readFile(uri);
     return parseProjectJson(new TextDecoder().decode(bytes));
   }
 }

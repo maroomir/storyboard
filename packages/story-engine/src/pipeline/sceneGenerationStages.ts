@@ -43,8 +43,8 @@ export async function describeBackgroundForScene(
   store: BackgroundMemoryStore | undefined,
   recentExcerpt?: string,
 ): Promise<Background> {
-  const cached = recentExcerpt === undefined ? await store?.load(card) : undefined;
-  let atmosphere = cached;
+  const cached: string | undefined = recentExcerpt === undefined ? await store?.load(card) : undefined;
+  let atmosphere: string | undefined = cached;
   if (atmosphere === undefined) {
     atmosphere = await aiService.describeBackground(
       card,
@@ -61,7 +61,7 @@ export async function describeBackgroundForScene(
     return card;
   }
 
-  const description = [...(card.description ?? []), atmosphere];
+  const description: string[] = [...(card.description ?? []), atmosphere];
   return { ...card, description };
 }
 
@@ -75,12 +75,12 @@ export async function findBackgroundFactConflictsForScene(
     return [];
   }
 
-  const cached = await store?.load(card);
+  const cached: readonly BackgroundFactConflict[] | undefined = await store?.load(card);
   if (cached !== undefined) {
     return cached;
   }
 
-  const conflicts = await aiService.findBackgroundFactConflicts(card, {
+  const conflicts: BackgroundFactConflict[] = await aiService.findBackgroundFactConflicts(card, {
     attribution: { primary: { kind: 'background', id: card.id } },
   });
   await store?.save(card, conflicts);
@@ -103,16 +103,16 @@ export async function buildScenePersonas(
   onProgress: RunSceneGenerationPipelineInput['onProgress'],
   shouldCancel: (() => boolean) | undefined,
 ): Promise<Map<string, string>> {
-  const personasUsed = new Map<string, string>();
-  const characterCount = characters.length;
+  const personasUsed: Map<string, string> = new Map<string, string>();
+  const characterCount: number = characters.length;
 
-  for (let i = 0; i < characters.length; i++) {
+  for (let i: number = 0; i < characters.length; i++) {
     const character = characters[i];
     if (!character) {
       continue;
     }
-    const cached = await personaStore?.load(character);
-    let persona = cached;
+    const cached: string | undefined = await personaStore?.load(character);
+    let persona: string | undefined = cached;
     if (persona === undefined) {
       persona = await aiService.createCharacterPersona(
         character,

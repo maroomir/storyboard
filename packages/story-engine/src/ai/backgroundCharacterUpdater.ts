@@ -3,6 +3,7 @@ import type {
   BackgroundCard,
   CardFileSystem,
   CharacterCard,
+  StoryboardCard,
 } from '@storyboard/story-model';
 import { isBackgroundCard, readCardFile, writeCardFile } from '@storyboard/story-model';
 interface BackgroundCharacterUpdateLogger {
@@ -31,9 +32,9 @@ export async function updateBackgroundCharactersFromScene(
     return { updated: false };
   }
 
-  const cardUri = resolveBackgroundCardUri(backgroundId);
+  const cardUri: StoryUri = resolveBackgroundCardUri(backgroundId);
 
-  let current;
+  let current: StoryboardCard;
   try {
     current = await readCardFile(cardUri, fileSystem);
   } catch (error) {
@@ -45,15 +46,17 @@ export async function updateBackgroundCharactersFromScene(
     return { updated: false };
   }
 
-  const existing = current.characterIds ?? [];
-  const seen = new Set(existing);
-  const additions = detectedCharacterCards.map((card) => card.id).filter((id) => !seen.has(id));
+  const existing: string[] = current.characterIds ?? [];
+  const seen: Set<string> = new Set(existing);
+  const additions: string[] = detectedCharacterCards
+    .map((card) => card.id)
+    .filter((id) => !seen.has(id));
 
   if (additions.length === 0) {
     return { updated: false };
   }
 
-  const merged = [...existing, ...new Set(additions)];
+  const merged: string[] = [...existing, ...new Set(additions)];
   const next: BackgroundCard = { ...current, characterIds: merged };
 
   try {

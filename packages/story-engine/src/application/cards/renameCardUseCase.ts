@@ -7,6 +7,8 @@ import {
   rewriteCardIdReferences,
   serializeCard,
   setCardId,
+  type StoryboardCard,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -70,11 +72,11 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
       };
     }
 
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const directory =
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const directory: StoryUri =
       category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const fromUri = joinStoryPath(directory, `${fromId}.card`);
-    const toUri = joinStoryPath(directory, `${toId}.card`);
+    const fromUri: StoryUri = joinStoryPath(directory, `${fromId}.card`);
+    const toUri: StoryUri = joinStoryPath(directory, `${toId}.card`);
 
     if (!(await fileSystem.exists(fromUri))) {
       return { ok: false, kind: 'missing', message: `카드가 없습니다: ${fromId}` };
@@ -84,7 +86,7 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
       return { ok: false, kind: 'exists', message: `이미 있습니다: ${toId}` };
     }
 
-    const renamed = setCardId(
+    const renamed: StoryboardCard = setCardId(
       parseCard(new TextDecoder().decode(await fileSystem.readFile(fromUri))),
       toId,
     );
@@ -114,17 +116,17 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
   ): Promise<{ readonly rewrittenCount: number; readonly unreadableFiles: readonly string[] }> {
     const { fileSystem } = this.deps;
     const unreadableFiles: string[] = [];
-    let rewrittenCount = 0;
+    let rewrittenCount: number = 0;
 
     for (const directory of directories) {
       for (const uri of await listCardFileUris(fileSystem, directory)) {
-        const fileName = uri.path.split('/').at(-1) ?? '';
+        const fileName: string = uri.path.split('/').at(-1) ?? '';
 
         if (uri.path === renamedUri.path || isIgnoredSampleCardFileName(fileName)) {
           continue;
         }
 
-        const raw = new TextDecoder().decode(await fileSystem.readFile(uri));
+        const raw: string = new TextDecoder().decode(await fileSystem.readFile(uri));
         let next: string;
 
         try {

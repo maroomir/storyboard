@@ -5,12 +5,15 @@ import type {
   OutlineCharacterBrief,
   OutlineSynopsis,
   StoryboardProject,
+  GenerationContractReadiness,
+  OutlineBrief,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { validateGenerationContract, toOutlineBrief } from '@storyboard/story-model';
 import { refuseChapterCountMismatch } from './chapterPlanContract';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 export interface IOutlineRepository {
   hasExisting(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
@@ -61,8 +64,8 @@ export class GenerateOutlineUseCase implements IUseCase<
       this.deps.logger,
       'Generate outline failed',
       async () => {
-        const project = await this.deps.repository.loadProject(workspaceRoot);
-        const readiness = validateGenerationContract(project.setting);
+        const project: StoryboardProject = await this.deps.repository.loadProject(workspaceRoot);
+        const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
 
         if (readiness.missing.length > 0) {
           return { kind: 'missing_contract', missing: readiness.missing, ok: false };
@@ -72,19 +75,28 @@ export class GenerateOutlineUseCase implements IUseCase<
           return { kind: 'existing', ok: false };
         }
 
-        const aiService = this.deps.aiGateway.createService(workspaceRoot);
-        const brief = toOutlineBrief(
+        const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+        const brief: OutlineBrief = toOutlineBrief(
           project,
           await this.deps.repository.loadNarratorIds(workspaceRoot),
         );
         options.onProgress?.('시놉시스 생성 중…');
-        const synopsis = await aiService.generateOutlineSynopsis(brief);
-        const characters = await this.deps.repository.loadCharacterBriefs(workspaceRoot);
+        const synopsis: OutlineSynopsis = await aiService.generateOutlineSynopsis(brief);
+        const characters: readonly OutlineCharacterBrief[] =
+          await this.deps.repository.loadCharacterBriefs(workspaceRoot);
         options.onProgress?.('챕터 구성 중…');
-        const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
+        const chapterPlan: ChapterPlan = await aiService.generateChapterPlan(
+          brief,
+          synopsis,
+          characters,
+        );
         refuseChapterCountMismatch(brief, chapterPlan, 'generated');
         options.onProgress?.('파일 저장 중…');
-        const synopsisUri = await this.deps.repository.save(workspaceRoot, synopsis, chapterPlan);
+        const synopsisUri: StoryUri = await this.deps.repository.save(
+          workspaceRoot,
+          synopsis,
+          chapterPlan,
+        );
 
         return { kind: 'generated', ok: true, synopsisUri };
       },

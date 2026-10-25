@@ -11,7 +11,7 @@ import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSy
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { createHash } from 'node:crypto';
 
-import type { SceneFile, StoryboardCard } from '@storyboard/story-model';
+import type { SceneFile, StoryboardCard, StoryboardProject, StoryboardProjectPaths } from '@storyboard/story-model';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
@@ -23,7 +23,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async load(workspaceRoot: StoryUri): Promise<StoryFeatureSource> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
       readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
       readTextFiles(
@@ -65,8 +65,8 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
       }
     }
 
-    const project = parseProjectJson(projectText.text);
-    const snapshots = [
+    const project: StoryboardProject = parseProjectJson(projectText.text);
+    const snapshots: StoryFileSnapshot[] = [
       snapshotFile(projectText.uri, projectText.bytes),
       ...sceneFiles.map((file) => snapshotFile(file.uri, file.bytes)),
       ...cardFiles.map((file) => snapshotFile(file.uri, file.bytes)),
@@ -154,9 +154,9 @@ async function readCardFiles(
   fs: IFileSystem,
   ...directories: readonly StoryUri[]
 ): Promise<TextFile[]> {
-  const files = await Promise.all(
+  const files: TextFile[][] = await Promise.all(
     directories.map(async (directory) => {
-      const names = await listDirectoryFileNames(
+      const names: readonly string[] = await listDirectoryFileNames(
         fs,
         directory,
         (name) => name.endsWith('.card') && !isIgnoredSampleCardFileName(name),
@@ -172,7 +172,7 @@ async function readCardFiles(
 }
 
 async function readTextFile(fs: IFileSystem, uri: StoryUri): Promise<TextFile> {
-  const bytes = await fs.readFile(uri);
+  const bytes: Uint8Array = await fs.readFile(uri);
   return {
     uri,
     name: uri.path.split('/').at(-1) ?? uri.toString(),
@@ -187,8 +187,8 @@ function snapshotFile(uri: StoryUri, bytes: Uint8Array): StoryFileSnapshot {
 
 async function snapshotDirectory(fs: IFileSystem, uri: StoryUri): Promise<StoryFileSnapshot> {
   try {
-    const entries = await fs.readDirectory(uri);
-    const manifest = entries
+    const entries: FileSystemDirectoryEntry[] = await fs.readDirectory(uri);
+    const manifest: string = entries
       .filter(([name, entry]) => entry.type === 'file' && !name.startsWith('.'))
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([name, entry]) => `${entry.type}:${name}`)

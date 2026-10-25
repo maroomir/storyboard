@@ -6,6 +6,9 @@ import type {
   ManuscriptDraftEntry,
   DraftFileSystem,
   StoryboardProjectPaths,
+  SceneFileNameParts,
+  StoryUri,
+  Draft,
 } from '@storyboard/story-model';
 export async function collectDraftsByOrder(
   fs: IFileSystem,
@@ -13,22 +16,22 @@ export async function collectDraftsByOrder(
   fileSystem: DraftFileSystem,
   logger: Pick<IStoryboardLogger, 'warn'>,
 ): Promise<Map<number, ManuscriptDraftEntry>> {
-  const draftsByOrder = new Map<number, ManuscriptDraftEntry>();
+  const draftsByOrder: Map<number, ManuscriptDraftEntry> = new Map<number, ManuscriptDraftEntry>();
 
-  const names = await listDirectoryFileNames(fs, paths.draftDirectory, (name) =>
+  const names: readonly string[] = await listDirectoryFileNames(fs, paths.draftDirectory, (name) =>
     name.endsWith('.md'),
   );
 
   for (const name of names) {
-    const stem = name.slice(0, -'.md'.length);
-    const parts = parseSceneStem(stem);
+    const stem: string = name.slice(0, -'.md'.length);
+    const parts: SceneFileNameParts | undefined = parseSceneStem(stem);
     if (!parts) {
       continue;
     }
 
-    const draftUri = joinStoryPath(paths.draftDirectory, name);
+    const draftUri: StoryUri = joinStoryPath(paths.draftDirectory, name);
     try {
-      const draft = parseDraft(await readDraftFile(draftUri, fileSystem));
+      const draft: Draft = parseDraft(await readDraftFile(draftUri, fileSystem));
       draftsByOrder.set(parts.order, { stem, body: draft.body });
     } catch (error) {
       logger.warn(
