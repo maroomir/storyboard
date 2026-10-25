@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import { decimalSettingStep, parseSettingNumberInput, type AiProviderId } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, extractErrorMessage, parseSettingNumberInput, type AiProviderId } from '@storyboard/story-model/contracts';
 
 import type { DesktopSettings, ProviderOption, SettingEntry, UiLanguage } from '@/shared/dto';
 
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 
 const englishBasicSettings: Readonly<Record<string, { readonly label: string; readonly description: string }>> = {
@@ -43,7 +43,7 @@ export function Settings(props: SettingsProps): JSX.Element {
     try {
       setSettings(await action());
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 
@@ -64,7 +64,7 @@ export function Settings(props: SettingsProps): JSX.Element {
       setApiKey('');
       setKeyMessage(translate('provider.connected'));
     } catch (failure) {
-      setKeyMessage(messageOf(failure));
+      setKeyMessage(extractErrorMessage(failure));
       setSettings(await call('settings.read', {}));
     }
   };

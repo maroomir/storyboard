@@ -19,6 +19,8 @@ import {
   providerCatalog,
   usageLimitMessage,
   type ReasoningEffort,
+  isJsonRecord,
+  type JsonRecord,
 } from '@storyboard/story-model';
 import {
   ChatGptOAuthError,
@@ -49,18 +51,12 @@ export interface ChatGptModelOption {
   readonly displayName: string;
 }
 
-type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function readErrorField(body: unknown, field: 'code' | 'message'): string | undefined {
-  if (!isRecord(body)) {
+  if (!isJsonRecord(body)) {
     return undefined;
   }
 
-  const error: JsonRecord = isRecord(body.error) ? body.error : body;
+  const error: JsonRecord = isJsonRecord(body.error) ? body.error : body;
   const value: unknown = error[field] ?? (field === 'message' ? body.detail : undefined);
 
   return typeof value === 'string' ? value : undefined;
@@ -99,13 +95,13 @@ interface ResponsesRequestBody {
 }
 
 function readUsage(value: unknown): AiUsage | undefined {
-  if (!isRecord(value)) {
+  if (!isJsonRecord(value)) {
     return undefined;
   }
 
   const inputTokens: number = typeof value.input_tokens === 'number' ? value.input_tokens : 0;
   const outputTokens: number = typeof value.output_tokens === 'number' ? value.output_tokens : 0;
-  const details: JsonRecord = isRecord(value.input_tokens_details)
+  const details: JsonRecord = isJsonRecord(value.input_tokens_details)
     ? value.input_tokens_details
     : {};
   const cachedTokens: number =
@@ -163,7 +159,7 @@ function parseEventLine(line: string): JsonRecord | undefined {
 
   try {
     const parsed: unknown = JSON.parse(payload);
-    return isRecord(parsed) ? parsed : undefined;
+    return isJsonRecord(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
@@ -214,10 +210,10 @@ export class ChatGptProvider implements AiProvider {
   public async listModels(): Promise<readonly ChatGptModelOption[]> {
     const response: Response = await this.send('/models', { method: 'GET' }, 'connection-failed');
     const body: unknown = await response.json().catch(() => undefined);
-    const models: unknown[] = isRecord(body) && Array.isArray(body.models) ? body.models : [];
+    const models: unknown[] = isJsonRecord(body) && Array.isArray(body.models) ? body.models : [];
 
     return models.flatMap((model): ChatGptModelOption[] => {
-      if (!isRecord(model) || typeof model.slug !== 'string') {
+      if (!isJsonRecord(model) || typeof model.slug !== 'string') {
         return [];
       }
       if (model.visibility !== undefined && model.visibility !== 'list') {
@@ -291,7 +287,7 @@ export class ChatGptProvider implements AiProvider {
         }
         case 'response.completed':
         case 'response.incomplete': {
-          const completed: JsonRecord = isRecord(event.response) ? event.response : {};
+          const completed: JsonRecord = isJsonRecord(event.response) ? event.response : {};
           const usage: AiUsage | undefined = readUsage(completed.usage);
 
           yield {
@@ -307,7 +303,7 @@ export class ChatGptProvider implements AiProvider {
           return;
         }
         case 'response.failed': {
-          const failed: JsonRecord = isRecord(event.response) ? event.response : {};
+          const failed: JsonRecord = isJsonRecord(event.response) ? event.response : {};
           throw this.errorFromCode(
             readErrorField(failed.error, 'code'),
             readErrorField(failed.error, 'message') ?? 'response.failed',

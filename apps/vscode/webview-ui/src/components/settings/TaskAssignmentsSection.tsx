@@ -10,7 +10,6 @@ import {
   formatResolvedTaskAi,
   getProviderStatus,
   hasTaskOverride,
-  isAiProviderId,
   parseSaveTarget,
   pickModelForTaskProvider,
   type AiProviderId,
@@ -21,6 +20,7 @@ import {
   type TaskAiAssignment,
 } from './settingsSnapshot';
 import { sbInlineSelectClass, sbInputClass, sectionCardClass } from './settingsStyles';
+import { isAiProviderId } from '@storyboard/story-model/contracts';
 
 export function TaskAssignmentsSection({
   snapshot,

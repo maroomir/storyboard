@@ -1,4 +1,4 @@
-import { isNotionUrl, NodeUri } from '@storyboard/story-model';
+import { extractErrorMessage, isNotionUrl, NodeUri } from '@storyboard/story-model';
 import type { NoteAbsorbPlan, NoteBundle } from '@storyboard/story-model';
 import type { ApplyNoteAbsorbResult, CollectNotesResult, NoteLocation, PlanNoteAbsorbResult } from '@storyboard/story-engine';
 
@@ -41,7 +41,7 @@ export class NotesService {
     try {
       estimate = this.container.notes.estimate(collected.bundle);
     } catch (error) {
-      return fail('provider-missing', error instanceof Error ? error.message : String(error));
+      return fail('provider-missing', extractErrorMessage(error));
     }
 
     return succeed({

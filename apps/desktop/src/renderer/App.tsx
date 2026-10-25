@@ -6,7 +6,7 @@ import { ProviderSetup } from './components/ProviderSetup';
 import { RunDrawer } from './components/RunDrawer';
 import { TopBar, type WorkspaceView } from './components/TopBar';
 import { desktopBridge } from './lib/bridge';
-import { call, messageOf } from './lib/call';
+import { call } from './lib/call';
 import { I18nProvider, useI18n } from './lib/i18n';
 import type { WorkspaceChange } from './lib/workspaceChange';
 import { Bible } from './screens/Bible';
@@ -17,6 +17,7 @@ import { Welcome } from './screens/Welcome';
 import { Wizard } from './screens/Wizard';
 import { NotesAbsorb } from './components/NotesAbsorb';
 import type { DesktopBridge, InvokeResponses } from '@/shared/ipcContract';
+import { extractErrorMessage } from '@storyboard/story-model/contracts';
 
 export function App(): JSX.Element {
   const [bootstrap, setBootstrap] = useState<AppBootstrap>();
@@ -77,7 +78,7 @@ function Workbench(props: WorkbenchProps): JSX.Element {
     try {
       setOverview(await call('workspace.overview', {}));
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(extractErrorMessage(failure));
     }
   }, []);
 
@@ -118,7 +119,7 @@ function Workbench(props: WorkbenchProps): JSX.Element {
         setRun(await call('run.status', {}));
       }
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(extractErrorMessage(failure));
     }
     await refreshBootstrap();
   };
@@ -131,7 +132,7 @@ function Workbench(props: WorkbenchProps): JSX.Element {
       setDrawerOpen(false);
       await refreshBootstrap();
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(extractErrorMessage(failure));
     }
   };
 

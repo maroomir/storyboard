@@ -5,6 +5,7 @@ import {
   storyboardModelCatalog,
   parseSceneCard,
   parseSceneFileName,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import type { AiProviderId, SceneCard, SceneFileNameParts } from '@storyboard/story-model';
 import {
@@ -87,7 +88,7 @@ import { flagBoolean, flagString } from '@/cliArguments';
 import { createSimWorkspaceFactory } from '@/adapters/simWorkspaceFactory';
 import { createCliContainer } from '@/container';
 import type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
-import { availableProviderIds } from '@/adapters/availableProviders';
+import { availableProviderIds, isAvailableProviderId } from '@/adapters/availableProviders';
 import type { ZodSafeParseResult } from 'zod';
 
 interface TrackScene {
@@ -288,10 +289,6 @@ function generationRecord(
   };
 }
 
-function isProviderId(value: string): value is AiProviderId {
-  return availableProviderIds().includes(value as AiProviderId);
-}
-
 function generationSelection(context: CommandContext, config: SimConfig): Selection | string {
   const flagProvider: string | undefined = requireFlag(context, 'provider');
   const flagModel: string | undefined = requireFlag(context, 'model');
@@ -310,7 +307,7 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
   });
 
   if (flagProvider !== undefined) {
-    if (!isProviderId(flagProvider)) {
+    if (!isAvailableProviderId(flagProvider)) {
       return `알 수 없는 프로바이더: ${flagProvider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
     }
     const model: string = flagModel ?? storyboardModelCatalog[flagProvider][0]?.id;
@@ -320,7 +317,7 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
   }
 
   if (config.generation !== undefined) {
-    if (!isProviderId(config.generation.provider)) {
+    if (!isAvailableProviderId(config.generation.provider)) {
       return `${simConfigFileName} 의 generation.provider 를 모릅니다: ${config.generation.provider}`;
     }
     return withVariant({
@@ -353,7 +350,7 @@ function judgeSelection(
     return `--judge 로 심판을 정하거나 ${simConfigFileName} 에 judge 를 적어 주세요. 생성과 같은 모델이면 자기 글을 자기가 채점하게 됩니다.`;
   }
 
-  if (!isProviderId(rawProvider)) {
+  if (!isAvailableProviderId(rawProvider)) {
     return `알 수 없는 심판 프로바이더: ${rawProvider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
   }
 
@@ -595,7 +592,7 @@ async function executePoints(
             });
           }
         } catch (error) {
-          const message: string = error instanceof Error ? error.message : String(error);
+          const message: string = extractErrorMessage(error);
           context.container.logger.warn(
             `${point.label} ${repeat}회 · 심판 실패, 생성 결과만 남깁니다: ${message}`,
           );
@@ -665,7 +662,7 @@ async function refuseMissingLocalModels(input: {
   try {
     available = await listLocalModels(baseUrl);
   } catch (error) {
-    return `ollama 에 닿지 못했습니다 (${baseUrl}): ${error instanceof Error ? error.message : String(error)}`;
+    return `ollama 에 닿지 못했습니다 (${baseUrl}): ${extractErrorMessage(error)}`;
   }
 
   const missing: readonly string[] = missingLocalModels(available, wanted);
@@ -1225,7 +1222,7 @@ export const rejudgeSim: CommandHandler = async (context) => {
         draftsDir: source.draftsDir,
       });
     } catch (error) {
-      const message: string = error instanceof Error ? error.message : String(error);
+      const message: string = extractErrorMessage(error);
       context.container.logger.warn(`${source.run.runId} · 심판 실패: ${message}`);
       verdict = { discarded: true, discardReasons: [`심판 실패: ${message}`] };
     }

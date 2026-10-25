@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-import { compositionKinds, pointOfViews } from '@storyboard/story-model/contracts';
+import { compositionKinds, extractErrorMessage, pointOfViews } from '@storyboard/story-model/contracts';
 
 import type { WorkspaceOverview } from '@/shared/dto';
 import type { WorkspaceCreateRequest } from '@/shared/ipcContract';
 
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { compositionLabel, pointOfViewLabel } from '@/renderer/lib/narrativeLabels';
 import { initialWizardForm, isStepComplete, lengthHint, wizardSteps, type SceneLengthHint, type WizardStep } from '@/renderer/lib/wizardForm';
@@ -55,7 +55,7 @@ export function Wizard(props: WizardProps): JSX.Element {
     try {
       props.onCreated(await call('workspace.create', { parentDirectory, request: form }), shouldAbsorbNotes);
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(extractErrorMessage(failure));
       setCreating(false);
     }
   };

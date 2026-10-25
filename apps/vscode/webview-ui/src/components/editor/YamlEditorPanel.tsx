@@ -1,23 +1,14 @@
 import React, { useCallback, useState } from 'react';
 
-import { createRequestId } from '@webview/lib/messaging';
 import type { CardEditorInitialData, StoryboardCard } from '@webview/lib/types';
 import { IconButton } from '../ui/IconButton';
 import { SectionHeader } from '../ui/SectionHeader';
 import { sbYamlTextareaClass } from '../ui/formClasses';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
+import { callRpc } from '@webview/lib/rpcClient';
 
 const panelClass: string =
   'flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]';
-
-type RpcResponse = {
-  readonly type: 'response';
-  readonly id: string;
-  readonly method: string;
-  readonly ok: boolean;
-  readonly payload?: { readonly card: StoryboardCard; readonly rawText: string };
-  readonly error?: { readonly message: string };
-};
 
 export type YamlEditorPanelProps = {
   readonly documentUri: string;
@@ -28,39 +19,22 @@ export type YamlEditorPanelProps = {
   readonly vscodeApi?: VscodeApi;
 };
 
+interface WrittenCard {
+  readonly card: StoryboardCard;
+  readonly rawText: string;
+}
+
 function callWriteRaw(
   vscodeApi: NonNullable<YamlEditorPanelProps['vscodeApi']>,
   documentUri: string,
   rawText: string,
-): Promise<{ readonly card: StoryboardCard; readonly rawText: string }> {
-  const id: string = createRequestId();
-
-  return new Promise((resolve, reject) => {
-    const handler = (event: MessageEvent): void => {
-      const response: RpcResponse | undefined = event.data as RpcResponse | undefined;
-      if (!response || response.type !== 'response' || response.id !== id) {
-        return;
-      }
-
-      window.removeEventListener('message', handler);
-
-      if (response.ok && response.payload) {
-        resolve(response.payload);
-        return;
-      }
-
-      reject(new Error(response.error?.message ?? 'YAML을 저장하지 못했습니다.'));
-    };
-
-    window.addEventListener('message', handler);
-    vscodeApi.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id,
-      method: 'cards.writeRaw',
-      payload: { uri: documentUri, rawText },
-    });
-  });
+): Promise<WrittenCard> {
+  return callRpc<WrittenCard>(
+    vscodeApi,
+    'cards.writeRaw',
+    { uri: documentUri, rawText },
+    { fallbackErrorMessage: 'YAML을 저장하지 못했습니다.' },
+  );
 }
 
 export function YamlEditorPanel({

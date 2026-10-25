@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { NovelManager } from '@storyboard/story-app';
-import { parseScene } from '@storyboard/story-model';
+import { extractErrorMessage, parseScene } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type { CompletedStoryScene, CompleteStoryScenesProposal } from '@storyboard/story-engine';
 
@@ -99,7 +99,7 @@ export function registerCompleteStoryScenesCommand(
         return;
       }
       await vscode.window.showErrorMessage(
-        `이야기 완결 제안을 만들지 못했습니다: ${messageOf(error)}`,
+        `이야기 완결 제안을 만들지 못했습니다: ${extractErrorMessage(error)}`,
       );
     }
   });
@@ -125,10 +125,6 @@ async function choosePrefix(count: number): Promise<number | undefined> {
 
 function resolveWorkspaceRoot(): vscode.Uri | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri;
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 class StoryCompletionCancelledError extends Error {}

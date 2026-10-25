@@ -2,7 +2,12 @@ import * as vscode from 'vscode';
 
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger, ReviseDraftWorkflowResult } from '@storyboard/story-engine';
-import { draftPath, parseSceneStem, type StoryUri } from '@storyboard/story-model';
+import {
+  draftPath,
+  extractErrorMessage,
+  parseSceneStem,
+  type StoryUri,
+} from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -92,7 +97,7 @@ async function runReviseDraft(
       } catch (error) {
         dependencies.logger.error('Draft revise loop failed', error);
         dependencies.logger.show();
-        const message: string = error instanceof Error ? error.message : String(error);
+        const message: string = extractErrorMessage(error);
         await showStoryboardFailure(`초안 검수·재작성에 실패했습니다: ${message}`);
       }
     },

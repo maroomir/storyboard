@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DraftDocument } from '@/shared/dto';
 
-import { call, messageOf } from './call';
+import { call } from './call';
 import { DraftAutosave, type AutosaveState } from './draftAutosave';
+import { extractErrorMessage } from '@storyboard/story-model/contracts';
 
 export interface DraftEditor {
   readonly document: DraftDocument | undefined;
@@ -53,7 +54,7 @@ export function useDraftEditor(
           setSaveState,
         );
       })
-      .catch((failure: unknown) => onError(messageOf(failure)));
+      .catch((failure: unknown) => onError(extractErrorMessage(failure)));
 
     return (): void => {
       isCurrent = false;
@@ -61,7 +62,7 @@ export function useDraftEditor(
       autosave.current = undefined;
       void closing
         ?.flush()
-        .catch((failure: unknown) => onError(messageOf(failure)))
+        .catch((failure: unknown) => onError(extractErrorMessage(failure)))
         .finally(() => {
           closing.dispose();
           void call('draft.endSession', { stem });

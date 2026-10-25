@@ -11,6 +11,7 @@ import {
 } from '@/shared/ipcContract';
 
 import { fail, type ServiceResult } from './serviceResult';
+import { extractErrorMessage } from '@storyboard/story-model';
 
 export type InvokeHandlers = {
   readonly [C in InvokeChannel]: (request: InvokeRequest<C>) => Promise<ServiceResult<InvokeResponses[C]>>;
@@ -52,7 +53,7 @@ export function createIpcRouter(
       return await handler(request.data);
     } catch (error) {
       logger.error(`${channel} failed`, error);
-      return fail('internal', describe.internal(error instanceof Error ? error.message : String(error)));
+      return fail('internal', describe.internal(extractErrorMessage(error)));
     }
   };
 }

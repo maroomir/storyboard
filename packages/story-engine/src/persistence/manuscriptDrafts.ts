@@ -1,4 +1,10 @@
-import { joinStoryPath, parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-model';
+import {
+  extractErrorMessage,
+  joinStoryPath,
+  parseDraft,
+  parseSceneStem,
+  readDraftFile,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { IStoryboardLogger } from '#engine/ports/logger';
@@ -34,9 +40,7 @@ export async function collectDraftsByOrder(
       const draft: Draft = parseDraft(await readDraftFile(draftUri, fileSystem));
       draftsByOrder.set(parts.order, { stem, body: draft.body });
     } catch (error) {
-      logger.warn(
-        `Skipping unreadable draft: ${name} (${error instanceof Error ? error.message : String(error)})`,
-      );
+      logger.warn(`Skipping unreadable draft: ${name} (${extractErrorMessage(error)})`);
     }
   }
 

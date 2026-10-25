@@ -6,6 +6,7 @@ import {
 import {
   asNotionRecord,
   compareNoteNames,
+  extractErrorMessage,
   listNotionChildren,
   listNotionLinkedPageIds,
   normalizeNotionId,
@@ -287,7 +288,7 @@ export class NotionNoteSource implements INoteSource {
   private skip(label: string, error: unknown): void {
     this.skipped.push({
       label,
-      reason: error instanceof Error ? error.message : String(error),
+      reason: extractErrorMessage(error),
     });
   }
 }

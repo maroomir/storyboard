@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { parseSceneStem, type SceneFileNameParts } from '@storyboard/story-model/contracts';
+import { extractErrorMessage, parseSceneStem, type SceneFileNameParts } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, SceneNotes, TocScene, WorkspaceOverview } from '@/shared/dto';
 
@@ -8,7 +8,7 @@ import type { WorkspaceChange } from '@/renderer/lib/workspaceChange';
 import { MarginNotes } from '@/renderer/components/MarginNotes';
 import { SceneCardPreview } from '@/renderer/components/SceneCardPreview';
 import { TableOfContents } from '@/renderer/components/TableOfContents';
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { hasSelection, replaceSelection, type TextSelection } from '@/renderer/lib/selectionEdit';
 import { useDraftEditor, type DraftEditor } from '@/renderer/lib/useDraftEditor';
@@ -59,7 +59,7 @@ export function Desk(props: DeskProps): JSX.Element {
     }
     void call('scene.notes', { stem: selectedStem })
       .then(setNotes)
-      .catch((failure: unknown) => props.onError(messageOf(failure)));
+      .catch((failure: unknown) => props.onError(extractErrorMessage(failure)));
   }, [selectedStem, props.change.sequence, props.run?.status]);
 
   const writeScene = async (): Promise<void> => {
@@ -71,7 +71,7 @@ export function Desk(props: DeskProps): JSX.Element {
       await call('run.generateScene', { stem: selectedStem, force: editor.document?.exists === true });
       props.onOpenDrawer();
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 
@@ -214,7 +214,7 @@ function SceneRenameForm(props: SceneRenameFormProps): JSX.Element {
       const { stem } = await call('scene.rename', { stem: props.stem, to: nextStem });
       props.onRenamed(stem);
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     } finally {
       setSaving(false);
     }
@@ -298,7 +298,7 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
       });
       setProposal(text);
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     } finally {
       setProposing(false);
     }
@@ -317,7 +317,7 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
       await props.onApply(next);
       closeEdit();
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     }
   };
 

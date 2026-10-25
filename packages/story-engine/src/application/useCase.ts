@@ -1,4 +1,5 @@
 import type { IStoryboardLogger } from '#engine/ports/logger';
+import { extractErrorMessage } from '@storyboard/story-model';
 
 export interface IUseCase<TRequest, TResult> {
   execute(request: TRequest): Promise<TResult>;
@@ -11,7 +12,7 @@ export interface UseCaseFailure {
 }
 
 export function failureMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return extractErrorMessage(error);
 }
 
 export function failedResult(error: unknown): UseCaseFailure {

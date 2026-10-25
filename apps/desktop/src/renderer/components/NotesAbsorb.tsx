@@ -2,9 +2,10 @@ import { useState } from 'react';
 
 import type { NotesApplyView, NotesEstimateView, NotesPlanView } from '@/shared/dto';
 
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { formatUsd } from '@/renderer/lib/runView';
+import { extractErrorMessage } from '@storyboard/story-model/contracts';
 
 interface NotesAbsorbProps {
   readonly fillContract: boolean;
@@ -32,7 +33,7 @@ export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
     try {
       await action();
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(extractErrorMessage(failure));
     } finally {
       setBusy(false);
     }

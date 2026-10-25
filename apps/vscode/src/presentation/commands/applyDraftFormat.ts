@@ -4,6 +4,7 @@ import type { ApplyDraftFormatResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
+  extractErrorMessage,
   isDirectSceneCardFile,
   parseSceneFileName,
   type SceneFileNameParts,
@@ -129,7 +130,7 @@ async function runApplyDraftFormatForScene(
   } catch (error) {
     dependencies.logger.error('Apply draft format failed', error);
     dependencies.logger.show();
-    const message: string = error instanceof Error ? error.message : String(error);
+    const message: string = extractErrorMessage(error);
     await showStoryboardFailure(`장르 포맷 적용에 실패했습니다: ${message}`);
   }
 }

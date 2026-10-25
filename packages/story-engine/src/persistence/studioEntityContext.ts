@@ -12,22 +12,8 @@ SceneFile,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
-import {
-  extractDraftBody,
-  parseSceneFileName,
-  readCardFile,
-  readSceneFile,
-  serializeCard,
-  backgroundCardPath,
-  characterCardPath,
-  draftPath,
-  getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
-  isSafeStudioEntityKey,
-  scenePath,
-} from '@storyboard/story-model';
-
-
+import { extractDraftBody, parseSceneFileName, readSceneFile, serializeCard, backgroundCardPath, characterCardPath, draftPath, getStoryboardProjectPaths, isIgnoredSampleCardFileName, isSafeStudioEntityKey, scenePath } from '@storyboard/story-model';
+import { readCardOrUndefined, readSceneOrUndefined } from '#engine/persistence/optionalStoryFiles';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: StudioAgentEntityKind;
@@ -281,29 +267,6 @@ function relativeCardPath(cardKind: BibleSubjectKind, cardId: string): string {
 async function readTextOrUndefined(fs: IFileSystem, uri: StoryUri): Promise<string | undefined> {
   try {
     return new TextDecoder().decode(await fs.readFile(uri));
-  } catch {
-    return undefined;
-  }
-}
-
-async function readCardOrUndefined(
-  fs: IFileSystem,
-  uri: StoryUri,
-): Promise<Awaited<ReturnType<typeof readCardFile>> | undefined> {
-  try {
-    return await readCardFile(uri, fs);
-  } catch {
-    return undefined;
-  }
-}
-
-async function readSceneOrUndefined(
-  fs: IFileSystem,
-  workspaceRoot: StoryUri,
-  sceneStem: string,
-): Promise<Awaited<ReturnType<typeof readSceneFile>> | undefined> {
-  try {
-    return await readSceneFile(scenePath(workspaceRoot, sceneStem), fs, `${sceneStem}.card`);
   } catch {
     return undefined;
   }

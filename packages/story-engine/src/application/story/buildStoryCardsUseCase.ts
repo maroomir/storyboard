@@ -1,6 +1,7 @@
 import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse, CharacterRole, BibleSubjectKind } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
+import { slugify } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import {
@@ -458,14 +459,6 @@ function resolveCardId(
 
 function normalizeName(value: string): string {
   return value.trim().toLocaleLowerCase('ko').replace(/\s+/g, ' ');
-}
-
-function slugify(value: string): string | undefined {
-  const slug: string = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : undefined;
 }
 
 function changeLabel(proposal: CardCollectProposal): string {

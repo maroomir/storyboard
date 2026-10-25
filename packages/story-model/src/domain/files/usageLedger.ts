@@ -20,7 +20,7 @@ import {
   storyboardModelPricing,
   type ModelPricePerMillion,
 } from '#model/contracts/providerCatalog';
-import { aiTaskNames } from '#model/contracts/ai';
+import { addUsageAmount, aiTaskNames, emptyUsageAmount } from '#model/contracts/ai';
 type UsageLedgerVersion = 1;
 
 const usageLedgerVersion: UsageLedgerVersion = 1;
@@ -97,42 +97,12 @@ export interface UsageLedgerFileSystem {
   readonly createDirectory: (uri: StoryUri) => Promise<void>;
 }
 
-export function emptyUsageAmount(): UsageAmount {
-  return { costUsd: 0, tokens: 0, hasUnpricedUsage: false };
-}
-
 export function emptyUsageSummary(): UsageSummaryByEntity {
   return {
     scenes: {},
     characters: {},
     backgrounds: {},
     total: emptyUsageAmount(),
-  };
-}
-
-function addUsageCache(
-  base: UsageCacheAmount | undefined,
-  delta: UsageCacheAmount | undefined,
-): UsageCacheAmount | undefined {
-  if (base === undefined || delta === undefined) {
-    return base ?? delta;
-  }
-
-  return {
-    promptTokens: base.promptTokens + delta.promptTokens,
-    cachedTokens: base.cachedTokens + delta.cachedTokens,
-    savedUsd: base.savedUsd + delta.savedUsd,
-  };
-}
-
-export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
-  const cache: UsageCacheAmount | undefined = addUsageCache(base.cache, delta.cache);
-
-  return {
-    costUsd: base.costUsd + delta.costUsd,
-    tokens: base.tokens + delta.tokens,
-    hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
-    ...(cache === undefined ? {} : { cache }),
   };
 }
 

@@ -1,23 +1,20 @@
 import * as vscode from 'vscode';
 
-import type { ConfigBridge } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
-import type { DraftManager } from '@storyboard/story-app';
-import type { CheckDraftResult, IStoryboardLogger } from '@storyboard/story-engine';
+import type { CheckDraftResult } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, parseDraft } from '@storyboard/story-model';
-import { createDiagnostic, toRange } from './diagnosticsShared';
+import {
+  createDiagnostic,
+  runDiagnosticsCheckCommand,
+  toRange,
+  type DiagnosticsProviderDependencies,
+} from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ContinuityIssue } from '@storyboard/story-ai';
 
 const continuityCheckCommand: string = 'storyboard.draft.continuityCheck';
 const continuitySource: string = 'storyboard-continuity';
-
-export interface RegisterContinuityDiagnosticsProviderDependencies {
-  readonly drafts: Pick<DraftManager, 'check'>;
-  readonly configBridge: ConfigBridge;
-  readonly logger: IStoryboardLogger;
-}
 
 export function toContinuityRange(
   document: vscode.TextDocument,
@@ -50,9 +47,7 @@ export function mapContinuityIssuesToDiagnostics(
 class ContinuityDiagnosticsController {
   private readonly collection: vscode.DiagnosticCollection =
     vscode.languages.createDiagnosticCollection(continuitySource);
-  public constructor(
-    private readonly dependencies: RegisterContinuityDiagnosticsProviderDependencies,
-  ) {}
+  public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {}
 
   public getDiagnosticsCollection(): vscode.DiagnosticCollection {
     return this.collection;
@@ -123,22 +118,8 @@ function resolveSceneStem(document: vscode.TextDocument): string {
   }
 }
 
-async function runContinuityCheckCommand(
-  controller: ContinuityDiagnosticsController,
-  uri?: vscode.Uri,
-): Promise<void> {
-  const targetUri: vscode.Uri | undefined = uri ?? vscode.window.activeTextEditor?.document.uri;
-  if (!targetUri) {
-    await vscode.window.showErrorMessage('활성 드래프트 파일을 찾을 수 없습니다.');
-    return;
-  }
-
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(targetUri);
-  await controller.runForDocument(document);
-}
-
 export function registerContinuityDiagnosticsProvider(
-  dependencies: RegisterContinuityDiagnosticsProviderDependencies,
+  dependencies: DiagnosticsProviderDependencies,
 ): vscode.Disposable {
   const controller: ContinuityDiagnosticsController = new ContinuityDiagnosticsController(
     dependencies,
@@ -146,7 +127,7 @@ export function registerContinuityDiagnosticsProvider(
 
   const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
     continuityCheckCommand,
-    (uri?: vscode.Uri) => runContinuityCheckCommand(controller, uri),
+    (uri?: vscode.Uri) => runDiagnosticsCheckCommand(controller, uri),
   );
   const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
     controller.getDiagnosticsCollection().delete(document.uri);

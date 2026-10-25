@@ -11,6 +11,7 @@ import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import { resolveSceneUriFromInvocation } from '@/presentation/commands/sceneInvocation';
 
 const GENERATE_DRAFT_COMMAND: string = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND: string = 'storyboard.draft.regenerate';
@@ -40,15 +41,6 @@ export function stageProgressLabel(stage: SceneGenerationPipelineStage): string 
     default:
       return '처리 중';
   }
-}
-
-function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | undefined {
-  if (invokedUri?.scheme === 'file') {
-    return invokedUri;
-  }
-
-  const document: vscode.TextDocument | undefined = vscode.window.activeTextEditor?.document;
-  return document?.uri.scheme === 'file' ? document.uri : undefined;
 }
 
 async function openDraftResult(

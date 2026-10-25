@@ -1,15 +1,8 @@
 import React from 'react';
 
 import { Button } from '../ui/Button';
-import {
-  AI_PROVIDER_IDS,
-  getProviderStatus,
-  hasTaskOverride,
-  requiresApiKey,
-  type AiProviderId,
-  type AiProviderStatus,
-  type SettingsReadSnapshot,
-} from './settingsSnapshot';
+import { getProviderStatus, hasTaskOverride, type AiProviderId, type AiProviderStatus, type SettingsReadSnapshot } from './settingsSnapshot';
+import { aiProviderIds, requiresApiKey } from '@storyboard/story-model/contracts';
 
 const summaryCardClass: string =
   'flex flex-col gap-1 rounded-lg border border-sb-border bg-sb-bg-widget/70 px-3 py-2.5';
@@ -33,7 +26,7 @@ export function SettingsSummaryCards({
     snapshot.modelCatalog[defaultProviderId].find((entry) => entry.id === defaultModelId)
       ?.displayName ?? defaultModelId;
 
-  const keyedProviders: AiProviderId[] = AI_PROVIDER_IDS.filter(requiresApiKey);
+  const keyedProviders: AiProviderId[] = aiProviderIds.filter(requiresApiKey);
   const connectedCount: number = keyedProviders.filter(
     (id) => getProviderStatus(snapshot, id)?.hasApiKey === true,
   ).length;

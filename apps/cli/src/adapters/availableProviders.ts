@@ -10,3 +10,7 @@ export function enabledHiddenProviderIds(env: NodeJS.ProcessEnv = process.env): 
 export function availableProviderIds(env: NodeJS.ProcessEnv = process.env): AiProviderId[] {
   return listAvailableProviderIds(enabledHiddenProviderIds(env));
 }
+
+export function isAvailableProviderId(value: string): value is AiProviderId {
+  return availableProviderIds().includes(value as AiProviderId);
+}

@@ -6,6 +6,8 @@ import {
   STORYBOARD_GLOBS,
   parseCard,
   isIgnoredSampleCardFileName,
+  escapeRegExp,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
@@ -39,7 +41,7 @@ export function mapCardErrorToSpans(text: string, error: unknown): CardDiagnosti
     }
   }
 
-  const message: string = error instanceof Error ? error.message : String(error);
+  const message: string = extractErrorMessage(error);
   return [{ line: 0, start: 0, end: firstLineLength(text), message }];
 }
 
@@ -92,10 +94,6 @@ function yamlErrorToSpan(text: string, cause: unknown, message: string): CardDia
 function firstLineLength(text: string): number {
   const newlineIndex: number = text.indexOf('\n');
   return newlineIndex === -1 ? text.length : newlineIndex;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function cardFileName(uri: vscode.Uri): string {

@@ -23,7 +23,11 @@ import type {
   UsageCacheAmount,
   UsageSummaryByEntity,
 } from './types';
-import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
+import {
+  addUsageAmount,
+  emptyUsageAmount,
+  type BibleSubjectKind,
+} from '@storyboard/story-model/contracts';
 
 export function createRequestId(): string {
   return crypto.randomUUID();
@@ -41,13 +45,11 @@ export function parseCardEditorInitialData(value: unknown): CardEditorInitialDat
   };
 }
 
-export const emptyUsageAmount: UsageAmount = { costUsd: 0, tokens: 0, hasUnpricedUsage: false };
-
 const emptyUsageSummary: UsageSummaryByEntity = {
   scenes: {},
   characters: {},
   backgrounds: {},
-  total: emptyUsageAmount,
+  total: emptyUsageAmount(),
 };
 
 export function parseSidebarCardsInitialData(value: unknown): SidebarCardsInitialData {
@@ -381,33 +383,15 @@ export function parseUsageChangedPayload(payload: unknown): UsageSummaryByEntity
   return normalizeUsageSummary(payload);
 }
 
-export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
-  const cache: UsageCacheAmount | undefined =
-    base.cache === undefined || delta.cache === undefined
-      ? (base.cache ?? delta.cache)
-      : {
-          promptTokens: base.cache.promptTokens + delta.cache.promptTokens,
-          cachedTokens: base.cache.cachedTokens + delta.cache.cachedTokens,
-          savedUsd: base.cache.savedUsd + delta.cache.savedUsd,
-        };
-
-  return {
-    costUsd: base.costUsd + delta.costUsd,
-    tokens: base.tokens + delta.tokens,
-    hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
-    ...(cache === undefined ? {} : { cache }),
-  };
-}
-
 export function sumUsageMap(usageByKey: Readonly<Record<string, UsageAmount>>): UsageAmount {
-  return Object.values(usageByKey).reduce(addUsageAmount, emptyUsageAmount);
+  return Object.values(usageByKey).reduce(addUsageAmount, emptyUsageAmount());
 }
 
 export function usageAmountOf(
   usageByKey: Readonly<Record<string, UsageAmount>>,
   key: string,
 ): UsageAmount {
-  return usageByKey[key] ?? emptyUsageAmount;
+  return usageByKey[key] ?? emptyUsageAmount();
 }
 
 function normalizeUsageAmount(value: unknown): UsageAmount | undefined {
@@ -473,7 +457,7 @@ function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
     scenes: normalizeUsageMap(summary.scenes),
     characters: normalizeUsageMap(summary.characters),
     backgrounds: normalizeUsageMap(summary.backgrounds),
-    total: normalizeUsageAmount(summary.total) ?? emptyUsageAmount,
+    total: normalizeUsageAmount(summary.total) ?? emptyUsageAmount(),
   };
 }
 

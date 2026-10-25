@@ -13,29 +13,8 @@ SceneContext,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
-import {
-  buildSceneContext,
-  characterMatchTokens,
-  detectCharactersInText,
-  isIgnoredSampleCardFileName,
-  parseDraft,
-  parseSceneFileName,
-  readCardFile,
-  readSceneFile,
-  type SceneFile,
-  type StoryboardCard,
-  nextDraftHistoryRevision,
-  sceneContextPaths,
-  readRevisionPlanFile,
-  backgroundCardPath,
-  characterCardPath,
-  draftHistorySceneDirectory,
-  draftPath,
-  getStoryboardProjectPaths,
-  scenePath,
-  type StoryboardProjectPaths,
-} from '@storyboard/story-model';
-
+import { buildSceneContext, characterMatchTokens, detectCharactersInText, isIgnoredSampleCardFileName, parseDraft, parseSceneFileName, type SceneFile, type StoryboardCard, nextDraftHistoryRevision, sceneContextPaths, readRevisionPlanFile, backgroundCardPath, characterCardPath, draftHistorySceneDirectory, draftPath, getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-model';
+import { readCardOrUndefined, readSceneOrUndefined } from '#engine/persistence/optionalStoryFiles';
 
 type DraftFacts = Pick<StudioSceneStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
 
@@ -108,17 +87,6 @@ function toStageRelation(relation: {
   return { target: relation.target, type: relation.type };
 }
 
-async function readCardOrUndefined(
-  fs: IFileSystem,
-  uri: StoryUri,
-): Promise<StoryboardCard | undefined> {
-  try {
-    return await readCardFile(uri, fs);
-  } catch {
-    return undefined;
-  }
-}
-
 async function findScenesFeaturingCard(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
@@ -168,18 +136,6 @@ function resolveSceneStem(target: StudioTarget): string | undefined {
 
   const fileName: string = target.sceneUri.split('/').pop() ?? '';
   return parseSceneFileName(fileName)?.stem;
-}
-
-async function readSceneOrUndefined(
-  fs: IFileSystem,
-  workspaceRoot: StoryUri,
-  sceneStem: string,
-): Promise<SceneFile | undefined> {
-  try {
-    return await readSceneFile(scenePath(workspaceRoot, sceneStem), fs, `${sceneStem}.card`);
-  } catch {
-    return undefined;
-  }
 }
 
 async function readStageCards(

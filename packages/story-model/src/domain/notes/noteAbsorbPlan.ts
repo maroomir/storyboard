@@ -21,6 +21,7 @@ import {
   type CardCollectProposalDraft,
 } from '#model/shared/cardCollect';
 import type { NoteDocument } from '#model/shared/noteAbsorb';
+import { slugify } from '#model/format/slug';
 
 export interface NoteCardPlan {
   readonly card: StoryboardCard;
@@ -80,15 +81,6 @@ const roleRank: Readonly<Record<CharacterRole, number>> = { main: 3, supporting:
 
 function normalizeName(value: string): string {
   return value.normalize('NFC').trim().toLocaleLowerCase('ko').replace(/\s+/g, ' ');
-}
-
-function slugify(value: string): string | undefined {
-  const slug: string = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return slugPattern.test(slug) ? slug : undefined;
 }
 
 function union(left: readonly string[], right: readonly string[]): string[] {

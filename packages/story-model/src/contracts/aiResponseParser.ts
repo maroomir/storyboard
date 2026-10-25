@@ -1,3 +1,5 @@
+import { escapeRegExp } from '#model/format/regExp';
+
 export function parseJsonArray(response: string): unknown[] | null {
   const match: RegExpMatchArray | null = response.match(/\[[\s\S]*\]/);
 
@@ -157,8 +159,4 @@ export function detectCharactersFromDialogue(script: string): string[] {
   }
 
   return Array.from(names);
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

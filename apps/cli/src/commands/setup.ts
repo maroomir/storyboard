@@ -39,6 +39,7 @@ import {
   type NarratorCard,
   type ModelMeasurement,
   type ConfigValueOrigin,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import {
   type ConfigBridge,
@@ -72,13 +73,13 @@ import { signIn } from './login';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
 import { providerKeys, type ProviderKey } from './catalog';
-import { availableProviderIds, enabledHiddenProviderIds } from '@/adapters/availableProviders';
+import {
+  availableProviderIds,
+  enabledHiddenProviderIds,
+  isAvailableProviderId,
+} from '@/adapters/availableProviders';
 import type { StoryboardHomePaths } from '@storyboard/story-config';
 import type { BackgroundFactConflictReport } from '../../../../packages/story-app/src/managers/cardManager';
-
-function isProviderId(value: string): value is AiProviderId {
-  return availableProviderIds().includes(value as AiProviderId);
-}
 
 function describeProvider(providerId: AiProviderId): string {
   if (providerId === 'ollama') {
@@ -1239,7 +1240,7 @@ async function setTaskRoute(
     );
   }
 
-  if (!isProviderId(raw)) {
+  if (!isAvailableProviderId(raw)) {
     return {
       ok: false,
       message: `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
@@ -1282,7 +1283,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
   }
 
   if (key === 'ai.provider.default') {
-    if (!isProviderId(raw)) {
+    if (!isAvailableProviderId(raw)) {
       return {
         ok: false,
         message: `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
@@ -1341,7 +1342,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     const providerId: string = providerMatch[1] ?? '';
     const field: ProviderKey = providerMatch[2] as ProviderKey;
 
-    if (!isProviderId(providerId)) {
+    if (!isAvailableProviderId(providerId)) {
       return { ok: false, message: `알 수 없는 프로바이더: ${providerId}` };
     }
 
@@ -1378,7 +1379,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
   try {
     await configBridge.setSettingValue(key, value);
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+    return { ok: false, message: extractErrorMessage(error) };
   }
 
   return describeSaved(container, key, value);
@@ -1399,7 +1400,7 @@ function findUnsettableKeyProblem(key: string): string | undefined {
   ).exec(key);
   const isKnownKey: boolean =
     key === 'ai.provider.default' ||
-    (providerMatch !== null && isProviderId(providerMatch[1] ?? '')) ||
+    (providerMatch !== null && isAvailableProviderId(providerMatch[1] ?? '')) ||
     storyboardSettingCatalog.some((entry) => entry.key === key);
 
   return isKnownKey ? undefined : describeUnknownKey(key);

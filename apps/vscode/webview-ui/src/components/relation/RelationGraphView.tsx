@@ -6,6 +6,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { SectionHeader } from '../ui/SectionHeader';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
+import { createRequestId } from '@webview/lib/messaging';
+import { shortenLineSegment, type LineSegment } from '@webview/lib/lineSegment';
 
 const NODE_CARD_W: number = 112;
 const NODE_CARD_H: number = 52;
@@ -14,40 +16,6 @@ const LINK_TRIM: number = 52;
 
 const EDGE_GRADIENT_START: string = '#d97706';
 const EDGE_GRADIENT_END: string = '#0d9488';
-
-interface LineSegment {
-  readonly x1: number;
-  readonly y1: number;
-  readonly x2: number;
-  readonly y2: number;
-}
-
-function shortenLineSegment(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  insetStart: number,
-  insetEnd: number,
-): LineSegment | undefined {
-  const dx: number = x2 - x1;
-  const dy: number = y2 - y1;
-  const length: number = Math.hypot(dx, dy);
-
-  if (length < insetStart + insetEnd + 4) {
-    return undefined;
-  }
-
-  const ux: number = dx / length;
-  const uy: number = dy / length;
-
-  return {
-    x1: x1 + ux * insetStart,
-    y1: y1 + uy * insetStart,
-    x2: x2 - ux * insetEnd,
-    y2: y2 - uy * insetEnd,
-  };
-}
 
 interface RelationListCharacter {
   readonly id: string;
@@ -74,10 +42,6 @@ interface GraphLinkDatum {
   readonly source: string | GraphNode;
   readonly target: string | GraphNode;
   readonly type: string;
-}
-
-function createRequestId(): string {
-  return crypto.randomUUID();
 }
 
 export function RelationGraph({

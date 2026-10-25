@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
 
+import type { DraftManager } from '@storyboard/story-app';
+import type { ConfigBridge } from '@storyboard/story-ai';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
+
 export function toRange(
   document: vscode.TextDocument,
   start: number,
@@ -45,4 +49,28 @@ export function createWarningDiagnostic(
   const warningSeverity: vscode.DiagnosticSeverity = (vscode.DiagnosticSeverity?.Warning ??
     1) as unknown as vscode.DiagnosticSeverity;
   return createDiagnostic(range, message, source, warningSeverity);
+}
+
+export interface DiagnosticsProviderDependencies {
+  readonly drafts: Pick<DraftManager, 'check'>;
+  readonly configBridge: ConfigBridge;
+  readonly logger: IStoryboardLogger;
+}
+
+export interface IDocumentDiagnosticsRunner {
+  runForDocument(document: vscode.TextDocument): Promise<void>;
+}
+
+export async function runDiagnosticsCheckCommand(
+  runner: IDocumentDiagnosticsRunner,
+  uri?: vscode.Uri,
+): Promise<void> {
+  const targetUri: vscode.Uri | undefined = uri ?? vscode.window.activeTextEditor?.document.uri;
+  if (!targetUri) {
+    await vscode.window.showErrorMessage('활성 드래프트 파일을 찾을 수 없습니다.');
+    return;
+  }
+
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(targetUri);
+  await runner.runForDocument(document);
 }

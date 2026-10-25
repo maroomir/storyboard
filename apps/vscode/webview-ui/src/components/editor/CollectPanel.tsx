@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { createRequestId } from '@webview/lib/messaging';
 import type { CardCollectProposal, StoryboardCard } from '@webview/lib/types';
 import { Button } from '../ui/Button';
 import { SectionHeader } from '../ui/SectionHeader';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
+import { callRpc } from '@webview/lib/rpcClient';
 
 const panelClass: string =
   'flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]';
@@ -33,43 +33,6 @@ const kindLabels: Record<CardCollectProposal['kind'], string> = {
 interface ProposalGroup {
   readonly kind: CardCollectProposal['kind'];
   readonly items: CardCollectProposal[];
-}
-
-type RpcResponse<T> = {
-  readonly type: 'response';
-  readonly id: string;
-  readonly ok: boolean;
-  readonly payload?: T;
-  readonly error?: { readonly message: string };
-};
-
-function callRpc<T>(
-  vscodeApi: VscodeApi,
-  method: string,
-  payload: Record<string, unknown>,
-): Promise<T> {
-  const id: string = createRequestId();
-
-  return new Promise((resolve, reject) => {
-    const handler = (event: MessageEvent): void => {
-      const response: RpcResponse<T> | undefined = event.data as RpcResponse<T> | undefined;
-      if (!response || response.type !== 'response' || response.id !== id) {
-        return;
-      }
-
-      window.removeEventListener('message', handler);
-
-      if (response.ok && response.payload !== undefined) {
-        resolve(response.payload);
-        return;
-      }
-
-      reject(new Error(response.error?.message ?? '요청을 처리하지 못했습니다.'));
-    };
-
-    window.addEventListener('message', handler);
-    vscodeApi.postMessage({ protocolVersion: '1.0.0', type: 'request', id, method, payload });
-  });
 }
 
 function proposalDiff(proposal: CardCollectProposal): {

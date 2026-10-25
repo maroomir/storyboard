@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import type { RunSnapshot, SnapshotEntry } from '@/shared/dto';
 
 import type { WorkspaceChange } from '@/renderer/lib/workspaceChange';
-import { call, messageOf } from '@/renderer/lib/call';
+import { call } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
+import { extractErrorMessage } from '@storyboard/story-model/contracts';
 
 interface HistoryProps {
   readonly run: RunSnapshot | undefined;
@@ -22,7 +23,7 @@ export function History(props: HistoryProps): JSX.Element {
   useEffect(() => {
     void call('history.list', {})
       .then(setEntries)
-      .catch((failure: unknown) => props.onError(messageOf(failure)));
+      .catch((failure: unknown) => props.onError(extractErrorMessage(failure)));
   }, [props.change.sequence, props.run?.status]);
 
   const restore = async (entry: SnapshotEntry): Promise<void> => {
@@ -33,7 +34,7 @@ export function History(props: HistoryProps): JSX.Element {
     try {
       setEntries(await call('history.restore', { id: entry.id }));
     } catch (failure) {
-      props.onError(messageOf(failure));
+      props.onError(extractErrorMessage(failure));
     } finally {
       setRestoring(false);
     }

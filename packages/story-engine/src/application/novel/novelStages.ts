@@ -19,6 +19,7 @@ import {
   scenePath,
   type StoryboardProjectPaths,
   buildSceneSeeds,
+  collectChapterPlanCharacterIds,
 } from '@storyboard/story-model';
 import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
@@ -409,7 +410,7 @@ export async function runReviewStage(
     draftsByOrder,
     annotateSceneStems: true,
   });
-  const characters: string[] = collectCharacterIds(plan);
+  const characters: string[] = collectChapterPlanCharacterIds(plan);
 
   const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
     aiService,
@@ -606,14 +607,4 @@ export function groupChapterStems(
   });
 
   return groups.map(({ title, stems }) => ({ title, stems }));
-}
-
-function collectCharacterIds(plan: ChapterPlan): string[] {
-  const ids: Set<string> = new Set<string>();
-  for (const flatScene of flattenChapterPlan(plan)) {
-    for (const id of flatScene.scene.characters) {
-      ids.add(id);
-    }
-  }
-  return [...ids];
 }
