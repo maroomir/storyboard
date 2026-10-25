@@ -147,7 +147,6 @@ describe('CLI verbs and the run lock', () => {
     expect(existsSync(lockFile())).toBe(false);
   });
 
-  // A new verb must say whether it writes the workspace. Guessing "no" would let it race a run.
   it('classifies every verb as writing or read-only', () => {
     const readOnlyVerbs = new Set([
       'init',

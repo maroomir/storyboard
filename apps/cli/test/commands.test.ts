@@ -70,8 +70,6 @@ beforeEach(async () => {
   home = mkdtempSync(join(tmpdir(), 'storyboard-cli-home-'));
   process.env.STORYBOARD_HOME = home;
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
-  // Generation verbs refuse an unconfigured provider, so the temp home names one the way
-  // `storyboard setup` would.
   writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   await run('init', args(['init'], { title: '시그널' }));
 });
@@ -86,8 +84,6 @@ afterEach(() => {
   rmSync(workspace, { recursive: true, force: true });
 });
 
-// A manager keeps its verbs on the prototype, so spreading one drops them. Overriding through a
-// proxy keeps every other verb live on the real instance.
 function stubManager<T extends object>(manager: T, overrides: Partial<T>): T {
   return new Proxy(manager, {
     get: (target, key) => (key in overrides ? overrides[key as keyof T] : Reflect.get(target, key)),
@@ -151,7 +147,6 @@ describe('project contract', () => {
     expect(existsSync(join(workspace, '.storyboard', 'project.json'))).toBe(false);
   });
 
-  // 계약이 비면 outline generate 가 거절한다. 채우는 길이 없으면 CLI 만으로는 시작할 수 없었다.
   it('fills the contract from init flags', async () => {
     rmSync(workspace, { recursive: true, force: true });
     workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
@@ -229,8 +224,6 @@ describe('project contract', () => {
 });
 
 describe('card create', () => {
-  // 예전에는 한글 이름이 new-card, new-card-2 로 번호를 받아 이름과 무관한 id 가 조용히 생겼고,
-  // 씬 카드가 그 id 로 인물을 참조했다.
   it('refuses a name it cannot turn into an id instead of inventing one', async () => {
     const outcome = await run(
       'card create',
@@ -242,7 +235,6 @@ describe('card create', () => {
     expect(existsSync(join(workspace, 'character', 'new-card.card'))).toBe(false);
   });
 
-  // 거부만 하면 무엇을 줘야 할지 알기 어려웠다. 실패 문구가 바로 쓸 수 있는 모양을 보여 준다.
   it('shows the shape of the id it wants when it refuses a name', async () => {
     const outcome = await run(
       'card create',
@@ -275,7 +267,6 @@ describe('card create', () => {
     expect(outcome.message).toContain('영소문자');
   });
 
-  // 예전에는 --id hana 가 이미 있으면 hana-2 를 조용히 만들어, 에이전트가 엉뚱한 카드를 가리켰다.
   it('refuses an explicit id a card already holds instead of numbering it', async () => {
     await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character']));
 
@@ -302,7 +293,6 @@ describe('card create', () => {
   });
 });
 
-// 종류는 명령 이름이 아니라 첫 인자다. 빠지거나 틀리면 짐작하지 않고 쓸 수 있는 값을 알려 준다.
 describe('kind arguments', () => {
   it('refuses a card verb without a card type', async () => {
     const created = await run('card create', args(['card', 'create'], { name: 'Hana' }));
@@ -402,8 +392,6 @@ describe('scene create and scene seed', () => {
 });
 
 describe('card build', () => {
-  // 익스텐션은 제안을 골라 파일까지 쓰는데 CLI 는 JSON 만 뱉고 끝이었다. 파리티 테스트는
-  // verb 존재만 보므로 이 반쪽 상태를 잡지 못했다.
   function containerWith(targets: unknown[]) {
     const real = container();
     return {
@@ -510,7 +498,6 @@ describe('scene complete', () => {
     expect(existsSync(join(workspace, 'scene', written[0] as string))).toBe(true);
   });
 
-  // 완결 씬은 뒤에 덧붙이는 제안이므로, 같은 이름의 씬이 이미 있으면 쓰던 내용을 덮지 않는다.
   it('skips a file that already exists', async () => {
     await seedOneScene();
     const container = containerProposing('01-first.card');
@@ -536,7 +523,6 @@ describe('scene complete', () => {
 });
 
 describe('scene create', () => {
-  // 씬은 번호가 정체성을 지니므로 슬러그를 못 만들어도 진행한다.
   it('falls back to a numbered slug for a name with no ascii', async () => {
     const outcome = await run('scene create', args(['scene', 'create'], { name: '첫 방송' }));
 
@@ -570,7 +556,6 @@ describe('scene rename', () => {
 });
 
 describe('pre-0.8 workspace repair', () => {
-  // 0.8 이전 워크스페이스에는 마커만 있고 manuscript/ 가 없다.
   it('tops up a stale gitignore block on re-init', async () => {
     writeFileSync(
       join(workspace, '.gitignore'),
@@ -591,7 +576,6 @@ describe('pre-0.8 workspace repair', () => {
     expect(readFileSync(join(workspace, 'CLAUDE.md'), 'utf8')).toBe('@AGENTS.md\n');
   });
 
-  // «작품 메모»는 작가가 채우는 절이다. 보수가 그 파일을 다시 쓰면 메모가 사라진다.
   it('restores a missing agent guide on --repair and keeps an edited one', async () => {
     writeFileSync(join(workspace, 'AGENTS.md'), '# 작가가 고친 지침\n');
     rmSync(join(workspace, 'CLAUDE.md'));
@@ -604,7 +588,6 @@ describe('pre-0.8 workspace repair', () => {
     expect(outcome.data).toMatchObject({ addedAgentGuides: ['CLAUDE.md'] });
   });
 
-  // 계약 플래그가 조용히 버려진 채 exit 0 이 되면 에이전트는 제목이 바뀌었다고 믿는다.
   it('refuses a plain init on an existing workspace', async () => {
     const outcome = await run('init', args(['init'], { title: '새 제목' }));
 
@@ -685,8 +668,6 @@ describe('git repository', () => {
     }
   }
 
-  // 발판(.gitignore)이 저장소보다 먼저 있어야 생성물이 첫 커밋에 쓸려 들어가지 않는다. 그 첫 커밋은
-  // CLI 가 아니라 사용자의 몫이라 HEAD 는 아직 비어 있어야 한다.
   it('makes a new workspace a repository on main without committing', () => {
     expect(existsSync(join(workspace, '.git'))).toBe(true);
     expect(git('symbolic-ref', 'HEAD')).toBe('refs/heads/main');
@@ -764,7 +745,6 @@ describe('state generate', () => {
     expect(ledger()).toMatch(/<!-- scene-input: 1 sha256:[0-9a-f]{64} -->/);
     expect(ledger()).toMatch(/<!-- scene-input: 2 sha256:[0-9a-f]{64} -->/);
 
-    // 에이전트가 반복 실행해도 안전해야 한다: 이미 있는 씬은 호출 없이 그대로 둔다.
     const again = await run('state generate', args(['state', 'generate']));
     expect(again.ok).toBe(true);
     expect(again.data).toMatchObject({ recorded: [], kept: ['01-first', '02-second'] });
@@ -861,7 +841,6 @@ describe('scene plot', () => {
 });
 
 describe('draft generate progress', () => {
-  // 한 씬이 10~25분 걸리는데 --verbose 로도 아무 것도 찍히지 않았다.
   it('logs the pipeline stage and section index', async () => {
     const logged: string[] = [];
     const real = container();
@@ -1017,7 +996,6 @@ describe('paid run confirmation', () => {
 });
 
 describe('draft generate warnings', () => {
-  // 초안 앞머리의 warnings 는 사람이 파일을 열어야 보인다. 무인 실행에서는 아무도 열지 않는다.
   it('reports the draft warnings on stderr and in the json data', async () => {
     const warned: string[] = [];
     const real = container();
@@ -1053,14 +1031,12 @@ describe('draft generate warnings', () => {
     });
 
     expect(outcome.ok).toBe(true);
-    // 검수 재작성이 이미 고쳤을 수 있는 문제를 그 뒤에 알리면 stale 경고가 된다.
     expect(warned).toEqual(['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)', '검사 중 (1/1)']);
     expect((outcome.data as { warnings: string[] }).warnings).toHaveLength(1);
   });
 });
 
 describe('draft generate after a failed review', () => {
-  // #114: 초안이 써진 뒤 감수가 멈추면 생성은 성공이다. 종료 코드로 판단하는 에이전트가 초안을 다시 사지 않게.
   it('succeeds with the review status and a warning when the rewrite timed out', async () => {
     const warned: string[] = [];
     const real = container();
@@ -1381,7 +1357,6 @@ describe('scene rename: two fresh scenes are not a cut-off rename', () => {
   });
 });
 
-// 예전에는 이전 초안을 .draft/ 에 보관만 하고 수정본을 쓰지 않아, 성공을 보고해도 초안이 그대로였다.
 describe('draft edit and draft augment', () => {
   const originalBody = '첫 문단.\n\n둘째 문단.\n';
 
@@ -1418,8 +1393,6 @@ describe('draft edit and draft augment', () => {
     expect(draftBody()).toContain('[Mock AI: draftAugment]');
   });
 
-  // 손질 명령은 editor.draft.keepHistory 와 무관하게 늘 보관해, 설정 설명(«덮어쓰기 전에 이전 판을
-  // 남깁니다»)과 어긋났다. 재생성과 같은 설정을 따른다.
   it.each([
     ['draft augment', {}],
     ['draft edit', { instruction: '더 짧게' }],
@@ -1455,7 +1428,6 @@ describe('draft edit and draft augment', () => {
     expect(historyCount()).toBe(0);
   });
 
-  // 쓰기 경로는 빈 구간을 거부하는데 --dry-run 은 빈 선택 영역으로 모델을 불렀다.
   it('refuses an empty --lines range on --dry-run too', async () => {
     await writeSceneWithDraft();
 
@@ -1482,7 +1454,6 @@ describe('draft edit and draft augment', () => {
   });
 });
 
-// 예전에는 아웃라인처럼 씬에 속하지 않는 호출이 귀속 없이 나가 원장·예산·/cost 어디에도 잡히지 않았다.
 describe('spend that belongs to no scene', () => {
   it('charges the outline calls to the work', async () => {
     await run(
@@ -1519,7 +1490,6 @@ describe('spend that belongs to no scene', () => {
   });
 });
 
-// 예전에는 다시 돌린 novel generate 가 아웃라인을 새로 만들고, 다른 이름의 씬 시드를 또 썼다.
 describe('novel generate again', () => {
   const runStateFile = (): string => join(workspace, STORYBOARD_RELATIVE_PATHS.novelRunState);
 
@@ -1536,7 +1506,6 @@ describe('novel generate again', () => {
     await run('novel generate', args(['novel', 'generate']));
   }
 
-  // 프로세스가 죽으면 실행 상태가 running 으로 남는다.
   function leaveRunCutOff(): void {
     const state = JSON.parse(readFileSync(runStateFile(), 'utf8')) as Record<string, unknown>;
     writeFileSync(
@@ -1601,7 +1570,6 @@ describe('novel generate again', () => {
     expect(tasks).not.toContain('outlineSynopsis');
   });
 
-  // 데스크톱·익스텐션은 잠금을 쥐기 전에 묻는다. 살아 있는 잠금이 있으면 그 running 은 진행 중이다.
   it('treats a running state as cut off only when no app holds the lock', async () => {
     await startNovel();
     leaveRunCutOff();
@@ -1634,7 +1602,6 @@ describe('novel generate again', () => {
     expect(readFileSync(firstScene, 'utf8')).toContain('# 작가 메모');
   });
 
-  // 씬 번호가 같으면 이름이 바뀌어도 같은 씬이다. 예전에는 계획의 이름으로 씬을 하나 더 만들었다.
   it('keeps a scene card that was renamed or renumbered to another width', async () => {
     await startNovel();
     const [firstStem] = sceneFiles().map((name) => name.replace(/\.card$/, ''));
@@ -1657,7 +1624,6 @@ describe('novel generate again', () => {
   });
 });
 
-// 예전에는 빈 작품의 novel generate 가 첫 씬에서 실패했다: 시드가 가리키는 인물 카드가 없었다.
 describe('novel generate on an empty work', () => {
   async function setContract(): Promise<void> {
     await run(

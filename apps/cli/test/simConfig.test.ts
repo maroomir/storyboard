@@ -10,9 +10,6 @@ import type { ParsedArguments } from '../src/cliArguments';
 import { commands } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
-// 기계 프로필은 트랙 저장소 루트에 산다. 시험체는 기계가 바뀌어도 그대로여야 하므로 장르 디렉터리의
-// 설정과는 섞이지 않고, 플래그는 파일을 이긴다.
-
 let home: string;
 let track: string;
 
@@ -80,7 +77,6 @@ describe('profile file', () => {
 });
 
 describe('precedence', () => {
-  // 파일에 심판이 있으면 --judge 없이도 견적까지 간다.
   it('takes the judge from the profile', async () => {
     writeProfile({
       generation: { provider: 'ollama', model: 'qwen3:14b' },
@@ -93,7 +89,6 @@ describe('precedence', () => {
     expect(outcome?.message).toContain('--yes');
   });
 
-  // 한 런타임의 다른 두 모델은 자기채점이 아니다. 같은 모델일 때만 막는다.
   it('refuses when the profile judges with the generation model', async () => {
     writeProfile({
       generation: { provider: 'ollama', model: 'qwen3:14b' },
@@ -129,7 +124,6 @@ describe('precedence', () => {
     expect((await run('sim run', { track, genre: 'thriller', repeats: '5' }))?.message).toContain('× 5회');
   });
 
-  // 기계 프로필이 심판을 이름 짓고 있어도, 배선만 볼 때는 심판 없이 돌 수 있어야 한다.
   it('runs generation only with --judge none even when the profile names a judge', async () => {
     writeProfile({
       generation: { provider: 'ollama', model: 'qwen3:14b' },

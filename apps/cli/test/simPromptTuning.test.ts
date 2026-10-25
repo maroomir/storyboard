@@ -9,10 +9,6 @@ import {
 } from '@storyboard/story-ai';
 import { applyOverlay } from '@storyboard/story-sim';
 
-// 프롬프트 모듈 서른다섯 곳은 import 시점에 config 를 붙잡는다. 덮개가 그 뒤에 걸려도 이미 붙잡힌
-// 값이 따라와야 스윕이 온도를 흔들 수 있다. 안 따라오면 스윕은 매 회차 같은 값을 재고도 «영향
-// 없음»이라고 보고한다 — 조용히 틀린 결론이라 여기서 못박는다.
-
 afterEach(() => {
   resetPromptTuningOverrides();
 });

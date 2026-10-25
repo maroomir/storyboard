@@ -158,8 +158,6 @@ describe('switching the hidden subscription provider on', () => {
     });
   });
 
-  // QA D3: switching it off left `ai.provider.default: claude-code` behind, which made the whole home
-  // file invalid, so it could never be switched back on.
   it('can be switched off and back on after it became the default', async () => {
     await runConfigSet({
       container: container(prompterAnswering(true)),
@@ -243,8 +241,6 @@ describe('switching the hidden subscription provider on', () => {
     });
   });
 
-  // QA D4: an empty command was saved, after which the schema rejected the home file and every
-  // command — including the one that would fix it — failed.
   it('refuses an empty or blank command before writing anything', async () => {
     writeFileSync(join(home, 'config.json'), JSON.stringify({ [enabledKey]: true }));
     const before = homeConfig();

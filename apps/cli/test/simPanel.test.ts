@@ -13,8 +13,6 @@ import {
   type SimJudge,
 } from '@storyboard/story-sim';
 
-// 심판은 돈이 드는 유일한 부분이지만, 무엇을 묻고 무엇을 버리는지는 전부 결정론적으로 잴 수 있다.
-
 const sceneText = '엘리아가 문을 열었다. 비가 내리고 있었다.';
 
 function scenes(count: number) {
@@ -24,7 +22,6 @@ function scenes(count: number) {
   }));
 }
 
-// 대본대로 답하는 심판. 실제 호출은 하지 않는다.
 function scriptedJudge(reply: (messages: readonly AiMessage[], call: number) => string): SimJudge {
   let call = 0;
 
@@ -45,8 +42,6 @@ function turn(engagement: number, continueReading: boolean, quote = '문을 열�
 
 const floorText = '망가진 원고';
 
-// 심판은 후보의 정체를 모른 채 기호로만 답한다. 보여 준 차례는 독자마다 뒤집히므로, 제대로 읽는
-// 심판은 어느 기호 아래에 훼손본이 있는지 본문으로 찾아 그 기호를 꼴찌에 둔다.
 function floorShownFirst(messages: readonly AiMessage[]): boolean {
   const prompt = messages.at(-1)?.content ?? '';
   return prompt.indexOf(floorText) < prompt.indexOf(sceneText);
@@ -74,7 +69,6 @@ describe('judge selection', () => {
     ).toThrow(SelfJudgingError);
   });
 
-  // 로컬 런타임 하나에 qwen 과 gemma 를 올려 두는 것은 자기채점이 아니다.
   it('allows two different models on one local runtime', () => {
     expect(() =>
       createSimJudge({
@@ -98,7 +92,6 @@ describe('judge selection', () => {
 });
 
 describe('floor gate runs first', () => {
-  // 관문 실패는 표시다. 곡선은 남기고 리포트가 따로 센다. 버리면 «관문 통과만» 과 «전체» 를 나란히 못 본다.
   it('keeps reading and records the failure when a reader ranks the floor above the draft', async () => {
     const judge = scriptedJudge((messages, call) =>
       call <= 16 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
@@ -134,8 +127,6 @@ describe('floor gate runs first', () => {
 });
 
 describe('the floor gate measures the judge, not the labels', () => {
-  // 후보에 «훼손본» 이라고 써 붙여 주면 심판은 원고를 읽지 않고도 답을 맞힌다. 그러면 관문은
-  // 아무것도 걸러내지 못하면서 언제나 통과한다.
   it('never tells the judge which candidate is the floor', async () => {
     const prompts: string[] = [];
     const judge = scriptedJudge((messages, call) => {
@@ -159,9 +150,6 @@ describe('the floor gate measures the judge, not the labels', () => {
     }
   });
 
-  // 실측에서 관문이 독자 셋을 한꺼번에 막았는데, 후보가 늘 생성본·훼손본 차례로 보였다. 첫 자리를
-  // 고르는 버릇이라면 그 회차는 심판이 아니라 자리를 잰 것이다. 차례를 독자마다 뒤집으면 그 버릇은
-  // 반드시 독자 둘에서 드러난다.
   it('shows every reader the candidates in both orders', async () => {
     const prompts: readonly AiMessage[][] = [];
     const judge = scriptedJudge((messages, call) => {
@@ -182,7 +170,6 @@ describe('the floor gate measures the judge, not the labels', () => {
     );
   });
 
-  // 순위만 물으면 작은 심판은 자리를 답한다. 결함을 먼저 적게 해야 읽는다.
   it('asks for a note on each candidate before the ranking', async () => {
     const prompts: string[] = [];
     const judge = scriptedJudge((messages, call) => {
@@ -209,15 +196,12 @@ describe('the floor gate measures the judge, not the labels', () => {
       floorCandidates: floorCandidates(),
     });
 
-    // 넷 다 자리를 답했다. 실패도 통과도 아니고, 판정이 없으니 관문은 막힌다.
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.floor.abstained).toHaveLength(8);
     expect(verdict.floor.failures.join(' ')).toContain('자리와 무관하게');
     expect(verdict.discarded).toBe(false);
   });
 
-  // 작은 심판은 기호를 줘도 자리를 세어 답하는 일이 잦다. 그 답을 못 읽으면 관문이 심판의 눈이
-  // 아니라 형식을 재게 되어 모든 회차가 폐기된다.
   it('reads a ranking the judge answered by position', async () => {
     const judge = scriptedJudge((messages, call) =>
       call <= 16
@@ -248,12 +232,10 @@ describe('the floor gate measures the judge, not the labels', () => {
       floorCandidates: floorCandidates(),
     });
 
-    // 양쪽 차례에서 늘 «2 > 1» 이면 독자마다 답이 뒤집힌 것이다. 판정이 없으니 관문은 막힌다.
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.floor.failures[0]).toContain('자리와 무관하게');
   });
 
-  // 되돌릴 수 없는 답을 통과로 세면 그 회차의 눈금이 조용히 틀어진다.
   it('discards the round when no answer maps onto the candidates', async () => {
     const ask = vi.fn(
       async () => ({ text: JSON.stringify({ ranking: ['첫째', '둘째'] }) }) as AiGenerateResponse,
@@ -270,11 +252,9 @@ describe('the floor gate measures the judge, not the labels', () => {
     expect(verdict.discarded).toBe(true);
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.discardReasons.join(' ')).toContain('되돌릴 수 없습니다');
-    // 독자 8인 × 차례 둘 × (원답 + 되묻기).
     expect(ask).toHaveBeenCalledTimes(32);
   });
 
-  // 결함 문장에 본문을 따옴표로 인용해 JSON 이 깨진 답이 실측에 있었다. 한 번은 되묻는다.
   it('asks again when the ranking could not be read, saying why', async () => {
     const prompts: string[] = [];
     let rankingCalls = 0;
@@ -285,7 +265,6 @@ describe('the floor gate measures the judge, not the labels', () => {
       }
       rankingCalls += 1;
       prompts.push(messages.at(-1)?.content ?? '');
-      // 홀수 번째는 JSON 이 아닌 답, 되물으면 제대로 답한다. (따옴표만 깨진 답은 이제 관대하게 읽는다.)
       return rankingCalls % 2 === 1 ? '순위: 가 > 나. 결함은 되풀이.' : rankFloorLast(messages);
     });
 
@@ -312,7 +291,6 @@ describe('the floor gate measures the judge, not the labels', () => {
 });
 
 describe('reading in order', () => {
-  // 덮겠다는 답은 의향으로 남고 읽기는 계속된다. 이탈 AUC 는 첫 덮음부터 0, 몰입도는 8화 전부.
   it('keeps reading after a reader says it would close the book', async () => {
     const ask = vi.fn(async (messages: readonly AiMessage[]) => {
       const isRanking = messages.some((message) => message.content.includes('줄을 세워라'));
@@ -331,10 +309,8 @@ describe('reading in order', () => {
       floorCandidates: floorCandidates(),
     });
 
-    // 하한선 16회 + 독자 9인이 8화 전부 = 88회.
     expect(ask).toHaveBeenCalledTimes(16 + 9 * 8);
     expect(verdict.curves[0]?.turns).toHaveLength(8);
-    // 2화에서 덮겠다고 했으니 이탈 AUC 는 (0.8 + 0.2) / 8, 몰입도 평균은 (4 + 1×7) / 5 / 8.
     expect(verdict.auc.byReader['pace']).toBeCloseTo((0.8 + 0.2) / 8);
     expect(verdict.auc.dropOffScene['pace']).toBe('02-scene');
     expect(verdict.auc.engagementByReader['pace']).toBeCloseTo((4 + 7) / 5 / 8);
@@ -363,7 +339,6 @@ describe('reading in order', () => {
 });
 
 describe('quote grounding', () => {
-  // 심판이 근거를 지어내면 그 판정은 근거 없는 숫자다. 한 번 되묻고 그래도 안 되면 회차를 버린다.
   it('retries once and then discards the round', async () => {
     const ask = vi.fn(async (messages: readonly AiMessage[]) => {
       const isRanking = messages.some((message) => message.content.includes('줄을 세워라'));
@@ -382,12 +357,9 @@ describe('quote grounding', () => {
 
     expect(verdict.discarded).toBe(true);
     expect(verdict.discardReasons.join(' ')).toContain('본문에 없는 근거');
-    // 독자마다 1화에서 두 번(원답 + 되묻기) 만에 포기한다.
     expect(ask).toHaveBeenCalledTimes(16 + 9 * 2);
   });
 
-  // 장르 독자는 AUC 에 안 들어간다. 그 독자가 근거를 지어냈다고 공통 독자 넷의 곡선까지 버리면
-  // 8화 판정 한 회차가 통째로 사라진다. 실측에서 그 일이 있었다.
   it('keeps the round when only the genre reader loses its grounding', async () => {
     const judge = scriptedJudge((messages, call) => {
       if (call <= 16) {
@@ -411,7 +383,6 @@ describe('quote grounding', () => {
     expect(verdict.genreProblems[0]).toContain('genre');
   });
 
-  // «본문에 없는 근거» 만 남으면 심판이 무엇을 지어냈는지 되짚을 수 없다.
   it('names the rejected quote in the reason', async () => {
     const judge = scriptedJudge((messages, call) =>
       call <= 16 ? rankFloorLast(messages) : turn(5, true, '본문에 없는 구절'),
@@ -427,7 +398,6 @@ describe('quote grounding', () => {
     expect(verdict.discardReasons[0]).toContain('«본문에 없는 구절»');
   });
 
-  // 되묻기는 판정을 두고 근거만 다시 받는 좁은 일이다. 이력 없이 본문과 이유만 준다.
   it('repairs only the quote, without the history, when it asks again', async () => {
     const prompts: string[] = [];
     let turnCalls = 0;
@@ -437,7 +407,6 @@ describe('quote grounding', () => {
       }
       turnCalls += 1;
       prompts.push(messages.at(-1)?.content ?? '');
-      // 첫 답은 지어낸 인용, 되물으면 본문 구절.
       return turn(5, true, turnCalls % 2 === 1 ? '본문에 없는 구절' : '문을 열었다');
     });
 
@@ -451,12 +420,10 @@ describe('quote grounding', () => {
     expect(verdict.discarded).toBe(false);
     expect(prompts[0]).not.toContain('글자 그대로 복사');
     expect(prompts[1]).toContain('글자 그대로 복사');
-    // 퇴짜 맞은 인용을 보여 주면 심판이 그 문장을 그대로 다시 낸다. 사유에만 남기고 프롬프트엔 안 넣는다.
     expect(prompts[1]).not.toContain('본문에 없는 구절');
     expect(verdict.curves[0]?.turns[0]?.quote).toBe('문을 열었다');
   });
 
-  // 심판이 다음 화에서 앞 화의 인용을 기억에서 꺼내 쓴 일이 있었다. 이력에는 인용을 남기지 않는다.
   it('keeps the quote out of the history it hands back to the judge', async () => {
     const prompts: readonly AiMessage[][] = [];
     const judge = scriptedJudge((messages, call) => {
@@ -518,7 +485,6 @@ facts:
     });
   });
 
-  // 뒤집혔다는 판정도 근거가 있어야 한다. 없으면 되묻고, 그래도 없으면 모른다고 적는다.
   it('marks a contradiction unverified when its quote is invented', async () => {
     const judge = scriptedJudge(() => JSON.stringify({ status: 'contradicted', quote: '오른손 흉터' }));
 
@@ -544,7 +510,6 @@ describe('axis judge', () => {
     });
   }
 
-  // 훼손본을 fail 로 못 밀면 그 씬의 눈금을 믿을 수 없다. 원고 판정 전에 확인한다.
   it('discards the scene when the judge does not fail the corrupted draft', async () => {
     const judge = verdictJudge(() => JSON.stringify({ verdict: 'pass', reason: '이유', quote: '눈빛을 주고받았다' }));
 
@@ -588,7 +553,6 @@ describe('axis judge', () => {
 
     await judgeAxis({ judge, scenes: [{ ...scene, floorDraft: undefined }, { ...scene, sceneStem: '06', floorDraft: undefined }] });
 
-    // system + user 두 개뿐. 앞 씬의 대화가 실리지 않는다.
     expect(seen.every((count) => count === 2)).toBe(true);
   });
 });

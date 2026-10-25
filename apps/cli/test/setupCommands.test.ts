@@ -169,7 +169,6 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(checks.find((check) => check.label === '씬')?.detail).toContain('0개');
   });
 
-  // 원장 무효화. 봉인 없는 0.8 이전 원장은 판정 근거가 없으므로 낡음이 아니라 보수 대상이다.
   function writeWorkspaceWithLedger(ledger: string): void {
     mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
     writeFileSync(
@@ -263,7 +262,6 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(resealed.data).toMatchObject({ sceneOrders: [1] });
     expect(await staleCheckStatus()).toBe('ok');
 
-    // 두 번째 호출은 할 일이 없다고 답하되 실패는 아니다 — 에이전트가 반복 실행해도 안전해야 한다.
     const again = await runCommand('state reseal', args());
     expect(again.ok).toBe(true);
     expect(again.data).toMatchObject({ sceneOrders: [] });
@@ -292,7 +290,6 @@ describe('storyboard doctor chapter summaries', () => {
     return (outcome.data as { checks: { label: string; detail: string; fix?: string }[] }).checks;
   }
 
-  // 장별 요약은 그 장의 초안에서 나온 것이므로, 초안을 고치고 다시 요약하지 않으면 낡는다.
   function writeWorkspaceWithSummary(draftBody: string, recordedHash: string): void {
     mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
@@ -381,7 +378,6 @@ describe('storyboard config', () => {
     expect(shown.message).toMatch(/ai\.provider\.default\s+\(없음\)\s+기본값/);
   });
 
-  // 예전에는 정수 설정이라 0.25 가 경고 없이 0(제한 없음)으로 저장됐다.
   it('keeps a run budget in cents and refuses a finer amount', async () => {
     const cents = await runConfigSet({
       container: container(),
@@ -431,8 +427,6 @@ describe('storyboard config', () => {
     });
   });
 
-  // A folder without project.json is not a work: a stray .storyboard/config.json there is neither
-  // read nor named as this work's settings.
   it('reads and names no work settings outside a workspace', async () => {
     mkdirSync(join(workspace, '.storyboard'), { recursive: true });
     writeFileSync(
@@ -528,7 +522,6 @@ describe('storyboard config set tasks', () => {
     expect(wrongModel.message).toContain('claude 에 없는 모델: gpt-5.5');
   });
 
-  // The engine ignores a model with no provider, so a lone model takes the default provider with it.
   it('fills the provider of a lone model from the default provider, or refuses without one', async () => {
     const withoutDefault = await runConfigSet({
       container: container(),
@@ -657,7 +650,6 @@ describe('storyboard config unset', () => {
     expect(unknownTask.message).toContain('알 수 없는 작업: nope');
   });
 
-  // A model with no provider is ignored by the engine, so removing the provider removes the route.
   it('removes the whole route with the provider, and only the model with the model', async () => {
     writeFileSync(
       join(home, 'config.json'),

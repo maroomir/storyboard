@@ -34,8 +34,6 @@ import {
   type SimSceneGenerator,
 } from '@storyboard/story-sim';
 
-// 실행기는 돈이 드는 유일한 경로지만, 무엇을 세고 무엇을 건너뛰는지는 전부 결정론적으로 잴 수 있다.
-
 function usageRecord(): UsageRecord {
   return {
     taskName: 'sceneSkeleton',
@@ -83,7 +81,6 @@ const scenes = [
 ];
 
 describe('warning weight', () => {
-  // 개수만 세면 «인물이 새로 등장» 과 «조금 짧다» 가 같은 무게가 된다.
   it('weighs a cast violation heavier than a length one', () => {
     expect(weighWarnings(['1구간: cast 뼈대에 없는 인물'])).toBeGreaterThan(
       weighWarnings(['1구간: too-short 짧습니다']),
@@ -141,7 +138,6 @@ describe('track run', () => {
     expect(result.failures).toEqual([]);
   });
 
-  // 생성이 실패한 씬은 원고가 없다. 그 씬을 0점으로 세면 손잡이 탓으로 읽히므로 따로 남긴다.
   it('records a failed scene instead of scoring it as a zero', async () => {
     const result = await runTrack({
       factory: fakeFactory({ fail: new Set(['02-b']) }),
@@ -173,7 +169,6 @@ describe('track run', () => {
     );
   });
 
-  // 프롬프트 덮개는 전역이다. 실행이 끝나고 안 되돌리면 다음 지점이 앞 지점의 온도로 돌아간다.
   it('puts the prompt overrides back when the run ends', async () => {
     const before = SceneSkeletonPrompt.config.temperature;
 
@@ -279,7 +274,6 @@ describe('run store', () => {
     expect(await readRuns(path)).toHaveLength(2);
   });
 
-  // 죽는 순간 반쯤 쓰인 줄이 남는다. 그 한 줄 때문에 앞서 몇 시간 돌린 결과를 잃으면 안 된다.
   it('keeps the intact lines when the last one was cut off', async () => {
     const path = file();
 
@@ -301,7 +295,6 @@ describe('run store', () => {
     expect(done.has(runKey('thriller', 'grid:0000', 2))).toBe(false);
   });
 
-  // 엔진이나 트랙이 바뀐 뒤의 기록은 다른 것을 잰 값이다. 이어 쓰면 서로 다른 것을 섞게 된다.
   it('does not reuse a run recorded against a different engine or track', async () => {
     const path = file();
 
@@ -313,7 +306,6 @@ describe('run store', () => {
     expect(done.size).toBe(0);
   });
 
-  // 한 결과 파일에 장르를 이어 쌓는다. 장르가 열쇠에 없으면 둘째 장르가 «이미 끝남» 으로 읽힌다.
   it('does not mistake another genre at the same point for a finished run', async () => {
     const path = file();
 
@@ -325,7 +317,6 @@ describe('run store', () => {
     expect(done.has(runKey('wuxia', 'point', 1))).toBe(false);
   });
 
-  // 같은 지점 이름으로 다른 생성 모델을 돌릴 때 앞 모델의 회차를 끝난 것으로 읽으면 안 된다.
   it('does not reuse a run made with a different generator or prompt variant', async () => {
     const out = file();
     await appendRun(out, record({ generation: { providerId: 'ollama', model: 'qwen3:14b' } }));
@@ -366,8 +357,6 @@ describe('draft store', () => {
     }
   });
 
-  // 사본은 회차가 끝나면 지워진다. 심판이 회차를 버렸을 때 무엇을 읽고 버렸는지 되짚으려면 원고가
-  // 결과 곁에 남아 있어야 한다.
   it('keeps every scene draft beside the results file and records where', async () => {
     directory = mkdtempSync(join(tmpdir(), 'sim-drafts-'));
     const outPath = join(directory, 'results', 'runs.jsonl');
@@ -383,7 +372,6 @@ describe('draft store', () => {
     expect(existsSync(join(directory, 'results', kept, '01-demolition.md'))).toBe(true);
   });
 
-  // 격자 지점 이름에는 경로에 못 쓰는 글자가 있다.
   it('turns a point label into a path segment without losing the point', () => {
     expect(draftsDirectoryFor({ genre: 'thriller', pointLabel: 'grid:0120', repeat: 1 })).toBe(
       join('drafts', 'thriller', 'grid_0120', '1'),
@@ -426,7 +414,6 @@ describe('profile apply', () => {
     };
   }
 
-  // 프로필 칸의 이름은 손잡이 id 그대로다. 프롬프트 손잡이만 프로필로 가지 않는다.
   it('keeps model-profile knobs and refuses prompt knobs', () => {
     const { fields, unsupported } = profileFieldsFor({
       'generation.section.outputLimit': 1000,
@@ -461,7 +448,6 @@ describe('profile apply', () => {
     });
   });
 
-  // 몇 시간짜리 실행 끝에 사람이 자리를 비운 사이 나쁜 숫자가 검토 없이 들어가면 안 된다.
   it('writes a new profile and refuses to overwrite one without force', async () => {
     directory = mkdtempSync(join(tmpdir(), 'sim-profiles-'));
     const file = join(directory, 'modelProfiles.params.json');
@@ -506,7 +492,6 @@ describe('track fingerprint', () => {
     return root;
   }
 
-  // 결과는 트랙 안에 쌓인다. 그것을 «시험체가 바뀌었다» 로 읽으면 첫 실행이 두 번째를 막는다.
   it('does not count the results directory as a dirty fixture', async () => {
     const track = repo();
     mkdirSync(join(track, simResultsDirectory));
@@ -518,7 +503,6 @@ describe('track fingerprint', () => {
     await expect(assertTrackUnchanged(ref)).resolves.toBeUndefined();
   });
 
-  // 패키지 버전은 릴리스 사이의 빌드를 가르지 못한다. 하루 다섯 빌드가 전부 «0.9.3» 으로 남았다.
   it('names the engine by its commit when run inside a repository', async () => {
     const engine = await describeEngine(repo(), '9.9.9');
 
@@ -548,7 +532,6 @@ describe('track fingerprint', () => {
 });
 
 describe('local model check', () => {
-  // 없는 모델은 호출마다 404 다. 실행기는 씬마다 실패를 적으며 끝까지 가므로 11지점 선별이 빈 기록으로 끝난다.
   it('names the models the runtime does not have', () => {
     expect(missingLocalModels(['qwen3:14b', 'gemma3:12b'], ['qwen3:14b', 'gemma4:12b'])).toEqual([
       'gemma4:12b',
@@ -599,7 +582,6 @@ describe('rejudge', () => {
   }
   const claude = { providerId: 'claude', model: 'claude-sonnet-5' };
 
-  // 심판을 바꿀 때 생성을 다시 돌릴 이유가 없다. 원고가 있는 기록만, 같은 심판으로 아직 안 본 것만 고른다.
   it('picks runs with kept drafts that this judge has not scored yet', () => {
     const sources = rejudgeSources(
       [
@@ -614,7 +596,6 @@ describe('rejudge', () => {
 
     expect(sources.map((source) => source.run.runId)).toEqual(['thriller/point#3']);
     expect(rejudgeSources([run({})], { pointLabel: 'point', judge: claude, enginePrefix: 'bbbb' })).toHaveLength(0);
-    // 같은 심판이라도 심판 쪽 코드가 바뀌었으면(지금 엔진과 다른 커밋의 재채점이면) 다시 본다.
     const again = rejudgeSources(
       [
         run({}),

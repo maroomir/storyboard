@@ -26,8 +26,6 @@ function texts(words: string[]): string[] {
 }
 
 beforeEach(() => {
-  // The provider list depends on the home config (a hidden provider enabled there is offered), so
-  // the test owns an empty home rather than reading the machine's.
   home = mkdtempSync(join(tmpdir(), 'storyboard-complete-home-'));
   vi.stubEnv('STORYBOARD_HOME', home);
   cwd = mkdtempSync(join(tmpdir(), 'storyboard-complete-'));

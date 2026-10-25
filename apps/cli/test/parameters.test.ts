@@ -32,7 +32,6 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  // Leave the process-wide resource stores as the next test expects them.
   await dispatch(['params', 'show', '--json'], {
     ...deps(),
     cwd: mkdtempSync(join(tmpdir(), 'x-')),
@@ -121,7 +120,6 @@ describe('params show', () => {
     expect(report.resources.applied.map((entry) => entry.kind)).toEqual(['prompt']);
   });
 
-  // A knob the default provider's model refuses is dropped before every call, whatever file set it.
   it('marks the sampling knobs the default provider does not take', async () => {
     writeFile(
       home,
