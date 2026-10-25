@@ -23,6 +23,7 @@ after the first public release.
 
 - **Every app and package moves its comments into names and spells out every type.** Explanatory comments are gone and their meaning lives in constant, boolean and function names (tool directives stay), and every local, field and return carries a type, enforced by lint (`scripts/lint/explicitTypeRules.cjs`). zod schemas are written interface first and bound with `z.ZodType<X>`, and `as const` tables declare their type first. Contract names — command ids, RPC/IPC channels, stage ids — are unchanged, and so is the workspace file format.
 - **Types and helpers that were copied across the apps and packages now exist once.** Identical string sets (card kinds, prompt variants, scene structure keys and others), functions with the same body (slugs, regexp escaping, error-message extraction, the webview RPC call and others) and records with the same shape and meaning (story-model types the webview had restated, host and webview initial data, twelve file ports and others) each live in the lowest package that needs them. Behaviour is unchanged.
+- **Two checks are sharper.** The release diff contract asks for `en.ts` only when a key or a string of the desktop `ko.ts` changes, so a comment or formatting change passes. The story-model architecture check fails on an import of an entry file (`#model/contracts`) or a folder barrel (`…/index`) from inside the package, which used to slip past the layer check.
 
 ## [0.13.4] - 2026-10-24
 
