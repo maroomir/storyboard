@@ -6,6 +6,7 @@ import { StoryboardCard as HeroCard } from '../card/StoryboardCard';
 import { Pill } from '../ui/Pill';
 import { CHARACTER_ROLE_OPTIONS } from '@webview/lib/characterSidebarGroups';
 import type { CharacterRole, StoryboardCard } from '@webview/lib/types';
+import type { LocationKind } from '@storyboard/story-model/contracts';
 
 const previewShellClass: string =
   'relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-xl border border-sb-border/90 bg-gradient-to-b from-sb-bg-widget/50 via-sb-bg-sidebar to-sb-bg-sidebar/95 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.2)]';
@@ -17,7 +18,7 @@ const roleLabelByValue: Record<CharacterRole, string> = Object.fromEntries(
   CHARACTER_ROLE_OPTIONS.map((option) => [option.value, option.label]),
 ) as Record<CharacterRole, string>;
 
-const locationKindLabel: Record<'place' | 'affiliation', string> = {
+const locationKindLabel: Record<LocationKind, string> = {
   place: '장소',
   affiliation: '소속',
 };

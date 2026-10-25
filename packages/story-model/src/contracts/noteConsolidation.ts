@@ -1,3 +1,4 @@
+import type { BibleSubjectKind } from '#model/format/bible';
 import { z } from 'zod';
 
 export type NoteConsolidatedField = 'aliases' | 'traits' | 'tags' | 'description' | 'voice' | 'desire' | 'senses';
@@ -31,7 +32,7 @@ export interface NoteSharedAlias {
 export interface NoteConsolidationTarget {
   readonly cardId: string;
   readonly name: string;
-  readonly type: 'character' | 'background';
+  readonly type: BibleSubjectKind;
   readonly existing: NoteConsolidatedValues;
   readonly candidates: NoteConsolidatedValues;
   readonly sharedAliases: readonly NoteSharedAlias[];
@@ -90,7 +91,7 @@ function readConflicts(value: unknown): NoteConsolidationConflict[] {
 
   return value.flatMap((entry) => {
     const record: Record<string, unknown> = typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>) : {};
-    const field: "tags" | "description" | "voice" | "aliases" | "traits" | "desire" | "senses" | undefined = noteConsolidatedFields.find((name) => name === record.field);
+    const field: NoteConsolidatedField | undefined = noteConsolidatedFields.find((name) => name === record.field);
     const items: string[] = readTextList(record.items) ?? [];
 
     return field === undefined || items.length < 2 ? [] : [{ field, items }];

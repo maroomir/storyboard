@@ -1,4 +1,4 @@
-import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse } from '@storyboard/story-model';
+import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse, CharacterRole } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
@@ -50,7 +50,7 @@ interface StoryCardEntity {
   characterIds: string[];
   sourceScenes: string[];
   existingId?: string;
-  role?: 'main' | 'supporting' | 'extra';
+  role?: CharacterRole;
   time?: string;
   weather?: string;
 }

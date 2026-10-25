@@ -14,6 +14,7 @@ import type {
   StudioValidationState,
   StudioValidationWarning,
 } from '#model/contracts/studioValidation';
+import type { BibleSubjectKind } from '#model/format/bible';
 
 export type StudioEntityKind = 'character' | 'scene' | 'background' | 'project';
 
@@ -57,7 +58,7 @@ export const studioTargetSchema: z.ZodType<StudioTarget> = z.object({
 });
 
 export interface StudioStageCard {
-  kind: 'character' | 'background';
+  kind: BibleSubjectKind;
   name: string;
 }
 
@@ -112,7 +113,7 @@ const studioCardStageShape = {
 
 export interface StudioCardStage {
   kind: 'card';
-  cardKind: 'character' | 'background';
+  cardKind: BibleSubjectKind;
   cardId: string;
   name: string;
   relations: StudioCardStageRelation[];
@@ -149,7 +150,7 @@ export interface StudioStageResponsePayload {
       }
     | {
         kind: 'card';
-        cardKind: 'character' | 'background';
+        cardKind: BibleSubjectKind;
         cardId: string;
         name: string;
         relations: StudioCardStageRelation[];

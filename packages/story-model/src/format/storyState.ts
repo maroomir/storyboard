@@ -34,7 +34,7 @@ const sectionEntries: [StoryStateSection, string][] = Object.entries(storyStateS
   StoryStateSection,
   string,
 ][];
-const labelToSection: Map<string, 'relations' | 'facts' | 'revealed' | 'motifs'> = new Map(
+const labelToSection: Map<string, StoryStateSection> = new Map(
   sectionEntries.map(([section, label]) => [label, section]),
 );
 

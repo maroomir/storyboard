@@ -278,15 +278,7 @@ export class ConfigBridge {
       taskName,
     );
     const defaultProvider: AiProviderId = this.getDefaultProvider();
-    const providerId:
-      | 'openai'
-      | 'mock'
-      | 'claude'
-      | 'google'
-      | 'grok'
-      | 'ollama'
-      | 'claude-code'
-      | 'chatgpt' = stored?.provider ?? defaultProvider;
+    const providerId: AiProviderId = stored?.provider ?? defaultProvider;
     const runtime: ProviderModelConfig = this.getProviderConfig(providerId);
     const fallbackModelId: string = defaultModelIdFor(providerId);
 

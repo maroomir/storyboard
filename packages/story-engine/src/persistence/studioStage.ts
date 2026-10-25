@@ -1,4 +1,5 @@
 import type {
+BibleSubjectKind,
 RevisionPlan,
 RevisionPlanEntry,
 SceneContext,
@@ -74,7 +75,7 @@ async function readSceneStage(
 async function readCardStage(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
-  cardKind: 'character' | 'background',
+  cardKind: BibleSubjectKind,
   cardId: string,
 ): Promise<StudioCardStage | undefined> {
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);

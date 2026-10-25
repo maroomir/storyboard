@@ -27,8 +27,7 @@ export const confirmSceneGrounding: ConfirmSceneGrounding = async ({
   proposedFields,
 }) => {
   const draft: Record<string, string> = { ...grounding };
-  const editedKeys: Set<'place' | 'time' | 'relation' | 'incident'> =
-    new Set<SceneGroundingFieldKey>();
+  const editedKeys: Set<SceneGroundingFieldKey> = new Set<SceneGroundingFieldKey>();
 
   for (;;) {
     const choice: GroundingChoice | undefined = await pickGroundingChoice(

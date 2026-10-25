@@ -14,7 +14,12 @@ import {
 
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
-import type { SceneFileNameParts, StoryUri, StudioTarget } from '@storyboard/story-model';
+import type {
+  BibleSubjectKind,
+  SceneFileNameParts,
+  StoryUri,
+  StudioTarget,
+} from '@storyboard/story-model';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 
@@ -102,10 +107,7 @@ export async function computeStudioTarget(focus: StudioFocus | undefined): Promi
     };
   }
 
-  const cardKind: 'character' | 'background' | undefined = resolveCardTargetKind(
-    uri,
-    workspaceFolder,
-  );
+  const cardKind: BibleSubjectKind | undefined = resolveCardTargetKind(uri, workspaceFolder);
 
   if (cardKind) {
     const cardId: string | undefined = resolveCardId(uri);
@@ -145,7 +147,7 @@ function resolveDraftSceneStem(draftUri: vscode.Uri): string | undefined {
 function resolveCardTargetKind(
   uri: vscode.Uri,
   workspaceFolder: vscode.WorkspaceFolder,
-): 'character' | 'background' | undefined {
+): BibleSubjectKind | undefined {
   if (isDirectCharacterCardFile(uri, workspaceFolder)) {
     return 'character';
   }

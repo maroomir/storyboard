@@ -9,6 +9,7 @@ import type {
   NoteBundle,
   NoteCandidateFile,
   NoteExtractionResponse,
+  BibleSubjectKind,
 } from '@storyboard/story-model';
 
 export type NoteCandidateLoad =
@@ -40,7 +41,7 @@ export interface INoteAbsorbRepository {
   saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void>;
   loadCard(
     workspaceRoot: StoryUri,
-    cardType: 'character' | 'background',
+    cardType: BibleSubjectKind,
     id: string,
   ): Promise<StoryboardCard | undefined>;
   sceneExists(workspaceRoot: StoryUri, fileName: string): Promise<boolean>;

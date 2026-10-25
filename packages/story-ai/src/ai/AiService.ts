@@ -18,6 +18,7 @@ import type {
   DraftCritiqueIssue,
   SceneCoverageIssue,
   StoryStateUpdateItem,
+  AiMessageRole,
 } from '@storyboard/story-model';
 import {
   coerceChapterPlan,
@@ -500,7 +501,7 @@ export class StoryboardAiService {
   public async *generateTextStream(
     taskName: AiTaskName,
     messages: ReadonlyArray<{
-      readonly role: 'system' | 'user' | 'assistant';
+      readonly role: AiMessageRole;
       readonly content: string;
     }>,
     options: GenerateTextOptions,
@@ -511,7 +512,7 @@ export class StoryboardAiService {
   public async generateText(
     taskName: AiTaskName,
     messages: ReadonlyArray<{
-      readonly role: 'system' | 'user' | 'assistant';
+      readonly role: AiMessageRole;
       readonly content: string;
     }>,
     options: GenerateTextOptions = {},

@@ -3,6 +3,7 @@ import type React from 'react';
 import type { StoryboardCard } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { ListField } from './ListField';
+import type { LocationKind } from '@storyboard/story-model/contracts';
 
 export function BackgroundFields({
   card,
@@ -52,7 +53,7 @@ export function BackgroundFields({
             className={sbInputClass}
             value={card.locationKind ?? 'place'}
             onChange={(event) =>
-              updateCard({ ...card, locationKind: event.target.value as 'place' | 'affiliation' })
+              updateCard({ ...card, locationKind: event.target.value as LocationKind })
             }
           >
             <option value="place">place</option>

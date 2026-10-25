@@ -8,6 +8,7 @@ import type {
 NoteCandidateFile,
 StoryboardProject,
 BibleFact,
+BibleSubjectKind,
 } from '@storyboard/story-model';
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
@@ -131,7 +132,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     const candidates: NoteCardCandidate[] = [];
 
     for (const entry of plan.cards) {
-      const cardType: "character" | "background" = entry.card.type === 'character' ? 'character' : 'background';
+      const cardType: BibleSubjectKind = entry.card.type === 'character' ? 'character' : 'background';
       const isStillNew: boolean =
         entry.isNew &&
         !(await this.deps.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));

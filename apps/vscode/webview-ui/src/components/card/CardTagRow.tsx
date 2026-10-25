@@ -4,6 +4,7 @@ import type React from 'react';
 
 import type { CardType } from '@webview/lib/types';
 import { Pill } from '../ui/Pill';
+import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
 
 export type CardTagRowProps = {
   readonly cardType: CardType;
@@ -25,7 +26,7 @@ export function CardTagRow({
   layout = 'inline',
   className,
 }: CardTagRowProps): React.ReactElement {
-  const tone: 'character' | 'background' = cardType === 'character' ? 'character' : 'background';
+  const tone: BibleSubjectKind = cardType === 'character' ? 'character' : 'background';
   const Icon: LucideIcon = cardType === 'character' ? User : Map;
 
   return (

@@ -15,7 +15,12 @@ import {
   type ResourceOverrideReport,
   type WorkspaceStatus,
 } from '@storyboard/story-app';
-import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
+import {
+  ConfigBridge,
+  type ConfigBridgeDependencies,
+  type PromptVariantOverride,
+  SecretStore,
+} from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
@@ -86,7 +91,7 @@ export interface CliContainerOptions {
     readonly contextTokens?: number;
     readonly think?: boolean;
   };
-  readonly promptVariant?: 'generic' | 'xs' | 'rich';
+  readonly promptVariant?: PromptVariantOverride;
 }
 
 function createCommandLineConfigOverrides(options: CliContainerOptions): Record<string, unknown> {

@@ -10,6 +10,7 @@ import {
   isIgnoredSampleCardFileName,
   type StoryUri,
   type StoryboardProjectPaths,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 
@@ -27,10 +28,7 @@ export function registerRenameCardCommands(): vscode.Disposable {
   );
 }
 
-async function renameCard(
-  kind: 'character' | 'background',
-  invokedUri?: vscode.Uri,
-): Promise<void> {
+async function renameCard(kind: BibleSubjectKind, invokedUri?: vscode.Uri): Promise<void> {
   const cardUri: vscode.Uri | undefined = resolveCardUri(kind, invokedUri);
 
   if (!cardUri) {
@@ -89,7 +87,7 @@ async function renameCard(
 
 async function moveStudioSessions(
   workspaceRoot: vscode.Uri,
-  kind: 'character' | 'background',
+  kind: BibleSubjectKind,
   oldId: string,
   newId: string,
 ): Promise<void> {
@@ -115,10 +113,7 @@ async function moveStudioSessions(
   }
 }
 
-function resolveCardUri(
-  kind: 'character' | 'background',
-  invokedUri?: vscode.Uri,
-): vscode.Uri | undefined {
+function resolveCardUri(kind: BibleSubjectKind, invokedUri?: vscode.Uri): vscode.Uri | undefined {
   const candidateUri: vscode.Uri | undefined =
     invokedUri ?? vscode.window.activeTextEditor?.document.uri;
 

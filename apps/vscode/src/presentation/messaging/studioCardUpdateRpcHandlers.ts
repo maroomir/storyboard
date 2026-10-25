@@ -7,6 +7,7 @@ import type {
   StoryUri,
   Character,
   LocationBackgroundCard,
+  BibleSubjectKind,
 } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
@@ -95,8 +96,7 @@ async function openCardLeavingInstructionStagedOnFailure(
   root: vscode.Uri,
   seed: StudioCardSeed,
 ): Promise<void> {
-  const directory: 'character' | 'background' =
-    seed.kind === 'character' ? 'character' : 'background';
+  const directory: BibleSubjectKind = seed.kind === 'character' ? 'character' : 'background';
 
   try {
     await vscode.window.showTextDocument(vscode.Uri.joinPath(root, directory, `${seed.id}.card`), {

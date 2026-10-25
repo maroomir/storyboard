@@ -7,6 +7,7 @@ import { cardGameFrameClass, cardGameInnerBevelClass } from './cardFrameStyles';
 import { CardImagePane } from './CardImagePane';
 import { CardRoleBadge } from './CardRoleBadge';
 import { CardTagRow } from './CardTagRow';
+import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
 
 export type StoryboardCardProps = {
   readonly card: StoryboardCardModel;
@@ -19,7 +20,7 @@ export type StoryboardCardProps = {
 const shadowRest: string =
   'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)';
 
-const shadowHover: Record<'character' | 'background', string> = {
+const shadowHover: Record<BibleSubjectKind, string> = {
   character:
     'inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 32px rgba(0,0,0,0.24), 0 0 36px rgba(251, 191, 36, 0.24)',
   background:
@@ -75,8 +76,7 @@ export function StoryboardCard({
   className,
 }: StoryboardCardProps): React.ReactElement {
   const isHero: boolean = variant === 'hero';
-  const glowKey: 'character' | 'background' =
-    card.type === 'character' ? 'character' : 'background';
+  const glowKey: BibleSubjectKind = card.type === 'character' ? 'character' : 'background';
   const showRoleBadge: false | CharacterRole | undefined = card.type === 'character' && card.role;
 
   const compactSecondary: string =

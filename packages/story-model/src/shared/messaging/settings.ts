@@ -8,7 +8,7 @@ import {
 import { storyboardModelCatalog, type ProviderModelOption } from '#model/contracts/providerCatalog';
 import { aiProviderStatusSchema } from './ai';
 import { aiTaskNameSchema, providerIdSchema, type ProviderId } from './atoms';
-import type { AiTaskName } from '#model/contracts/ai';
+import type { AiProviderId, AiTaskName } from '#model/contracts/ai';
 import type { StoryboardSettingKind } from '#model/contracts/settingCatalog';
 import type { AiProviderStatus } from '#model/contracts/aiTypes';
 
@@ -42,16 +42,7 @@ const providerConfigsPayloadSchema: z.ZodType<ProviderConfigsPayload> = z.record
 );
 
 interface TaskAssignmentRead {
-  providerId:
-    | null
-    | 'mock'
-    | 'openai'
-    | 'claude'
-    | 'google'
-    | 'grok'
-    | 'ollama'
-    | 'claude-code'
-    | 'chatgpt';
+  providerId: AiProviderId | null;
   model: null | string;
 }
 
@@ -203,16 +194,7 @@ export const settingsUpdateProviderBaseUrlRequestPayloadSchema: z.ZodType<Settin
 
 export interface SettingsUpdateTaskAiConfigRequestPayload {
   taskName: AiTaskName;
-  providerId:
-    | null
-    | 'mock'
-    | 'openai'
-    | 'claude'
-    | 'google'
-    | 'grok'
-    | 'ollama'
-    | 'claude-code'
-    | 'chatgpt';
+  providerId: AiProviderId | null;
   model: null | string;
 }
 

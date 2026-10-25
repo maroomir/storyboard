@@ -1,7 +1,8 @@
+import type { BibleSubjectKind } from '#model/format/bible';
 import { parseJsonObject } from './aiResponseParser';
 
 export interface StudioCardSeed {
-  readonly kind: 'character' | 'background';
+  readonly kind: BibleSubjectKind;
   readonly name: string;
   readonly id: string;
 }

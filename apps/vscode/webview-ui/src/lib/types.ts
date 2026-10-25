@@ -21,6 +21,7 @@ import type {
   StudioValidation,
   NarratorCard,
   SceneBeat,
+  LocationKind,
 } from '@storyboard/story-model/contracts';
 
 export type {
@@ -76,7 +77,7 @@ export interface StoryboardCard {
   readonly voice?: readonly string[];
   readonly catchphrases?: readonly string[];
   readonly desire?: readonly string[];
-  readonly locationKind?: 'place' | 'affiliation';
+  readonly locationKind?: LocationKind;
   readonly time?: string;
   readonly weather?: string;
   readonly senses?: readonly string[];
