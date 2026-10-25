@@ -12,8 +12,6 @@ const tables: Readonly<Record<UiLanguage, Readonly<Record<MessageKey, string>>>>
   en: enMessages,
 };
 
-// `{name}` placeholders are filled from params; a missing param stays visible rather than vanishing,
-// so a wrong call shows up on screen instead of silently dropping information.
 export function translate(language: UiLanguage, key: MessageKey, params: MessageParams = {}): string {
   return tables[language][key].replace(/\{(\w+)\}/g, (placeholder, name: string) =>
     params[name] === undefined ? placeholder : String(params[name]),

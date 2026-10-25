@@ -58,8 +58,6 @@ export interface WorkspaceSessionOptions {
   readonly onWorkspaceChanged: (change: WorkspaceChange) => void;
 }
 
-// NOTE: 폴더 이름으로 쓸 수 없는 글자만 바꾼다. 한글 제목은 그대로 둔다 — 작가가 파인더·탐색기에서
-// 자기 작품을 제목으로 알아봐야 한다.
 export function workspaceFolderName(title: string): string {
   const cleaned: string = [...title]
     .map((character) => (character.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(character) ? ' ' : character))
@@ -103,8 +101,6 @@ const sceneRenameErrorCodes = {
   failed: 'failed',
 } as const satisfies Record<string, DesktopErrorCode>;
 
-// One open work: its engine container, its version history, its run, and the author's editing
-// sessions. Closing it ends every session and records a last snapshot.
 export class WorkspaceSession {
   private readonly editedStems: Set<string> = new Set<string>();
   private readonly archivedStems: Set<string> = new Set<string>();
@@ -143,7 +139,6 @@ export class WorkspaceSession {
     }
     const snapshots: SnapshotService = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
     const takeSnapshot = async (message: string): Promise<void> => {
-      // NOTE: 버전 기록이 실패해도 작가의 글은 이미 디스크에 있다. 기록 실패로 작업을 막지 않는다.
       try {
         await snapshots.snapshot(message);
       } catch (error) {
@@ -168,8 +163,6 @@ export class WorkspaceSession {
       new NotesService(container, options.translate),
     );
 
-    // Whatever changed while the work was closed (the CLI, the extension, a text editor) becomes its
-    // own version, so a later restore can tell the app's changes from those.
     await takeSnapshot(options.translate('snapshot.opened'));
     await runs.refresh();
 
@@ -225,9 +218,6 @@ export class WorkspaceSession {
     return await readDraftDocument(this.container, stem);
   }
 
-  // The first save of a session keeps the pre-edit version in `.draft/`; the session's snapshot is
-  // taken when it ends. An AI edit is its own step, snapshotted at once; its `.draft/` copy follows
-  // the history setting like a regeneration's does.
   public async saveDraft(
     stem: string,
     body: string,
@@ -276,16 +266,12 @@ export class WorkspaceSession {
     }
   }
 
-  // A run is about to rewrite drafts, or the history is about to change under the editor: every open
-  // editing session is closed first so its edits become their own version.
   public async endAllDraftSessions(): Promise<void> {
     for (const stem of [...this.editedStems, ...this.archivedStems]) {
       await this.endDraftSession(stem);
     }
   }
 
-  // The engine moves everything keyed by the stem and refuses a number another scene holds; its
-  // message is shown as it is. The open editing session ends first so its edits are their own version.
   public async renameScene(from: string, to: string): Promise<ServiceResult<{ readonly stem: string }>> {
     await this.endDraftSession(from);
 
@@ -338,8 +324,6 @@ export class WorkspaceSession {
       : fail('failed', result.message);
   }
 
-  // Edits are refused while any run holds the work: ours rewrites drafts under the editor, and
-  // another app's lock means the same thing from outside.
   public async refuseWhileBusy(): Promise<ServiceFailure | undefined> {
     if (this.runs.isBusy || (await this.foreignLockMessage()) !== undefined) {
       return fail('workspace-locked', this.options.translate('error.readOnly'));

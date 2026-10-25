@@ -15,9 +15,6 @@ import type {
   NovelStageName,
 } from '@storyboard/story-model/contracts';
 
-// NOTE: 이 파일은 main 과 렌더러가 함께 보는 응답 모양이다. 렌더러 번들에 들어가므로 값은 없고
-// 타입만 둔다 — 값이 필요한 표는 패키지의 /contracts 진입점에서 직접 가져온다.
-
 export type UiLanguage = 'ko' | 'en';
 
 export interface RecentWorkspace {
@@ -46,7 +43,6 @@ export interface TocScene {
 }
 
 export interface TocChapter {
-  // Empty for a workspace without an outline yet: its scenes sit in one untitled group.
   readonly title: string;
   readonly scenes: readonly TocScene[];
 }
@@ -65,8 +61,6 @@ export interface WorkspaceOverview {
   readonly chapters: readonly TocChapter[];
   readonly totalLength: number;
   readonly missingContractFields: readonly ContractFieldKey[];
-  // Set only when another app holds the workspace. The desktop's own run is reported through the
-  // run snapshot instead.
   readonly foreignLock?: WorkspaceLockNotice;
 }
 
@@ -151,12 +145,10 @@ export interface RunSnapshot {
   readonly spentUsd: number;
   readonly spentTokens: number;
   readonly hasUnpricedUsage: boolean;
-  // Prompt-cache share of this run; absent until a call reports cache counts.
   readonly cache?: { readonly hitRate: number; readonly savedUsd: number };
   readonly budgetUsd: number;
   readonly projectSpentUsd: number;
   readonly lastOutcome?: { readonly outcome: RunOutcome; readonly message: string };
-  // A novel run that stopped and can pick up where it left off.
   readonly resumable?: {
     readonly mode: NovelRunMode;
     readonly completedStages: readonly NovelStageName[];
@@ -190,13 +182,9 @@ export interface DesktopSettings {
   readonly entries: readonly SettingEntry[];
   readonly language: UiLanguage;
   readonly ollamaBaseUrl: string;
-  // Whether a Notion integration token is in the secrets file (the token itself never leaves main).
   readonly hasNotionToken: boolean;
 }
 
-// The note import (#53), step by step: what was read and what it would cost, what the model made of
-// it, and what was written. Each step is its own channel so the author confirms before paying and
-// before writing.
 export interface NotesEstimateView {
   readonly location: string;
   readonly noteCount: number;

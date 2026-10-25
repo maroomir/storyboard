@@ -21,8 +21,6 @@ const desktopStateSchema: z.ZodType<DesktopState> = z.object({
     .default([]),
 });
 
-// App-operational state only the desktop needs (the recent list, the chosen language), kept under
-// the shared Storyboard home as `desktop.json`. Settings and keys stay in config.json/secrets.json.
 export class DesktopStateStore {
   private state: DesktopState;
 
@@ -72,8 +70,6 @@ export class DesktopStateStore {
     writeFileSync(this.stateFile, `${JSON.stringify(next, null, 2)}\n`);
   }
 
-  // NOTE: 이 파일은 최근 목록과 언어뿐이라, 깨졌다고 앱을 못 열게 하면 잃는 것보다 막히는 것이 크다.
-  // 대신 조용히 버리지 않는다 — 깨진 파일을 옆에 옮겨 두고 호출자에게 알린다.
   private load(onDiscardedCorruptFile: (backupFile: string) => void): DesktopState {
     if (!existsSync(this.stateFile)) {
       return { version: 1, recentWorkspaces: [] };

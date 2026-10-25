@@ -18,8 +18,6 @@ function isInside(path: string, directory: string): boolean {
   return path.startsWith(`${directory}/`);
 }
 
-// Which screens a changed file affects. Anything else under the workspace (the git directory,
-// caches, the assembled manuscript) changes nothing the author is looking at.
 export function classifyWorkspacePath(relativePath: string): {
   readonly area?: WorkspaceArea;
   readonly draftStem?: string;
@@ -57,8 +55,8 @@ export function classifyWorkspacePath(relativePath: string): {
   return {};
 }
 
-// Watches the whole workspace recursively (native on macOS and Windows) and reports what changed
-// in one settled batch, so a pipeline writing ten files produces one refresh, not ten.
+function showOutsideChangesOnlyOnReopen(): void {}
+
 export function watchWorkspace(
   workspaceRoot: string,
   onChange: (change: WorkspaceChange) => void,
@@ -100,7 +98,7 @@ export function watchWorkspace(
     });
     watcher.on('error', () => undefined);
   } catch {
-    // NOTE: 감시를 못 걸면 외부 변경이 자동으로 보이지 않을 뿐이다. 화면을 다시 열면 읽힌다.
+    showOutsideChangesOnlyOnReopen();
   }
 
   return {

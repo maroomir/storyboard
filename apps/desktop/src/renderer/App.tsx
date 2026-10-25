@@ -96,7 +96,6 @@ function Workbench(props: WorkbenchProps): JSX.Element {
     };
   }, []);
 
-  // A finished run and any change on disk may move the table of contents.
   useEffect(() => {
     if (overview !== undefined && change.sequence > 0) {
       void refreshOverview();

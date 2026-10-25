@@ -3,8 +3,6 @@ import { dirname } from 'node:path';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
-// The engine's log goes to a file the author can attach to a bug report; nothing is on screen to
-// reveal it, so `show` is a no-op. SECURITY: callers never pass API keys, and none is logged here.
 export class DesktopLogger implements IStoryboardLogger {
   public constructor(private readonly logFile: string) {
     mkdirSync(dirname(logFile), { recursive: true });
@@ -28,7 +26,6 @@ export class DesktopLogger implements IStoryboardLogger {
   private write(level: string, message: string): void {
     const line: string = `${new Date().toISOString()} [${level}] ${message}\n`;
 
-    // NOTE: 로그 파일을 못 써도 앱은 계속 돌아야 한다. 로그는 진단용이지 작업의 일부가 아니다.
     try {
       appendFileSync(this.logFile, line);
     } catch {

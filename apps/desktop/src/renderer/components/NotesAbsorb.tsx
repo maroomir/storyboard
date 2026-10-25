@@ -7,7 +7,6 @@ import { useI18n } from '@/renderer/lib/i18n';
 import { formatUsd } from '@/renderer/lib/runView';
 
 interface NotesAbsorbProps {
-  // True right after the wizard made the work: the contract's empty fields are filled from the notes.
   readonly fillContract: boolean;
   readonly hasNotionToken: boolean;
   readonly onDone: () => void;
@@ -20,8 +19,6 @@ type Step =
   | { readonly kind: 'plan'; readonly plan: NotesPlanView }
   | { readonly kind: 'done'; readonly result: NotesApplyView };
 
-// The same four steps as `storyboard notes absorb`: read, confirm the estimate, sort, confirm the
-// plan, write. Paths come only from main's dialog (notes.chooseLocation), never typed here.
 export function NotesAbsorb(props: NotesAbsorbProps): JSX.Element {
   const { t, language } = useI18n();
   const [step, setStep] = useState<Step>({ kind: 'pick' });

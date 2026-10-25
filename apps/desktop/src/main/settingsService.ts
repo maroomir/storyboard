@@ -28,11 +28,8 @@ import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 
 import { fail, succeed, type ServiceResult } from './serviceResult';
 
-// Shown on the settings screen's first section; the rest of the catalog sits under "advanced".
 const basicSettingKeys: Set<string> = new Set(['budget.run.limitUsd', 'revise.loop.afterGenerate', 'editor.draft.keepHistory']);
 
-// A value one work needs differently from another. Everything else is the writer's habit and follows
-// them into every work, like the provider and the model.
 const workspaceScopedSettingKeys: Set<string> = new Set(['budget.run.limitUsd']);
 
 export interface SettingsStores {
@@ -42,8 +39,6 @@ export interface SettingsStores {
   readonly aiProviderRegistry: AiProviderRegistry;
 }
 
-// Before a work is open the settings screen still has to work (the first run asks for a key), so
-// the stores can also be built from the home files alone.
 export function createHomeSettingsStores(
   homePaths: StoryboardHomePaths,
   onInvalidConfigFile: (error: ConfigFileError) => void,
@@ -73,6 +68,11 @@ export interface SettingsServiceDependencies {
   readonly translate: (key: MessageKey, params?: MessageParams) => string;
 }
 
+function isProviderShownToWriters(providerId: AiProviderId): boolean {
+  const isFakeDraftProvider: boolean = providerId === 'mock';
+  return !isFakeDraftProvider;
+}
+
 export class SettingsService {
   public constructor(private readonly dependencies: SettingsServiceDependencies) {}
 
@@ -87,8 +87,7 @@ export class SettingsService {
       : undefined;
     const providers: ProviderOption[] = [];
 
-    // NOTE: mock 은 작가에게 보이지 않는다. 가짜 원고를 진짜처럼 저장하는 선택지이기 때문이다.
-    for (const id of configBridge.getAvailableProviderIds().filter((candidate) => candidate !== 'mock')) {
+    for (const id of configBridge.getAvailableProviderIds().filter(isProviderShownToWriters)) {
       providers.push({
         id,
         label: providerCatalog[id].displayName,
@@ -136,10 +135,6 @@ export class SettingsService {
     return await this.read();
   }
 
-  // Stores the key, then calls the service once, so a mistyped key shows up now rather than on
-  // the first paid call. The first key also becomes the service in use. SECURITY: the key is
-  // never logged or sent back; only whether one is stored is.
-  // SECURITY: the token goes to the 0600 secrets file only and is never sent back to the renderer.
   public async connectNotion(token: string): Promise<DesktopSettings> {
     await this.dependencies.stores().secretStore.setNotionToken(token);
     return await this.read();

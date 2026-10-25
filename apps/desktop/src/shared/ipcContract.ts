@@ -31,9 +31,6 @@ import type {
   WorkspaceOverview,
 } from './dto';
 
-// SECURITY: 렌더러는 신뢰하지 않는 쪽이다. 경로는 한 번도 렌더러에서 오지 않고(폴더는 main 이 연
-// 대화상자로만 고른다), 씬·카드는 패턴이 맞는 id 로만 가리킨다. 그래서 `../` 같은 값이 파일 경로로
-// 이어질 길이 없다.
 const sceneStemSchema: z.ZodType<string> = z.string().regex(sceneStemPattern);
 const cardIdSchema: z.ZodType<string> = z.string().regex(cardIdPattern);
 const uiLanguageSchema: z.ZodType<UiLanguage> = z.enum(['ko', 'en']);
@@ -69,8 +66,6 @@ export const invokeRequestSchemas = {
   'app.setLanguage': z.object({ language: uiLanguageSchema }),
   'app.installUpdate': empty,
 
-  // Without a path main shows the folder dialog. A path is accepted only from the recent list,
-  // which main itself wrote.
   'workspace.open': z.object({ recentPath: z.string().min(1).optional() }),
   'workspace.chooseParentDirectory': empty,
   'workspace.create': z.object({
@@ -104,7 +99,6 @@ export const invokeRequestSchemas = {
 
   'bible.list': z.object({ kind: bibleCardKindSchema }),
   'bible.read': z.object({ kind: bibleCardKindSchema, id: cardIdSchema }),
-  // The card itself is validated against the story-model schema in main, which owns it.
   'bible.save': z.object({ kind: bibleCardKindSchema, card: z.record(z.string(), z.unknown()) }),
   'bible.create': z.object({
     kind: bibleCardKindSchema,
@@ -132,8 +126,6 @@ export const invokeRequestSchemas = {
   'history.list': empty,
   'history.restore': z.object({ id: z.string().regex(/^[0-9a-f]{40}$/) }),
 
-  // SECURITY: a notes path is accepted only when main's own dialog offered it (notes.chooseLocation);
-  // a Notion address is a URL main validates again before any request.
   'notes.chooseLocation': z.object({ kind: z.enum(['folder', 'zip']) }),
   'notes.collect': z.object({
     location: z.union([
@@ -232,7 +224,6 @@ export interface DesktopEvents {
 
 export type DesktopEventName = keyof DesktopEvents;
 
-// The single object the preload script exposes on `window.storyboard`.
 export interface DesktopBridge {
   invoke<C extends InvokeChannel>(channel: C, request: InvokeRequest<C>): Promise<InvokeResult<C>>;
   on<E extends DesktopEventName>(event: E, listener: (payload: DesktopEvents[E]) => void): () => void;

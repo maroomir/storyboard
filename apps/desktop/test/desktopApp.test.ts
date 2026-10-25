@@ -168,8 +168,6 @@ describe('the hidden subscription provider', () => {
     expect(homeConfig()).toEqual({ providers: { 'claude-code': { enabled: false } } });
   });
 
-  // QA D3: a no wrote only `enabled: false`, so a default still naming the provider made the whole
-  // home file invalid and every other setting fell back to its default.
   it('clears the default that named it on no, keeping the rest of the home settings', async () => {
     writeFileSync(
       join(home, 'config.json'),
@@ -306,8 +304,6 @@ describe('with a work open', () => {
     expect(gitSubjects()[0]).toBe('직접 고침: 밤의 방파제');
   });
 
-  // An AI edit always kept a `.draft/` copy, whatever `editor.draft.keepHistory` said; the version
-  // history has the step anyway, so the copy follows the setting like a regeneration does.
   it('keeps the pre-edit draft on an AI edit only when the history setting is on', async () => {
     await expectOk('draft.save', { stem: '01-harbor', body: 'AI가 고친 문단.\n', reason: 'ai-edit' });
 
@@ -421,13 +417,10 @@ describe('with a work open', () => {
     await expectOk('history.restore', { id: created?.id ?? '' });
 
     expect(existsSync(join(workspacePath(), 'draft', '01-harbor.md'))).toBe(false);
-    // The edit session was already its own version, so nothing was left to save before the restore.
     expect(gitSubjects().slice(0, 2)).toEqual(['되돌림: 새 작품: 겨울 항구의 편지', '직접 고침: 밤의 방파제']);
   });
 });
 
-// #53: the note import over IPC. Paths are accepted only when main's own dialog offered them, the
-// token stays in the secrets file, and each step refuses when the one before it has not run.
 describe('absorbing notes', () => {
   const vault = join(__dirname, '..', '..', 'cli', 'test', 'fixtures', 'notes', 'obsidianVault', '달의 문');
 

@@ -74,15 +74,12 @@ interface ActiveRun {
   readonly markFinished: () => void;
 }
 
-// Owns the one generation that may run in a workspace at a time: a whole novel or a single scene.
-// Everything it does is reported as a RunSnapshot, which the drawer renders as is.
 export class RunController {
   private active: ActiveRun | undefined;
   private log: RunLogLine[] = [];
   private lastOutcome: RunSnapshot['lastOutcome'];
   private resumable: RunSnapshot['resumable'];
   private projectSpentUsd: number = 0;
-  // Settles after the last run's closing snapshot, which happens after the run stops being active.
   private lastRunFinished: Promise<void> = Promise.resolve();
 
   public constructor(private readonly dependencies: RunControllerDependencies) {}
@@ -173,7 +170,6 @@ export class RunController {
           ...(resumeState === undefined ? {} : { resumeState }),
           onProgress: (stage, message) => this.recordProgress(run, stage, message),
           requestApproval: (kind, info) => this.askApproval(run, kind, info),
-          // NOTE: 데스크톱은 취소를 쓰지 않는다. 멈춤은 모두 씬 경계에서 끝나는 shouldPause 로 간다.
           shouldCancel: () => false,
           shouldPause: () => run.isPauseRequested,
           onBudgetReached: () => this.noteBudgetReached(run),
@@ -249,7 +245,6 @@ export class RunController {
     return this.snapshot();
   }
 
-  // Resolves when nothing is running any more. The quit flow pauses first, then waits here.
   public async waitUntilIdle(): Promise<void> {
     await this.lastRunFinished;
   }
@@ -315,7 +310,6 @@ export class RunController {
     try {
       ({ outcome, message, snapshotMessage } = await work);
     } catch (error) {
-      // NOTE: 실행 하나가 던진 예외가 앱을 멈추면 안 된다. 실패로 기록하고 잠금을 반드시 푼다.
       this.dependencies.container.logger.error('Desktop run failed', error);
       outcome = 'failed';
       message = error instanceof Error ? error.message : String(error);
@@ -353,8 +347,6 @@ export class RunController {
     const result: GenerateDraftResult = await container.drafts.generate({
       sceneUri,
       force,
-      // A writer is not asked to approve a fact sheet: the proposal is taken as written, like the
-      // extension's auto-approve setting. The sheet stays in the scene card for later edits.
       confirmSceneGrounding: async ({ grounding }) => grounding,
       onPipelineProgress: (stage, current, total) =>
         this.appendLog(translate('log.sceneStage', { title, stage: this.sceneStageLabel(stage, current, total) })),
@@ -376,7 +368,6 @@ export class RunController {
       onProgress: (message) => this.appendLog(translate('log.sceneRevising', { title, message })),
       shouldCancel,
     });
-    // Engine messages stay Korean in both languages, so the warning goes out as the engine wrote it.
     const reviseWarning: string | undefined = revised && describeReviseOutcome(revised).warning;
     if (reviseWarning) {
       this.appendLog(translate('log.sceneRevising', { title, message: reviseWarning }), 'warn');
@@ -409,7 +400,6 @@ export class RunController {
     run.currentStage = stage;
     run.furthestStageIndex = Math.max(run.furthestStageIndex, stageIndex);
 
-    // The step that just ended is on disk now; keep it as a version before the next one writes.
     if (run.lastProgressMessage !== undefined) {
       void this.dependencies.snapshot(
         this.dependencies.translate('snapshot.novelProgress', { message: run.lastProgressMessage }),
@@ -441,8 +431,6 @@ export class RunController {
     return state === undefined ? undefined : { mode: state.runMode, completedStages: state.completedStages };
   }
 
-  // While our own run is going there is nothing to resume; otherwise the engine decides, including
-  // a run left `running` by an app that died.
   private async readResumableState(): Promise<NovelRunState | undefined> {
     const { container } = this.dependencies;
 

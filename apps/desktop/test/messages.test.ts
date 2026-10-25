@@ -9,8 +9,6 @@ function placeholders(text: string): string[] {
 }
 
 describe('UI messages', () => {
-  // The type already forces the same keys; a translation that drops a placeholder would silently
-  // lose the number or name the author needs to see.
   it('keep the same placeholders in both languages and no empty text', () => {
     for (const key of Object.keys(koMessages) as MessageKey[]) {
       expect(placeholders(enMessages[key]), key).toEqual(placeholders(koMessages[key]));

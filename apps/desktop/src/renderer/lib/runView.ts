@@ -9,8 +9,6 @@ export interface StageRailItem {
   readonly state: StageState;
 }
 
-// The rail shows the novel run's seven stages. A resumable run that is not running shows what the
-// earlier run finished, so the author sees where "resume" will pick up.
 export function stageRail(snapshot: RunSnapshot): StageRailItem[] {
   const isNovelRun: boolean = snapshot.status !== 'idle' && snapshot.kind === 'novel';
   const done: Set<NovelStageName> = new Set<NovelStageName>(

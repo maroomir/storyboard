@@ -18,7 +18,6 @@ import {
 } from '@storyboard/story-config';
 import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 
-// The managers and infrastructure handles a screen may reach, plus what only the desktop knows.
 export interface DesktopContainer extends Pick<
   StoryboardApplication,
   | 'drafts'
@@ -48,13 +47,9 @@ export interface DesktopContainerOptions {
   readonly homePaths: StoryboardHomePaths;
   readonly logger: IStoryboardLogger;
   readonly version: string;
-  // A settings file the author broke by hand must not close the app. Reads fall back to defaults
-  // for that file and the host tells the author which file it was.
   readonly onInvalidConfigFile: (error: ConfigFileError) => void;
 }
 
-// The desktop's side of the composition for one open workspace: only the host adapters are built
-// here. The engine graph they feed is assembled once, for every app, by StoryboardApplication.
 export function createDesktopContainer(options: DesktopContainerOptions): DesktopContainer {
   const workspaceRoot: NodeUri = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
@@ -68,8 +63,6 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     onInvalidFile: options.onInvalidConfigFile,
     onUnknownKey: (warning) => logger.warn(warning.message),
   });
-  // NOTE: 프로바이더·모델·키처럼 작가가 한 번 고르는 값은 모든 작품에 걸린다(홈 파일). 작품마다
-  // 다른 값(예산)은 호출하는 쪽이 작품 파일을 지정해 쓴다.
   const configBridge: ConfigBridge = new ConfigBridge({
     getConfiguration: () => configuration,
     writeTarget: configurationTargets.user,

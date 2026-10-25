@@ -14,8 +14,6 @@ import { fail, succeed, type ServiceFailure, type ServiceResult } from './servic
 import { createHomeSettingsStores, SettingsService, type SettingsStores } from './settingsService';
 import { WorkspaceSession, workspaceFolderName } from './workspaceSession';
 
-// Everything the app needs from Electron, handed in so the rest of main runs (and is tested)
-// without it.
 export interface DesktopAppPorts {
   readonly homePaths: StoryboardHomePaths;
   readonly logFile: string;
@@ -23,14 +21,10 @@ export interface DesktopAppPorts {
   readonly systemLocale: string;
   readonly documentsDirectory: string;
   readonly chooseDirectory: (title: string, defaultPath?: string) => Promise<string | undefined>;
-  // One file of the given extensions, through main's own dialog.
   readonly chooseFile: (title: string, extensions: readonly string[]) => Promise<string | undefined>;
   readonly emit: <E extends DesktopEventName>(event: E, payload: DesktopEvents[E]) => void;
-  // A non-blocking notice for problems the author should know about but that stop nothing.
   readonly notify: (message: string) => void;
-  // A blocking yes/no. Closing the dialog is a no.
   readonly confirm: (question: ConfirmQuestion) => Promise<boolean>;
-  // Restarts into a downloaded update. Only a packaged app ever has one.
   readonly installUpdate: () => void;
 }
 
@@ -103,8 +97,6 @@ export class DesktopApp {
   }
 
   public async openWorkspace(recentPath: string | undefined): Promise<ServiceResult<WorkspaceOverview | { readonly cancelled: true }>> {
-    // SECURITY: 렌더러가 보낸 경로는 main 이 최근 목록에 적어 둔 것일 때만 연다. 다른 경로는 반드시
-    // main 의 폴더 대화상자를 거친다.
     if (recentPath !== undefined && !this.state.isRecentWorkspace(recentPath)) {
       return fail('invalid-request', this.t('error.invalidRequest'));
     }
@@ -133,8 +125,6 @@ export class DesktopApp {
     return directory === undefined ? {} : { directory };
   }
 
-  // The author picks a notes folder or a Notion export zip in main's dialog; only a path offered this
-  // way is later accepted by notes.collect.
   public async chooseNotesLocation(kind: 'folder' | 'zip'): Promise<{ readonly path?: string }> {
     const path: string | undefined =
       kind === 'folder'
@@ -158,7 +148,6 @@ export class DesktopApp {
   ): Promise<ServiceResult<WorkspaceOverview>> {
     const parent: string = resolve(parentDirectory);
 
-    // SECURITY: 새 작품은 main 이 권한 기본 위치이거나 대화상자로 고르게 한 폴더 안에만 만든다.
     if (parent !== resolve(this.defaultParentDirectory()) && !this.offeredParentDirectories.has(parent)) {
       return fail('invalid-request', this.t('error.invalidRequest'));
     }
@@ -181,8 +170,6 @@ export class DesktopApp {
     return closed;
   }
 
-  // Quitting mid-run either lets the scene in progress finish (and pauses there) or leaves at once;
-  // both resume on the next open.
   public async shutdown(mode: 'finish-scene' | 'now'): Promise<void> {
     const session: WorkspaceSession | undefined = this.current;
 
@@ -222,8 +209,6 @@ export class DesktopApp {
     }
 
     this.current = opened.data;
-    // NOTE: 숨은 프로바이더를 켜는 화면은 없다. 홈 설정 파일을 손으로 고쳐 켠 사람에게, 작품을 열 때
-    // 위험 고지를 보여 주고 답을 받는다.
     await requestHiddenProviderConsent(opened.data.container.configBridge, (question) =>
       this.ports.confirm({ ...question, declineLabel: this.t('common.cancel') }),
     );
@@ -251,8 +236,6 @@ export class DesktopApp {
     return join(this.ports.documentsDirectory, 'Storyboard');
   }
 
-  // A broken settings file keeps the app running on defaults, but the author is told once which
-  // file it is — never a silent fallback.
   private reportInvalidConfig(error: ConfigFileError): void {
     this.logger.warn(error.message);
 

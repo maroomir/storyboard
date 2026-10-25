@@ -4,8 +4,6 @@ export type DiskChange = 'echo' | 'reload' | 'conflict';
 
 const defaultDelayMs: number = 1200;
 
-// Keeps the editor's text and the draft on disk in step. Typing marks the draft dirty and saves it
-// after a pause; a change on disk is classified against what this editor last wrote.
 export class DraftAutosave {
   private pending: ReturnType<typeof setTimeout> | undefined;
   private body: string;
@@ -61,8 +59,6 @@ export class DraftAutosave {
     await this.inFlight;
   }
 
-  // What to do when the draft file changed: our own save coming back is ignored, a change while the
-  // editor has nothing unsaved is loaded, and a change over unsaved edits needs the author to choose.
   public classifyDiskChange(diskBody: string): DiskChange {
     if (diskBody === this.lastSavedBody || diskBody === this.body) {
       return 'echo';

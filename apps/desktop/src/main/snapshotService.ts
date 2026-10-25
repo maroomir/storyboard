@@ -5,10 +5,6 @@ import git, { type ReadCommitResult } from 'isomorphic-git';
 
 import type { SnapshotEntry } from '@/shared/dto';
 
-// NOTE: 작가는 git 을 모른다. 앱이 작품을 자동으로 커밋해 «이전 버전으로 되돌리기»를 주는 것이
-// 데스크톱만의 예외다(CLI·확장은 커밋하지 않는다). isomorphic-git 을 쓰는 이유는 git 이 깔려 있지
-// 않은 Windows·macOS 에서도 같은 저장소 형식을 만들기 위해서다. 사용자가 나중에 git 을 써도 그대로
-// 읽힌다.
 interface CommitAuthor {
   readonly name: string;
   readonly email: string;
@@ -20,7 +16,6 @@ const vanishedFileRetries: number = 5;
 
 export interface SnapshotLocation {
   readonly repositoryRoot: string;
-  // The workspace's path inside the repository, '' when the workspace is the repository root.
   readonly workspacePrefix: string;
 }
 
@@ -40,22 +35,16 @@ export async function locateSnapshotRepository(workspaceRoot: string): Promise<S
   }
 }
 
-// Columns are [path, HEAD, WORKDIR, STAGE]. Once every file is staged, a file is unchanged exactly
-// when its staged content is the one HEAD has.
 function isStagedAsInHead([, head, , stage]: StatusRow): boolean {
   return head === 1 && stage === 1;
 }
 
-// NOTE: 원자적 쓰기는 옆에 임시 파일을 만들고 이름을 바꾼다. 생성이 돌며 쓰는 도중에 찍으면 그
-// 임시 파일이 목록에 잡혔다가 사라지므로, 버전에 넣지 않고 사라진 파일은 지워진 것으로 다룬다.
 const atomicWriteLeftover: RegExp = /\.tmp-[0-9a-z]+$/;
 
 function isAtomicWriteLeftover(filepath: string): boolean {
   return atomicWriteLeftover.test(filepath);
 }
 
-// isomorphic-git re-throws a file-system error from its tree walk without the `code`, so the
-// message is the only reliable signal.
 function isVanishedFileError(error: unknown): boolean {
   return (
     (error as NodeJS.ErrnoException).code === 'ENOENT' ||
@@ -80,7 +69,6 @@ export class SnapshotService {
 
   public constructor(private readonly location: SnapshotLocation) {}
 
-  // Records the workspace as it is now. Returns undefined when nothing changed since the last one.
   public snapshot(message: string): Promise<string | undefined> {
     return this.serialize(() => this.commitChangesRetryingVanishedFiles(message));
   }
@@ -91,20 +79,15 @@ export class SnapshotService {
         const commits: Array<ReadCommitResult> = await git.log({ fs, dir: this.location.repositoryRoot, depth: listLimit });
         return commits.map((entry) => ({
           id: entry.oid,
-          // A commit made outside the app may carry a long body; the history shows its subject only.
           message: entry.commit.message.trim().split('\n')[0] ?? '',
           time: new Date(entry.commit.author.timestamp * 1000).toISOString(),
         }));
       } catch {
-        // A repository with no commit yet has no HEAD to walk.
         return [];
       }
     });
   }
 
-  // Puts every tracked file of the workspace back as it was in `commitId`, then records that as a new
-  // snapshot. History is never rewritten: the state before the restore is snapshotted first, so a
-  // restore can itself be undone.
   public restore(commitId: string, message: string): Promise<string | undefined> {
     return this.serialize(async () => {
       await this.commitChanges('되돌리기 전 자동 저장');
@@ -142,8 +125,6 @@ export class SnapshotService {
     return prefix === '' ? files : files.filter((file) => file.startsWith(`${prefix}/`));
   }
 
-  // NOTE: 상태 행렬은 무시 목록의 폴더까지 한 번 훑는다. 그 사이 생성 작업이 임시 파일을 이름 바꿔
-  // 없애면 통째로 ENOENT 가 난다. 잠깐 쉬었다 다시 찍으면 새 파일로 보인다.
   private async commitChangesRetryingVanishedFiles(message: string): Promise<string | undefined> {
     for (let attempt: number = 1; ; attempt += 1) {
       try {
@@ -161,9 +142,6 @@ export class SnapshotService {
     const dir: string = this.location.repositoryRoot;
     const scope: { readonly filepaths?: string[] } = this.location.workspacePrefix === '' ? {} : { filepaths: [this.location.workspacePrefix] };
 
-    // NOTE: 상태 행렬의 작업 트리 열은 파일 시각·크기가 색인과 같으면 내용을 보지 않는다. 자동 저장처럼
-    // 같은 초 안에 길이가 같은 편집이 오면 «변경 없음»으로 잘못 나오므로, 모든 파일을 다시 올려
-    // (내용 해시) 색인과 HEAD 를 비교한다.
     for (const [filepath, , workdir] of (await git.statusMatrix({ fs, dir, ...scope })) as StatusRow[]) {
       if (isAtomicWriteLeftover(filepath)) {
         continue;

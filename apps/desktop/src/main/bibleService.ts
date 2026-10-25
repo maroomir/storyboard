@@ -82,9 +82,6 @@ function summaryDetail(card: BibleCard): string | undefined {
   }
 }
 
-// The story bible screen: character, background and narrator cards, and the canon facts. Every
-// write goes through the story-model schema and codec, so a card saved here serializes to the same
-// bytes the extension and the CLI would write.
 export interface RemovedBibleCard {
   readonly name: string;
 }
@@ -154,8 +151,6 @@ export class BibleService {
     const card: BibleCard = parsed.data;
     const uri: StoryUri = this.cardUri(kind, card.id);
 
-    // The id is the file name. Renaming rewrites references across the workspace, which is its own
-    // command (`card rename`), so a save may only write a card that already exists under that id.
     if (!(await this.fileSystem.exists(uri))) {
       return fail('not-found', card.id);
     }
@@ -239,7 +234,6 @@ export class BibleService {
   }
 
   private async readCanon(): Promise<StoryBible> {
-    // A workspace starts without canon; the first confirmed fact creates the file.
     if (!(await this.fileSystem.exists(this.paths.bibleCanon))) {
       return createEmptyBible();
     }
