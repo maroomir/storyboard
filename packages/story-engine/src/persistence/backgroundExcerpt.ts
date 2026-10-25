@@ -18,8 +18,6 @@ import type {
 
 const EXCERPT_LENGTH_LIMIT: number = 800;
 
-// NOTE: 같은 장소가 다시 나올 때 배경 묘사를 갱신하기 위한 재료. 직전 등장 씬의 초안 앞부분만
-// 쓴다. 장면 도입부에 공간 묘사가 몰려 있고, 뒤로 갈수록 그 장면 한정 사건이 늘기 때문이다.
 export async function findRecentBackgroundExcerpt(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,

@@ -72,8 +72,6 @@ function findWarnings(setting: ProjectSetting | undefined): string[] {
   return warnings;
 }
 
-// NOTE: 구성 설정은 씬을 만들기 전에 어긋나는 편이 낫다. 감싸는 대상이 없는 액자나 편이 하나뿐인
-// 옴니버스는 생성이 끝난 뒤에야 결과에서 드러나고, 그때는 이미 원고를 다시 만들어야 한다.
 function findCompositionWarnings(setting: ProjectSetting): string[] {
   const warnings: string[] = [];
   const threads: Record<string, StoryThread> = setting.threads ?? {};
@@ -116,7 +114,6 @@ function hasWrappingThread(setting: ProjectSetting): boolean {
 }
 
 function findProhibitionConflicts(setting: ProjectSetting): string[] {
-  // project.json is hand-editable, so an omitted array reaches here as undefined despite the type.
   const allowedTerms: Set<string> = new Set(
     [setting.genre, ...(setting.tags ?? [])]
       .filter(isNonEmpty)

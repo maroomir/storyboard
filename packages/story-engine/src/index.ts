@@ -1,5 +1,3 @@
-// The engine's public surface. Apps import from '@storyboard/story-engine' only — deep paths into
-// this package are not part of the contract.
 export * from './ai/PostGenerationUpdateManager';
 export * from './ai/backgroundCharacterUpdater';
 export * from './ai/bibleCandidateUpdater';

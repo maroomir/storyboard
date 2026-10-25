@@ -54,7 +54,6 @@ import {
 export interface SceneGenerationInputs {
   readonly workspaceFolder: StoryWorkspaceFolder;
   readonly paths: ReturnType<typeof getStoryboardProjectPaths>;
-  // 연속성 재료(이야기 상태·요약·인물 기억)를 읽고 쓰는 경로. 줄기가 하나면 paths와 같다.
   readonly threadPaths: ReturnType<typeof getStoryboardProjectPaths>;
   readonly threadId: string;
   readonly narration: NarrationDirective | undefined;
@@ -300,9 +299,6 @@ async function loadSceneContextBundle(
     };
   }
 
-  // NOTE: 사실 시트는 컨텍스트를 만든 뒤 확정한다. 그래야 카드 id가 아닌 실제 인물 이름으로 제안받고,
-  // 확정된 사실이 inputHash와 생성 프롬프트에 같이 반영된다. grounding은 characters/location을
-  // 건드리지 않으므로 컨텍스트를 다시 만들지 않고 씬만 갈아 끼운다.
   const characterNames: string[] = builtContext.characters.map((character) => character.name);
   const grounded: SceneGroundingOutcome = await resolveSceneGrounding(
     paths.workspaceRoot,
@@ -315,7 +311,6 @@ async function loadSceneContextBundle(
     return { ok: false, result: { ok: false, kind: 'cancelled' } };
   }
 
-  // 비트는 확정된 사실 시트를 재료로 삼으므로 그 뒤에 뽑는다. 본문에 들어가 inputHash 에도 반영된다.
   const scene: SceneFile = options.skipSceneBeats
     ? grounded.scene
     : await resolveSceneBeats(sceneUri, grounded.scene, builtContext.characters, options);
@@ -344,9 +339,6 @@ async function loadSceneContextBundle(
     options.configBridge.getDraftSceneBreakSeparator(),
   );
 
-  // NOTE: 원장 감사는 서사 컨텍스트를 만들기 전에 끝나야 한다. 낡은 항목을 원장에 표시해 두어야
-  // 곧이어 원장을 읽는 buildNarrativeContext가 그 항목을 프롬프트에서 뺀다. 줄기가 갈렸으면
-  // 그 줄기의 원장을 봐야 하므로 스레드 경로로 감사한다.
   const memoryAudit: StoryMemoryAudit = await auditStoryMemory({
     fileSystem: options.fileSystem,
     paths: thread.threadPaths,
@@ -356,9 +348,6 @@ async function loadSceneContextBundle(
   });
   await markStoryStateStaleEntries(thread.threadPaths, options.fileSystem, memoryAudit);
 
-  // 장별 요약도 그것을 낳은 초안에 매여 있다. 원장과 같은 이유로 서사 컨텍스트를 만들기 전에
-  // 표시해야, 곧이어 요약을 읽는 buildNarrativeContext가 낡은 장을 프롬프트에서 뺀다. 요약도
-  // 줄기별로 갈리므로 원장과 같은 스레드 경로로 감사한다.
   const chapterAuditRequest: ChapterSummaryAuditRequest = {
     fileSystem: options.fileSystem,
     paths: thread.threadPaths,
@@ -376,8 +365,6 @@ async function loadSceneContextBundle(
         ...(narration?.knowledge === 'witnessed' && narration.focal
           ? { focal: narration.focal }
           : {}),
-        // 전지적 서술이 아니면 공용 맥락에는 씬 인물 모두가 아는 것만 둔다. 한 인물만 아는 것은
-        // 그 인물의 [아는 것]으로만 간다.
         ...(narration?.knowledge === 'omniscient'
           ? {}
           : { witnessedByAll: context.characters.map((character) => character.id) }),

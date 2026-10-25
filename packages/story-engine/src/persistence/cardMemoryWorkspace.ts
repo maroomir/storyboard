@@ -63,9 +63,6 @@ function backgroundMemoryFilePath(paths: StoryboardProjectPaths, cardId: string)
   return joinStoryPath(paths.backgroundMemoryDirectory, `${cardId}.json`);
 }
 
-// 씬 N을 만드는 동안, N 이후까지 진화한 기억은 두 가지로 쓸 수 없다: 아직 오지 않은 씬의 정보를
-// 담고 있고(스포일러), N을 다시 만든다면 그 기억이 전제한 판본이 폐기된다. 원장의 되감기와 같은
-// 판정이다. 씬 번호를 읽을 수 없으면 근거가 없으므로 그대로 쓴다.
 function isMemoryAheadOfScene(updatedThroughScene: string, sceneStem: string): boolean {
   const memoryOrder: number | undefined = parseSceneStem(updatedThroughScene)?.order;
   const currentOrder: number | undefined = parseSceneStem(sceneStem)?.order;
@@ -78,8 +75,6 @@ export function createPersonaMemoryStore(
   paths: StoryboardProjectPaths,
   sceneStem: string,
 ): IPersonaMemoryStore {
-  // NOTE: 페르소나는 personaGeneration 프롬프트의 산출물이다. 그 문구(작가의 덮어쓰기 포함)를 키에
-  // 넣어야 프롬프트를 고친 뒤에도 옛 문구로 만든 페르소나가 재사용되지 않는다.
   const promptFingerprint: string = promptResourceFingerprint('personaGeneration');
 
   return {
@@ -149,7 +144,6 @@ export function createBackgroundMemoryStore(
   };
 }
 
-// A record that cannot be read is no record: the cache saves a call, it never blocks one.
 export async function readBackgroundFactConflictRecords(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
@@ -166,8 +160,6 @@ export async function readBackgroundFactConflictRecords(
   }
 }
 
-// NOTE: 판정은 카드 줄과 프롬프트 문구(작가의 덮어쓰기 포함)에만 달려 있으므로 줄기·씬과 무관하게
-// 작품 캐시 한 파일에 카드마다 둔다. doctor 가 같은 파일을 읽는다.
 export function createBackgroundFactConflictStore(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
@@ -241,9 +233,6 @@ export function createSceneDialogueStore(
   };
 }
 
-// NOTE: 초안은 생성 뒤에도 수정 루프와 사람 손을 거치므로 해시는 대개 어긋난다. 어긋났다고 기록을
-// 통째로 버리면 코퍼스가 상시 비게 되고, 그대로 믿으면 원고에 없는 대사가 말투 표본이 된다.
-// 그래서 지금 초안에 실제로 남아 있는 대사만 남긴다. 해시는 그 대조를 건너뛰는 빠른 길이다.
 async function reconcileWithDraft(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,

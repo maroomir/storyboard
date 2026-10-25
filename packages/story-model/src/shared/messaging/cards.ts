@@ -25,8 +25,6 @@ export const cardsReadRequestPayloadSchema: z.ZodType<CardsReadRequestPayload> =
   uri: uriStringSchema,
 });
 
-// NOTE: 카드 에디터는 scene/*.card와 narrator/*.card도 열므로 편집 RPC만 그 카드들을 함께 받는다.
-// 목록·생성 계약은 entity 카드 전용으로 남는다.
 type CardFileContent = StoryboardCard | SceneCard | NarratorCard;
 
 const workspaceCardSchema: z.ZodType<CardFileContent> = z.union([

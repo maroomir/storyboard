@@ -19,7 +19,6 @@ export function isSceneGroundingComplete(grounding: SceneGrounding | undefined):
   return missingSceneGroundingFields(grounding).length === 0;
 }
 
-// 사용자가 적어 둔 값이 항상 이긴다. 제안은 비어 있는 필드만 채운다.
 export function mergeSceneGrounding(
   existing: SceneGrounding | undefined,
   proposed: SceneGrounding | undefined,
@@ -38,7 +37,6 @@ export function mergeSceneGrounding(
   return merged;
 }
 
-// NOTE: Scene card 직렬화는 canonical이라 grounding만 바꿔도 전체를 다시 직렬화한다.
 export function applySceneGrounding(rawScene: string, grounding: SceneGrounding): string {
   const card: SceneCard = parseSceneCard(rawScene);
 

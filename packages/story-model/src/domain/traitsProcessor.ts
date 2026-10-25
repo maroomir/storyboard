@@ -59,7 +59,7 @@ export function reconcileCharacterTraits(
   extractedTraits: Readonly<Record<string, readonly string[]>>,
   existingTraits: Readonly<Record<string, readonly string[]>> = {},
 ): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
+  const reconciledTraitsByCharacter: Record<string, string[]> = {};
 
   for (const [characterName, traits] of Object.entries(extractedTraits)) {
     const validatedTraits: string[] = validateTraits(traits);
@@ -67,10 +67,10 @@ export function reconcileCharacterTraits(
       validatedTraits,
       existingTraits[characterName] ?? [],
     );
-    result[characterName] = removeDuplicateTraits(uniqueFromExisting);
+    reconciledTraitsByCharacter[characterName] = removeDuplicateTraits(uniqueFromExisting);
   }
 
-  return result;
+  return reconciledTraitsByCharacter;
 }
 
 const meaninglessTraitPatterns: RegExp[] = [/^[가-힣]+이?다$/, /^[가-힣]+이?었다$/];

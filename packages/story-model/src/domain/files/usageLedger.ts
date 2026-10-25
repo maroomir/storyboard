@@ -136,8 +136,6 @@ export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmou
   };
 }
 
-// Claude counts cached and cache-written tokens outside input_tokens; the prompt the model saw is
-// the three together. The saving is what the cached share would have cost at the input price.
 function usageCacheOfEntry(
   entry: Pick<UsageLedgerEntry, 'usage' | 'providerId' | 'model'>,
 ): UsageCacheAmount | undefined {
@@ -167,8 +165,6 @@ function usageCacheOfEntry(
   };
 }
 
-// NOTE: an entry with no price is still spend the author made, so its tokens count and the
-// summary flags it instead of pretending the call was free.
 export function usageAmountOfEntry(
   entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'providerId' | 'model'>,
 ): UsageAmount {
@@ -229,7 +225,6 @@ export function mergeUsageLedgerEntryIntoSummary(
         return;
       }
       case 'project': {
-        // The work has no row of its own: its spend shows in the total, which every host reads.
         return;
       }
       default: {

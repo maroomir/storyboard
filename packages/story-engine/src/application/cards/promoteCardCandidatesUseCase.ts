@@ -67,8 +67,6 @@ export class PromoteCardCandidatesUseCase {
     return { kind: 'promoted', updatedCardCount };
   }
 
-  // Drops the draft candidates of the given cards, or every one without a list. Returns how many
-  // items went.
   public async discard(
     workspaceRoot: StoryUri,
     cardIds: ReadonlySet<string> | undefined,

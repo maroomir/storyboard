@@ -37,7 +37,7 @@ export class CardCandidateRepository implements ICardCandidateRepository {
           await readCardCandidateFile(joinStoryPath(cardCacheDirectory, name), this.fileSystem),
         );
       } catch {
-        // NOTE: Invalid cache records are excluded from candidate promotion.
+        continue;
       }
     }
 
@@ -60,7 +60,7 @@ export class CardCandidateRepository implements ICardCandidateRepository {
           cardsById.set(cardId, card);
         }
       } catch {
-        // NOTE: Missing cards leave their candidates available for promotion.
+        continue;
       }
     }
 

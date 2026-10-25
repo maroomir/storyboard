@@ -19,8 +19,6 @@ import type { ISceneSeedRepository } from './novelPipelinePorts';
 
 export interface SeedScenesRequest {
   readonly workspaceRoot: StoryUri;
-  // Seeds replace the scene cards of the same name. Without this, a workspace that already has
-  // scene files is refused rather than overwritten.
   readonly overwrite: boolean;
 }
 
@@ -37,7 +35,6 @@ export interface SeedScenesUseCaseDependencies {
   readonly sceneSeedRepository: ISceneSeedRepository;
 }
 
-// Scene cards from the chapter plan. No model is involved: `buildSceneSeeds` is deterministic.
 export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenesResult> {
   public constructor(private readonly deps: SeedScenesUseCaseDependencies) {}
 

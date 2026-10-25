@@ -37,8 +37,6 @@ export class SceneParseError extends Error {
   }
 }
 
-// summaryText 는 카드 옆 summary 파일의 내용이다. 인라인 summary 는 아직 파일로 옮기지 않은
-// 카드이므로 그 값을 그대로 산문으로 쓴다.
 export function parseScene(rawScene: string, fileName: string, summaryText?: string): SceneFile {
   return toSceneFile(requireSceneFileNameParts(fileName), parseSceneCard(rawScene), summaryText);
 }
@@ -158,8 +156,6 @@ export function serializeSceneCard(card: SceneCard): string {
   });
 }
 
-// NOTE: Entity 카드의 canonicalizeCardText와 같은 계약 — 정규화는 별도 명령(/doctor)이 의도적으로
-// 수행하고, 내용 편집 diff에는 섞지 않는다.
 export function canonicalizeSceneCardText(rawScene: string): {
   readonly text: string;
   readonly changed: boolean;

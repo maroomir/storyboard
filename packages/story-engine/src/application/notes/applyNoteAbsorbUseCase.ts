@@ -27,12 +27,8 @@ import type { INoteAbsorbRepository, NoteCandidateLoad } from './noteAbsorbRepos
 export interface ApplyNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;
   readonly plan: NoteAbsorbPlan;
-  // Where the notes came from, kept with the candidates so `card promote` can say so.
   readonly location: string;
-  // True only for a workspace `init` just made from the notes: then the contract's empty fields
-  // are filled. Otherwise the contract is never touched and differences come back as proposals.
   readonly shouldFillContract: boolean;
-  // Drops every candidate earlier absorbs left instead of adding to them.
   readonly shouldReplaceCandidates: boolean;
 }
 
@@ -40,16 +36,13 @@ export interface ApplyNoteAbsorbOutcome {
   readonly ok: true;
   readonly createdCards: readonly string[];
   readonly candidateCards: readonly string[];
-  // Cards with candidates waiting for `card promote`, this absorb's included.
   readonly pendingCandidateCards: readonly string[];
   readonly createdScenes: readonly string[];
   readonly skippedScenes: readonly NoteLeftOut[];
   readonly synopsis: 'written' | 'candidate' | 'none';
   readonly filledSettingKeys: readonly string[];
   readonly settingProposals: NoteSynthesisSetting;
-  // Characters whose quoted lines from the notes became voice samples.
   readonly seededCharacters: readonly string[];
-  // Setting facts offered to `canon promote`; never written to the canon here.
   readonly canonCandidates: number;
 }
 
@@ -65,8 +58,6 @@ type FillableSettingKey = 'genre' | 'audience' | 'concept' | 'description' | 'po
 
 const settingKeys: readonly FillableSettingKey[] = ['genre', 'audience', 'concept', 'description', 'pov'];
 
-// Writes a plan: new cards and scenes go straight into the workspace, nothing that exists is
-// overwritten — a card that exists gets candidates, a synopsis that exists gets a sibling file.
 export interface AppliedNoteSetting {
   readonly filledSettingKeys: string[];
   readonly settingProposals: NoteSynthesisSetting;
@@ -113,8 +104,6 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     });
   }
 
-  // The notes' setting facts become one candidate record for this location (#55). Re-absorbing the
-  // location replaces it; a plan with none clears it.
   private async applyCanonCandidates(request: ApplyNoteAbsorbRequest): Promise<number> {
     const facts: BibleFact[] = request.plan.canonCandidates.map((candidate) =>
       buildCandidateFact(candidate.subject, candidate.key, candidate.value),
@@ -130,7 +119,6 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
 
   private async applyCards(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteCards> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
-    // Read before any card is written, so a file that cannot be read leaves the workspace as it was.
     const loaded: NoteCandidateLoad = await this.deps.noteRepository.loadCandidates(workspaceRoot);
 
     if (loaded.kind === 'legacy') {
@@ -144,7 +132,6 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
 
     for (const entry of plan.cards) {
       const cardType: "character" | "background" = entry.card.type === 'character' ? 'character' : 'background';
-      // A card written between planning and applying is the author's now; the notes only propose.
       const isStillNew: boolean =
         entry.isNew &&
         !(await this.deps.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));
@@ -252,7 +239,6 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
         continue;
       }
 
-      // An explicit flag given to `init` is already in the contract, so it wins over the notes.
       if (shouldFillContract && current[key] === undefined) {
         filled[key] = proposed;
       } else {

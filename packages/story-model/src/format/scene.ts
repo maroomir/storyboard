@@ -2,11 +2,8 @@ import { z } from 'zod';
 
 export const sceneFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
 export const sceneStemPattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
-// 창작자가 쓴 사건 산문은 카드 옆 `<stem>.summary.md`에 두고, 카드의 summary 에는 그 파일명만 적는다.
 export const sceneSummaryFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
 
-// 씬을 구체적인 사건으로 못박는 4개 사실. 가사·분위기 스케치처럼 추상적인 씬이 은유만으로
-// 생성되는 것을 막는다.
 export type SceneGroundingFieldKey = 'incident' | 'place' | 'relation' | 'time';
 
 export const sceneGroundingFieldKeys: readonly [SceneGroundingFieldKey, ...SceneGroundingFieldKey[]] = ['incident', 'place', 'relation', 'time'];
@@ -32,9 +29,6 @@ export const sceneGroundingFieldLabels: Readonly<Record<SceneGroundingFieldKey, 
   time: '시점',
 };
 
-// NOTE: 비트는 문자열이거나, 그 사건의 좌표(출연·장소·시각)를 단 객체다. 좌표가 있으면 뼈대가 인물의
-// 등장·퇴장을 추론하지 않아도 되고, 구간별 검증과 «이 비트에서 누가 무엇을 아는가»의 자리가 생긴다.
-// 문자열만 쓰던 카드는 그대로 읽힌다.
 export interface SceneBeatDetail {
   text: string;
   cast?: string[];
@@ -45,11 +39,9 @@ export interface SceneBeatDetail {
 
 export const sceneBeatDetailSchema: z.ZodType<SceneBeatDetail> = z.object({
   text: z.string().trim().min(1),
-  // 이 비트에 있는 인물. 카드 id 또는 이름.
   cast: z.array(z.string().trim().min(1)).optional(),
   place: z.string().trim().min(1).optional(),
   time: z.string().trim().min(1).optional(),
-  // 이 비트 앞에서 장면을 끊을지(---). 적지 않으면 장소·시각 좌표로 파이프라인이 정한다.
   break: z.boolean().optional(),
 });
 
@@ -65,8 +57,6 @@ export function sceneBeatTexts(beats: readonly SceneBeat[] | undefined): string[
   return (beats ?? []).map(sceneBeatText);
 }
 
-// 비트 좌표의 출연 중 어느 인물 카드의 id·이름·별칭과도 맞지 않는 것. 그런 출연은 이름으로 바뀌지
-// 못한 채 프롬프트에 그대로 실린다. beat 는 1부터 센다.
 export interface UnknownBeatCast {
   readonly beat: number;
   readonly ref: string;
@@ -97,7 +87,6 @@ export const sceneBeatCoordinateLabels: Readonly<Record<'cast' | 'place' | 'time
   time: '시각',
 };
 
-// 비트의 좌표 한 줄(«출연: … / 장소: … / 시각: …»). 문자열 비트나 좌표 없는 비트는 undefined.
 export function formatSceneBeatCoordinates(
   beat: SceneBeat,
   castName: (ref: string) => string = (ref) => ref,
@@ -117,7 +106,6 @@ export function formatSceneBeatCoordinates(
   return coordinates.length > 0 ? coordinates.join(' / ') : undefined;
 }
 
-// 좌표는 사건 줄 아래 괄호 한 줄로 붙는다. 빈 줄이 없어야 사건 재료 분할에서 한 블록으로 남는다.
 export function renderSceneBeat(
   beat: SceneBeat,
   castName: (ref: string) => string = (ref) => ref,
@@ -153,8 +141,6 @@ export const sceneFrontmatterSchema: z.ZodType<SceneFrontmatter> = z
     narrator: z.string().trim().min(1).optional(),
     thread: z.string().trim().min(1).optional(),
     targetWordCount: z.number().int().positive().optional(),
-    // 서사 시간 축. 없으면 씬 순서를 쓴다. 회상·액자처럼 서술 순서와 사건 순서가 어긋나는 씬에만
-    // 적으면 되고, 캐넌의 validFrom/validUntil은 이 축으로 비교한다.
     storyTime: z.number().int().optional(),
     grounding: sceneGroundingSchema.optional(),
   })
@@ -196,7 +182,6 @@ export const sceneCardSchema: z.ZodType<SceneCard> = z.object({
   mood: z.string().trim().min(1).optional(),
   relationStage: z.string().trim().min(1).optional(),
   povCharacter: z.string().trim().min(1).optional(),
-  // 이 씬의 서술자 카드 id와 연속성 줄기. 생략하면 장 → 프로젝트 기본으로 내려간다.
   narrator: z.string().trim().min(1).optional(),
   thread: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
@@ -244,7 +229,6 @@ export function isSceneSummaryReference(summary: string | undefined): boolean {
   return sceneSummaryReference(summary) !== undefined;
 }
 
-// 파일로 옮기지 않은 인라인 산문.
 export function isInlineSceneSummary(summary: string | undefined): boolean {
   return summary !== undefined && summary.trim().length > 0 && !isSceneSummaryReference(summary);
 }
@@ -308,10 +292,6 @@ export const sceneSeedSectionLabels: Readonly<Record<SceneSeedSection, string>> 
 
 export const sceneSummaryLabel: string = '창작자 요약';
 
-// NOTE: 프롬프트는 씬 의도를 하나의 텍스트로 받는다. 구조 필드를 기존 씬 시드와 같은
-// `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다. 사건 재료는 라벨 없는 블록으로 놓이며
-// beats 가 있으면 그것이 사건 재료다. 그때 summary 는 비트에 없는 질감(말버릇·분위기·작가 메모)을
-// 담으므로 버리지 않고 설계 블록으로 함께 넘긴다 — 한 블록으로 묶어야 사건 재료로 읽히지 않는다.
 export function renderSceneCardBody(
   card: SceneCard,
   summaryText?: string,
@@ -326,8 +306,6 @@ export function renderSceneCardBody(
     blocks.push(`[${sceneSeedSectionLabels.conflict}]\n${card.conflict}`);
   }
   if (card.twist !== undefined) {
-    // NOTE: 반전을 사건으로만 적어 두면 평범한 반응과 구별되지 않아 독자가 이상을 알아채지 못한다.
-    // 무엇이 평소와 다른지 대비로 보이고, 알아채는 사람이 정해져 있으면 그 유일성까지 쓰게 한다.
     blocks.push(
       `[${sceneSeedSectionLabels.twist}]\n${card.twist}\n이 반전은 독자가 이상을 분명히 알아볼 수 있게 써라. 평소에는 어땠는지를 먼저 보이고 무엇이 달라졌는지 대비하라. 특정 인물만 알아채는 반전이면, 그 자리의 다른 사람들은 알아채지 못한다는 것까지 함께 보여라.`,
     );
@@ -371,25 +349,15 @@ export function renderSceneCardBody(
   return blocks.length > 0 ? `${blocks.join('\n\n')}\n` : '';
 }
 
-// NOTE: 상황 추출은 '일어난 일'만 받아야 한다. 씬 본문에는 요약 앞에 [갈등]·[반전]·[종료 지점]
-// 같은 작법 블록이 놓이는데, 추출기가 이것들을 사건으로 읽으면 같은 등장이 두 번 뽑히거나
-// (「발키리가 시비를 건다」가 [갈등]과 요약에서 각각) 금지문이 소재로 둔갑한다(「브로크와의 대면은
-// 다음 장면에」→ 대장간 도착을 씀). 그래서 사건 목록만 따로 떼어 넘긴다.
 export function extractSceneNarrativeSource(body: string): string {
   return splitSceneNarrativeSource(body).narrative;
 }
 
 export interface SceneNarrativeParts {
-  // 사건 재료. 뼈대가 «무엇이 일어나는가»로 삼는 것.
   readonly narrative: string;
-  // 목적·갈등·반전 같은 설계 블록. 사건 재료와 섞으면 카드 메타가 산문으로 새므로 따로 넘긴다.
-  // 사건 재료가 따로 없어 본문 전체가 재료가 된 경우에는 비어 있다 — 이미 그 안에 들어 있다.
   readonly design: string;
 }
 
-// NOTE: 비트나 요약이 있으면 설계 블록이 통째로 버려져 뼈대가 목적·갈등·반전을 모르는 채 쓰였다.
-// 실측(sonnet, 목표 3,000자·1구간)에서 뼈대가 1,801자 → 743자로 줄어 초안이 그만큼 짧아졌다.
-// 재료와 설계를 나눠 둘 다 넘기되, 섞지는 않는다.
 export function splitSceneNarrativeSource(body: string): SceneNarrativeParts {
   const blocks: string[] = body
     .split(/\n\s*\n+/)
@@ -451,8 +419,6 @@ export function parseSceneStem(stem: string): SceneFileNameParts | undefined {
   };
 }
 
-// NOTE: File-agnostic timeline coordinate for canon-fact validity ranges. Accepts a bare
-// order, a numeric string, or an `NN-slug` scene stem; returns undefined for anything else.
 export function resolveSceneOrder(ref: string | number): number | undefined {
   if (typeof ref === 'number') {
     return Number.isInteger(ref) && ref > 0 ? ref : undefined;

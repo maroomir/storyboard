@@ -15,9 +15,7 @@ import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/applicat
 
 export interface UpdateProjectContractRequest {
   readonly workspaceRoot: StoryUri;
-  // Only the keys given change; the rest of the contract keeps its value.
   readonly setting: Partial<ProjectSetting>;
-  // Narrator cards a composition preset asked for. One that already exists is left as written.
   readonly narratorCards?: readonly NarratorCard[];
 }
 
@@ -35,7 +33,6 @@ export interface UpdateProjectContractUseCaseDependencies {
   readonly logger: IStoryboardLogger;
 }
 
-// 계약은 한 번에 다 채워지지 않는다. 주지 않은 키는 그대로 두고 준 키만 덮어쓴다.
 export function mergeProjectSetting(
   current: ProjectSetting | undefined,
   patch: Partial<ProjectSetting>,

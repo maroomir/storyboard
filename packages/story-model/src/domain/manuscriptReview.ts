@@ -10,9 +10,7 @@ export interface ManuscriptReviewInput {
   readonly generatedAt: string;
   readonly continuityIssues: readonly ContinuityIssueLike[];
   readonly critiqueIssues: readonly DraftCritiqueIssue[];
-  // Scenes the pipeline rewrote from this review's findings before the report was written.
   readonly revisedStems?: readonly string[];
-  // High-severity findings that named no draft, so no rewrite could answer them.
   readonly unroutedHighCount?: number;
 }
 
@@ -39,8 +37,6 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
     sections.push('발견된 이슈가 없습니다.');
     sections.push(scoreLine);
 
-    // A clean report after a rewrite still has to say what was rewritten, or the run reads as if
-    // the first review found nothing.
     const feedbackAfterClean: string | undefined = buildFeedbackSection(input);
     if (feedbackAfterClean) {
       sections.push(feedbackAfterClean);

@@ -23,7 +23,6 @@ export class CardCollectRepository implements ICardCollectRepository {
   public async loadDrafts(workspaceRoot: StoryUri): Promise<readonly CollectDraft[]> {
     const { draftDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
-    // NOTE: Invalid drafts are excluded from collection proposals.
     return await readDirectoryFiles(this.fileSystem, draftDirectory, {
       isEligible: (name) => name.endsWith('.md'),
       read: async (uri): Promise<CollectDraft> => {

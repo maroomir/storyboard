@@ -16,8 +16,6 @@ export interface SaveDraftEditRequest {
   readonly workspaceRoot: StoryUri;
   readonly sceneStem: string;
   readonly body: string;
-  // The first save of an editing session keeps the version it started from in `.draft/`. Later
-  // saves in the same session overwrite quietly, so autosave does not flood the history.
   readonly archivePrevious: boolean;
 }
 
@@ -26,9 +24,6 @@ export type SaveDraftEditResult =
   | { readonly ok: true; readonly kind: 'unchanged' }
   | { readonly ok: false; readonly kind: 'missing' };
 
-// A person's edit to a generated draft. The frontmatter stays as generated; only the body changes.
-// A later regeneration sees that the body no longer matches its cache record and archives the
-// edited version before writing, so a hand edit is never overwritten without a copy.
 export interface SaveDraftEditUseCaseDependencies {
   readonly fileSystem: IFileSystem;
 }

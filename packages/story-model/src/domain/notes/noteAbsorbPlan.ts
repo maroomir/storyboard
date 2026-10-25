@@ -23,14 +23,10 @@ import {
 import type { NoteDocument } from '#model/shared/noteAbsorb';
 
 export interface NoteCardPlan {
-  // A new card starts as its bare identity; an existing card is the one on disk. Either way the
-  // note's facts are the `changes` laid over it.
   readonly card: StoryboardCard;
   readonly isNew: boolean;
   readonly changes: readonly CardCollectProposal[];
   readonly sourceNotes: readonly string[];
-  // How many readings of the notes gave each alias, keyed by its normalized text: when two cards
-  // share an alias, this is what the consolidation request weighs it by.
   readonly aliasReadCounts: Readonly<Record<string, number>>;
 }
 
@@ -50,8 +46,6 @@ export interface UnclassifiedNote {
   readonly title: string;
 }
 
-// A setting fact the notes state about a card: never written to the canon, only offered as a
-// candidate for `canon promote` to confirm (#55). The subject is the card the entity became.
 export interface NoteCanonCandidate {
   readonly subject: BibleFactSubject;
   readonly key: string;
@@ -65,11 +59,8 @@ export interface NoteAbsorbPlan {
   readonly skippedScenes: readonly NoteLeftOut[];
   readonly setting: NoteSynthesisSetting;
   readonly synopsis?: OutlineSynopsis;
-  // Notes nothing was taken from. They are reported, never written anywhere.
   readonly unclassifiedNotes: readonly UnclassifiedNote[];
-  // Prose already written: read for cards and premise, never turned into scenes.
   readonly draftNotes: readonly UnclassifiedNote[];
-  // Each character's lines quoted in the notes, by card id: the voice samples of the first scene.
   readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
   readonly canonCandidates: readonly NoteCanonCandidate[];
   readonly warnings: readonly string[];
@@ -77,7 +68,6 @@ export interface NoteAbsorbPlan {
 
 export interface NoteAbsorbPlanInput {
   readonly notes: readonly NoteDocument[];
-  // One per extraction request, in the order the notes were read.
   readonly extractions: readonly NoteExtraction[];
   readonly synthesis: NoteSynthesis;
   readonly cards: readonly StoryboardCard[];
@@ -113,8 +103,6 @@ function entityKind(card: StoryboardCard): NoteExtractionEntity['type'] {
   return card.type === 'character' ? 'character' : 'background';
 }
 
-// The same person described in two notes is one card. Lists are joined, and where two notes
-// disagree on a keyed fact the note read first keeps its say.
 function mergeEntity(
   first: NoteExtractionEntity,
   second: NoteExtractionEntity,
@@ -167,8 +155,6 @@ function validCardId(value: string | undefined): string | undefined {
   return value !== undefined && cardIdPattern.test(value) ? value : undefined;
 }
 
-// The id an entity read in an earlier request goes by until the plan gives it one, so a later
-// request can point at it the way it points at a card on disk.
 function provisionalCardId(entity: NoteExtractionEntity): string | undefined {
   return validCardId(entity.suggestedId) ?? slugify(entity.name);
 }
@@ -187,7 +173,6 @@ function hasOwnId(entity: NoteExtractionEntity): boolean {
   return entity.existingId !== undefined || validCardId(entity.suggestedId) !== undefined;
 }
 
-// A name beats an id the model gave; aliases wait until every request has been read.
 function findSameSubject(
   merged: readonly NoteExtractionEntity[],
   entity: NoteExtractionEntity,
@@ -208,9 +193,6 @@ function findSameSubject(
   });
 }
 
-// An alias decides only when one entry's own name is the alias of exactly one other entry and
-// the named entry has no id of its own. Two people who merely share an alias stay apart: a wrong
-// merge mixes two people into one card, a wrong split is fixed by hand.
 function findAliasTarget(
   groups: readonly NoteExtractionEntity[],
   index: number,
@@ -242,7 +224,6 @@ function findRoot(parents: number[], index: number): number {
 
 interface MergedEntity {
   readonly entity: NoteExtractionEntity;
-  // The entries the model returned that became this one, one per reading.
   readonly readings: readonly NoteExtractionEntity[];
 }
 
@@ -305,8 +286,6 @@ function countAliasReads(readings: readonly NoteExtractionEntity[]): Record<stri
   return counts;
 }
 
-// What the requests read so far found, listed for the next request beside the cards on disk, so
-// it points at the same person or place instead of naming it a second time.
 export function listKnownNoteEntities(
   extractions: readonly NoteExtraction[],
   cards: readonly NoteExtractionKnownCard[],
@@ -370,9 +349,6 @@ interface ResolvedEntity {
   readonly isNew: boolean;
 }
 
-// Names resolve to ids across what is already in the workspace and what this plan adds, so a
-// relation between two people who both arrive from the notes still lands. A card's own name wins
-// over another card's alias, and an alias two cards share resolves to neither.
 class CardNameIndex {
   private readonly idsByName: Map<string, string> = new Map<string, string>();
   private readonly idsByAlias: Map<string, Set<string>> = new Map<string, Set<string>>();
@@ -510,7 +486,6 @@ function planCards(
       )
       .filter((proposal) => entry.isNew || shouldProposeCardCollect(entry.card, proposal));
 
-    // An existing card the notes add nothing to is not a candidate.
     return entry.isNew || changes.length > 0
       ? [
           {
@@ -555,8 +530,6 @@ function beatsOf(scene: NoteExtractionScene): string[] {
   return scene.beats.length > 0 ? scene.beats : [scene.summary];
 }
 
-// One note is one scene. A model that splits a note anyway, or a note long enough to be read in two
-// requests, gives several scenes for one source; they become the first one with every part a beat.
 function mergeScenesBySourceNote(scenes: readonly NoteExtractionScene[]): NoteExtractionScene[] {
   const merged: NoteExtractionScene[] = [];
   const indexBySourceNote: Map<string, number> = new Map<string, number>();
@@ -585,8 +558,6 @@ function mergeScenesBySourceNote(scenes: readonly NoteExtractionScene[]): NoteEx
   return merged;
 }
 
-// A notebook has no scene numbers. The only order it has is the order its notes were read in, and
-// within one note the order the scenes were written in — nothing here reorders by content.
 function orderScenes(
   extractions: readonly NoteExtraction[],
   notes: readonly NoteDocument[],
@@ -742,8 +713,6 @@ function toSynopsis(synthesis: NoteSynthesis): OutlineSynopsis | undefined {
     : undefined;
 }
 
-// Everything the notes would become, decided without touching the workspace: which cards are new,
-// which only add to a card that exists, which scenes follow the last one, and what was left out.
 export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan {
   const entities: MergedEntity[] = mergeEntities(input.extractions.flatMap((extraction) => extraction.entities));
   const cards: ReturnType<typeof planCards> = planCards(entities, input.cards);

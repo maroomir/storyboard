@@ -21,8 +21,6 @@ export interface DraftCandidateValidation {
   readonly reason?: DraftCandidateRejectionReason;
 }
 
-// 허용 범위와 기본값은 설정 카탈로그가 갖는다. 여기서 다시 적으면 설정 화면이 허용한 값을 파이프라인이
-// 잘라내는 상태로 갈라질 수 있다.
 const maxCompressionPercentKey: string = 'revise.length.maxCompressionPercent';
 
 export function normalizeMaxCompressionPercent(value: number): number {
@@ -37,10 +35,6 @@ export function resolveMinimumDraftLength(
   originalLength: number,
   policy: DraftCandidateLengthPolicy,
 ): number {
-  // NOTE: 이 하한은 압축을 막기 위한 것이므로 원본 길이를 넘어서는 안 된다. 목표에 미달한 원고에서
-  // 하한을 원본 길이로 잡으면 한 글자라도 줄어든 수정본이 too-short로 기각되고(실측: 3% 짧아진 감수
-  // 결과가 통째로 버려짐), 압축 허용 한도(기본 50%)로 잡으면 이미 짧은 원고를 반으로 줄여도 통과한다.
-  // 목표와 원본 중 짧은 쪽의 90%로 두면 두 경우를 함께 막고 목표 경계에서도 값이 끊기지 않는다.
   const target: number | undefined = policy.targetLength;
   if (target !== undefined && target > 0) {
     return Math.ceil(Math.min(target, originalLength) * 0.9);
@@ -77,8 +71,6 @@ export function validateDraftCandidate(
     return { accepted: false, candidateLength, minimumLength, reason: 'not-shorter' };
   }
 
-  // NOTE: 재작성은 본문 전체를 한 번에 다시 쓰므로 프롬프트의 «--- 유지»만으로는 구간 경계가 지켜지지
-  // 않았다(#108: 6구간이 경계가 옮겨진 채 통과). 장면 전환 수가 바뀐 후보는 원본을 지킨다.
   if (countSceneBreaks(candidate) !== countSceneBreaks(originalBody)) {
     return { accepted: false, candidateLength, minimumLength, reason: 'scene-breaks-changed' };
   }

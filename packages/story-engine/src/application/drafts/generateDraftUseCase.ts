@@ -71,8 +71,6 @@ function toBackgroundSnapshot(
   };
 }
 
-// NOTE: 씬 캐시는 작품의 .gitignore가 무시하므로 git으로 받은 작품에는 없다. 그때는 커밋되는 이야기
-// 상태 원장이 그 씬을 마지막으로 생성한 입력 해시를 대신 근거로 삼는다. 캐시가 있으면 캐시가 우선이다.
 async function isCacheHit(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
@@ -103,7 +101,7 @@ async function openCachedDraft(draftUri: StoryUri): Promise<GenerateDraftResult>
 
 function buildSceneCacheRecord(
   inputs: SceneGenerationInputs,
-  result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
+  pipelineResult: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
   providers: SceneCacheRecord['providers'],
   bodyHash: string,
 ): SceneCacheRecord {
@@ -114,21 +112,19 @@ function buildSceneCacheRecord(
     generatedAt: new Date().toISOString(),
     inputHash,
     input: context.scene.body,
-    detectedCharacters: result.detectedCharacters,
-    skeleton: result.skeleton,
-    ...(result.sceneCoordinates.length > 0 ? { sceneCoordinates: result.sceneCoordinates } : {}),
+    detectedCharacters: pipelineResult.detectedCharacters,
+    skeleton: pipelineResult.skeleton,
+    ...(pipelineResult.sceneCoordinates.length > 0
+      ? { sceneCoordinates: pipelineResult.sceneCoordinates }
+      : {}),
     bodyHash,
-    personasUsed: Object.fromEntries(result.personasUsed),
+    personasUsed: Object.fromEntries(pipelineResult.personasUsed),
     backgroundSnapshot: toBackgroundSnapshot(context.background),
     previousContext,
     providers,
   };
 }
 
-// NOTE: 디스크의 초안이 우리가 마지막으로 쓴 그것인지 판정한다. 사람이 고친 초안이나 캐시 기록
-// 없이 만들어진 초안은 여기서 거짓이 되고, 그런 초안은 히스토리 설정과 무관하게 보관한 뒤에만
-// 덮어쓴다. 기록 자체가 없거나 구버전 기록에 bodyHash가 없으면 판정 불가이므로 보수적으로
-// 보관한다.
 async function isDraftOursToOverwrite(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
@@ -182,19 +178,17 @@ async function persistGeneratedDraft(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
   aiService: StoryboardAiService,
-  result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
+  pipelineResult: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
   cacheProviders: SceneCacheRecord['providers'],
 ): Promise<GenerateDraftResult> {
   const { paths, threadPaths, scene, project, draftUri, cacheUri } = inputs;
 
-  // A model that answers with nothing must never cost the author the draft they already have, and
-  // must not read as success: no provider is trusted on this.
-  if (result.draftBody.trim().length === 0) {
+  if (pipelineResult.draftBody.trim().length === 0) {
     return { ok: false, kind: 'failed', message: emptyDraftBodyMessage(scene.stem) };
   }
 
-  if (result.dialoguePolish) {
-    const { lineCount, polishedCount, contestedCount } = result.dialoguePolish;
+  if (pipelineResult.dialoguePolish) {
+    const { lineCount, polishedCount, contestedCount } = pipelineResult.dialoguePolish;
     options.logger.info(
       `${scene.stem}: 대사 다듬기 ${polishedCount}/${lineCount}개 손봄${contestedCount > 0 ? `, ${contestedCount}개는 화자가 겹쳐 뼈대 유지` : ''}`,
     );
@@ -204,8 +198,8 @@ async function persistGeneratedDraft(
   const draft: Draft = createDraft({
     sceneStem: scene.stem,
     format: project.format,
-    body: result.draftBody,
-    warnings: result.warnings,
+    body: pipelineResult.draftBody,
+    warnings: pipelineResult.warnings,
     generator: options.generator,
     providerId: sceneDraftConfig.providerId,
     model: sceneDraftConfig.model,
@@ -218,13 +212,11 @@ async function persistGeneratedDraft(
   const bodyHash: string = computeDraftBodyHash(parseDraft(serializeDraft(draft)).body);
   const cacheRecord: SceneCacheRecord = buildSceneCacheRecord(
     inputs,
-    result,
+    pipelineResult,
     cacheProviders,
     bodyHash,
   );
 
-  // 우리가 쓴 초안이 아니면(다른 도구의 산출물·사람 수정본) 설정과 무관하게 보관한다. draft/는 기본
-  // gitignore이고 keepHistory 기본값이 꺼짐이라, 이 보관이 없으면 되돌릴 곳이 없다.
   const isOurs: boolean = await isDraftOursToOverwrite(inputs, options);
   if (!isOurs) {
     options.logger.warn(
@@ -235,25 +227,25 @@ async function persistGeneratedDraft(
 
   await options.draftRepository.write(draftUri, draft);
 
-  // 사이드카는 초안이 디스크에 자리잡은 뒤에 쓴다. 먼저 쓰면 살붙임이 실패한 뒤에도 존재하지 않는
-  // 초안을 기술하는 기록이 남는다.
-  if (result.dialogueRecord) {
-    await createSceneDialogueStore(options.fileSystem, threadPaths).save(result.dialogueRecord);
+  if (pipelineResult.dialogueRecord) {
+    await createSceneDialogueStore(options.fileSystem, threadPaths).save(
+      pipelineResult.dialogueRecord,
+    );
   }
 
   await options.sceneCacheRepository.write(cacheUri, cacheRecord);
 
-  await updateStoryStateAfterGeneration(inputs, options, aiService, result.draftBody);
+  await updateStoryStateAfterGeneration(inputs, options, aiService, pipelineResult.draftBody);
 
   if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
-    schedulePostGenerationUpdates(inputs, options, aiService, result);
+    schedulePostGenerationUpdates(inputs, options, aiService, pipelineResult);
   }
 
   return {
     ok: true,
     kind: 'generated',
     draftUri,
-    warnings: [...inputs.warnings, ...result.warnings],
+    warnings: [...inputs.warnings, ...pipelineResult.warnings],
   };
 }
 
@@ -285,7 +277,7 @@ async function runAndPersistDraft(
     : undefined;
 
   try {
-    const result: RunSceneGenerationPipelineResult = await new SceneGenerationPipeline({
+    const pipelineResult: RunSceneGenerationPipelineResult = await new SceneGenerationPipeline({
       sceneStem: scene.stem,
       context,
       aiService,
@@ -320,13 +312,12 @@ async function runAndPersistDraft(
       backgroundRecentExcerpt,
     }).run();
 
-    return await persistGeneratedDraft(inputs, options, aiService, result, cacheProviders);
+    return await persistGeneratedDraft(inputs, options, aiService, pipelineResult, cacheProviders);
   } catch (error) {
     if (error instanceof SceneGenerationPipelineCancelledError) {
       return { ok: false, kind: 'cancelled' };
     }
 
-    // The limit is the person's plan, not this scene: the message already says where to look.
     if (error instanceof AiProviderError && error.code === 'usage-limit') {
       return { ok: false, kind: 'failed', reason: 'usage-limit', message: error.message };
     }

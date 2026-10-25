@@ -2,10 +2,6 @@ import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
 
-// NOTE: 작품 저장소에서 도는 코딩 에이전트(Claude Code·Codex·Cursor)가 본문을 직접 쓰지 않고
-// CLI 를 거치게 하는 지침이다. 명령을 적을 때는 늘 `storyboard <verb>` 꼴로 적는다 — CLI 의
-// help.test 가 그 꼴을 찾아 카탈로그와 대조하므로, 다른 꼴로 적은 명령은 검사를 빠져나간다.
-
 interface AgentGuideFile {
   readonly uri: StoryUri;
   readonly name: string;
@@ -80,10 +76,8 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 `;
 }
 
-// Claude Code 는 CLAUDE.md 를 읽고 @ 경로를 따라간다. 지침 본문은 AGENTS.md 하나에만 둔다.
 export const workspaceClaudeGuide: string = `@${STORYBOARD_RELATIVE_PATHS.agentGuide}\n`;
 
-// 이미 있는 파일은 손대지 않는다. «작품 메모»는 작가가 채우는 절이라 다시 쓰면 그 내용을 잃는다.
 export async function writeWorkspaceAgentGuidesIfMissing(
   fileSystem: IFileSystem,
   paths: StoryboardProjectPaths,

@@ -6,8 +6,6 @@ export interface StudioCardSeed {
   readonly id: string;
 }
 
-// NOTE: the id becomes a file name, so it is held to the card id grammar here rather than trusted
-// to the prompt.
 const cardSeedIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
 export function coerceStudioCardSeed(response: string): StudioCardSeed | undefined {

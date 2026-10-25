@@ -31,12 +31,9 @@ interface VaultIndexEntry {
 
 export interface ObsidianNoteSourceOptions {
   readonly fileSystem: IFileSystem;
-  // A folder of notes, or one `.md` note.
   readonly root: StoryUri;
 }
 
-// Reads a folder of Markdown notes the way Obsidian lays them out: every note under the folder, in
-// name order, plus the notes their links point at elsewhere in the vault — one step, no further.
 export class ObsidianNoteSource implements INoteSource {
   public readonly kind: NoteSourceKind = 'obsidian';
 
@@ -58,8 +55,6 @@ export class ObsidianNoteSource implements INoteSource {
     const skipped: SkippedNote[] = [];
 
     for (const file of treeFiles) {
-      // SECURITY: a symbolic link in the vault may point anywhere on disk, and what is read here is
-      // sent to the AI provider. Only files that really live under the vault are read.
       if (!(await fileSystem.isRealPathInside(file, vaultRoot))) {
         skipped.push({ label: relativePath(vaultRoot, file), reason: outsideVaultReason });
         continue;
@@ -120,8 +115,6 @@ function parentOf(uri: StoryUri): StoryUri {
   return uri.with({ path: cut <= 0 ? '/' : uri.path.slice(0, cut) });
 }
 
-// A link resolves against the whole vault, not the folder that was handed in. The vault is the
-// nearest ancestor holding `.obsidian`; a plain folder of notes is its own vault.
 async function findVaultRoot(fileSystem: IFileSystem, start: StoryUri): Promise<StoryUri> {
   let current: StoryUri = start;
 
@@ -195,8 +188,6 @@ interface VaultIndex {
   resolve(target: string): StoryUri | undefined;
 }
 
-// Obsidian resolves `[[Name]]` by note name anywhere in the vault and `[[folder/Name]]` by path
-// suffix. When two notes share a name the shallower one wins, which is the vault's own tie-break.
 function buildVaultIndex(vaultRoot: StoryUri, files: readonly StoryUri[]): VaultIndex {
   const entries: VaultIndexEntry[] = files
     .map(

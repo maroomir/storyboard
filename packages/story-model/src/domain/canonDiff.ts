@@ -77,8 +77,6 @@ function formatRangeLabel(fact: BibleFact): string {
   return `${left}–${right}`;
 }
 
-// NOTE: Surfaces canon facts that have more than one time-scoped version as an ordered
-// timeline so authors can verify the cutover scene. Single-version facts are omitted here.
 function buildCanonTimelineSection(canon: StoryBible): string | undefined {
   const groups: Map<string, BibleFact[]> = new Map<string, BibleFact[]>();
 
@@ -101,8 +99,6 @@ function buildCanonTimelineSection(canon: StoryBible): string | undefined {
     if (facts.length < 2) {
       continue;
     }
-    // NOTE: Compare without subtraction so two open-start versions (both -Infinity) sort
-    // stably instead of producing NaN, which would leave the timeline order undefined.
     const sorted: BibleFact[] = [...facts].sort((left, right) => {
       const leftStart: number = rangeStart(left);
       const rightStart: number = rangeStart(right);

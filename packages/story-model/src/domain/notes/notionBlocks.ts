@@ -1,7 +1,3 @@
-// Notion hands a page back as a tree of typed blocks. These helpers turn that tree into the
-// Markdown the rest of the absorb flow reads, and pull out what the collector must follow next:
-// sub-pages, inline databases and links to other pages. Shapes follow Notion-Version 2022-06-28.
-
 export type NotionRecord = { readonly [key: string]: unknown };
 
 export interface NotionBlockNode {
@@ -39,9 +35,6 @@ export function normalizeNotionId(value: string): string {
   return value.replace(/-/g, '').toLowerCase();
 }
 
-// A page link carries the id as the last 32 hex characters of its path
-// (`…/My-Page-1429989fe8ac4effbc8f57f56486db54`); a page opened from a database view carries it in
-// `?p=` instead, and that one is the page the author is looking at.
 export function parseNotionPageId(pageUrl: string): string | undefined {
   let url: URL;
 
@@ -66,8 +59,6 @@ export function parseNotionPageId(pageUrl: string): string | undefined {
     : undefined;
 }
 
-// One page has many addresses — with or without its title, `?pvs=4`, a database peek — and this
-// is the one they all share, so an absorbed page is the same location however it was linked.
 export function canonicalNotionPageUrl(pageUrl: string): string {
   const pageId: string | undefined = parseNotionPageId(pageUrl);
 
@@ -156,7 +147,6 @@ function renderNode(node: NotionBlockNode): string[] {
     case 'synced_block':
       return children;
     default:
-      // Sub-pages and databases become notes of their own; media and embeds carry no story text.
       return [];
   }
 }
@@ -179,8 +169,6 @@ function walk(nodes: readonly NotionBlockNode[], visit: (block: NotionRecord) =>
   }
 }
 
-// Sub-pages and inline databases in the order they appear on the page — that order is the only
-// sequence a notebook has, and the scene order is read from it.
 export function listNotionChildren(nodes: readonly NotionBlockNode[]): NotionChildReference[] {
   const children: NotionChildReference[] = [];
 
@@ -224,7 +212,6 @@ function linkedIdsInRichText(value: unknown): string[] {
   return ids;
 }
 
-// Pages this page points at: `link_to_page` blocks, @-mentions and internal links in the text.
 export function listNotionLinkedPageIds(nodes: readonly NotionBlockNode[]): string[] {
   const ids: string[] = [];
 
@@ -282,8 +269,6 @@ function renderPropertyValue(property: NotionRecord): string {
   }
 }
 
-// A database row keeps its facts in columns, not in the page body, so the columns are written out
-// as a list above the body. An ordinary page has only its title and yields nothing here.
 export function renderNotionProperties(page: NotionRecord): string {
   return Object.entries(asNotionRecord(page.properties) ?? {})
     .flatMap(([name, property]) => {

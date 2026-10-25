@@ -17,8 +17,6 @@ export class SceneRepository implements ISceneRepository {
     await this.rewriteScene(uri, (rawScene) => applySceneBeats(rawScene, beats));
   }
 
-  // NOTE: 내용이 같으면 쓰지 않는다. 다시 쓰면 카드의 수정 시각만 새로워져, 그대로 둔 초안이
-  // «카드보다 오래된 초안»으로 세어진다(씬 목록의 stale 판정이 수정 시각 비교다).
   private async rewriteScene(uri: StoryUri, rewrite: (rawScene: string) => string): Promise<void> {
     const rawScene: string = new TextDecoder().decode(await this.fileSystem.readFile(uri));
     const rewritten: string = rewrite(rawScene);

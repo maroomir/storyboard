@@ -18,8 +18,6 @@ export type {
 
 export type AiMessageRole = 'system' | 'user' | 'assistant';
 
-// How long a cached prefix lives after its last use. The hour costs more to write (2× input instead
-// of 1.25×) and pays off only for a prefix read ten times or more across a long run.
 export type CacheTtl = '5m' | '1h';
 
 export const cacheTtls: readonly [CacheTtl, ...CacheTtl[]] = ['5m', '1h'];
@@ -27,14 +25,10 @@ export const cacheTtls: readonly [CacheTtl, ...CacheTtl[]] = ['5m', '1h'];
 export interface AiMessage {
   readonly role: AiMessageRole;
   readonly content: string;
-  // NOTE: 여기까지의 접두를 캐시해도 된다는 표시. 접두 캐싱을 지원하는 프로바이더(Claude)만 읽고
-  // 나머지는 무시한다. 같은 접두가 여러 호출에 되풀이될 때만 붙인다.
   readonly cacheBoundary?: boolean;
-  // 경계의 캐시 수명. 없으면 프로바이더 기본(5분).
   readonly cacheTtl?: CacheTtl;
 }
 
-// How hard a thinking model may think before it answers. Its tokens come out of `maxTokens`.
 export type ReasoningEffort = 'low' | 'medium' | 'high';
 
 export const reasoningEfforts: readonly [ReasoningEffort, ...ReasoningEffort[]] = [
@@ -48,7 +42,6 @@ export interface AiGenerateRequest {
   readonly messages: readonly AiMessage[];
   readonly temperature?: number;
   readonly maxTokens?: number;
-  // Sent only to a model whose catalog row says it accepts one.
   readonly reasoningEffort?: ReasoningEffort;
 }
 
@@ -75,7 +68,6 @@ export interface AiGenerateResponse {
   readonly model?: string;
   readonly usage?: AiUsage;
   readonly costUsd?: number;
-  // The provider stopped at the output limit, so the text ends mid-way.
   readonly isTruncated?: boolean;
 }
 
@@ -91,8 +83,6 @@ export interface UsageAttribution {
   readonly participants?: readonly EntityRef[];
 }
 
-// A call that serves no one scene or card (the outline, a chapter summary, a manuscript review) is
-// still spend on the work, so it is charged to the work as a whole.
 export const projectUsageAttribution: UsageAttribution = {
   primary: { kind: 'project', id: 'project' },
 };

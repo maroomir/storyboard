@@ -1,12 +1,9 @@
 import type { StoryUri, NoteDocument, NoteSourceKind, SkippedNote } from '@storyboard/story-model';
 
 
-// Where the author keeps their notes. A vault is a folder (or one note) on disk; a Notion page is
-// reached over the network with the integration token from the secret store.
 export type NoteLocation =
   | { readonly kind: 'obsidian'; readonly root: StoryUri }
   | { readonly kind: 'notion'; readonly pageUrl: string }
-  // A Notion «Markdown & CSV» export zip on disk.
   | { readonly kind: 'notion-export'; readonly archive: StoryUri };
 
 export interface CollectedNotes {

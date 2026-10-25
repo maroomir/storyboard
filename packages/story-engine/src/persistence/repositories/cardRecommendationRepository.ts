@@ -78,7 +78,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
         );
         bodies.set(scene.stem, scene.body);
       } catch {
-        // NOTE: Invalid scene files are intentionally excluded from recommendations.
+        continue;
       }
     }
 
@@ -100,7 +100,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
         );
         bodies.set(draft.sceneStem, draft.body);
       } catch {
-        // NOTE: Invalid draft files are intentionally excluded from recommendations.
+        continue;
       }
     }
 
@@ -128,7 +128,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
         );
         names.push(card.name, ...(card.aliases ?? []));
       } catch {
-        // NOTE: Invalid card files cannot be used to filter recommendations.
+        continue;
       }
     }
 

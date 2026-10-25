@@ -11,8 +11,6 @@ function addUnique(list: readonly string[], value: string): string[] {
   return list.includes(value) ? [...list] : [...list, value];
 }
 
-// Free-text list items that differ only in spacing, punctuation or case say the same thing, so a
-// card never collects both. Ids are compared exactly.
 export function normalizeCardListText(value: string): string {
   return value
     .normalize('NFC')
@@ -190,8 +188,6 @@ function isNewListText(list: readonly string[] | undefined, value: string): bool
   return !hasCardListText(list ?? [], value);
 }
 
-// NOTE: Keyed fields are proposable when the key is absent (add) OR present with a different value
-// (update). Free-form lists are append-only, so only genuinely new values qualify.
 export function shouldProposeCardCollect(
   card: StoryboardCard,
   proposal: CardCollectProposal,

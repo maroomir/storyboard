@@ -21,7 +21,6 @@ export type ManuscriptReviewSource = {
   readonly styleConstraints: readonly string[];
   readonly qualityCriteria: readonly string[];
   readonly canonFactLines: readonly string[];
-  // 앞 장을 창에 실을 때 쓰는 장별 요약. 낡은 항목은 저장소가 걸러 낸다.
   readonly chapterSummaries: readonly ChapterSummary[];
 };
 
@@ -79,7 +78,6 @@ export class ReviewManuscriptUseCase implements IUseCase<
           return { kind: 'missing_drafts', ok: false };
         }
 
-        // 이슈가 어느 씬에서 나왔는지 짚어야 보고서에서 초안으로 되짚을 수 있다.
         const manuscript: AssembledManuscript = assembleManuscript({
           draftsByOrder: source.draftsByOrder,
           plan: source.plan,

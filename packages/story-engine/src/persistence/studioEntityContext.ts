@@ -37,8 +37,6 @@ export interface StudioEntityContext {
   readonly baseline: string | undefined;
 }
 
-// NOTE: a scene entity spans two files, so the editor the author is looking at decides which one a
-// proposal may rewrite; the other one stays in the prompt as read-only material.
 export type StudioSceneFocus = 'card' | 'draft';
 
 const missingDraftNote: string =
@@ -50,7 +48,6 @@ export async function readStudioEntityContext(
   entity: StudioEntity,
   sceneFocus: StudioSceneFocus = 'draft',
 ): Promise<StudioEntityContext | undefined> {
-  // SECURITY: the key reaches here straight off a webview payload and becomes a file path.
   if (!isSafeStudioEntityKey(entity.key)) {
     return undefined;
   }
@@ -69,7 +66,6 @@ export async function resolveStudioLookups(
   workspaceRoot: StoryUri,
   requests: readonly StudioAgentLookupRequest[],
 ): Promise<string> {
-  // SECURITY: lookup keys are model output, so an invented path is refused rather than read.
   const safeRequests: StudioAgentLookupRequest[] = requests.filter((request) => isSafeStudioEntityKey(request.key));
 
   const sections: string[] = await Promise.all(
@@ -82,8 +78,6 @@ export async function resolveStudioLookups(
   return sections.join('\n\n');
 }
 
-// NOTE: the model names follow-up targets from memory, so anything it invented is dropped here
-// rather than shown to the author as a button that leads nowhere.
 export async function resolveStudioFollowUps(
   fs: IFileSystem,
   workspaceRoot: StoryUri,

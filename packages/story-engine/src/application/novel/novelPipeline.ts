@@ -46,8 +46,6 @@ export type {
   NovelPipelineRunOptions,
 } from './novelPipelineTypes';
 
-// The run state every stage shares: what is persisted, what a stage finished, and the chapter plan
-// once the outline exists. A stage returns a result only to stop the run (paused, cancelled).
 interface NovelRunContext {
   readonly options: NovelPipelineOptions;
   readonly paths: StoryboardProjectPaths;
@@ -62,13 +60,12 @@ interface NovelRunContext {
   readonly newAiService: () => NovelAiService;
   readonly chapterPlan: () => Promise<ChapterPlan>;
   readonly chapterGroups: () => Promise<readonly ChapterGroup[]>;
-  // What the review stage found on this run, for the rewrite stage that follows it.
   review: ReviewStageResult | undefined;
 }
 
 export interface INovelStage {
   readonly id: NovelStageName;
-  run(ctx: NovelRunContext): Promise<NovelPipelineResult | undefined>;
+  run(runContext: NovelRunContext): Promise<NovelPipelineResult | undefined>;
 }
 
 function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
@@ -145,57 +142,60 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   };
 }
 
-// A stage boundary where a cancel or a pause request takes effect.
-async function checkpoint(ctx: NovelRunContext): Promise<NovelPipelineResult | undefined> {
-  if (ctx.options.shouldCancel()) {
-    return await cancel(ctx.persist);
+async function checkpoint(runContext: NovelRunContext): Promise<NovelPipelineResult | undefined> {
+  if (runContext.options.shouldCancel()) {
+    return await cancel(runContext.persist);
   }
 
-  return await pauseIfRequested(ctx.options, ctx.persist);
+  return await pauseIfRequested(runContext.options, runContext.persist);
 }
 
 const outlineStage: INovelStage = {
   id: 'outline',
-  async run(ctx) {
-    const { options } = ctx;
-    const wasCompleted: boolean = ctx.completed.has('outline');
+  async run(runContext) {
+    const { options } = runContext;
+    const wasCompleted: boolean = runContext.completed.has('outline');
 
-    await ctx.runStageOnce('outline', '아웃라인 생성 중…', () =>
+    await runContext.runStageOnce('outline', '아웃라인 생성 중…', () =>
       runOutlineStage(
         options.workspaceUri,
         options.project,
-        ctx.newAiService(),
+        runContext.newAiService(),
         options.deps.outlineRepository,
       ),
     );
 
     if (!wasCompleted && options.runMode !== 'auto') {
-      const paused: NovelPipelineResult | undefined = await pauseForApproval(options, ctx.persist, {
-        kind: 'outline',
-        info: '아웃라인(synopsis.md, chapters.yaml)을 검토하세요. 계속할까요?',
-        pausedMessage: '아웃라인 승인 대기에서 멈췄습니다.',
-      });
+      const paused: NovelPipelineResult | undefined = await pauseForApproval(
+        options,
+        runContext.persist,
+        {
+          kind: 'outline',
+          info: '아웃라인(synopsis.md, chapters.yaml)을 검토하세요. 계속할까요?',
+          pausedMessage: '아웃라인 승인 대기에서 멈췄습니다.',
+        },
+      );
       if (paused) {
         return paused;
       }
     }
 
-    return await checkpoint(ctx);
+    return await checkpoint(runContext);
   },
 };
 
 const charactersStage: INovelStage = {
   id: 'characters',
-  async run(ctx) {
-    const { options } = ctx;
-    const plan: ChapterPlan = await ctx.chapterPlan();
+  async run(runContext) {
+    const { options } = runContext;
+    const plan: ChapterPlan = await runContext.chapterPlan();
 
-    await ctx.runStageOnce('characters', '인물 카드 확인 중…', async () => {
+    await runContext.runStageOnce('characters', '인물 카드 확인 중…', async () => {
       const report: CharactersStageReport = await runCharactersStage(
         options.workspaceUri,
         options.project,
         plan,
-        ctx.newAiService(),
+        runContext.newAiService(),
         options.deps.outlineRepository,
         options.deps.cardWriter,
       );
@@ -217,145 +217,151 @@ const charactersStage: INovelStage = {
       }
     });
 
-    return await checkpoint(ctx);
+    return await checkpoint(runContext);
   },
 };
 
 const seedsStage: INovelStage = {
   id: 'seeds',
-  async run(ctx) {
-    const { options } = ctx;
-    const plan: ChapterPlan = await ctx.chapterPlan();
+  async run(runContext) {
+    const { options } = runContext;
+    const plan: ChapterPlan = await runContext.chapterPlan();
     const digitCount: number = resolveScenePrefixDigitCount(
       options.project.editor.scenePrefixDigits,
       options.deps.configBridge.inspectScenePrefixDigits(),
     );
 
-    await ctx.runStageOnce('seeds', '씬 시드 생성 중…', () =>
+    await runContext.runStageOnce('seeds', '씬 시드 생성 중…', () =>
       runSeedsStage(options.workspaceUri, plan, digitCount, options.deps.sceneSeedRepository),
     );
 
-    return await checkpoint(ctx);
+    return await checkpoint(runContext);
   },
 };
 
 const chaptersStage: INovelStage = {
   id: 'chapters',
-  async run(ctx) {
+  async run(runContext) {
     const chapterResult: NovelPipelineResult | undefined = await runChapterStages({
-      options: ctx.options,
-      paths: ctx.paths,
-      groups: await ctx.chapterGroups(),
-      state: ctx.state,
-      completed: ctx.completed,
-      persist: ctx.persist,
+      options: runContext.options,
+      paths: runContext.paths,
+      groups: await runContext.chapterGroups(),
+      state: runContext.state,
+      completed: runContext.completed,
+      persist: runContext.persist,
     });
     if (chapterResult) {
       return chapterResult;
     }
 
-    return await checkpoint(ctx);
+    return await checkpoint(runContext);
   },
 };
 
 const assembleStage: INovelStage = {
   id: 'assemble',
-  async run(ctx) {
-    await ctx.runStageOnce('assemble', '원고 조립 중…', () =>
-      runAssembleStage(ctx.options.workspaceUri, ctx.options.deps.assembleManuscriptUseCase),
+  async run(runContext) {
+    await runContext.runStageOnce('assemble', '원고 조립 중…', () =>
+      runAssembleStage(
+        runContext.options.workspaceUri,
+        runContext.options.deps.assembleManuscriptUseCase,
+      ),
     );
     return undefined;
   },
 };
 
 async function reviewVolume(
-  ctx: NovelRunContext,
+  runContext: NovelRunContext,
   revisedStems: readonly string[] = [],
 ): Promise<ReviewStageResult> {
-  const { options } = ctx;
+  const { options } = runContext;
 
   return await runReviewStage(
     options.workspaceUri,
     options.project,
-    await ctx.chapterPlan(),
-    ctx.newAiService(),
+    await runContext.chapterPlan(),
+    runContext.newAiService(),
     options.deps.aiProviderRegistry,
     options.deps.novelReviewRepository,
     revisedStems,
   );
 }
 
-// The final review reads the whole assembled volume, so it sees contradictions no per-scene check
-// can. Its findings feed the rewrite stage; when that stage is already done (a resume after it),
-// the review only runs if it never finished itself.
 const reviewStage: INovelStage = {
   id: 'review',
-  async run(ctx) {
-    if (ctx.completed.has('revise-from-review')) {
-      await ctx.runStageOnce('review', '원고 최종 검사 중…', async () => {
-        await reviewVolume(ctx);
+  async run(runContext) {
+    if (runContext.completed.has('revise-from-review')) {
+      await runContext.runStageOnce('review', '원고 최종 검사 중…', async () => {
+        await reviewVolume(runContext);
       });
       return undefined;
     }
 
-    ctx.options.onProgress('review', '원고 최종 검사 중…');
-    const review: ReviewStageResult = await reviewVolume(ctx);
-    ctx.completed.add('review');
-    await ctx.persist({});
-    ctx.review = review;
+    runContext.options.onProgress('review', '원고 최종 검사 중…');
+    const review: ReviewStageResult = await reviewVolume(runContext);
+    runContext.completed.add('review');
+    await runContext.persist({});
+    runContext.review = review;
 
     if (review.targets.length === 0) {
-      ctx.completed.add('revise-from-review');
-      await ctx.persist({});
+      runContext.completed.add('revise-from-review');
+      await runContext.persist({});
     }
 
     return undefined;
   },
 };
 
-// The high-severity findings are rewritten once, then the volume is reviewed again so the report
-// on disk describes the text that actually shipped.
 const reviseFromReviewStage: INovelStage = {
   id: 'revise-from-review',
-  async run(ctx) {
-    const { options } = ctx;
+  async run(runContext) {
+    const { options } = runContext;
 
-    if (ctx.completed.has('revise-from-review')) {
+    if (runContext.completed.has('revise-from-review')) {
       return undefined;
     }
 
-    const review: ReviewStageResult = ctx.review ?? (await reviewVolume(ctx));
+    const review: ReviewStageResult = runContext.review ?? (await reviewVolume(runContext));
     const { targets } = review;
 
     if (targets.length === 0) {
-      ctx.completed.add('revise-from-review');
-      await ctx.persist({});
+      runContext.completed.add('revise-from-review');
+      await runContext.persist({});
       return undefined;
     }
 
     if (options.runMode === 'review-approval') {
       const stems: string = targets.map((target) => target.sceneStem).join(', ');
-      const paused: NovelPipelineResult | undefined = await pauseForApproval(options, ctx.persist, {
-        kind: 'review',
-        info: `최종 검사에서 high 이슈 ${review.highCount}건을 찾았습니다. 다음 씬을 재작성할까요? ${stems}`,
-        pausedMessage: '최종 검사 승인 대기에서 멈췄습니다.',
-      });
+      const paused: NovelPipelineResult | undefined = await pauseForApproval(
+        options,
+        runContext.persist,
+        {
+          kind: 'review',
+          info: `최종 검사에서 high 이슈 ${review.highCount}건을 찾았습니다. 다음 씬을 재작성할까요? ${stems}`,
+          pausedMessage: '최종 검사 승인 대기에서 멈췄습니다.',
+        },
+      );
       if (paused) {
         return paused;
       }
     }
 
     options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
-    const revisedStems: string[] = await runReviseFromReviewStage(options, ctx.paths, targets);
-    ctx.completed.add('revise-from-review');
-    await ctx.persist({});
+    const revisedStems: string[] = await runReviseFromReviewStage(
+      options,
+      runContext.paths,
+      targets,
+    );
+    runContext.completed.add('revise-from-review');
+    await runContext.persist({});
 
     if (options.shouldCancel()) {
-      return await cancel(ctx.persist);
+      return await cancel(runContext.persist);
     }
 
     options.onProgress('review', '재작성분 재검사 중…');
-    await reviewVolume(ctx, revisedStems);
+    await reviewVolume(runContext, revisedStems);
 
     return undefined;
   },
@@ -363,9 +369,12 @@ const reviseFromReviewStage: INovelStage = {
 
 const summariesStage: INovelStage = {
   id: 'summaries',
-  async run(ctx) {
-    await ctx.runStageOnce('summaries', '장별 요약 중…', () =>
-      runSummariesStage(ctx.options.workspaceUri, ctx.options.deps.summarizeChaptersUseCase),
+  async run(runContext) {
+    await runContext.runStageOnce('summaries', '장별 요약 중…', () =>
+      runSummariesStage(
+        runContext.options.workspaceUri,
+        runContext.options.deps.summarizeChaptersUseCase,
+      ),
     );
     return undefined;
   },
@@ -382,27 +391,25 @@ export const novelStages: Readonly<Record<NovelStageName, INovelStage>> = {
   summaries: summariesStage,
 };
 
-// Runs the stages the plan names, in its order, over one run context. The plan is the author's
-// `pipelines/novel.yaml` when one is in force, otherwise the bundled order.
 async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
-  const ctx: NovelRunContext = createNovelRunContext(options);
+  const runContext: NovelRunContext = createNovelRunContext(options);
 
   try {
-    await ctx.persist({ status: 'running' });
+    await runContext.persist({ status: 'running' });
 
     for (const id of options.stages ?? resolveNovelPipelinePlan()) {
-      const stop: NovelPipelineResult | undefined = await novelStages[id].run(ctx);
+      const stop: NovelPipelineResult | undefined = await novelStages[id].run(runContext);
       if (stop) {
         return stop;
       }
     }
 
-    await ctx.persist({ status: 'done' });
+    await runContext.persist({ status: 'done' });
     return { outcome: 'completed', message: '장편 생성을 완료했습니다.' };
   } catch (error) {
     options.deps.logger.error('Novel pipeline failed', error);
     const message: string = error instanceof Error ? error.message : String(error);
-    await ctx.persist({ status: 'failed', lastError: message }).catch(() => undefined);
+    await runContext.persist({ status: 'failed', lastError: message }).catch(() => undefined);
     return { outcome: 'failed', message };
   }
 }

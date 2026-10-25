@@ -48,7 +48,6 @@ export interface StudioTarget {
 export const studioTargetSchema: z.ZodType<StudioTarget> = z.object({
   kind: z.enum(['draft', 'scene', 'character', 'background', 'project', 'none']),
   label: z.string().optional(),
-  // NOTE: draft and scene targets share one entity so their chat sessions live under the same key.
   entity: studioEntitySchema.optional(),
   sceneUri: uriStringSchema.optional(),
   draftUri: uriStringSchema.optional(),
@@ -195,15 +194,12 @@ export const studioValidationSchema: z.ZodType<StudioValidation> = z.object({
 
 export const studioCardFieldChangeSchema: z.ZodType<StudioCardFieldChange> = z.object({
   field: z.string().min(1),
-  // NOTE: the object arm carries structured fields such as a character's arc; the card schema is
-  // what actually validates the shape when the patch is applied.
   value: z.union([z.string(), z.array(z.string()), z.array(z.record(z.string(), z.string()))]),
 });
 
 export const studioDraftReplacementSchema: z.ZodType<StudioDraftReplacement> = z.object({
   startOffset: z.number().int().nonnegative(),
   endOffset: z.number().int().nonnegative(),
-  // NOTE: the anchor the offsets must match; a drifted range is refused rather than applied.
   oldText: z.string(),
   newText: z.string(),
 });
@@ -297,11 +293,8 @@ const studioProposalTurnSchema: z.ZodType<StudioProposalTurn> = z.object({
   kind: z.literal('proposal'),
   summary: z.string().min(1),
   message: z.string().optional(),
-  // NOTE: the proposal names the file it was built against, so approving it later cannot land on
-  // whatever the author happens to have open by then.
   targetFile: z.string().min(1),
   patch: studioPatchSchema,
-  // NOTE: the file bytes the patch was derived from; applying against anything else is refused.
   baselineHash: z.string().min(1),
   validation: studioValidationSchema,
   status: studioProposalStatusSchema,
@@ -355,8 +348,6 @@ export const studioChatSendRequestPayloadSchema: z.ZodType<StudioChatSendRequest
     entity: studioEntitySchema,
     instruction: z.string().min(1),
     history: z.array(studioChatTurnSchema),
-    // NOTE: set when the author pinned a tool with the composer's slash menu; the agent must use
-    // that tool this turn instead of deciding for itself.
     tool: studioAgentToolNameSchema.optional(),
   },
 );
@@ -396,7 +387,6 @@ export const studioCardUpdateResponsePayloadSchema: z.ZodType<StudioCardUpdateRe
   z.object({
     ok: z.boolean(),
     message: z.string().optional(),
-    // NOTE: the composer stages this as the first instruction of the new card's fill conversation.
     instruction: z.string().optional(),
   });
 

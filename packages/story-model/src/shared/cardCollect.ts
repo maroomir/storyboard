@@ -105,9 +105,6 @@ type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : n
 
 export type CardCollectProposalDraft = DistributiveOmit<CardCollectProposal, 'id' | 'sourceScenes'>;
 
-// NOTE: Keyed fields (attribute/relation/arc/scalar) dedupe by their identity key only — not the
-// value — so a changed value surfaces as one update proposal instead of a duplicate. Free-form list
-// kinds key by value (append-only).
 export function cardCollectProposalId(proposal: CardCollectProposalDraft): string {
   switch (proposal.kind) {
     case 'attribute':

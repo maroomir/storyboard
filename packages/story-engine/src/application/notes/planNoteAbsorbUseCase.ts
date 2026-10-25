@@ -54,8 +54,6 @@ import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 export interface NoteAbsorbEstimate extends NoteAbsorbWorkload {
   readonly providerId: AiProviderId;
   readonly model: string;
-  // The most the run can cost: estimated input plus every request writing up to its limit.
-  // Undefined when the model has no listed price.
   readonly costCeilingUsd?: number;
 }
 
@@ -110,8 +108,6 @@ function describeExtractionFailure(
   return `노트 묶음 ${position} (${titles})은 ${failureDescriptions[failure]} 아무것도 옮기지 못했습니다.`;
 }
 
-// The paid half of the import: the notes are read by the model, and what comes back is merged into
-// one plan. Nothing but the cached plan is written — applying it is a separate verb.
 export interface CardConsolidation {
   readonly plan: NoteAbsorbPlan;
   readonly warnings: readonly string[];
@@ -148,8 +144,6 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     const { workspaceRoot, bundle } = request;
 
     return await runUseCase(this.deps.logger, '노트를 정리하지 못했습니다.', async () => {
-      // Applying adds to the waiting candidates, so a candidate file it could not read fails here,
-      // before any request is paid for.
       await this.deps.noteRepository.loadCandidates(workspaceRoot);
 
       const source: StoryFeatureSource = await this.deps.storyRepository.load(workspaceRoot);
@@ -164,20 +158,20 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         const position: string = `${index + 1}/${chunks.length}`;
         this.deps.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
 
-        const result: NoteExtractionResult = await aiService.extractNotes(
+        const extraction: NoteExtractionResult = await aiService.extractNotes(
           chunk,
           listKnownNoteEntities(extractions, knownCards),
         );
-        extractions.push(result.extraction);
+        extractions.push(extraction.extraction);
         responses.push({
           chunk: index + 1,
           noteIds: chunk.map((note) => note.id),
-          ...(result.failure === undefined ? {} : { failure: result.failure }),
-          text: result.responseText,
+          ...(extraction.failure === undefined ? {} : { failure: extraction.failure }),
+          text: extraction.responseText,
         });
 
-        if (result.failure !== undefined) {
-          const warning: string = describeExtractionFailure(result.failure, chunk, position);
+        if (extraction.failure !== undefined) {
+          const warning: string = describeExtractionFailure(extraction.failure, chunk, position);
           this.deps.logger.warn(warning);
           failureWarnings.push(warning);
         }
@@ -236,9 +230,6 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     });
   }
 
-  // Exact repeats are already gone; this asks the model once for the ones worded differently and
-  // for whose a doubtful alias is. A failed request keeps the merged lists, so the import goes on
-  // with a warning.
   private async consolidateCards(
     aiService: Pick<StoryboardAiService, 'consolidateNoteCards'>,
     plan: NoteAbsorbPlan,
@@ -271,18 +262,20 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     );
 
     for (const request of requests) {
-      const result: NoteConsolidationResult = await aiService.consolidateNoteCards(request);
-      const answeredIds: Set<string> = new Set(result.consolidated.map((answer) => answer.cardId));
+      const consolidation: NoteConsolidationResult = await aiService.consolidateNoteCards(request);
+      const answeredIds: Set<string> = new Set(
+        consolidation.consolidated.map((answer) => answer.cardId),
+      );
       const unansweredNames: string[] = request
         .filter((target) => !answeredIds.has(target.cardId))
         .map((target) => target.name);
-      answers.push(...result.consolidated);
+      answers.push(...consolidation.consolidated);
 
       if (unansweredNames.length > 0) {
         const reason: string =
-          result.failure === undefined
+          consolidation.failure === undefined
             ? '정리 응답에 빠져'
-            : consolidationFailureDescriptions[result.failure];
+            : consolidationFailureDescriptions[consolidation.failure];
         warnings.push(describeUnconsolidatedCards(unansweredNames, reason));
       }
     }

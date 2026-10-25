@@ -16,14 +16,8 @@ interface StudioCardFieldChange {
   readonly value: string | readonly string[] | readonly Readonly<Record<string, string>>[];
 }
 
-// NOTE: id and type key the file name and the codec branch, so renaming or retyping a card belongs
-// to the rename command, not to a chat patch that only rewrites the file in place.
 const protectedEntityCardFields: Set<string> = new Set(['id', 'type']);
 
-// NOTE: a scene card doubles as the generation contract. Narrative fields are free to edit;
-// characters and location are editable too but the apply path refuses ids that do not resolve to
-// real cards, so a chat fill cannot leave the pipeline pointing at nothing. grounding and the
-// numeric contract fields stay closed — the pipeline computes those.
 const editableSceneCardFields: Set<string> = new Set([
   'title',
   'summary',
@@ -166,8 +160,6 @@ function applyDraftPatch(
       return { ok: false, message: '수정 범위가 서로 겹칩니다.' };
     }
 
-    // NOTE: the anchor is what makes a drifted offset visible; without it a miscount rewrites an
-    // unrelated passage that still passes every range check.
     if (baseline.slice(replacement.startOffset, replacement.endOffset) !== replacement.oldText) {
       return {
         ok: false,

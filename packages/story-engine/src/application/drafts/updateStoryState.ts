@@ -11,12 +11,6 @@ import type { StoryState, StoryStateUpdateItem } from '@storyboard/story-model';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 
-// NOTE: 목격자는 그 사실이 확립되는 자리에 있던 인물이다. 목격 범위 서술자가 자기가 없던 자리의
-// 사실을 아는 것을 막으려면 누가 그 자리에 있었는지를 남겨 두어야 한다. 모델이 항목마다 이름을
-// 달아 주면 그것을 카드 id로 옮긴다. 달지 않았거나, 단 이름 중 하나라도 카드와 맞지 않으면 씬의
-// 모든 인물이다 — 성을 뺀 이름이나 호칭을 붙인 이름을 버리면 그 인물이 실제로 본 사실이 그 인물의
-// 지식에서 조용히 빠지기 때문이다. 좁히는 것은 모든 이름이 맞을 때만이다. 이름은 카드의 이름·별칭
-// 그대로이거나, 띄어 쓴 이름의 한 낱말(«카일런 베인»의 «카일런»)이 꼭 한 카드만 가리킬 때 맞는다.
 export interface StoryStateEntryMapping {
   readonly entries: StoryStateEntry[];
   readonly unknownWitnesses: readonly string[];
@@ -84,7 +78,6 @@ function witnessIdsByName(
   return idByName;
 }
 
-// 프롬프트의 [등장인물] 한 줄. 모델이 본문의 가명·호칭 대신 이 표기로 목격자를 달게 한다.
 export function witnessNameLabels(
   characters: readonly { readonly name: string; readonly aliases?: readonly string[] }[],
 ): string[] {
@@ -95,8 +88,6 @@ export function witnessNameLabels(
   );
 }
 
-// NOTE: 다음 씬 생성이 이 원장을 읽으므로 백그라운드 큐가 아니라 저장 경로에서 await 한다.
-// 실패해도 초안 저장은 이미 끝난 뒤이므로 경고만 남기고 생성 흐름을 막지 않는다.
 export async function updateStoryStateAfterGeneration(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
@@ -110,8 +101,6 @@ export async function updateStoryStateAfterGeneration(
   }
 }
 
-// 초안 본문에서 이 씬의 상태 변화를 뽑아 원장에 합친다. 생성 직후와 기존 초안에서 원장을 세우는
-// 명령이 같은 길을 쓴다. 실패는 던진다 — 어떻게 받을지는 부르는 쪽이 정한다.
 export async function recordStoryStateFromDraft(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,

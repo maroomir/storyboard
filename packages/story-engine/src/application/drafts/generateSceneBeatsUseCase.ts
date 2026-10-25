@@ -39,8 +39,6 @@ export type GenerateSceneBeatsResult =
   | { readonly ok: true; readonly kind: 'kept'; readonly beats: readonly SceneBeat[] }
   | { readonly ok: false; readonly kind: 'failed'; readonly message: string };
 
-// `draft generate` 가 비트 없는 씬에 자동으로 하는 일을 명시적 verb 로 노출한다. 기존 비트는
-// 창작자가 다듬었을 수 있으므로 force 없이는 건드리지 않는다.
 export class GenerateSceneBeatsUseCase {
   public constructor(private readonly deps: GenerateSceneBeatsUseCaseDependencies) {}
 

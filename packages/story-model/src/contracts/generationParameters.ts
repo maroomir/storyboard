@@ -1,10 +1,5 @@
 import { sectionViolationKinds } from './sectionViolationKinds';
 
-// The scene generation knobs a model profile or a measurement sweep may move, by their public id.
-// Ids read `generation.<group>.<property>`, the same path the value has in the pipeline's defaults
-// file, so one name serves the config, the model profile, the sweep and the report. The default
-// values themselves live in `story-engine/src/pipeline/pipelineDefaults.params.json`; this table owns the
-// identity, the unit and the range.
 export type GenerationParameterKind = 'ratio' | 'count' | 'chars' | 'weight';
 
 export interface GenerationParameterBounds {
@@ -133,8 +128,6 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     kind: 'chars',
     bounds: { min: 2, max: 30 },
   },
-  // NOTE: 뼈대·구간은 attempt <= retryLimit 로 돌고 다듬기만 < 로 돈다. 같은 숫자가 호출을 하나 덜
-  // 부르므로 두 계열의 재시도 한도를 나란히 비교하지 않는다.
   {
     id: 'generation.polish.lengthLimitRatio',
     label: '대사 다듬기 분량 상한 배율',
@@ -218,8 +211,6 @@ export function findGenerationParameter(id: string): GenerationParameterDefiniti
   return generationParameterCatalog.find((definition) => definition.id === id);
 }
 
-// The one setting a model profile may also carry: it is a user setting first, so it is not in the
-// generation catalog, but a measured model may say what it can output per call.
 export const sectionOutputLimitParameterId: string = 'generation.section.outputLimit';
 
 export const modelProfileKnobIds: readonly string[] = [
@@ -227,6 +218,4 @@ export const modelProfileKnobIds: readonly string[] = [
   sectionOutputLimitParameterId,
 ];
 
-// A partial set of generation knobs keyed by id — what a model profile, a sweep overlay or a host
-// hands the pipeline over its defaults.
 export type GenerationKnobs = Readonly<Partial<Record<string, number>>>;

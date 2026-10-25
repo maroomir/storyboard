@@ -83,8 +83,6 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'sceneStructure', label: '씬 구조화' },
   { name: 'situationExtraction', label: '상황 추출' },
   { name: 'personaGeneration', label: '페르소나 생성' },
-  // NOTE: 비트별 즉흥 대화(뼈대 구조 이전)의 작업 이름. 프롬프트와 호출은 없어졌지만 옛 사용량
-  // 원장·설정 파일이 이 이름을 담고 있어 enum 에서 빼면 그 파일들이 읽히지 않는다.
   { name: 'personaDialogue', label: '페르소나 대화 (사용 안 함)' },
   { name: 'backgroundDescription', label: '배경 묘사' },
   { name: 'backgroundFactConflicts', label: '배경 사실 상충 검사' },
@@ -93,7 +91,6 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'sceneDialoguePolish', label: '대사 다듬기' },
   { name: 'sceneDialogueAttribution', label: '대사 화자 귀속' },
   { name: 'sceneSectionExpansion', label: '구간 살붙임' },
-  // 배우 뼈대(actBeats): 비트마다 출연 인물이 제안하고, 감독이 엮고, 인물 심판이 채점한다.
   { name: 'sceneBeatActor', label: '비트 배우 제안' },
   { name: 'sceneBeatArbiter', label: '비트 감독 합침' },
   { name: 'sceneBeatJudge', label: '비트 인물 심판' },
@@ -135,9 +132,6 @@ export const aiTaskLabels: Readonly<Record<AiTaskName, string>> = Object.fromEnt
   aiTaskCatalog.map((task) => [task.name, task.label]),
 ) as Readonly<Record<AiTaskName, string>>;
 
-// What the prompt cache did for this spend: of the prompt tokens the model saw, how many it read
-// from cache and what that saved against the uncached input price. Absent when no call reported
-// cache counts (#107).
 export interface UsageCacheAmount {
   readonly promptTokens: number;
   readonly cachedTokens: number;
@@ -151,7 +145,6 @@ export interface UsageAmount {
   readonly cache?: UsageCacheAmount;
 }
 
-// Cache hits as a share of the prompt tokens, 0 to 1; undefined when nothing was reported.
 export function usageCacheHitRate(amount: UsageAmount): number | undefined {
   const cache: UsageCacheAmount | undefined = amount.cache;
   return cache === undefined || cache.promptTokens <= 0 ? undefined : cache.cachedTokens / cache.promptTokens;
@@ -168,8 +161,6 @@ export function isAiProviderId(value: string): value is AiProviderId {
   return Object.hasOwn(providerCatalog, value);
 }
 
-// ~/.storyboard/secrets.json 에 키가 필요한 쪽. 호스트마다 같은 질문을 다르게 답하지 않도록
-// 카탈로그의 한 칸으로 판정한다.
 export function requiresApiKey(providerId: AiProviderId): boolean {
   return providerCatalog[providerId].requiresApiKey;
 }

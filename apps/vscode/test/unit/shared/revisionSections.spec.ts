@@ -84,7 +84,7 @@ describe("planSectionRevisions", () => {
 
 describe("runReviseLoop by section", () => {
   const registry = { getTaskProvider: () => "mock" } as never
-  const ctx = {
+  const loopContext = {
     format: "novel",
     intent: "",
     factLines: [],
@@ -119,7 +119,7 @@ describe("runReviseLoop by section", () => {
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
-      ctx,
+      loopContext,
       body,
       maxIterations: 2,
       reviseScoreThreshold: 0,
@@ -142,7 +142,7 @@ describe("runReviseLoop by section", () => {
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
-      ctx,
+      loopContext,
       body,
       maxIterations: 1,
       reviseScoreThreshold: 0,
@@ -167,7 +167,7 @@ describe("runReviseLoop by section", () => {
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
-      ctx,
+      loopContext,
       body,
       maxIterations: 2,
       reviseScoreThreshold: 0,
@@ -186,7 +186,7 @@ describe("runReviseLoop by section", () => {
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
-      ctx,
+      loopContext,
       body,
       maxIterations: 1,
       reviseScoreThreshold: 0,

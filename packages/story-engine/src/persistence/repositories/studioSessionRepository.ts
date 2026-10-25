@@ -40,8 +40,6 @@ export interface IStudioSessionRepository {
   ): Promise<StudioSessionSnapshot | undefined>;
 }
 
-// SECURITY: session ids arrive from the webview and are used as file names; reject anything
-// that could escape the sessions directory.
 const safeSessionIdPattern: RegExp = /^[A-Za-z0-9-]+$/;
 
 export class StudioSessionRepository implements IStudioSessionRepository {

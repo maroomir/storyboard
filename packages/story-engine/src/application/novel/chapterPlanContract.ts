@@ -1,8 +1,5 @@
 import type { ChapterPlan, OutlineBrief } from '@storyboard/story-model';
 
-// A plan whose chapter count is not the contract's never runs. A kept plan would be paid for at a
-// length the person moved on from; a plan the model just returned would be saved and refuse every
-// later run for a mismatch the person never made, so it is sent back before it is written.
 export function refuseChapterCountMismatch(
   brief: OutlineBrief,
   plan: ChapterPlan,

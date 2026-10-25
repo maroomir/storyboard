@@ -36,8 +36,6 @@ async function readRevisionPlanOrEmpty(fs: IFileSystem, uri: StoryUri): Promise<
   }
 }
 
-// The rounds of the latest review of one scene, next to the scene cache (git-ignored). The plan file
-// keeps only the last round's instructions; this is where an earlier round can be read back.
 export async function recordRevisionRounds(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,

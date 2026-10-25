@@ -35,21 +35,15 @@ export interface StoryStateAuditRequest {
   readonly paths: StoryboardProjectPaths;
   readonly format: ProjectFormat;
   readonly sceneBreakJoiner: string | undefined;
-  // 이 씬보다 앞에서 확립된 낡은 항목만 보고한다. 진단(doctor)처럼 원장 전체를 봐야 하면 생략한다.
   readonly beforeSceneOrder?: number;
 }
 
-// NOTE: 원장에 기록된 씬마다 같은 카드를 다시 읽는다. 32씬이면 인물 카드 하나를 32번 읽게 되므로
-// 이 감사가 도는 동안만 읽기를 기억해 둔다. 감사가 끝나면 버려지므로 워크스페이스 변경과 어긋나지
-// 않는다.
 function memoizeFileReads(fileSystem: IFileSystem): IFileSystem {
   const reads: Map<string, Promise<Uint8Array<ArrayBufferLike>>> = new Map<
     string,
     Promise<Uint8Array>
   >();
 
-  // NOTE: 어댑터는 클래스이고 비공개 필드를 쓸 수 있으므로 스프레드나 Object.create로 감싸면
-  // 메서드나 this가 어긋난다. 위임을 하나씩 적는다.
   return {
     readFile: (uri: StoryUri): Promise<Uint8Array> => {
       const cached: Promise<Uint8Array<ArrayBufferLike>> | undefined = reads.get(uri.path);
@@ -124,7 +118,6 @@ async function computeCurrentSceneInputHash(
       narration: sceneNarrationHashInput(context.scene),
     });
   } catch {
-    // 읽히지 않는 씬은 "그 입력이 더 이상 없다"와 같다. 해시를 비워 두면 감사가 낡음으로 판정한다.
     return undefined;
   }
 }
@@ -132,7 +125,6 @@ async function computeCurrentSceneInputHash(
 export interface StoryMemoryAudit {
   readonly audit: StoryStateAudit;
   readonly staleWarning: string | undefined;
-  // 감사가 새로 찾아낸 낡음이 있어 원장 파일의 표시가 실제와 다른 상태.
   readonly needsMarking: boolean;
 }
 
@@ -148,8 +140,6 @@ export async function auditStoryMemory(request: StoryStateAuditRequest): Promise
   };
 }
 
-// 표시는 사람이 원장에서 무엇이 버려졌는지 보기 위한 것이므로 파일에 남긴다. 바뀐 것이 없으면
-// 쓰지 않는다 — 뜻 없는 저장은 파일 시각과 diff 만 어지럽힌다.
 export async function markStoryStateStaleEntries(
   paths: StoryboardProjectPaths,
   fileSystem: IFileSystem,
@@ -176,8 +166,6 @@ async function auditAgainstCurrentScenes(
   return auditStoryState(state, currentHashes, request.beforeSceneOrder);
 }
 
-// 0.8 이전 원장에는 대조할 해시가 없다. 봉인은 지금의 카드·씬을 기준으로 삼아 그 근거를 만드는
-// 일회성 조치이므로, 봉인한 뒤에 고친 것부터 낡음으로 잡힌다.
 export async function sealStoryMemory(request: StoryStateAuditRequest): Promise<readonly number[]> {
   const fileSystem: IFileSystem = memoizeFileReads(request.fileSystem);
   const state: StoryState = await readStoryState(request.paths.storyState, fileSystem);
@@ -204,12 +192,9 @@ export async function sealStoryMemory(request: StoryStateAuditRequest): Promise<
 }
 
 export interface ResealStoryMemoryRequest extends StoryStateAuditRequest {
-  // 비우면 지금 낡음으로 잡힌 씬 전부. 봉인하지 않은 씬은 대상이 아니다 — 그건 sealStoryMemory 다.
   readonly sceneOrders?: readonly number[];
 }
 
-// 카드를 고치고도 초안은 그대로 두기로 한 판단을 원장에 반영한다. 낡음 판정 자체는 옳으므로
-// 자동으로 하지 않고, 사람이 이 명령을 불러 "지금 초안이 맞다"고 선언할 때만 덮어쓴다.
 export async function resealStoryMemory(
   request: ResealStoryMemoryRequest,
 ): Promise<readonly number[]> {

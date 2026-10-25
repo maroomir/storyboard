@@ -1,9 +1,5 @@
 import { countSharedShingles, normalizeForMatch } from './textMatch';
 
-// A draft is rewritten one scene-break section at a time (#114, #115): one call over a whole 40,000
-// character draft outran the provider timeout, and a single rejected candidate threw every fix
-// away. The review still reads the whole draft once; its issues are attributed to sections here.
-
 export interface DraftSections {
   readonly sections: readonly string[];
   readonly breakLines: readonly string[];
@@ -42,8 +38,6 @@ export function joinDraftSections(split: DraftSections): string {
     .join('');
 }
 
-// The rewrite answers with the section's text alone; the blank lines around it belong to the
-// joins, so the original's are kept and a section never grows or loses the gap to its neighbours.
 export function replaceSectionText(original: string, rewritten: string): string {
   const leading: string = /^\s*/.exec(original)?.[0] ?? '';
   const trailing: string = /\s*$/.exec(original)?.[0] ?? '';
@@ -62,9 +56,6 @@ function longestFragment(quote: string): string {
   );
 }
 
-// Finds the section a quoted excerpt came from: verbatim first, then ignoring spacing and
-// punctuation, then the section sharing the most four-character runs with it. A model often
-// paraphrases or elides when it quotes, so the last step is what places most loose quotes.
 export function locateQuoteSection(
   sections: readonly string[],
   quote: string | undefined,

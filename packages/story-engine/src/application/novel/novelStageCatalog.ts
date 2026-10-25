@@ -8,9 +8,6 @@ import {
 } from '@storyboard/story-model';
 
 
-// The stages a novel run goes through, in the bundled order. The ids are the contract floor's
-// `novelStageNames` (every host draws its stage rail from them); this catalog adds what a
-// `pipelines/novel.yaml` is checked against.
 export const novelStageCatalog = [
   { id: 'outline', label: '아웃라인', required: true },
   { id: 'characters', label: '인물 카드', required: true, requires: ['outline'] },
@@ -26,7 +23,6 @@ export function novelStageLabel(id: NovelStageName): string {
   return novelStageCatalog.find((definition) => definition.id === id)?.label ?? id;
 }
 
-// The plan in force: the bundled order until an author's spec is laid over it.
 let currentNovelPipelinePlan: readonly NovelStageName[] = novelStageNames;
 
 export function overrideNovelPipelinePlan(spec: PipelineSpec): readonly NovelStageName[] {
@@ -38,8 +34,6 @@ export function overrideNovelPipelinePlan(spec: PipelineSpec): readonly NovelSta
   return currentNovelPipelinePlan;
 }
 
-// NOTE: `characters` arrived after authors had written their novel.yaml. A file that does not name
-// it runs it right after `outline`, so an upgrade keeps the author's order instead of dropping it.
 function insertCharactersStage(spec: PipelineSpec): PipelineSpec {
   const ids: string[] = pipelineStageEntries(spec).map((entry) => entry.id);
   const outlineIndex: number = ids.indexOf('outline');

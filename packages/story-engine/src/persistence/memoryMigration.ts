@@ -2,9 +2,6 @@ import { STORYBOARD_RELATIVE_PATHS, joinStoryPath, type StoryUri } from '@storyb
 import type { StoryboardProjectPaths } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 
-// NOTE: `.storyboard/memory/` used to live under `.storyboard/cache/`, which the scaffold
-// gitignores. Everything moved here is LLM output that no committed input can reproduce, so it
-// belongs in version control. Workspaces created before the move are migrated when they open.
 interface LegacyMemoryMove {
   readonly legacy: string;
   readonly current: string;
@@ -31,13 +28,9 @@ const legacyMemoryDirectories: readonly LegacyMemoryMove[] = [
 ];
 
 export interface MemoryMigrationResult {
-  // Workspace-relative paths written at the new location, for a host that has to commit them.
   readonly movedPaths: readonly string[];
 }
 
-// Idempotent: a memory already present at its current location is kept and its legacy copy removed,
-// so the workspace never holds two versions of one memory. Legacy locations were gitignored, so a
-// host committing the result only has to add the returned paths.
 export async function migrateLegacyMemory(
   fileSystem: IFileSystem,
   paths: StoryboardProjectPaths,
@@ -93,8 +86,6 @@ async function moveDirectoryFiles(
 
   await fileSystem.createDirectory(currentUri);
 
-  // Each legacy file is removed as it is copied so the directory is empty by the time the caller
-  // deletes it — a host whose delete is non-recursive would otherwise fail on a full directory.
   const moved: string[] = [];
   for (const fileName of fileNames) {
     const legacyFileUri: StoryUri = joinStoryPath(legacyUri, fileName);

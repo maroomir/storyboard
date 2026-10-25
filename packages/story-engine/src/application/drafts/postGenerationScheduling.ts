@@ -17,7 +17,7 @@ export function schedulePostGenerationUpdates(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
   aiService: StoryboardAiService,
-  result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
+  pipelineResult: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
 ): void {
   const { workspaceFolder, paths, scene, context } = inputs;
   const updates: PostGenerationUpdateManager | undefined = options.postGenerationUpdates;
@@ -27,13 +27,13 @@ export function schedulePostGenerationUpdates(
   }
 
   const detectedCharacterCards: CharacterCard[] = context.characters.filter((card) =>
-    result.detectedCharacters.includes(card.name),
+    pipelineResult.detectedCharacters.includes(card.name),
   );
 
   updates.scheduleCharacterTraits({
     queueKey: workspaceFolder.uri.toString(),
     sceneStem: scene.stem,
-    draftBody: result.draftBody,
+    draftBody: pipelineResult.draftBody,
     detectedCharacterCards,
     aiService,
     fileSystem: options.fileSystem,
@@ -45,7 +45,7 @@ export function schedulePostGenerationUpdates(
   updates.scheduleBibleCandidates({
     queueKey: `${workspaceFolder.uri.toString()}#bible`,
     sceneStem: scene.stem,
-    draftBody: result.draftBody,
+    draftBody: pipelineResult.draftBody,
     detectedCharacterCards,
     aiService,
     fileSystem: options.fileSystem,
@@ -57,7 +57,7 @@ export function schedulePostGenerationUpdates(
   updates.scheduleCardCandidates({
     queueKey: `${workspaceFolder.uri.toString()}#cards`,
     sceneStem: scene.stem,
-    draftBody: result.draftBody,
+    draftBody: pipelineResult.draftBody,
     detectedCharacterCards,
     characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
     aiService,

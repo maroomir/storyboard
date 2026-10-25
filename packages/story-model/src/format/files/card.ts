@@ -113,8 +113,6 @@ export async function writeNarratorCardFile(
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
 }
 
-// `.card` 캐리어를 쓰는 모든 카드: entity 카드(character/background), scene 카드, narrator 카드.
-// 카드 에디터처럼 파일 하나를 종류와 무관하게 다뤄야 하는 곳만 이 유니언을 쓴다.
 export type WorkspaceCard = StoryboardCard | SceneCard | NarratorCard;
 
 export function parseWorkspaceCard(rawCard: string): WorkspaceCard {
@@ -163,9 +161,6 @@ export function canonicalizeNarratorCardText(rawCard: string): {
   return { text, changed: text !== rawCard };
 }
 
-// Serialization is canonical (fixed key order, block sequences), but a hand-authored card may use
-// inline sequences or its own key order. Without this, the first programmatic edit would fold that
-// reformatting into an unrelated content diff; callers use it to normalize deliberately instead.
 export function canonicalizeCardText(rawCard: string): {
   readonly text: string;
   readonly changed: boolean;

@@ -1,7 +1,5 @@
 export type StoryboardSettingKind = 'boolean' | 'integer' | 'decimal' | 'string';
 
-// A `decimal` setting is an amount of money: it moves in cents, so a finer value is refused rather
-// than rounded behind the author's back.
 export const decimalSettingStep: number = 0.01;
 
 export interface StoryboardSettingDefinition {
@@ -15,9 +13,6 @@ export interface StoryboardSettingDefinition {
   readonly group: '생성' | '검수' | '편집기';
 }
 
-// The plain on/off and number switches that used to be VSCode settings. Provider, model, and task
-// routing have their own UI; everything else the settings panel renders from this list, so adding
-// a switch here is what makes it visible to the author.
 export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = [
   {
     key: 'revise.loop.afterGenerate',
@@ -226,8 +221,6 @@ export function isValidStoryboardSettingValue(
   }
 }
 
-// A number typed into a settings field. A cleared field reads as no value, never as 0, so the
-// caller keeps what is saved.
 export function parseSettingNumberInput(text: string): number | undefined {
   const trimmed: string = text.trim();
   const value: number = Number(trimmed);
@@ -248,8 +241,6 @@ function isWithinRange(definition: StoryboardSettingDefinition, value: number): 
   );
 }
 
-// 기본값과 허용 범위는 이 카탈로그가 갖는다. 설정을 읽는 쪽이 같은 숫자를 다시 적으면 설정 화면과
-// 실제 생성이 서로 다른 값을 쓰는 상태로 조용히 갈라진다.
 function requireSetting(key: string, kind: StoryboardSettingKind): StoryboardSettingDefinition {
   const definition: StoryboardSettingDefinition | undefined = findStoryboardSetting(key);
 

@@ -23,8 +23,6 @@ interface WorkspaceUsageCache {
   summary: UsageSummaryByEntity;
 }
 
-// The workspace's cost ledger (`.storyboard/cache/usage.json`). Writes for one workspace are
-// serialised so two calls finishing together cannot drop each other's entry.
 export class UsageLedgerRecorder {
   private readonly cacheByWorkspaceKey: Map<string, WorkspaceUsageCache> = new Map<
     string,

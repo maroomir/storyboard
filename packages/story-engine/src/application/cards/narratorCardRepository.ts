@@ -8,7 +8,6 @@ export type RemoveNarratorCardResult =
   | { readonly ok: true; readonly kind: 'removed' }
   | { readonly ok: false; readonly kind: 'missing' };
 
-// Named narrators, `narrator/<id>.card`. Most works have none, so an absent directory lists empty.
 export interface INarratorCardRepository {
   list(workspaceRoot: StoryUri): Promise<ReadonlyMap<string, NarratorCard>>;
   create(workspaceRoot: StoryUri, card: NarratorCard): Promise<CreateNarratorCardResult>;

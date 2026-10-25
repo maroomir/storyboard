@@ -17,8 +17,6 @@ import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/applicat
 
 export interface CreateSceneRequest {
   readonly workspaceRoot: StoryUri;
-  // The file-name part after the number. A scene's identity is its number, so a name that yields
-  // no slug still gets a card: it is filed as `scene-<number>`.
   readonly slug?: string;
 }
 
@@ -32,8 +30,6 @@ export interface CreateSceneUseCaseDependencies {
   readonly logger: IStoryboardLogger;
 }
 
-// A new, empty scene card after the highest number in use — the workspace's own numbering, so the
-// author never has to pick one.
 export class CreateSceneUseCase implements IUseCase<CreateSceneRequest, CreateSceneResult> {
   public constructor(private readonly deps: CreateSceneUseCaseDependencies) {}
 

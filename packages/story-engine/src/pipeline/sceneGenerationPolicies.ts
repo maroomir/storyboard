@@ -109,8 +109,6 @@ export function resolveSceneBreakJoiner(rawSeparator: string | undefined): strin
   return `\n\n${separator}\n\n`;
 }
 
-// NOTE: 청크 포맷 호출이 소설 본문 대신 "분량 한계라 연재형/압축형 중 고르라"는 메타 안내를 돌려보내는
-// 경우가 있어, 그게 원고에 박히지 않도록 감지한다. 길이 핑계와 선택지 제시가 함께 있을 때만 메타로 본다.
 export function looksLikeFormatMetaLeak(text: string): boolean {
   const hasLengthExcuse: boolean =
     /분량[^\n]{0,8}(한계|제한|많|길)|한 ?번에 (다|모두|전부)|토큰 ?(한계|제한|수)/.test(text);
@@ -122,9 +120,6 @@ export function looksLikeFormatMetaLeak(text: string): boolean {
 }
 
 
-// NOTE: 앞서 이 압축은 콜론이 있는 줄(= '캐릭터명: 대사')만 남겨 지문을 통째로 버렸다. 그래서 뒤
-// 비트가 "인물이 이미 그 자리에 들어와 있다"는 사실을 알 수 없어 매번 무대를 다시 세우고 같은
-// 질문을 되풀이했다. 맥락은 대사만이 아니므로 지문도 남기고, 빈 줄만 걷어낸 뒤 예산으로 자른다.
 export function condensePreviousContext(
   previousContext: string | undefined,
   enabled: boolean,

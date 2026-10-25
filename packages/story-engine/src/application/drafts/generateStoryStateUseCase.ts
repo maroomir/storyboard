@@ -21,10 +21,7 @@ export type GenerateStoryStateUseCaseDependencies = Omit<
 
 export interface GenerateStoryStateRequest {
   readonly workspaceRoot: StoryUri;
-  // Scene numbers to record; every scene with a draft when left out.
   readonly sceneOrders?: readonly number[];
-  // Record a scene the ledger already knows. Like regenerating that draft, it marks the entries
-  // of later scenes stale, so a forced middle scene asks for the scenes after it as well.
   readonly force?: boolean;
   readonly shouldPause?: () => boolean;
   readonly onProgress?: (progress: GenerateStoryStateProgress) => void;
@@ -38,16 +35,12 @@ export interface GenerateStoryStateProgress {
 
 export interface GenerateStoryStateResult {
   readonly recorded: readonly string[];
-  // Scenes the ledger already carried and `force` did not name.
   readonly kept: readonly string[];
   readonly withoutDraft: readonly string[];
   readonly failures: readonly { readonly stem: string; readonly message: string }[];
   readonly pausedWithRemaining?: number;
 }
 
-// Builds the story-state ledger from drafts that exist without one: a work written before the
-// ledger, or one whose drafts were brought in from outside. Scenes go in number order because each
-// call reads the state the earlier scenes left, exactly as generation does.
 export interface ScenesWithDrafts {
   readonly targets: readonly { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri }[];
   readonly withoutDraft: readonly string[];
@@ -124,7 +117,6 @@ export class GenerateStoryStateUseCase {
     const draftText: string = new TextDecoder().decode(
       await this.deps.fileSystem.readFile(draftPath(request.workspaceRoot, scene.stem)),
     );
-    // 밖에서 들여온 초안은 front matter 가 없을 수 있다. 본문만 있으면 된다.
     await recordStoryStateFromDraft(inputs, options, aiService, extractDraftBody(draftText));
 
     return 'recorded';

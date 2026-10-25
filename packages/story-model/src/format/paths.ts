@@ -1,9 +1,5 @@
 import { sampleCardFileName } from './sampleCard';
 
-// Workspace-relative path conventions. Every path is expressed as a '/'-separated string relative
-// to the workspace root so that both the VSCode extension (which joins them onto a vscode.Uri) and
-// headless clients (which join them onto a filesystem path) share one definition.
-
 export interface StoryboardRelativePaths {
   readonly metadataDirectory: string;
   readonly projectJson: string;
@@ -110,8 +106,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   claudeGuide: 'CLAUDE.md',
 };
 
-// 워크스페이스 파일의 확장자. 경로를 만드는 쪽과 판정하는 쪽이 같은 글자를 봐야 «만들 때는
-// .card, 찾을 때는 .cards» 같은 어긋남이 생기지 않는다.
 interface StoryboardFileExtensions {
   readonly card: string;
   readonly draft: string;
@@ -123,11 +117,9 @@ export const STORYBOARD_FILE_EXTENSIONS: StoryboardFileExtensions = {
   card: '.card',
   draft: '.md',
   profileImage: '.png',
-  // 마이그레이션 전용: 구형 씬 텍스트.
   legacyScene: '.txt',
 };
 
-// 확장자까지 붙은 글롭. 에디터 쪽 파일 감시자와 문서 선택자가 디렉터리 이름을 다시 적지 않게 한다.
 interface StoryboardGlobs {
   readonly characterCards: string;
   readonly backgroundCards: string;
@@ -141,12 +133,9 @@ export const STORYBOARD_GLOBS: StoryboardGlobs = {
   backgroundCards: `${STORYBOARD_RELATIVE_PATHS.backgroundDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
   sceneCards: `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
   draftMarkdown: `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/**/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
-  // 문서 선택자는 워크스페이스 어디에 있는 draft 폴더든 잡아야 한다.
   anyDraftMarkdown: `**/${STORYBOARD_RELATIVE_PATHS.draftDirectory}/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
 };
 
-// NOTE: 스레드는 연속성 줄기다. 기본 줄기('main')는 종전 경로를 그대로 쓰고, 나머지 줄기만
-// 하위 디렉터리로 갈라 이야기 상태·요약·인물 기억이 줄기 밖으로 새지 않게 한다.
 export function threadMemoryRelativePath(threadId: string, leafRelativePath: string): string {
   const leaf: string = leafRelativePath.startsWith(`${STORYBOARD_RELATIVE_PATHS.memoryDirectory}/`)
     ? leafRelativePath.slice(STORYBOARD_RELATIVE_PATHS.memoryDirectory.length + 1)
@@ -199,8 +188,6 @@ export function parseCardIdFromFileName(fileName: string): string | undefined {
   return fileName.slice(0, -STORYBOARD_FILE_EXTENSIONS.card.length);
 }
 
-// Case-sensitive on purpose: the codecs only accept lowercase directory and file names, so a
-// case-insensitive match here would classify files the parsers then reject.
 function isDirectChildWithExtension(
   relativePath: string,
   directory: string,
@@ -237,7 +224,6 @@ export function isDirectNarratorCardRelativePath(relativePath: string): boolean 
   return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.narratorDirectory, STORYBOARD_FILE_EXTENSIONS.card);
 }
 
-// 마이그레이션 전용: 구형 씬 텍스트(.txt)를 찾아 변환 대상으로 보고할 때만 쓴다.
 export function isLegacySceneTextRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.sceneDirectory, STORYBOARD_FILE_EXTENSIONS.legacyScene);
 }

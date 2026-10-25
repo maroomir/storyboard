@@ -188,15 +188,15 @@ function renderNodes(
   contexts: readonly TemplateValue[],
   partials: TemplatePartials,
 ): string {
-  let output: string = '';
+  let renderedText: string = '';
 
   for (const node of nodes) {
     switch (node.kind) {
       case 'text':
-        output += node.text;
+        renderedText += node.text;
         break;
       case 'variable':
-        output += stringify(lookup(contexts, node.name));
+        renderedText += stringify(lookup(contexts, node.name));
         break;
       case 'partial': {
         const partial: string | undefined = partials[node.name];
@@ -206,7 +206,7 @@ function renderNodes(
         }
 
         if (partial.length > 0) {
-          output += node.standalone ? `${partial}\n` : partial;
+          renderedText += node.standalone ? `${partial}\n` : partial;
         }
         break;
       }
@@ -215,7 +215,7 @@ function renderNodes(
 
         if (node.inverted) {
           if (!isTruthy(value)) {
-            output += renderNodes(node.body, contexts, partials);
+            renderedText += renderNodes(node.body, contexts, partials);
           }
           break;
         }
@@ -227,14 +227,14 @@ function renderNodes(
         const items: readonly TemplateValue[] = Array.isArray(value) ? value : [value];
 
         for (const item of items) {
-          output += renderNodes(node.body, [...contexts, item], partials);
+          renderedText += renderNodes(node.body, [...contexts, item], partials);
         }
         break;
       }
     }
   }
 
-  return output;
+  return renderedText;
 }
 
 interface OpenSection {

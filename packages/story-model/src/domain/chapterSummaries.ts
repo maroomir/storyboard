@@ -8,7 +8,6 @@ import {
 export interface ChapterSummary {
   readonly chapterTitle: string;
   readonly summary: string;
-  // 이 요약을 낳은 장 본문의 해시. 0.8 이전 요약에는 없으므로 대조할 근거가 없는 것으로 본다.
   readonly sourceHash?: string;
   readonly isStale?: boolean;
 }
@@ -39,9 +38,6 @@ export function buildChapterSummariesMarkdown(
 
 const recapPrefix: string = '**이전 장 recap:**';
 
-// The rolling summary is rebuilt one chapter at a time while a run is still going, so the file has
-// to be readable back into the sections it was written from. The recap line is derived from the
-// previous chapter's summary at render time, so it is dropped here rather than stored twice.
 export function parseChapterSummariesMarkdown(markdown: string): ChapterSummary[] {
   return markdown
     .split(/^## /m)
@@ -87,9 +83,6 @@ export function mergeChapterSummary(
   return summaries.map((entry, position) => (position === index ? updated : entry));
 }
 
-// 원장(§4.10)과 같은 판정이다. 기록된 본문 해시와 지금의 장 본문 해시가 다르면 그 요약은 낡았다.
-// 지우지 않고 표시만 하는 이유도 같다 — 사람이 무엇이 버려졌는지 볼 수 있어야 하고, 그 장을 다시
-// 요약하면 통째로 갈아 끼워진다. 해시가 없는 0.8 이전 요약은 대조할 근거가 없으므로 유효로 둔다.
 export interface ChapterSummaryAudit {
   readonly summaries: readonly ChapterSummary[];
   readonly staleChapterTitles: readonly string[];

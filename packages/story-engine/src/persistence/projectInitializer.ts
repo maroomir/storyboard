@@ -63,7 +63,6 @@ export interface CreateWorkspaceRequest {
   readonly name: string;
   readonly language?: string;
   readonly setting?: ProjectSetting;
-  // Narrator cards a composition preset asked for alongside the contract.
   readonly narratorCards?: readonly NarratorCard[];
 }
 
@@ -72,9 +71,6 @@ export interface CreateWorkspaceResult {
   readonly createdNarrators: readonly string[];
 }
 
-// Everything a new workspace needs on disk, in the order that keeps a first commit clean: the
-// ignore block exists before any generated file could. Creating the git repository is the host's
-// business, because only the host knows whether git is there and how to run it.
 export async function createWorkspace(request: CreateWorkspaceRequest): Promise<CreateWorkspaceResult> {
   const { fileSystem } = request;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
@@ -99,7 +95,6 @@ export async function createWorkspace(request: CreateWorkspaceRequest): Promise<
   return { project, createdNarrators };
 }
 
-// 이미 있는 서술자는 손대지 않는다. 프리셋을 다시 돌렸다고 작가가 고친 목소리를 잃으면 안 된다.
 export async function writeNarratorCardsIfMissing(
   fileSystem: IFileSystem,
   paths: StoryboardProjectPaths,

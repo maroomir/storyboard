@@ -66,31 +66,23 @@ export interface ReviseLoopOptions {
   readonly aiService: StoryboardAiService;
   readonly registry: AiProviderRegistry;
   readonly attribution: UsageAttribution;
-  readonly ctx: ReviseLoopContext;
+  readonly loopContext: ReviseLoopContext;
   readonly body: string;
   readonly maxIterations: number;
   readonly reviseScoreThreshold: number;
   readonly maxCompressionPercent: number;
   readonly onProgress?: (message: string) => void;
   readonly shouldCancel?: () => boolean;
-  // Issues found somewhere other than this draft — the final review reads the whole assembled
-  // volume, so a long-range contradiction it spots is invisible to a per-scene check. They join the
-  // first iteration's own findings and are dropped afterwards, once the rewrite has answered them.
   readonly seedIssues?: ReviseSeedIssues;
-  // Called as each round ends, so a long review can be followed while it runs.
   readonly onRound?: (round: ReviseRound) => void;
 }
 
-// A provider that fails mid-review (a timeout on a long rewrite, a dropped connection) ends the loop
-// but is not the caller's failure: the draft the loop was handed is already on disk.
 export interface ReviseLoopFailure {
   readonly stage: 'check' | 'revise';
   readonly kind: 'timeout' | 'provider';
   readonly message: string;
 }
 
-// One check of the loop and what it led to. Every round is kept (#113): only the last round's
-// instructions used to survive, so what an earlier check caught and what its rewrite fixed was lost.
 export interface ReviseRound {
   readonly round: number;
   readonly continuityIssues: readonly ContinuityIssueLike[];
@@ -166,8 +158,6 @@ export interface SectionRevisionPlan {
   readonly instructions: readonly string[];
 }
 
-// Each issue goes to the section its quote came from. An issue that quotes nothing cannot be placed,
-// so it rides with every section — rare, since both review prompts ask for the quoted text.
 export function planSectionRevisions(
   body: string,
   continuityIssues: readonly ContinuityIssueLike[],
@@ -213,7 +203,7 @@ interface ReviseSession {
   readonly aiService: StoryboardAiService;
   readonly registry: AiProviderRegistry;
   readonly attribution: UsageAttribution;
-  readonly ctx: ReviseLoopContext;
+  readonly loopContext: ReviseLoopContext;
 }
 
 interface ReviewCheckResults {
@@ -222,23 +212,23 @@ interface ReviewCheckResults {
 }
 
 async function runReviewChecks(session: ReviseSession, body: string): Promise<ReviewCheckResults> {
-  const { aiService, registry, attribution, ctx } = session;
+  const { aiService, registry, attribution, loopContext } = session;
 
   const [continuityIssues, critiqueIssues] = await Promise.all([
-    aiService.checkContinuity(body, ctx.factLines, {
+    aiService.checkContinuity(body, loopContext.factLines, {
       providerId: registry.getTaskProvider('continuityCheck'),
       attribution,
     }),
     aiService.critiqueDraft(
       {
         body,
-        intent: ctx.intent,
-        characters: ctx.characterNames,
-        characterCards: ctx.characterCards,
-        facts: ctx.factLines,
-        styleConstraints: ctx.styleConstraints,
-        qualityCriteria: ctx.qualityCriteria,
-        styleDirective: ctx.styleDirective,
+        intent: loopContext.intent,
+        characters: loopContext.characterNames,
+        characterCards: loopContext.characterCards,
+        facts: loopContext.factLines,
+        styleConstraints: loopContext.styleConstraints,
+        qualityCriteria: loopContext.qualityCriteria,
+        styleDirective: loopContext.styleDirective,
       },
       { providerId: registry.getTaskProvider('draftCritique'), attribution },
     ),
@@ -289,8 +279,6 @@ interface SectionRevisionOutcome {
   readonly failure?: ReviseLoopFailure;
 }
 
-// A rejected section keeps its original text and the others still land: one bad candidate no longer
-// costs the whole round. Each section is held to its share of the scene's target length.
 async function applySectionRevisions(
   session: ReviseSession,
   plans: readonly SectionRevisionPlan[],
@@ -299,7 +287,7 @@ async function applySectionRevisions(
   maxCompressionPercent: number,
   onSection?: (done: number, total: number) => void,
 ): Promise<SectionRevisionOutcome> {
-  const { aiService, registry, attribution, ctx } = session;
+  const { aiService, registry, attribution, loopContext } = session;
   const split: DraftSections = splitDraftSections(currentBody);
   const sections: string[] = [...split.sections];
   const acceptedSections: number[] = [];
@@ -320,11 +308,11 @@ async function applySectionRevisions(
       candidate = await aiService.reviseDraft(
         {
           body: originalText,
-          format: ctx.format,
+          format: loopContext.format,
           instructions: plan.instructions,
-          intent: ctx.intent,
-          facts: ctx.factLines,
-          characterCards: ctx.characterCards,
+          intent: loopContext.intent,
+          facts: loopContext.factLines,
+          characterCards: loopContext.characterCards,
         },
         { providerId: registry.getTaskProvider('draftRevision'), attribution },
       );
@@ -333,9 +321,9 @@ async function applySectionRevisions(
       break;
     }
     const sectionTarget: number | undefined =
-      ctx.targetLength === undefined || currentBody.length === 0
+      loopContext.targetLength === undefined || currentBody.length === 0
         ? undefined
-        : Math.round((ctx.targetLength * originalText.length) / currentBody.length);
+        : Math.round((loopContext.targetLength * originalText.length) / currentBody.length);
     const validation: DraftCandidateValidation = validateDraftCandidate(originalText, candidate, {
       maxCompressionPercent,
       ...(sectionTarget === undefined ? {} : { targetLength: sectionTarget }),
@@ -373,12 +361,11 @@ function summarizeRejection(
   };
 }
 
-// NOTE: Both apps share this exact review→revise policy; changing pass/stop semantics here changes
-// the extension's revise command and the CLI's `draft revise` together.
 export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseLoopResult> {
-  const { aiService, registry, attribution, ctx, maxIterations, reviseScoreThreshold } = options;
+  const { aiService, registry, attribution, loopContext, maxIterations, reviseScoreThreshold } =
+    options;
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;
-  const session: ReviseSession = { aiService, registry, attribution, ctx };
+  const session: ReviseSession = { aiService, registry, attribution, loopContext };
 
   let body: string = options.body;
   let revisionCount: number = 0;
@@ -456,7 +443,7 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
       body,
       continuityIssues,
       critiqueIssues,
-      ctx.characters,
+      loopContext.characters,
     );
     if (plans.length === 0) {
       endRound(checkedRound);
@@ -490,7 +477,6 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
       break;
     }
 
-    // Sections accepted before a provider failure are kept: they passed the same checks.
     body = applied.body;
     revisionCount += 1;
 
@@ -521,7 +507,6 @@ const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
   'scene-breaks-changed': '장면 구분 변경',
 };
 
-// The one line `--verbose` shows per round: what the check found and what the rewrite did with it.
 export function describeReviseRound(round: ReviseRound): string {
   const highContinuity: number = round.continuityIssues.filter(
     (issue) => issue.severity === 'high',

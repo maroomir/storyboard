@@ -19,8 +19,6 @@ import type { SidebarCardCategory } from '#engine/application/cards/cardSidebarR
 const SCENE_CHUNK_SIZE: number = 40_000;
 const MAX_PARALLEL_REQUESTS: number = 4;
 
-// 모델은 "모르는 값"을 빈 문자열로 적어 보낸다. 그걸 오류로 세면 32씬을 다 읽고 온 응답이
-// weather: "" 한 칸 때문에 통째로 버려진다. 빈 값은 안 적은 것으로 읽고, 목록에서는 걸러 낸다.
 const optionalText: z.ZodPreprocess<z.ZodOptional<z.ZodString>> = z.preprocess(
   (value) => (typeof value === 'string' && value.trim().length === 0 ? undefined : value),
   z.string().trim().min(1).optional(),
@@ -277,7 +275,7 @@ async function mapWithConcurrency<T, R>(
   maximum: number,
   mapper: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length);
+  const mappedItems: R[] = new Array(items.length);
   let cursor: number = 0;
   const worker = async (): Promise<void> => {
     while (cursor < items.length) {
@@ -287,11 +285,11 @@ async function mapWithConcurrency<T, R>(
       if (item === undefined) {
         return;
       }
-      results[index] = await mapper(item);
+      mappedItems[index] = await mapper(item);
     }
   };
   await Promise.all(Array.from({ length: Math.min(maximum, items.length) }, worker));
-  return results;
+  return mappedItems;
 }
 
 function buildCardNameIndex(cards: readonly StoryboardCard[]): Map<string, StoryboardCard> {
