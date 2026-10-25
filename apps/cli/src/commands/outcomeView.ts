@@ -5,14 +5,10 @@ import { wrapWordsToWidth } from '@/terminal/width';
 
 import { describeNextStep, nextStepCommands } from './status';
 
-// 사람이 읽는 터미널에서만 결과에 표시를 붙인다. 파이프로 받는 쪽은 지금까지와 같은 글자를 받는다.
-
 export interface OutcomeMarking {
   readonly ok: boolean;
   readonly stop?: 'paused' | 'cancelled';
   readonly isDrawn?: boolean;
-  // A verb that changed the work earns a check mark; one that only printed something (a draft
-  // body, a scene list) does not, since a mark in front of data reads as part of it.
   readonly isAction: boolean;
 }
 
@@ -25,8 +21,6 @@ export function markOutcome(
     return message;
   }
 
-  // Printed data (a draft body, a scene list) is left as it is; a message is a sentence, and the
-  // terminal would break it inside a word.
   if (marking.ok && marking.stop === undefined && !marking.isAction) {
     return message;
   }
@@ -45,8 +39,6 @@ export function markOutcome(
     .join('\n');
 }
 
-// The same step `storyboard status` names, so the hint after a run and the status screen never
-// disagree about what comes next.
 export function renderNextStep(status: WorkspaceStatus, stream: TerminalStream): string {
   const command: string | undefined = nextStepCommands[status.nextStep];
 

@@ -16,10 +16,6 @@ import { renderColumns, type ColumnRow } from './terminal/layout';
 import { plainTerminalStream, type TerminalStream } from './terminal/profile';
 import { wrapToWidth } from './terminal/width';
 
-// 도움말은 세 겹이다. 맨 처음 화면은 묶음만, `help <묶음>` 은 한 묶음의 명령, `help --all` 은 전부.
-// 60 개가 넘는 명령을 한 화면에 쏟으면 처음 온 사람은 어디서 시작할지 찾지 못한다.
-
-// Lines longer than this are hard to read even on a wide terminal.
 const maximumHelpWidth: number = 100;
 
 function helpWidth(stream: TerminalStream): number {
@@ -68,10 +64,8 @@ function commandsInGroup(group: CommandGroup): CommandSpec[] {
   return commandCatalog.filter((spec) => spec.group === group);
 }
 
-// Wide enough for the init line, so the six steps read as one aligned column.
 const gettingStartedLabelWidth: number = 40;
 
-// The first screen a new install sees, so the commands that make the CLI usable come first.
 function renderGettingStarted(stream: TerminalStream): string[] {
   const steps: readonly ColumnRow[] = [
     { label: 'init --title "작품 이름"', description: '빈 디렉터리를 워크스페이스로' },
@@ -120,8 +114,6 @@ function renderFooter(stream: TerminalStream): string[] {
   );
 }
 
-// What a reader scans a group for: its nouns (`card · canon`), or for a one-noun group its actions
-// (`list · show · create`), since repeating `scene` beside the scene group says nothing.
 function summarizeGroup(group: CommandGroup): string {
   const specs: CommandSpec[] = commandsInGroup(group);
   const nouns: string[] = [...new Set(specs.map((spec) => spec.verb.split(' ')[0] ?? spec.verb))];
@@ -288,8 +280,6 @@ export function renderCommandHelp(
   return lines.join('\n');
 }
 
-// `help <topic>` takes a command first, then a group: `help status` is the command, `help draft`
-// (not a command on its own) is the group.
 export function renderHelpTopic(
   topic: string,
   stream: TerminalStream = plainTerminalStream,
@@ -297,9 +287,6 @@ export function renderHelpTopic(
   return renderCommandHelp(topic, stream) ?? renderGroupHelp(topic, stream);
 }
 
-// NOTE: The rename table of the changelog's «CLI 명령 이름을 한 규칙으로» entry. Old names are not
-// aliases; an agent following an old AGENTS.md is told the one new name, never a near miss that
-// costs money (`scene generate` reads closest to `outline generate`).
 interface RenamedCommand {
   readonly verb: string;
   readonly kind?: string;
@@ -322,11 +309,9 @@ export const renamedCommands: Readonly<Record<string, RenamedCommand>> = {
 
 interface RenamedCommandMatch {
   readonly newWords: readonly string[];
-  readonly rest: readonly string[];
+  readonly wordsAfterVerb: readonly string[];
 }
 
-// The old name is the longest run of leading words found in the table; whatever follows it
-// (arguments, flags and their values) stays in the order it was typed.
 function findRenamedCommand(tokens: readonly string[]): RenamedCommandMatch | undefined {
   const words: string[] = tokens
     .flatMap((token) => token.trim().split(/\s+/))
@@ -339,7 +324,7 @@ function findRenamedCommand(tokens: readonly string[]): RenamedCommandMatch | un
     if (renamed !== undefined) {
       return {
         newWords: [renamed.verb, ...(renamed.kind === undefined ? [] : [renamed.kind])],
-        rest: words.slice(length),
+        wordsAfterVerb: words.slice(length),
       };
     }
   }
@@ -347,9 +332,7 @@ function findRenamedCommand(tokens: readonly string[]): RenamedCommandMatch | un
   return undefined;
 }
 
-// A wrong verb is usually a near miss on a real one; naming the closest ones beats dumping the
-// whole usage screen the author already scrolled past. A renamed command leads with its new name.
-export function suggestVerbs(input: string, limit = 3): string[] {
+export function suggestVerbs(input: string, suggestionLimit = 3): string[] {
   const needle: string = input.trim().toLowerCase();
 
   if (needle.length === 0) {
@@ -358,12 +341,15 @@ export function suggestVerbs(input: string, limit = 3): string[] {
 
   const renamedVerb: string | undefined = findRenamedCommand([needle])?.newWords[0];
   const scored: string[] = commandCatalog
-    .map((spec) => ({ verb: spec.verb, score: similarity(needle, spec.verb.toLowerCase()) }))
+    .map((spec) => ({
+      verb: spec.verb,
+      score: scoreVerbSimilarity(needle, spec.verb.toLowerCase()),
+    }))
     .filter((entry) => entry.score > 0 && entry.verb !== renamedVerb)
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.verb);
 
-  return (renamedVerb === undefined ? scored : [renamedVerb, ...scored]).slice(0, limit);
+  return (renamedVerb === undefined ? scored : [renamedVerb, ...scored]).slice(0, suggestionLimit);
 }
 
 const prefixScore: number = 10;
@@ -372,9 +358,9 @@ const sharedWordScore: number = 2;
 const nearWordScore: number = 1;
 const nearWordDistance: number = 2;
 
-// The action counts for more than the noun: a command that moved to another noun
-// (`scene generate` → `draft generate`) is found by what it does, not by the noun it left.
-function similarity(input: string, verb: string): number {
+const maximumActionTypoLetters: number = 1;
+
+function scoreVerbSimilarity(input: string, verb: string): number {
   if (verb.startsWith(input) || input.startsWith(verb)) {
     return prefixScore;
   }
@@ -385,9 +371,11 @@ function similarity(input: string, verb: string): number {
   const verbAction: string | undefined = verbWords[verbWords.length - 1];
 
   return inputWords.reduce((score, word) => {
-    // The action decides what a command does, so a one-letter slip on it (`generat`) still counts.
-    // Two letters would make `slop` an action of `show`.
-    if (word === inputAction && verbAction !== undefined && levenshtein(word, verbAction) <= 1) {
+    if (
+      word === inputAction &&
+      verbAction !== undefined &&
+      levenshtein(word, verbAction) <= maximumActionTypoLetters
+    ) {
       return score + sameActionScore;
     }
 
@@ -434,12 +422,11 @@ function renderSuggestions(
   ].join('\n');
 }
 
-// `rest` is what followed the verb on the command line, flags included, in the order it was typed.
 export function renderUnknownCommand(verb: string, rest: readonly string[] = []): string {
   const renamed: RenamedCommandMatch | undefined = findRenamedCommand([verb, ...rest]);
 
   if (renamed !== undefined) {
-    const words: string[] = [...renamed.newWords, ...renamed.rest];
+    const words: string[] = [...renamed.newWords, ...renamed.wordsAfterVerb];
     return [
       `알 수 없는 명령: ${verb}`,
       `  이름이 바뀌었습니다 →  storyboard ${words.join(' ')}`,
@@ -454,8 +441,7 @@ export function renderUnknownCommand(verb: string, rest: readonly string[] = [])
   );
 }
 
-// A flag typo is a letter or two off (`--titel`, `--dryrun`), so only near names are offered.
-export function suggestFlags(name: string, limit = 2): string[] {
+export function suggestFlags(name: string, suggestionLimit = 2): string[] {
   const needle: string = name.toLowerCase();
 
   return flagCatalog
@@ -465,7 +451,7 @@ export function suggestFlags(name: string, limit = 2): string[] {
     }))
     .filter((entry) => entry.distance <= nearWordDistance)
     .sort((a, b) => a.distance - b.distance)
-    .slice(0, limit)
+    .slice(0, suggestionLimit)
     .map((entry) => entry.name);
 }
 

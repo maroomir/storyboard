@@ -12,7 +12,6 @@ export interface ReadSceneCardsResult {
   readonly unreadable: readonly string[];
 }
 
-// 한 카드가 깨졌다고 doctor 나 migrate 전체가 죽으면 안 된다. 깨진 파일은 이름만 모아 보고한다.
 export async function readSceneCards(
   container: CliContainer,
   sceneDirectory: StoryUri,

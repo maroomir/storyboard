@@ -49,6 +49,10 @@ export const listScenes: CommandHandler = async ({ container }) => {
   };
 };
 
+function cardIdFromUnreadableFileName(fileName: string): string {
+  return fileName.replace(/\.card$/, '');
+}
+
 interface CardListRow {
   readonly category: CardCategory;
   readonly id: string;
@@ -75,8 +79,7 @@ export const listCards: CommandHandler = async ({ container, args }) => {
       categories.map(async (category) =>
         (await container.cards.list(container.workspaceRoot, category)).map((summary) => ({
           category,
-          // NOTE: 읽지 못한 카드는 id 자리에 경로가 온다. 파일 이름이 곧 id 다.
-          id: summary.error === undefined ? summary.id : summary.name.replace(/\.card$/, ''),
+          id: summary.error === undefined ? summary.id : cardIdFromUnreadableFileName(summary.name),
           name: summary.error === undefined ? summary.name : null,
           role: summary.role ?? null,
           error: summary.error ?? null,
@@ -130,7 +133,6 @@ export const showCard: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// 본문만 stdout 으로 낸다 — 다른 도구로 바로 넘길 수 있게. 경로와 생성 정보는 --json 에 있다.
 export const showDraft: CommandHandler = async ({ container, args }) => {
   const stem: string | undefined = args.positionals[0]?.replace(/\.card$/, '');
 

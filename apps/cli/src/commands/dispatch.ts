@@ -63,7 +63,6 @@ import { markOutcome, renderNextStep } from './outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
 import type { ResourceOverrideReport, WorkspaceHoldResult } from '@storyboard/story-app';
 
-// 설정 파일을 쓰는 verb 는 이 셋뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
 const configWritingVerbs: Set<string> = new Set(['setup', 'config set', 'config unset']);
 
 function resolveConfigWriteTarget(
@@ -80,21 +79,15 @@ function resolveConfigWriteTarget(
 export interface DispatchDependencies {
   readonly version: string;
   readonly cwd: string;
-  // Whether a person can answer questions (setup) and wants progress lines by default.
   readonly isInteractive: boolean;
   readonly createLogger: (
     showProgress: boolean,
     stderrTheme: Theme,
     showsErrorStack: boolean,
   ) => IStoryboardLogger;
-  // The real streams; without them the output is the plain text a pipe gets.
   readonly terminal?: TerminalFacts;
-  // The bottom of stderr a progress rail may redraw; the logger writes above it. Without one,
-  // progress is log lines.
   readonly liveArea?: LiveArea;
-  // Ctrl+C / Esc reaching a run that can stop at a scene boundary.
   readonly pauseRequests?: PauseRequests;
-  // How to ask the person at this run a question; left out where nobody can answer.
   readonly createPrompter?: (stderr: TerminalStream) => IPrompter;
 }
 
@@ -103,9 +96,7 @@ export interface DispatchResult {
   readonly stdout: string;
   readonly stderr: string;
   readonly outcome?: CommandOutcome;
-  // Set when the argv asked for the interactive screen instead of a one-shot command.
   readonly launchTui?: boolean;
-  // Dollars the run spent, for the interactive screen's /cost.
   readonly costUsd?: number;
 }
 
@@ -119,9 +110,6 @@ interface OutputMode {
   readonly json: boolean;
 }
 
-// stdout carries the result and nothing else, so an agent can pipe `--json` straight into a
-// parser while progress and warnings go to stderr. A failure is a result too: with `--json` it is
-// the same `{ok:false, message}` object on stdout, never loose text.
 function reportText(outcome: CommandOutcome, mode: OutputMode): string {
   if (mode.json) {
     return `${JSON.stringify({ ok: outcome.ok, message: outcome.message, data: outcome.data ?? null })}\n`;
@@ -143,9 +131,6 @@ function failure(message: string, mode: OutputMode, stream: TerminalStream): Dis
       };
 }
 
-// SECURITY-adjacent: an unknown provider used to fall back to `mock`, which always succeeds — a
-// typo would overwrite a real draft with synthetic text and still exit 0. Refuse instead: an
-// unattended run has nobody to notice.
 function validateProvider(
   provider: string | undefined,
   model: string | undefined,
@@ -162,9 +147,10 @@ function validateProvider(
 
   const catalog: ProviderModelOptions = storyboardModelCatalog[provider as AiProviderId];
 
-  // 로컬 런타임의 모델 목록은 기계마다 다르다. 카탈로그는 제안이고 진짜 목록은 ollama 가 갖는다.
+  const hasMachineSpecificModelList: boolean = provider === 'ollama';
+
   if (
-    provider !== 'ollama' &&
+    !hasMachineSpecificModelList &&
     model !== undefined &&
     !catalog.some((entry) => entry.id === model)
   ) {
@@ -177,8 +163,6 @@ function validateProvider(
   return undefined;
 }
 
-// The command line as typed, minus the verb's words: arguments and flags with their values keep
-// their order, which the parsed form (flags in a map) has lost.
 function removeVerbWords(argv: readonly string[], verbWords: readonly string[]): string[] {
   const rest: string[] = [...argv];
 
@@ -192,13 +176,10 @@ function removeVerbWords(argv: readonly string[], verbWords: readonly string[]):
   return rest;
 }
 
-// One entry for both faces of the CLI: `index.ts` prints what comes back, the TUI renders it.
 export async function dispatch(
   argv: readonly string[],
   deps: DispatchDependencies,
 ): Promise<DispatchResult> {
-  // The shell hands over the half-typed line verbatim, so it must not go through the parser,
-  // which would reject the partial flag the author is in the middle of typing.
   if (argv[0] === '__complete') {
     const completions: Completion[] = computeCompletions(argv.slice(1), { cwd: deps.cwd });
     const text: string = formatCompletions(completions);
@@ -222,7 +203,6 @@ export async function dispatch(
     );
   }
 
-  // `help <verb>` and `tui` are not handlers, but they must resolve as verbs.
   const args: ParsedArguments = resolveVerb(parsed, [
     ...Object.keys(commands),
     'help',
@@ -243,7 +223,6 @@ export async function dispatch(
     return { exitCode: 0, stdout: '', stderr: '', launchTui: true };
   }
 
-  // Bare `storyboard` and `--help` are entry points, not mistakes: usage goes to stdout, exit 0.
   if (args.path.length === 0 || verb === 'help') {
     const topic: string = verb === 'help' ? args.positionals.join(' ') : '';
 
@@ -260,8 +239,6 @@ export async function dispatch(
     return { exitCode: 0, stdout: usage, stderr: '' };
   }
 
-  // `eval "$(storyboard completion zsh)"` runs on every shell start, so it must stay a pure
-  // print: no container, no config read, nothing on stderr.
   if (verb === 'completion') {
     const script: string | undefined = renderCompletionScript(args.positionals[0] ?? '');
     return script === undefined
@@ -292,15 +269,11 @@ export async function dispatch(
     };
   }
 
-  // `config set` names its provider in the key, so its --model is the value it saves, which the
-  // verb checks itself — not a model for this run.
   const providerFailure: string | undefined =
     verb === 'config set'
       ? undefined
       : validateProvider(flagString(args.flags, 'provider'), flagString(args.flags, 'model'));
 
-  // NOTE: --provider 는 이번 실행의 설정을 메모리에서 덮어쓴다(작업 라우팅도 비운다). 설정 파일을
-  // 고치는 동사에 섞이면 저장된 라우팅이 안 보여 그 모델을 말없이 지우게 된다.
   if (
     (verb === 'config set' || verb === 'config unset') &&
     flagString(args.flags, 'provider') !== undefined
@@ -324,8 +297,6 @@ export async function dispatch(
     join(workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson),
   );
 
-  // NOTE: git 과 같은 규칙 — 설정은 지금 있는 작품에 저장하고, 모든 작품에 걸려면 --global 을
-  // 명시한다. 작품 밖에서 플래그 없이 부르면 어디에 쓰는지 모호하므로 거부한다.
   const configWriteTarget: ConfigurationTarget | undefined = configWritingVerbs.has(verb)
     ? resolveConfigWriteTarget(flagBoolean(args.flags, 'global'), isWorkspace)
     : undefined;
@@ -406,7 +377,6 @@ export async function dispatch(
     }
   }
 
-  // Only a person reads a diff; it is skipped for pipes, --json and --quiet.
   const shouldShowDraftChanges: boolean =
     spec?.rewritesDraft === true &&
     terminal.stderr.isTty &&
@@ -436,7 +406,6 @@ export async function dispatch(
   );
   meter.stop();
 
-  // `init` makes the workspace rather than writing one under the lock, but it is the first action.
   const isAction: boolean = spec?.writesWorkspace === true || verb === 'init';
   const markedMessage: string = markOutcome(
     outcome.message,
@@ -473,6 +442,8 @@ export async function dispatch(
   };
 }
 
+const hintOmittedSoTheFinishedRunStillSucceeds: string = '';
+
 async function suggestNextStep(
   container: ReturnType<typeof createCliContainer>,
   stream: TerminalStream,
@@ -480,9 +451,7 @@ async function suggestNextStep(
   try {
     return renderNextStep(await container.describeWorkspace(), stream);
   } catch {
-    // A hint must never turn a finished run into a failure; without it the author still has
-    // `storyboard status`.
-    return '';
+    return hintOmittedSoTheFinishedRunStillSucceeds;
   }
 }
 
@@ -499,7 +468,6 @@ function renderDraftChanges(
   return `${renderSentenceDiff(`draft/${stem}.md`, diffSentences(before, after), stream.theme).join('\n')}\n`;
 }
 
-// The rail is cleared before the result is printed, whatever the run ended with.
 async function runReportingProgress(
   progress: IRunProgress,
   run: () => Promise<CommandOutcome>,

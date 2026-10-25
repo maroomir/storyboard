@@ -86,6 +86,7 @@ import {
   type StoryBible,
   type Character,
   type LocationBackgroundCard,
+  type NovelRunMode,
 } from '@storyboard/story-model';
 
 import type { DraftAugmentScope, OAuthConnection } from '@storyboard/story-ai';
@@ -134,9 +135,8 @@ function sceneUriFor(root: StoryUri, stem: string): StoryUri {
   return scenePath(root, stem);
 }
 
-// 한 씬이 10~25분 걸리는데 --verbose 로도 아무 것도 찍히지 않아, 멈춘 것인지 도는 것인지
-// 구분할 수 없었다. 엔진은 이미 단계와 구간 번호를 알려 준다. 단계 이름표는 파이프라인의
-// 단계 카탈로그가 갖고, 엔진이 그것을 재노출한다.
+const unattendedRunApprovesEveryGate: NovelRunMode = 'auto';
+
 const sceneStageLabels: Record<string, string> = Object.fromEntries(
   sceneStageCatalog.map((definition) => [definition.id, definition.label]),
 );
@@ -148,8 +148,6 @@ function describeModel(container: CliContainer): string {
   return model === undefined ? provider : `${provider} · ${model}`;
 }
 
-// The interactive screen asks before a paid batch run; a one-shot command was started on purpose
-// and an agent's run must never wait, so both go ahead.
 interface PaidRunSummary {
   readonly title: string;
   readonly details: readonly string[];
@@ -183,7 +181,6 @@ const cancelledBeforeRun: CommandOutcome = {
   stop: 'cancelled',
 };
 
-// What the rail shows beside the scene: the pipeline stage while it runs, then saving and review.
 function describeBatchStep(progress: GenerateAllDraftsProgress): string {
   switch (progress.kind) {
     case 'prepared':
@@ -220,7 +217,6 @@ const generateScene: CommandHandler = async ({ container, args }) => {
       onProgress: (progress) => {
         const step: string = describeBatchStep(progress);
         container.progress.update({
-          // A log line per stage, so each line says which stage it is.
           line: `${progress.current}/${progress.total} ${progress.label} · ${step}`,
           unit: { current: progress.current, total: progress.total, label: progress.label },
           step,
@@ -232,10 +228,8 @@ const generateScene: CommandHandler = async ({ container, args }) => {
       return { ok: false, message: describeBatchFailure(result.kind), data: result };
     }
 
-    // A batch where scenes failed is not a success, however many others went through.
     const { cacheHits, failureLabels, failures, generated, pausedWithRemaining } = result.summary;
 
-    // A pause is not a failure of any scene, but the batch is unfinished, so it does not exit 0.
     if (pausedWithRemaining !== undefined) {
       return {
         ok: false,
@@ -278,21 +272,14 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: result.kind === 'failed' ? result.message : '취소했습니다.' };
   }
 
-  // 초안 앞머리에만 남기면 아무도 보지 않는다. 경고는 stderr로 알리되 생성 자체는 성공이다 —
-  // 분량 미달은 모델 편차에서도 나오므로 게이트로 쓰면 정상 결과까지 실패로 만든다. 검수
-  // 재작성 뒤에 찍으면 이미 고쳐진 문제를 다시 알리는 꼴이라 생성 직후에 낸다.
   const warnings: readonly string[] = result.kind === 'generated' ? result.warnings : [];
   for (const warning of warnings) {
     container.logger.warn(warning);
   }
 
-  // `--no-revise` overrides the setting; without it the workspace's `revise.loop.afterGenerate`
-  // decides, exactly as it does in the extension.
   const reviseRequested: boolean =
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
-  // 초안은 이미 디스크에 있다. 그 뒤의 감수가 멈춰도(재작성 타임아웃 등) 생성은 성공이고, 에이전트가
-  // 종료 코드만 보고 초안을 다시 사는 일이 없도록 경고와 data.revise 로만 알린다.
   let revise: ReviseOutcome | undefined;
   if (result.kind === 'generated' && reviseRequested) {
     const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
@@ -321,8 +308,6 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// 비트는 `draft generate` 가 비어 있을 때 자동으로 채우지만, 생성 전에 사건 전개를 검수하려는
-// 창작자를 위해 verb 로도 노출한다. --all 은 비트 없는 씬만 고르고, --force 가 있어야 다시 뽑는다.
 const generateSceneBeats: CommandHandler = async ({ container, args }) => {
   const force: boolean = flagBoolean(args.flags, 'force');
   const dryRun: boolean = flagBoolean(args.flags, 'dry-run');
@@ -415,7 +400,6 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '초안이 없어 검수를 건너뛰었습니다.' };
   }
 
-  // 감수만 하는 동사에서는 감수가 멈춘 것이 곧 실패다.
   return result.failure
     ? {
         ok: false,
@@ -488,7 +472,6 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 };
 
 const generateNovel: CommandHandler = async ({ container, args }) => {
-  // NOTE: 이 명령은 실행 잠금을 쥔 채 돈다. 그러니 running 으로 남은 상태는 죽은 프로세스의 것이다.
   const interrupted: NovelRunState | undefined = await container.novel.findResumableRun(
     container.workspaceRoot,
     {
@@ -523,8 +506,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   const result: NovelRunResult = await container.novel.run({
     workspaceUri: container.workspaceRoot,
     project,
-    // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
-    runMode: 'auto',
+    runMode: unattendedRunApprovesEveryGate,
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
     ...(restartChoice === 'resume' && interrupted !== undefined
       ? { resumeState: interrupted }
@@ -566,9 +548,6 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// 끊긴 실행이 있을 때 사람에게만 묻는다. 에이전트·파이프·--json 은 프롬프터가 없어 묻지 않고 이어 간다.
-// 한 번 실행하는 명령에 질문을 더하지 않는다는 원칙의 예외다: 잘못 고르면 쓴 돈이 버려진다.
-// «처음부터»도 있는 아웃라인과 씬 카드는 그대로 쓴다. 실행 기록만 새로 시작한다.
 async function askResumeOrRestart(
   prompter: IPrompter | undefined,
   interrupted: NovelRunState,
@@ -591,8 +570,6 @@ async function askResumeOrRestart(
   });
 }
 
-// 파생이 어떻게 됐는지 확인하는 자리. 서술자 카드를 만들지 않은 작품도 계약의 시점 하나가 어떤
-// 서술로 풀리는지 여기서 볼 수 있다.
 const showScene: CommandHandler = async ({ container, args }) => {
   const stem: string | undefined = sceneStemFrom(args);
 
@@ -638,8 +615,6 @@ const showScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// Notes that disagree about one slot of a card are held back: promotion asks nobody, so the
-// author keeps one value with `card discard --change` and promotes again.
 function describeNoteConflicts(cards: readonly MergedNoteCardCandidate[]): string[] {
   const lines: string[] = cards.flatMap((card) =>
     card.conflicts.flatMap((conflict) => [
@@ -655,10 +630,6 @@ function describeNoteConflicts(cards: readonly MergedNoteCardCandidate[]): strin
     : [...lines, '  하나만 남기려면: storyboard card discard <id> --change <ref>'];
 }
 
-// An unattended run has nobody to pick from a list, so promotion applies everything the prepare
-// step judged new. `--dry-run` is how an agent inspects first.
-// Candidates come from two places — facts generation pulled out of drafts, and notes about cards
-// that already existed — and the author promotes both with this one verb.
 const promoteCards: CommandHandler = async ({ container, args }) => {
   const prepared: PrepareCardCandidatePromotionResult =
     await container.cards.prepareCandidatePromotion(container.workspaceRoot);
@@ -806,7 +777,6 @@ const promoteBible: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// Read-only: an agent uses this to decide whether a card is worth creating, so it never writes.
 const recommendCards: CommandHandler = async ({ container, args }) => {
   const category: CardCategory | undefined = cardCategoryFrom(args);
 
@@ -881,8 +851,6 @@ const renameCard: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// The editor names a region by dragging; a terminal names it by line numbers. `--lines 40-60` is
-// the same input in the form this host has.
 interface LineRange {
   readonly from: number;
   readonly to: number;
@@ -928,8 +896,6 @@ function replaceLines(body: string, range: LineRange | undefined, replacement: s
   ].join('\n');
 }
 
-// The draft and the lines a rewrite works on. The same check serves a dry run, so an empty range
-// is refused before any model is called.
 interface TransformedDraft {
   ok: boolean;
   text?: string;
@@ -960,8 +926,6 @@ async function loadDraftTarget(
   return { ok: true, body, target };
 }
 
-// Rewrites the draft in place. `--lines` narrows it; without one the whole body is the target,
-// which is the shape a terminal caller usually wants.
 async function rewriteDraft(
   container: CliContainer,
   stem: string,
@@ -981,7 +945,6 @@ async function rewriteDraft(
     return { ok: false, message: result.message };
   }
 
-  // 손질 한 번이 한 편집 세션이다. 고치기 전 판본은 재생성과 같은 설정을 따라 .draft/ 에 남는다.
   const saved: SaveDraftEditResult = await container.drafts.saveEdit({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
@@ -1056,8 +1019,6 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
   });
 };
 
-// Seeds come from the outline, so an agent runs `outline generate` first. Overwriting is what the
-// editor asks about with a modal; unattended, it is refused unless `--force` says so.
 const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
   const result: SeedScenesResult = await container.novel.seedScenes({
     workspaceRoot: container.workspaceRoot,
@@ -1088,8 +1049,6 @@ const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
   }
 };
 
-// 익스텐션은 제안을 QuickPick 으로 고르고 diff 로 검토한 뒤 쓴다. 무인 실행에는 그 자리가 없으니
-// 제안 전체를 적용하고, 미리 보려면 --dry-run 을 쓴다 — card promote 와 같은 관례다.
 const completeStory: CommandHandler = async ({ container, args }) => {
   const proposal: CompleteStoryScenesProposal = await container.novel.completeScenes({
     workspaceRoot: container.workspaceRoot,
@@ -1126,8 +1085,6 @@ const buildStoryCards: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: `카드 구성안 ${proposal.targets.length}건`, data: proposal };
   }
 
-  // 이름에서 id 를 못 만드는 새 카드는 익스텐션이 사람에게 물어보는 자리다. 짐작해 id 를 박아
-  // 넣는 대신 이름을 돌려받아, card create --id 를 거치게 한다.
   const { writtenIds: written, needsIdNames: needsId } = await container.cards.applyBuildTargets(
     container.workspaceRoot,
     proposal.targets,
@@ -1167,8 +1124,6 @@ const canonDiff: CommandHandler = async ({ container }) => {
   };
 };
 
-// Cards start empty and get filled by the studio or by hand; creating one is a file write, not a
-// generation, so no provider is involved.
 const createCard: CommandHandler = async ({ container, args }) => {
   const kind: CardCategory | undefined = cardCategoryFrom(args);
   const name: string | undefined = flagString(args.flags, 'name') ?? args.positionals[1];
@@ -1185,9 +1140,6 @@ const createCard: CommandHandler = async ({ container, args }) => {
   const explicitId: string | undefined = flagString(args.flags, 'id');
   const suggested: string | undefined = explicitId ?? slugify(name);
 
-  // 한글 이름은 ascii 슬러그를 내지 못한다. 예전에는 이때 new-card, new-card-2 로 번호를 붙여
-  // 이름과 무관한 id 가 조용히 만들어졌고, 씬 카드가 그 id 로 인물을 참조했다. 짐작하는 대신
-  // 거부하고 --id 를 요구한다.
   if (suggested === undefined) {
     return {
       ok: false,
@@ -1202,8 +1154,6 @@ const createCard: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  // 이름에서 유도한 id 는 번호를 붙여 피하지만, 명시한 id 가 이미 있으면 짐작하지 않고 거부한다:
-  // 에이전트가 hana 를 달라고 했는데 hana-2 를 받으면 그 뒤로 엉뚱한 카드를 가리킨다.
   if (
     explicitId !== undefined &&
     (await container.cards.exists(container.workspaceRoot, cardType, explicitId))
@@ -1233,8 +1183,6 @@ const createCard: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// 씬은 번호가 정체성을 지니므로 이름에서 슬러그를 못 만들어도 거부하지 않는다. 그때는 엔진이
-// sceneSeedFactory 의 폴백과 같은 `scene-<번호>` 로 붙인다.
 const createScene: CommandHandler = async ({ container, args }) => {
   const name: string | undefined = flagString(args.flags, 'name') ?? args.positionals[0];
 
@@ -1259,8 +1207,6 @@ const createScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// The stem is the scene's key: the engine moves every file named after it and rewrites the
-// ledgers, canon and caches that point at it. A number another scene holds is refused.
 const renameScene: CommandHandler = async ({ container, args }) => {
   const fromStem: string | undefined = args.positionals[0];
   const toStem: string | undefined = flagString(args.flags, 'to');
@@ -1291,8 +1237,6 @@ const renameScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// Card ids are file names, so they stay ascii-safe and lowercase. A name with no ascii yields
-// nothing usable; the caller refuses rather than inventing a name-shaped id.
 function slugify(name: string): string | undefined {
   const slug: string = name
     .trim()
@@ -1324,8 +1268,6 @@ const applyDraftFormat: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// Card-based augmentation rewrites the whole draft from updated cards and canon, without
-// regenerating it. The editor shows a diff first; unattended, the caller asked for it, so it lands.
 const augmentDraft: CommandHandler = async ({ container, args }) => {
   const stem: string | undefined = sceneStemFrom(args);
   const range: LineRange | 'invalid' | undefined = rangeFrom(args);
@@ -1348,8 +1290,6 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
   });
 };
 
-// The editor asks for the instruction in a prompt box; here it is a flag. Everything else is the
-// selection-scoped augmentation the editor runs.
 const editDraft: CommandHandler = async ({ container, args }) => {
   const stem: string | undefined = sceneStemFrom(args);
   const range: LineRange | 'invalid' | undefined = rangeFrom(args);
@@ -1441,7 +1381,6 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: '', data: { projectName: source.projectName } };
   }
 
-  // 편집기의 형식 선택과 같은 두 형식이다. 확장자가 .txt 면 마크다운 기호를 걷어 낸 평문으로 낸다.
   const format: ManuscriptExportFormat = target.toLowerCase().endsWith('.txt') ? 'txt' : 'md';
   const exported: ExportManuscriptResult = await container.manuscript.writeExport(
     NodeUri.file(resolve(target)),
@@ -1460,9 +1399,6 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// An agent starting from an empty directory needs this first; without it the CLI can only work in
-// 0.8 이전 원장에는 씬 입력 해시가 없어 낡음을 판정할 근거가 없다. 보수 시점의 카드·씬을
-// 기준으로 삼는다 — 그 뒤에 고친 것부터 낡음으로 잡힌다.
 async function sealWorkspaceStoryState(
   container: CliContainer,
   paths: ReturnType<typeof getStoryboardProjectPaths>,
@@ -1484,7 +1420,6 @@ async function sealWorkspaceStoryState(
   });
 }
 
-// "5", "5-8", "5,7,9" 를 받는다. 형식이 어긋나면 undefined 로 알려 조용히 전체를 봉인하는 일을 막는다.
 function parseSceneOrders(raw: string): readonly number[] | undefined {
   const orders: Set<number> = new Set<number>();
 
@@ -1510,8 +1445,6 @@ function parseSceneOrders(raw: string): readonly number[] | undefined {
   return [...orders];
 }
 
-// 원장은 생성이 쌓는다. 초안만 있는 작품(원장 이전에 쓴 것, 밖에서 들여온 것)은 그 초안에서 세운다.
-// 씬 하나에 호출 하나이고, 이미 원장에 있는 씬은 --force 없이는 건드리지 않는다.
 const generateState: CommandHandler = async ({ container, args }) => {
   const rawOrders: string | undefined = args.positionals[0];
   const sceneOrders: readonly number[] | undefined =
@@ -1564,8 +1497,6 @@ const generateState: CommandHandler = async ({ container, args }) => {
   return { ok: true, message: summary, data: result };
 };
 
-// 낡음 판정은 옳다. 사람이 "카드는 고쳤지만 이 초안이 맞다"고 판단했을 때 그 판단을 원장에 남기는
-// 유일한 통로이므로, 자동으로 도는 곳이 없고 이 명령만 덮어쓴다.
 const resealState: CommandHandler = async ({ container, args }) => {
   const rawOrders: string | undefined = args.positionals[0];
   const sceneOrders: readonly number[] | undefined =
@@ -1593,13 +1524,9 @@ const resealState: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// a workspace the extension already created.
 const initProject: CommandHandler = async ({ container, args }) => {
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
 
-  // `--repair` 는 계약은 손대지 않고 발판(디렉터리·.gitignore)만 채운다. 0.8 이전에 만든
-  // 워크스페이스에는 생성물 무시 항목이 빠져 있어 원고가 통째로 커밋 대상에 남는다. 플래그 없이
-  // 기존 워크스페이스에 오면 거부해, --title 이 조용히 무시된 채 exit 0 이 되는 일을 막는다.
   const isExistingWorkspace: boolean = await container.fileSystem.exists(paths.projectJson);
 
   if (flagBoolean(args.flags, 'repair')) {
@@ -1643,7 +1570,6 @@ const initProject: CommandHandler = async ({ container, args }) => {
   const name: string | undefined = flagString(args.flags, 'title') ?? args.positionals[0];
   const hasName: boolean = name !== undefined && name.trim().length > 0;
 
-  // A person at a terminal is asked instead of being told to start over with flags.
   if (!hasName && container.prompter !== undefined) {
     const answers: Record<string, string> | undefined = await askInitContract(
       container.prompter,
@@ -1699,8 +1625,6 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
   return {
     ok: true,
-    // NOTE: 다음 단계는 dispatch 가 현황(status)에서 읽어 터미널에 덧붙인다. 계약을 플래그로 채운
-    // init 에게 «계약을 채우라» 고 하지 않도록 여기서는 적지 않는다.
     message: [
       `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
         describeGitRepository(gitRepository),
@@ -1721,8 +1645,6 @@ const initProject: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// The ignore block is in place before the repository exists, so nothing generated can slip into the
-// user's first commit; the CLI itself never makes that commit.
 function describeGitRepository(outcome: GitRepositoryOutcome): string {
   switch (outcome) {
     case 'initialized':
@@ -1734,8 +1656,6 @@ function describeGitRepository(outcome: GitRepositoryOutcome): string {
   }
 }
 
-// 계약은 outline generate 의 입구다. 이걸 채우는 길이 없으면 워크스페이스를 만들고도 CLI 만으로는
-// 한 걸음도 못 나간다. init 이 처음 채우고, project set 이 나중에 고친다 — 둘 다 같은 입력을 읽는다.
 const setProjectContract: CommandHandler = async ({ container, args }) => {
   const contract: ContractInput = await readContractInput(container, args);
 
@@ -1767,13 +1687,10 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
 type ContractInput =
   | {
       readonly setting: Partial<ProjectSetting> | undefined;
-      // 구성 프리셋이 함께 만들라고 내놓은 서술자 카드. init·project set 이 워크스페이스에 쓴다.
       readonly narratorCards?: readonly NarratorCard[];
     }
   | { readonly message: string };
 
-// The onboarding rail: the name, then each contract choice the flags did not already make. A
-// skipped answer leaves that field for `project set` later; backing out at any step creates nothing.
 async function askInitContract(
   prompter: IPrompter,
   args: ParsedArguments,
@@ -1860,7 +1777,6 @@ async function readContractInput(
         return { message: `${fromPath} 의 최상위는 객체여야 합니다.` };
       }
 
-      // setting 을 감싼 project.json 을 그대로 줘도 받는다.
       const record: Record<string, unknown> = parsed as Record<string, unknown>;
       fromFile = (record.setting ?? record) as Partial<ProjectSetting>;
     } catch (error) {
@@ -1918,7 +1834,6 @@ async function readContractInput(
     .map((id) => id.trim())
     .filter((id) => id.length > 0);
 
-  // 프리셋이 줄기와 서술자 카드를 만든다. 창작자는 구성 하나만 고르면 된다.
   const preset: CompositionPreset | undefined =
     composition === undefined
       ? undefined
@@ -1954,10 +1869,6 @@ async function readContractInput(
     ...(preset && preset.narratorCards.length > 0 ? { narratorCards: preset.narratorCards } : {}),
   };
 }
-
-// Diagnostics the editor paints as squiggles have no terminal form, but the analysis behind them
-// does — and an agent that can check its own output is the whole point of the CLI. Findings go out
-// as data; the exit code says whether the draft is clean.
 
 async function readDraftBody(container: CliContainer, stem: string): Promise<string | undefined> {
   try {
@@ -2032,8 +1943,6 @@ const checkDraft: CommandHandler = async ({ container, args }) => {
   }
 };
 
-// SECURITY: the key is read from stdin or a hidden prompt, never from argv — an API key on a
-// command line lands in the shell history and in the process list for every user on the machine.
 const setApiKey: CommandHandler = async ({ container, args }) => {
   const provider: string | undefined = await resolveApiKeyProvider(container, args.positionals[0]);
 
@@ -2063,7 +1972,6 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
 
   await container.secretStore.setApiKey(providerId, key);
 
-  // 저장하자마자 한 번 불러 본다. 키를 잘못 붙여 넣은 것을 첫 실제 호출에서 알게 되면 늦다.
   try {
     await container.aiProviderRegistry.checkConnection(providerId);
     return {
@@ -2084,8 +1992,6 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
   }
 };
 
-// 어느 키가 들어 있는지만 보여 준다. 값은 절대 찍지 않는다. 로그인으로 연결하는 프로바이더는 같은
-// 파일의 세션을 «로그인됨/안 됨» 으로 보여 준다.
 const showApiKeys: CommandHandler = async ({ container }) => {
   const rows: { readonly providerId: AiProviderId; readonly stored: boolean }[] = [];
   const logins: {
@@ -2132,7 +2038,6 @@ const showApiKeys: CommandHandler = async ({ container }) => {
   };
 };
 
-// 프로바이더를 안 적었으면 터미널에서 번호로 고르게 한다. 파이프에서는 물을 수 없으니 그대로 거절한다.
 async function resolveApiKeyProvider(
   container: CliContainer,
   given: string | undefined,

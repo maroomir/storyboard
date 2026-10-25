@@ -77,6 +77,7 @@ import {
   type ProfileMeasurement,
   type ProfileWriteResult,
   type Overlay,
+  type BaselineSample,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -85,9 +86,6 @@ import { createCliContainer } from '@/container';
 import type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 import { availableProviderIds } from '@/adapters/availableProviders';
 import type { ZodSafeParseResult } from 'zod';
-
-// NOTE: 시뮬레이터는 트랙 저장소를 대상으로 돌고 제품 워크스페이스를 요구하지 않는다. 그래서
-// 다섯 동사 모두 needsWorkspace: false 이고, 대상은 --track 이 가리킨다.
 
 interface TrackScene {
   readonly sceneStem: string;
@@ -98,7 +96,6 @@ interface TrackScene {
 
 interface JudgeMaterials {
   readonly genre: string;
-  // 비평가의 훼손본을 만들 때 뒤바꿀 인물 이름. 카드의 name 순서다.
   readonly characterNames: readonly string[];
   readonly floorDraft: { readonly sceneStem: string; readonly text: string };
   readonly ledger: ReturnType<typeof parseFactLedger> | undefined;
@@ -113,7 +110,6 @@ function refuse(message: string): CommandOutcome {
   return { ok: false, message };
 }
 
-// 씬 목록과 목표 분량은 카드가 갖는다. 따로 적은 목록은 카드와 어긋나는 순간 다른 것을 잰다.
 async function readTrackScenes(genreRoot: string): Promise<readonly TrackScene[]> {
   const sceneDirectory: string = join(genreRoot, 'scene');
   const names: string[] = (await readdir(sceneDirectory)).filter((name) =>
@@ -150,7 +146,6 @@ async function readTrackScenes(genreRoot: string): Promise<readonly TrackScene[]
   return scenes;
 }
 
-// 심판이 쓸 재료. 훼손 원고는 관문에 반드시 필요하므로 없으면 돈을 쓰기 전에 거부한다.
 async function readAxisFloors(
   genreRoot: string,
   scenes: readonly TrackScene[],
@@ -169,7 +164,6 @@ async function readAxisFloors(
   return floors;
 }
 
-// 훼손본은 인물 이름을 뒤바꿔 만든다. 카드의 name 한 줄이면 충분하다.
 async function readCharacterNames(genreRoot: string): Promise<readonly string[]> {
   const directory: string = join(genreRoot, 'character');
   let files: string[];
@@ -242,7 +236,6 @@ async function readJudgeMaterials(
   return { genre, characterNames, floorDraft, ledger };
 }
 
-// 축 트랙은 장르가 아니라 진단표라 chain/ 아래가 아니다. 결과도 성능으로 보고하지 않는다.
 const axisGenre: string = 'axis';
 
 function resolveGenreRoot(trackRoot: string, genre: string | undefined): string {
@@ -278,7 +271,6 @@ interface Selection {
   readonly promptVariant?: SimPromptVariant;
 }
 
-// 기록에 남길 «무엇으로 썼는가». 프롬프트 변형과 생각 여부까지 적어야 같은 지점의 다른 실험을 가른다.
 function generationRecord(
   selection: Selection,
   localRuntime: SimConfig['ollama'],
@@ -297,8 +289,6 @@ function isProviderId(value: string): value is AiProviderId {
   return availableProviderIds().includes(value as AiProviderId);
 }
 
-// 명령줄 > 트랙 저장소의 sim.config.json > 워크스페이스 자체 설정. 기계 프로필은 파일에 두고,
-// 한 번만 바꿔 볼 값은 플래그로 준다.
 function generationSelection(context: CommandContext, config: SimConfig): Selection | string {
   const flagProvider: string | undefined = requireFlag(context, 'provider');
   const flagModel: string | undefined = requireFlag(context, 'model');
@@ -373,7 +363,6 @@ function judgeSelection(
     return `${rawProvider} 에 쓸 심판 모델을 --judge-model 로 주세요.`;
   }
 
-  // 같은 것은 프로바이더가 아니라 가중치다. 한 런타임의 다른 두 모델은 자기채점이 아니다.
   if (rawProvider === generation.providerId && model === generation.model) {
     return `심판과 생성이 같은 모델(${rawProvider}:${model})입니다. 다른 모델을 골라 주세요.`;
   }
@@ -386,7 +375,14 @@ function repeatsOf(context: CommandContext, config: SimConfig): number {
   return flag === undefined ? (config.repeats ?? simDefaults.run.repeats) : Number(flag);
 }
 
-// 견적을 찍고 멈춘다. --yes 가 없으면 한 호출도 하지 않는다.
+const unmeasuredBaselineUntilTheFirstRun: BaselineSample = {
+  generationCallsPerScene: 7,
+  inputTokensPerCall: 4000,
+  outputTokensPerCall: 1500,
+  secondsPerCall: 30,
+  measuredAt: '미실측 (기본 추정)',
+};
+
 function reportEstimate(
   context: CommandContext,
   points: readonly DesignedPoint[],
@@ -404,14 +400,7 @@ function reportEstimate(
     judgeCallsPerRun,
     generationProvider: generation.providerId,
     generationModel: generation.model,
-    // NOTE: 실측 기준선이 아직 없다. 첫 실행이 이 값을 재고 나면 그 값으로 바꾼다.
-    baseline: {
-      generationCallsPerScene: 7,
-      inputTokensPerCall: 4000,
-      outputTokensPerCall: 1500,
-      secondsPerCall: 30,
-      measuredAt: '미실측 (기본 추정)',
-    },
+    baseline: unmeasuredBaselineUntilTheFirstRun,
   });
 
   if (!withinCap(estimate, maxRuns === undefined ? undefined : Number(maxRuns))) {
@@ -471,10 +460,7 @@ async function executePoints(
     return refuse(localRefusal);
   }
 
-  // NOTE: 패키지 버전은 릴리스 사이의 엔진 빌드를 가르지 못한다. 하루에 다섯 빌드로 잰 기록이 전부
-  // «0.9.3» 으로 남았다. 저장소 안에서 돌면 git 해시를, 아니면 버전을 적는다.
   const engineVersion: string = context.container.version;
-  // 번들은 CommonJS 로 형검사되어 import.meta 를 못 쓴다. 실행 파일의 자리(dist/index.mjs)에서 찾는다.
   const engineCommit: string = await describeEngine(
     dirname(process.argv[1] ?? process.cwd()),
     engineVersion,
@@ -499,11 +485,6 @@ async function executePoints(
       : { promptVariant: input.generation.promptVariant }),
   });
 
-  // NOTE: 심판도 생성과 같은 로컬 런타임에서 돈다. 명령을 띄운 컨테이너는 sim.config.json 을 읽지
-  // 않으므로 주소와 문맥 창이 빠진 채로 심판을 부른다. 주소가 다른 기계에서는 연결이 끊겨 시끄럽게
-  // 죽지만, 주소가 같은 기계에서는 num_ctx 없이 조용히 판정한다 — 8화 누적이 모델 기본 문맥을
-  // 넘기면 뒤 독자가 앞을 못 읽은 채 점수를 낸다. 조용히 틀리는 쪽이 위험하므로 심판 레지스트리도
-  // 같은 프로필로 세운다.
   const judgeRegistry: AiProviderRegistry =
     input.localRuntime === undefined
       ? context.container.aiProviderRegistry
@@ -512,7 +493,6 @@ async function executePoints(
           logger: context.container.logger,
           canPrompt: false,
           version: context.container.version,
-          // 생각 켜기/끄기는 생성 쪽 실험 변수다. 심판 모델이 생각을 지원하지 않으면 ollama 가 거부한다.
           localRuntime: {
             ...(input.localRuntime.baseUrl === undefined
               ? {}
@@ -542,7 +522,6 @@ async function executePoints(
         return refuse(refusals.join('\n'));
       }
 
-      // 생성이 씬 카드를 되쓰므로 회차마다 사본에서 돈다.
       const scratch: string = await copyToScratch(input.genreRoot);
 
       try {
@@ -560,8 +539,6 @@ async function executePoints(
             ),
         });
 
-        // 사본은 회차가 끝나면 지워진다. 심판이 회차를 버려도 무엇을 읽고 버렸는지 되짚을 수 있도록
-        // 심판을 부르기 전에 원고부터 결과 곁에 남긴다.
         const draftsDir: string = await keepDrafts(
           input.outPath,
           { genre: input.genre, pointLabel: point.label, repeat },
@@ -570,8 +547,6 @@ async function executePoints(
 
         let verdictFields: Partial<RunRecord> = {};
 
-        // 생성이 끝난 뒤에 심판을 부른다. 심판 사용량은 생성 원장에 섞이지 않는다.
-        // NOTE: 심판이 죽어도 생성 결과는 남긴다. 이미 돈을 쓴 회차를 심판 탓에 잃으면 안 된다.
         try {
           if (input.judge !== undefined && input.materials?.axisFloors !== undefined) {
             const judge: SimJudge = createSimJudge({
@@ -668,7 +643,6 @@ async function executePoints(
   };
 }
 
-// 로컬 런타임에 없는 모델은 호출마다 404 로 죽고 실행기는 빈 기록을 쌓으며 끝까지 간다. 첫 호출 전에 본다.
 async function refuseMissingLocalModels(input: {
   readonly generation: Selection;
   readonly judge?: Selection;
@@ -698,8 +672,6 @@ async function refuseMissingLocalModels(input: {
     : `ollama 에 없는 모델입니다: ${missing.join(', ')} (있는 것: ${available.join(', ') || '없음'}). ollama pull 로 받거나 sim.config 의 모델을 고치세요.`;
 }
 
-// 연쇄 트랙의 심판 한 벌: 하한선 관문 → 독자 패널 → 비평가 → 사실 회수. 새로 생성한 원고와
-// 저장된 원고를 다시 채점할 때(sim rejudge) 같은 길을 쓴다. 심판 사용량은 judgeTokens 로 따로 남긴다.
 async function judgeChainDrafts(
   context: CommandContext,
   input: {
@@ -741,7 +713,6 @@ async function judgeChainDrafts(
     discarded: verdict.discarded,
     ...(verdict.discarded ? { discardReasons: verdict.discardReasons } : {}),
     floorGate: verdict.floor,
-    // 곡선은 폐기 여부와 무관하게 남긴다. 어디서 덮었는지가 곧 되짚을 단서다.
     panel: {
       byReader: verdict.auc.byReader,
       curves: verdict.auc.curves,
@@ -806,7 +777,6 @@ async function judgeChainDrafts(
   return { ...fields, judgeTokens: judgeUsageTotals(judge) };
 }
 
-// 심판 응답의 사용량을 원장 모양으로 접는다. 로컬은 0달러, API 는 실제 금액이 여기 남는다.
 function judgeUsageTotals(judge: SimJudge): TokenTotals {
   return summarizeUsage(
     judge.usage().map((response) => ({
@@ -1026,7 +996,6 @@ export const sweepSim: CommandHandler = async (context) => {
   return await executePoints(context, { ...prepared, points, judge, materials });
 };
 
-// 같은 지점·같은 생성을 두 엔진 이상으로 돌렸으면 앞 엔진 대비 움직임을 잡음 폭과 함께 보인다.
 function regressionLines(runs: readonly RunRecord[]): readonly string[] {
   const rows: readonly RegressionRow[] = regressionRows(runs);
 
@@ -1052,7 +1021,6 @@ export const reportSim: CommandHandler = async (context) => {
     return { ok: true, message: '아직 기록된 실행이 없습니다.', data: { runs: [] } };
   }
 
-  // 요금이 0인 모델로 돌았으면 금액으로는 지점을 가를 수 없다. 그때는 토큰이 x축이 된다.
   const totalUsd: number | undefined = runs.reduce<number | undefined>(
     (total, run) =>
       total === undefined || run.tokens.costUsd === undefined
@@ -1062,14 +1030,12 @@ export const reportSim: CommandHandler = async (context) => {
   );
   const axis: CostAxis = chooseCostAxis(totalUsd);
   const scored: readonly PointScore[] = scoreRuns(runs, axis);
-  // 유효 회차가 없는 지점은 품질을 모른다. 경계에 올리면 AUC 0 인 지점으로 읽힌다.
   const frontier: readonly ScoredPoint[] = paretoFrontier(
     scored.filter((point) => point.judged > 0),
   );
   const frontierKeys: Set<string> = new Set(frontier.map((point) => scoreKey(point as PointScore)));
   const judgedRuns: number = scored.reduce((total, point) => total + point.judged, 0);
 
-  // 엔진이나 트랙이 다른 기록이 한 파일에 섞이면 같은 지점 이름이 여러 줄 나온다. 어느 것인지 밝힌다.
   const fingerprints: Set<string> = new Set(
     scored.map((point) => `${point.engineCommit}@${point.trackCommit}`),
   );
@@ -1079,7 +1045,6 @@ export const reportSim: CommandHandler = async (context) => {
   const judges: Set<string> = new Set(scored.map((point) => point.judge));
   const mixedJudge: boolean = judges.size > 1;
 
-  // 시험체마다 따로 줄을 세운다. 장르를 섞으면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
   const genres: string[] = [...new Set(scored.map((point) => point.genre))].sort();
   const lines: string[] = genres.flatMap((genre) => [
     '',
@@ -1119,13 +1084,11 @@ export const reportSim: CommandHandler = async (context) => {
     message: [
       `실행 ${runs.length}회 (유효 ${judgedRuns}회) · 지점 ${scored.length}개 · 시험체 ${genres.length}개 (* 는 그 시험체의 파레토 경계)`,
       `비용 축: ${costAxisLabels[axis]}`,
-      // 폐기 회차는 품질 축에서 뺀다. 0 으로 넣으면 셋 중 둘이 폐기된 지점이 «AUC 0» 으로 읽힌다.
       '품질 축은 유효 회차의 중앙값, 비용 축은 전체 회차의 중앙값 · 관문은 유효 회차 중 심판이 훼손본을 가려낸 수',
       ...(mixed ? ['엔진·트랙이 다른 기록은 따로 셉니다 (@엔진/트랙)'] : []),
       ...(mixedGeneration
         ? ['생성 모델·프롬프트 변형이 다른 기록은 따로 셉니다 ([프로바이더:모델/변형])']
         : []),
-      // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',
       ...lines,
       ...regressionLines(runs),
@@ -1134,7 +1097,6 @@ export const reportSim: CommandHandler = async (context) => {
   };
 };
 
-// 저장된 원고를 다른 심판으로 다시 채점한다. 생성은 다시 돌리지 않는다.
 export const rejudgeSim: CommandHandler = async (context) => {
   const prepared: string | PreparedSim = await prepare(context);
   if (typeof prepared === 'string') {
@@ -1291,7 +1253,6 @@ export const rejudgeSim: CommandHandler = async (context) => {
   };
 };
 
-// results/drafts/<장르>/<지점>/<회차>/<씬>.md 를 씬 순서대로 읽는다. 심판이 받았던 그대로(머리말 포함)다.
 async function readKeptDrafts(
   directory: string,
   scenes: readonly TrackScene[],
@@ -1322,7 +1283,6 @@ export const applySim: CommandHandler = async (context) => {
     return refuse(`${point} 의 실행 기록이 없습니다.`);
   }
 
-  // 폐기된 회차는 값이 없다. 돌았다고 세면 폐기 둘에 유효 하나인 지점이 프로필에 들어간다.
   if (judged.length < simDefaults.run.repeats) {
     return refuse(
       `${point} 은 유효 회차가 ${judged.length}회뿐입니다 (${runs.length}회 실행). 씨앗이 없어 회차마다 흔들리므로 ${simDefaults.run.repeats}회 이상의 중앙값이 필요합니다.`,
@@ -1412,7 +1372,6 @@ export const applySim: CommandHandler = async (context) => {
   };
 };
 
-// 실행 파일(dist/index.mjs) 자리에서 위로 올라가며 엔진 저장소의 프로필 파일을 찾는다.
 async function findModelProfilesFile(): Promise<string | undefined> {
   let directory: string = dirname(process.argv[1] ?? process.cwd());
 

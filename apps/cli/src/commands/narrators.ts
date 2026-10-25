@@ -123,13 +123,11 @@ export const removeNarrator: CommandHandler = async ({ container, args }) => {
 
   return {
     ok: true,
-    // 참조가 남아 있으면 생성이 그 씬에서 멈춘다. 지우는 자리에서 알려 두는 편이 낫다.
     message: `narrator/${id}.card 를 지웠습니다. 이 id 를 참조하는 씬이 남아 있으면 doctor 가 알려 줍니다.`,
     data: { id },
   };
 };
 
-// 씬이 어떤 시점으로 생성될지 해석된 결과 한 줄. 파생이 어떻게 됐는지 눈으로 확인하는 자리다.
 export async function describeSceneNarration(
   container: Pick<CliContainer, 'workspaceRoot' | 'cards' | 'novel'>,
   sceneNarrator: string | undefined,

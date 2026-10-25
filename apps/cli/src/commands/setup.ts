@@ -124,8 +124,6 @@ async function chooseProviderInteractively(
   return selectableProviderIds.find((providerId) => providerId === answer);
 }
 
-// `storyboard setup` — the terminal's version of the extension's provider picker. Interactive
-// when there is a person at the keyboard; an agent passes `--provider` instead.
 export async function runSetup({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge, secretStore } = container;
   const flagProvider: string | undefined = flagString(args.flags, 'provider');
@@ -187,7 +185,6 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
 
   return {
     ok: true,
-    // NOTE: API 키는 --global 여부와 상관없이 0600 홈 파일 하나에만 산다. 설정 파일만 갈린다.
     message:
       `기본 프로바이더를 ${providerId} 로 저장했습니다: ${container.configWriteFile}` +
       (keyStored ? `\nAPI 키를 저장했습니다: ${home.secretsFile}` : '') +
@@ -201,8 +198,6 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
   };
 }
 
-// A browser-login provider with no session: sign in now when a person is there, otherwise say
-// which command does it. Undefined when there is nothing to do.
 async function signInIfNeeded(
   container: CliContainer,
   providerId: AiProviderId,
@@ -289,18 +284,13 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
 interface SceneCardCensus {
   readonly withoutBeats: number;
   readonly unreadable: readonly string[];
-  // 서술자·줄기 검사도 같은 카드를 본다. 한 번 읽어 두 진단이 나눠 쓴다.
   readonly cards: readonly { readonly fileName: string; readonly card: SceneCard }[];
   readonly largestSceneTarget: number;
 }
 
-// 3,000자에서는 sonnet 도 85%를 냈고 15,000자에서 51%로 떨어졌다. 그 사이 어딘가가 경계이므로
-// 두 실측점 중간을 기준으로 삼는다.
 const largeSceneTarget: number = 8_000;
 const acceptableReach: number = 0.8;
 
-// NOTE: 모델이 목표를 못 채우면 사용자는 원인을 파이프라인에서 찾는다. 생성 수십 분을 쓰기 전에
-// 목표와 모델의 조합부터 알려 준다.
 function collectSceneLengthReachChecks(
   container: CliContainer,
   largestSceneTarget: number,
@@ -313,7 +303,6 @@ function collectSceneLengthReachChecks(
 
   const providerId: AiProviderId = configBridge.getDefaultProvider();
   const model: string | undefined = configBridge.getProviderConfig(providerId).model;
-  // 실측표는 모델 프로필 하나에 모여 있다. 재보지 않은 조합은 프로필이 없고, 그러면 말하지 않는다.
   const measured: ModelMeasurement | undefined = configBridge.getModelProfile()?.measured;
 
   if (measured === undefined || measured.reach >= acceptableReach) {
@@ -355,8 +344,6 @@ async function surveySceneCards(
   return { withoutBeats, unreadable, cards, largestSceneTarget };
 }
 
-// NOTE: 끊긴 서술자 참조와 정의되지 않은 줄기는 생성이 그 씬에 닿아야 드러난다. 장편은 그때가
-// 수십 분 뒤이므로, 씬을 읽는 김에 미리 본다.
 async function collectNarrationChecks(
   container: CliContainer,
   sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
@@ -463,9 +450,6 @@ async function collectNarrationChecks(
   ];
 }
 
-// NOTE: 시점은 씬 > 장 > 작품 기본 순으로 정해지고 아무것도 없으면 프롬프트에 시점 지시가 나가지
-// 않는다(기존 작품 보호). 초점 인물까지 적어 둔 씬이 그 길로 가면 작가의 뜻과 달리 3인칭이 되므로
-// 미리 알린다.
 async function findNarrationlessScenes(
   container: CliContainer,
   sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
@@ -492,7 +476,6 @@ async function findNarrationlessScenes(
     .map(({ card }) => card.id);
 }
 
-// 줄기별 원장까지 함께 본다. 편이 갈린 작품에서 깨진 줄이 기본 원장에만 있으리라는 보장이 없다.
 async function findUnreadableLedgerLines(
   container: CliContainer,
   project: StoryboardProject | undefined,
@@ -519,8 +502,6 @@ async function findUnreadableLedgerLines(
   return lines;
 }
 
-// 원장(.storyboard/memory/storyState.md)이 지금의 카드·씬과 어긋나는지 본다. 어긋난 채로 두면
-// 폐기된 판본의 사실이 다음 씬 프롬프트로 들어간다.
 async function collectStoryStateChecks(
   container: CliContainer,
   paths: ReturnType<typeof getStoryboardProjectPaths>,
@@ -570,8 +551,6 @@ async function collectStoryStateChecks(
   return [{ status: 'ok', label: '이야기 상태', detail: '원장이 지금의 카드·씬과 맞습니다.' }];
 }
 
-// 장별 요약(.storyboard/memory/summaries.md)이 지금의 초안과 어긋나는지 본다. 어긋난 채로 두면
-// 폐기된 판본의 줄거리가 다음 씬 프롬프트로 들어간다.
 async function collectChapterSummaryChecks(
   container: CliContainer,
   paths: ReturnType<typeof getStoryboardProjectPaths>,
@@ -611,10 +590,6 @@ async function collectChapterSummaryChecks(
   return [{ status: 'ok', label: '장별 요약', detail: '요약이 지금의 초안과 맞습니다.' }];
 }
 
-// NOTE: scene rename records itself in a journal, writes every new file, deletes the old ones and
-// then the journal. A journal whose old card is still there is a rename cut off before the old card
-// went, and the same rename finishes it; cut off after, the old stem's draft or summary is left
-// with no card.
 function collectInterruptedRenameChecks(
   paths: ReturnType<typeof getStoryboardProjectPaths>,
   sceneFileNames: readonly string[],
@@ -679,8 +654,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     ];
   }
 
-  // 0.8 이전 워크스페이스나 손으로 지운 디렉터리는 진단 대상이지 예외가 아니다.
-  const sceneFileNames: readonly string[] | never[] = await container.fileSystem
+  const sceneFileNames: readonly string[] = await container.fileSystem
     .listFileNames(paths.sceneDirectory)
     .catch(() => []);
   const scenes: string[] = sceneFileNames.filter((name) => name.endsWith('.card'));
@@ -770,12 +744,10 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     },
     ...(await collectNarrationChecks(container, sceneCards)),
     ...(await collectBeatCastChecks(container, sceneCards)),
-    ...(await collectBackgroundConflictChecks(container)),
+    ...(await collectCachedBackgroundConflictChecks(container)),
   ];
 }
 
-// NOTE: 비트 좌표의 출연이 어느 인물 카드와도 맞지 않으면 이름으로 바뀌지 못하고 id·오타 그대로
-// 프롬프트에 실린다. 생성 때도 경고하지만 장편은 그 씬에 닿기까지 오래 걸리므로 미리 본다.
 async function collectBeatCastChecks(
   container: CliContainer,
   sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
@@ -820,9 +792,9 @@ async function collectBeatCastChecks(
       ];
 }
 
-// NOTE: 상충 판정은 AI 호출이라 doctor 는 하지 않는다. 생성이 카드마다 한 번 판정해 남긴 캐시만 읽으므로,
-// 아직 생성에 쓰이지 않았거나 판정 뒤 고친 카드는 여기 나오지 않는다.
-async function collectBackgroundConflictChecks(container: CliContainer): Promise<DoctorCheck[]> {
+async function collectCachedBackgroundConflictChecks(
+  container: CliContainer,
+): Promise<DoctorCheck[]> {
   const reports: BackgroundFactConflictReport[] = await container.cards.listBackgroundFactConflicts(
     container.workspaceRoot,
   );
@@ -835,9 +807,6 @@ async function collectBackgroundConflictChecks(container: CliContainer): Promise
   }));
 }
 
-// The author's resource files (prompts, the craft contract, the pipeline specs, …) are read at every
-// workspace run; a file that cannot be used is reported here with the reason, so a typo in a
-// pipeline spec is caught before a paid run rather than by it.
 async function collectResourceChecks(container: CliContainer): Promise<DoctorCheck[]> {
   const report: ResourceOverrideReport = await container.loadResourceOverrides();
 
@@ -883,7 +852,6 @@ export async function runDoctor({ container, stdout }: CommandContext): Promise<
     { title: '리소스 파일', checks: await collectResourceChecks(container) },
     { title: '작품', checks: await collectWorkspaceChecks(container) },
   ];
-  // The flat list keeps the order `--json` readers have always had.
   const checks: DoctorCheck[] = [
     ...homeChecks,
     ...sections.slice(1).flatMap((section) => section.checks),
@@ -917,11 +885,8 @@ const doctorMarks: Readonly<
   info: ['·', 'muted'],
 };
 
-// Wide enough for a workspace path, narrow enough to read as a panel rather than a log.
 const doctorPanelWidth: number = 100;
 
-// One box per section, a count line, and the first fix to try — what a person at a terminal needs
-// to act on without reading every line.
 function renderDoctorPanels(sections: readonly DoctorSection[], stream: TerminalStream): string[] {
   const { paint } = stream.theme;
   const visibleSections: DoctorSection[] = sections.filter((section) => section.checks.length > 0);
@@ -977,8 +942,6 @@ function describeOrigin(configBridge: ConfigBridge, key: string): string {
     case 'user':
       return '공통';
     default:
-      // 실측으로 정한 모델 기본값과 코드 기본값은 사용자에게 다른 것이다 — 전자는 모델을 바꾸면
-      // 따라 바뀐다.
       return configBridge.getModelProfileDefault(key) === undefined ? '기본값' : '모델 실측';
   }
 }
@@ -1004,7 +967,6 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
     }
   }
 
-  // 라우팅이 없는 작업은 기본 프로바이더를 따른다. 작업이 서른 개가 넘어 정한 것만 보인다.
   for (const taskName of aiTaskNames) {
     const route: TaskAiConfigOverride | null = configBridge.getTaskAiConfigOverride(taskName);
     if (route === null) {
@@ -1057,13 +1019,11 @@ const parameterOriginLabels: Record<ParameterEntry['origin'], string> = {
   'provider-unsupported': '프로바이더 미지원',
 };
 
-// The bundled value is worth noting beside a value someone set; not beside one that is never sent.
 const originsWithoutDefaultNote: Set<ParameterOrigin> = new Set<ParameterEntry['origin']>([
   'default',
   'provider-unsupported',
 ]);
 
-// 작가가 움직일 수 있는 값 전부를 한 목록으로: 어떤 값이 지금 어디서 오는지 한눈에 보인다.
 export async function runParamsShow({ container }: CommandContext): Promise<CommandOutcome> {
   const report: ParameterReport = await container.describeParameters();
   const width: number = Math.max(...report.parameters.map((entry) => entry.id.length));
@@ -1099,7 +1059,6 @@ export async function runParamsShow({ container }: CommandContext): Promise<Comm
   return { ok: true, message: lines.join('\n'), data: report };
 }
 
-// The catalog's bounds, so the author learns what would be accepted instead of only being refused.
 function describeOutOfRange(
   definition: StoryboardSettingDefinition,
   value: boolean | number | string,
@@ -1148,8 +1107,6 @@ function describeSaved(
 ): CommandOutcome {
   const file: string = container.configWriteFile;
   const origin: ConfigValueOrigin = container.configBridge.getValueOrigin(key);
-  // NOTE: 작품 파일이 공통을 덮는다. --global 로 썼는데 이 작품에 같은 키가 있으면 방금 쓴 값은
-  // 여기서 가려지므로, 조용히 넘어가면 "고쳤는데 안 바뀐다"가 된다.
   const isShadowed: boolean = file === container.homePaths.configFile && origin === 'workspace';
 
   return {
@@ -1170,10 +1127,10 @@ function describeModelOutsideCatalog(providerId: AiProviderId, model: string): s
   );
 }
 
-// NOTE: 로컬 런타임은 기계마다 받아 둔 모델이 다르다. 카탈로그를 고정 목록으로 강제하면
-// 사용자가 이미 가진 모델을 쓸 수 없으므로, ollama 에서는 목록을 제안으로만 쓴다.
 function findProviderModelProblem(providerId: AiProviderId, model: string): string | undefined {
-  return providerId === 'ollama' || isModelInCatalogForProvider(providerId, model)
+  const hasMachineSpecificModelList: boolean = providerId === 'ollama';
+
+  return hasMachineSpecificModelList || isModelInCatalogForProvider(providerId, model)
     ? undefined
     : describeModelOutsideCatalog(providerId, model);
 }
@@ -1227,8 +1184,6 @@ function isTaskName(value: string): value is AiTaskName {
   return (aiTaskNames as readonly string[]).includes(value);
 }
 
-// A task route is a provider and, optionally, its model: the engine ignores a model with no
-// provider, so whichever half is set, the pair is written whole and stays one the engine reads.
 async function setTaskRoute(
   container: CliContainer,
   taskName: string,
@@ -1316,8 +1271,6 @@ async function setTaskRoute(
   );
 }
 
-// `config set` is the agent-friendly face of the settings panel: one key, one value, validated by
-// the same catalog the panel renders.
 export async function runConfigSet({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge } = container;
   const key: string | undefined = flagString(args.flags, 'key') ?? args.positionals[0];
@@ -1431,8 +1384,6 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
   return describeSaved(container, key, value);
 }
 
-// The keys `config set` writes, minus the hidden providers' own: those are switched off through
-// `config set … false`, which also clears the routes that name the provider.
 function findUnsettableKeyProblem(key: string): string | undefined {
   const taskMatch: RegExpExecArray | null = taskKeyPattern.exec(key);
 
@@ -1454,8 +1405,6 @@ function findUnsettableKeyProblem(key: string): string | undefined {
   return isKnownKey ? undefined : describeUnknownKey(key);
 }
 
-// Like `config set`, it touches only the file this run writes to, so a value the other file holds
-// comes back into force — said out loud, or the author would think the key is gone everywhere.
 export async function runConfigUnset({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge } = container;
   const key: string | undefined = flagString(args.flags, 'key') ?? args.positionals[0];
