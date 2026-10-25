@@ -75,19 +75,22 @@ class ContinuityDiagnosticsController {
       return;
     }
 
-    const result: CheckDraftResult = await this.dependencies.drafts.check({
+    const draftCheck: CheckDraftResult = await this.dependencies.drafts.check({
       workspaceRoot: workspaceFolder.uri,
       sceneStem: resolveSceneStem(document),
       kind: 'continuity',
       text: document.getText(),
     });
 
-    if (result.kind !== 'continuity' || !result.hasFacts) {
+    if (draftCheck.kind !== 'continuity' || !draftCheck.hasFacts) {
       this.collection.delete(document.uri);
       return;
     }
 
-    this.collection.set(document.uri, mapContinuityIssuesToDiagnostics(document, result.issues));
+    this.collection.set(
+      document.uri,
+      mapContinuityIssuesToDiagnostics(document, draftCheck.issues),
+    );
   }
 
   public dispose(): void {

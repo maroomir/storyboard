@@ -116,19 +116,19 @@ class GrammarDiagnosticsController {
       sceneStem = fileName.replace(/\.md$/i, '');
     }
 
-    const result: CheckDraftResult = await this.dependencies.drafts.check({
+    const draftCheck: CheckDraftResult = await this.dependencies.drafts.check({
       workspaceRoot: workspaceFolder.uri,
       sceneStem,
       kind: 'grammar',
       text: document.getText(),
     });
 
-    if (result.kind !== 'grammar') {
+    if (draftCheck.kind !== 'grammar') {
       this.collection.delete(document.uri);
       return;
     }
 
-    this.collection.set(document.uri, this.toDiagnostics(document, result.issues));
+    this.collection.set(document.uri, this.toDiagnostics(document, draftCheck.issues));
   }
 
   public scheduleRealtimeCheck(document: vscode.TextDocument): void {

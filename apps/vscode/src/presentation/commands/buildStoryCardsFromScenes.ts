@@ -57,11 +57,13 @@ export function registerBuildStoryCardsFromScenesCommand(
           cancellable: true,
         },
         async (_progress, token) => {
-          const result: BuildStoryCardsProposal = await cards.buildFromScenes({ workspaceRoot });
+          const storyCardsProposal: BuildStoryCardsProposal = await cards.buildFromScenes({
+            workspaceRoot,
+          });
           if (token.isCancellationRequested) {
             throw new StoryCardBuildCancelledError();
           }
-          return result;
+          return storyCardsProposal;
         },
       );
       const selected: SelectedChange[] = await selectChanges(proposal.targets);

@@ -36,19 +36,19 @@ function callRpc<T>(
 
   return new Promise((resolve, reject) => {
     const handler = (event: MessageEvent): void => {
-      const data: RpcResponse<T> | undefined = event.data as RpcResponse<T> | undefined;
-      if (!data || data.type !== 'response' || data.id !== id) {
+      const response: RpcResponse<T> | undefined = event.data as RpcResponse<T> | undefined;
+      if (!response || response.type !== 'response' || response.id !== id) {
         return;
       }
 
       window.removeEventListener('message', handler);
 
-      if (data.ok && data.payload !== undefined) {
-        resolve(data.payload);
+      if (response.ok && response.payload !== undefined) {
+        resolve(response.payload);
         return;
       }
 
-      reject(new Error(data.error?.message ?? '요청을 처리하지 못했습니다.'));
+      reject(new Error(response.error?.message ?? '요청을 처리하지 못했습니다.'));
     };
 
     window.addEventListener('message', handler);

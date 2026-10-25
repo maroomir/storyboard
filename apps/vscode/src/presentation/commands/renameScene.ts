@@ -59,14 +59,14 @@ async function renameScene(
   }
 
   await runHoldingWorkspaceLock(dependencies.runGate, workspaceRoot, '씬 이름 변경', async () => {
-    const result: RenameSceneResult = await dependencies.drafts.renameScene({
+    const sceneRename: RenameSceneResult = await dependencies.drafts.renameScene({
       workspaceRoot,
       fromStem,
       toStem: toStem.trim(),
     });
 
-    if (!result.ok) {
-      await vscode.window.showWarningMessage(result.message);
+    if (!sceneRename.ok) {
+      await vscode.window.showWarningMessage(sceneRename.message);
       return;
     }
 
@@ -77,13 +77,13 @@ async function renameScene(
     if (wasOpen) {
       await vscode.commands.executeCommand(
         'vscode.open',
-        scenePath(workspaceRoot, result.toStem) as vscode.Uri,
+        scenePath(workspaceRoot, sceneRename.toStem) as vscode.Uri,
       );
     }
 
     void vscode.window.showInformationMessage(
-      `${result.fromStem} → ${result.toStem}: 파일 ${result.movedFiles.length}개를 옮기고 ${result.rewrittenFiles.length}개를 고쳤습니다.${
-        result.hasOrderChanged
+      `${sceneRename.fromStem} → ${sceneRename.toStem}: 파일 ${sceneRename.movedFiles.length}개를 옮기고 ${sceneRename.rewrittenFiles.length}개를 고쳤습니다.${
+        sceneRename.hasOrderChanged
           ? ' 번호가 바뀌어 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
           : ''
       }`,

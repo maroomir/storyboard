@@ -37,19 +37,19 @@ function callWriteRaw(
 
   return new Promise((resolve, reject) => {
     const handler = (event: MessageEvent): void => {
-      const data: RpcResponse | undefined = event.data as RpcResponse | undefined;
-      if (!data || data.type !== 'response' || data.id !== id) {
+      const response: RpcResponse | undefined = event.data as RpcResponse | undefined;
+      if (!response || response.type !== 'response' || response.id !== id) {
         return;
       }
 
       window.removeEventListener('message', handler);
 
-      if (data.ok && data.payload) {
-        resolve(data.payload);
+      if (response.ok && response.payload) {
+        resolve(response.payload);
         return;
       }
 
-      reject(new Error(data.error?.message ?? 'YAML을 저장하지 못했습니다.'));
+      reject(new Error(response.error?.message ?? 'YAML을 저장하지 못했습니다.'));
     };
 
     window.addEventListener('message', handler);

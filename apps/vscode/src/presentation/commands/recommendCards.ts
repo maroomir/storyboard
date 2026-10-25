@@ -41,27 +41,27 @@ async function recommendCards(
     return;
   }
 
-  const result: RecommendCardsResult | undefined = await runCardRecommendation(
+  const recommendation: RecommendCardsResult | undefined = await runCardRecommendation(
     category,
     workspaceRoot,
     dependencies,
   );
 
-  if (!result || result.kind === 'cancelled') {
+  if (!recommendation || recommendation.kind === 'cancelled') {
     return;
   }
 
-  if (result.kind === 'failed') {
-    await showStoryboardFailure(result.message);
+  if (recommendation.kind === 'failed') {
+    await showStoryboardFailure(recommendation.message);
     return;
   }
 
-  if (result.kind === 'no_sources') {
+  if (recommendation.kind === 'no_sources') {
     await vscode.window.showInformationMessage('스캔할 scene 또는 draft가 없습니다.');
     return;
   }
 
-  const { recommendations } = result;
+  const { recommendations } = recommendation;
 
   if (recommendations.length === 0) {
     await vscode.window.showInformationMessage(

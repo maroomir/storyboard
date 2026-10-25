@@ -51,8 +51,10 @@ function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | un
   return document?.uri.scheme === 'file' ? document.uri : undefined;
 }
 
-async function openDraftResult(result: Extract<GenerateDraftResult, { ok: true }>): Promise<void> {
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.draftUri);
+async function openDraftResult(
+  generated: Extract<GenerateDraftResult, { ok: true }>,
+): Promise<void> {
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(generated.draftUri);
   await vscode.window.showTextDocument(document);
 }
 
@@ -70,7 +72,7 @@ async function runGenerateDraftForWorkspaceScene(
     async (progress, token) => {
       progress.report({ message: '준비 중…' });
 
-      const result: GenerateDraftResult = await dependencies.drafts.generate({
+      const draftGeneration: GenerateDraftResult = await dependencies.drafts.generate({
         sceneUri,
         force,
         confirmSceneGrounding,
@@ -97,16 +99,16 @@ async function runGenerateDraftForWorkspaceScene(
         shouldCancel: () => token.isCancellationRequested,
       });
 
-      if (!result.ok) {
-        if (result.kind === 'failed') {
-          void showStoryboardFailure(result.message);
+      if (!draftGeneration.ok) {
+        if (draftGeneration.kind === 'failed') {
+          void showStoryboardFailure(draftGeneration.message);
         }
         return;
       }
 
-      await openDraftResult(result);
+      await openDraftResult(draftGeneration);
 
-      if (result.kind === 'generated') {
+      if (draftGeneration.kind === 'generated') {
         const reviseResult: ReviseDraftWorkflowResult | undefined =
           await dependencies.drafts.reviseAfterGenerate(sceneUri, {
             onProgress: (message) => progress.report({ message }),
@@ -124,10 +126,10 @@ async function runGenerateDraftForWorkspaceScene(
       }
 
       progress.report({
-        message: result.kind === 'cache_hit' ? '캐시된 초안을 열었습니다.' : '완료',
+        message: draftGeneration.kind === 'cache_hit' ? '캐시된 초안을 열었습니다.' : '완료',
       });
       void vscode.window.showInformationMessage(
-        result.kind === 'cache_hit'
+        draftGeneration.kind === 'cache_hit'
           ? CACHE_HIT_MESSAGE
           : force
             ? REGENERATE_SUCCESS_MESSAGE

@@ -329,15 +329,15 @@ async function applyAugmentation(
 
 async function reportAugmentFailure(
   dependencies: RegisterAugmentDraftCommandDependencies,
-  result: Extract<AugmentDraftResult, { ok: false }>,
+  failure: Extract<AugmentDraftResult, { ok: false }>,
 ): Promise<void> {
-  if (result.kind === 'empty') {
+  if (failure.kind === 'empty') {
     await vscode.window.showWarningMessage('보충 결과가 비어 있어 적용하지 않았습니다.');
     return;
   }
 
   dependencies.logger.show();
-  await showStoryboardFailure(`초안 보충에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`초안 보충에 실패했습니다: ${failure.message}`);
 }
 
 async function runAugmentDraft(
@@ -364,7 +364,7 @@ async function runAugmentDraft(
   const { editor, workspaceFolder, documentText, draft, selectionRange } = target;
   const labels: AugmentLabels = buildAugmentLabels(scope, instruction);
 
-  const result: AugmentDraftResult = await runAugmentation(
+  const augmentation: AugmentDraftResult = await runAugmentation(
     dependencies.drafts,
     labels.progressTitle,
     {
@@ -377,8 +377,8 @@ async function runAugmentDraft(
     },
   );
 
-  if (!result.ok) {
-    await reportAugmentFailure(dependencies, result);
+  if (!augmentation.ok) {
+    await reportAugmentFailure(dependencies, augmentation);
     return;
   }
 
@@ -387,7 +387,7 @@ async function runAugmentDraft(
     editor.document,
     selectionRange,
     draft,
-    result.text,
+    augmentation.text,
   );
   const proposedFullText: string = applyReplacementToText(
     documentText,

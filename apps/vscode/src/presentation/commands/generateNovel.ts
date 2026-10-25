@@ -88,7 +88,7 @@ async function runGenerateNovel(
         cancellable: true,
       },
       async (progress, token) => {
-        const result: NovelRunResult = await dependencies.novel.run({
+        const novelRun: NovelRunResult = await dependencies.novel.run({
           workspaceUri: workspaceRoot,
           project,
           runMode: decision.runMode,
@@ -99,12 +99,12 @@ async function runGenerateNovel(
         });
 
         await reportResult(
-          result.spending.isOverBudget && result.outcome === 'paused'
+          novelRun.spending.isOverBudget && novelRun.outcome === 'paused'
             ? {
-                ...result,
-                message: `이번 실행 예산 $${result.spending.budgetUsd}에 닿아 멈췄습니다.`,
+                ...novelRun,
+                message: `이번 실행 예산 $${novelRun.spending.budgetUsd}에 닿아 멈췄습니다.`,
               }
-            : result,
+            : novelRun,
           paths.manuscriptVolume,
         );
       },
@@ -185,10 +185,10 @@ async function requestApproval(_kind: NovelApprovalKind, info: string): Promise<
 }
 
 async function reportResult(
-  result: NovelPipelineResult,
+  pipelineResult: NovelPipelineResult,
   manuscriptVolumeUri: vscode.Uri,
 ): Promise<void> {
-  if (result.outcome === 'completed') {
+  if (pipelineResult.outcome === 'completed') {
     if (await uriExists(manuscriptVolumeUri)) {
       const document: vscode.TextDocument =
         await vscode.workspace.openTextDocument(manuscriptVolumeUri);
@@ -198,12 +198,14 @@ async function reportResult(
     return;
   }
 
-  if (result.outcome === 'failed') {
+  if (pipelineResult.outcome === 'failed') {
     await vscode.window.showErrorMessage(
-      `장편 생성에 실패했습니다: ${result.message} 다시 실행하면 중단 지점부터 재개합니다.`,
+      `장편 생성에 실패했습니다: ${pipelineResult.message} 다시 실행하면 중단 지점부터 재개합니다.`,
     );
     return;
   }
 
-  await vscode.window.showWarningMessage(`${result.message} (다시 실행하면 이어서 진행합니다.)`);
+  await vscode.window.showWarningMessage(
+    `${pipelineResult.message} (다시 실행하면 이어서 진행합니다.)`,
+  );
 }

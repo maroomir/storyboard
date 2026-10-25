@@ -53,7 +53,7 @@ export function CardEditor({
   );
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
+    const receiveHostMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
       if (event.data.type !== 'event' || event.data.method !== 'cards.changed') {
         return;
       }
@@ -71,8 +71,8 @@ export function CardEditor({
       applyDocumentState(nextDocumentState);
     };
 
-    window.addEventListener('message', handleMessage);
-    return (): void => window.removeEventListener('message', handleMessage);
+    window.addEventListener('message', receiveHostMessage);
+    return (): void => window.removeEventListener('message', receiveHostMessage);
   }, [isDirty, isEditingYaml, applyDocumentState]);
 
   const applyYamlSave: (next: Pick<CardEditorInitialData, 'card' | 'rawText'>) => void =

@@ -27,11 +27,13 @@ export function registerCompleteStoryScenesCommand(
           cancellable: true,
         },
         async (_progress, token) => {
-          const result: CompleteStoryScenesProposal = await novel.completeScenes({ workspaceRoot });
+          const completionProposal: CompleteStoryScenesProposal = await novel.completeScenes({
+            workspaceRoot,
+          });
           if (token.isCancellationRequested) {
             throw new StoryCompletionCancelledError();
           }
-          return result;
+          return completionProposal;
         },
       );
       const selectedCount: number | undefined = await choosePrefix(proposal.scenes.length);

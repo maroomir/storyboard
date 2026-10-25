@@ -398,15 +398,15 @@ export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmou
   };
 }
 
-export function sumUsageMap(map: Readonly<Record<string, UsageAmount>>): UsageAmount {
-  return Object.values(map).reduce(addUsageAmount, emptyUsageAmount);
+export function sumUsageMap(usageByKey: Readonly<Record<string, UsageAmount>>): UsageAmount {
+  return Object.values(usageByKey).reduce(addUsageAmount, emptyUsageAmount);
 }
 
 export function usageAmountOf(
-  map: Readonly<Record<string, UsageAmount>>,
+  usageByKey: Readonly<Record<string, UsageAmount>>,
   key: string,
 ): UsageAmount {
-  return map[key] ?? emptyUsageAmount;
+  return usageByKey[key] ?? emptyUsageAmount;
 }
 
 function normalizeUsageAmount(value: unknown): UsageAmount | undefined {
@@ -509,14 +509,16 @@ function isSceneListItem(value: unknown): value is SceneListItem {
     return false;
   }
 
-  const s: Partial<SceneListItem> = value as Partial<SceneListItem>;
+  const sceneFields: Partial<SceneListItem> = value as Partial<SceneListItem>;
   return (
-    typeof s.stem === 'string' &&
-    typeof s.order === 'number' &&
-    typeof s.slug === 'string' &&
-    typeof s.sceneUri === 'string' &&
-    (s.status === 'ready' || s.status === 'stale' || s.status === 'missing') &&
-    typeof s.sceneMtime === 'number'
+    typeof sceneFields.stem === 'string' &&
+    typeof sceneFields.order === 'number' &&
+    typeof sceneFields.slug === 'string' &&
+    typeof sceneFields.sceneUri === 'string' &&
+    (sceneFields.status === 'ready' ||
+      sceneFields.status === 'stale' ||
+      sceneFields.status === 'missing') &&
+    typeof sceneFields.sceneMtime === 'number'
   );
 }
 

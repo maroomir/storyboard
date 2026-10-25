@@ -102,7 +102,7 @@ export function CardsSidebar({
   const [sidebarState, setSidebarState] = useState(initialData);
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
+    const receiveHostMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
       if (event.data.type !== 'event') {
         return;
       }
@@ -120,8 +120,8 @@ export function CardsSidebar({
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return (): void => window.removeEventListener('message', handleMessage);
+    window.addEventListener('message', receiveHostMessage);
+    return (): void => window.removeEventListener('message', receiveHostMessage);
   }, []);
 
   const postCardRequest = (
@@ -152,11 +152,11 @@ export function CardsSidebar({
       : sumUsageMap(sidebarState.usage.backgrounds);
 
   const cardUsage = (card: SidebarCardSummary): UsageAmount => {
-    const map: Readonly<Record<string, UsageAmount>> =
+    const usageByCard: Readonly<Record<string, UsageAmount>> =
       sidebarState.type === 'character'
         ? sidebarState.usage.characters
         : sidebarState.usage.backgrounds;
-    return usageAmountOf(map, card.id);
+    return usageAmountOf(usageByCard, card.id);
   };
 
   const characterSections: readonly CharacterSidebarSection[] = useMemo(

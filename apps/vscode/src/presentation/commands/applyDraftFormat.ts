@@ -34,10 +34,10 @@ export interface RegisterApplyDraftFormatCommandDependencies {
 }
 
 async function reportApplyFormatFailure(
-  result: Extract<ApplyDraftFormatResult, { ok: false }>,
+  failure: Extract<ApplyDraftFormatResult, { ok: false }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
-  switch (result.kind) {
+  switch (failure.kind) {
     case 'cancelled':
       return;
     case 'project_unreadable':
@@ -59,7 +59,7 @@ async function reportApplyFormatFailure(
       return;
     case 'failed':
       logger.show();
-      await showStoryboardFailure(`장르 포맷 적용에 실패했습니다: ${result.message}`);
+      await showStoryboardFailure(`장르 포맷 적용에 실패했습니다: ${failure.message}`);
       return;
   }
 }
@@ -106,19 +106,21 @@ async function runApplyDraftFormatForScene(
       async (progress, token) => {
         progress.report({ message: '장르 포맷 적용 중…' });
 
-        const result: ApplyDraftFormatResult = await dependencies.drafts.applyFormat({
+        const formatting: ApplyDraftFormatResult = await dependencies.drafts.applyFormat({
           workspaceRoot: workspaceFolder.uri,
           sceneStem: nameParts.stem,
           onSaving: () => progress.report({ message: '저장 중…' }),
           shouldCancel: () => token.isCancellationRequested,
         });
 
-        if (!result.ok) {
-          await reportApplyFormatFailure(result, dependencies.logger);
+        if (!formatting.ok) {
+          await reportApplyFormatFailure(formatting, dependencies.logger);
           return;
         }
 
-        const doc: vscode.TextDocument = await vscode.workspace.openTextDocument(result.draftUri);
+        const doc: vscode.TextDocument = await vscode.workspace.openTextDocument(
+          formatting.draftUri,
+        );
         await vscode.window.showTextDocument(doc);
         progress.report({ message: '완료' });
         void vscode.window.showInformationMessage('장르 포맷을 적용해 초안을 저장했습니다.');

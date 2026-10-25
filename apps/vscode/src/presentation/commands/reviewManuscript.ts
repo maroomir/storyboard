@@ -31,7 +31,7 @@ async function runReviewManuscript(
     return;
   }
 
-  const result: ReviewManuscriptResult = await vscode.window.withProgress(
+  const manuscriptReview: ReviewManuscriptResult = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Storyboard 원고 최종 검사',
@@ -43,38 +43,40 @@ async function runReviewManuscript(
     },
   );
 
-  if (!result.ok) {
-    await reportFailure(result, dependencies.logger);
+  if (!manuscriptReview.ok) {
+    await reportFailure(manuscriptReview, dependencies.logger);
     return;
   }
 
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(result.reportUri);
+  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+    manuscriptReview.reportUri,
+  );
   await vscode.window.showTextDocument(document);
 
-  const total: number = result.continuityCount + result.critiqueCount;
+  const total: number = manuscriptReview.continuityCount + manuscriptReview.critiqueCount;
   await vscode.window.showInformationMessage(
     total === 0
       ? '원고 최종 검사를 마쳤습니다. 발견된 이슈가 없습니다.'
-      : `원고 최종 검사를 마쳤습니다. 설정 모순 ${result.continuityCount}건, 비평 ${result.critiqueCount}건.`,
+      : `원고 최종 검사를 마쳤습니다. 설정 모순 ${manuscriptReview.continuityCount}건, 비평 ${manuscriptReview.critiqueCount}건.`,
   );
 }
 
 async function reportFailure(
-  result: Exclude<ReviewManuscriptResult, { readonly ok: true }>,
+  failure: Exclude<ReviewManuscriptResult, { readonly ok: true }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
-  if (result.kind === 'missing_outline') {
+  if (failure.kind === 'missing_outline') {
     await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
     return;
   }
-  if (result.kind === 'missing_drafts') {
+  if (failure.kind === 'missing_drafts') {
     await vscode.window.showInformationMessage(
       '검사할 초안이 없습니다. 먼저 Generate (All) Drafts를 실행해 주세요.',
     );
     return;
   }
 
-  logger.error('Manuscript review failed', new Error(result.message));
+  logger.error('Manuscript review failed', new Error(failure.message));
   logger.show();
-  await showStoryboardFailure(`원고 최종 검사에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`원고 최종 검사에 실패했습니다: ${failure.message}`);
 }
