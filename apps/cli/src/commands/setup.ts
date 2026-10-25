@@ -38,10 +38,10 @@ import {
   type SidebarCardSummary,
   type NarratorCard,
   type ModelMeasurement,
+  type ConfigValueOrigin,
 } from '@storyboard/story-model';
 import {
   type ConfigBridge,
-  type ConfigValueOrigin,
   type ProviderModelConfig,
   type TaskAiConfigOverride,
 } from '@storyboard/story-ai';
@@ -71,7 +71,7 @@ import { collectHiddenProviderChecks, setHiddenProviderKey } from './hiddenProvi
 import { signIn } from './login';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
-import { displayedProviderKeys, settableProviderKeys, type SettableProviderKey } from './catalog';
+import { providerKeys, type ProviderKey } from './catalog';
 import { availableProviderIds, enabledHiddenProviderIds } from '@/adapters/availableProviders';
 import type { StoryboardHomePaths } from '@storyboard/story-config';
 import type { BackgroundFactConflictReport } from '../../../../packages/story-app/src/managers/cardManager';
@@ -958,7 +958,7 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
 
   for (const providerId of availableProviderIds()) {
     const runtime: ProviderModelConfig = configBridge.getProviderConfig(providerId);
-    for (const key of displayedProviderKeys) {
+    for (const key of providerKeys) {
       const value: string | number | undefined = runtime[key];
       if (value !== undefined) {
         const settingKey: string = `providers.${providerId}.${key}`;
@@ -1138,7 +1138,7 @@ function findProviderModelProblem(providerId: AiProviderId, model: string): stri
 async function setProviderField(
   container: CliContainer,
   providerId: AiProviderId,
-  field: SettableProviderKey,
+  field: ProviderKey,
   raw: string,
 ): Promise<CommandOutcome> {
   const { configBridge } = container;
@@ -1173,7 +1173,7 @@ async function setProviderField(
 function describeUnknownKey(key: string): string {
   return (
     `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: ai.provider.default, ` +
-    `providers.<id>.${settableProviderKeys.join('|')}, tasks.<task>.provider|model, ` +
+    `providers.<id>.${providerKeys.join('|')}, tasks.<task>.provider|model, ` +
     storyboardSettingCatalog.map((entry) => entry.key).join(', ')
   );
 }
@@ -1334,12 +1334,12 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
   }
 
   const providerMatch: RegExpExecArray | null = new RegExp(
-    `^providers\\.([a-z-]+)\\.(${settableProviderKeys.join('|')})$`,
+    `^providers\\.([a-z-]+)\\.(${providerKeys.join('|')})$`,
   ).exec(key);
 
   if (providerMatch) {
     const providerId: string = providerMatch[1] ?? '';
-    const field: SettableProviderKey = providerMatch[2] as SettableProviderKey;
+    const field: ProviderKey = providerMatch[2] as ProviderKey;
 
     if (!isProviderId(providerId)) {
       return { ok: false, message: `알 수 없는 프로바이더: ${providerId}` };
@@ -1395,7 +1395,7 @@ function findUnsettableKeyProblem(key: string): string | undefined {
   }
 
   const providerMatch: RegExpExecArray | null = new RegExp(
-    `^providers\\.([a-z-]+)\\.(${settableProviderKeys.join('|')})$`,
+    `^providers\\.([a-z-]+)\\.(${providerKeys.join('|')})$`,
   ).exec(key);
   const isKnownKey: boolean =
     key === 'ai.provider.default' ||

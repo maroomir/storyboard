@@ -12,6 +12,7 @@ import {
   type SceneFile,
   type Draft,
   type StoryboardCard,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type {
@@ -19,14 +20,13 @@ import type {
   ICardRecommendationRepository,
 } from '#engine/application/cards/recommendCardsUseCase';
 import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '@storyboard/story-ai';
 
 export class CardRecommendationRepository implements ICardRecommendationRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async load(
     workspaceRoot: StoryUri,
-    category: RecommendationCategory,
+    category: BibleSubjectKind,
   ): Promise<CardRecommendationInput> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [sources, existingNames] = await Promise.all([
@@ -109,7 +109,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
 
   private async loadExistingCardNames(
     workspaceRoot: StoryUri,
-    category: RecommendationCategory,
+    category: BibleSubjectKind,
   ): Promise<string[]> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const directory: StoryUri =

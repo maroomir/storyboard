@@ -24,7 +24,6 @@ import type {
   RenameCardRequest,
   RenameCardResult,
   RenameCardUseCase,
-  SidebarCardCategory,
   StoryCardTarget,
   StoryFileSnapshot,
   IBackgroundFactConflictStore,
@@ -43,10 +42,11 @@ import {
   type SidebarCardSummary,
   type StoryboardCard,
   type StoryUri,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 
 export interface CardReading {
-  readonly category: SidebarCardCategory;
+  readonly category: BibleSubjectKind;
   readonly uri: StoryUri;
   readonly card: StoryboardCard;
 }
@@ -81,10 +81,7 @@ export class CardManager {
     this.bibleCandidates = deps.bibleCandidateRepository;
   }
 
-  public list(
-    workspaceRoot: StoryUri,
-    category: SidebarCardCategory,
-  ): Promise<SidebarCardSummary[]> {
+  public list(workspaceRoot: StoryUri, category: BibleSubjectKind): Promise<SidebarCardSummary[]> {
     return this.sidebar.list(workspaceRoot, category);
   }
 

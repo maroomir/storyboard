@@ -10,7 +10,7 @@ import {
   applyNoteConsolidation,
   emptyNoteSynthesis,
   type NoteExtraction,
-  type NoteExtractionFailure,
+  type NoteResponseFailure,
   type NoteExtractionKnownCard,
   type NoteExtractionResponse,
   buildNoteAbsorbPlan,
@@ -20,7 +20,6 @@ import {
   measureNoteAbsorbWorkload,
   type NoteAbsorbWorkload,
   type NoteConsolidatedLists,
-  type NoteConsolidationFailure,
   groupNoteConsolidationTargets,
   selectNoteConsolidationTargets,
   STORYBOARD_RELATIVE_PATHS,
@@ -82,12 +81,12 @@ function toKnownCard(card: StoryboardCard): NoteExtractionKnownCard {
   };
 }
 
-const failureDescriptions: Readonly<Record<NoteExtractionFailure, string>> = {
+const failureDescriptions: Readonly<Record<NoteResponseFailure, string>> = {
   truncated: '응답이 출력 한도에서 잘려',
   unparsed: '응답에서 정리 결과(JSON)를 찾지 못해',
 };
 
-const consolidationFailureDescriptions: Readonly<Record<NoteConsolidationFailure, string>> = {
+const consolidationFailureDescriptions: Readonly<Record<NoteResponseFailure, string>> = {
   truncated: '응답이 출력 한도에서 잘려',
   unparsed: '응답에서 정리 결과(JSON)를 찾지 못해',
 };
@@ -97,7 +96,7 @@ function describeUnconsolidatedCards(names: readonly string[], reason: string): 
 }
 
 function describeExtractionFailure(
-  failure: NoteExtractionFailure,
+  failure: NoteResponseFailure,
   chunk: readonly NoteDocument[],
   position: string,
 ): string {

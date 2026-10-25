@@ -1,9 +1,5 @@
-import type {
-  RecommendationCategory,
-  RecommendedEntity,
-  StoryboardAiService,
-} from '@storyboard/story-ai';
-import type { UsageAttribution } from '@storyboard/story-model';
+import type { RecommendedEntity, StoryboardAiService } from '@storyboard/story-ai';
+import type { BibleSubjectKind, UsageAttribution } from '@storyboard/story-model';
 
 interface EntityAccumulator {
   entity: RecommendedEntity;
@@ -30,7 +26,7 @@ export interface RecommendedCard {
 }
 
 export interface BuildCardRecommendationsInput {
-  readonly category: RecommendationCategory;
+  readonly category: BibleSubjectKind;
   readonly sources: readonly RecommendationSource[];
   readonly existingNames: readonly string[];
   readonly aiService: CardRecommendationAiService;

@@ -87,6 +87,7 @@ import {
   type Character,
   type LocationBackgroundCard,
   type NovelRunMode,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 
 import type { DraftAugmentScope, OAuthConnection } from '@storyboard/story-ai';
@@ -95,7 +96,7 @@ import type { CliContainer } from '@/container';
 import type { NovelRunResult, WorkspaceStatus } from '@storyboard/story-app';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
-import { cardCategories, draftCheckKinds, type CardCategory } from './catalog';
+import { cardCategories, draftCheckKinds } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
 import { absorbNotes, connectNotes, runNoteAbsorb, exportNotes } from './notes';
 import { askLine, askSecret, readStdin } from './prompt';
@@ -803,7 +804,7 @@ const promoteBible: CommandHandler = async ({ container, args }) => {
 };
 
 const recommendCards: CommandHandler = async ({ container, args }) => {
-  const category: CardCategory | undefined = cardCategoryFrom(args);
+  const category: BibleSubjectKind | undefined = cardCategoryFrom(args);
 
   if (category === undefined) {
     return { ok: false, message: describeMissingCardCategory('card recommend') };
@@ -833,7 +834,7 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
 
 const cardIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
-function cardCategoryFrom(args: ParsedArguments): CardCategory | undefined {
+function cardCategoryFrom(args: ParsedArguments): BibleSubjectKind | undefined {
   return cardCategories.find((category) => category === args.positionals[0]);
 }
 
@@ -842,7 +843,7 @@ function describeMissingCardCategory(verb: string): string {
 }
 
 const renameCard: CommandHandler = async ({ container, args }) => {
-  const category: CardCategory | undefined = cardCategoryFrom(args);
+  const category: BibleSubjectKind | undefined = cardCategoryFrom(args);
   const fromId: string | undefined = args.positionals[1];
   const toId: string | undefined = flagString(args.flags, 'to');
 
@@ -1150,7 +1151,7 @@ const canonDiff: CommandHandler = async ({ container }) => {
 };
 
 const createCard: CommandHandler = async ({ container, args }) => {
-  const kind: CardCategory | undefined = cardCategoryFrom(args);
+  const kind: BibleSubjectKind | undefined = cardCategoryFrom(args);
   const name: string | undefined = flagString(args.flags, 'name') ?? args.positionals[1];
 
   if (kind === undefined) {

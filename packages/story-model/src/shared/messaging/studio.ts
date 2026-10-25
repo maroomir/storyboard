@@ -15,10 +15,9 @@ import type {
   StudioValidationWarning,
 } from '#model/contracts/studioValidation';
 import type { BibleSubjectKind } from '#model/format/bible';
+import type { EntityKind } from '#model/contracts/aiTypes';
 
-export type StudioEntityKind = 'character' | 'scene' | 'background' | 'project';
-
-export const studioEntityKindSchema: z.ZodType<StudioEntityKind> = z.enum([
+export const studioEntityKindSchema: z.ZodType<EntityKind> = z.enum([
   'character',
   'background',
   'scene',
@@ -26,7 +25,7 @@ export const studioEntityKindSchema: z.ZodType<StudioEntityKind> = z.enum([
 ]);
 
 export interface StudioEntity {
-  kind: StudioEntityKind;
+  kind: EntityKind;
   key: string;
 }
 

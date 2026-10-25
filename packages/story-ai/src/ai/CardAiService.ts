@@ -15,7 +15,6 @@ import { CardCandidateVerificationPrompt } from './prompts/cardCandidateVerifica
 import {
   CardRecommendationPrompt,
   coerceCardRecommendations,
-  type RecommendationCategory,
   type RecommendedEntity,
 } from './prompts/cardRecommendation';
 import { FactExtractionPrompt } from './prompts/factExtraction';
@@ -31,7 +30,12 @@ import {
 } from '@storyboard/story-model';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig, PromptVariantId } from './prompts/types';
-import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '@storyboard/story-model';
+import type {
+  AiGenerateResponse,
+  UsageAttribution,
+  AiTaskName,
+  BibleSubjectKind,
+} from '@storyboard/story-model';
 import {
   parseBulletList,
   parseJsonArray,
@@ -180,7 +184,7 @@ export class CardAiService {
 
   public async extractCardRecommendations(
     body: string,
-    category: RecommendationCategory,
+    category: BibleSubjectKind,
     knownNames: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<RecommendedEntity[]> {

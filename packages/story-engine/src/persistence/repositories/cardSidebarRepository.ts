@@ -13,19 +13,17 @@ import type {
   StoryboardProjectPaths,
   StoryboardCard,
   CharacterRole,
+  BibleSubjectKind,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type {
-  ICardSidebarRepository,
-  SidebarCardCategory,
-} from '#engine/application/cards/cardSidebarRepository';
+import type { ICardSidebarRepository } from '#engine/application/cards/cardSidebarRepository';
 
 export class CardSidebarRepository implements ICardSidebarRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async list(
     workspaceRoot: StoryUri,
-    category: SidebarCardCategory,
+    category: BibleSubjectKind,
   ): Promise<SidebarCardSummary[]> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const directory: StoryUri =
@@ -40,10 +38,7 @@ export class CardSidebarRepository implements ICardSidebarRepository {
     return summaries.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
   }
 
-  private async toSummary(
-    uri: StoryUri,
-    category: SidebarCardCategory,
-  ): Promise<SidebarCardSummary> {
+  private async toSummary(uri: StoryUri, category: BibleSubjectKind): Promise<SidebarCardSummary> {
     try {
       const card: StoryboardCard = parseCard(
         new TextDecoder().decode(await this.fileSystem.readFile(uri)),
@@ -74,7 +69,7 @@ export class CardSidebarRepository implements ICardSidebarRepository {
 
   private errorSummary(
     uri: StoryUri,
-    category: SidebarCardCategory,
+    category: BibleSubjectKind,
     error: string,
   ): SidebarCardSummary {
     return {
@@ -86,7 +81,7 @@ export class CardSidebarRepository implements ICardSidebarRepository {
     };
   }
 
-  private toCategory(cardType: CardType): SidebarCardCategory {
+  private toCategory(cardType: CardType): BibleSubjectKind {
     return cardType === 'character' ? 'character' : 'background';
   }
 }

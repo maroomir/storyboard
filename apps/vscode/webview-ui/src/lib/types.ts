@@ -1,5 +1,9 @@
 import type {
+  CardType,
+  CharacterRole,
+  StudioValidationState,
   CardCollectProposal,
+  EntityKind,
   SceneListItem,
   SidebarCardSummary,
   StoryboardRequestMethod,
@@ -7,7 +11,6 @@ import type {
   StudioCardStageRelation,
   StudioChatTurn,
   StudioEntity,
-  StudioEntityKind,
   StudioFollowUpTarget,
   StudioPendingFollowUp,
   StudioProposalStatus,
@@ -22,9 +25,13 @@ import type {
   NarratorCard,
   SceneBeat,
   LocationKind,
+  BibleSubjectKind,
 } from '@storyboard/story-model/contracts';
 
 export type {
+  CardType,
+  CharacterRole,
+  StudioValidationState,
   CardCollectProposal,
   SceneListItem,
   SidebarCardSummary,
@@ -33,7 +40,7 @@ export type {
   StudioCardStageRelation,
   StudioChatTurn,
   StudioEntity,
-  StudioEntityKind,
+  EntityKind,
   StudioFollowUpTarget,
   StudioPendingFollowUp,
   StudioProposalStatus,
@@ -46,12 +53,6 @@ export type {
   StudioTarget,
   StudioValidation,
 };
-
-export type CardType = 'character' | 'location' | 'temporal' | 'social';
-
-export type SidebarCardCategory = 'character' | 'background';
-
-export type CharacterRole = 'main' | 'supporting' | 'extra';
 
 type CardAttributeValue = string | number | boolean | null;
 
@@ -170,7 +171,7 @@ export interface UsageSummaryByEntity {
 }
 
 export interface SidebarCardsInitialData {
-  readonly type: SidebarCardCategory;
+  readonly type: BibleSubjectKind;
   readonly title: string;
   readonly cards: readonly SidebarCardSummary[];
   readonly isStoryboardProject: boolean;
@@ -185,8 +186,6 @@ export interface SidebarScenesInitialData {
 }
 
 export type StudioReviewState = 'unreviewed' | 'clean' | 'issues';
-
-export type StudioValidationState = 'pass' | 'warn' | 'skipped';
 
 export interface StudioValidationWarning {
   readonly message: string;

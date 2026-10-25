@@ -18,6 +18,8 @@ import {
   describeNarration,
   applyCardCollectProposals,
   getStoryboardProjectPaths,
+  sceneStructureTextFields,
+  sceneStructureListFields,
 } from '@storyboard/story-model';
 import type {
   SceneCard,
@@ -26,8 +28,10 @@ import type {
   StoryboardCard,
   CardCollectProposal,
   NarratorCard,
+  SceneStructureFieldKey,
+  SceneStructureTextField,
 } from '@storyboard/story-model';
-import type { SceneStructureFieldKey, SceneStructureProposal } from '@storyboard/story-ai';
+import type { SceneStructureProposal } from '@storyboard/story-ai';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { loadCharacterRoster, loadNarratorCards } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
@@ -348,23 +352,11 @@ function resolveCardImageUri(
   return webview.asWebviewUri(vscode.Uri.joinPath(cardDirectory, relativeImagePath)).toString();
 }
 
-type SceneStructureScalarKey = 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | 'endState';
-type SceneStructureListKey = 'foreshadowing' | 'neededCanon';
-
-const sceneStructureScalarKeys: readonly SceneStructureScalarKey[] = [
-  'purpose',
-  'conflict',
-  'twist',
-  'emotionalShift',
-  'endState',
-];
-const sceneStructureListKeys: readonly SceneStructureListKey[] = ['foreshadowing', 'neededCanon'];
-
 function collectMissingStructureFields(card: SceneCard): SceneStructureFieldKey[] {
-  const missingScalars: SceneStructureScalarKey[] = sceneStructureScalarKeys.filter(
+  const missingScalars: SceneStructureTextField[] = sceneStructureTextFields.filter(
     (key) => (card[key]?.trim() ?? '').length === 0,
   );
-  const missingLists: ('foreshadowing' | 'neededCanon')[] = sceneStructureListKeys.filter(
+  const missingLists: ('foreshadowing' | 'neededCanon')[] = sceneStructureListFields.filter(
     (key) => (card[key] ?? []).length === 0,
   );
 
@@ -372,11 +364,11 @@ function collectMissingStructureFields(card: SceneCard): SceneStructureFieldKey[
 }
 
 function describeKnownStructureFields(card: SceneCard): string[] {
-  const scalars: string[] = sceneStructureScalarKeys.flatMap((key) => {
+  const scalars: string[] = sceneStructureTextFields.flatMap((key) => {
     const value: string | undefined = card[key]?.trim();
     return value ? [`- ${sceneSeedSectionLabels[key]}: ${value}`] : [];
   });
-  const lists: string[] = sceneStructureListKeys.flatMap((key) => {
+  const lists: string[] = sceneStructureListFields.flatMap((key) => {
     const values: string[] = card[key] ?? [];
     return values.length > 0 ? [`- ${sceneSeedSectionLabels[key]}: ${values.join(', ')}`] : [];
   });

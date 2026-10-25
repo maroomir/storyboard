@@ -1,17 +1,14 @@
+import { promptVariantIds, type PromptVariantId } from '@storyboard/story-ai';
 import { readFile } from 'node:fs/promises';
 
 import { z } from 'zod';
 
-export type SimPromptVariant = 'generic' | 'xs' | 'rich';
-
-export const simPromptVariants: readonly [SimPromptVariant, ...SimPromptVariant[]] = ['generic', 'xs', 'rich'];
-
-export const promptVariantSchema: z.ZodType<SimPromptVariant> = z.enum(simPromptVariants);
+export const promptVariantSchema: z.ZodType<PromptVariantId> = z.enum(promptVariantIds);
 
 interface Selection {
   provider: string;
   model: string;
-  promptVariant?: SimPromptVariant;
+  promptVariant?: PromptVariantId;
 }
 
 const selectionSchema: z.ZodType<Selection> = z.object({

@@ -1,7 +1,7 @@
-import type { DisposableHandle } from '@storyboard/story-model';
+import type { ConfigValueOrigin, DisposableHandle } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
-import type { ConfigBridge, ConfigValueOrigin } from '@storyboard/story-ai';
+import type { ConfigBridge } from '@storyboard/story-ai';
 
 import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
 import type { SettingsConfigFiles } from '@/presentation/messaging/settingsRpcHandlers';

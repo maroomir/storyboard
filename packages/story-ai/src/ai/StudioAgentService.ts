@@ -1,10 +1,6 @@
 import type { AiTextGateway } from './AiTextGateway';
 import { toPromptMessages } from './aiResponseCoercion';
-import {
-  StudioAgentPrompt,
-  type StudioAgentPatchShape,
-  type StudioAgentPromptInput,
-} from './prompts/studioAgent';
+import { StudioAgentPrompt, type StudioAgentPromptInput } from './prompts/studioAgent';
 import { StudioCardAuditPrompt, type StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import { StudioCardSeedPrompt } from './prompts/studioCardSeed';
 import { StudioValidationPrompt } from './prompts/studioValidation';
@@ -20,6 +16,7 @@ import {
   coerceStudioValidationVerdict,
   type StudioValidationVerdict,
   type AiGenerateResponse,
+  type StudioPatchTarget,
 } from '@storyboard/story-model';
 import type { PromptArtifact } from '#ai/ai/prompts/types';
 
@@ -36,7 +33,7 @@ export type StudioInvokeResolver = (request: StudioAgentInvokeRequest) => Promis
 
 export interface StudioAgentRunInput {
   readonly entityKind: StudioAgentPromptInput['entityKind'];
-  readonly patchShape: StudioAgentPatchShape;
+  readonly patchShape: StudioPatchTarget;
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly context: string;

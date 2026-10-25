@@ -3,16 +3,15 @@ import {
   studioToolNamesByShape,
   type StudioAgentEntityKind,
   type StudioAgentToolName,
+  type StudioPatchTarget,
 } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
 import type { PromptArtifact, PromptModule } from './types';
 
-export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';
-
 export interface StudioAgentPromptInput {
   readonly entityKind: StudioAgentEntityKind;
-  readonly patchShape: StudioAgentPatchShape;
+  readonly patchShape: StudioPatchTarget;
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly context: string;

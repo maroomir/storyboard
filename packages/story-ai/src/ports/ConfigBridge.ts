@@ -1,3 +1,4 @@
+import { promptVariantIds, type PromptVariantId } from '#ai/ai/prompts/types';
 import {
   aiProviderIds,
   aiTaskNames,
@@ -26,6 +27,7 @@ import {
   stringSettingDefault,
 } from '@storyboard/story-model';
 import type {
+  ConfigValueOrigin,
   DisposableHandle,
   ScenePrefixDigitsInspectLike,
   StoryboardSettingDefinition,
@@ -33,8 +35,6 @@ import type {
 
 const userConfigurationTarget: number = 1;
 const workspaceConfigurationTarget: number = 2;
-
-export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
 
 export interface ProviderModelConfig {
   readonly model?: string;
@@ -47,9 +47,6 @@ export interface CliProviderConfig {
   readonly command?: string;
   readonly timeoutMs?: number;
 }
-
-export type PromptVariantOverride = 'generic' | 'xs' | 'rich';
-export const promptVariantIds: readonly PromptVariantOverride[] = ['generic', 'xs', 'rich'];
 
 interface RawTaskRoute {
   readonly provider?: string;
@@ -241,13 +238,13 @@ export class ConfigBridge {
     };
   }
 
-  public getPromptVariantOverride(): PromptVariantOverride | undefined {
+  public getPromptVariantOverride(): PromptVariantId | undefined {
     const value: unknown = this.dependencies
       .getConfiguration()
       .get<unknown>('ai.prompt.variant', undefined);
 
     return typeof value === 'string' && (promptVariantIds as readonly string[]).includes(value)
-      ? (value as PromptVariantOverride)
+      ? (value as PromptVariantId)
       : undefined;
   }
 

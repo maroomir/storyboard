@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { BibleSubjectKind, StoryUri } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
@@ -7,10 +7,9 @@ import {
   type RecommendationSource,
   type RecommendedCard,
 } from '#engine/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '@storyboard/story-ai';
 
 export interface ICardRecommendationRepository {
-  load(workspaceRoot: StoryUri, category: RecommendationCategory): Promise<CardRecommendationInput>;
+  load(workspaceRoot: StoryUri, category: BibleSubjectKind): Promise<CardRecommendationInput>;
 }
 
 export interface ICardRecommendationAiGateway {
@@ -23,7 +22,7 @@ export type CardRecommendationInput = {
 };
 
 export type RecommendCardsRequest = {
-  readonly category: RecommendationCategory;
+  readonly category: BibleSubjectKind;
   readonly shouldCancel?: () => boolean;
   readonly workspaceRoot: StoryUri;
 };

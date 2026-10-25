@@ -2,7 +2,6 @@ import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadField
 import type {
   CardEditorInitialData,
   SceneListItem,
-  SidebarCardCategory,
   SidebarCardsInitialData,
   SidebarScenesInitialData,
   StudioCardStage,
@@ -10,7 +9,7 @@ import type {
   StudioChatStage,
   StudioChatTurn,
   StudioEntity,
-  StudioEntityKind,
+  EntityKind,
   StudioInitialData,
   StudioPendingFollowUp,
   StudioReviewState,
@@ -120,7 +119,7 @@ function parseStudioEntity(value: unknown): StudioEntity | undefined {
   }
 
   const candidate: Partial<StudioEntity> = value as Partial<StudioEntity>;
-  const kind: StudioEntityKind | undefined = candidate.kind;
+  const kind: EntityKind | undefined = candidate.kind;
 
   if (kind !== 'character' && kind !== 'background' && kind !== 'scene' && kind !== 'project') {
     return undefined;
@@ -524,6 +523,6 @@ function isSceneListItem(value: unknown): value is SceneListItem {
   );
 }
 
-function isSidebarCardCategory(value: unknown): value is SidebarCardCategory {
+function isSidebarCardCategory(value: unknown): value is BibleSubjectKind {
   return value === 'character' || value === 'background';
 }

@@ -1,10 +1,12 @@
 import {
+  bibleSubjectKinds,
   compositionKinds,
   compositionPresetDefaults,
   narrativeTenses,
   narratorKnowledges,
   narratorPersons,
   pointOfViews,
+  type BibleSubjectKind,
 } from '@storyboard/story-model';
 import { draftCheckKinds } from '@storyboard/story-engine';
 
@@ -51,9 +53,7 @@ export type InitLanguage = 'ko' | 'en' | 'ja';
 
 export const initLanguages: readonly InitLanguage[] = ['ko', 'en', 'ja'];
 
-export type CardCategory = 'character' | 'background';
-
-export const cardCategories: readonly CardCategory[] = ['character', 'background'];
+export const cardCategories: readonly BibleSubjectKind[] = bibleSubjectKinds;
 
 export { draftCheckKinds, type DraftCheckKind } from '@storyboard/story-engine';
 
@@ -65,15 +65,7 @@ export const defaultNoteSource: NoteSource = 'notion';
 
 export type ProviderKey = 'model' | 'baseUrl' | 'contextTokens';
 
-export type SettableProviderKey = ProviderKey;
-
-export const displayedProviderKeys: readonly ProviderKey[] = ['model', 'baseUrl', 'contextTokens'];
-
-export const settableProviderKeys: readonly SettableProviderKey[] = [
-  'model',
-  'baseUrl',
-  'contextTokens',
-];
+export const providerKeys: readonly ProviderKey[] = ['model', 'baseUrl', 'contextTokens'];
 
 export const commandGroups: readonly CommandGroup[] = [
   '시작하기',

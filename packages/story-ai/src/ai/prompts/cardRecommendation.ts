@@ -1,10 +1,8 @@
 import { isCharacterRole } from '@storyboard/story-model';
-import type { CharacterRole } from '@storyboard/story-model';
+import type { BibleSubjectKind, CharacterRole } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
-
-export type RecommendationCategory = 'character' | 'background';
 
 export interface RecommendedEntity {
   readonly name: string;
@@ -15,7 +13,7 @@ export interface RecommendedEntity {
 export const CardRecommendationPrompt: PromptModule<
   [
     body: string,
-    category: RecommendationCategory,
+    category: BibleSubjectKind,
     knownNames: readonly string[],
     variant?: PromptVariantId,
   ]
@@ -23,7 +21,7 @@ export const CardRecommendationPrompt: PromptModule<
   config: promptTuning('cardRecommendation'),
   build(
     body: string,
-    category: RecommendationCategory,
+    category: BibleSubjectKind,
     knownNames: readonly string[],
     variant: PromptVariantId = 'generic',
   ): PromptArtifact {
@@ -53,7 +51,7 @@ function coerceRole(value: unknown): CharacterRole | undefined {
 
 export function coerceCardRecommendations(
   value: unknown[] | null,
-  category: RecommendationCategory,
+  category: BibleSubjectKind,
 ): RecommendedEntity[] {
   if (value === null) {
     return [];

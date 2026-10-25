@@ -4,6 +4,7 @@ import {
   pointOfViewLabels,
   serializeCard,
   validateGenerationContract,
+  type BibleSubjectKind,
   type CharacterRole,
   type ProjectSetting,
   type SceneListItem,
@@ -11,7 +12,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { cardCategories, type CardCategory } from './catalog';
+import { cardCategories } from './catalog';
 import type { CommandHandler } from './outcome';
 import type { CardReading, DraftReading } from '@storyboard/story-app';
 
@@ -21,7 +22,7 @@ const draftStatusLabels: Readonly<Record<SceneListItem['status'], string>> = {
   stale: '초안이 카드보다 오래됨',
 };
 
-const cardCategoryLabels: Readonly<Record<CardCategory, string>> = {
+const cardCategoryLabels: Readonly<Record<BibleSubjectKind, string>> = {
   character: '인물',
   background: '배경',
 };
@@ -54,7 +55,7 @@ function cardIdFromUnreadableFileName(fileName: string): string {
 }
 
 interface CardListRow {
-  readonly category: CardCategory;
+  readonly category: BibleSubjectKind;
   readonly id: string;
   readonly name: string | null;
   readonly role: CharacterRole | null;
@@ -63,7 +64,7 @@ interface CardListRow {
 
 export const listCards: CommandHandler = async ({ container, args }) => {
   const requested: string | undefined = args.positionals[0];
-  const categories: CardCategory[] = cardCategories.filter(
+  const categories: BibleSubjectKind[] = cardCategories.filter(
     (category) => requested === undefined || category === requested,
   );
 
