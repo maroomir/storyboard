@@ -22,13 +22,13 @@ import {
   type ChapterPlan,
   type SceneFile,
   type StoryboardProject,
-type Draft,
-type GenerationContractReadiness,
-type StoryboardCard,
-type StoryState,
-type NarrationDirective,
-type RevisionPlan,
-type RevisionPlanEntry,
+  type Draft,
+  type GenerationContractReadiness,
+  type StoryboardCard,
+  type StoryState,
+  type NarrationDirective,
+  type RevisionPlan,
+  type RevisionPlanEntry,
 } from '@storyboard/story-model';
 import {
   groupChapterStems,
@@ -39,7 +39,7 @@ import {
   resolveSceneThread,
   type ChapterNarrationDefaults,
   type IFileSystem,
-type SceneThreadContext,
+  type SceneThreadContext,
 } from '@storyboard/story-engine';
 
 import type {

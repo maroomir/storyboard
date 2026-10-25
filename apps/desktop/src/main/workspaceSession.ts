@@ -7,10 +7,10 @@ import {
   createWorkspace,
   readProjectJson,
   readWorkspaceRunLock,
-type AugmentDraftResult,
-type CompositionPreset,
-type RenameSceneResult,
-type SaveDraftEditResult,
+  type AugmentDraftResult,
+  type CompositionPreset,
+  type RenameSceneResult,
+  type SaveDraftEditResult,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
@@ -20,9 +20,9 @@ import {
   STORYBOARD_RELATIVE_PATHS,
   readSceneFile,
   type ProjectSetting,
-type StoryboardProjectPaths,
-type WorkspaceRunLockRecord,
-type SceneFile,
+  type StoryboardProjectPaths,
+  type WorkspaceRunLockRecord,
+  type SceneFile,
 } from '@storyboard/story-model';
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
 import { NodeFileSystem } from '@storyboard/story-node';

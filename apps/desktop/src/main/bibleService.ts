@@ -19,7 +19,7 @@ import {
   writeBibleFile,
   type BibleFact,
   type StoryUri,
-type StoryBible,
+  type StoryBible,
 } from '@storyboard/story-model';
 import { type IFileSystem } from '@storyboard/story-engine';
 import { ZodError, type ZodSafeParseResult, type ZodType } from 'zod';
