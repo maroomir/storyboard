@@ -22,7 +22,7 @@ export function ChoiceDialog(props: ChoiceDialogProps): React.ReactElement {
     } else if (key.return) {
       props.onAnswer(selectedIndex);
     } else if (key.upArrow || key.downArrow) {
-      const step: 1 | -1 = key.upArrow ? -1 : 1;
+      const step: number = key.upArrow ? -1 : 1;
       setSelectedIndex((index) => (index + step + optionCount) % optionCount);
     } else if (digit >= 1 && digit <= optionCount) {
       props.onAnswer(digit - 1);
