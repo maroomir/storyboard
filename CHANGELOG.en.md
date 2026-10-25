@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Internal
+
+- **Every app and package moves its comments into names and spells out every type.** Explanatory comments are gone and their meaning lives in constant, boolean and function names (tool directives stay), and every local, field and return carries a type, enforced by lint (`scripts/lint/explicitTypeRules.cjs`). zod schemas are written interface first and bound with `z.ZodType<X>`, and `as const` tables declare their type first. Contract names — command ids, RPC/IPC channels, stage ids — are unchanged, and so is the workspace file format.
+
 ## [0.13.4] - 2026-10-24
 
 ### Added
