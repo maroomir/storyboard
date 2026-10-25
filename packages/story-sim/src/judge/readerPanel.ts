@@ -1,4 +1,4 @@
-import { parseJsonObject } from '@storyboard/story-model';
+import { parseJsonObject, type AiGenerateResponse } from '@storyboard/story-model';
 import { z } from 'zod';
 
 import { simDefaults } from '#sim/simDefaults';
@@ -9,6 +9,7 @@ import {
   resolveFloorRanking,
   type FloorRanking,
   type FloorCandidateKind,
+  type FloorGateResult,
 } from '#sim/judge/floorAnchor';
 import {
   buildAxisVerdict,
@@ -30,20 +31,29 @@ import { isQuoteGrounded } from '#sim/judge/quoteCheck';
 import type { SimJudge } from '#sim/ports/judge';
 import type { JudgeRecall } from '#sim/score/factRecall';
 
-// 프로바이더가 본문 없이 돌아오는 경우가 있다. 그때 파서가 던지면 회차 전체가 예외로 끝나므로,
-// 읽을 수 없는 답은 «판정 실패» 로 다루고 되묻기 흐름에 태운다.
 function readJsonObject(text: string | undefined): Record<string, unknown> | null {
   return typeof text === 'string' && text.length > 0 ? parseJsonObject(text) : null;
 }
 
-const turnSchema = z.object({
+interface Turn {
+  engagement: number;
+  continueReading: boolean;
+  reason: string;
+  quote: string;
+}
+
+const turnSchema: z.ZodType<Turn> = z.object({
   engagement: z.number(),
   continueReading: z.boolean(),
   reason: z.string().min(1),
   quote: z.string(),
 });
 
-const rankingSchema = z.object({
+interface Ranking {
+  ranking: string[];
+}
+
+const rankingSchema: z.ZodType<Ranking> = z.object({
   ranking: z.array(z.string()).min(2),
 });
 
@@ -55,26 +65,30 @@ export interface SceneDraft {
 export interface PanelVerdict {
   readonly auc: PanelAuc;
   readonly curves: readonly ReaderCurve[];
-  // 장르 독자의 말. AUC 에 들어가지 않는다.
   readonly genreNotes: readonly ReaderTurn[];
   readonly floor: {
     readonly passed: boolean;
     readonly failures: readonly string[];
     readonly abstained: readonly string[];
   };
-  // 회차를 버려야 하는지. 공통 독자가 검증 못 한 인용이나 읽을 수 없는 관문 답이 이유다. 관문의
-  // 실패 자체는 floor 에 표시로만 남는다.
   readonly discarded: boolean;
   readonly discardReasons: readonly string[];
-  // 장르 독자가 중간에 끊긴 사유. AUC 에 안 들어가는 독자이므로 회차를 버리지 않고 적어만 둔다.
   readonly genreProblems: readonly string[];
-  // 원고 전체를 읽은 비평가의 점수. AUC 와 다른 눈금이라 따로 둔다. 비평가를 안 부르면 없다.
   readonly critic?: CriticVerdict;
 }
 
-const repairSchema = z.object({ quote: z.string() });
+interface Repair {
+  quote: string;
+}
 
-// 인용이 본문에 없으면 판정은 두고 근거만 다시 받는다. 그래도 안 되면 그 회차를 버린다.
+const repairSchema: z.ZodType<Repair> = z.object({ quote: z.string() });
+
+interface TurnOutcome {
+  readonly turn?: ReaderTurn;
+  readonly raw?: string;
+  readonly problem?: string;
+}
+
 async function askTurn(
   judge: SimJudge,
   persona: ReaderPersona,
@@ -82,11 +96,11 @@ async function askTurn(
   sceneNumber: number,
   sceneCount: number,
   priorTurns: { sceneNumber: number; answer: string }[],
-): Promise<{ readonly turn?: ReaderTurn; readonly raw?: string; readonly problem?: string }> {
-  const response = await judge.ask(
+): Promise<TurnOutcome> {
+  const response: AiGenerateResponse = await judge.ask(
     buildReaderTurn({ persona, sceneNumber, sceneCount, draft: scene.draft, priorTurns }),
   );
-  const parsed = turnSchema.safeParse(
+  const parsed: z.ZodSafeParseResult<Turn> = turnSchema.safeParse(
     readJsonObject(response.text) ?? readTurnLeniently(response.text ?? ''),
   );
 
@@ -94,8 +108,7 @@ async function askTurn(
     return { problem: `${persona.id} 가 ${scene.sceneStem} 에서 읽을 수 있는 답을 주지 않았습니다.` };
   }
 
-  // 이력에는 인용을 남기지 않는다. 심판이 다음 화에서 앞 화의 인용을 기억에서 꺼내 쓰는 일이 있었다.
-  const raw = JSON.stringify({
+  const raw: string = JSON.stringify({
     engagement: parsed.data.engagement,
     continueReading: parsed.data.continueReading,
     reason: parsed.data.reason,
@@ -105,14 +118,13 @@ async function askTurn(
     return { turn: { sceneStem: scene.sceneStem, ...parsed.data }, raw };
   }
 
-  // 마지막으로 퇴짜 맞은 인용. 사유에 남겨야 심판이 무엇을 지어냈는지 되짚을 수 있다.
-  let rejectedQuote = parsed.data.quote;
+  let rejectedQuote: string = parsed.data.quote;
 
-  for (let attempt = 0; attempt < simDefaults.panel.quoteRetryLimit; attempt += 1) {
-    const repair = await judge.ask(
+  for (let attempt: number = 0; attempt < simDefaults.panel.quoteRetryLimit; attempt += 1) {
+    const repair: AiGenerateResponse = await judge.ask(
       buildQuoteRepair({ persona, draft: scene.draft, reason: parsed.data.reason }),
     );
-    const repaired = repairSchema.safeParse(
+    const repaired: z.ZodSafeParseResult<Repair> = repairSchema.safeParse(
       readJsonObject(repair.text) ?? readQuoteLeniently(repair.text ?? ''),
     );
 
@@ -133,21 +145,26 @@ async function askTurn(
 }
 
 function clip(text: string, limit = 80): string {
-  const flat = text.replace(/\s+/g, ' ').trim();
+  const flat: string = text.replace(/\s+/g, ' ').trim();
   return flat.length <= limit ? flat : `${flat.slice(0, limit)}…`;
+}
+
+interface ReaderReading {
+  readonly curve: ReaderCurve;
+  readonly problems: readonly string[];
 }
 
 async function readInOrder(
   judge: SimJudge,
   persona: ReaderPersona,
   scenes: readonly SceneDraft[],
-): Promise<{ readonly curve: ReaderCurve; readonly problems: readonly string[] }> {
+): Promise<ReaderReading> {
   const turns: ReaderTurn[] = [];
   const priorTurns: { sceneNumber: number; answer: string }[] = [];
   const problems: string[] = [];
 
   for (const [index, scene] of scenes.entries()) {
-    const outcome = await askTurn(judge, persona, scene, index + 1, scenes.length, priorTurns);
+    const outcome: TurnOutcome = await askTurn(judge, persona, scene, index + 1, scenes.length, priorTurns);
 
     if (outcome.turn === undefined) {
       problems.push(outcome.problem as string);
@@ -156,9 +173,6 @@ async function readInOrder(
 
     turns.push(outcome.turn);
     priorTurns.push({ sceneNumber: index + 1, answer: outcome.raw as string });
-    // NOTE: 덮겠다는 답은 의향으로만 남기고 다음 화도 읽힌다. 실제로 멈추면 설정·시점 독자가 2화를
-    // 못 봐 연속성을 아예 못 재고, 심판이 짤수록 AUC 가 0 에 뭉친다. 이탈 AUC 는 첫 «덮음» 부터 0 으로
-    // 세어 뜻이 그대로이고, 몰입도 평균이 8화 전부에 대한 둘째 눈금이 된다.
   }
 
   return { curve: { readerId: persona.id, turns }, problems };
@@ -169,28 +183,28 @@ export interface FloorCandidate {
   readonly draft: string;
 }
 
+interface FloorGateAnswers {
+  readonly rankings: readonly FloorRanking[];
+  readonly problems: readonly string[];
+}
+
 async function runFloorGate(
   judge: SimJudge,
   readers: readonly ReaderPersona[],
   candidates: readonly FloorCandidate[],
-): Promise<{ readonly rankings: readonly FloorRanking[]; readonly problems: readonly string[] }> {
+): Promise<FloorGateAnswers> {
   const rankings: FloorRanking[] = [];
   const problems: string[] = [];
 
-  // NOTE: 독자마다 양쪽 차례로 두 번 묻는다. 한 차례만 물으면 자리 버릇과 판정을 가를 수 없고,
-  // 차례를 독자마다 번갈아 보여 주는 것으로는 버릇 있는 심판이 독자 둘을 늘 막는다. 양쪽에서 같은
-  // 답을 낸 독자만 판정으로 세고, 바뀐 독자는 floorAnchor 가 «자리에 따라 바뀜» 으로 적는다.
   const orders: readonly (readonly FloorCandidate[])[] = [candidates, [...candidates].reverse()];
 
   for (const persona of readers) {
     const answers: (readonly FloorCandidateKind[])[] = [];
 
     for (const shown of orders) {
-      const labelled = labelFloorCandidates(shown);
-      const outcome = await askRanking(judge, persona, labelled);
+      const labelled: readonly LabelledDraftCandidate[] = labelFloorCandidates(shown);
+      const outcome: RankingOutcome = await askRanking(judge, persona, labelled);
 
-      // 후보로 되돌릴 수 없는 답은 판정이 아니다. 관문을 그냥 통과시키지도, 실패로 세지도 않고
-      // 폐기 사유로 남긴다 — 하나도 되돌리지 못하면 rankings 가 비어 관문이 막는다.
       if (outcome.ranking === undefined) {
         problems.push(outcome.problem as string);
         continue;
@@ -207,18 +221,23 @@ async function runFloorGate(
   return { rankings, problems };
 }
 
-// 읽을 수 없거나 후보로 되돌릴 수 없는 순위 답은 한 번 되묻는다. 온도 0 이라 무엇이 틀렸는지 말해야
-// 다른 답이 온다. 실측에서 결함 문장에 본문을 따옴표로 인용해 JSON 이 깨진 답이 있었다.
+type LabelledDraftCandidate = FloorCandidate & { readonly label: string };
+
+interface RankingOutcome {
+  readonly ranking?: readonly FloorCandidateKind[];
+  readonly problem?: string;
+}
+
 async function askRanking(
   judge: SimJudge,
   persona: ReaderPersona,
-  labelled: ReturnType<typeof labelFloorCandidates<FloorCandidate>>,
-): Promise<{ readonly ranking?: readonly FloorCandidateKind[]; readonly problem?: string }> {
-  let problem = `${persona.id} 의 순위 판정을 읽을 수 없습니다.`;
+  labelled: readonly LabelledDraftCandidate[],
+): Promise<RankingOutcome> {
+  let problem: string = `${persona.id} 의 순위 판정을 읽을 수 없습니다.`;
   let retryNotice: string | undefined;
 
-  for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
-    const response = await judge.ask(
+  for (let attempt: number = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
+    const response: AiGenerateResponse = await judge.ask(
       buildFloorRanking({
         persona,
         candidates: labelled.map((candidate) => ({
@@ -229,7 +248,7 @@ async function askRanking(
       }),
     );
 
-    const parsed = rankingSchema.safeParse(
+    const parsed: z.ZodSafeParseResult<Ranking> = rankingSchema.safeParse(
       readJsonObject(response.text) ?? readRankingLeniently(response.text ?? ''),
     );
 
@@ -239,7 +258,7 @@ async function askRanking(
       continue;
     }
 
-    const ranking = resolveFloorRanking(parsed.data.ranking, labelled);
+    const ranking: readonly FloorCandidateKind[] | undefined = resolveFloorRanking(parsed.data.ranking, labelled);
 
     if (ranking !== undefined) {
       return { ranking };
@@ -256,21 +275,14 @@ export async function judgeChain(input: {
   readonly judge: SimJudge;
   readonly scenes: readonly SceneDraft[];
   readonly genre: string;
-  // 하한선 관문에 쓸 후보. 훼손본이 반드시 들어 있어야 한다.
   readonly floorCandidates: readonly FloorCandidate[];
-  // 있으면 8화를 다 읽은 뒤 비평가를 부른다. names 는 훼손본을 만들 때 뒤바꿀 인물 이름이다.
   readonly critic?: { readonly names: readonly string[] };
 }): Promise<PanelVerdict> {
-  // NOTE: 관문은 회차를 버리는 조건이 아니라 표시다. 심판이 훼손본을 못 가려낸 회차의 AUC 는 믿을
-  // 수 없지만, 버리면 «관문 통과 회차만» 과 «전체» 를 나란히 볼 길이 없다. 실측에서 작은 심판이 보통
-  // 원고와 훼손본을 일관되게 가르지 못해 회차 대부분이 사라졌다. 이제 곡선은 늘 남기고, 관문 결과는
-  // floor 에 적어 리포트가 따로 센다. 되돌릴 수 없는 답(problems)은 여전히 폐기 사유다.
-  const floor = await runFloorGate(input.judge, commonReaders, input.floorCandidates);
-  const gate = evaluateFloorGate(floor.rankings);
+  const floor: FloorGateAnswers = await runFloorGate(input.judge, commonReaders, input.floorCandidates);
+  const gate: FloorGateResult = evaluateFloorGate(floor.rankings);
 
-  const discardReasons = [...floor.problems];
+  const discardReasons: string[] = [...floor.problems];
 
-  // 읽을 수 없는 관문 답은 폐기 사유다. 이미 버릴 회차의 8화 읽기에 돈을 쓰지 않는다.
   if (discardReasons.length > 0) {
     return {
       auc: panelAuc([], input.scenes.length),
@@ -286,17 +298,14 @@ export async function judgeChain(input: {
   const curves: ReaderCurve[] = [];
 
   for (const persona of commonReaders) {
-    const outcome = await readInOrder(input.judge, persona, input.scenes);
+    const outcome: ReaderReading = await readInOrder(input.judge, persona, input.scenes);
     curves.push(outcome.curve);
     discardReasons.push(...outcome.problems);
   }
 
-  // NOTE: 장르 독자의 말은 기록만 하고 AUC 에 넣지 않는다. 그 독자가 근거를 지어냈다고 회차를
-  // 버리면 공통 독자 넷이 8화를 다 읽고 낸 곡선까지 함께 버려진다. 실측에서 그 일이 있었다.
-  const genre = await readInOrder(input.judge, genreReader(input.genre), input.scenes);
+  const genre: ReaderReading = await readInOrder(input.judge, genreReader(input.genre), input.scenes);
 
-  // 비평가는 회차를 버리지 않는다. 답을 못 읽은 기준은 빠진 채 남고, 문제는 사유로만 적힌다.
-  const critic =
+  const critic: CriticVerdict | undefined =
     input.critic === undefined
       ? undefined
       : await judgeManuscript({
@@ -318,20 +327,23 @@ export async function judgeChain(input: {
   };
 }
 
-const factRecallSchema = z.object({
+interface FactRecall {
+  status: 'recalled' | 'missing' | 'contradicted';
+  quote: string;
+}
+
+const factRecallSchema: z.ZodType<FactRecall> = z.object({
   status: z.enum(['recalled', 'missing', 'contradicted']),
   quote: z.string(),
 });
 
-// 원장 채점기가 요구하는 모양으로 심판을 감싼다. recalled·contradicted 는 근거가 본문에 있어야
-// 인정하고, 없으면 한 번 되묻고 그래도 안 되면 unverified 다.
 export function createFactRecallJudge(judge: SimJudge): JudgeRecall {
   return async ({ fact, draft }) => {
-    for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
-      const response = await judge.ask(
+    for (let attempt: number = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
+      const response: AiGenerateResponse = await judge.ask(
         buildFactRecall({ statement: fact.statement, check: fact.check, draft }),
       );
-      const parsed = factRecallSchema.safeParse(readJsonObject(response.text));
+      const parsed: z.ZodSafeParseResult<FactRecall> = factRecallSchema.safeParse(readJsonObject(response.text));
 
       if (!parsed.success) {
         continue;
@@ -350,7 +362,13 @@ export function createFactRecallJudge(judge: SimJudge): JudgeRecall {
   };
 }
 
-const axisVerdictSchema = z.object({
+interface AxisVerdictPayload {
+  verdict: 'pass' | 'partial' | 'fail';
+  reason: string;
+  quote: string;
+}
+
+const axisVerdictSchema: z.ZodType<AxisVerdictPayload> = z.object({
   verdict: z.enum(['pass', 'partial', 'fail']),
   reason: z.string().min(1),
   quote: z.string(),
@@ -361,7 +379,6 @@ export interface AxisScene {
   readonly axis: string;
   readonly question: string;
   readonly draft: string;
-  // 그 씬의 축을 일부러 깨뜨린 원고. 심판이 이것을 fail 로 못 밀면 그 씬의 판정은 버린다.
   readonly floorDraft?: string;
 }
 
@@ -379,12 +396,12 @@ async function askAxis(
   judge: SimJudge,
   scene: Pick<AxisScene, 'axis' | 'question'>,
   draft: string,
-): Promise<z.infer<typeof axisVerdictSchema> | undefined> {
-  for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
-    const response = await judge.ask(
+): Promise<AxisVerdictPayload | undefined> {
+  for (let attempt: number = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
+    const response: AiGenerateResponse = await judge.ask(
       buildAxisVerdict({ axis: scene.axis, question: scene.question, draft }),
     );
-    const parsed = axisVerdictSchema.safeParse(readJsonObject(response.text));
+    const parsed: z.ZodSafeParseResult<AxisVerdictPayload> = axisVerdictSchema.safeParse(readJsonObject(response.text));
 
     if (parsed.success && isQuoteGrounded(parsed.data.quote, draft)) {
       return parsed.data;
@@ -394,7 +411,6 @@ async function askAxis(
   return undefined;
 }
 
-// 축 트랙은 곡선이 없다. 씬마다 새 대화로 독립해 읽고 그 씬의 축 하나만 본다.
 export async function judgeAxis(input: {
   readonly judge: SimJudge;
   readonly scenes: readonly AxisScene[];
@@ -402,9 +418,8 @@ export async function judgeAxis(input: {
   const verdicts: AxisVerdict[] = [];
 
   for (const scene of input.scenes) {
-    // 씬마다 하한선. 훼손본이 fail 이 아니면 이 씬의 눈금을 믿을 수 없다.
     if (scene.floorDraft !== undefined) {
-      const floor = await askAxis(input.judge, scene, scene.floorDraft);
+      const floor: AxisVerdictPayload | undefined = await askAxis(input.judge, scene, scene.floorDraft);
       if (floor?.verdict !== 'fail') {
         verdicts.push({
           sceneStem: scene.sceneStem,
@@ -419,7 +434,7 @@ export async function judgeAxis(input: {
       }
     }
 
-    const answer = await askAxis(input.judge, scene, scene.draft);
+    const answer: AxisVerdictPayload | undefined = await askAxis(input.judge, scene, scene.draft);
 
     verdicts.push(
       answer === undefined

@@ -16,7 +16,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['story-sim/**', 'story-engine/**', 'story-model/**'],
+      files: ['story-engine/**', 'story-model/**'],
       rules: {
         'no-restricted-syntax': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',

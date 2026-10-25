@@ -1,13 +1,9 @@
 import type { AiMessage } from '@storyboard/story-model';
 
-// NOTE: 이 프롬프트는 story-sim 소유다. 제품의 promptTuning 카탈로그에 넣으면 계측기가 측정
-// 대상의 일부가 되어, 스윕이 눈금을 함께 흔들게 된다.
-
 export interface ReaderPersona {
   readonly id: string;
   readonly name: string;
   readonly watches: string;
-  // 공통 독자만 AUC 에 들어간다. 장르 독자의 말은 기록만 한다.
   readonly scope: 'common' | 'genre';
 }
 
@@ -36,8 +32,6 @@ export const commonReaders: readonly ReaderPersona[] = [
     watches: '초점 인물이 모를 것을 서술이 알고 있는지. 새면 덮는다.',
     scope: 'common',
   },
-  // NOTE: 아래 넷은 2026-09 에 더한 독자다. 그 전의 AUC 는 위 넷의 평균이라 눈금이 다르다 — 리포트는
-  // 엔진 커밋으로 묶으므로 섞이지 않지만, 옛 값과 나란히 읽을 때는 그 점을 안다.
   {
     id: 'cause',
     name: '개연성을 보는 독자',
@@ -87,7 +81,7 @@ function personaSystem(persona: ReaderPersona): string {
   ].join('\n');
 }
 
-const turnSchema = [
+const turnSchema: string = [
   '{',
   '  "engagement": 0에서 5 사이 정수,',
   '  "continueReading": true 또는 false,',
@@ -103,7 +97,7 @@ export function buildReaderTurn(input: {
   readonly draft: string;
   readonly priorTurns: readonly { readonly sceneNumber: number; readonly answer: string }[];
 }): readonly AiMessage[] {
-  const history = input.priorTurns.flatMap((turn): AiMessage[] => [
+  const history: AiMessage[] = input.priorTurns.flatMap((turn): AiMessage[] => [
     { role: 'user', content: `${turn.sceneNumber}화입니다.` },
     { role: 'assistant', content: turn.answer },
   ]);
@@ -125,13 +119,6 @@ export function buildReaderTurn(input: {
   ];
 }
 
-// 인용 고치기. 판정은 그대로 두고 근거만 다시 받는다.
-// NOTE: 같은 프롬프트로 되물으면 온도 0 심판은 같은 답을 내고, 사유를 붙여 되물어도 앞 화에서 든
-// 인용을 기억에서 꺼내 다시 썼다 — 이력에 앞 답이 들어 있기 때문이다. 그래서 이력 없이, 본문과 방금
-// 든 이유만 주고 «한 문장을 글자 그대로 복사하라» 는 좁은 일 하나만 시킨다.
-// NOTE: 퇴짜 맞은 인용을 프롬프트에 보여 주면 심판은 그 문장을 그대로 다시 낸다. 실측의 같은 사례에서
-// 인용을 보여 주면 100% 되풀이했고, 감추면 세 가지 물음 모두 본문의 문장을 복사했다. 사유에는 남기되
-// 심판에게는 보여 주지 않는다.
 export function buildQuoteRepair(input: {
   readonly persona: ReaderPersona;
   readonly draft: string;
@@ -155,35 +142,27 @@ export function buildQuoteRepair(input: {
   ];
 }
 
-// 하한선 관문. 훼손본을 꼴찌로 못 밀면 그 회차의 눈금을 믿을 수 없다.
-// NOTE: 후보는 뜻 없는 기호로만 부른다. 어느 쪽이 훼손본인지 라벨로 알려 주면 관문이 심판의
-// 눈이 아니라 독해력을 재게 된다. 기호를 후보로 되돌리는 일은 floorAnchor 가 한다.
 export function buildFloorRanking(input: {
   readonly persona: ReaderPersona;
   readonly candidates: readonly { readonly label: string; readonly draft: string }[];
-  // 앞선 답을 읽지 못해 되묻는 차례면 그 사유. 온도 0 이라 같은 프롬프트로는 같은 답이 온다.
   readonly retryNotice?: string;
 }): readonly AiMessage[] {
-  const body = input.candidates
+  const body: string = input.candidates
     .map((candidate) => `### 원고 ${candidate.label}\n\n${candidate.draft}`)
     .join('\n\n');
-  const labels = input.candidates.map((candidate) => candidate.label);
+  const labels: string[] = input.candidates.map((candidate) => candidate.label);
 
   return [
     { role: 'system', content: personaSystem(input.persona) },
     {
       role: 'user',
       content: [
-        // NOTE: 순위만 바로 물으면 gemma3:12b 는 내용과 무관하게 뒤에 보인 원고를 앞에 놓았다.
-        // 같은 두 원고를 양쪽 차례로 독자 넷에게 물어 여덟 번 모두 «나 > 가» 였다. 원고마다 결함을 먼저
-        // 적게 하면 같은 모델이 양쪽 차례에서 같은 답을 낸다. 관문은 자리가 아니라 읽기를 재야 한다.
         '같은 장면을 쓴 원고가 여러 편 있다. 먼저 원고마다 결함을 한 문장으로 적고, 그 다음 좋은 순서대로 줄을 세워라.',
         '',
         body,
         '',
         ...(input.retryNotice === undefined ? [] : [input.retryNotice, '']),
         `기호는 ${labels.join(' · ')} 뿐이다. 이 기호를 그대로 쓰고 번호로 바꾸지 마라.`,
-        // NOTE: 결함 문장에 본문을 따옴표로 인용하면 JSON 문자열이 깨진다. 실측에서 그렇게 읽지 못한 답이 있었다.
         '결함 문장에는 따옴표를 쓰지 말고 본문을 인용하지 마라.',
         '답은 JSON 한 덩어리로만 낸다.',
         `{ "notes": { ${labels.map((label) => `"${label}": "결함 한 문장"`).join(', ')} }, "ranking": ["가장 좋은 원고의 기호", "…", "가장 나쁜 원고의 기호"] }`,
@@ -192,7 +171,6 @@ export function buildFloorRanking(input: {
   ];
 }
 
-// 축 트랙은 씬마다 새 대화로 독립해 읽고 그 씬의 축 하나만 본다.
 export function buildAxisVerdict(input: {
   readonly axis: string;
   readonly question: string;
@@ -221,8 +199,6 @@ export function buildAxisVerdict(input: {
   ];
 }
 
-// 사실 원장의 attribute·knowledge·object·relation 은 문자열로 셀 수 없어 심판이 본다.
-// 사실 하나, 씬 하나, 판정 하나. 다른 것은 보지 않는다.
 export function buildFactRecall(input: {
   readonly statement: string;
   readonly check: string;
