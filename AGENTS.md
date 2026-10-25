@@ -218,8 +218,9 @@ file; everything else derives from it.
 - Tuning numbers a person adjusts go in a `*.params.json` data file beside a zod schema that
   documents each knob, owned by the package whose behaviour it changes. `git ls-files '*.params.json'`
   lists them; the map with one row per file is in `.claude/rules/coding-standards.md`.
-- Identifiers and enums stay TypeScript `as const` so literal types survive — `providerCatalog`,
-  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. Never move an enum to JSON.
+- Identifiers and enums stay TypeScript, declared type first (`type X = 'a' | 'b'`, then a table
+  annotated with it; no `as const` declarations) — `providerCatalog`, `STORYBOARD_RELATIVE_PATHS`,
+  `pointOfViewCatalog`, `commandCatalog`. Never move an enum to JSON.
 - Generation knobs layer as user setting → model profile → pipeline default. Setting defaults and
   bounds belong to `storyboardSettingCatalog` alone.
 - The webview reads the real tables through `@storyboard/story-model/contracts`, never a copy.
