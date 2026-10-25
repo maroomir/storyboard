@@ -15,7 +15,6 @@ export interface DraftReaderProps {
 
 export type ReaderLineKind = 'dialogue' | 'separator' | 'prose' | 'blank';
 
-// Spoken lines open with a quote; a scene break is a line of only *, - or ~ marks.
 export function classifyReaderLine(line: string): ReaderLineKind {
   const trimmed: string = line.trim();
 
@@ -28,7 +27,6 @@ export function classifyReaderLine(line: string): ReaderLineKind {
   return /^["“「『'‘]/.test(trimmed) ? 'dialogue' : 'prose';
 }
 
-// Prose counts the way Korean manuscripts do: characters without spaces.
 export function countManuscriptCharacters(body: string): number {
   return body.replace(/\s/g, '').length;
 }
@@ -38,7 +36,6 @@ export interface ReaderLine {
   readonly kind: ReaderLineKind;
 }
 
-// Paragraphs wrapped to the reader's width, each wrapped line keeping its paragraph's kind.
 export function layoutReaderLines(body: string, width: number): ReaderLine[] {
   return body.split('\n').flatMap((paragraph): ReaderLine[] => {
     const kind: ReaderLineKind = classifyReaderLine(paragraph);
@@ -48,7 +45,6 @@ export function layoutReaderLines(body: string, width: number): ReaderLine[] {
   });
 }
 
-// The rows the reader keeps for its frame, title and key line.
 const readerChromeRows: number = 5;
 
 export function DraftReader(props: DraftReaderProps): React.ReactElement {

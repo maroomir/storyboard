@@ -6,12 +6,9 @@ import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface ChoiceDialogProps {
   readonly request: ChoiceRequest<unknown>;
-  // Called once with the chosen option's index, or undefined when the person backs out.
   readonly onAnswer: (index: number | undefined) => void;
 }
 
-// The interactive screen's form of a prompter question: the details, numbered options, and the
-// same keys the one-shot prompt reads.
 export function ChoiceDialog(props: ChoiceDialogProps): React.ReactElement {
   const theme: TuiTheme = useTuiTheme();
   const [selectedIndex, setSelectedIndex] = useState(0);

@@ -6,8 +6,8 @@ import { measureWidth, padEndToWidth, truncateToWidth } from '@/terminal/width';
 import type { InputSuggestion } from './session';
 import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
-// Enough rows to see the neighbourhood of the selection without pushing the log off the screen.
 const visibleRows: number = 8;
+const summaryPaddingColumns: number = 8;
 const maximumTextWidth: number = 32;
 
 export interface SuggestionListProps {
@@ -16,7 +16,6 @@ export interface SuggestionListProps {
   readonly columns: number;
 }
 
-// The window scrolls with the selection, so ↓ past the last visible row keeps it in view.
 export function selectVisibleWindow(total: number, selectedIndex: number): [number, number] {
   const start: number = Math.min(
     Math.max(0, selectedIndex - Math.floor(visibleRows / 2)),
@@ -32,8 +31,7 @@ export function SuggestionList(props: SuggestionListProps): React.ReactElement {
     maximumTextWidth,
     Math.max(...props.suggestions.map((suggestion) => measureWidth(suggestion.text))),
   );
-  // Two columns of padding, the marker and the gap before the summary.
-  const summaryWidth: number = Math.max(0, props.columns - textWidth - 8);
+  const summaryWidth: number = Math.max(0, props.columns - textWidth - summaryPaddingColumns);
   const hasMore: boolean = props.suggestions.length > visibleRows;
 
   return (

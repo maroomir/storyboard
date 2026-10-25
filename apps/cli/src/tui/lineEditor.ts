@@ -3,17 +3,14 @@ import { useRef, useState } from 'react';
 
 export interface LineEditorOptions {
   readonly isActive: boolean;
-  // The whole input line each suggestion would leave behind when taken.
   readonly suggestions: readonly string[];
   readonly onSubmit: (line: string) => void;
   readonly onExit: () => void;
-  // Ctrl+O: show folded output in full, or fold it again.
   readonly onToggleOutput?: () => void;
 }
 
 export interface HistorySearch {
   readonly query: string;
-  // Index into the history of the line that matches, if any does.
   readonly matchIndex?: number;
   readonly match?: string;
 }
@@ -27,14 +24,10 @@ export interface LineEditorState {
   readonly value: string;
   readonly cursor: number;
   readonly selectedSuggestion: number;
-  // Suggestions exist and Esc has not closed them since the last edit.
   readonly isSuggestionOpen: boolean;
-  // Set while Ctrl+R searches the history.
   readonly search?: HistorySearch;
 }
 
-// The newest line containing the query, older than `beforeIndex` when given — Ctrl+R pressed again
-// steps back to the previous match, as in a shell.
 export function findHistoryMatch(
   history: readonly string[],
   query: string,
@@ -49,18 +42,11 @@ export function findHistoryMatch(
   return undefined;
 }
 
-// A small line editor on top of Ink's key stream: ↑/↓ move through the open suggestion list or
-// the history, Tab takes a suggestion, Ctrl+R searches the history, Esc closes the list and then
-// clears the line, Ctrl+C leaves. Enough for a prompt; not a text area.
 export function useLineEditor(options: LineEditorOptions): LineEditorState {
   const [line, setLine] = useState<EditorLine>({ value: '', cursor: 0 });
-  // NOTE: Keys can arrive faster than React re-renders and re-subscribes the handler (a CI runner
-  // typed `draft show` as `draft how`), so a handler that read the line from its closure would
-  // build on a value the previous key already replaced. The handler reads and writes this ref;
-  // the state only drives rendering.
-  const latestLine: React.MutableRefObject<EditorLine> = useRef(line);
+  const lineAheadOfRenderForKeyHandler: React.MutableRefObject<EditorLine> = useRef(line);
   const setLineNow = (next: EditorLine): void => {
-    latestLine.current = next;
+    lineAheadOfRenderForKeyHandler.current = next;
     setLine(next);
   };
   const [history, setHistory] = useState<string[]>([]);
@@ -78,7 +64,6 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
     );
   };
 
-  // While searching, keys edit the query; Enter takes the match into the line without running it.
   const handleSearchKey = (current: HistorySearch, input: string, key: Key): void => {
     if (key.escape) {
       setSearch(undefined);
@@ -110,7 +95,7 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
 
   useInput(
     (input, key) => {
-      const { value, cursor } = latestLine.current;
+      const { value, cursor } = lineAheadOfRenderForKeyHandler.current;
       if (key.ctrl && input === 'c') {
         options.onExit();
         return;

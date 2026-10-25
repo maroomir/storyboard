@@ -34,9 +34,7 @@ import {
 export interface StoryboardTuiProps extends TuiSessionOptions {
   readonly header: TuiHeaderInfo;
   readonly maxLogLines?: number;
-  // Reads the workspace around the prompt again; called on start and after every command.
   readonly loadWorkspaceView?: () => Promise<WorkspaceView>;
-  // The color preset the screen opens with; /theme changes it for the session and saves it.
   readonly themeName?: TuiThemeName;
 }
 
@@ -56,8 +54,6 @@ const tonePrefix: Record<LogTone, string> = {
   hint: '  ',
 };
 
-// A result longer than this is folded to its head so one long listing does not push the dashboard
-// and the earlier commands off the screen.
 const foldedLineLimit: number = 12;
 
 export function foldLines(lines: readonly string[], isExpanded: boolean): string[] {
@@ -94,7 +90,6 @@ function LogLine({
   );
 }
 
-// One question at a time sits over the prompt while a command waits for its answer.
 type PendingQuestion =
   | {
       readonly kind: 'choice';
@@ -201,8 +196,6 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
     setInputValue(editor.value);
   }, [editor.value]);
 
-  // The prompt is idle while a command runs; Esc (or Ctrl+C) is the one key that means something
-  // then.
   useInput(
     (input, key) => {
       if (!key.escape && !(key.ctrl && input === 'c')) {

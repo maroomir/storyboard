@@ -4,13 +4,12 @@ import { dirname, join } from 'node:path';
 import { resolveStoryboardHomePaths } from '@storyboard/story-config';
 import { createContext, useContext } from 'react';
 
-// 대화형 화면의 색. 컴포넌트는 역할(강조·흐림·경고·…)만 말하고, 어느 색인지는 고른 테마가 정한다.
-
 export type TuiThemeName = 'default' | 'light' | 'mono';
 
 export const tuiThemeNames: readonly TuiThemeName[] = ['default', 'light', 'mono'];
 
-// An undefined color is the terminal's own foreground, which is what «mono» asks for.
+const defaultTuiThemeName: TuiThemeName = 'default';
+
 export interface TuiTheme {
   readonly accent: string | undefined;
   readonly muted: string | undefined;
@@ -43,7 +42,6 @@ export function useTuiTheme(): TuiTheme {
   return useContext(TuiThemeContext);
 }
 
-// NOTE: 대화형 화면만 쓰는 상태라 config.json 이 아니라 ~/.storyboard/tui.json 에 둔다.
 function tuiStateFile(): string {
   return join(resolveStoryboardHomePaths().home, 'tui.json');
 }
@@ -54,16 +52,15 @@ function isThemeName(value: unknown): value is TuiThemeName {
 
 export function loadTuiThemeName(file: string = tuiStateFile()): TuiThemeName {
   if (!existsSync(file)) {
-    return 'default';
+    return defaultTuiThemeName;
   }
 
   try {
     const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'));
     const name: unknown = (parsed as { theme?: unknown }).theme;
-    return isThemeName(name) ? name : 'default';
+    return isThemeName(name) ? name : defaultTuiThemeName;
   } catch {
-    // A damaged preference file costs the author their color choice, not the screen.
-    return 'default';
+    return defaultTuiThemeName;
   }
 }
 

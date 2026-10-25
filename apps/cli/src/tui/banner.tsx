@@ -9,7 +9,6 @@ export interface BannerProps {
   readonly columns: number;
 }
 
-// The wordmark when it fits, otherwise one bold line: a narrow terminal still knows what it opened.
 export function Banner(props: BannerProps): React.ReactElement {
   const theme: TuiTheme = useTuiTheme();
   if (!canShowWordmark(props.columns)) {

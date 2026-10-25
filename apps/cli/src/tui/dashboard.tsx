@@ -11,7 +11,6 @@ export interface DashboardProps {
   readonly status: WorkspaceStatus;
 }
 
-// Fresh drafts over scenes: a draft older than its card does not count as done.
 export interface DraftProgress {
   readonly done: number;
   readonly total: number;
@@ -38,8 +37,6 @@ function describeManuscript({ manuscript }: WorkspaceStatus): string {
       : '조립됨';
 }
 
-// The home screen: how far the work is, and the one command that moves it forward — the same step
-// `storyboard status` names, written as it is typed at this prompt.
 export function Dashboard({ status }: DashboardProps): React.ReactElement {
   const theme: TuiTheme = useTuiTheme();
   const progress: DraftProgress = describeDraftProgress(status);

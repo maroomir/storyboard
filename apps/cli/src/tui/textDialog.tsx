@@ -6,7 +6,6 @@ import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 export interface TextDialogProps {
   readonly request: TextRequest;
-  // The typed line, trimmed, or undefined when the person backs out with Esc.
   readonly onAnswer: (answer: string | undefined) => void;
 }
 
