@@ -37,7 +37,7 @@ class RecommendationAccumulator {
   private readonly byKey = new Map<string, { entity: RecommendedEntity; scenes: Set<string> }>();
 
   public add(sceneStem: string, entity: RecommendedEntity): void {
-    const key = normalizeRecommendationKey(entity.name);
+    const key: string = normalizeRecommendationKey(entity.name);
     const existing = this.byKey.get(key);
 
     if (existing) {
@@ -73,8 +73,8 @@ export async function buildCardRecommendations(
     return [];
   }
 
-  const existingKeys = new Set(existingNames.map(normalizeRecommendationKey));
-  const accumulator = new RecommendationAccumulator();
+  const existingKeys: Set<string> = new Set(existingNames.map(normalizeRecommendationKey));
+  const accumulator: RecommendationAccumulator = new RecommendationAccumulator();
 
   const extractedBySource = await Promise.all(
     sources.map(async (source) => ({

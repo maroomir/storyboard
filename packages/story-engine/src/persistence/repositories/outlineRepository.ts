@@ -4,6 +4,8 @@ import type {
   OutlineCharacterBrief,
   OutlineSynopsis,
   StoryboardProject,
+  StoryboardProjectPaths,
+  NarratorCard,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IOutlineRepository } from '#engine/application/novel/generateOutlineUseCase';
@@ -21,7 +23,7 @@ export class OutlineRepository implements IOutlineRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async hasExisting(workspaceRoot: StoryUri): Promise<boolean> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     return (
       (await this.fileSystem.exists(paths.outlineSynopsis)) ||
       (await this.fileSystem.exists(paths.outlineChapters))
@@ -42,7 +44,7 @@ export class OutlineRepository implements IOutlineRepository {
   }
 
   public async loadNarratorIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
-    const narrators = await loadNarratorCards(
+    const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
       getStoryboardProjectPaths(workspaceRoot),
       this.fileSystem,
     );
@@ -65,7 +67,7 @@ export class OutlineRepository implements IOutlineRepository {
   }
 
   public async loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined> {
-    const synopsisUri = getStoryboardProjectPaths(workspaceRoot).outlineSynopsis;
+    const synopsisUri: StoryUri = getStoryboardProjectPaths(workspaceRoot).outlineSynopsis;
 
     if (!(await this.fileSystem.exists(synopsisUri))) {
       return undefined;
@@ -77,7 +79,7 @@ export class OutlineRepository implements IOutlineRepository {
   }
 
   public async saveSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.outlineDirectory);
     await writeSynopsisFile(paths.outlineSynopsis, this.fileSystem, synopsis);
   }
@@ -87,7 +89,7 @@ export class OutlineRepository implements IOutlineRepository {
     synopsis: OutlineSynopsis,
     chapterPlan: ChapterPlan,
   ): Promise<StoryUri> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.saveSynopsis(workspaceRoot, synopsis);
     await writeChapterPlanFile(paths.outlineChapters, this.fileSystem, chapterPlan);
     return paths.outlineSynopsis;

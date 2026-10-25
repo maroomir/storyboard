@@ -3,6 +3,10 @@ import {
   getStoryboardProjectPaths,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
+  type ChapterPlan,
+  type GeneratedSceneSeed,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -45,15 +49,15 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
 
   private async seed(request: SeedScenesRequest): Promise<SeedScenesResult> {
     const { fileSystem, sceneSeedRepository } = this.deps;
-    const paths = getStoryboardProjectPaths(request.workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
 
     if (!(await fileSystem.exists(paths.outlineChapters))) {
       return { ok: false, kind: 'missing_outline' };
     }
 
-    const project = await readProjectJson(fileSystem, paths.projectJson);
-    const plan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
-    const seeds = buildSceneSeeds(
+    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
+    const seeds: GeneratedSceneSeed[] = buildSceneSeeds(
       plan,
       resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined),
     );
@@ -62,7 +66,10 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
       return { ok: true, kind: 'empty_plan' };
     }
 
-    const existing = await listDirectoryFileNames(fileSystem, paths.sceneDirectory);
+    const existing: readonly string[] = await listDirectoryFileNames(
+      fileSystem,
+      paths.sceneDirectory,
+    );
 
     if (existing.length > 0 && !request.overwrite) {
       return { ok: false, kind: 'existing_scenes', existingCount: existing.length };

@@ -6,6 +6,7 @@ import {
   draftHistorySceneDirectory,
   draftPath,
   joinUri,
+  type Draft,
 } from '@storyboard/story-model';
 
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -36,13 +37,13 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
   public constructor(private readonly deps: SaveDraftEditUseCaseDependencies) {}
 
   public async execute(request: SaveDraftEditRequest): Promise<SaveDraftEditResult> {
-    const draftUri = draftPath(request.workspaceRoot, request.sceneStem);
+    const draftUri: StoryUri = draftPath(request.workspaceRoot, request.sceneStem);
 
     if (!(await this.deps.fileSystem.exists(draftUri))) {
       return { ok: false, kind: 'missing' };
     }
 
-    const existing = parseDraft(
+    const existing: Draft = parseDraft(
       new TextDecoder().decode(await this.deps.fileSystem.readFile(draftUri)),
     );
 
@@ -50,7 +51,7 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
       return { ok: true, kind: 'unchanged' };
     }
 
-    const archivedAs = request.archivePrevious
+    const archivedAs: string | undefined = request.archivePrevious
       ? await this.archive(request.workspaceRoot, request.sceneStem, draftUri)
       : undefined;
 
@@ -69,7 +70,7 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
     sceneStem: string,
     draftUri: StoryUri,
   ): Promise<string | undefined> {
-    const historyDirectory = draftHistorySceneDirectory(workspaceRoot, sceneStem);
+    const historyDirectory: StoryUri = draftHistorySceneDirectory(workspaceRoot, sceneStem);
 
     return await archiveExistingDraft({
       draftUri,

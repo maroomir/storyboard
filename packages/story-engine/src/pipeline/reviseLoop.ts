@@ -12,6 +12,7 @@ import type {
 } from '@storyboard/story-ai';
 import type {
   ContinuityIssueLike,
+  CritiqueScore,
   DraftCritiqueIssue,
   StyleDirective,
   UsageAttribution,
@@ -20,12 +21,15 @@ import type {
 import {
   validateDraftCandidate,
   type DraftCandidateRejectionReason,
+  type DraftCandidateValidation,
 } from './draftCandidateValidation';
 import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
   routeReviewIssues,
+  type ReviewIssue,
+  type ReviewRouting,
   type RoutingCharacter,
 } from './reviewRouting';
 import {
@@ -33,6 +37,7 @@ import {
   locateQuoteSection,
   replaceSectionText,
   splitDraftSections,
+  type DraftSections,
 } from './revisionSections';
 
 export interface ReviseLoopCharacter extends RoutingCharacter {
@@ -135,16 +140,16 @@ function buildSectionInstructions(
   critiqueIssues: readonly DraftCritiqueIssue[],
   characters: readonly ReviseLoopCharacter[],
 ): string[] {
-  const reviewIssues = [
+  const reviewIssues: ReviewIssue[] = [
     ...adaptContinuityIssues(continuityIssues),
     ...adaptCritiqueIssues(critiqueIssues, characters),
   ];
-  const routing = routeReviewIssues(reviewIssues);
-  const cardNameById = new Map(
+  const routing: ReviewRouting = routeReviewIssues(reviewIssues);
+  const cardNameById: Map<string, string> = new Map(
     characters.map((character) => [character.id, character.name] as const),
   );
 
-  const scoped = routing.groups.flatMap((group) =>
+  const scoped: string[] = routing.groups.flatMap((group) =>
     buildScopedInstructions(group, (cardId) => cardNameById.get(cardId)),
   );
 
@@ -170,11 +175,13 @@ export function planSectionRevisions(
   characters: readonly ReviseLoopCharacter[],
 ): SectionRevisionPlan[] {
   const { sections } = splitDraftSections(body);
-  const continuityBySection = sections.map((): ContinuityIssueLike[] => []);
-  const critiqueBySection = sections.map((): DraftCritiqueIssue[] => []);
+  const continuityBySection: ContinuityIssueLike[][] = sections.map(
+    (): ContinuityIssueLike[] => [],
+  );
+  const critiqueBySection: DraftCritiqueIssue[][] = sections.map((): DraftCritiqueIssue[] => []);
 
   const assign = <T>(buckets: T[][], issue: T, quote: string | undefined): void => {
-    const index = locateQuoteSection(sections, quote);
+    const index: number | undefined = locateQuoteSection(sections, quote);
     for (const [bucketIndex, bucket] of buckets.entries()) {
       if (index === undefined || index === bucketIndex) {
         bucket.push(issue);
@@ -186,8 +193,8 @@ export function planSectionRevisions(
   critiqueIssues.forEach((issue) => assign(critiqueBySection, issue, issue.excerpt));
 
   return sections.flatMap((_, section) => {
-    const sectionContinuity = continuityBySection[section] ?? [];
-    const sectionCritique = critiqueBySection[section] ?? [];
+    const sectionContinuity: ContinuityIssueLike[] = continuityBySection[section] ?? [];
+    const sectionCritique: DraftCritiqueIssue[] = critiqueBySection[section] ?? [];
 
     if (sectionContinuity.length === 0 && sectionCritique.length === 0) {
       return [];
@@ -246,12 +253,14 @@ function evaluateReviewResult(
   critiqueIssues: readonly DraftCritiqueIssue[],
   threshold: number,
 ): { blocking: number; instructions: string[]; passed: boolean } {
-  const blocking = countBlockingIssues(continuityIssues, critiqueIssues);
-  const instructions = buildRevisionInstructions(continuityIssues, critiqueIssues);
-  const score = scoreCritique(critiqueIssues);
-  const highContinuityCount = continuityIssues.filter((issue) => issue.severity === 'high').length;
+  const blocking: number = countBlockingIssues(continuityIssues, critiqueIssues);
+  const instructions: string[] = buildRevisionInstructions(continuityIssues, critiqueIssues);
+  const score: CritiqueScore = scoreCritique(critiqueIssues);
+  const highContinuityCount: number = continuityIssues.filter(
+    (issue) => issue.severity === 'high',
+  ).length;
 
-  const passed = shouldPassRevise({
+  const passed: boolean = shouldPassRevise({
     blocking,
     score: score.overall,
     threshold,
@@ -286,8 +295,8 @@ async function applySectionRevisions(
   onSection?: (done: number, total: number) => void,
 ): Promise<SectionRevisionOutcome> {
   const { aiService, registry, attribution, ctx } = session;
-  const split = splitDraftSections(currentBody);
-  const sections = [...split.sections];
+  const split: DraftSections = splitDraftSections(currentBody);
+  const sections: string[] = [...split.sections];
   const acceptedSections: number[] = [];
   const rejectedSections: SectionRejection[] = [];
   let failure: ReviseLoopFailure | undefined;
@@ -299,8 +308,8 @@ async function applySectionRevisions(
 
     onSection?.(done + 1, plans.length);
 
-    const original = sections[plan.section] ?? '';
-    const originalText = original.trim();
+    const original: string = sections[plan.section] ?? '';
+    const originalText: string = original.trim();
     let candidate: string;
     try {
       candidate = await aiService.reviseDraft(
@@ -318,11 +327,11 @@ async function applySectionRevisions(
       failure = toReviseLoopFailure('revise', error);
       break;
     }
-    const sectionTarget =
+    const sectionTarget: number | undefined =
       ctx.targetLength === undefined || currentBody.length === 0
         ? undefined
         : Math.round((ctx.targetLength * originalText.length) / currentBody.length);
-    const validation = validateDraftCandidate(originalText, candidate, {
+    const validation: DraftCandidateValidation = validateDraftCandidate(originalText, candidate, {
       maxCompressionPercent,
       ...(sectionTarget === undefined ? {} : { targetLength: sectionTarget }),
     });
@@ -366,10 +375,10 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;
   const session: ReviseSession = { aiService, registry, attribution, ctx };
 
-  let body = options.body;
-  let revisionCount = 0;
-  let blocking = 0;
-  let passed = false;
+  let body: string = options.body;
+  let revisionCount: number = 0;
+  let blocking: number = 0;
+  let passed: boolean = false;
   let lastInstructions: string[] = [];
   let rejection: ReviseLoopResult['rejection'];
   let failure: ReviseLoopFailure | undefined;
@@ -380,7 +389,7 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
   };
 
   while (!isCancelled()) {
-    const round = revisionCount + 1;
+    const round: number = revisionCount + 1;
     options.onProgress?.(`검사 중 (${round}/${maxIterations + 1})…`);
 
     let checked: Awaited<ReturnType<typeof runReviewChecks>>;
@@ -400,9 +409,15 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
       break;
     }
 
-    const seed = revisionCount === 0 ? options.seedIssues : undefined;
-    const continuityIssues = [...checked.continuityIssues, ...(seed?.continuityIssues ?? [])];
-    const critiqueIssues = [...checked.critiqueIssues, ...(seed?.critiqueIssues ?? [])];
+    const seed: ReviseSeedIssues | undefined = revisionCount === 0 ? options.seedIssues : undefined;
+    const continuityIssues: ContinuityIssueLike[] = [
+      ...checked.continuityIssues,
+      ...(seed?.continuityIssues ?? []),
+    ];
+    const critiqueIssues: DraftCritiqueIssue[] = [
+      ...checked.critiqueIssues,
+      ...(seed?.critiqueIssues ?? []),
+    ];
     const review = evaluateReviewResult(continuityIssues, critiqueIssues, reviseScoreThreshold);
     blocking = review.blocking;
     lastInstructions = review.instructions;
@@ -428,13 +443,18 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
 
     options.onProgress?.(`재작성 중 (${round}/${maxIterations})…`);
 
-    const plans = planSectionRevisions(body, continuityIssues, critiqueIssues, ctx.characters);
+    const plans: SectionRevisionPlan[] = planSectionRevisions(
+      body,
+      continuityIssues,
+      critiqueIssues,
+      ctx.characters,
+    );
     if (plans.length === 0) {
       endRound(checkedRound);
       break;
     }
 
-    const applied = await applySectionRevisions(
+    const applied: SectionRevisionOutcome = await applySectionRevisions(
       session,
       plans,
       body,
@@ -494,8 +514,10 @@ const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
 
 // The one line `--verbose` shows per round: what the check found and what the rewrite did with it.
 export function describeReviseRound(round: ReviseRound): string {
-  const highContinuity = round.continuityIssues.filter((issue) => issue.severity === 'high').length;
-  const parts = [
+  const highContinuity: number = round.continuityIssues.filter(
+    (issue) => issue.severity === 'high',
+  ).length;
+  const parts: string[] = [
     `검사 ${round.round}: 연속성 ${round.continuityIssues.length}건(높음 ${highContinuity}) · 비평 ${round.critiqueIssues.length}건 · 차단 ${round.blocking}`,
   ];
 
@@ -505,7 +527,7 @@ export function describeReviseRound(round: ReviseRound): string {
 
   if (round.rewrite) {
     const { plannedSections, acceptedSections, rejectedSections } = round.rewrite;
-    const rejected = rejectedSections
+    const rejected: string = rejectedSections
       .map(
         (item) =>
           `${item.section + 1}구간 ${rejectionReasonLabels[item.reason]}(${item.candidateLength}/${item.originalLength}자)`,

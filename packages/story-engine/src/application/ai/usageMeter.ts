@@ -16,12 +16,12 @@ interface ActiveSession {
 // Counts what one run spends while every record still reaches the host's own sink. A host wraps its
 // sink once in its composition root; a run opens a session, reads it, and stops it when done.
 export class UsageMeter {
-  private readonly sessions = new Set<ActiveSession>();
+  private readonly sessions: Set<ActiveSession> = new Set<ActiveSession>();
 
   public wrap(sink: IUsageSink): IUsageSink {
     return {
       record: async (workspaceRoot, usage): Promise<void> => {
-        const amount = usageAmountOfEntry(usage);
+        const amount: UsageAmount = usageAmountOfEntry(usage);
 
         for (const session of this.sessions) {
           session.amount = addUsageAmount(session.amount, amount);

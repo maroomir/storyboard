@@ -10,9 +10,9 @@ import { countSharedShingles, normalizeForMatch } from './textMatch';
 // 지움). 비트에 좌표가 있으면 파이프라인이 끊는 자리를 정해 뼈대 입력에 ⟪대목 n⟫ 으로 미리 표시하고,
 // 뼈대 결과의 --- 는 그 표식 앞에만 다시 놓는다. 좌표가 없는 씬은 종전대로 모델 재량이다.
 
-const SCENE_BREAK_LINE = '---';
-const SEGMENT_MARKER = /⟪\s*대목\s*(\d+)\s*⟫/g;
-const ANY_MARKER = /⟪[^⟪⟫\n]*⟫/g;
+const SCENE_BREAK_LINE: string = '---';
+const SEGMENT_MARKER: RegExp = /⟪\s*대목\s*(\d+)\s*⟫/g;
+const ANY_MARKER: RegExp = /⟪[^⟪⟫\n]*⟫/g;
 
 export interface PlannedSceneSegment {
   // 이 대목에 드는 비트 번호(0부터).
@@ -36,14 +36,14 @@ const dayPeriods = [
 ] as const;
 
 // 한 비트 안에서 시간이 흐른 시각(«오전부터 오후까지», «수업 동안», «경과»). 그 비트가 끝나면 전환이다.
-const timeSpanPattern = /까지|경과|동안|내내/;
+const timeSpanPattern: RegExp = /까지|경과|동안|내내/;
 
 // 날이 바뀌었다고 적힌 시각은 언제나 전환이다.
-const dayChangePattern =
+const dayChangePattern: RegExp =
   /다음\s*날|이튿날|며칠\s*(?:뒤|후)|\d+\s*일\s*(?:뒤|후)|일주일\s*(?:뒤|후)|다음\s*주/;
 
 // 장소에서 같은 곳인지 가리는 데 쓰지 않는 낱말.
-const placeStopWords = new Set([
+const placeStopWords: Set<string> = new Set([
   '앞',
   '뒤',
   '옆',
@@ -69,7 +69,7 @@ function readPeriod(time: string): number | undefined {
 
   dayPeriods.forEach((period, index) => {
     for (const word of period.words) {
-      const at = time.lastIndexOf(word);
+      const at: number = time.lastIndexOf(word);
       if (at >= 0 && (found === undefined || at > found.at)) {
         found = { period: index, at };
       }
@@ -80,19 +80,21 @@ function readPeriod(time: string): number | undefined {
 }
 
 function readMinutes(time: string, period: number | undefined): number | undefined {
-  const clock = /(\d{1,2}):(\d{2})/.exec(time);
+  const clock: RegExpExecArray | null = /(\d{1,2}):(\d{2})/.exec(time);
   if (clock) {
     return Number(clock[1]) * 60 + Number(clock[2]);
   }
 
-  const hourMatch = /(\d{1,2})\s*시(?:\s*(반)|\s*(\d{1,2})\s*분)?/.exec(time);
+  const hourMatch: RegExpExecArray | null = /(\d{1,2})\s*시(?:\s*(반)|\s*(\d{1,2})\s*분)?/.exec(
+    time,
+  );
   if (!hourMatch) {
     return undefined;
   }
 
-  let hour = Number(hourMatch[1]);
-  const minute = hourMatch[2] ? 30 : hourMatch[3] ? Number(hourMatch[3]) : 0;
-  const isAfternoon = period !== undefined && dayPeriods[period]?.pm === true;
+  let hour: number = Number(hourMatch[1]);
+  const minute: number = hourMatch[2] ? 30 : hourMatch[3] ? Number(hourMatch[3]) : 0;
+  const isAfternoon: boolean = period !== undefined && dayPeriods[period]?.pm === true;
 
   if (isAfternoon && hour < 12 && !(period === 3 && hour >= 11)) {
     hour += 12;
@@ -102,7 +104,7 @@ function readMinutes(time: string, period: number | undefined): number | undefin
 }
 
 function readTime(time: string): ReadTime {
-  const period = readPeriod(time);
+  const period: number | undefined = readPeriod(time);
   return {
     period,
     minutes: readMinutes(time, period),
@@ -112,8 +114,8 @@ function readTime(time: string): ReadTime {
 }
 
 export function isTimeJump(previous: string, next: string, jumpMinutes: number): boolean {
-  const before = readTime(previous);
-  const after = readTime(next);
+  const before: ReadTime = readTime(previous);
+  const after: ReadTime = readTime(next);
 
   if (after.isNextDay || before.isSpan) {
     return true;
@@ -148,19 +150,19 @@ function shouldBreakBefore(
   segmentPlaceWords: ReadonlySet<string>,
   jumpMinutes: number,
 ): boolean {
-  const detail = detailOf(beat);
+  const detail: Exclude<SceneBeat, string> | undefined = detailOf(beat);
   if (detail?.break !== undefined) {
     return detail.break;
   }
 
   if (detail?.place !== undefined && segmentPlaceWords.size > 0) {
-    const words = placeWords(detail.place);
+    const words: string[] = placeWords(detail.place);
     if (words.length > 0 && !words.some((word) => segmentPlaceWords.has(word))) {
       return true;
     }
   }
 
-  const previousTime = detailOf(previous)?.time;
+  const previousTime: string | undefined = detailOf(previous)?.time;
   return (
     detail?.time !== undefined &&
     previousTime !== undefined &&
@@ -177,13 +179,13 @@ function formatSegmentCoordinate(
     ...new Set(values.filter((value): value is string => value !== undefined)),
   ];
 
-  const cast = unique(details.flatMap((detail) => (detail.cast ?? []).map(castName)));
-  const places = unique(details.map((detail) => detail.place));
-  const times = unique(details.map((detail) => detail.time));
-  const timeSpan =
+  const cast: string[] = unique(details.flatMap((detail) => (detail.cast ?? []).map(castName)));
+  const places: string[] = unique(details.map((detail) => detail.place));
+  const times: string[] = unique(details.map((detail) => detail.time));
+  const timeSpan: string | undefined =
     times.length > 1 ? `${times[0] as string} ~ ${times.at(-1) as string}` : times[0];
 
-  const parts = [
+  const parts: string[] = [
     cast.length > 0 ? `${sceneBeatCoordinateLabels.cast}: ${cast.join(', ')}` : undefined,
     places.length > 0 ? `${sceneBeatCoordinateLabels.place}: ${places.join(' → ')}` : undefined,
     timeSpan !== undefined ? `${sceneBeatCoordinateLabels.time}: ${timeSpan}` : undefined,
@@ -199,8 +201,8 @@ export function planSceneBreaks(
   jumpMinutes: number,
 ): SceneBreakPlan | undefined {
   const list = beats ?? [];
-  const hasCoordinates = list.some((beat) => {
-    const detail = detailOf(beat);
+  const hasCoordinates: boolean = list.some((beat) => {
+    const detail: Exclude<SceneBeat, string> | undefined = detailOf(beat);
     return detail?.place !== undefined || detail?.time !== undefined || detail?.break !== undefined;
   });
 
@@ -209,7 +211,7 @@ export function planSceneBreaks(
   }
 
   const groups: number[][] = [];
-  let placeWordSet = new Set<string>();
+  let placeWordSet: Set<string> = new Set<string>();
 
   list.forEach((beat, index) => {
     const previous = list[index - 1];
@@ -219,7 +221,7 @@ export function planSceneBreaks(
     }
 
     groups.at(-1)?.push(index);
-    const place = detailOf(beat)?.place;
+    const place: string | undefined = detailOf(beat)?.place;
     if (place !== undefined) {
       placeWords(place).forEach((word) => placeWordSet.add(word));
     }
@@ -246,15 +248,17 @@ export function renderPlannedNarrative(
 ): string {
   return plan.segments
     .flatMap((segment, index) => {
-      const chosen = segment.beats.filter(
+      const chosen: number[] = segment.beats.filter(
         (beat) => onlyBeats === undefined || onlyBeats.includes(beat),
       );
       if (chosen.length === 0) {
         return [];
       }
 
-      const rendered = chosen.map((beat) => renderSceneBeat(beats[beat] as SceneBeat, castName));
-      const marker = chosen[0] === segment.beats[0] ? `⟪대목 ${index + 1}⟫\n` : '';
+      const rendered: string[] = chosen.map((beat) =>
+        renderSceneBeat(beats[beat] as SceneBeat, castName),
+      );
+      const marker: string = chosen[0] === segment.beats[0] ? `⟪대목 ${index + 1}⟫\n` : '';
       return [`${marker}${rendered.join('\n\n')}`];
     })
     .join('\n\n');
@@ -276,7 +280,7 @@ export function planSkeletonCalls(
   targetLength: number | undefined,
   charsPerCall: number,
 ): SkeletonCall[] {
-  const totalBeats = plan.segments.reduce((sum, segment) => sum + segment.beats.length, 0);
+  const totalBeats: number = plan.segments.reduce((sum, segment) => sum + segment.beats.length, 0);
   if (targetLength === undefined || totalBeats === 0) {
     return [
       {
@@ -297,10 +301,10 @@ export function planSkeletonCalls(
       return;
     }
 
-    const chunkCount = Math.max(1, Math.ceil(shareOf(segment.beats.length) / charsPerCall));
-    let rest = [...segment.beats];
-    for (let chunk = 0; chunk < chunkCount; chunk += 1) {
-      const size = Math.ceil(rest.length / (chunkCount - chunk));
+    const chunkCount: number = Math.max(1, Math.ceil(shareOf(segment.beats.length) / charsPerCall));
+    let rest: number[] = [...segment.beats];
+    for (let chunk: number = 0; chunk < chunkCount; chunk += 1) {
+      const size: number = Math.ceil(rest.length / (chunkCount - chunk));
       calls.push({ beats: rest.slice(0, size), markers: chunk === 0 ? [index + 1] : [] });
       rest = rest.slice(size);
     }
@@ -311,7 +315,7 @@ export function planSkeletonCalls(
 
 // 호출이 자기 첫 대목의 표식을 빠뜨렸으면 앞에 붙인다. 호출의 시작 대목은 파이프라인이 안다.
 export function ensureLeadingMarker(text: string, segmentNumber: number): string {
-  const hasMarker = [...text.matchAll(SEGMENT_MARKER)].some(
+  const hasMarker: boolean = [...text.matchAll(SEGMENT_MARKER)].some(
     (match) => Number(match[1]) === segmentNumber,
   );
   return hasMarker ? text : `⟪대목 ${segmentNumber}⟫\n${text}`;
@@ -324,7 +328,7 @@ export function keepOnlyMarkers(text: string, allowed: readonly number[]): strin
   return text
     .split('\n')
     .flatMap((line) => {
-      const stripped = line.replace(SEGMENT_MARKER, (marker, number: string) =>
+      const stripped: string = line.replace(SEGMENT_MARKER, (marker, number: string) =>
         allowed.includes(Number(number)) ? marker : '',
       );
       return stripped === line || stripped.trim().length > 0 ? [stripped] : [];
@@ -337,7 +341,9 @@ export function countMissingSegmentMarkers(
   text: string,
   segmentNumbers: readonly number[],
 ): number {
-  const seen = new Set([...text.matchAll(SEGMENT_MARKER)].map((match) => Number(match[1])));
+  const seen: Set<number> = new Set(
+    [...text.matchAll(SEGMENT_MARKER)].map((match) => Number(match[1])),
+  );
   return segmentNumbers.filter((segmentNumber) => !seen.has(segmentNumber)).length;
 }
 
@@ -360,7 +366,7 @@ export function applyPlannedSceneBreaks(
   plan: SceneBreakPlan,
 ): PlannedBreakResult {
   const out: string[] = [];
-  const seen = new Set<number>();
+  const seen: Set<number> = new Set<number>();
   const coordinates: (string | undefined)[] = [];
   // 결과 대목마다 그 대목을 여는 계획 대목 번호(1부터).
   const openingNumbers: number[] = [];
@@ -375,7 +381,7 @@ export function applyPlannedSceneBreaks(
       continue;
     }
 
-    const markers = [...line.matchAll(SEGMENT_MARKER)].map((match) => Number(match[1]));
+    const markers: number[] = [...line.matchAll(SEGMENT_MARKER)].map((match) => Number(match[1]));
     for (const segmentNumber of markers) {
       if (seen.has(segmentNumber) || segmentNumber < 1 || segmentNumber > plan.segments.length) {
         continue;
@@ -396,7 +402,7 @@ export function applyPlannedSceneBreaks(
       openSegment(segmentNumber);
     }
 
-    const rest = line.replace(ANY_MARKER, '');
+    const rest: string = line.replace(ANY_MARKER, '');
     if (rest === line) {
       out.push(line);
     } else if (rest.trim().length > 0) {
@@ -409,9 +415,9 @@ export function applyPlannedSceneBreaks(
   }
 
   // 결과 대목 i는 자기를 연 계획 대목부터 다음 결과 대목이 열리기 전까지의 비트를 모두 가진다.
-  const beats = openingNumbers.map((opening, index) => {
-    const next = openingNumbers[index + 1] ?? plan.segments.length + 1;
-    const from = index === 0 ? 1 : opening;
+  const beats: number[][] = openingNumbers.map((opening, index) => {
+    const next: number = openingNumbers[index + 1] ?? plan.segments.length + 1;
+    const from: number = index === 0 ? 1 : opening;
     return plan.segments.slice(from - 1, next - 1).flatMap((segment) => segment.beats);
   });
 
@@ -439,7 +445,7 @@ function paragraphsOf(text: string): string[] {
 }
 
 function similarity(paragraph: string, reference: string): number {
-  const needle = normalizeForMatch(paragraph);
+  const needle: string = normalizeForMatch(paragraph);
   return needle.length === 0
     ? 0
     : countSharedShingles(needle, normalizeForMatch(reference)) / needle.length;
@@ -449,7 +455,7 @@ function similarity(paragraph: string, reference: string): number {
 // 살붙임 문단 앞에 --- 를 다시 놓는다(#112). 바로 앞 문단이 이 대목을 더 닮았으면(전환 뒤 첫머리의
 // 설정 문장) 한 문단 당긴다. 자리를 못 찾으면 undefined.
 export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): string | undefined {
-  const parts = sectionSkeleton.split('\n');
+  const parts: string[] = sectionSkeleton.split('\n');
   const skeletonParts: string[][] = [[]];
   for (const line of parts) {
     if (line.trim() === SCENE_BREAK_LINE) {
@@ -458,27 +464,27 @@ export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): s
       skeletonParts.at(-1)?.push(line);
     }
   }
-  const segments = skeletonParts.map((lines) => lines.join('\n').trim());
-  const paragraphs = paragraphsOf(
+  const segments: string[] = skeletonParts.map((lines) => lines.join('\n').trim());
+  const paragraphs: string[] = paragraphsOf(
     expanded
       .split('\n')
       .filter((line) => line.trim() !== SCENE_BREAK_LINE)
       .join('\n'),
   );
 
-  const leadingBreak = segments[0] === '';
-  const trailingBreak = segments.length > 1 && segments.at(-1) === '';
-  const inner = segments.slice(leadingBreak ? 1 : 0, trailingBreak ? -1 : undefined);
+  const leadingBreak: boolean = segments[0] === '';
+  const trailingBreak: boolean = segments.length > 1 && segments.at(-1) === '';
+  const inner: string[] = segments.slice(leadingBreak ? 1 : 0, trailingBreak ? -1 : undefined);
   const breakBefore: number[] = [];
-  let lastIndex = 0;
+  let lastIndex: number = 0;
 
-  for (let segment = 1; segment < inner.length; segment += 1) {
-    const current = inner[segment] as string;
-    const anchor = paragraphsOf(current)[0] ?? '';
+  for (let segment: number = 1; segment < inner.length; segment += 1) {
+    const current: string = inner[segment] as string;
+    const anchor: string = paragraphsOf(current)[0] ?? '';
     let best: { index: number; score: number } | undefined;
 
-    for (let index = lastIndex + 1; index < paragraphs.length; index += 1) {
-      const score = similarity(anchor, paragraphs[index] as string);
+    for (let index: number = lastIndex + 1; index < paragraphs.length; index += 1) {
+      const score: number = similarity(anchor, paragraphs[index] as string);
       if (score > 0 && (best === undefined || score > best.score)) {
         best = { index, score };
       }
@@ -488,8 +494,8 @@ export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): s
       return undefined;
     }
 
-    let index = best.index;
-    const before = paragraphs[index - 1];
+    let index: number = best.index;
+    const before: string | undefined = paragraphs[index - 1];
     if (
       before !== undefined &&
       index - 1 > lastIndex &&
@@ -517,14 +523,14 @@ export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): s
   ].join('\n\n');
 }
 
-const quotedLine = /[“"][^”"\n]+[”"]/g;
+const quotedLine: RegExp = /[“"][^”"\n]+[”"]/g;
 
 function beatCastSize(beat: SceneBeat | undefined): number {
   return detailOf(beat ?? '')?.cast?.length ?? 0;
 }
 
 function shortBeatText(beat: SceneBeat): string {
-  const text = typeof beat === 'string' ? beat : beat.text;
+  const text: string = typeof beat === 'string' ? beat : beat.text;
   return text.length > 24 ? `${text.slice(0, 24)}…` : text;
 }
 
@@ -537,11 +543,11 @@ export function findThinDialogueBeats(
   beats: readonly SceneBeat[],
   thinTurns: number,
 ): string[] {
-  const textBySegment = new Map<number, string>();
+  const textBySegment: Map<number, string> = new Map<number, string>();
   let current: number | undefined;
 
   for (const line of skeleton.split('\n')) {
-    const marker = [...line.matchAll(SEGMENT_MARKER)].at(-1);
+    const marker: RegExpExecArray | undefined = [...line.matchAll(SEGMENT_MARKER)].at(-1);
     if (marker) {
       current = Number(marker[1]);
     }
@@ -551,13 +557,13 @@ export function findThinDialogueBeats(
   }
 
   return plan.segments.flatMap((segment, index) => {
-    const conversational = segment.beats.filter((beat) => beatCastSize(beats[beat]) >= 2);
-    const text = textBySegment.get(index + 1);
+    const conversational: number[] = segment.beats.filter((beat) => beatCastSize(beats[beat]) >= 2);
+    const text: string | undefined = textBySegment.get(index + 1);
     if (conversational.length === 0 || text === undefined) {
       return [];
     }
 
-    const turns = text.match(quotedLine)?.length ?? 0;
+    const turns: number = text.match(quotedLine)?.length ?? 0;
     return turns < thinTurns * conversational.length
       ? conversational.map((beat) => shortBeatText(beats[beat] as SceneBeat))
       : [];

@@ -13,11 +13,11 @@ import {
   type CollectedNotes,
   type INoteSource,
 } from '#engine/application/notes/noteSource';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type { NoteDocument, NoteOrigin, SkippedNote } from '@storyboard/story-model';
 
-const vaultMarkerDirectory = '.obsidian';
-const outsideVaultReason = '볼트 밖을 가리키는 링크라 읽지 않았습니다';
+const vaultMarkerDirectory: string = '.obsidian';
+const outsideVaultReason: string = '볼트 밖을 가리키는 링크라 읽지 않았습니다';
 
 export interface ObsidianNoteSourceOptions {
   readonly fileSystem: IFileSystem;
@@ -39,10 +39,10 @@ export class ObsidianNoteSource implements INoteSource {
       throw new NoteSourceError('not-found', `노트를 찾을 수 없습니다: ${root.fsPath}`);
     }
 
-    const isSingleNote = /\.md$/i.test(root.path);
-    const treeDirectory = isSingleNote ? parentOf(root) : root;
-    const vaultRoot = await findVaultRoot(fileSystem, treeDirectory);
-    const treeFiles = isSingleNote ? [root] : await listMarkdownFiles(fileSystem, root);
+    const isSingleNote: boolean = /\.md$/i.test(root.path);
+    const treeDirectory: StoryUri = isSingleNote ? parentOf(root) : root;
+    const vaultRoot: StoryUri = await findVaultRoot(fileSystem, treeDirectory);
+    const treeFiles: StoryUri[] = isSingleNote ? [root] : await listMarkdownFiles(fileSystem, root);
     const notes: NoteDocument[] = [];
     const linkTargets: string[] = [];
     const skipped: SkippedNote[] = [];
@@ -55,22 +55,25 @@ export class ObsidianNoteSource implements INoteSource {
         continue;
       }
 
-      const note = await readNote(fileSystem, vaultRoot, file, 'tree');
+      const note: NoteDocument = await readNote(fileSystem, vaultRoot, file, 'tree');
       notes.push(note);
       linkTargets.push(...extractNoteLinkTargets(note.body));
     }
 
-    const collectedIds = new Set([
+    const collectedIds: Set<string> = new Set([
       ...notes.map((note) => note.id),
       ...skipped.map((entry) => entry.label),
     ]);
-    const pendingTargets = [...new Set(linkTargets)];
+    const pendingTargets: string[] = [...new Set(linkTargets)];
 
     if (pendingTargets.length > 0) {
-      const vaultIndex = buildVaultIndex(vaultRoot, await listMarkdownFiles(fileSystem, vaultRoot));
+      const vaultIndex: VaultIndex = buildVaultIndex(
+        vaultRoot,
+        await listMarkdownFiles(fileSystem, vaultRoot),
+      );
 
       for (const target of pendingTargets) {
-        const file = vaultIndex.resolve(target);
+        const file: StoryUri | undefined = vaultIndex.resolve(target);
 
         if (file === undefined) {
           skipped.push({
@@ -80,7 +83,7 @@ export class ObsidianNoteSource implements INoteSource {
           continue;
         }
 
-        const id = relativePath(vaultRoot, file);
+        const id: string = relativePath(vaultRoot, file);
 
         if (collectedIds.has(id)) {
           continue;
@@ -102,7 +105,7 @@ export class ObsidianNoteSource implements INoteSource {
 }
 
 function parentOf(uri: StoryUri): StoryUri {
-  const cut = uri.path.replace(/\/+$/, '').lastIndexOf('/');
+  const cut: number = uri.path.replace(/\/+$/, '').lastIndexOf('/');
 
   return uri.with({ path: cut <= 0 ? '/' : uri.path.slice(0, cut) });
 }
@@ -110,14 +113,14 @@ function parentOf(uri: StoryUri): StoryUri {
 // A link resolves against the whole vault, not the folder that was handed in. The vault is the
 // nearest ancestor holding `.obsidian`; a plain folder of notes is its own vault.
 async function findVaultRoot(fileSystem: IFileSystem, start: StoryUri): Promise<StoryUri> {
-  let current = start;
+  let current: StoryUri = start;
 
   for (;;) {
     if (await fileSystem.exists(joinStoryPath(current, vaultMarkerDirectory))) {
       return current;
     }
 
-    const parent = parentOf(current);
+    const parent: StoryUri = parentOf(current);
 
     if (parent.path === current.path) {
       return start;
@@ -131,13 +134,13 @@ async function listMarkdownFiles(
   fileSystem: IFileSystem,
   directory: StoryUri,
 ): Promise<StoryUri[]> {
-  const entries = [...(await fileSystem.readDirectory(directory))]
+  const entries: FileSystemDirectoryEntry[] = [...(await fileSystem.readDirectory(directory))]
     .filter(([name]) => !name.startsWith('.'))
     .sort(([left], [right]) => compareNoteNames(left, right));
   const files: StoryUri[] = [];
 
   for (const [name, entry] of entries) {
-    const uri = joinStoryPath(directory, name);
+    const uri: StoryUri = joinStoryPath(directory, name);
 
     if (entry.type === 'directory') {
       files.push(...(await listMarkdownFiles(fileSystem, uri)));
@@ -150,8 +153,10 @@ async function listMarkdownFiles(
 }
 
 function relativePath(vaultRoot: StoryUri, file: StoryUri): string {
-  const base = vaultRoot.path.replace(/\/+$/, '');
-  const relative = file.path.startsWith(`${base}/`) ? file.path.slice(base.length + 1) : file.path;
+  const base: string = vaultRoot.path.replace(/\/+$/, '');
+  const relative: string = file.path.startsWith(`${base}/`)
+    ? file.path.slice(base.length + 1)
+    : file.path;
 
   return relative.normalize('NFC');
 }
@@ -162,10 +167,10 @@ async function readNote(
   file: StoryUri,
   origin: NoteOrigin,
 ): Promise<NoteDocument> {
-  const id = relativePath(vaultRoot, file);
-  const segments = id.split('/');
-  const fileName = segments[segments.length - 1] ?? id;
-  const body = new TextDecoder().decode(await fileSystem.readFile(file));
+  const id: string = relativePath(vaultRoot, file);
+  const segments: string[] = id.split('/');
+  const fileName: string = segments[segments.length - 1] ?? id;
+  const body: string = new TextDecoder().decode(await fileSystem.readFile(file));
 
   return {
     id,
@@ -192,7 +197,7 @@ function buildVaultIndex(vaultRoot: StoryUri, files: readonly StoryUri[]): Vault
 
   return {
     resolve(target: string): StoryUri | undefined {
-      const wanted = normalizeNoteName(target).replace(/^\/+/, '');
+      const wanted: string = normalizeNoteName(target).replace(/^\/+/, '');
 
       return entries.find((entry) => entry.key === wanted || entry.key.endsWith(`/${wanted}`))
         ?.file;

@@ -2,6 +2,8 @@ import {
   getStoryboardProjectPaths,
   type NarratorCard,
   type ProjectSetting,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -62,12 +64,12 @@ export class UpdateProjectContractUseCase implements IUseCase<
       'Update project contract failed',
       async () => {
         const { fileSystem } = this.deps;
-        const paths = getStoryboardProjectPaths(request.workspaceRoot);
-        const project = await readProjectJson(fileSystem, paths.projectJson);
-        const setting = mergeProjectSetting(project.setting, request.setting);
+        const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
+        const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+        const setting: ProjectSetting = mergeProjectSetting(project.setting, request.setting);
 
         await writeProjectJson(fileSystem, paths.projectJson, { ...project, setting });
-        const createdNarrators = await writeNarratorCardsIfMissing(
+        const createdNarrators: string[] = await writeNarratorCardsIfMissing(
           fileSystem,
           paths,
           request.narratorCards ?? [],

@@ -31,10 +31,10 @@ export async function ensureWorkspaceGitignore(
   fs: IFileSystem,
   gitignoreUri: StoryUri,
 ): Promise<void> {
-  const current = (await fs.exists(gitignoreUri))
+  const current: string | undefined = (await fs.exists(gitignoreUri))
     ? new TextDecoder().decode(await fs.readFile(gitignoreUri))
     : undefined;
-  const merged = mergeStoryboardGitignore(current);
+  const merged: string | undefined = mergeStoryboardGitignore(current);
 
   if (merged !== undefined) {
     await fs.writeFile(gitignoreUri, new TextEncoder().encode(merged));
@@ -77,8 +77,8 @@ export interface CreateWorkspaceResult {
 // business, because only the host knows whether git is there and how to run it.
 export async function createWorkspace(request: CreateWorkspaceRequest): Promise<CreateWorkspaceResult> {
   const { fileSystem } = request;
-  const paths = getStoryboardProjectPaths(request.workspaceRoot);
-  const base = createDefaultProjectJson({
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
+  const base: StoryboardProject = createDefaultProjectJson({
     name: request.name,
     ...(request.language === undefined ? {} : { language: request.language }),
   });
@@ -90,7 +90,7 @@ export async function createWorkspace(request: CreateWorkspaceRequest): Promise<
   await ensureWorkspaceGitignore(fileSystem, paths.gitignore);
   await fileSystem.writeFile(paths.readme, new TextEncoder().encode(createWorkspaceReadme(project.name)));
   await writeWorkspaceAgentGuidesIfMissing(fileSystem, paths);
-  const createdNarrators = await writeNarratorCardsIfMissing(
+  const createdNarrators: string[] = await writeNarratorCardsIfMissing(
     fileSystem,
     paths,
     request.narratorCards ?? [],
@@ -113,7 +113,7 @@ export async function writeNarratorCardsIfMissing(
 
   const written: string[] = [];
   for (const card of cards) {
-    const uri = joinStoryPath(paths.narratorDirectory, `${card.id}.card`);
+    const uri: StoryUri = joinStoryPath(paths.narratorDirectory, `${card.id}.card`);
 
     if (await fileSystem.exists(uri)) {
       continue;

@@ -14,8 +14,9 @@ import type {
   StudioFollowUpTarget,
   StudioPatchPayload,
   StudioValidation,
+  StudioValidationVerdict,
 } from '@storyboard/story-model';
-import type { StudioAgentMessage } from '@storyboard/story-ai';
+import type { StoryboardAiService, StudioAgentMessage } from '@storyboard/story-ai';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryboardLogger } from '#engine/ports/logger';
@@ -51,7 +52,7 @@ export interface StudioChatRequest {
 
 export type StudioChatStage = 'thinking' | 'looking-up' | 'invoking' | 'validating';
 
-export const maxStudioQuestions = 5;
+export const maxStudioQuestions: number = 5;
 
 export interface StudioChatUseCaseDependencies {
   readonly aiGateway: AiGateway;
@@ -62,9 +63,9 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
   public constructor(private readonly deps: StudioChatUseCaseDependencies) {}
 
   public async execute(request: StudioChatRequest): Promise<readonly StudioChatTurn[]> {
-    const service = this.deps.aiGateway.createService(request.workspaceRoot);
+    const service: StoryboardAiService = this.deps.aiGateway.createService(request.workspaceRoot);
 
-    const action = await service.runStudioAgent(
+    const action: StudioAgentAction = await service.runStudioAgent(
       {
         entityKind: request.entityContext.agentEntityKind,
         patchShape: request.entityContext.patchTarget,
@@ -82,7 +83,9 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
       { onStage: (stage) => request.onStage?.(stage), attribution: request.attribution },
     );
 
-    const followUps = await request.resolveFollowUps(followUpsOf(action));
+    const followUps: readonly StudioFollowUpTarget[] = await request.resolveFollowUps(
+      followUpsOf(action),
+    );
 
     if (action.kind !== 'propose') {
       return [toPlainTurn(action, request.createTurnId(), followUps)];
@@ -99,7 +102,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
       ];
     }
 
-    const patch = action.patch as StudioPatchPayload;
+    const patch: StudioPatchPayload = action.patch as StudioPatchPayload;
 
     return [
       {
@@ -130,7 +133,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
     request.onStage?.('validating');
 
     try {
-      const verdict = await this.deps.aiGateway
+      const verdict: StudioValidationVerdict = await this.deps.aiGateway
         .createService(request.workspaceRoot)
         .validateStudioProposal(
           {
@@ -161,7 +164,9 @@ export function hashBaseline(text: string): string {
 // NOTE: the cap counts questions already asked in this session so a stubborn ambiguity cannot turn
 // the conversation into an interrogation.
 function remainingQuestions(history: readonly StudioChatTurn[]): number {
-  const asked = history.filter((turn) => turn.role === 'assistant' && turn.kind === 'ask').length;
+  const asked: number = history.filter(
+    (turn) => turn.role === 'assistant' && turn.kind === 'ask',
+  ).length;
 
   return Math.max(0, maxStudioQuestions - asked);
 }

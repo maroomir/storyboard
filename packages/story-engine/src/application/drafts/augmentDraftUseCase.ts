@@ -1,5 +1,15 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { StoryUri, BibleFact, ProjectFormat, SceneContext } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  BibleFact,
+  ProjectFormat,
+  SceneContext,
+  StoryboardProjectPaths,
+  SceneContextWorkspacePaths,
+  NarrativeContext,
+  SceneFile,
+  StoryboardProject,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { failedResult } from '#engine/application/useCase';
 import {
@@ -58,31 +68,36 @@ export class AugmentDraftUseCase {
   public constructor(private readonly deps: AugmentDraftUseCaseDependencies) {}
 
   public async prepareAugmentedDraft(request: AugmentDraftRequest): Promise<AugmentDraftResult> {
-    const context = await this.loadContext(request.sceneUri, request.workspaceRoot);
+    const context: AugmentContextResult = await this.loadContext(
+      request.sceneUri,
+      request.workspaceRoot,
+    );
 
     if (!context.ok) {
       return { kind: 'failed', message: context.message, ok: false };
     }
 
     try {
-      const text = await this.deps.aiGateway.createService(request.workspaceRoot).augmentDraft(
-        {
-          target: request.target,
-          scope: request.scope,
-          format: context.format,
-          cards: formatAugmentCards(
-            context.sceneContext.characters,
-            context.sceneContext.background,
-          ),
-          facts: formatBibleFactLines(context.sceneContext, context.bibleFacts),
-          intent: context.sceneContext.scene.body,
-          instruction: request.instruction,
-        },
-        {
-          providerId: this.deps.aiGateway.getTaskProvider('draftAugment'),
-          attribution: { primary: { kind: 'scene', id: request.draftSceneStem } },
-        },
-      );
+      const text: string = await this.deps.aiGateway
+        .createService(request.workspaceRoot)
+        .augmentDraft(
+          {
+            target: request.target,
+            scope: request.scope,
+            format: context.format,
+            cards: formatAugmentCards(
+              context.sceneContext.characters,
+              context.sceneContext.background,
+            ),
+            facts: formatBibleFactLines(context.sceneContext, context.bibleFacts),
+            intent: context.sceneContext.scene.body,
+            instruction: request.instruction,
+          },
+          {
+            providerId: this.deps.aiGateway.getTaskProvider('draftAugment'),
+            attribution: { primary: { kind: 'scene', id: request.draftSceneStem } },
+          },
+        );
 
       return text.trim().length === 0
         ? { kind: 'empty', ok: false }
@@ -98,7 +113,10 @@ export class AugmentDraftUseCase {
       return;
     }
 
-    const historyDirectory = draftHistorySceneDirectory(request.workspaceRoot, request.sceneStem);
+    const historyDirectory: StoryUri = draftHistorySceneDirectory(
+      request.workspaceRoot,
+      request.sceneStem,
+    );
 
     try {
       await archiveExistingDraft({
@@ -116,9 +134,9 @@ export class AugmentDraftUseCase {
     sceneUri: StoryUri,
     workspaceRoot: StoryUri,
   ): Promise<AugmentContextResult> {
-    const fileName = sceneUri.path.split('/').pop() ?? '';
+    const fileName: string = sceneUri.path.split('/').pop() ?? '';
 
-    let scene;
+    let scene: SceneFile;
     try {
       scene = await readSceneFile(sceneUri, this.deps.fileSystem, fileName);
     } catch (error) {
@@ -127,23 +145,23 @@ export class AugmentDraftUseCase {
         : { message: '연결된 씬 파일을 찾을 수 없습니다.', ok: false };
     }
 
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    let project;
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    let project: StoryboardProject;
     try {
       project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
     } catch {
       return { message: 'project.json을 읽을 수 없습니다.', ok: false };
     }
 
-    const contextPaths = sceneContextPaths(paths);
-    let sceneContext;
+    const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
+    let sceneContext: SceneContext;
     try {
       sceneContext = await buildSceneContext(contextPaths, scene, this.deps.fileSystem);
     } catch {
       return { message: '씬 컨텍스트를 구성하지 못했습니다.', ok: false };
     }
 
-    const narrativeContext = await buildNarrativeContext(
+    const narrativeContext: NarrativeContext = await buildNarrativeContext(
       contextPaths,
       sceneContext,
       this.deps.fileSystem,

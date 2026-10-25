@@ -7,7 +7,11 @@ import {
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { ISceneSeedRepository } from '#engine/application/novel/novelPipeline';
-import type { GeneratedSceneSeed } from '@storyboard/story-model';
+import type {
+  GeneratedSceneSeed,
+  SceneFileNameParts,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 
 export class SceneSeedRepository implements ISceneSeedRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
@@ -16,7 +20,7 @@ export class SceneSeedRepository implements ISceneSeedRepository {
     workspaceRoot: StoryUri,
     seeds: readonly GeneratedSceneSeed[],
   ): Promise<void> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.sceneDirectory);
 
     for (const seed of seeds) {
@@ -30,14 +34,14 @@ export class SceneSeedRepository implements ISceneSeedRepository {
   public async listSceneStemsByOrder(
     workspaceRoot: StoryUri,
   ): Promise<ReadonlyMap<number, string>> {
-    const fileNames = await listDirectoryFileNames(
+    const fileNames: readonly string[] = await listDirectoryFileNames(
       this.fileSystem,
       getStoryboardProjectPaths(workspaceRoot).sceneDirectory,
     );
-    const stemsByOrder = new Map<number, string>();
+    const stemsByOrder: Map<number, string> = new Map<number, string>();
 
     for (const fileName of [...fileNames].sort()) {
-      const parts = parseSceneFileName(fileName);
+      const parts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
       if (parts !== undefined && !stemsByOrder.has(parts.order)) {
         stemsByOrder.set(parts.order, parts.stem);
       }
@@ -50,9 +54,10 @@ export class SceneSeedRepository implements ISceneSeedRepository {
     workspaceRoot: StoryUri,
     seeds: readonly GeneratedSceneSeed[],
   ): Promise<number> {
-    const stemsByOrder = await this.listSceneStemsByOrder(workspaceRoot);
-    const missing = seeds.filter((seed) => {
-      const order = parseSceneFileName(seed.fileName)?.order;
+    const stemsByOrder: ReadonlyMap<number, string> =
+      await this.listSceneStemsByOrder(workspaceRoot);
+    const missing: GeneratedSceneSeed[] = seeds.filter((seed) => {
+      const order: number | undefined = parseSceneFileName(seed.fileName)?.order;
       return order === undefined || !stemsByOrder.has(order);
     });
 

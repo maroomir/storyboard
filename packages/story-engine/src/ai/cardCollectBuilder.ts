@@ -11,7 +11,11 @@ import type {
   EntityRef,
   UsageAttribution,
 } from '@storyboard/story-model';
-import type { StoryboardAiService } from '@storyboard/story-ai';
+import type {
+  BackgroundFactExtraction,
+  CardCandidateExtraction,
+  StoryboardAiService,
+} from '@storyboard/story-ai';
 import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
 export interface CollectDraft {
   readonly sceneStem: string;
@@ -41,7 +45,7 @@ export function filterDraftsForCard(
   card: StoryboardCard,
   drafts: readonly CollectDraft[],
 ): CollectDraft[] {
-  const needles = [card.name, ...(card.aliases ?? [])]
+  const needles: string[] = [card.name, ...(card.aliases ?? [])]
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
 
@@ -54,7 +58,7 @@ class ProposalAccumulator {
   private readonly byId = new Map<string, { partial: PartialProposal; scenes: Set<string> }>();
 
   public add(sceneStem: string, partial: PartialProposal): void {
-    const id = cardCollectProposalId(partial);
+    const id: string = cardCollectProposalId(partial);
     const existing = this.byId.get(id);
 
     if (existing) {
@@ -69,8 +73,8 @@ class ProposalAccumulator {
     const proposals: CardCollectProposal[] = [];
 
     for (const [id, { partial, scenes }] of this.byId) {
-      const before = resolveBefore(card, partial);
-      const proposal = {
+      const before: string | undefined = resolveBefore(card, partial);
+      const proposal: CardCollectProposal = {
         ...partial,
         id,
         sourceScenes: [...scenes],
@@ -89,7 +93,7 @@ class ProposalAccumulator {
 function resolveBefore(card: StoryboardCard, partial: PartialProposal): string | undefined {
   if (card.type === 'character') {
     if (partial.kind === 'attribute') {
-      const current = card.attributes?.[partial.key];
+      const current: string | number | boolean | null | undefined = card.attributes?.[partial.key];
       return current === undefined || current === null ? undefined : String(current);
     }
     if (partial.kind === 'relation') {
@@ -111,11 +115,11 @@ function resolveBefore(card: StoryboardCard, partial: PartialProposal): string |
 function buildTargetResolver(
   roster: readonly CollectRosterEntry[],
 ): (rawTarget: string) => string | undefined {
-  const idByName = new Map(roster.map((entry) => [entry.name, entry.id]));
-  const ids = new Set(roster.map((entry) => entry.id));
+  const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
+  const ids: Set<string> = new Set(roster.map((entry) => entry.id));
 
   return (rawTarget) => {
-    const target = rawTarget.trim();
+    const target: string = rawTarget.trim();
     return ids.has(target) ? target : idByName.get(target);
   };
 }
@@ -130,19 +134,20 @@ async function buildCharacterProposals(
   aiService: CardCollectAiService,
   roster: readonly CollectRosterEntry[],
 ): Promise<CardCollectProposal[]> {
-  const resolveTarget = buildTargetResolver(roster);
-  const accumulator = new ProposalAccumulator();
+  const resolveTarget: (rawTarget: string) => string | undefined = buildTargetResolver(roster);
+  const accumulator: ProposalAccumulator = new ProposalAccumulator();
   const primary: EntityRef = { kind: 'character', id: card.id };
-  const aliases = card.aliases ?? [];
+  const aliases: string[] = card.aliases ?? [];
 
   for (const draft of drafts) {
-    const attribution = attributionFor(primary, draft.sceneStem);
+    const attribution: UsageAttribution = attributionFor(primary, draft.sceneStem);
 
-    const extracted = await aiService.extractCardCandidatesByCharacter(draft.body, [card.name], {
-      attribution,
-      aliases,
-    });
-    const candidate = extracted[card.name];
+    const extracted: Record<string, CardCandidateExtraction> =
+      await aiService.extractCardCandidatesByCharacter(draft.body, [card.name], {
+        attribution,
+        aliases,
+      });
+    const candidate: CardCandidateExtraction | undefined = extracted[card.name];
 
     if (candidate) {
       for (const attribute of candidate.attributes) {
@@ -153,7 +158,7 @@ async function buildCharacterProposals(
         });
       }
       for (const relation of candidate.relations) {
-        const target = resolveTarget(relation.target);
+        const target: string | undefined = resolveTarget(relation.target);
         if (target && target !== card.id) {
           accumulator.add(draft.sceneStem, { kind: 'relation', target, type: relation.type });
         }
@@ -176,10 +181,14 @@ async function buildCharacterProposals(
       }
     }
 
-    const traits = await aiService.extractTraitsByCharacter(draft.body, [card.name], {
-      attribution,
-      aliases,
-    });
+    const traits: Record<string, string[]> = await aiService.extractTraitsByCharacter(
+      draft.body,
+      [card.name],
+      {
+        attribution,
+        aliases,
+      },
+    );
     for (const trait of traits[card.name] ?? []) {
       accumulator.add(draft.sceneStem, { kind: 'trait', value: trait });
     }
@@ -198,15 +207,19 @@ async function buildBackgroundProposals(
   aiService: CardCollectAiService,
   roster: readonly CollectRosterEntry[],
 ): Promise<CardCollectProposal[]> {
-  const idByName = new Map(roster.map((entry) => [entry.name, entry.id]));
-  const accumulator = new ProposalAccumulator();
+  const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
+  const accumulator: ProposalAccumulator = new ProposalAccumulator();
   const primary: EntityRef = { kind: 'background', id: card.id };
 
   for (const draft of drafts) {
-    const attribution = attributionFor(primary, draft.sceneStem);
-    const facts = await aiService.extractBackgroundFactsFromDraft(draft.body, card.name, {
-      attribution,
-    });
+    const attribution: UsageAttribution = attributionFor(primary, draft.sceneStem);
+    const facts: BackgroundFactExtraction = await aiService.extractBackgroundFactsFromDraft(
+      draft.body,
+      card.name,
+      {
+        attribution,
+      },
+    );
 
     for (const line of facts.description) {
       accumulator.add(draft.sceneStem, { kind: 'descriptionLine', value: line });
@@ -221,7 +234,7 @@ async function buildBackgroundProposals(
       accumulator.add(draft.sceneStem, { kind: 'scalar', field: 'weather', after: facts.weather });
     }
     for (const name of facts.characterNames) {
-      const id = idByName.get(name);
+      const id: string | undefined = idByName.get(name);
       if (id) {
         accumulator.add(draft.sceneStem, { kind: 'characterId', value: id });
       }
@@ -234,7 +247,7 @@ async function buildBackgroundProposals(
 export async function buildCardCollectProposals(
   input: BuildCardCollectProposalsInput,
 ): Promise<CardCollectProposal[]> {
-  const drafts = filterDraftsForCard(input.card, input.drafts);
+  const drafts: CollectDraft[] = filterDraftsForCard(input.card, input.drafts);
 
   if (drafts.length === 0) {
     return [];

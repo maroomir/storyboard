@@ -8,8 +8,9 @@ import {
   joinStoryPath,
   resolveThreadPaths,
   type StoryboardProjectPaths,
+  type SceneFileNameParts,
 } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 
 export interface SceneThreadContext {
   readonly threadId: string;
@@ -32,7 +33,7 @@ export async function resolveSceneThread(
     return { threadId: mainThreadId, threadPaths: paths, previousSceneOrder: undefined };
   }
 
-  const threadId = scene.card.thread ?? chapterThread ?? mainThreadId;
+  const threadId: string = scene.card.thread ?? chapterThread ?? mainThreadId;
 
   return {
     threadId,
@@ -59,7 +60,7 @@ async function findPreviousSceneOrderInThread(
   chapterThread: string | undefined,
   fileSystem: IFileSystem,
 ): Promise<number | undefined> {
-  let entries;
+  let entries: FileSystemDirectoryEntry[];
   try {
     entries = await fileSystem.readDirectory(paths.sceneDirectory);
   } catch {
@@ -69,7 +70,7 @@ async function findPreviousSceneOrderInThread(
   const earlierScenes = entries
     .filter(([name, entry]) => entry.type === 'file' && !isHiddenSceneFileName(name))
     .flatMap(([name]) => {
-      const parsed = parseSceneFileName(name);
+      const parsed: SceneFileNameParts | undefined = parseSceneFileName(name);
       return parsed && parsed.order < scene.order ? [{ name, order: parsed.order }] : [];
     })
     .sort((left, right) => right.order - left.order);
@@ -92,7 +93,9 @@ async function readSceneThreadId(
   chapterThread: string | undefined,
 ): Promise<string | undefined> {
   try {
-    const bytes = await fileSystem.readFile(joinStoryPath(paths.sceneDirectory, fileName));
+    const bytes: Uint8Array = await fileSystem.readFile(
+      joinStoryPath(paths.sceneDirectory, fileName),
+    );
     return parseSceneCard(new TextDecoder().decode(bytes)).thread ?? chapterThread ?? mainThreadId;
   } catch {
     return undefined;

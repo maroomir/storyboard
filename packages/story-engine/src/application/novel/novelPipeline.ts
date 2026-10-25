@@ -18,6 +18,7 @@ import {
   runSeedsStage,
   runSummariesStage,
   type ChapterGroup,
+  type CharactersStageReport,
   type ReviewStageResult,
 } from './novelStages';
 import { resolveNovelPipelinePlan } from './novelStageCatalog';
@@ -71,7 +72,7 @@ export interface INovelStage {
 }
 
 function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
-  const paths = getStoryboardProjectPaths(options.workspaceUri);
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(options.workspaceUri);
   const completed = new Set<NovelStageName>(options.resumeState?.completedStages ?? []);
   const now = (): string => new Date().toISOString();
 
@@ -117,13 +118,12 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   let loadedGroups: Promise<readonly ChapterGroup[]> | undefined;
   const chapterGroups = (): Promise<readonly ChapterGroup[]> => {
     loadedGroups ??= chapterPlan().then(async (plan) => {
-      const digitCount = resolveScenePrefixDigitCount(
+      const digitCount: number = resolveScenePrefixDigitCount(
         options.project.editor.scenePrefixDigits,
         options.deps.configBridge.inspectScenePrefixDigits(),
       );
-      const sceneStemsByOrder = await options.deps.sceneSeedRepository.listSceneStemsByOrder(
-        options.workspaceUri,
-      );
+      const sceneStemsByOrder: ReadonlyMap<number, string> =
+        await options.deps.sceneSeedRepository.listSceneStemsByOrder(options.workspaceUri);
       return groupChapterStems(plan, digitCount, sceneStemsByOrder);
     });
     return loadedGroups;
@@ -156,7 +156,7 @@ const outlineStage: INovelStage = {
   id: 'outline',
   async run(ctx) {
     const { options } = ctx;
-    const wasCompleted = ctx.completed.has('outline');
+    const wasCompleted: boolean = ctx.completed.has('outline');
 
     await ctx.runStageOnce('outline', '아웃라인 생성 중…', () =>
       runOutlineStage(
@@ -168,7 +168,7 @@ const outlineStage: INovelStage = {
     );
 
     if (!wasCompleted && options.runMode !== 'auto') {
-      const paused = await pauseForApproval(options, ctx.persist, {
+      const paused: NovelPipelineResult | undefined = await pauseForApproval(options, ctx.persist, {
         kind: 'outline',
         info: '아웃라인(synopsis.md, chapters.yaml)을 검토하세요. 계속할까요?',
         pausedMessage: '아웃라인 승인 대기에서 멈췄습니다.',
@@ -186,10 +186,10 @@ const charactersStage: INovelStage = {
   id: 'characters',
   async run(ctx) {
     const { options } = ctx;
-    const plan = await ctx.chapterPlan();
+    const plan: ChapterPlan = await ctx.chapterPlan();
 
     await ctx.runStageOnce('characters', '인물 카드 확인 중…', async () => {
-      const report = await runCharactersStage(
+      const report: CharactersStageReport = await runCharactersStage(
         options.workspaceUri,
         options.project,
         plan,
@@ -223,8 +223,8 @@ const seedsStage: INovelStage = {
   id: 'seeds',
   async run(ctx) {
     const { options } = ctx;
-    const plan = await ctx.chapterPlan();
-    const digitCount = resolveScenePrefixDigitCount(
+    const plan: ChapterPlan = await ctx.chapterPlan();
+    const digitCount: number = resolveScenePrefixDigitCount(
       options.project.editor.scenePrefixDigits,
       options.deps.configBridge.inspectScenePrefixDigits(),
     );
@@ -240,7 +240,7 @@ const seedsStage: INovelStage = {
 const chaptersStage: INovelStage = {
   id: 'chapters',
   async run(ctx) {
-    const chapterResult = await runChapterStages({
+    const chapterResult: NovelPipelineResult | undefined = await runChapterStages({
       options: ctx.options,
       paths: ctx.paths,
       groups: await ctx.chapterGroups(),
@@ -297,7 +297,7 @@ const reviewStage: INovelStage = {
     }
 
     ctx.options.onProgress('review', '원고 최종 검사 중…');
-    const review = await reviewVolume(ctx);
+    const review: ReviewStageResult = await reviewVolume(ctx);
     ctx.completed.add('review');
     await ctx.persist({});
     ctx.review = review;
@@ -322,7 +322,7 @@ const reviseFromReviewStage: INovelStage = {
       return undefined;
     }
 
-    const review = ctx.review ?? (await reviewVolume(ctx));
+    const review: ReviewStageResult = ctx.review ?? (await reviewVolume(ctx));
     const { targets } = review;
 
     if (targets.length === 0) {
@@ -332,8 +332,8 @@ const reviseFromReviewStage: INovelStage = {
     }
 
     if (options.runMode === 'review-approval') {
-      const stems = targets.map((target) => target.sceneStem).join(', ');
-      const paused = await pauseForApproval(options, ctx.persist, {
+      const stems: string = targets.map((target) => target.sceneStem).join(', ');
+      const paused: NovelPipelineResult | undefined = await pauseForApproval(options, ctx.persist, {
         kind: 'review',
         info: `최종 검사에서 high 이슈 ${review.highCount}건을 찾았습니다. 다음 씬을 재작성할까요? ${stems}`,
         pausedMessage: '최종 검사 승인 대기에서 멈췄습니다.',
@@ -344,7 +344,7 @@ const reviseFromReviewStage: INovelStage = {
     }
 
     options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
-    const revisedStems = await runReviseFromReviewStage(options, ctx.paths, targets);
+    const revisedStems: string[] = await runReviseFromReviewStage(options, ctx.paths, targets);
     ctx.completed.add('revise-from-review');
     await ctx.persist({});
 
@@ -383,13 +383,13 @@ export const novelStages: Readonly<Record<NovelStageName, INovelStage>> = {
 // Runs the stages the plan names, in its order, over one run context. The plan is the author's
 // `pipelines/novel.yaml` when one is in force, otherwise the bundled order.
 async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
-  const ctx = createNovelRunContext(options);
+  const ctx: NovelRunContext = createNovelRunContext(options);
 
   try {
     await ctx.persist({ status: 'running' });
 
     for (const id of options.stages ?? resolveNovelPipelinePlan()) {
-      const stop = await novelStages[id].run(ctx);
+      const stop: NovelPipelineResult | undefined = await novelStages[id].run(ctx);
       if (stop) {
         return stop;
       }
@@ -399,7 +399,7 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     return { outcome: 'completed', message: '장편 생성을 완료했습니다.' };
   } catch (error) {
     options.deps.logger.error('Novel pipeline failed', error);
-    const message = error instanceof Error ? error.message : String(error);
+    const message: string = error instanceof Error ? error.message : String(error);
     await ctx.persist({ status: 'failed', lastError: message }).catch(() => undefined);
     return { outcome: 'failed', message };
   }

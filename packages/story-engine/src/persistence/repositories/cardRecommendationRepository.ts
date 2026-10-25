@@ -8,6 +8,10 @@ import {
   readSceneFile,
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
+  type StoryboardProjectPaths,
+  type SceneFile,
+  type Draft,
+  type StoryboardCard,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type {
@@ -24,7 +28,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
     workspaceRoot: StoryUri,
     category: RecommendationCategory,
   ): Promise<CardRecommendationInput> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [sources, existingNames] = await Promise.all([
       this.gatherSources(paths.sceneDirectory, paths.draftDirectory),
       this.loadExistingCardNames(workspaceRoot, category),
@@ -41,11 +45,11 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
       this.readSceneBodies(sceneDirectory),
       this.readDraftBodies(draftDirectory),
     ]);
-    const stems = new Set<string>([...sceneBodies.keys(), ...draftBodies.keys()]);
+    const stems: Set<string> = new Set<string>([...sceneBodies.keys(), ...draftBodies.keys()]);
     const sources: RecommendationSource[] = [];
 
     for (const stem of stems) {
-      const text = [sceneBodies.get(stem), draftBodies.get(stem)]
+      const text: string = [sceneBodies.get(stem), draftBodies.get(stem)]
         .filter((part): part is string => part !== undefined && part.trim().length > 0)
         .join('\n\n');
 
@@ -58,8 +62,8 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
   }
 
   private async readSceneBodies(sceneDirectory: StoryUri): Promise<Map<string, string>> {
-    const bodies = new Map<string, string>();
-    const entries = await this.readDirectorySafely(sceneDirectory);
+    const bodies: Map<string, string> = new Map<string, string>();
+    const entries: FileSystemDirectoryEntry[] = await this.readDirectorySafely(sceneDirectory);
 
     for (const [name, fileType] of entries) {
       if (fileType.type !== 'file' || !name.endsWith('.card') || name.startsWith('.')) {
@@ -67,7 +71,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
       }
 
       try {
-        const scene = await readSceneFile(
+        const scene: SceneFile = await readSceneFile(
           joinStoryPath(sceneDirectory, name),
           this.fileSystem,
           name,
@@ -82,8 +86,8 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
   }
 
   private async readDraftBodies(draftDirectory: StoryUri): Promise<Map<string, string>> {
-    const bodies = new Map<string, string>();
-    const entries = await this.readDirectorySafely(draftDirectory);
+    const bodies: Map<string, string> = new Map<string, string>();
+    const entries: FileSystemDirectoryEntry[] = await this.readDirectorySafely(draftDirectory);
 
     for (const [name, fileType] of entries) {
       if (fileType.type !== 'file' || !name.endsWith('.md')) {
@@ -91,7 +95,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
       }
 
       try {
-        const draft = parseDraft(
+        const draft: Draft = parseDraft(
           await readDraftFile(joinStoryPath(draftDirectory, name), this.fileSystem),
         );
         bodies.set(draft.sceneStem, draft.body);
@@ -107,10 +111,10 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
     workspaceRoot: StoryUri,
     category: RecommendationCategory,
   ): Promise<string[]> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const directory =
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const directory: StoryUri =
       category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const uris = await listCardFileUris(this.fileSystem, directory);
+    const uris: StoryUri[] = await listCardFileUris(this.fileSystem, directory);
     const names: string[] = [];
 
     for (const uri of uris) {
@@ -119,7 +123,9 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
       }
 
       try {
-        const card = parseCard(new TextDecoder().decode(await this.fileSystem.readFile(uri)));
+        const card: StoryboardCard = parseCard(
+          new TextDecoder().decode(await this.fileSystem.readFile(uri)),
+        );
         names.push(card.name, ...(card.aliases ?? []));
       } catch {
         // NOTE: Invalid card files cannot be used to filter recommendations.

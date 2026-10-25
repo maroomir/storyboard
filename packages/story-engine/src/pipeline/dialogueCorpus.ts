@@ -1,8 +1,12 @@
-import { resolveSceneOrder, type SceneDialogueRecord } from '@storyboard/story-model';
+import {
+  resolveSceneOrder,
+  type SceneDialogueRecord,
+  type SceneDialogueTurn,
+} from '@storyboard/story-model';
 
 import { pipelineDefaults } from './pipelineDefaults';
 
-export const VOICE_SAMPLE_LIMIT = pipelineDefaults.voiceSamples.limit;
+export const VOICE_SAMPLE_LIMIT: number = pipelineDefaults.voiceSamples.limit;
 
 export interface VoiceSampleBounds {
   readonly minimumLength: number;
@@ -18,13 +22,13 @@ export function selectRepresentativeDialogue(
   limit: number = VOICE_SAMPLE_LIMIT,
   bounds: VoiceSampleBounds = pipelineDefaults.voiceSamples,
 ): string[] {
-  const candidates = collectCandidates(records, characterId, currentSceneStem, bounds);
+  const candidates: string[] = collectCandidates(records, characterId, currentSceneStem, bounds);
 
   if (candidates.length <= limit) {
     return candidates;
   }
 
-  const stride = candidates.length / limit;
+  const stride: number = candidates.length / limit;
   return Array.from(
     { length: limit },
     (_, bucket) => candidates[Math.floor(bucket * stride)] as string,
@@ -39,23 +43,25 @@ function collectCandidates(
   currentSceneStem: string,
   bounds: VoiceSampleBounds,
 ): string[] {
-  const currentOrder = resolveSceneOrder(currentSceneStem) ?? Number.MAX_SAFE_INTEGER;
-  const ordered = records
+  const currentOrder: number = resolveSceneOrder(currentSceneStem) ?? Number.MAX_SAFE_INTEGER;
+  const ordered: SceneDialogueRecord[] = records
     .filter((record) => sceneOrderOf(record) < currentOrder)
     .sort((left, right) => sceneOrderOf(left) - sceneOrderOf(right));
 
-  const seen = new Set<string>();
+  const seen: Set<string> = new Set<string>();
   const candidates: string[] = [];
 
   for (const record of ordered) {
-    const turns = [...record.turns].sort((left, right) => left.index - right.index);
+    const turns: SceneDialogueTurn[] = [...record.turns].sort(
+      (left, right) => left.index - right.index,
+    );
 
     for (const turn of turns) {
       if (turn.speaker !== characterId) {
         continue;
       }
 
-      const text = turn.text.trim();
+      const text: string = turn.text.trim();
       if (text.length < bounds.minimumLength || text.length > bounds.maximumLength) {
         continue;
       }

@@ -11,6 +11,7 @@ import type { StoryboardAiService } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/sceneGenerationPipeline';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
+import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 
 export function schedulePostGenerationUpdates(
   inputs: SceneGenerationInputs,
@@ -19,7 +20,7 @@ export function schedulePostGenerationUpdates(
   result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
 ): void {
   const { workspaceFolder, paths, scene, context } = inputs;
-  const updates = options.postGenerationUpdates;
+  const updates: PostGenerationUpdateManager | undefined = options.postGenerationUpdates;
 
   if (!updates) {
     return;

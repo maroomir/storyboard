@@ -3,6 +3,7 @@ import {
   parseDraft,
   readDraftFile,
   getStoryboardProjectPaths,
+  type Draft,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
@@ -26,7 +27,7 @@ export class CardCollectRepository implements ICardCollectRepository {
     return await readDirectoryFiles(this.fileSystem, draftDirectory, {
       isEligible: (name) => name.endsWith('.md'),
       read: async (uri): Promise<CollectDraft> => {
-        const draft = parseDraft(await readDraftFile(uri, this.fileSystem));
+        const draft: Draft = parseDraft(await readDraftFile(uri, this.fileSystem));
         return { body: draft.body, sceneStem: draft.sceneStem };
       },
     });

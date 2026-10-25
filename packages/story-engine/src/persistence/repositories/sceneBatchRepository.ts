@@ -7,7 +7,7 @@ import {
   isHiddenSceneFileName,
 } from '@storyboard/story-model';
 import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type {
   BatchSceneList,
   ISceneBatchRepository,
@@ -21,7 +21,7 @@ export class SceneBatchRepository implements ISceneBatchRepository {
 
   public async listStoryboardScenes(): Promise<BatchSceneList> {
     const scenes: StoryUri[] = [];
-    let projectCount = 0;
+    let projectCount: number = 0;
     for (const folder of this.workspaceLocator.folders()) {
       if (!(await hasStoryboardProjectAt(folder.uri, (uri) => this.fileSystem.exists(uri))))
         continue;
@@ -34,7 +34,7 @@ export class SceneBatchRepository implements ISceneBatchRepository {
   }
 
   private async listOrdered(sceneDirectory: StoryUri): Promise<StoryUri[]> {
-    const entries = await this.fileSystem.readDirectory(sceneDirectory);
+    const entries: FileSystemDirectoryEntry[] = await this.fileSystem.readDirectory(sceneDirectory);
     const items = entries
       .filter(
         ([name, type]) =>

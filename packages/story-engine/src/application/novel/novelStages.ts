@@ -1,5 +1,11 @@
-import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
-import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
+import type {
+  AssembleManuscriptResult,
+  AssembleManuscriptUseCase,
+} from '#engine/application/manuscript/assembleManuscriptUseCase';
+import type {
+  SummarizeChaptersResult,
+  SummarizeChaptersUseCase,
+} from '#engine/application/manuscript/summarizeChaptersUseCase';
 import {
   assembleManuscript,
   createEmptyCharacter,
@@ -25,6 +31,13 @@ import type {
   StoryboardProject,
   ContinuityIssueLike,
   DraftCritiqueIssue,
+  OutlineBrief,
+  OutlineSynopsis,
+  OutlineCharacterBrief,
+  OutlineCharacterDraft,
+  AssembledManuscript,
+  GeneratedSceneSeed,
+  FlatChapterScene,
 } from '@storyboard/story-model';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { ReviseSeedIssues } from '#engine/pipeline/reviseLoop';
@@ -40,6 +53,8 @@ import type {
   NovelPipelineOptions,
   NovelPipelineResult,
 } from './novelPipelineTypes';
+import type { GenerateDraftResult } from '#engine/application/drafts/generateDraftTypes';
+import type { ReviseDraftWorkflowResult } from '#engine/application/drafts/reviseDraftUseCase';
 
 export interface ChapterGroup {
   readonly title: string;
@@ -79,7 +94,7 @@ export async function pauseForApproval(
   persist: (patch: Partial<NovelRunState>) => Promise<void>,
   request: ApprovalRequest,
 ): Promise<NovelPipelineResult | undefined> {
-  const approved = await options.requestApproval(request.kind, request.info);
+  const approved: boolean = await options.requestApproval(request.kind, request.info);
   if (approved) {
     return undefined;
   }
@@ -93,8 +108,8 @@ export async function runOutlineStage(
   aiService: NovelAiService,
   outlineRepository: INovelOutlineRepository,
 ): Promise<void> {
-  const brief = toOutlineBrief(project);
-  const keptPlan = (await outlineRepository.hasChapterPlan(workspaceUri))
+  const brief: OutlineBrief = toOutlineBrief(project);
+  const keptPlan: ChapterPlan | undefined = (await outlineRepository.hasChapterPlan(workspaceUri))
     ? await outlineRepository.loadChapterPlan(workspaceUri)
     : undefined;
 
@@ -112,9 +127,10 @@ export async function runOutlineStage(
     return;
   }
 
-  const synopsis = await aiService.generateOutlineSynopsis(brief);
-  const characters = await outlineRepository.loadCharacterBriefs(workspaceUri);
-  const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
+  const synopsis: OutlineSynopsis = await aiService.generateOutlineSynopsis(brief);
+  const characters: readonly OutlineCharacterBrief[] =
+    await outlineRepository.loadCharacterBriefs(workspaceUri);
+  const chapterPlan: ChapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
   refuseChapterCountMismatch(brief, chapterPlan, 'generated');
 
   await outlineRepository.save(workspaceUri, synopsis, chapterPlan);
@@ -139,7 +155,7 @@ export async function runCharactersStage(
   outlineRepository: INovelOutlineRepository,
   cardWriter: ICardWriterRepository,
 ): Promise<CharactersStageReport> {
-  const existingIds = new Set(
+  const existingIds: Set<string> = new Set(
     (await outlineRepository.loadCharacterBriefs(workspaceUri)).map((brief) => brief.id),
   );
   const { cast, unusableIds } = findUncastCharacters(plan, existingIds);
@@ -148,16 +164,21 @@ export async function runCharactersStage(
     return { writtenCount: 0, missingIds: [], unusableIds };
   }
 
-  const synopsis = (await outlineRepository.loadSynopsis(workspaceUri)) ?? emptyOutlineSynopsis();
-  const drafts = await aiService.generateOutlineCharacters(toOutlineBrief(project), synopsis, cast);
-  const draftedIds = new Set(drafts.map((draft) => draft.id));
-  const missingIds = cast.map((member) => member.id).filter((id) => !draftedIds.has(id));
+  const synopsis: OutlineSynopsis =
+    (await outlineRepository.loadSynopsis(workspaceUri)) ?? emptyOutlineSynopsis();
+  const drafts: OutlineCharacterDraft[] = await aiService.generateOutlineCharacters(
+    toOutlineBrief(project),
+    synopsis,
+    cast,
+  );
+  const draftedIds: Set<string> = new Set(drafts.map((draft) => draft.id));
+  const missingIds: string[] = cast.map((member) => member.id).filter((id) => !draftedIds.has(id));
 
   if (missingIds.length === cast.length) {
     throw new Error(`인물 카드를 하나도 만들지 못했습니다: ${missingIds.join(', ')}`);
   }
 
-  let writtenCount = 0;
+  let writtenCount: number = 0;
 
   for (const draft of drafts) {
     if (await cardWriter.exists(workspaceUri, 'character', draft.id)) {
@@ -202,8 +223,8 @@ async function runChapterDraftsAndRevise(
       return 'paused';
     }
 
-    const sceneUri = scenePath(options.workspaceUri, stem);
-    const draftResult = await options.deps.generateDraftUseCase.execute({
+    const sceneUri: StoryUri = scenePath(options.workspaceUri, stem);
+    const draftResult: GenerateDraftResult = await options.deps.generateDraftUseCase.execute({
       sceneUri,
       force: false,
       suppressLoggerPanel: true,
@@ -221,7 +242,7 @@ async function runChapterDraftsAndRevise(
       throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`);
     }
 
-    const reviseResult = await options.deps.reviseDraftUseCase.execute({
+    const reviseResult: ReviseDraftWorkflowResult = await options.deps.reviseDraftUseCase.execute({
       workspaceUri: options.workspaceUri,
       paths,
       draftUri: draftPath(options.workspaceUri, stem),
@@ -265,8 +286,12 @@ export async function runChapterStages(
     return undefined;
   }
 
-  for (let chapterIndex = state.nextChapterIndex; chapterIndex < groups.length; chapterIndex += 1) {
-    const group = groups[chapterIndex];
+  for (
+    let chapterIndex: number = state.nextChapterIndex;
+    chapterIndex < groups.length;
+    chapterIndex += 1
+  ) {
+    const group: ChapterGroup | undefined = groups[chapterIndex];
     if (!group) {
       continue;
     }
@@ -277,7 +302,11 @@ export async function runChapterStages(
 
     // NOTE: 장 도중에 멈추면 nextChapterIndex 를 올리지 않는다. 재개가 같은 장을 다시 돌면 끝난 씬은
     // 캐시로 건너뛰고 남은 씬부터 이어 쓴다.
-    const draftsOutcome = await runChapterDraftsAndRevise(group, paths, options);
+    const draftsOutcome: ChapterDraftsOutcome = await runChapterDraftsAndRevise(
+      group,
+      paths,
+      options,
+    );
     if (draftsOutcome === 'paused') {
       return await pause(persist);
     }
@@ -293,14 +322,17 @@ export async function runChapterStages(
       return await cancel(persist);
     }
 
-    const pausedAfterChapter = await pauseIfRequested(options, persist);
+    const pausedAfterChapter: NovelPipelineResult | undefined = await pauseIfRequested(
+      options,
+      persist,
+    );
     if (pausedAfterChapter) {
       return pausedAfterChapter;
     }
 
-    const isLastChapter = chapterIndex === groups.length - 1;
+    const isLastChapter: boolean = chapterIndex === groups.length - 1;
     if (options.runMode === 'chapter-approval' && !isLastChapter) {
-      const paused = await pauseForApproval(options, persist, {
+      const paused: NovelPipelineResult | undefined = await pauseForApproval(options, persist, {
         kind: 'chapter',
         info: `${chapterIndex + 1}장을 마쳤습니다. 다음 장으로 진행할까요?`,
         pausedMessage: `${chapterIndex + 1}장까지 진행하고 멈췄습니다.`,
@@ -323,7 +355,7 @@ async function refreshChapterSummary(
   options: NovelPipelineOptions,
   chapterIndex: number,
 ): Promise<void> {
-  const result = await options.deps.summarizeChaptersUseCase.execute({
+  const result: SummarizeChaptersResult = await options.deps.summarizeChaptersUseCase.execute({
     workspaceRoot: options.workspaceUri,
     chapterIndex,
   });
@@ -340,7 +372,9 @@ export async function runAssembleStage(
   workspaceUri: StoryUri,
   assembleManuscriptUseCase: AssembleManuscriptUseCase,
 ): Promise<void> {
-  const result = await assembleManuscriptUseCase.execute({ workspaceRoot: workspaceUri });
+  const result: AssembleManuscriptResult = await assembleManuscriptUseCase.execute({
+    workspaceRoot: workspaceUri,
+  });
   if (!result.ok) {
     throw new Error(
       result.kind === 'failed' ? result.message : `원고를 조립할 수 없습니다: ${result.kind}`,
@@ -370,13 +404,13 @@ export async function runReviewStage(
 ): Promise<ReviewStageResult> {
   const { draftsByOrder, canonFactLines, chapterSummaries } =
     await reviewRepository.loadReviewSource(workspaceUri);
-  const manuscript = assembleManuscript({
+  const manuscript: AssembledManuscript = assembleManuscript({
     plan,
     projectName: project.name,
     draftsByOrder,
     annotateSceneStems: true,
   });
-  const characters = collectCharacterIds(plan);
+  const characters: string[] = collectCharacterIds(plan);
 
   const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
     aiService,
@@ -391,10 +425,14 @@ export async function runReviewStage(
     critiqueProviderId: registry.getTaskProvider('draftCritique'),
   });
 
-  const knownStems = new Set([...draftsByOrder.values()].map((draft) => draft.stem));
-  const targets = groupHighIssuesByScene(continuityIssues, critiqueIssues, knownStems);
+  const knownStems: Set<string> = new Set([...draftsByOrder.values()].map((draft) => draft.stem));
+  const targets: ReviewTarget[] = groupHighIssuesByScene(
+    continuityIssues,
+    critiqueIssues,
+    knownStems,
+  );
 
-  const reportMarkdown = buildManuscriptReviewMarkdown({
+  const reportMarkdown: string = buildManuscriptReviewMarkdown({
     projectName: project.name,
     sceneCount: manuscript.includedCount,
     generatedAt: new Date().toISOString(),
@@ -500,7 +538,7 @@ export async function runReviseFromReviewStage(
 
     options.onProgress('revise-from-review', `«${target.sceneStem}» 재작성 중…`);
 
-    const result = await options.deps.reviseDraftUseCase.execute({
+    const result: ReviseDraftWorkflowResult = await options.deps.reviseDraftUseCase.execute({
       workspaceUri: options.workspaceUri,
       paths,
       draftUri: draftPath(options.workspaceUri, target.sceneStem),
@@ -536,7 +574,9 @@ export async function runSummariesStage(
   workspaceUri: StoryUri,
   summarizeChaptersUseCase: SummarizeChaptersUseCase,
 ): Promise<void> {
-  const result = await summarizeChaptersUseCase.execute({ workspaceRoot: workspaceUri });
+  const result: SummarizeChaptersResult = await summarizeChaptersUseCase.execute({
+    workspaceRoot: workspaceUri,
+  });
   if (!result.ok) {
     throw new Error(
       result.kind === 'failed' ? result.message : `장별 요약을 완료할 수 없습니다: ${result.kind}`,
@@ -551,12 +591,12 @@ export function groupChapterStems(
   digitCount: number,
   sceneStemsByOrder: ReadonlyMap<number, string> = new Map(),
 ): ChapterGroup[] {
-  const seeds = buildSceneSeeds(plan, digitCount);
-  const flat = flattenChapterPlan(plan);
+  const seeds: GeneratedSceneSeed[] = buildSceneSeeds(plan, digitCount);
+  const flat: FlatChapterScene[] = flattenChapterPlan(plan);
   const groups: { title: string; stems: string[]; actIndex: number; chapterIndex: number }[] = [];
 
   flat.forEach((flatScene, index) => {
-    const stem = sceneStemsByOrder.get(index + 1) ?? seeds[index]?.stem;
+    const stem: string | undefined = sceneStemsByOrder.get(index + 1) ?? seeds[index]?.stem;
     if (stem === undefined) {
       return;
     }
@@ -582,7 +622,7 @@ export function groupChapterStems(
 }
 
 function collectCharacterIds(plan: ChapterPlan): string[] {
-  const ids = new Set<string>();
+  const ids: Set<string> = new Set<string>();
   for (const flatScene of flattenChapterPlan(plan)) {
     for (const id of flatScene.scene.characters) {
       ids.add(id);

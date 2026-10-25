@@ -6,6 +6,7 @@ import {
   resolveMinimumDraftLength,
   validateDraftCandidate,
   type DraftCandidateRejectionReason,
+  type DraftCandidateValidation,
 } from '#engine/pipeline/draftCandidateValidation';
 
 export interface CondenseDraftRequest {
@@ -49,29 +50,36 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
     // NOTE: 압축은 원고를 원본보다 짧게 만드는 작업이라 씬 목표를 하한으로 쓰면 안 된다. 목표에
     // 미달한 원고에서는 하한이 원본 길이와 같아져 어떤 압축 결과도 통과하지 못한다.
     const lengthPolicy = { maxCompressionPercent: request.maxCompressionPercent };
-    const minimumLength = resolveMinimumDraftLength(request.body.length, lengthPolicy);
+    const minimumLength: number = resolveMinimumDraftLength(request.body.length, lengthPolicy);
 
     return await runUseCase<CondenseDraftResult>(
       this.deps.logger,
       'Condense draft failed',
       async () => {
-        const text = await this.deps.aiGateway.createService(request.workspaceRoot).condenseDraft(
+        const text: string = await this.deps.aiGateway
+          .createService(request.workspaceRoot)
+          .condenseDraft(
+            {
+              body: request.body,
+              format: request.format,
+              targetLength: minimumLength,
+              intent: request.intent,
+              facts: request.facts,
+              characterCards: request.characterCards,
+            },
+            {
+              providerId: this.deps.aiGateway.getTaskProvider('draftRevision'),
+              attribution: { primary: { kind: 'scene', id: request.sceneStem } },
+            },
+          );
+        const validation: DraftCandidateValidation = validateDraftCandidate(
+          request.body,
+          text,
+          lengthPolicy,
           {
-            body: request.body,
-            format: request.format,
-            targetLength: minimumLength,
-            intent: request.intent,
-            facts: request.facts,
-            characterCards: request.characterCards,
-          },
-          {
-            providerId: this.deps.aiGateway.getTaskProvider('draftRevision'),
-            attribution: { primary: { kind: 'scene', id: request.sceneStem } },
+            requireShorter: true,
           },
         );
-        const validation = validateDraftCandidate(request.body, text, lengthPolicy, {
-          requireShorter: true,
-        });
 
         if (!validation.accepted) {
           if (validation.reason === 'too-short') {

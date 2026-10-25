@@ -74,7 +74,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 }
 
 // Claude Code 는 CLAUDE.md 를 읽고 @ 경로를 따라간다. 지침 본문은 AGENTS.md 하나에만 둔다.
-export const workspaceClaudeGuide = `@${STORYBOARD_RELATIVE_PATHS.agentGuide}\n`;
+export const workspaceClaudeGuide: string = `@${STORYBOARD_RELATIVE_PATHS.agentGuide}\n`;
 
 // 이미 있는 파일은 손대지 않는다. «작품 메모»는 작가가 채우는 절이라 다시 쓰면 그 내용을 잃는다.
 export async function writeWorkspaceAgentGuidesIfMissing(

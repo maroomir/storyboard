@@ -67,7 +67,7 @@ export interface NarrationDirective {
   readonly narratorId?: string;
 }
 
-interface PointOfViewDerivation {
+export interface PointOfViewDerivation {
   readonly person: NarratorPerson;
   readonly knowledge: NarratorKnowledge;
 }

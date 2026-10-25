@@ -1,4 +1,11 @@
-import type { StoryUri, BackgroundCard, AiProviderId, AiTaskName } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  BackgroundCard,
+  AiProviderId,
+  AiTaskName,
+  StoryState,
+  Draft,
+} from '@storyboard/story-model';
 import {
   AiProviderError,
   draftHistorySceneDirectory,
@@ -22,7 +29,10 @@ import {
 import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/sceneGenerationPipeline';
-import { SceneGenerationPipelineCancelledError } from '#engine/pipeline/sceneGenerationTypes';
+import {
+  SceneGenerationPipelineCancelledError,
+  type RunSceneGenerationPipelineResult,
+} from '#engine/pipeline/sceneGenerationTypes';
 import {
   emptyDraftBodyMessage,
   type GenerateDraftRequest,
@@ -34,6 +44,7 @@ import {
   loadSceneGenerationInputs,
   reportWorkflowFailure,
   type SceneGenerationInputs,
+  type SceneGenerationInputsResult,
 } from './sceneGenerationInputs';
 import type { IUseCase } from '#engine/application/useCase';
 import { schedulePostGenerationUpdates } from './postGenerationScheduling';
@@ -70,12 +81,15 @@ async function isCacheHit(
   }
 
   if (!(await options.fileSystem.exists(inputs.cacheUri))) {
-    const ledger = await readStoryState(inputs.threadPaths.storyState, options.fileSystem);
+    const ledger: StoryState = await readStoryState(
+      inputs.threadPaths.storyState,
+      options.fileSystem,
+    );
     return ledger.sceneInputHashes.get(inputs.scene.order) === inputs.inputHash;
   }
 
   try {
-    const record = await options.sceneCacheRepository.read(inputs.cacheUri);
+    const record: SceneCacheRecord = await options.sceneCacheRepository.read(inputs.cacheUri);
     return record.inputHash === inputs.inputHash;
   } catch {
     return false;
@@ -123,12 +137,12 @@ async function isDraftOursToOverwrite(
   }
 
   try {
-    const record = await options.sceneCacheRepository.read(inputs.cacheUri);
+    const record: SceneCacheRecord = await options.sceneCacheRepository.read(inputs.cacheUri);
     if (record.bodyHash === undefined) {
       return false;
     }
 
-    const existing = parseDraft(
+    const existing: Draft = parseDraft(
       new TextDecoder().decode(await options.fileSystem.readFile(inputs.draftUri)),
     );
     return computeDraftBodyHash(existing.body) === record.bodyHash;
@@ -146,7 +160,7 @@ async function maybeArchiveExistingDraft(
     return;
   }
 
-  const historyDirectory = draftHistorySceneDirectory(
+  const historyDirectory: StoryUri = draftHistorySceneDirectory(
     inputs.workspaceFolder.uri,
     inputs.scene.stem,
   );
@@ -186,7 +200,7 @@ async function persistGeneratedDraft(
   }
 
   const sceneDraftConfig = options.aiGateway.getTaskAiConfig('sceneDraft');
-  const draft = createDraft({
+  const draft: Draft = createDraft({
     sceneStem: scene.stem,
     format: project.format,
     body: result.draftBody,
@@ -200,12 +214,17 @@ async function persistGeneratedDraft(
 
   options.onSaving?.();
 
-  const bodyHash = computeDraftBodyHash(parseDraft(serializeDraft(draft)).body);
-  const cacheRecord = buildSceneCacheRecord(inputs, result, cacheProviders, bodyHash);
+  const bodyHash: string = computeDraftBodyHash(parseDraft(serializeDraft(draft)).body);
+  const cacheRecord: SceneCacheRecord = buildSceneCacheRecord(
+    inputs,
+    result,
+    cacheProviders,
+    bodyHash,
+  );
 
   // 우리가 쓴 초안이 아니면(다른 도구의 산출물·사람 수정본) 설정과 무관하게 보관한다. draft/는 기본
   // gitignore이고 keepHistory 기본값이 꺼짐이라, 이 보관이 없으면 되돌릴 곳이 없다.
-  const isOurs = await isDraftOursToOverwrite(inputs, options);
+  const isOurs: boolean = await isDraftOursToOverwrite(inputs, options);
   if (!isOurs) {
     options.logger.warn(
       `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${scene.stem}`,
@@ -243,7 +262,7 @@ async function runAndPersistDraft(
 ): Promise<GenerateDraftResult> {
   const { workspaceFolder, paths, threadPaths, scene, project, context, previousContext } = inputs;
 
-  const aiService = options.aiGateway.createService(workspaceFolder.uri);
+  const aiService: StoryboardAiService = options.aiGateway.createService(workspaceFolder.uri);
   const pipelineProviders = {
     personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
     sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
@@ -259,13 +278,13 @@ async function runAndPersistDraft(
     traitsExtraction: options.aiGateway.getTaskProvider('traitsExtraction'),
   } satisfies Partial<Record<AiTaskName, AiProviderId>>;
 
-  const backgroundId = context.background?.id;
-  const backgroundRecentExcerpt = backgroundId
+  const backgroundId: string | undefined = context.background?.id;
+  const backgroundRecentExcerpt: string | undefined = backgroundId
     ? await findRecentBackgroundExcerpt(options.fileSystem, paths, scene.stem, backgroundId)
     : undefined;
 
   try {
-    const result = await new SceneGenerationPipeline({
+    const result: RunSceneGenerationPipelineResult = await new SceneGenerationPipeline({
       sceneStem: scene.stem,
       context,
       aiService,
@@ -311,7 +330,7 @@ async function runAndPersistDraft(
       return { ok: false, kind: 'failed', reason: 'usage-limit', message: error.message };
     }
 
-    const message = error instanceof Error ? error.message : String(error);
+    const message: string = error instanceof Error ? error.message : String(error);
     return reportWorkflowFailure(
       options,
       'Draft generation failed',
@@ -325,12 +344,12 @@ async function generateDraftForWorkspaceSceneWorkflow(
   sceneUri: StoryUri,
   options: GenerateDraftWorkflowOptions,
 ): Promise<GenerateDraftResult> {
-  const loaded = await loadSceneGenerationInputs(sceneUri, options);
+  const loaded: SceneGenerationInputsResult = await loadSceneGenerationInputs(sceneUri, options);
   if (!loaded.ok) {
     return loaded.result;
   }
 
-  const inputs = loaded.inputs;
+  const inputs: SceneGenerationInputs = loaded.inputs;
 
   if (!options.force && (await isCacheHit(inputs, options))) {
     return await openCachedDraft(inputs.draftUri);

@@ -1,17 +1,24 @@
-import type { StoryUri, SceneCard, SceneFile, StoryboardCard } from '@storyboard/story-model';
+import type { StoryUri, SceneCard, SceneFile, StoryboardCard, AiGenerateResponse } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { sceneFileNamePattern, serializeSceneCard, parseJsonObject } from '@storyboard/story-model';
-import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
+import type { IStoryFeatureRepository, StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 
-const MAX_COMPLETE_SCENES = 20;
-const FULL_SCENE_CONTEXT_LIMIT = 120_000;
-const SUMMARY_CHUNK_SIZE = 40_000;
+const MAX_COMPLETE_SCENES: number = 20;
+const FULL_SCENE_CONTEXT_LIMIT: number = 120_000;
+const SUMMARY_CHUNK_SIZE: number = 40_000;
 
-const completionResponseSchema = z.object({
+interface CompletionResponse {
+  scenes: { slug: string; title: string; characterIds: string[]; body: string; resolvedThreads: string[]; openThreads: string[]; locationId?: string | undefined; mood?: string | undefined; relationStage?: string | undefined; }[];
+  centralQuestion?: string;
+  climaxChoice?: string;
+}
+
+const completionResponseSchema: z.ZodType<CompletionResponse> = z.object({
   scenes: z
     .array(
       z.object({
@@ -61,14 +68,14 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
 
   public async execute(request: CompleteStoryScenesRequest): Promise<CompleteStoryScenesProposal> {
     const { workspaceRoot } = request;
-    const source = await this.deps.repository.load(workspaceRoot);
+    const source: StoryFeatureSource = await this.deps.repository.load(workspaceRoot);
 
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('no-valid-scenes', '완결할 유효한 씬이 없습니다.');
     }
 
-    const sceneContext = await this.buildSceneContext(workspaceRoot, source.scenes);
-    const response = await this.deps.aiGateway.createService(workspaceRoot).generateText(
+    const sceneContext: unknown = await this.buildSceneContext(workspaceRoot, source.scenes);
+    const response: AiGenerateResponse = await this.deps.aiGateway.createService(workspaceRoot).generateText(
       'storyCompletion',
       [
         {
@@ -106,18 +113,18 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
       ],
       {},
     );
-    const parsed = completionResponseSchema.parse(parseJsonObject(response.text));
-    const existingCharacterIds = new Set(
+    const parsed: CompletionResponse = completionResponseSchema.parse(parseJsonObject(response.text));
+    const existingCharacterIds: Set<string> = new Set(
       source.cards.filter((card) => card.type === 'character').map((card) => card.id),
     );
-    const existingBackgroundIds = new Set(
+    const existingBackgroundIds: Set<string> = new Set(
       source.cards.filter((card) => card.type !== 'character').map((card) => card.id),
     );
-    const existingSlugs = new Set(source.scenes.map((scene) => scene.slug));
-    const proposedSlugs = new Set<string>();
-    const maximumOrder = Math.max(...source.scenes.map((scene) => scene.order));
+    const existingSlugs: Set<string> = new Set(source.scenes.map((scene) => scene.slug));
+    const proposedSlugs: Set<string> = new Set<string>();
+    const maximumOrder: number = Math.max(...source.scenes.map((scene) => scene.order));
 
-    const scenes = parsed.scenes.map((candidate, index): CompletedStoryScene => {
+    const scenes: CompletedStoryScene[] = parsed.scenes.map((candidate, index): CompletedStoryScene => {
       if (existingSlugs.has(candidate.slug) || proposedSlugs.has(candidate.slug)) {
         throw new StoryFeatureSourceError('duplicate-scene-slug', `중복된 씬 slug: ${candidate.slug}`);
       }
@@ -131,11 +138,11 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
         throw new StoryFeatureSourceError('unknown-card-reference', `존재하지 않는 배경 ID: ${candidate.locationId}`);
       }
 
-      const prefix = String(maximumOrder + index + 1).padStart(
+      const prefix: string = String(maximumOrder + index + 1).padStart(
         source.project.editor.scenePrefixDigits,
         '0',
       );
-      const fileName = `${prefix}-${candidate.slug}.card`;
+      const fileName: string = `${prefix}-${candidate.slug}.card`;
       if (!sceneFileNamePattern.test(fileName)) {
         throw new StoryFeatureSourceError('invalid-scene-filename', `생성할 수 없는 씬 파일명: ${fileName}`);
       }
@@ -175,20 +182,20 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
     workspaceRoot: StoryUri,
     scenes: readonly SceneFile[],
   ): Promise<unknown> {
-    const fullScenes = scenes.map(sceneSummary);
-    const serialized = JSON.stringify(fullScenes);
+    const fullScenes: Record<string, unknown>[] = scenes.map(sceneSummary);
+    const serialized: string = JSON.stringify(fullScenes);
 
     if (serialized.length <= FULL_SCENE_CONTEXT_LIMIT) {
       return fullScenes;
     }
 
-    const tail = fullScenes.slice(-5);
-    const previousText = JSON.stringify(fullScenes.slice(0, -5));
-    const chunks = splitText(previousText, SUMMARY_CHUNK_SIZE);
-    const aiService = this.deps.aiGateway.createService(workspaceRoot);
-    const summaries = await Promise.all(
+    const tail: Record<string, unknown>[] = fullScenes.slice(-5);
+    const previousText: string = JSON.stringify(fullScenes.slice(0, -5));
+    const chunks: string[] = splitText(previousText, SUMMARY_CHUNK_SIZE);
+    const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+    const summaries: string[] = await Promise.all(
       chunks.map(async (chunk) => {
-        const response = await aiService.generateText(
+        const response: AiGenerateResponse = await aiService.generateText(
           'storyCompletion',
           [
             {
@@ -229,7 +236,7 @@ function cardSummary(card: StoryboardCard): Record<string, unknown> {
 
 function splitText(value: string, maximumSize: number): string[] {
   const chunks: string[] = [];
-  for (let start = 0; start < value.length; start += maximumSize) {
+  for (let start: number = 0; start < value.length; start += maximumSize) {
     chunks.push(value.slice(start, start + maximumSize));
   }
   return chunks;

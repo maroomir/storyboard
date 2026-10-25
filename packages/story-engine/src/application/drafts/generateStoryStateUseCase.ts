@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { SceneFileNameParts, StoryboardProjectPaths, StoryState, StoryUri } from '@storyboard/story-model';
 import {
   draftPath,
   extractDraftBody,
@@ -9,8 +9,10 @@ import {
   storyStateSceneOrders,
 } from '@storyboard/story-model';
 import type { GenerateDraftUseCaseDependencies } from './generateDraftTypes';
-import { loadSceneGenerationInputs } from './sceneGenerationInputs';
+import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from './sceneGenerationInputs';
 import { recordStoryStateFromDraft } from './updateStoryState';
+import type { StoryboardAiService } from '@storyboard/story-ai';
+import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
 
 export type GenerateStoryStateUseCaseDependencies = Omit<
   GenerateDraftUseCaseDependencies,
@@ -51,7 +53,7 @@ export class GenerateStoryStateUseCase {
 
   public async execute(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     const scenes = await this.listScenesWithDrafts(request);
-    const aiService = this.deps.aiGateway.createService(request.workspaceRoot);
+    const aiService: StoryboardAiService = this.deps.aiGateway.createService(request.workspaceRoot);
     const recorded: string[] = [];
     const kept: string[] = [];
     const failures: { stem: string; message: string }[] = [];
@@ -70,7 +72,7 @@ export class GenerateStoryStateUseCase {
       request.onProgress?.({ stem: scene.stem, current: index + 1, total: scenes.targets.length });
 
       try {
-        const outcome = await this.recordScene(request, scene, aiService);
+        const outcome: 'recorded' | 'kept' = await this.recordScene(request, scene, aiService);
         (outcome === 'kept' ? kept : recorded).push(scene.stem);
       } catch (error) {
         this.deps.logger.error(`Failed to record the story state of ${scene.stem}`, error);
@@ -94,7 +96,7 @@ export class GenerateStoryStateUseCase {
       skipSceneBeats: true,
       suppressLoggerPanel: true,
     };
-    const loaded = await loadSceneGenerationInputs(scene.sceneUri, options);
+    const loaded: SceneGenerationInputsResult = await loadSceneGenerationInputs(scene.sceneUri, options);
     if (!loaded.ok) {
       throw new Error(
         loaded.result.ok === false && loaded.result.kind === 'failed'
@@ -105,7 +107,7 @@ export class GenerateStoryStateUseCase {
 
     const { inputs } = loaded;
     if (request.force !== true) {
-      const state = await readStoryState(inputs.threadPaths.storyState, this.deps.fileSystem);
+      const state: StoryState = await readStoryState(inputs.threadPaths.storyState, this.deps.fileSystem);
       if (
         state.sceneInputHashes.has(scene.order) ||
         storyStateSceneOrders(state).includes(scene.order)
@@ -114,7 +116,7 @@ export class GenerateStoryStateUseCase {
       }
     }
 
-    const draftText = new TextDecoder().decode(
+    const draftText: string = new TextDecoder().decode(
       await this.deps.fileSystem.readFile(draftPath(request.workspaceRoot, scene.stem)),
     );
     // 밖에서 들여온 초안은 front matter 가 없을 수 있다. 본문만 있으면 된다.
@@ -127,19 +129,19 @@ export class GenerateStoryStateUseCase {
     readonly targets: readonly { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri }[];
     readonly withoutDraft: readonly string[];
   }> {
-    const paths = getStoryboardProjectPaths(request.workspaceRoot);
-    const entries = await this.deps.fileSystem.readDirectory(paths.sceneDirectory).catch(() => []);
-    const requested = request.sceneOrders;
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
+    const entries: never[] | FileSystemDirectoryEntry[] = await this.deps.fileSystem.readDirectory(paths.sceneDirectory).catch(() => []);
+    const requested: readonly number[] | undefined = request.sceneOrders;
     const targets: { stem: string; order: number; sceneUri: StoryUri }[] = [];
     const withoutDraft: string[] = [];
 
     for (const [fileName, entry] of entries) {
-      const parsed = entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
+      const parsed: SceneFileNameParts | undefined = entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
       if (parsed === undefined || (requested !== undefined && !requested.includes(parsed.order))) {
         continue;
       }
 
-      const stem = fileName.slice(0, -'.card'.length);
+      const stem: string = fileName.slice(0, -'.card'.length);
       if (!(await this.deps.fileSystem.exists(draftPath(request.workspaceRoot, stem)))) {
         withoutDraft.push(stem);
         continue;

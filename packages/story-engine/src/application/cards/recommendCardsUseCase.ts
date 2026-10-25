@@ -56,13 +56,16 @@ export class RecommendCardsUseCase implements IUseCase<
     }
 
     try {
-      const input = await this.deps.repository.load(request.workspaceRoot, request.category);
+      const input: CardRecommendationInput = await this.deps.repository.load(
+        request.workspaceRoot,
+        request.category,
+      );
 
       if (input.sources.length === 0) {
         return { kind: 'no_sources', ok: true };
       }
 
-      const recommendations = await buildCardRecommendations({
+      const recommendations: RecommendedCard[] = await buildCardRecommendations({
         category: request.category,
         sources: input.sources,
         existingNames: input.existingNames,

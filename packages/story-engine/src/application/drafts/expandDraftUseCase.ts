@@ -27,14 +27,16 @@ export class ExpandDraftUseCase implements IUseCase<ExpandDraftRequest, ExpandDr
       this.deps.logger,
       'Expand draft failed',
       async () => {
-        const expanded = await this.deps.aiGateway.createService(request.workspaceRoot).expandDraft(
-          request.selectedText,
-          {},
-          {
-            providerId: this.deps.aiGateway.getTaskProvider('draftExpansion'),
-            attribution: { primary: { kind: 'scene', id: request.sceneStem } },
-          },
-        );
+        const expanded: string = await this.deps.aiGateway
+          .createService(request.workspaceRoot)
+          .expandDraft(
+            request.selectedText,
+            {},
+            {
+              providerId: this.deps.aiGateway.getTaskProvider('draftExpansion'),
+              attribution: { primary: { kind: 'scene', id: request.sceneStem } },
+            },
+          );
 
         if (!expanded) {
           return { kind: 'empty', ok: false };

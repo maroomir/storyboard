@@ -12,20 +12,20 @@ import type { SceneBeatDirective, SceneBeatProposal, SceneBeatVerdict } from '@s
 // guerrilla 01 실측 3회에서 정했다(.doc/experiments/actor-loop-2026-10-15).
 
 // 모든 역할이 «아직 아니다»로 보는 뒤 대목 수. 하나만 주면 심판이 n+2 의 사건을 안 했다고 감점했다.
-const LOOKAHEAD_BEATS = 2;
+const LOOKAHEAD_BEATS: number = 2;
 // 배우와 감독이 전문으로 보는 최근 대목 수. 그보다 앞은 첫 줄 요약으로 준다.
-const RECENT_PASSAGES_IN_FULL = 10;
+const RECENT_PASSAGES_IN_FULL: number = 10;
 // 심판이 되풀이를 보는 직전 대목 수.
-const JUDGE_PREVIOUS_PASSAGES = 2;
+const JUDGE_PREVIOUS_PASSAGES: number = 2;
 // 심판 지적을 다음 대목의 «피할 것»으로 남기는 점수 상한과, 그 메모가 사는 대목 수·개수.
-const NOTE_SCORE_LIMIT = 3;
-const NOTE_TTL_BEATS = 2;
-const NOTE_LIMIT = 3;
+const NOTE_SCORE_LIMIT: number = 3;
+const NOTE_TTL_BEATS: number = 2;
+const NOTE_LIMIT: number = 3;
 // 이 점수 아래면 감독이 다시 엮는다.
-const RETRY_SCORE_LIMIT = 3;
+const RETRY_SCORE_LIMIT: number = 3;
 
-const INNER_LINE_PREFIX = '(속)';
-const SCENE_BREAK_LINE = '---';
+const INNER_LINE_PREFIX: string = '(속)';
+const SCENE_BREAK_LINE: string = '---';
 
 export interface ActedBeat {
   readonly number: number;
@@ -39,7 +39,7 @@ export interface ActedBeat {
 }
 
 function castNameResolver(characters: readonly CharacterCard[]): (ref: string) => string | undefined {
-  const nameByRef = new Map<string, string>();
+  const nameByRef: Map<string, string> = new Map<string, string>();
 
   for (const character of characters) {
     for (const ref of [character.id, character.name, ...(character.aliases ?? [])]) {
@@ -56,15 +56,15 @@ export function planActedBeats(
   beats: readonly SceneBeat[] | undefined,
   characters: readonly CharacterCard[],
 ): ActedBeat[] {
-  const nameOf = castNameResolver(characters);
-  const everyone = characters.map((character) => character.name);
+  const nameOf: (ref: string) => string | undefined = castNameResolver(characters);
+  const everyone: string[] = characters.map((character) => character.name);
   let previousPlace: string | undefined;
 
   return (beats ?? []).map((beat, index) => {
     const detail = typeof beat === 'string' ? undefined : beat;
-    const named = [...new Set((detail?.cast ?? []).flatMap((ref) => nameOf(ref) ?? []))];
-    const place = detail?.place?.trim();
-    const isBreak =
+    const named: string[] = [...new Set((detail?.cast ?? []).flatMap((ref) => nameOf(ref) ?? []))];
+    const place: string | undefined = detail?.place?.trim();
+    const isBreak: boolean =
       index > 0 && place !== undefined && previousPlace !== undefined && place !== previousPlace;
     previousPlace = place ?? previousPlace;
 
@@ -84,7 +84,7 @@ export function toBeatDirective(
   sourceBeat: SceneBeat | undefined,
   castName: (ref: string) => string,
 ): SceneBeatDirective {
-  const coordinates = sourceBeat === undefined ? undefined : formatSceneBeatCoordinates(sourceBeat, castName);
+  const coordinates: string | undefined = sourceBeat === undefined ? undefined : formatSceneBeatCoordinates(sourceBeat, castName);
 
   return {
     number: beat.number,
@@ -115,12 +115,12 @@ function recentInFull(
   passages: ReadonlyMap<number, string>,
   render: (passage: string) => string,
 ): string {
-  const done = beats.filter((beat) => passages.has(beat.number));
-  const summarizedCount = Math.max(0, done.length - RECENT_PASSAGES_IN_FULL);
+  const done: ActedBeat[] = beats.filter((beat) => passages.has(beat.number));
+  const summarizedCount: number = Math.max(0, done.length - RECENT_PASSAGES_IN_FULL);
 
   return done
     .map((beat, index) => {
-      const passage = passages.get(beat.number) as string;
+      const passage: string = passages.get(beat.number) as string;
 
       return index < summarizedCount
         ? `[대목 ${beat.number} — 요약] ${firstLine(passage).slice(0, 80)}`
@@ -184,7 +184,7 @@ export function findBeatCatchphraseOveruse(input: {
       .filter((phrase) => phrase.length > 0 && !input.beat.text.includes(phrase))
       .map((phrase) => ({ phrase, count: countCatchphrase(input.passage, phrase) }))
       .filter((entry) => entry.count > 0);
-    const total = counts.reduce((sum, entry) => sum + entry.count, 0);
+    const total: number = counts.reduce((sum, entry) => sum + entry.count, 0);
 
     return total > input.limit
       ? [
@@ -223,7 +223,7 @@ const hasQuote = (text: string): boolean => /["“”'‘’「」]/.test(text);
 // NOTE: 심판의 «피할 것»만 남기고 따옴표가 든 것은 버린다. 1차 실측에서 대사 문구가 메모로 넘어가자
 // 배우가 그 문구를 받아쓰며 틱이 증폭됐다. 같은 메모는 한 번만, 최근 것부터 셋까지.
 export function addBeatNote(notes: readonly BeatNote[], beat: number, text: string): BeatNote[] {
-  const trimmed = text.trim();
+  const trimmed: string = text.trim();
 
   if (trimmed.length === 0 || hasQuote(trimmed)) {
     return [...notes];
@@ -247,7 +247,7 @@ export function beatRetryReasons(input: {
   readonly verdict: SceneBeatVerdict | undefined;
   readonly catchphraseOveruse: readonly string[];
 }): string[] {
-  const verdict = input.verdict;
+  const verdict: SceneBeatVerdict | undefined = input.verdict;
 
   return [
     ...(verdict?.scores ?? [])
@@ -267,7 +267,7 @@ export function beatRetryReasons(input: {
 }
 
 function coordinateMarker(beat: ActedBeat): string | undefined {
-  const parts = [
+  const parts: string[] = [
     beat.time === undefined ? undefined : `${sceneBeatCoordinateLabels.time}: ${beat.time}`,
     beat.place === undefined ? undefined : `${sceneBeatCoordinateLabels.place}: ${beat.place}`,
     `있는 사람: ${beat.cast.join(', ')}`,
@@ -291,7 +291,7 @@ export function assembleActedSkeleton(
       parts.push(coordinateMarker(beat) as string);
     }
 
-    const passage = passages.get(beat.number)?.trim() ?? '';
+    const passage: string = passages.get(beat.number)?.trim() ?? '';
     if (passage.length > 0) {
       parts.push(passage);
     }

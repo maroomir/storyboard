@@ -17,8 +17,8 @@ export async function recordRevisionEntry(
   paths: StoryboardProjectPaths,
   entry: RevisionPlanEntry,
 ): Promise<void> {
-  const current = await readRevisionPlanOrEmpty(fs, paths.outlineRevisionPlan);
-  const next = upsertRevisionEntry(current, entry);
+  const current: RevisionPlan = await readRevisionPlanOrEmpty(fs, paths.outlineRevisionPlan);
+  const next: RevisionPlan = upsertRevisionEntry(current, entry);
 
   await fs.createDirectory(paths.outlineDirectory);
   await writeRevisionPlanFile(paths.outlineRevisionPlan, fs, next);

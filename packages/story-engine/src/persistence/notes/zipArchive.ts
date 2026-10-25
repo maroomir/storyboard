@@ -19,15 +19,15 @@ export class ZipArchiveError extends Error {
   }
 }
 
-const endOfCentralDirectorySignature = 0x06054b50;
-const centralDirectoryEntrySignature = 0x02014b50;
-const endRecordLength = 22;
-const maximumCommentLength = 0xffff;
+const endOfCentralDirectorySignature: number = 0x06054b50;
+const centralDirectoryEntrySignature: number = 0x02014b50;
+const endRecordLength: number = 22;
+const maximumCommentLength: number = 0xffff;
 
 function findEndOfCentralDirectory(view: Buffer): number {
-  const lowest = Math.max(0, view.length - endRecordLength - maximumCommentLength);
+  const lowest: number = Math.max(0, view.length - endRecordLength - maximumCommentLength);
 
-  for (let offset = view.length - endRecordLength; offset >= lowest; offset -= 1) {
+  for (let offset: number = view.length - endRecordLength; offset >= lowest; offset -= 1) {
     if (view.readUInt32LE(offset) === endOfCentralDirectorySignature) {
       return offset;
     }
@@ -37,38 +37,42 @@ function findEndOfCentralDirectory(view: Buffer): number {
 }
 
 export function readZipEntries(bytes: Uint8Array): ZipEntry[] {
-  const view = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const view: Buffer<ArrayBufferLike> = Buffer.from(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength,
+  );
 
   if (view.length < endRecordLength) {
     throw new ZipArchiveError('not-a-zip', 'zip 파일이 아닙니다 (너무 짧습니다).');
   }
 
-  const endRecord = findEndOfCentralDirectory(view);
-  const entryCount = view.readUInt16LE(endRecord + 10);
-  let cursor = view.readUInt32LE(endRecord + 16);
+  const endRecord: number = findEndOfCentralDirectory(view);
+  const entryCount: number = view.readUInt16LE(endRecord + 10);
+  let cursor: number = view.readUInt32LE(endRecord + 16);
   const entries: ZipEntry[] = [];
 
-  for (let index = 0; index < entryCount; index += 1) {
+  for (let index: number = 0; index < entryCount; index += 1) {
     if (cursor + 46 > view.length || view.readUInt32LE(cursor) !== centralDirectoryEntrySignature) {
       break;
     }
 
-    const method = view.readUInt16LE(cursor + 10);
-    const compressedSize = view.readUInt32LE(cursor + 20);
-    const nameLength = view.readUInt16LE(cursor + 28);
-    const extraLength = view.readUInt16LE(cursor + 30);
-    const commentLength = view.readUInt16LE(cursor + 32);
-    const localHeader = view.readUInt32LE(cursor + 42);
-    const name = view.subarray(cursor + 46, cursor + 46 + nameLength).toString('utf8');
+    const method: number = view.readUInt16LE(cursor + 10);
+    const compressedSize: number = view.readUInt32LE(cursor + 20);
+    const nameLength: number = view.readUInt16LE(cursor + 28);
+    const extraLength: number = view.readUInt16LE(cursor + 30);
+    const commentLength: number = view.readUInt16LE(cursor + 32);
+    const localHeader: number = view.readUInt32LE(cursor + 42);
+    const name: string = view.subarray(cursor + 46, cursor + 46 + nameLength).toString('utf8');
     cursor += 46 + nameLength + extraLength + commentLength;
 
     if (name.endsWith('/')) {
       continue;
     }
 
-    const dataStart =
+    const dataStart: number =
       localHeader + 30 + view.readUInt16LE(localHeader + 26) + view.readUInt16LE(localHeader + 28);
-    const raw = view.subarray(dataStart, dataStart + compressedSize);
+    const raw: Buffer<ArrayBufferLike> = view.subarray(dataStart, dataStart + compressedSize);
 
     if (method === 0) {
       entries.push({ name, data: new Uint8Array(raw) });

@@ -10,7 +10,12 @@ import {
 } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { readProjectJson } from '#engine/persistence/projectJson';
-import type { StoryboardProjectPaths } from '@storyboard/story-model';
+import type {
+  AssembledManuscript,
+  ChapterSummary,
+  StoryboardProject,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
 export interface ChapterSummaryAuditRequest {
@@ -53,15 +58,17 @@ export async function auditChapterMemory(
   }
 
   try {
-    const markdown = new TextDecoder().decode(await fileSystem.readFile(paths.chapterSummaries));
-    const summaries = parseChapterSummariesMarkdown(markdown);
+    const markdown: string = new TextDecoder().decode(
+      await fileSystem.readFile(paths.chapterSummaries),
+    );
+    const summaries: ChapterSummary[] = parseChapterSummariesMarkdown(markdown);
 
     if (summaries.length === 0) {
       return idle;
     }
 
-    const project = await readProjectJson(fileSystem, paths.projectJson);
-    const audit = auditChapterSummaries(
+    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const audit: ChapterSummaryAudit = auditChapterSummaries(
       summaries,
       await collectCurrentChapterHashes(request, project.name),
     );
@@ -109,7 +116,7 @@ export async function collectCurrentChapterHashes(
     readChapterPlanFile(paths.outlineChapters, fileSystem),
     collectDraftsByOrder(fileSystem, paths, fileSystem, { warn: (): void => undefined }),
   ]);
-  const manuscript = assembleManuscript({ draftsByOrder, plan, projectName });
+  const manuscript: AssembledManuscript = assembleManuscript({ draftsByOrder, plan, projectName });
 
   return new Map(
     manuscript.chapters.map((chapter) => [

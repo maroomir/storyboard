@@ -1,4 +1,9 @@
-import type { MergedNoteCardCandidate, NoteCandidateFile, StoryUri } from '@storyboard/story-model';
+import type {
+  MergedNoteCardCandidate,
+  NoteCandidateFile,
+  StoryboardCard,
+  StoryUri,
+} from '@storyboard/story-model';
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import {
@@ -11,7 +16,7 @@ import {
   shouldProposeCardCollect,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { INoteAbsorbRepository } from './noteAbsorbRepository';
+import type { INoteAbsorbRepository, NoteCandidateLoad } from './noteAbsorbRepository';
 
 export type PrepareNoteCandidatePromotionResult =
   | { readonly kind: 'no_candidates' }
@@ -49,7 +54,7 @@ export class PromoteNoteCandidatesUseCase {
   public constructor(private readonly deps: PromoteNoteCandidatesUseCaseDependencies) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareNoteCandidatePromotionResult> {
-    const file = await this.loadFile(workspaceRoot);
+    const file: NoteCandidateFile = await this.loadFile(workspaceRoot);
 
     if (file.sources.length === 0) {
       return { kind: 'no_candidates' };
@@ -59,7 +64,7 @@ export class PromoteNoteCandidatesUseCase {
     const heldCards: MergedNoteCardCandidate[] = [];
 
     for (const candidate of mergeNoteCandidateSources(file.sources)) {
-      const card = await this.deps.noteRepository.loadCard(
+      const card: StoryboardCard | undefined = await this.deps.noteRepository.loadCard(
         workspaceRoot,
         candidate.cardType,
         candidate.cardId,
@@ -87,10 +92,10 @@ export class PromoteNoteCandidatesUseCase {
     candidates: readonly MergedNoteCardCandidate[],
   ): Promise<PromoteNoteCandidatesResult> {
     const updatedCardIds: string[] = [];
-    let file = await this.loadFile(workspaceRoot);
+    let file: NoteCandidateFile = await this.loadFile(workspaceRoot);
 
     for (const candidate of candidates) {
-      const card = await this.deps.noteRepository.loadCard(
+      const card: StoryboardCard | undefined = await this.deps.noteRepository.loadCard(
         workspaceRoot,
         candidate.cardType,
         candidate.cardId,
@@ -117,7 +122,7 @@ export class PromoteNoteCandidatesUseCase {
     workspaceRoot: StoryUri,
     request: DiscardNoteCandidatesRequest,
   ): Promise<DiscardNoteCandidatesResult> {
-    const file = await this.loadFile(workspaceRoot);
+    const file: NoteCandidateFile = await this.loadFile(workspaceRoot);
     const next =
       request.kind === 'cards'
         ? removeNoteCandidateCards(file, request.cardIds)
@@ -129,8 +134,10 @@ export class PromoteNoteCandidatesUseCase {
 
     await this.deps.noteRepository.saveCandidates(workspaceRoot, next);
 
-    const before = mergeNoteCandidateSources(file.sources).map((card) => card.cardId);
-    const remaining = new Set(mergeNoteCandidateSources(next.sources).map((card) => card.cardId));
+    const before: string[] = mergeNoteCandidateSources(file.sources).map((card) => card.cardId);
+    const remaining: Set<string> = new Set(
+      mergeNoteCandidateSources(next.sources).map((card) => card.cardId),
+    );
 
     return {
       kind: 'discarded',
@@ -142,7 +149,7 @@ export class PromoteNoteCandidatesUseCase {
   }
 
   private async loadFile(workspaceRoot: StoryUri): Promise<NoteCandidateFile> {
-    const loaded = await this.deps.noteRepository.loadCandidates(workspaceRoot);
+    const loaded: NoteCandidateLoad = await this.deps.noteRepository.loadCandidates(workspaceRoot);
 
     if (loaded.kind === 'legacy') {
       this.deps.logger.warn(

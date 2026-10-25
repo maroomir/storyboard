@@ -30,7 +30,7 @@ export class PromoteBibleCandidatesUseCase {
   public constructor(private readonly deps: PromoteBibleCandidatesUseCaseDependencies) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareBibleCandidatePromotionResult> {
-    const candidates = aggregateCandidateFacts(
+    const candidates: BibleFact[] = aggregateCandidateFacts(
       await this.deps.repository.loadRecords(workspaceRoot),
     );
 
@@ -38,7 +38,7 @@ export class PromoteBibleCandidatesUseCase {
       return { kind: 'no_candidates' };
     }
 
-    const facts = selectNewCandidates(
+    const facts: BibleFact[] = selectNewCandidates(
       candidates,
       await this.deps.repository.loadCanon(workspaceRoot),
     );
@@ -47,8 +47,8 @@ export class PromoteBibleCandidatesUseCase {
   }
 
   public async promote(workspaceRoot: StoryUri, facts: readonly BibleFact[]): Promise<void> {
-    const canon = await this.deps.repository.loadCanon(workspaceRoot);
-    const nextCanon = mergeCanonFacts(canon, facts.map(seedPromotedFact));
+    const canon: StoryBible = await this.deps.repository.loadCanon(workspaceRoot);
+    const nextCanon: StoryBible = mergeCanonFacts(canon, facts.map(seedPromotedFact));
 
     await this.deps.repository.saveCanon(workspaceRoot, nextCanon);
   }

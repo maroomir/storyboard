@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { SceneGroundingFieldKey, SceneGroundingGap, StoryUri } from '@storyboard/story-model';
 import {
   computeSceneGroundingInputKey,
   mergeSceneGrounding,
@@ -7,6 +7,7 @@ import {
   type SceneGrounding,
 } from '@storyboard/story-model';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import type { ISceneGroundingGapRepository } from '#engine/application/drafts/draftRepositories';
 
 export type SceneGroundingOutcome =
   | { readonly kind: 'resolved'; readonly scene: SceneFile }
@@ -22,7 +23,7 @@ export async function resolveSceneGrounding(
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGroundingOutcome> {
   const existing = scene.frontmatter.grounding;
-  const missingFields = missingSceneGroundingFields(existing);
+  const missingFields: SceneGroundingFieldKey[] = missingSceneGroundingFields(existing);
 
   // NOTE: 사실 시트를 건너뛰라는 것과 사용자가 승인을 거절한 것은 다르다. 앞은 있는 값으로 그대로
   // 생성하고, 뒤만 생성을 취소한다. 물어볼 UI가 없는 호스트가 앞이다.
@@ -31,8 +32,8 @@ export async function resolveSceneGrounding(
   }
 
   // 같은 씬·인물로 이미 물었는데 모델이 비워 둔 칸이면 다시 물어도 같은 답에 같은 비용이 든다.
-  const gaps = options.sceneGroundingGapRepository;
-  const gap = await gaps.read(workspaceRoot, scene.stem);
+  const gaps: ISceneGroundingGapRepository = options.sceneGroundingGapRepository;
+  const gap: SceneGroundingGap | undefined = await gaps.read(workspaceRoot, scene.stem);
   if (
     gap?.inputKey === computeSceneGroundingInputKey(scene, characterNames) &&
     missingFields.every((field) => gap.fields.includes(field))
@@ -40,13 +41,19 @@ export async function resolveSceneGrounding(
     return { kind: 'resolved', scene };
   }
 
-  const proposed = await proposeGrounding(sceneUri, scene, characterNames, missingFields, options);
+  const proposed: SceneGrounding | undefined = await proposeGrounding(
+    sceneUri,
+    scene,
+    characterNames,
+    missingFields,
+    options,
+  );
 
   if (proposed === undefined) {
     return { kind: 'resolved', scene };
   }
 
-  const merged = mergeSceneGrounding(existing, proposed);
+  const merged: SceneGrounding = mergeSceneGrounding(existing, proposed);
 
   const approved = options.configBridge.isSceneGroundingAutoApproveEnabled()
     ? merged
@@ -76,7 +83,9 @@ async function recordGroundingGap(
   characterNames: readonly string[],
   options: GenerateDraftWorkflowOptions,
 ): Promise<void> {
-  const stillMissing = missingSceneGroundingFields(scene.frontmatter.grounding);
+  const stillMissing: SceneGroundingFieldKey[] = missingSceneGroundingFields(
+    scene.frontmatter.grounding,
+  );
   const gap =
     stillMissing.length === 0
       ? undefined

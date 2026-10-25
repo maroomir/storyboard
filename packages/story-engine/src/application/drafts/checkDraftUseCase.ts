@@ -8,7 +8,12 @@ import {
   readSceneFile,
   sceneContextPaths,
   scenePath,
+  type NarrativeContext,
+  type SceneContext,
+  type SceneContextWorkspacePaths,
+  type SceneFile,
   type SlopFinding,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -71,7 +76,7 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
         return { ok: true, kind: 'slop', findings: analyzeSlop(request.text) };
 
       case 'grammar': {
-        const issues = await aiGateway
+        const issues: GrammarIssue[] = await aiGateway
           .createService(request.workspaceRoot)
           .checkGrammar(request.text, {
             providerId: aiGateway.getTaskProvider('grammarCheck'),
@@ -81,13 +86,16 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
       }
 
       case 'continuity': {
-        const factLines = await this.loadCanonFactLines(request.workspaceRoot, request.sceneStem);
+        const factLines: readonly string[] = await this.loadCanonFactLines(
+          request.workspaceRoot,
+          request.sceneStem,
+        );
 
         if (factLines.length === 0) {
           return { ok: true, kind: 'continuity', issues: [], hasFacts: false };
         }
 
-        const issues = await aiGateway
+        const issues: ContinuityIssue[] = await aiGateway
           .createService(request.workspaceRoot)
           .checkContinuity(request.text, factLines, {
             providerId: aiGateway.getTaskProvider('continuityCheck'),
@@ -103,15 +111,19 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
     sceneStem: string,
   ): Promise<readonly string[]> {
     const { fileSystem } = this.deps;
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const scene = await readSceneFile(
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const scene: SceneFile = await readSceneFile(
       scenePath(workspaceRoot, sceneStem),
       fileSystem,
       `${sceneStem}.card`,
     );
-    const contextPaths = sceneContextPaths(paths);
-    const context = await buildSceneContext(contextPaths, scene, fileSystem);
-    const narrative = await buildNarrativeContext(contextPaths, context, fileSystem);
+    const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
+    const context: SceneContext = await buildSceneContext(contextPaths, scene, fileSystem);
+    const narrative: NarrativeContext = await buildNarrativeContext(
+      contextPaths,
+      context,
+      fileSystem,
+    );
 
     return formatBibleFactLines(context, narrative.bibleFacts);
   }

@@ -7,7 +7,7 @@ import {
   characterProfilePath,
   serializeCard,
 } from '@storyboard/story-model';
-const TRANSPARENT_PNG_BYTES = Uint8Array.from([
+const TRANSPARENT_PNG_BYTES: Uint8Array<ArrayBuffer> = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
   0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
   0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
@@ -27,11 +27,11 @@ export class CardWriterRepository implements ICardWriterRepository {
   }
 
   public async write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
-    const cardUri = this.cardUri(workspaceRoot, card.type, card.id);
+    const cardUri: StoryUri = this.cardUri(workspaceRoot, card.type, card.id);
     await this.fileSystem.writeFile(cardUri, new TextEncoder().encode(serializeCard(card)));
 
     if (card.type === 'character') {
-      const imageUri = characterProfilePath(workspaceRoot, card.id);
+      const imageUri: StoryUri = characterProfilePath(workspaceRoot, card.id);
       if (!(await this.fileSystem.exists(imageUri))) {
         await this.fileSystem.writeFile(imageUri, TRANSPARENT_PNG_BYTES);
       }

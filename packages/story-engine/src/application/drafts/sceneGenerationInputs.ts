@@ -14,23 +14,40 @@ import {
   sceneNarrationHashInput,
   findUnknownBeatCast,
 } from '@storyboard/story-model';
-import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
+import type {
+  NarrativeContext,
+  SceneContext,
+  SceneContextWorkspacePaths,
+  SceneFile,
+  StoryboardProject,
+  StoryUri,
+  StoryWorkspaceFolder,
+} from '@storyboard/story-model';
 import type {
   IProjectRepository,
   ISceneRepository,
 } from '#engine/application/drafts/draftRepositories';
 
-import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
-import { resolveSceneThread } from './resolveSceneThread';
+import {
+  readChapterNarrationDefaults,
+  resolveSceneNarration,
+  type ChapterNarrationDefaults,
+} from './resolveSceneNarration';
+import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '#engine/pipeline/sceneGenerationPolicies';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import { resolveSceneBeats } from './resolveSceneBeats';
-import { resolveSceneGrounding } from './resolveSceneGrounding';
-import { auditStoryMemory, markStoryStateStaleEntries } from './storyStateAudit';
+import { resolveSceneGrounding, type SceneGroundingOutcome } from './resolveSceneGrounding';
+import {
+  auditStoryMemory,
+  markStoryStateStaleEntries,
+  type StoryMemoryAudit,
+} from './storyStateAudit';
 import {
   auditChapterMemory,
   markStaleChapterSummaries,
+  type ChapterMemoryAudit,
 } from '#engine/application/manuscript/chapterSummaryAudit';
 
 export interface SceneGenerationInputs {
@@ -90,7 +107,8 @@ async function resolveSceneGenerationTarget(
   sceneUri: StoryUri,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGenerationTargetResult> {
-  const workspaceFolder = options.workspaceLocator.folderFor(sceneUri);
+  const workspaceFolder: StoryWorkspaceFolder | undefined =
+    options.workspaceLocator.folderFor(sceneUri);
 
   if (!workspaceFolder) {
     return inputsFailure('씬 파일이 속한 워크스페이스 폴더를 찾을 수 없습니다.');
@@ -110,7 +128,7 @@ async function resolveSceneGenerationTarget(
     );
   }
 
-  const fileName = sceneUri.path.split('/').pop() ?? '';
+  const fileName: string = sceneUri.path.split('/').pop() ?? '';
 
   if (!parseSceneFileName(fileName)) {
     return inputsFailure('씬 파일명은 `NN-slug.card` 형식이어야 합니다.');
@@ -138,7 +156,7 @@ async function loadSceneAndProject(
   paths: ReturnType<typeof getStoryboardProjectPaths>,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneAndProjectResult> {
-  let scene;
+  let scene: SceneFile;
   try {
     scene = await options.sceneRepository.read(sceneUri, fileName);
   } catch (error) {
@@ -157,7 +175,7 @@ async function loadSceneAndProject(
     };
   }
 
-  let project;
+  let project: StoryboardProject;
   try {
     project = await options.projectRepository.read(paths.projectJson);
   } catch (error) {
@@ -179,21 +197,26 @@ export async function loadSceneGenerationInputs(
   sceneUri: StoryUri,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGenerationInputsResult> {
-  const target = await resolveSceneGenerationTarget(sceneUri, options);
+  const target: SceneGenerationTargetResult = await resolveSceneGenerationTarget(sceneUri, options);
   if (!target.ok) {
     return target;
   }
 
   const { workspaceFolder, paths, fileName } = target;
 
-  const loaded = await loadSceneAndProject(sceneUri, fileName, paths, options);
+  const loaded: SceneAndProjectResult = await loadSceneAndProject(
+    sceneUri,
+    fileName,
+    paths,
+    options,
+  );
   if (!loaded.ok) {
     return loaded;
   }
 
   const { project } = loaded;
 
-  const contextResult = await loadSceneContextBundle(
+  const contextResult: SceneContextBundleResult = await loadSceneContextBundle(
     paths,
     sceneUri,
     loaded.scene,
@@ -255,8 +278,8 @@ async function loadSceneContextBundle(
   project: Awaited<ReturnType<IProjectRepository['read']>>,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneContextBundleResult> {
-  const ctxPaths = sceneContextPaths(paths);
-  let builtContext;
+  const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
+  let builtContext: SceneContext;
   try {
     builtContext = await buildSceneContext(ctxPaths, rawScene, options.fileSystem);
   } catch (error) {
@@ -274,8 +297,8 @@ async function loadSceneContextBundle(
   // NOTE: 사실 시트는 컨텍스트를 만든 뒤 확정한다. 그래야 카드 id가 아닌 실제 인물 이름으로 제안받고,
   // 확정된 사실이 inputHash와 생성 프롬프트에 같이 반영된다. grounding은 characters/location을
   // 건드리지 않으므로 컨텍스트를 다시 만들지 않고 씬만 갈아 끼운다.
-  const characterNames = builtContext.characters.map((character) => character.name);
-  const grounded = await resolveSceneGrounding(
+  const characterNames: string[] = builtContext.characters.map((character) => character.name);
+  const grounded: SceneGroundingOutcome = await resolveSceneGrounding(
     paths.workspaceRoot,
     sceneUri,
     rawScene,
@@ -287,38 +310,38 @@ async function loadSceneContextBundle(
   }
 
   // 비트는 확정된 사실 시트를 재료로 삼으므로 그 뒤에 뽑는다. 본문에 들어가 inputHash 에도 반영된다.
-  const scene = options.skipSceneBeats
+  const scene: SceneFile = options.skipSceneBeats
     ? grounded.scene
     : await resolveSceneBeats(sceneUri, grounded.scene, builtContext.characters, options);
   const context = { ...builtContext, scene };
 
-  const chapterDefaults = await readChapterNarrationDefaults(
+  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
     paths,
     scene.order,
     options.fileSystem,
   );
-  const thread = await resolveSceneThread(
+  const thread: SceneThreadContext = await resolveSceneThread(
     paths,
     scene,
     project,
     options.fileSystem,
     chapterDefaults.thread,
   );
-  const narration = await resolveSceneNarration(
+  const narration: NarrationDirective | undefined = await resolveSceneNarration(
     paths,
     scene,
     project,
     chapterDefaults,
     options.fileSystem,
   );
-  const sceneBreakJoiner = resolveSceneBreakJoiner(
+  const sceneBreakJoiner: string | undefined = resolveSceneBreakJoiner(
     options.configBridge.getDraftSceneBreakSeparator(),
   );
 
   // NOTE: 원장 감사는 서사 컨텍스트를 만들기 전에 끝나야 한다. 낡은 항목을 원장에 표시해 두어야
   // 곧이어 원장을 읽는 buildNarrativeContext가 그 항목을 프롬프트에서 뺀다. 줄기가 갈렸으면
   // 그 줄기의 원장을 봐야 하므로 스레드 경로로 감사한다.
-  const memoryAudit = await auditStoryMemory({
+  const memoryAudit: StoryMemoryAudit = await auditStoryMemory({
     fileSystem: options.fileSystem,
     paths: thread.threadPaths,
     format: project.format,
@@ -331,10 +354,10 @@ async function loadSceneContextBundle(
   // 표시해야, 곧이어 요약을 읽는 buildNarrativeContext가 낡은 장을 프롬프트에서 뺀다. 요약도
   // 줄기별로 갈리므로 원장과 같은 스레드 경로로 감사한다.
   const chapterAuditRequest = { fileSystem: options.fileSystem, paths: thread.threadPaths };
-  const chapterAudit = await auditChapterMemory(chapterAuditRequest);
+  const chapterAudit: ChapterMemoryAudit = await auditChapterMemory(chapterAuditRequest);
   await markStaleChapterSummaries(chapterAuditRequest, chapterAudit);
 
-  const narrativeContext = await buildNarrativeContext(
+  const narrativeContext: NarrativeContext = await buildNarrativeContext(
     sceneContextPaths(thread.threadPaths),
     context,
     options.fileSystem,
@@ -352,7 +375,7 @@ async function loadSceneContextBundle(
       },
     },
   );
-  const inputHash = computeSceneInputHash({
+  const inputHash: string = computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,
     background: context.background,

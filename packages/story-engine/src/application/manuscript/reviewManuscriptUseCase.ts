@@ -1,6 +1,11 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
-import type { StoryUri, ChapterPlan, ChapterSummary } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  ChapterPlan,
+  ChapterSummary,
+  AssembledManuscript,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   assembleManuscript,
@@ -9,6 +14,7 @@ import {
 } from '@storyboard/story-model';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 import { reviewChapterWindows } from './reviewChapterWindows';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 
 export type ManuscriptReviewSource = {
   readonly source: ManuscriptAssemblySource;
@@ -74,14 +80,14 @@ export class ReviewManuscriptUseCase implements IUseCase<
         }
 
         // 이슈가 어느 씬에서 나왔는지 짚어야 보고서에서 초안으로 되짚을 수 있다.
-        const manuscript = assembleManuscript({
+        const manuscript: AssembledManuscript = assembleManuscript({
           draftsByOrder: source.draftsByOrder,
           plan: source.plan,
           projectName: source.projectName,
           annotateSceneStems: true,
         });
-        const characters = collectCharacterIds(source.plan);
-        const aiService = this.deps.aiGateway.createService(workspaceRoot);
+        const characters: string[] = collectCharacterIds(source.plan);
+        const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
 
         const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
           aiService,
@@ -96,14 +102,17 @@ export class ReviewManuscriptUseCase implements IUseCase<
           critiqueProviderId: this.deps.aiGateway.getTaskProvider('draftCritique'),
         });
 
-        const reportMarkdown = buildManuscriptReviewMarkdown({
+        const reportMarkdown: string = buildManuscriptReviewMarkdown({
           projectName: source.projectName,
           sceneCount: manuscript.includedCount,
           generatedAt: new Date().toISOString(),
           continuityIssues,
           critiqueIssues,
         });
-        const reportUri = await this.deps.repository.saveReview(workspaceRoot, reportMarkdown);
+        const reportUri: StoryUri = await this.deps.repository.saveReview(
+          workspaceRoot,
+          reportMarkdown,
+        );
 
         return {
           kind: 'reviewed',
@@ -118,7 +127,7 @@ export class ReviewManuscriptUseCase implements IUseCase<
 }
 
 function collectCharacterIds(plan: ChapterPlan): string[] {
-  const ids = new Set<string>();
+  const ids: Set<string> = new Set<string>();
 
   for (const flatScene of flattenChapterPlan(plan)) {
     for (const id of flatScene.scene.characters) {

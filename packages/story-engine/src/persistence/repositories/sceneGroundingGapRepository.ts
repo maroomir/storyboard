@@ -3,6 +3,7 @@ import {
   parseSceneGroundingGaps,
   serializeSceneGroundingGaps,
   type SceneGroundingGap,
+  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -29,7 +30,7 @@ export class SceneGroundingGapRepository implements ISceneGroundingGapRepository
       return;
     }
 
-    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const next = gap === undefined ? others : { ...others, [sceneStem]: gap };
     await this.fileSystem.createDirectory(paths.cacheDirectory);
     await this.fileSystem.writeFile(
@@ -39,7 +40,7 @@ export class SceneGroundingGapRepository implements ISceneGroundingGapRepository
   }
 
   private async readAll(workspaceRoot: StoryUri): Promise<Record<string, SceneGroundingGap>> {
-    const gapsUri = getStoryboardProjectPaths(workspaceRoot).sceneGroundingGaps;
+    const gapsUri: StoryUri = getStoryboardProjectPaths(workspaceRoot).sceneGroundingGaps;
 
     if (!(await this.fileSystem.exists(gapsUri))) {
       return {};
@@ -47,7 +48,7 @@ export class SceneGroundingGapRepository implements ISceneGroundingGapRepository
 
     // A record that cannot be read is no record: the cache saves a call, it never blocks one.
     try {
-      const raw = new TextDecoder().decode(await this.fileSystem.readFile(gapsUri));
+      const raw: string = new TextDecoder().decode(await this.fileSystem.readFile(gapsUri));
       return { ...parseSceneGroundingGaps(raw) };
     } catch {
       return {};

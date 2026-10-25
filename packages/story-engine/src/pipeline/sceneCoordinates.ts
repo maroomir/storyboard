@@ -9,8 +9,8 @@ import { placeWords } from './sceneBreakPlan';
 // NOTE: 뼈대는 장면 첫 줄과 --- 다음 줄에 그 대목의 좌표(시각·장소·있는 사람)를 ⟪…⟫ 한 줄로 남긴다.
 // 단계 사이에 «지금 몇 시, 어디, 누가 있나»를 넘기는 장부가 없어 살붙임이 앞 대목의 시각을 이어 쓰고
 // 검수도 그것을 잡을 근거가 없었다(#108). 표식은 장부로 옮긴 뒤 본문에서 지운다.
-const COORDINATE_MARKER = /⟪([^⟪⟫\n]*)⟫/g;
-const SCENE_BREAK_LINE = '---';
+const COORDINATE_MARKER: RegExp = /⟪([^⟪⟫\n]*)⟫/g;
+const SCENE_BREAK_LINE: string = '---';
 
 // 대목은 --- 로 나뉜 장면의 토막이다. segments[i]는 i번째 대목의 좌표이고, 표식이 없던 대목은 비어 있다.
 export interface SceneCoordinateLedger {
@@ -26,7 +26,7 @@ export function extractSceneCoordinates(skeleton: string): {
   readonly ledger: SceneCoordinateLedger;
 } {
   const segments: (string | undefined)[] = [];
-  let segmentIndex = 0;
+  let segmentIndex: number = 0;
   const keptLines: string[] = [];
 
   for (const line of skeleton.split('\n')) {
@@ -36,23 +36,23 @@ export function extractSceneCoordinates(skeleton: string): {
       continue;
     }
 
-    const markers = [...line.matchAll(COORDINATE_MARKER)];
+    const markers: RegExpExecArray[] = [...line.matchAll(COORDINATE_MARKER)];
     for (const marker of markers) {
-      const coordinate = (marker[1] ?? '').trim();
+      const coordinate: string = (marker[1] ?? '').trim();
       if (coordinate.length > 0 && segments[segmentIndex] === undefined) {
         segments[segmentIndex] = coordinate;
       }
     }
 
-    const rest = markers.length > 0 ? line.replace(COORDINATE_MARKER, '').trim() : line;
+    const rest: string = markers.length > 0 ? line.replace(COORDINATE_MARKER, '').trim() : line;
     if (markers.length === 0 || rest.trim().length > 0) {
       keptLines.push(rest);
     }
   }
 
-  const hasMarkers = segments.length > 0 || skeleton.includes('⟪');
+  const hasMarkers: boolean = segments.length > 0 || skeleton.includes('⟪');
   // 표식이 하나라도 있으면 끝 대목까지 자리를 잡아 두어, 뒤쪽 표식 누락도 빈 대목으로 드러난다.
-  const segmentCount = hasMarkers ? segmentIndex + 1 : 0;
+  const segmentCount: number = hasMarkers ? segmentIndex + 1 : 0;
 
   return {
     text: hasMarkers ? keptLines.join('\n').replace(/\n{3,}/g, '\n\n').trim() : skeleton,
@@ -76,7 +76,7 @@ export function sceneCoordinatesFromBeats(
   const segments: string[] = [];
 
   for (const beat of beats ?? []) {
-    const coordinate = formatSceneBeatCoordinates(beat, castName);
+    const coordinate: string | undefined = formatSceneBeatCoordinates(beat, castName);
     if (coordinate !== undefined && segments.at(-1) !== coordinate) {
       segments.push(coordinate);
     }
@@ -102,13 +102,13 @@ interface SegmentRange {
 
 // 구간은 뼈대를 앞에서부터 자른 조각이므로 앞 구간들의 --- 수가 이 구간의 첫 대목 번호(0부터)다.
 function sectionSegmentRanges(sections: readonly string[]): SegmentRange[] {
-  let firstSegment = 0;
+  let firstSegment: number = 0;
 
   return sections.map((section) => {
-    const lines = section.split('\n').map((line) => line.trim());
-    const breakCount = lines.filter((line) => line === SCENE_BREAK_LINE).length;
+    const lines: string[] = section.split('\n').map((line) => line.trim());
+    const breakCount: number = lines.filter((line) => line === SCENE_BREAK_LINE).length;
     // 분할기는 --- 뒤에서 자르기도 한다. 그 --- 다음 대목은 다음 구간에서 시작한다.
-    const endsWithBreak = lines.filter((line) => line.length > 0).at(-1) === SCENE_BREAK_LINE;
+    const endsWithBreak: boolean = lines.filter((line) => line.length > 0).at(-1) === SCENE_BREAK_LINE;
     const range = { first: firstSegment, last: firstSegment + breakCount - (endsWithBreak ? 1 : 0) };
     firstSegment += breakCount;
     return range;
@@ -147,13 +147,13 @@ export function sectionSceneCoordinates(
       if (segment === undefined) {
         return [];
       }
-      const isInSection = index >= range.first && index <= range.last;
+      const isInSection: boolean = index >= range.first && index <= range.last;
       if (!isInSection) {
         return [`${index + 1}. ${segment}`];
       }
-      const beatLines = sectionBeats(ledger, { first: index, last: index }, beats).flatMap(
+      const beatLines: string[] = sectionBeats(ledger, { first: index, last: index }, beats).flatMap(
         ({ index: beatIndex, beat }) => {
-          const coordinate = formatSceneBeatCoordinates(beat, castName);
+          const coordinate: string | undefined = formatSceneBeatCoordinates(beat, castName);
           return coordinate === undefined
             ? []
             : [`  ${index + 1}-${beatIndex + 1}. ${coordinate} — ${sceneBeatText(beat)}`];

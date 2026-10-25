@@ -70,26 +70,31 @@ export async function proposeSceneBeats(
   characters: readonly SceneBeatCastCard[],
   options: SceneBeatsOptions,
 ): Promise<SceneBeat[]> {
-  const targetLength = resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body);
-  const beatCount = planSceneBeatCount(
+  const targetLength: number | undefined = resolveSceneTargetLength(
+    scene.frontmatter.targetWordCount,
+    scene.body,
+  );
+  const beatCount: number = planSceneBeatCount(
     targetLength,
     options.configBridge.getCharsPerBeat(),
     options.configBridge.getMinBeats(),
   );
 
-  const proposals = await options.aiGateway.createService(sceneUri).proposeSceneBeats(
-    {
-      sceneBody: renderSceneCardBody({ ...scene.card, beats: undefined }),
-      ...(scene.summaryText === undefined ? {} : { summary: scene.summaryText }),
-      grounding: scene.frontmatter.grounding,
-      characterNames: characters.map((character) => character.name),
-      beatCount,
-    },
-    {
-      providerId: options.aiGateway.getTaskProvider('sceneBeats'),
-      attribution: { primary: { kind: 'scene', id: scene.stem } },
-    },
-  );
+  const proposals: ExpandedSceneBeat[] = await options.aiGateway
+    .createService(sceneUri)
+    .proposeSceneBeats(
+      {
+        sceneBody: renderSceneCardBody({ ...scene.card, beats: undefined }),
+        ...(scene.summaryText === undefined ? {} : { summary: scene.summaryText }),
+        grounding: scene.frontmatter.grounding,
+        characterNames: characters.map((character) => character.name),
+        beatCount,
+      },
+      {
+        providerId: options.aiGateway.getTaskProvider('sceneBeats'),
+        attribution: { primary: { kind: 'scene', id: scene.stem } },
+      },
+    );
 
   return proposals.map((proposal) => toSceneBeat(proposal, characters));
 }
@@ -100,7 +105,7 @@ export function toSceneBeat(
   proposal: ExpandedSceneBeat,
   characters: readonly SceneBeatCastCard[],
 ): SceneBeat {
-  const idByRef = new Map<string, string>();
+  const idByRef: Map<string, string> = new Map<string, string>();
   for (const character of characters) {
     idByRef.set(character.id, character.id);
     idByRef.set(character.name, character.id);
@@ -109,7 +114,7 @@ export function toSceneBeat(
     }
   }
 
-  const cast = [...new Set(proposal.cast.map((name) => idByRef.get(name) ?? name))];
+  const cast: string[] = [...new Set(proposal.cast.map((name) => idByRef.get(name) ?? name))];
   if (cast.length === 0 && proposal.place === undefined && proposal.time === undefined) {
     return proposal.text;
   }

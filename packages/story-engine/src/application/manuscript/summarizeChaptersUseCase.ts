@@ -1,4 +1,9 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type {
+  AiProviderId,
+  AssembledChapter,
+  AssembledManuscript,
+  StoryUri,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -12,6 +17,7 @@ import {
   computeDraftBodyHash,
 } from '@storyboard/story-model';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 
 export interface IChapterSummaryRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
@@ -68,17 +74,18 @@ export class SummarizeChaptersUseCase implements IUseCase<
           return { kind: 'missing_outline', ok: false };
         }
 
-        const source = await this.deps.repository.loadAssemblySource(workspaceRoot);
+        const source: ManuscriptAssemblySource =
+          await this.deps.repository.loadAssemblySource(workspaceRoot);
         if (source.draftsByOrder.size === 0) {
           return { kind: 'missing_drafts', ok: false };
         }
 
-        const manuscript = assembleManuscript({
+        const manuscript: AssembledManuscript = assembleManuscript({
           draftsByOrder: source.draftsByOrder,
           plan: source.plan,
           projectName: source.projectName,
         });
-        const targeted =
+        const targeted: AssembledChapter[] =
           options.chapterIndex === undefined
             ? manuscript.chapters
             : manuscript.chapters.slice(options.chapterIndex, options.chapterIndex + 1);
@@ -87,9 +94,9 @@ export class SummarizeChaptersUseCase implements IUseCase<
           return { kind: 'missing_drafts', ok: false };
         }
 
-        const aiService = this.deps.aiGateway.createService(workspaceRoot);
-        const providerId = this.deps.aiGateway.getTaskProvider('chapterSummary');
-        const sourceHashes = new Map(
+        const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+        const providerId: AiProviderId = this.deps.aiGateway.getTaskProvider('chapterSummary');
+        const sourceHashes: Map<string, string> = new Map(
           manuscript.chapters.map((chapter) => [
             chapter.chapterTitle,
             computeDraftBodyHash(chapter.markdown),
@@ -108,7 +115,7 @@ export class SummarizeChaptersUseCase implements IUseCase<
           }
 
           options.onProgress?.(index + 1, targeted.length);
-          const summary = await aiService.summarizeChapter(
+          const summary: string = await aiService.summarizeChapter(
             { body: chapter.markdown, chapterTitle: chapter.chapterTitle },
             { providerId },
           );
@@ -120,7 +127,7 @@ export class SummarizeChaptersUseCase implements IUseCase<
           });
         }
 
-        const summaryUri = await this.deps.repository.saveChapterSummaries(
+        const summaryUri: StoryUri = await this.deps.repository.saveChapterSummaries(
           workspaceRoot,
           buildChapterSummariesMarkdown(source.projectName, summaries),
         );
@@ -131,7 +138,8 @@ export class SummarizeChaptersUseCase implements IUseCase<
   }
 
   private async readExisting(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
-    const markdown = await this.deps.repository.readChapterSummaries(workspaceRoot);
+    const markdown: string | undefined =
+      await this.deps.repository.readChapterSummaries(workspaceRoot);
     return markdown === undefined ? [] : parseChapterSummariesMarkdown(markdown);
   }
 }

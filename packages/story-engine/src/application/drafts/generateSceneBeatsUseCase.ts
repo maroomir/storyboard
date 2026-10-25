@@ -1,5 +1,5 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { StoryUri } from '@storyboard/story-model';
+import type { SceneContext, SceneFile, StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
 import {
   buildSceneContext,
   SceneParseError,
@@ -45,7 +45,7 @@ export class GenerateSceneBeatsUseCase {
   public constructor(private readonly deps: GenerateSceneBeatsUseCaseDependencies) {}
 
   public async execute(request: GenerateSceneBeatsRequest): Promise<GenerateSceneBeatsResult> {
-    let scene;
+    let scene: SceneFile;
     try {
       scene = await this.deps.sceneRepository.read(request.sceneUri, request.fileName);
     } catch (error) {
@@ -59,8 +59,8 @@ export class GenerateSceneBeatsUseCase {
       return { ok: true, kind: 'kept', beats: scene.card.beats ?? [] };
     }
 
-    const paths = getStoryboardProjectPaths(request.workspaceRoot);
-    const context = await buildSceneContext(sceneContextPaths(paths), scene, this.deps.fileSystem);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
+    const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, this.deps.fileSystem);
 
     let beats: SceneBeat[];
     try {

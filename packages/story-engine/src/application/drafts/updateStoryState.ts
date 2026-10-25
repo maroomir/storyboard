@@ -7,7 +7,7 @@ import {
   type StoryStateEntry,
 } from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import type { StoryStateUpdateItem } from '@storyboard/story-model';
+import type { StoryState, StoryStateUpdateItem } from '@storyboard/story-model';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 
@@ -30,16 +30,16 @@ export function toStoryStateEntries(
     readonly aliases?: readonly string[];
   }[],
 ): StoryStateEntryMapping {
-  const everyone = characters.map((character) => character.id);
-  const idByName = witnessIdsByName(characters);
+  const everyone: string[] = characters.map((character) => character.id);
+  const idByName: Map<string, string> = witnessIdsByName(characters);
 
-  const unknownWitnesses = new Set<string>();
+  const unknownWitnesses: Set<string> = new Set<string>();
   const entries = items.map((item) => {
-    const names = item.witnesses ?? [];
-    const unknown = names.filter((name) => !idByName.has(name));
+    const names: readonly string[] = item.witnesses ?? [];
+    const unknown: string[] = names.filter((name) => !idByName.has(name));
     unknown.forEach((name) => unknownWitnesses.add(name));
 
-    const witnesses =
+    const witnesses: string[] =
       names.length === 0 || unknown.length > 0
         ? everyone
         : [...new Set(names.map((name) => idByName.get(name) as string))];
@@ -61,7 +61,7 @@ function witnessIdsByName(
     readonly aliases?: readonly string[];
   }[],
 ): Map<string, string> {
-  const idByName = new Map<string, string>();
+  const idByName: Map<string, string> = new Map<string, string>();
   for (const character of characters) {
     idByName.set(character.name, character.id);
     for (const alias of character.aliases ?? []) {
@@ -69,7 +69,7 @@ function witnessIdsByName(
     }
   }
 
-  const idsByToken = new Map<string, Set<string>>();
+  const idsByToken: Map<string, Set<string>> = new Map<string, Set<string>>();
   for (const character of characters) {
     for (const token of character.name.split(/\s+/).filter((part) => part.length > 0)) {
       idsByToken.set(token, new Set([...(idsByToken.get(token) ?? []), character.id]));
@@ -120,8 +120,8 @@ export async function recordStoryStateFromDraft(
 ): Promise<void> {
   const { threadPaths, scene, context, inputHash } = inputs;
 
-  const previous = await readStoryState(threadPaths.storyState, options.fileSystem);
-  const items = await aiService.updateStoryState(
+  const previous: StoryState = await readStoryState(threadPaths.storyState, options.fileSystem);
+  const items: StoryStateUpdateItem[] = await aiService.updateStoryState(
     {
       sceneTitle: scene.stem,
       draftBody,
@@ -134,14 +134,14 @@ export async function recordStoryStateFromDraft(
     },
   );
 
-  const mapping = toStoryStateEntries(items, context.characters);
+  const mapping: StoryStateEntryMapping = toStoryStateEntries(items, context.characters);
   if (mapping.unknownWitnesses.length > 0) {
     options.logger.warn(
       `${scene.stem}: 이야기 상태의 목격자 이름 ${mapping.unknownWitnesses.join(', ')}이(가) 등장인물 카드와 맞지 않아 그 항목은 씬의 모든 인물이 아는 것으로 기록했습니다. 가명·호칭이면 그 카드의 aliases 에 적어 주세요`,
     );
   }
 
-  const merged =
+  const merged: StoryState =
     items.length === 0
       ? recordStoryStateScene(previous, scene.order, inputHash)
       : mergeStoryState(previous, mapping.entries, scene.order, inputHash);

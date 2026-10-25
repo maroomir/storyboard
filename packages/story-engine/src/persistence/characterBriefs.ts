@@ -6,7 +6,7 @@ import {
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
-import type { OutlineCharacterBrief } from '@storyboard/story-model';
+import type { OutlineCharacterBrief, StoryboardCard } from '@storyboard/story-model';
 export async function listCharacterBriefs(
   fs: IFileSystem,
   characterDirectory: StoryUri,
@@ -15,7 +15,7 @@ export async function listCharacterBriefs(
     isEligible: (name) =>
       name.endsWith(STORYBOARD_FILE_EXTENSIONS.card) && !isIgnoredSampleCardFileName(name),
     read: async (uri): Promise<OutlineCharacterBrief | undefined> => {
-      const card = await readCardFile(uri, fs);
+      const card: StoryboardCard = await readCardFile(uri, fs);
       return card.type === 'character'
         ? { id: card.id, name: card.name, role: card.role }
         : undefined;

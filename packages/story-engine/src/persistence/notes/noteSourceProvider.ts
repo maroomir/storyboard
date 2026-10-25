@@ -32,7 +32,7 @@ export class NoteSourceProvider implements INoteSourceProvider {
       });
     }
 
-    const token = await this.deps.secretStore.getNotionToken();
+    const token: string | undefined = await this.deps.secretStore.getNotionToken();
 
     if (token === undefined) {
       throw new NoteSourceError(
