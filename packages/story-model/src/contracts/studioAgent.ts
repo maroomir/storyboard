@@ -114,12 +114,12 @@ export type StudioAgentAction =
       readonly followUps?: readonly StudioAgentFollowUp[];
     };
 
-const maxAskOptions = 4;
-const maxLookupRequests = 4;
-const maxFollowUps = 5;
+const maxAskOptions: number = 4;
+const maxLookupRequests: number = 4;
+const maxFollowUps: number = 5;
 
 export function coerceStudioAgentAction(response: string): StudioAgentAction | undefined {
-  const parsed = parseJsonObject(response);
+  const parsed: Record<string, unknown> | null = parseJsonObject(response);
 
   if (!parsed) {
     return undefined;
@@ -142,13 +142,13 @@ export function coerceStudioAgentAction(response: string): StudioAgentAction | u
 }
 
 function coerceSay(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const message = trimmedString(parsed['message']);
+  const message: string | undefined = trimmedString(parsed['message']);
 
   if (!message) {
     return undefined;
   }
 
-  const followUps = toFollowUps(parsed['followUps']);
+  const followUps: StudioAgentFollowUp[] = toFollowUps(parsed['followUps']);
 
   return followUps.length > 0 ? { kind: 'say', message, followUps } : { kind: 'say', message };
 }
@@ -176,9 +176,9 @@ function toFollowUp(value: unknown): StudioAgentFollowUp | undefined {
     readonly instruction?: unknown;
   };
 
-  const key = trimmedString(candidate.key);
-  const reason = trimmedString(candidate.reason);
-  const instruction = trimmedString(candidate.instruction);
+  const key: string | undefined = trimmedString(candidate.key);
+  const reason: string | undefined = trimmedString(candidate.reason);
+  const instruction: string | undefined = trimmedString(candidate.instruction);
 
   if (!key || !reason || !instruction || !isFollowUpKind(candidate.kind)) {
     return undefined;
@@ -192,7 +192,7 @@ function isFollowUpKind(value: unknown): value is StudioAgentEntityKind {
 }
 
 function coerceAsk(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const question = trimmedString(parsed['question']);
+  const question: string | undefined = trimmedString(parsed['question']);
 
   if (!question) {
     return undefined;
@@ -202,9 +202,9 @@ function coerceAsk(parsed: Record<string, unknown>): StudioAgentAction | undefin
 }
 
 function coerceLookup(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const rawRequests = Array.isArray(parsed['requests']) ? parsed['requests'] : [];
+  const rawRequests: unknown[] = Array.isArray(parsed['requests']) ? parsed['requests'] : [];
 
-  const requests = rawRequests
+  const requests: StudioAgentLookupRequest[] = rawRequests
     .map(toLookupRequest)
     .filter((request): request is StudioAgentLookupRequest => request !== undefined)
     .slice(0, maxLookupRequests);
@@ -213,7 +213,7 @@ function coerceLookup(parsed: Record<string, unknown>): StudioAgentAction | unde
     return undefined;
   }
 
-  const reason = trimmedString(parsed['reason']);
+  const reason: string | undefined = trimmedString(parsed['reason']);
 
   return reason ? { kind: 'lookup', requests, reason } : { kind: 'lookup', requests };
 }
@@ -224,7 +224,7 @@ function toLookupRequest(value: unknown): StudioAgentLookupRequest | undefined {
   }
 
   const candidate = value as { readonly kind?: unknown; readonly key?: unknown };
-  const key = trimmedString(candidate.key);
+  const key: string | undefined = trimmedString(candidate.key);
 
   if (!key || !isLookupKind(candidate.kind)) {
     return undefined;
@@ -238,20 +238,20 @@ function isLookupKind(value: unknown): value is StudioAgentLookupRequest['kind']
 }
 
 function coerceInvoke(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const tool = parsed['tool'];
+  const tool: unknown = parsed['tool'];
 
   if (!isToolName(tool)) {
     return undefined;
   }
 
-  const span = toToolSpan(parsed['span']);
+  const span: StudioAgentToolSpan | undefined = toToolSpan(parsed['span']);
 
   if (isSpanRequiredTool(tool) && !span) {
     return undefined;
   }
 
-  const instruction = trimmedString(parsed['instruction']);
-  const reason = trimmedString(parsed['reason']);
+  const instruction: string | undefined = trimmedString(parsed['instruction']);
+  const reason: string | undefined = trimmedString(parsed['reason']);
 
   return {
     kind: 'invoke',
@@ -297,15 +297,15 @@ function toToolSpan(value: unknown): StudioAgentToolSpan | undefined {
 }
 
 function coercePropose(parsed: Record<string, unknown>): StudioAgentAction | undefined {
-  const summary = trimmedString(parsed['summary']);
-  const patch = toPatch(parsed['patch']);
+  const summary: string | undefined = trimmedString(parsed['summary']);
+  const patch: StudioPatch | undefined = toPatch(parsed['patch']);
 
   if (!summary || !patch) {
     return undefined;
   }
 
-  const message = trimmedString(parsed['message']);
-  const followUps = toFollowUps(parsed['followUps']);
+  const message: string | undefined = trimmedString(parsed['message']);
+  const followUps: StudioAgentFollowUp[] = toFollowUps(parsed['followUps']);
 
   return {
     kind: 'propose',
@@ -328,7 +328,9 @@ function toPatch(value: unknown): StudioPatch | undefined {
   };
 
   if (candidate.target === 'card') {
-    const changes = (Array.isArray(candidate.changes) ? candidate.changes : [])
+    const changes: StudioCardFieldChange[] = (
+      Array.isArray(candidate.changes) ? candidate.changes : []
+    )
       .map(toCardFieldChange)
       .filter((change): change is StudioCardFieldChange => change !== undefined);
 
@@ -336,7 +338,9 @@ function toPatch(value: unknown): StudioPatch | undefined {
   }
 
   if (candidate.target === 'draft') {
-    const replacements = (Array.isArray(candidate.replacements) ? candidate.replacements : [])
+    const replacements: StudioDraftReplacement[] = (
+      Array.isArray(candidate.replacements) ? candidate.replacements : []
+    )
       .map(toDraftReplacement)
       .filter((replacement): replacement is StudioDraftReplacement => replacement !== undefined);
 
@@ -352,7 +356,7 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
   }
 
   const candidate = value as { readonly field?: unknown; readonly value?: unknown };
-  const field = trimmedString(candidate.field);
+  const field: string | undefined = trimmedString(candidate.field);
 
   if (!field) {
     return undefined;
@@ -366,7 +370,7 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
     return undefined;
   }
 
-  const objects = stringRecordList(candidate.value);
+  const objects: Readonly<Record<string, string>>[] | undefined = stringRecordList(candidate.value);
 
   // NOTE: an empty list is a deliberate "clear this field", so it stays a string list rather than
   // being dropped as unreadable.
@@ -380,7 +384,7 @@ function stringRecordList(
     return undefined;
   }
 
-  const records = value.map(toStringRecord);
+  const records: (Record<string, string> | undefined)[] = value.map(toStringRecord);
 
   return records.every((record): record is Record<string, string> => record !== undefined)
     ? records
@@ -392,7 +396,7 @@ function toStringRecord(value: unknown): Record<string, string> | undefined {
     return undefined;
   }
 
-  const entries = Object.entries(value as Record<string, unknown>).filter(
+  const entries: [string, string][] = Object.entries(value as Record<string, unknown>).filter(
     (entry): entry is [string, string] =>
       typeof entry[1] === 'string' && entry[1].trim().length > 0,
   );
@@ -439,7 +443,7 @@ function trimmedString(value: unknown): string | undefined {
     return undefined;
   }
 
-  const trimmed = value.trim();
+  const trimmed: string = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }
 

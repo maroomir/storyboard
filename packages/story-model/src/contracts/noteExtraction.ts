@@ -1,10 +1,22 @@
 import { z } from 'zod';
 
 import { characterRoles } from '#model/format/card';
+import type { CharacterRole } from '#model/format/card';
 
 // What a note may hold. `other` alone means nothing in the note belongs in the workspace; `draft` is
 // prose already written, which gives cards and premise but never a scene.
 // 'setting' 은 세계관·규칙만 적힌 노트다 — 그 사실은 카드가 아니라 정전 후보로 간다(#55).
+
+interface NoteExtractionAttribute {
+  key: string;
+  value: string;
+}
+
+interface NoteExtractionRelation {
+  target: string;
+  type: string;
+}
+
 export const noteKinds = [
   'character',
   'background',
@@ -39,7 +51,7 @@ function emptyWhenMissing<T extends z.ZodType>(schema: T) {
 
 // 모델은 «모르는 값» 을 빈 문자열로 적어 보낸다. 그것을 오류로 세면 노트 수십 장을 읽은 응답이
 // 빈 칸 하나 때문에 통째로 버려지므로, 빈 값은 안 적은 것으로 읽고 목록에서는 걸러 낸다.
-const optionalText = z.preprocess(
+const optionalText: z.ZodPreprocess<z.ZodOptional<z.ZodString>> = z.preprocess(
   (value) => (typeof value === 'string' && value.trim().length === 0 ? undefined : value),
   z.string().trim().min(1).optional(),
 );
@@ -58,7 +70,7 @@ function textList() {
 
 // 괄호가 든 별칭은 호칭이 아니라 호칭에 붙인 설명이다(«엘리트라 불리는 쪽은 아님(은하를 그렇게
 // 부름)»). 그런 줄이 카드에 남으면 틀린 호칭이 생성 프롬프트까지 가므로 읽을 때 걸러 낸다.
-const annotatedAliasPattern = /[()[\]{}（）［］｛｝【】〔〕]/;
+const annotatedAliasPattern: RegExp = /[()[\]{}（）［］｛｝【】〔〕]/;
 
 function aliasList() {
   return textList().transform((aliases) =>
@@ -76,7 +88,12 @@ function recordList<T extends z.ZodType>(item: T) {
   );
 }
 
-const noteClassificationSchema = z.object({
+export interface NoteClassification {
+  id: string;
+  kinds: NoteKind[];
+}
+
+const noteClassificationSchema: z.ZodType<NoteClassification> = z.object({
   id: z.string().trim().min(1),
   kinds: emptyWhenMissing(
     z.preprocess(
@@ -89,7 +106,30 @@ const noteClassificationSchema = z.object({
   ),
 });
 
-const noteEntitySchema = z.object({
+export interface NoteExtractionEntity {
+  type: 'character' | 'background';
+  name: string;
+  aliases: string[];
+  tags: string[] | never[];
+  traits: string[] | never[];
+  description: string[] | never[];
+  voice: string[] | never[];
+  sampleLines: string[] | never[];
+  desire: string[] | never[];
+  attributes: NoteExtractionAttribute[];
+  relations: NoteExtractionRelation[];
+  canonFacts: NoteExtractionAttribute[];
+  senses: string[] | never[];
+  characterNames: string[] | never[];
+  sourceNotes: string[] | never[];
+  suggestedId?: string;
+  existingId?: string;
+  role?: CharacterRole;
+  time?: string;
+  weather?: string;
+}
+
+const noteEntitySchema: z.ZodType<NoteExtractionEntity> = z.object({
   type: z.enum(['character', 'background']),
   name: z.string().trim().min(1),
   suggestedId: optionalText,
@@ -123,7 +163,19 @@ const noteEntitySchema = z.object({
   sourceNotes: textList(),
 });
 
-const noteSceneSchema = z.object({
+export interface NoteExtractionScene {
+  title: string;
+  summary: string;
+  beats: string[] | never[];
+  characterNames: string[] | never[];
+  slug?: string;
+  locationName?: string;
+  mood?: string;
+  purpose?: string;
+  sourceNote?: string;
+}
+
+const noteSceneSchema: z.ZodType<NoteExtractionScene> = z.object({
   title: z.string().trim().min(1),
   slug: optionalText,
   summary: z.string().trim().min(1),
@@ -134,10 +186,6 @@ const noteSceneSchema = z.object({
   purpose: optionalText,
   sourceNote: optionalText,
 });
-
-export type NoteClassification = z.infer<typeof noteClassificationSchema>;
-export type NoteExtractionEntity = z.infer<typeof noteEntitySchema>;
-export type NoteExtractionScene = z.infer<typeof noteSceneSchema>;
 
 export interface NoteExtraction {
   readonly notes: readonly NoteClassification[];
@@ -150,7 +198,7 @@ export interface NoteExtraction {
 function salvageList<T>(value: unknown, schema: z.ZodType<T>): T[] {
   return Array.isArray(value)
     ? value.flatMap((entry) => {
-        const parsed = schema.safeParse(entry);
+        const parsed: z.ZodSafeParseResult<T> = schema.safeParse(entry);
         return parsed.success ? [parsed.data] : [];
       })
     : [];

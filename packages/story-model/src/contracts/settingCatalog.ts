@@ -2,7 +2,7 @@ export type StoryboardSettingKind = 'boolean' | 'integer' | 'decimal' | 'string'
 
 // A `decimal` setting is an amount of money: it moves in cents, so a finer value is refused rather
 // than rounded behind the author's back.
-export const decimalSettingStep = 0.01;
+export const decimalSettingStep: number = 0.01;
 
 export interface StoryboardSettingDefinition {
   readonly key: string;
@@ -200,7 +200,7 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
   },
 ];
 
-export const storyboardSettingKeys = storyboardSettingCatalog.map((entry) => entry.key);
+export const storyboardSettingKeys: string[] = storyboardSettingCatalog.map((entry) => entry.key);
 
 export function findStoryboardSetting(key: string): StoryboardSettingDefinition | undefined {
   return storyboardSettingCatalog.find((entry) => entry.key === key);
@@ -229,14 +229,14 @@ export function isValidStoryboardSettingValue(
 // A number typed into a settings field. A cleared field reads as no value, never as 0, so the
 // caller keeps what is saved.
 export function parseSettingNumberInput(text: string): number | undefined {
-  const trimmed = text.trim();
-  const value = Number(trimmed);
+  const trimmed: string = text.trim();
+  const value: number = Number(trimmed);
 
   return trimmed === '' || !Number.isFinite(value) ? undefined : value;
 }
 
 export function isOnDecimalStep(value: number): boolean {
-  const steps = value / decimalSettingStep;
+  const steps: number = value / decimalSettingStep;
 
   return Number.isFinite(steps) && Math.abs(steps - Math.round(steps)) < 1e-9;
 }
@@ -251,7 +251,7 @@ function isWithinRange(definition: StoryboardSettingDefinition, value: number): 
 // 기본값과 허용 범위는 이 카탈로그가 갖는다. 설정을 읽는 쪽이 같은 숫자를 다시 적으면 설정 화면과
 // 실제 생성이 서로 다른 값을 쓰는 상태로 조용히 갈라진다.
 function requireSetting(key: string, kind: StoryboardSettingKind): StoryboardSettingDefinition {
-  const definition = findStoryboardSetting(key);
+  const definition: StoryboardSettingDefinition | undefined = findStoryboardSetting(key);
 
   if (definition === undefined) {
     throw new Error(`알 수 없는 설정 키: ${key}`);
@@ -289,7 +289,8 @@ export function clampDecimalSetting(key: string, value: number): number {
 }
 
 function clampToRange(definition: StoryboardSettingDefinition, value: number): number {
-  const atLeast = definition.minimum === undefined ? value : Math.max(definition.minimum, value);
+  const atLeast: number =
+    definition.minimum === undefined ? value : Math.max(definition.minimum, value);
 
   return definition.maximum === undefined ? atLeast : Math.min(definition.maximum, atLeast);
 }

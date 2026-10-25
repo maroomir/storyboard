@@ -15,16 +15,22 @@ export interface BackgroundFactConflictRecord {
   readonly conflicts: readonly BackgroundFactConflict[];
 }
 
-const backgroundFactConflictRecordsSchema = z.object({
-  version: z.literal(1),
-  cards: z.record(
-    z.string(),
-    z.object({
-      inputKey: z.string().min(1),
-      conflicts: z.array(z.object({ items: z.tuple([z.string(), z.string()]) })),
-    }),
-  ),
-});
+interface BackgroundFactConflictRecordsPayload {
+  version: 1;
+  cards: Record<string, { inputKey: string; conflicts: { items: [string, string] }[] }>;
+}
+
+const backgroundFactConflictRecordsSchema: z.ZodType<BackgroundFactConflictRecordsPayload> =
+  z.object({
+    version: z.literal(1),
+    cards: z.record(
+      z.string(),
+      z.object({
+        inputKey: z.string().min(1),
+        conflicts: z.array(z.object({ items: z.tuple([z.string(), z.string()]) })),
+      }),
+    ),
+  });
 
 export type BackgroundFactConflictRecords = Readonly<Record<string, BackgroundFactConflictRecord>>;
 
@@ -32,7 +38,10 @@ export function computeBackgroundFactConflictKey(
   card: BackgroundCard,
   promptFingerprint: string,
 ): string {
-  const source = JSON.stringify({ lines: listBackgroundFactLines(card), promptFingerprint });
+  const source: string = JSON.stringify({
+    lines: listBackgroundFactLines(card),
+    promptFingerprint,
+  });
 
   return createHash('sha256').update(source).digest('hex');
 }

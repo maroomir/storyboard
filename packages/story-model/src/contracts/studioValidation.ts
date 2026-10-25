@@ -14,18 +14,20 @@ export interface StudioValidationVerdict {
 
 export const skippedStudioValidation: StudioValidationVerdict = { state: 'skipped', warnings: [] };
 
-const maxWarnings = 5;
+const maxWarnings: number = 5;
 
 // NOTE: an unreadable verdict must not block the author, so it degrades to 'skipped' rather than
 // inventing a warning the model never made.
 export function coerceStudioValidationVerdict(response: string): StudioValidationVerdict {
-  const parsed = parseJsonObject(response);
+  const parsed: Record<string, unknown> | null = parseJsonObject(response);
 
   if (!parsed) {
     return skippedStudioValidation;
   }
 
-  const warnings = (Array.isArray(parsed['warnings']) ? parsed['warnings'] : [])
+  const warnings: StudioValidationWarning[] = (
+    Array.isArray(parsed['warnings']) ? parsed['warnings'] : []
+  )
     .map(toWarning)
     .filter((warning): warning is StudioValidationWarning => warning !== undefined)
     .slice(0, maxWarnings);
@@ -52,7 +54,7 @@ function toWarning(value: unknown): StudioValidationWarning | undefined {
     return undefined;
   }
 
-  const source = typeof candidate.source === 'string' ? candidate.source.trim() : '';
+  const source: string = typeof candidate.source === 'string' ? candidate.source.trim() : '';
 
   return source.length > 0
     ? { message: candidate.message.trim(), source }

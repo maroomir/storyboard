@@ -2,7 +2,7 @@ import type { StoryUri } from '#model/format/storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-export const unknownDialogueSpeaker = 'unknown';
+export const unknownDialogueSpeaker: string = 'unknown';
 
 export interface SceneDialogueTurn {
   readonly index: number;
@@ -22,13 +22,19 @@ export interface SceneDialogueFileSystem {
   readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
-const sceneDialogueTurnSchema = z.object({
+const sceneDialogueTurnSchema: z.ZodType<SceneDialogueTurn> = z.object({
   index: z.number().int().min(1),
   speaker: z.string().min(1),
   text: z.string().min(1),
 });
 
-const sceneDialogueRecordSchema = z.object({
+interface SceneDialogueRecordPayload {
+  sceneStem: string;
+  bodyHash: string;
+  turns: SceneDialogueTurn[];
+}
+
+const sceneDialogueRecordSchema: z.ZodType<SceneDialogueRecordPayload> = z.object({
   sceneStem: z.string().min(1),
   bodyHash: z.string().regex(/^sha256:[a-f0-9]{64}$/),
   turns: z.array(sceneDialogueTurnSchema),
@@ -50,7 +56,7 @@ export async function readSceneDialogueFile(
   uri: StoryUri,
   fileSystem: SceneDialogueFileSystem,
 ): Promise<SceneDialogueRecord> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseSceneDialogue(new TextDecoder().decode(bytes));
 }
 
@@ -69,7 +75,11 @@ export interface VoiceSeeds {
   readonly characters: Readonly<Record<string, readonly string[]>>;
 }
 
-const voiceSeedsSchema = z.object({
+interface VoiceSeedsPayload {
+  characters: Record<string, string[]>;
+}
+
+const voiceSeedsSchema: z.ZodType<VoiceSeedsPayload> = z.object({
   characters: z.record(z.string().min(1), z.array(z.string().min(1))),
 });
 
@@ -91,7 +101,7 @@ export function mergeVoiceSeeds(
   );
 
   for (const [id, lines] of Object.entries(added)) {
-    const kept = characters[id] ?? [];
+    const kept: string[] = characters[id] ?? [];
     for (const line of lines.map((value) => value.trim()).filter((value) => value.length > 0)) {
       if (!kept.includes(line)) {
         kept.push(line);

@@ -1,6 +1,6 @@
-const wikiLinkPattern = /(!?)\[\[([^\]\n]+?)\]\]/g;
-const markdownLinkPattern = /\[[^\]\n]*\]\(([^)\s]+)\)/g;
-const firstHeadingPattern = /^#\s+(.+?)\s*$/m;
+const wikiLinkPattern: RegExp = /(!?)\[\[([^\]\n]+?)\]\]/g;
+const markdownLinkPattern: RegExp = /\[[^\]\n]*\]\(([^)\s]+)\)/g;
+const firstHeadingPattern: RegExp = /^#\s+(.+?)\s*$/m;
 
 // macOS 는 파일 이름을 풀어 쓴 자모(NFD)로 돌려주고 본문 링크는 조합형(NFC)이라, 맞추지 않으면
 // 한글 노트 이름이 하나도 이어지지 않는다.
@@ -20,14 +20,14 @@ export function stripMarkdownExtension(fileName: string): string {
 
 // Notion's export names every page and folder `Title 1a2b…(32 hex)`. The id is noise in a title
 // and in a path; the title is what the author wrote.
-const notionIdSuffixPattern = /\s+[0-9a-f]{32}$/i;
+const notionIdSuffixPattern: RegExp = /\s+[0-9a-f]{32}$/i;
 
 export function stripNotionIdSuffix(name: string): string {
   return name.replace(notionIdSuffixPattern, '');
 }
 
 export function extractNoteTitle(body: string, fallbackTitle: string): string {
-  const heading = firstHeadingPattern.exec(body)?.[1]?.trim();
+  const heading: string | undefined = firstHeadingPattern.exec(body)?.[1]?.trim();
 
   return heading !== undefined && heading.length > 0 ? heading : fallbackTitle;
 }
@@ -39,8 +39,8 @@ export function extractNoteLinkTargets(body: string): string[] {
   const targets: string[] = [];
 
   for (const match of body.matchAll(wikiLinkPattern)) {
-    const target = (match[2] ?? '').split('|')[0]?.split('#')[0]?.trim() ?? '';
-    const extension = /\.([A-Za-z0-9]+)$/.exec(target)?.[1]?.toLowerCase();
+    const target: string = (match[2] ?? '').split('|')[0]?.split('#')[0]?.trim() ?? '';
+    const extension: string | undefined = /\.([A-Za-z0-9]+)$/.exec(target)?.[1]?.toLowerCase();
 
     if (target.length > 0 && (extension === undefined || extension === 'md')) {
       targets.push(stripMarkdownExtension(target));
@@ -48,7 +48,7 @@ export function extractNoteLinkTargets(body: string): string[] {
   }
 
   for (const match of body.matchAll(markdownLinkPattern)) {
-    const target = (match[1] ?? '').split('#')[0] ?? '';
+    const target: string = (match[1] ?? '').split('#')[0] ?? '';
 
     if (/^[a-z][a-z0-9+.-]*:/i.test(target) || !/\.md$/i.test(target)) {
       continue;

@@ -1,18 +1,18 @@
 export function calculateSimilarity(leftTrait: string, rightTrait: string): number {
-  const leftWords = normalizeTrait(leftTrait).split(/\s+/).filter(Boolean);
-  const rightWords = normalizeTrait(rightTrait).split(/\s+/).filter(Boolean);
+  const leftWords: string[] = normalizeTrait(leftTrait).split(/\s+/).filter(Boolean);
+  const rightWords: string[] = normalizeTrait(rightTrait).split(/\s+/).filter(Boolean);
 
   if (leftWords.join(' ') === rightWords.join(' ')) {
     return 1;
   }
 
-  const totalWords = new Set([...leftWords, ...rightWords]).size;
+  const totalWords: number = new Set([...leftWords, ...rightWords]).size;
 
   if (totalWords === 0) {
     return 0;
   }
 
-  const commonWordCount = leftWords.filter((word) => rightWords.includes(word)).length;
+  const commonWordCount: number = leftWords.filter((word) => rightWords.includes(word)).length;
   return commonWordCount / totalWords;
 }
 
@@ -20,7 +20,7 @@ export function removeDuplicateTraits(traits: readonly string[], threshold = 0.8
   const uniqueTraits: string[] = [];
 
   for (const trait of traits) {
-    const isDuplicate = uniqueTraits.some(
+    const isDuplicate: boolean = uniqueTraits.some(
       (existingTrait) => calculateSimilarity(trait, existingTrait) > threshold,
     );
 
@@ -62,8 +62,8 @@ export function reconcileCharacterTraits(
   const result: Record<string, string[]> = {};
 
   for (const [characterName, traits] of Object.entries(extractedTraits)) {
-    const validatedTraits = validateTraits(traits);
-    const uniqueFromExisting = removeExistingTraits(
+    const validatedTraits: string[] = validateTraits(traits);
+    const uniqueFromExisting: string[] = removeExistingTraits(
       validatedTraits,
       existingTraits[characterName] ?? [],
     );
@@ -73,7 +73,7 @@ export function reconcileCharacterTraits(
   return result;
 }
 
-const meaninglessTraitPatterns = [/^[가-힣]+이?다$/, /^[가-힣]+이?었다$/];
+const meaninglessTraitPatterns: RegExp[] = [/^[가-힣]+이?다$/, /^[가-힣]+이?었다$/];
 
 function normalizeTrait(trait: string): string {
   return trait

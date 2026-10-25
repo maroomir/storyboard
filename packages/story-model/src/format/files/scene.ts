@@ -44,7 +44,7 @@ export function parseScene(rawScene: string, fileName: string, summaryText?: str
 }
 
 function requireSceneFileNameParts(fileName: string): SceneFileNameParts {
-  const fileNameParts = parseSceneFileName(fileName);
+  const fileNameParts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
 
   if (!fileNameParts) {
     throw new SceneParseError(
@@ -61,7 +61,7 @@ function toSceneFile(
   card: SceneCard,
   summaryText: string | undefined,
 ): SceneFile {
-  const resolvedSummary =
+  const resolvedSummary: string | undefined =
     summaryText ?? (isSceneSummaryReference(card.summary) ? undefined : card.summary);
 
   return {
@@ -90,9 +90,9 @@ export function parseSceneCard(rawScene: string): SceneCard {
     return sceneCardSchema.parse(parsedYaml);
   } catch (error) {
     if (error instanceof ZodError) {
-      const details = error.issues
+      const details: string = error.issues
         .map((issue) => {
-          const path = issue.path.join('.');
+          const path: string = issue.path.join('.');
           return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
         })
         .join('; ');
@@ -112,9 +112,9 @@ export async function readSceneFile(
   fileSystem: SceneFileSystem,
   fileName: string,
 ): Promise<SceneFile> {
-  const fileNameParts = requireSceneFileNameParts(fileName);
-  const card = parseSceneCard(new TextDecoder().decode(await fileSystem.readFile(uri)));
-  const summaryText = await readSceneSummaryText(uri, fileSystem, card);
+  const fileNameParts: SceneFileNameParts = requireSceneFileNameParts(fileName);
+  const card: SceneCard = parseSceneCard(new TextDecoder().decode(await fileSystem.readFile(uri)));
+  const summaryText: string | undefined = await readSceneSummaryText(uri, fileSystem, card);
 
   return toSceneFile(fileNameParts, card, summaryText);
 }
@@ -128,14 +128,16 @@ async function readSceneSummaryText(
   fileSystem: SceneFileSystem,
   card: SceneCard,
 ): Promise<string | undefined> {
-  const summaryFileName = sceneSummaryReference(card.summary);
+  const summaryFileName: string | undefined = sceneSummaryReference(card.summary);
 
   if (summaryFileName === undefined) {
     return undefined;
   }
 
   try {
-    const bytes = await fileSystem.readFile(sceneSummaryUri(sceneUri, summaryFileName));
+    const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(
+      sceneSummaryUri(sceneUri, summaryFileName),
+    );
     return new TextDecoder().decode(bytes);
   } catch (error) {
     throw new SceneParseError(
@@ -162,7 +164,7 @@ export function canonicalizeSceneCardText(rawScene: string): {
   readonly text: string;
   readonly changed: boolean;
 } {
-  const text = serializeSceneCard(parseSceneCard(rawScene));
+  const text: string = serializeSceneCard(parseSceneCard(rawScene));
 
   return { text, changed: text !== rawScene };
 }

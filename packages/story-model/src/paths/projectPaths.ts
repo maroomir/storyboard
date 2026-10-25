@@ -167,8 +167,8 @@ export function resolveThreadPaths(
 }
 
 function workspaceRelativePath(uri: StoryUri, workspaceFolder: StoryWorkspaceFolder): string {
-  const rootPath = workspaceFolder.uri.fsPath.replace(/\\/g, '/');
-  const filePath = uri.fsPath.replace(/\\/g, '/');
+  const rootPath: string = workspaceFolder.uri.fsPath.replace(/\\/g, '/');
+  const filePath: string = uri.fsPath.replace(/\\/g, '/');
 
   if (!filePath.startsWith(`${rootPath}/`)) {
     return '';
@@ -190,7 +190,7 @@ export function isDirectSceneCardFile(
 
 // SECURITY: entity keys reach here from webview payloads and become directory names; anything
 // outside the card/scene id shape would let a session escape the studio-sessions directory.
-const safeEntityKeyPattern = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
+const safeEntityKeyPattern: RegExp = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 
 // SECURITY: entity keys arrive from the webview and from model output, and they become path
 // segments for both the session cache and the card/scene files themselves; anything outside the
@@ -261,7 +261,7 @@ export function draftHistorySceneDirectory(workspaceRoot: StoryUri, sceneStem: s
 }
 
 export function parseCardIdFromPath(uri: StoryUri): string | undefined {
-  const fileName = uri.path.split('/').at(-1);
+  const fileName: string | undefined = uri.path.split('/').at(-1);
 
   return fileName === undefined ? undefined : parseCardIdFromFileName(fileName);
 }

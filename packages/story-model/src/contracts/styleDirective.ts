@@ -6,7 +6,7 @@ import {
 import { resolveCraftContract } from '#model/format/craftContract';
 import { resolveSceneTargetLength } from '#model/format/sceneLength';
 import { sceneGroundingFieldLabels } from '#model/format/scene';
-import type { CraftContractOverride } from '#model/format/craftContract';
+import type { CraftContract, CraftContractOverride } from '#model/format/craftContract';
 import type { NarrationDirective, NarrativeTense } from '#model/format/narrator';
 import type { ProjectSetting } from '#model/format/project';
 import type { SceneGrounding } from '#model/format/scene';
@@ -32,7 +32,7 @@ export function buildStyleDirective(
   sceneBody?: string,
   narration?: NarrationDirective,
 ): StyleDirective | undefined {
-  const resolvedTargetWordCount =
+  const resolvedTargetWordCount: number | undefined =
     sceneBody === undefined
       ? targetWordCount
       : resolveSceneTargetLength(
@@ -40,13 +40,13 @@ export function buildStyleDirective(
           sceneBody,
           resolveCraftContract(setting?.craftContract).sceneLengthMultiplier,
         );
-  const styleConstraints =
+  const styleConstraints: string[] | undefined =
     setting?.styleConstraints && setting.styleConstraints.length > 0
       ? setting.styleConstraints
       : undefined;
-  const prohibitions =
+  const prohibitions: string[] | undefined =
     setting?.prohibitions && setting.prohibitions.length > 0 ? setting.prohibitions : undefined;
-  const trimmedRelationStage = relationStage?.trim();
+  const trimmedRelationStage: string | undefined = relationStage?.trim();
   const directive: StyleDirective = {
     narration,
     genre: setting?.genre,
@@ -76,7 +76,7 @@ export function buildStyleDirective(
 
 // NOTE: 프로젝트가 아무 설정도 하지 않아도 기본 계약이 걸리도록, directive가 없어도 항상 렌더한다.
 export function craftContractLines(override: CraftContractOverride | undefined): string[] {
-  const contract = resolveCraftContract(override);
+  const contract: CraftContract = resolveCraftContract(override);
   const lines: string[] = [];
 
   if (contract.banTelling) {
@@ -126,8 +126,8 @@ export function sceneGroundingLines(grounding: SceneGrounding | undefined): stri
     return [];
   }
 
-  const entries = Object.entries(sceneGroundingFieldLabels).flatMap(([key, label]) => {
-    const value = grounding[key as keyof SceneGrounding];
+  const entries: string[] = Object.entries(sceneGroundingFieldLabels).flatMap(([key, label]) => {
+    const value: string | undefined = grounding[key as keyof SceneGrounding];
     return value ? [`- ${label}: ${value}`] : [];
   });
 
@@ -168,7 +168,7 @@ function narrationVoiceLine(narration: NarrationDirective): string | undefined {
 }
 
 export function describeNarration(narration: NarrationDirective): string {
-  const parts = [
+  const parts: string[] = [
     narration.person ? narratorPersonLabels[narration.person] : undefined,
     narration.knowledge ? narratorKnowledgeLabels[narration.knowledge] : undefined,
     narration.focal ? `초점 ${narration.focal}` : undefined,
@@ -233,7 +233,7 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
     return [];
   }
 
-  const narration = directive.narration;
+  const narration: NarrationDirective | undefined = directive.narration;
 
   return [
     narration ? narrationPersonLine(narration) : undefined,

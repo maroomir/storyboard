@@ -39,7 +39,7 @@ export function cardCandidateItemKey(item: CardCandidateItem): string {
 export function collectCardCandidateItems(
   records: readonly CardCandidateRecord[],
 ): CardCandidateItem[] {
-  const byKey = new Map<string, CardCandidateItem>();
+  const byKey: Map<string, CardCandidateItem> = new Map<string, CardCandidateItem>();
 
   for (const record of records) {
     for (const character of record.characters) {
@@ -80,7 +80,7 @@ export function collectCardCandidateItems(
 }
 
 function addItem(byKey: Map<string, CardCandidateItem>, item: CardCandidateItem): void {
-  const key = cardCandidateItemKey(item);
+  const key: string = cardCandidateItemKey(item);
   if (!byKey.has(key)) {
     byKey.set(key, item);
   }

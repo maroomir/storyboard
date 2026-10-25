@@ -79,12 +79,12 @@ export const aiTaskCatalog = [
 export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number];
 export type AiTaskName = AiTaskCatalogEntry['name'];
 
-export const aiTaskNames = aiTaskCatalog.map((task) => task.name) as unknown as readonly [
+export const aiTaskNames: readonly [ AiTaskName, ...AiTaskName[], ] = aiTaskCatalog.map((task) => task.name) as unknown as readonly [
   AiTaskName,
   ...AiTaskName[],
 ];
 
-export const aiTaskLabels = Object.fromEntries(
+export const aiTaskLabels: Readonly<Record<AiTaskName, string>> = Object.fromEntries(
   aiTaskCatalog.map((task) => [task.name, task.label]),
 ) as Readonly<Record<AiTaskName, string>>;
 
@@ -106,7 +106,7 @@ export interface UsageAmount {
 
 // Cache hits as a share of the prompt tokens, 0 to 1; undefined when nothing was reported.
 export function usageCacheHitRate(amount: UsageAmount): number | undefined {
-  const cache = amount.cache;
+  const cache: UsageCacheAmount | undefined = amount.cache;
   return cache === undefined || cache.promptTokens <= 0 ? undefined : cache.cachedTokens / cache.promptTokens;
 }
 

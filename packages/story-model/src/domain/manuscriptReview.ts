@@ -1,5 +1,9 @@
 import { critiqueCategoryLabels, scoreCritique } from '#model/contracts/draftReview';
-import type { ContinuityIssueLike, DraftCritiqueIssue } from '#model/contracts/draftReview';
+import type {
+  ContinuityIssueLike,
+  CritiqueScore,
+  DraftCritiqueIssue,
+} from '#model/contracts/draftReview';
 export interface ManuscriptReviewInput {
   readonly projectName: string;
   readonly sceneCount: number;
@@ -13,14 +17,18 @@ export interface ManuscriptReviewInput {
 }
 
 export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): string {
-  const highCount = input.critiqueIssues.filter((issue) => issue.severity === 'high').length;
-  const lowCount = input.critiqueIssues.length - highCount;
-  const continuityHigh = input.continuityIssues.filter((issue) => issue.severity === 'high').length;
-  const continuityLow = input.continuityIssues.length - continuityHigh;
-  const total = input.continuityIssues.length + input.critiqueIssues.length;
+  const highCount: number = input.critiqueIssues.filter(
+    (issue) => issue.severity === 'high',
+  ).length;
+  const lowCount: number = input.critiqueIssues.length - highCount;
+  const continuityHigh: number = input.continuityIssues.filter(
+    (issue) => issue.severity === 'high',
+  ).length;
+  const continuityLow: number = input.continuityIssues.length - continuityHigh;
+  const total: number = input.continuityIssues.length + input.critiqueIssues.length;
 
-  const score = scoreCritique(input.critiqueIssues);
-  const scoreLine = `- 비평 점수: ${score.overall}/100 (voice −${score.perCategory.voice} / purpose −${score.perCategory.purpose} / repetition −${score.perCategory.repetition})`;
+  const score: CritiqueScore = scoreCritique(input.critiqueIssues);
+  const scoreLine: string = `- 비평 점수: ${score.overall}/100 (voice −${score.perCategory.voice} / purpose −${score.perCategory.purpose} / repetition −${score.perCategory.repetition})`;
 
   const sections: string[] = [
     '# 원고 최종 검사 보고서',
@@ -33,7 +41,7 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
 
     // A clean report after a rewrite still has to say what was rewritten, or the run reads as if
     // the first review found nothing.
-    const feedbackAfterClean = buildFeedbackSection(input);
+    const feedbackAfterClean: string | undefined = buildFeedbackSection(input);
     if (feedbackAfterClean) {
       sections.push(feedbackAfterClean);
     }
@@ -53,7 +61,7 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
   sections.push(buildContinuitySection(input.continuityIssues));
   sections.push(buildCritiqueSection(input.critiqueIssues));
 
-  const feedback = buildFeedbackSection(input);
+  const feedback: string | undefined = buildFeedbackSection(input);
   if (feedback) {
     sections.push(feedback);
   }
@@ -62,14 +70,14 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
 }
 
 function buildFeedbackSection(input: ManuscriptReviewInput): string | undefined {
-  const revisedStems = input.revisedStems ?? [];
-  const unroutedHighCount = input.unroutedHighCount ?? 0;
+  const revisedStems: readonly string[] = input.revisedStems ?? [];
+  const unroutedHighCount: number = input.unroutedHighCount ?? 0;
 
   if (revisedStems.length === 0 && unroutedHighCount === 0) {
     return undefined;
   }
 
-  const lines = [
+  const lines: string[] = [
     revisedStems.length > 0 ? `- 재작성한 씬: ${revisedStems.join(', ')}` : '- 재작성한 씬: 없음',
   ];
 
@@ -81,13 +89,13 @@ function buildFeedbackSection(input: ManuscriptReviewInput): string | undefined 
 }
 
 function buildContinuitySection(issues: readonly ContinuityIssueLike[]): string {
-  const lines = issues.map((issue) => `- "${issue.original}" — ${issue.reason}`);
+  const lines: string[] = issues.map((issue) => `- "${issue.original}" — ${issue.reason}`);
   return `## 설정 모순 (continuity)\n\n${lines.length > 0 ? lines.join('\n') : '_없음_'}`;
 }
 
 function buildCritiqueSection(issues: readonly DraftCritiqueIssue[]): string {
-  const lines = issues.map((issue) => {
-    const excerpt = issue.excerpt ? ` ("${issue.excerpt}")` : '';
+  const lines: string[] = issues.map((issue) => {
+    const excerpt: string = issue.excerpt ? ` ("${issue.excerpt}")` : '';
     return `- [${critiqueCategoryLabels[issue.category]}/${issue.severity}] ${issue.comment}${excerpt}`;
   });
   return `## 비평 (voice/purpose/repetition)\n\n${lines.length > 0 ? lines.join('\n') : '_없음_'}`;

@@ -2,9 +2,18 @@ import { z } from 'zod';
 
 import { studioEntitySchema, type StudioEntity } from '#model/shared/messaging/studio';
 
-export const studioFollowUpVersion = '1.0.0';
+export const studioFollowUpVersion: string = '1.0.0';
 
-export const studioFollowUpSchema = z.object({
+export interface StudioFollowUp {
+  id: string;
+  target: StudioEntity;
+  origin: StudioEntity;
+  reason: string;
+  instruction: string;
+  createdAt: string;
+}
+
+export const studioFollowUpSchema: z.ZodType<StudioFollowUp> = z.object({
   id: z.string().min(1),
   target: studioEntitySchema,
   origin: studioEntitySchema,
@@ -13,14 +22,15 @@ export const studioFollowUpSchema = z.object({
   createdAt: z.string().datetime(),
 });
 
-export type StudioFollowUp = z.infer<typeof studioFollowUpSchema>;
+export interface StudioFollowUpFile {
+  version: string;
+  followUps: StudioFollowUp[];
+}
 
-const studioFollowUpFileSchema = z.object({
+const studioFollowUpFileSchema: z.ZodType<StudioFollowUpFile> = z.object({
   version: z.literal(studioFollowUpVersion),
   followUps: z.array(studioFollowUpSchema),
 });
-
-export type StudioFollowUpFile = z.infer<typeof studioFollowUpFileSchema>;
 
 export function parseStudioFollowUps(rawFile: string): readonly StudioFollowUp[] {
   return studioFollowUpFileSchema.parse(JSON.parse(rawFile)).followUps;

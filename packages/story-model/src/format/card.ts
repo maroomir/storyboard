@@ -1,11 +1,18 @@
 import { z } from 'zod';
 
-export const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+export const cardIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
-export const cardTypes = ['character', 'location', 'temporal', 'social'] as const;
+export type CardType = 'character' | 'location' | 'temporal' | 'social';
 
-export const characterRoles = ['main', 'supporting', 'extra'] as const;
-export type CharacterRole = (typeof characterRoles)[number];
+export const cardTypes: readonly CardType[] = ['character', 'location', 'temporal', 'social'];
+
+export type CharacterRole = 'main' | 'supporting' | 'extra';
+
+export const characterRoles: readonly [CharacterRole, ...CharacterRole[]] = [
+  'main',
+  'supporting',
+  'extra',
+];
 
 export function isCharacterRole(value: string | undefined): value is CharacterRole {
   return value === 'main' || value === 'supporting' || value === 'extra';
@@ -14,7 +21,7 @@ export function isCharacterRole(value: string | undefined): value is CharacterRo
 // Decision #29: forgive casing and the known near-miss "support", but surface anything else as a
 // validation error instead of silently demoting the character to an extra — a lenient fallback
 // here rewrites authorial intent on the next save.
-export const characterRoleSchema = z.preprocess(
+export const characterRoleSchema: z.ZodType<CharacterRole | undefined> = z.preprocess(
   (value) => {
     if (value === undefined || value === null) {
       return undefined;
@@ -24,7 +31,7 @@ export const characterRoleSchema = z.preprocess(
       return value;
     }
 
-    const normalized = value.trim().toLowerCase();
+    const normalized: string = value.trim().toLowerCase();
     if (normalized.length === 0) {
       return undefined;
     }
@@ -42,14 +49,25 @@ export const characterRoleSchema = z.preprocess(
     .optional(),
 );
 
-const cardIdSchema = z.string().regex(cardIdPattern, {
+const cardIdSchema: z.ZodType<string> = z.string().regex(cardIdPattern, {
   message: 'Card id must use lowercase letters, numbers, and hyphens.',
 });
 
-const stringListSchema = z.array(z.string());
-const cardAttributeValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const stringListSchema: z.ZodType<string[]> = z.array(z.string());
+const cardAttributeValueSchema: z.ZodType<string | number | boolean | null> = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+]);
 
-export const characterRelationSchema = z.object({
+export interface CharacterRelation {
+  target: string;
+  type: string;
+  speech?: string;
+}
+
+export const characterRelationSchema: z.ZodType<CharacterRelation> = z.object({
   target: cardIdSchema,
   type: z.string().trim().min(1),
   // 이 상대에게 쓰는 말투("반말", "존댓말", "누나라 부르며 존댓말"). voice 하나로는 상대별 존대를
@@ -57,13 +75,69 @@ export const characterRelationSchema = z.object({
   speech: z.string().trim().min(1).optional(),
 });
 
-export const characterArcSchema = z.object({
+export interface CharacterArc {
+  stage: string;
+  summary: string;
+  sceneRef?: string;
+}
+
+export const characterArcSchema: z.ZodType<CharacterArc> = z.object({
   stage: z.string().trim().min(1),
   summary: z.string().trim().min(1),
   sceneRef: z.string().trim().min(1).optional(),
 });
 
-export const characterCardSchema = z.object({
+export interface CharacterCard {
+  type: 'character';
+  id: string;
+  name: string;
+  profile?: string;
+  role?: CharacterRole;
+  attributes?: Record<string, string | number | boolean | null>;
+  aliases?: string[];
+  tags?: string[];
+  traits?: string[];
+  description?: string[];
+  voice?: string[];
+  catchphrases?: string[];
+  desire?: string[];
+  relations?: CharacterRelation[];
+  arc?: CharacterArc[];
+  recentDialogues?: string[];
+}
+
+interface BackgroundCardFields {
+  id: string;
+  name: string;
+  aliases?: string[];
+  description: string[];
+  characterIds: string[];
+  tags: string[];
+  time?: string;
+  weather?: string;
+  senses?: string[];
+}
+
+export type LocationKind = 'place' | 'affiliation';
+
+export interface LocationBackgroundCard extends BackgroundCardFields {
+  type: 'location';
+  locationKind: LocationKind;
+}
+
+export interface TemporalBackgroundCard extends BackgroundCardFields {
+  type: 'temporal';
+}
+
+export interface SocialBackgroundCard extends BackgroundCardFields {
+  type: 'social';
+}
+
+export type BackgroundCard = LocationBackgroundCard | TemporalBackgroundCard | SocialBackgroundCard;
+
+export type StoryboardCard = CharacterCard | BackgroundCard;
+
+const characterCardShape = {
   type: z.literal('character'),
   id: cardIdSchema,
   name: z.string().trim().min(1),
@@ -82,9 +156,9 @@ export const characterCardSchema = z.object({
   relations: z.array(characterRelationSchema).optional(),
   arc: z.array(characterArcSchema).optional(),
   recentDialogues: stringListSchema.optional(),
-});
+} satisfies z.ZodRawShape;
 
-const backgroundBaseFields = {
+const backgroundBaseShape = {
   id: cardIdSchema,
   name: z.string().trim().min(1),
   aliases: stringListSchema.optional(),
@@ -94,40 +168,38 @@ const backgroundBaseFields = {
   time: z.string().trim().min(1).optional(),
   weather: z.string().trim().min(1).optional(),
   senses: stringListSchema.optional(),
-};
+} satisfies z.ZodRawShape;
 
-export const locationBackgroundSchema = z.object({
+const locationBackgroundShape = {
   type: z.literal('location'),
-  ...backgroundBaseFields,
+  ...backgroundBaseShape,
   locationKind: z.enum(['place', 'affiliation']).default('place'),
-});
+} satisfies z.ZodRawShape;
 
-export const temporalBackgroundSchema = z.object({
+const temporalBackgroundShape = {
   type: z.literal('temporal'),
-  ...backgroundBaseFields,
-});
+  ...backgroundBaseShape,
+} satisfies z.ZodRawShape;
 
-export const socialBackgroundSchema = z.object({
+const socialBackgroundShape = {
   type: z.literal('social'),
-  ...backgroundBaseFields,
-});
+  ...backgroundBaseShape,
+} satisfies z.ZodRawShape;
 
-export const cardSchema = z.discriminatedUnion('type', [
-  characterCardSchema,
-  locationBackgroundSchema,
-  temporalBackgroundSchema,
-  socialBackgroundSchema,
+export const characterCardSchema: z.ZodType<CharacterCard> = z.object(characterCardShape);
+export const locationBackgroundSchema: z.ZodType<LocationBackgroundCard> =
+  z.object(locationBackgroundShape);
+export const temporalBackgroundSchema: z.ZodType<TemporalBackgroundCard> =
+  z.object(temporalBackgroundShape);
+export const socialBackgroundSchema: z.ZodType<SocialBackgroundCard> =
+  z.object(socialBackgroundShape);
+
+export const cardSchema: z.ZodType<StoryboardCard> = z.discriminatedUnion('type', [
+  z.object(characterCardShape),
+  z.object(locationBackgroundShape),
+  z.object(temporalBackgroundShape),
+  z.object(socialBackgroundShape),
 ]);
-
-export type CardType = (typeof cardTypes)[number];
-export type CharacterRelation = z.infer<typeof characterRelationSchema>;
-export type CharacterArc = z.infer<typeof characterArcSchema>;
-export type CharacterCard = z.infer<typeof characterCardSchema>;
-export type LocationBackgroundCard = z.infer<typeof locationBackgroundSchema>;
-export type TemporalBackgroundCard = z.infer<typeof temporalBackgroundSchema>;
-export type SocialBackgroundCard = z.infer<typeof socialBackgroundSchema>;
-export type BackgroundCard = LocationBackgroundCard | TemporalBackgroundCard | SocialBackgroundCard;
-export type StoryboardCard = z.infer<typeof cardSchema>;
 
 export function isCardType(value: string): value is CardType {
   return cardTypes.includes(value as CardType);
@@ -151,8 +223,8 @@ export function splitCardTextToList(value: string): string[] {
 // NOTE: 게임 아이디(attributes.gamename)는 본문에서 실명만큼 자주 쓰이는 호칭이라, 별칭과 함께
 // 인물 매칭 토큰에 포함해야 아이디로만 등장하는 비트에서 인물(과 페르소나)이 누락되지 않는다.
 export function characterMatchTokens(card: CharacterCard): string[] {
-  const gamename = card.attributes?.['gamename'];
-  const tokens = [
+  const gamename: string | number | boolean | null | undefined = card.attributes?.['gamename'];
+  const tokens: string[] = [
     card.name,
     ...(card.aliases ?? []),
     ...(typeof gamename === 'string' && gamename.trim().length > 0 ? [gamename.trim()] : []),

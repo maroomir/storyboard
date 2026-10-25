@@ -11,7 +11,22 @@ import { modelProfileKnobIds } from './generationParameters';
 
 // 값이 어디서 왔는지 없으면 반년 뒤에 아무도 손대지 못한다. 모델이 바뀌었을 때 «다시 재야 할
 // 항목»을 이 블록으로 가려낸다.
-const measurementSchema = z.object({
+export interface ModelMeasurement {
+  date: string;
+  workspace: string;
+  sceneTarget: number;
+  runs: number;
+  reach: number;
+  expansionRatio?: number;
+  sections?: number;
+  skeletonRatioCandidates?: string;
+  auc?: number;
+  recalled?: number;
+  judge?: string;
+  notes?: string;
+}
+
+const measurementSchema: z.ZodType<ModelMeasurement> = z.object({
   date: z.string().min(1),
   workspace: z.string().min(1),
   // 이 실측이 대표하는 씬 목표 분량.
@@ -33,8 +48,6 @@ const measurementSchema = z.object({
   notes: z.string().optional(),
 });
 
-export type ModelMeasurement = z.infer<typeof measurementSchema>;
-
 // A profile is the measured knobs, keyed by their public `generation.*` id, plus where the numbers
 // came from. Every knob is optional; a missing one means the pipeline default. A key the generation
 // catalog does not know is refused, so a renamed knob cannot linger as a silently ignored value.
@@ -43,7 +56,7 @@ export interface ModelProfile {
   readonly measured?: ModelMeasurement;
 }
 
-const modelProfileSchema = z
+const modelProfileSchema: z.ZodType<ModelProfile> = z
   .object({ measured: measurementSchema.optional() })
   .catchall(z.number())
   .superRefine((profile, context) => {
@@ -64,9 +77,13 @@ const modelProfileSchema = z
     }),
   );
 
-const modelProfilesSchema = z.record(z.string(), modelProfileSchema);
+interface ModelProfiles {
+  [key: string]: ModelProfile;
+}
 
-const modelProfiles = modelProfilesSchema.parse(profileData);
+const modelProfilesSchema: z.ZodType<ModelProfiles> = z.record(z.string(), modelProfileSchema);
+
+const modelProfiles: Record<string, ModelProfile> = modelProfilesSchema.parse(profileData);
 
 export function modelProfileKey(providerId: string, model: string | undefined): string {
   return `${providerId}:${model ?? ''}`;

@@ -49,12 +49,12 @@ function cardKindOf(card: StoryboardCard): CardKind {
 }
 
 function existingValuesOf(card: StoryboardCard, field: NoteConsolidatedField): readonly string[] {
-  const value = (card as Partial<Record<NoteConsolidatedField, unknown>>)[field];
+  const value: unknown = (card as Partial<Record<NoteConsolidatedField, unknown>>)[field];
   return Array.isArray(value) ? (value as string[]) : [];
 }
 
 function candidateValuesOf(plan: NoteCardPlan, field: NoteConsolidatedField): string[] {
-  const kind = kindByField[field];
+  const kind: ListKind = kindByField[field];
   return plan.changes.flatMap((change) =>
     change.kind === kind && 'value' in change ? [change.value] : [],
   );
@@ -83,10 +83,10 @@ function collectAliasCarriers(
   plan: NoteAbsorbPlan,
   cards: readonly StoryboardCard[],
 ): Map<string, Map<string, NoteAliasCarrier>> {
-  const carriersByAlias = new Map<string, Map<string, NoteAliasCarrier>>();
+  const carriersByAlias: Map<string, Map<string, NoteAliasCarrier>> = new Map<string, Map<string, NoteAliasCarrier>>();
   const addCarrier = (card: StoryboardCard, alias: string, readCount?: number): void => {
-    const key = aliasKey(cardKindOf(card), alias);
-    const carriers = carriersByAlias.get(key) ?? new Map<string, NoteAliasCarrier>();
+    const key: string = aliasKey(cardKindOf(card), alias);
+    const carriers: Map<string, NoteAliasCarrier> = carriersByAlias.get(key) ?? new Map<string, NoteAliasCarrier>();
     carriers.set(card.id, {
       cardId: card.id,
       name: card.name,
@@ -114,8 +114,8 @@ function findSharedAliases(
   carriersByAlias: ReadonlyMap<string, ReadonlyMap<string, NoteAliasCarrier>>,
 ): NoteSharedAlias[] {
   return aliases.flatMap((alias): NoteSharedAlias[] => {
-    const carriers = carriersByAlias.get(aliasKey(cardKindOf(cardPlan.card), alias));
-    const otherCards = [...(carriers?.values() ?? [])].filter(
+    const carriers: ReadonlyMap<string, NoteAliasCarrier> | undefined = carriersByAlias.get(aliasKey(cardKindOf(cardPlan.card), alias));
+    const otherCards: NoteAliasCarrier[] = [...(carriers?.values() ?? [])].filter(
       (carrier) => carrier.cardId !== cardPlan.card.id,
     );
 
@@ -133,17 +133,17 @@ export function selectNoteConsolidationTargets(
   chunkByNoteId: ReadonlyMap<string, number>,
   cards: readonly StoryboardCard[],
 ): NoteConsolidationTarget[] {
-  const carriersByAlias = collectAliasCarriers(plan, cards);
+  const carriersByAlias: Map<string, Map<string, NoteAliasCarrier>> = collectAliasCarriers(plan, cards);
 
   return plan.cards.flatMap((cardPlan): NoteConsolidationTarget[] => {
     const { card } = cardPlan;
-    const type = cardKindOf(card);
+    const type: CardKind = cardKindOf(card);
     const candidates: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
     const existing: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
 
     for (const field of fieldsByCardKind[type]) {
-      const values = candidateValuesOf(cardPlan, field);
-      const onCard = cardPlan.isNew ? [] : existingValuesOf(card, field);
+      const values: string[] = candidateValuesOf(cardPlan, field);
+      const onCard: readonly string[] = cardPlan.isNew ? [] : existingValuesOf(card, field);
 
       if (values.length > 0) {
         candidates[field] = values;
@@ -154,11 +154,11 @@ export function selectNoteConsolidationTargets(
       }
     }
 
-    const aliases = candidates.aliases ?? [];
-    const sharedAliases = findSharedAliases(cardPlan, aliases, carriersByAlias);
-    const candidateCount = Object.values(candidates).reduce((total, list) => total + list.length, 0);
-    const hasAliasToCheck = sharedAliases.length > 0 || aliases.some(isAliasWorthChecking);
-    const hasRepeatsToCheck = cardPlan.isNew
+    const aliases: readonly string[] = candidates.aliases ?? [];
+    const sharedAliases: NoteSharedAlias[] = findSharedAliases(cardPlan, aliases, carriersByAlias);
+    const candidateCount: number = Object.values(candidates).reduce((total, list) => total + list.length, 0);
+    const hasAliasToCheck: boolean = sharedAliases.length > 0 || aliases.some(isAliasWorthChecking);
+    const hasRepeatsToCheck: boolean = cardPlan.isNew
       ? chunkCount(cardPlan, chunkByNoteId) > 1 && candidateCount > 1
       : Object.keys(existing).length > 0;
 
@@ -174,10 +174,10 @@ export function selectNoteConsolidationTargets(
 export function groupNoteConsolidationTargets(
   targets: readonly NoteConsolidationTarget[],
 ): NoteConsolidationTarget[][] {
-  const indexById = new Map(targets.map((target, index) => [target.cardId, index]));
-  const parents = targets.map((_, index) => index);
+  const indexById: Map<string, number> = new Map(targets.map((target, index) => [target.cardId, index]));
+  const parents: number[] = targets.map((_, index) => index);
   const findRoot = (index: number): number => {
-    let root = index;
+    let root: number = index;
 
     while (parents[root] !== root) {
       root = parents[root] as number;
@@ -189,7 +189,7 @@ export function groupNoteConsolidationTargets(
   targets.forEach((target, index) => {
     for (const shared of target.sharedAliases) {
       for (const carrier of shared.otherCards) {
-        const other = indexById.get(carrier.cardId);
+        const other: number | undefined = indexById.get(carrier.cardId);
 
         if (other !== undefined) {
           const [first, second] = [findRoot(index), findRoot(other)].sort((a, b) => a - b);
@@ -199,10 +199,10 @@ export function groupNoteConsolidationTargets(
     }
   });
 
-  const requests = new Map<number, NoteConsolidationTarget[]>();
+  const requests: Map<number, NoteConsolidationTarget[]> = new Map<number, NoteConsolidationTarget[]>();
 
   targets.forEach((target, index) => {
-    const root = findRoot(index);
+    const root: number = findRoot(index);
     requests.set(root, [...(requests.get(root) ?? []), target]);
   });
 
@@ -212,7 +212,7 @@ export function groupNoteConsolidationTargets(
 type KeptValues = Partial<Record<NoteConsolidatedField, Set<string>>>;
 
 function keptFromList(candidates: readonly string[], answer: readonly string[]): Set<string> {
-  const answered = new Set(answer.map(normalizeCardListText));
+  const answered: Set<string> = new Set(answer.map(normalizeCardListText));
 
   return new Set(candidates.filter((value) => answered.has(normalizeCardListText(value))));
 }
@@ -226,16 +226,16 @@ function keptFromGroups(
   groups: readonly (readonly string[])[],
   warnings: string[],
 ): Set<string> {
-  const candidateByKey = new Map(
+  const candidateByKey: Map<string, string> = new Map(
     (target.candidates[field] ?? []).map((value) => [normalizeCardListText(value), value]),
   );
-  const existingKeys = new Set((target.existing[field] ?? []).map(normalizeCardListText));
-  const kept = new Set<string>();
-  const placedKeys = new Set<string>();
+  const existingKeys: Set<string> = new Set((target.existing[field] ?? []).map(normalizeCardListText));
+  const kept: Set<string> = new Set<string>();
+  const placedKeys: Set<string> = new Set<string>();
 
   for (const group of groups) {
-    const members = group.flatMap((item) => {
-      const value = candidateByKey.get(normalizeCardListText(item));
+    const members: string[] = group.flatMap((item) => {
+      const value: string | undefined = candidateByKey.get(normalizeCardListText(item));
       return value === undefined ? [] : [value];
     });
     const [head] = group;
@@ -285,8 +285,8 @@ function narrowTargetValues(
     NoteConsolidatedField,
     readonly string[],
   ][]) {
-    const groups = answer.groups?.[field];
-    const list = answer.values[field];
+    const groups: readonly (readonly string[])[] | undefined = answer.groups?.[field];
+    const list: readonly string[] | undefined = answer.values[field];
     let values: Set<string>;
 
     if (groups !== undefined) {
@@ -303,7 +303,7 @@ function narrowTargetValues(
       continue;
     }
 
-    const isEmptiedList =
+    const isEmptiedList: boolean =
       values.size === 0 && field !== 'aliases' && target.existing[field] === undefined;
 
     if (!isEmptiedList) {
@@ -330,11 +330,11 @@ interface PendingSharedAlias {
 function collectSharedAliasDecisions(
   targets: readonly NoteConsolidationTarget[],
 ): SharedAliasDecision[] {
-  const decisions = new Map<string, PendingSharedAlias>();
+  const decisions: Map<string, PendingSharedAlias> = new Map<string, PendingSharedAlias>();
 
   for (const target of targets) {
     for (const shared of target.sharedAliases) {
-      const key = aliasKey(target.type, shared.alias);
+      const key: string = aliasKey(target.type, shared.alias);
       const decision: PendingSharedAlias = decisions.get(key) ?? {
         alias: shared.alias,
         proposers: [],
@@ -347,8 +347,8 @@ function collectSharedAliasDecisions(
   }
 
   return [...decisions.values()].map(({ alias, proposers, carriers }) => {
-    const proposerIds = new Set(proposers.map((target) => target.cardId));
-    const onDisk = [...carriers.values()].filter((carrier) => !proposerIds.has(carrier.cardId));
+    const proposerIds: Set<string> = new Set(proposers.map((target) => target.cardId));
+    const onDisk: NoteAliasCarrier[] = [...carriers.values()].filter((carrier) => !proposerIds.has(carrier.cardId));
 
     return { alias, proposers, onDisk };
   });
@@ -368,29 +368,29 @@ function decideSharedAliases(
   const warnings: string[] = [];
 
   for (const decision of collectSharedAliasDecisions(targets)) {
-    const key = normalizeCardListText(decision.alias);
+    const key: string = normalizeCardListText(decision.alias);
     const proposedValue = (target: NoteConsolidationTarget): string | undefined =>
       target.candidates.aliases?.find((alias) => normalizeCardListText(alias) === key);
     const isKeptBy = (target: NoteConsolidationTarget): boolean => {
-      const value = proposedValue(target);
+      const value: string | undefined = proposedValue(target);
       return value !== undefined && (keptById.get(target.cardId)?.aliases?.has(value) ?? true);
     };
-    const isUndecided = decision.proposers.some((target) => {
-      const answer = answerById.get(target.cardId);
+    const isUndecided: boolean = decision.proposers.some((target) => {
+      const answer: NoteConsolidatedLists | undefined = answerById.get(target.cardId);
       return answer?.values.aliases === undefined && answer?.groups?.aliases === undefined;
     });
-    const keepers = decision.proposers.filter(isKeptBy);
+    const keepers: NoteConsolidationTarget[] = decision.proposers.filter(isKeptBy);
 
     if (isUndecided || keepers.length > 1) {
       for (const target of decision.proposers) {
-        const value = proposedValue(target);
+        const value: string | undefined = proposedValue(target);
 
         if (value !== undefined) {
           keptById.get(target.cardId)?.aliases?.add(value);
         }
       }
 
-      const carriers = [...decision.proposers, ...decision.onDisk];
+      const carriers: (NoteAliasCarrier | NoteConsolidationTarget)[] = [...decision.proposers, ...decision.onDisk];
       warnings.push(
         `별칭 «${decision.alias}» 이 누구의 것인지 정하지 못해 ${namesOf(carriers)} 에 모두 남겼습니다.`,
       );
@@ -406,8 +406,8 @@ function decideSharedAliases(
 
 function narrowCardPlan(cardPlan: NoteCardPlan, kept: KeptValues): NoteCardPlan {
   const isKept = (change: CardCollectProposal): boolean => {
-    const field = fieldByKind.get(change.kind as ListKind);
-    const values = field === undefined ? undefined : kept[field];
+    const field: "tags" | "description" | "voice" | "aliases" | "traits" | "desire" | "senses" | undefined = fieldByKind.get(change.kind as ListKind);
+    const values: Set<string> | undefined = field === undefined ? undefined : kept[field];
 
     return values === undefined || ('value' in change && values.has(change.value));
   };
@@ -433,12 +433,12 @@ export function applyNoteConsolidation(
   targets: readonly NoteConsolidationTarget[],
   answers: readonly NoteConsolidatedLists[],
 ): { readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] } {
-  const answerById = new Map(answers.map((answer) => [answer.cardId, answer]));
+  const answerById: Map<string, NoteConsolidatedLists> = new Map(answers.map((answer) => [answer.cardId, answer]));
   const keptById = new Map<string, KeptValues>();
   const warnings: string[] = [];
 
   for (const target of targets) {
-    const answer = answerById.get(target.cardId);
+    const answer: NoteConsolidatedLists | undefined = answerById.get(target.cardId);
 
     if (answer !== undefined) {
       keptById.set(target.cardId, narrowTargetValues(target, answer, warnings));
@@ -448,14 +448,14 @@ export function applyNoteConsolidation(
 
   warnings.push(...decideSharedAliases(targets, answerById, keptById));
 
-  const cards = plan.cards.flatMap((cardPlan): NoteCardPlan[] => {
+  const cards: NoteCardPlan[] = plan.cards.flatMap((cardPlan): NoteCardPlan[] => {
     const kept = keptById.get(cardPlan.card.id);
 
     if (kept === undefined) {
       return [cardPlan];
     }
 
-    const narrowed = narrowCardPlan(cardPlan, kept);
+    const narrowed: NoteCardPlan = narrowCardPlan(cardPlan, kept);
 
     // An existing card the notes add nothing to is not a candidate.
     return narrowed.isNew || narrowed.changes.length > 0 ? [narrowed] : [];

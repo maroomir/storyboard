@@ -36,7 +36,17 @@ interface DraftFrontmatter {
   readonly warnings?: readonly string[];
 }
 
-const draftFrontmatterSchema = z.object({
+interface DraftFrontmatterPayload {
+  sceneStem: string;
+  format: ProjectFormat;
+  generatedAt: string;
+  generator?: string;
+  providerId?: string;
+  model?: string;
+  warnings?: string[];
+}
+
+const draftFrontmatterSchema: z.ZodType<DraftFrontmatterPayload> = z.object({
   sceneStem: z.string().trim().min(1),
   format: z.enum(projectFormats),
   generatedAt: z.string().datetime(),
@@ -78,24 +88,24 @@ export function serializeDraft(draft: Draft): string {
     ...(draft.model !== undefined && { model: draft.model }),
     ...(draft.warnings !== undefined && draft.warnings.length > 0 && { warnings: draft.warnings }),
   };
-  const serializedFrontmatter = yaml.dump(frontmatter, {
+  const serializedFrontmatter: string = yaml.dump(frontmatter, {
     lineWidth: -1,
     noRefs: true,
     sortKeys: false,
   });
-  const body = draft.body.endsWith('\n') ? draft.body : `${draft.body}\n`;
+  const body: string = draft.body.endsWith('\n') ? draft.body : `${draft.body}\n`;
 
   return `---\n${serializedFrontmatter}---\n${body}`;
 }
 
 export function parseDraft(rawDraft: string): Draft {
-  const normalizedDraft = rawDraft.replace(/\r\n/g, '\n');
+  const normalizedDraft: string = rawDraft.replace(/\r\n/g, '\n');
 
   if (!normalizedDraft.startsWith('---\n')) {
     throw new DraftParseError('missing-frontmatter', 'Draft frontmatter가 없습니다.');
   }
 
-  const closingFenceIndex = normalizedDraft.indexOf('\n---', '---\n'.length);
+  const closingFenceIndex: number = normalizedDraft.indexOf('\n---', '---\n'.length);
 
   if (closingFenceIndex === -1) {
     throw new DraftParseError(
@@ -104,9 +114,9 @@ export function parseDraft(rawDraft: string): Draft {
     );
   }
 
-  const rawFrontmatter = normalizedDraft.slice('---\n'.length, closingFenceIndex);
-  const bodyStartIndex = closingFenceIndex + '\n---'.length;
-  const body = normalizedDraft.slice(bodyStartIndex).replace(/^\n/, '');
+  const rawFrontmatter: string = normalizedDraft.slice('---\n'.length, closingFenceIndex);
+  const bodyStartIndex: number = closingFenceIndex + '\n---'.length;
+  const body: string = normalizedDraft.slice(bodyStartIndex).replace(/^\n/, '');
 
   return {
     ...parseDraftFrontmatter(rawFrontmatter),
@@ -133,7 +143,7 @@ export async function writeDraftFile(
 }
 
 export async function readDraftFile(uri: StoryUri, fileSystem: DraftFileSystem): Promise<string> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return new TextDecoder().decode(bytes);
 }
 

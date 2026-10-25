@@ -8,7 +8,7 @@ import {
   type NovelStageName,
 } from '#model/shared/novelRun';
 
-const novelRunStateVersion = '1.0.0';
+const novelRunStateVersion: string = '1.0.0';
 
 export { novelStageNames, type NovelRunMode, type NovelStageName };
 
@@ -32,7 +32,7 @@ export interface NovelRunStateFileSystem {
   readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
-const novelRunStateSchema = z.object({
+const novelRunStateSchema: z.ZodType<NovelRunState> = z.object({
   version: z.literal(novelRunStateVersion),
   runId: z.string().trim().min(1),
   startedAt: z.string().datetime(),
@@ -56,7 +56,7 @@ export async function readNovelRunState(
   uri: StoryUri,
   fileSystem: NovelRunStateFileSystem,
 ): Promise<NovelRunState> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseNovelRunState(new TextDecoder().decode(bytes));
 }
 

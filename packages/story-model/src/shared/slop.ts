@@ -16,10 +16,10 @@ export interface AnalyzeSlopOptions {
   readonly trigramThreshold?: number;
 }
 
-const defaultTrigramThreshold = 3;
+const defaultTrigramThreshold: number = 3;
 
 export function analyzeSlop(body: string, options?: AnalyzeSlopOptions): SlopFinding[] {
-  const trigramThreshold = options?.trigramThreshold ?? defaultTrigramThreshold;
+  const trigramThreshold: number = options?.trigramThreshold ?? defaultTrigramThreshold;
 
   return [
     ...detectClichePhrases(body),
@@ -35,7 +35,7 @@ function detectClichePhrases(body: string): SlopFinding[] {
     findings.push(...findLiteralOccurrences(body, phrase));
   }
 
-  const lowerBody = body.toLowerCase();
+  const lowerBody: string = body.toLowerCase();
   for (const phrase of slopPhrases.en) {
     findings.push(...findLiteralOccurrences(body, phrase.toLowerCase(), lowerBody));
   }
@@ -53,10 +53,10 @@ function findLiteralOccurrences(
   }
 
   const findings: SlopFinding[] = [];
-  let searchIndex = haystack.indexOf(phrase);
+  let searchIndex: number = haystack.indexOf(phrase);
 
   while (searchIndex !== -1) {
-    const end = searchIndex + phrase.length;
+    const end: number = searchIndex + phrase.length;
     findings.push({
       start: searchIndex,
       end,
@@ -80,7 +80,7 @@ function detectContrastPattern(body: string): SlopFinding[] {
 
   for (const pattern of contrastPatterns) {
     pattern.lastIndex = 0;
-    let match = pattern.exec(body);
+    let match: RegExpExecArray | null = pattern.exec(body);
     while (match) {
       findings.push({
         start: match.index,
@@ -103,25 +103,28 @@ interface Token {
 }
 
 function detectOverfrequentTrigrams(body: string, threshold: number): SlopFinding[] {
-  const tokens = tokenizeWords(body);
+  const tokens: Token[] = tokenizeWords(body);
   if (tokens.length < 3) {
     return [];
   }
 
-  const occurrencesByKey = new Map<string, Array<readonly [Token, Token, Token]>>();
+  const occurrencesByKey: Map<string, (readonly [Token, Token, Token])[]> = new Map<
+    string,
+    Array<readonly [Token, Token, Token]>
+  >();
 
-  for (let index = 0; index + 2 < tokens.length; index += 1) {
+  for (let index: number = 0; index + 2 < tokens.length; index += 1) {
     const trigram = [tokens[index], tokens[index + 1], tokens[index + 2]] as const;
     const [first, second, third] = trigram;
     if (!first || !second || !third) {
       continue;
     }
-    const key = `${normalizeTokenKey(first.text)} ${normalizeTokenKey(second.text)} ${normalizeTokenKey(third.text)}`;
+    const key: string = `${normalizeTokenKey(first.text)} ${normalizeTokenKey(second.text)} ${normalizeTokenKey(third.text)}`;
     if (key.trim().length === 0) {
       continue;
     }
 
-    const existing = occurrencesByKey.get(key) ?? [];
+    const existing: (readonly [Token, Token, Token])[] = occurrencesByKey.get(key) ?? [];
     existing.push([first, second, third]);
     occurrencesByKey.set(key, existing);
   }
@@ -129,14 +132,15 @@ function detectOverfrequentTrigrams(body: string, threshold: number): SlopFindin
   const findings: SlopFinding[] = [];
 
   for (const occurrences of occurrencesByKey.values()) {
-    const nonOverlapping = dropOverlappingOccurrences(occurrences);
+    const nonOverlapping: Array<readonly [Token, Token, Token]> =
+      dropOverlappingOccurrences(occurrences);
     if (nonOverlapping.length < threshold) {
       continue;
     }
 
     for (const trigram of nonOverlapping) {
-      const start = trigram[0].start;
-      const end = trigram[2].end;
+      const start: number = trigram[0].start;
+      const end: number = trigram[2].end;
       findings.push({
         start,
         end,
@@ -154,7 +158,7 @@ function dropOverlappingOccurrences(
   occurrences: ReadonlyArray<readonly [Token, Token, Token]>,
 ): Array<readonly [Token, Token, Token]> {
   const kept: Array<readonly [Token, Token, Token]> = [];
-  let lastEnd = -1;
+  let lastEnd: number = -1;
 
   for (const trigram of occurrences) {
     if (trigram[0].start >= lastEnd) {
@@ -168,8 +172,8 @@ function dropOverlappingOccurrences(
 
 function tokenizeWords(body: string): Token[] {
   const tokens: Token[] = [];
-  const pattern = /\S+/gu;
-  let match = pattern.exec(body);
+  const pattern: RegExp = /\S+/gu;
+  let match: RegExpExecArray | null = pattern.exec(body);
 
   while (match) {
     tokens.push({ text: match[0], start: match.index, end: match.index + match[0].length });

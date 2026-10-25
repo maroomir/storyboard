@@ -8,10 +8,10 @@ import {
   type StudioSessionSummary,
 } from '#model/shared/messaging/studio';
 
-export const studioSessionVersion = '2.0.0';
+export const studioSessionVersion: string = '2.0.0';
 
-const studioSessionTitleFallback = '새 대화';
-const studioSessionTitleMaxLength = 40;
+const studioSessionTitleFallback: string = '새 대화';
+const studioSessionTitleMaxLength: number = 40;
 
 export interface StudioSession {
   readonly version: typeof studioSessionVersion;
@@ -24,7 +24,18 @@ export interface StudioSession {
   readonly turns: readonly StudioChatTurn[];
 }
 
-const studioSessionSchema = z.object({
+interface StudioSessionPayload {
+  version: string;
+  id: string;
+  entity: StudioEntity;
+  createdAt: string;
+  updatedAt: string;
+  title: string;
+  hasAppliedChanges: boolean;
+  turns: StudioChatTurn[];
+}
+
+const studioSessionSchema: z.ZodType<StudioSessionPayload> = z.object({
   version: z.literal(studioSessionVersion),
   id: z.string().min(1),
   entity: studioEntitySchema,
@@ -45,7 +56,7 @@ export function serializeStudioSession(session: StudioSession): string {
 
 export function deriveStudioSessionTitle(turns: readonly StudioChatTurn[]): string {
   const firstUserTurn = turns.find((turn) => turn.role === 'user');
-  const text = firstUserTurn?.role === 'user' ? firstUserTurn.text.trim() : '';
+  const text: string = firstUserTurn?.role === 'user' ? firstUserTurn.text.trim() : '';
 
   if (text.length === 0) {
     return studioSessionTitleFallback;

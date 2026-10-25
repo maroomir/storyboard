@@ -15,7 +15,13 @@ export interface BibleCandidateFileSystem {
   readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
-const bibleCandidateRecordSchema = z.object({
+interface BibleCandidateRecordPayload {
+  sceneStem: string;
+  generatedAt: string;
+  facts: BibleFact[];
+}
+
+const bibleCandidateRecordSchema: z.ZodType<BibleCandidateRecordPayload> = z.object({
   sceneStem: z.string().trim().min(1),
   generatedAt: z.string().datetime(),
   facts: z.array(bibleFactSchema),
@@ -33,7 +39,7 @@ export async function readBibleCandidateFile(
   uri: StoryUri,
   fileSystem: BibleCandidateFileSystem,
 ): Promise<BibleCandidateRecord> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseBibleCandidates(new TextDecoder().decode(bytes));
 }
 

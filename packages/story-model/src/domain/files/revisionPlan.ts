@@ -3,7 +3,7 @@ import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 import { z } from 'zod';
 
-const revisionPlanVersion = '1.0.0';
+const revisionPlanVersion: string = '1.0.0';
 
 export interface RevisionPlanEntry {
   readonly sceneStem: string;
@@ -44,7 +44,23 @@ export class RevisionPlanParseError extends Error {
   }
 }
 
-const revisionPlanEntrySchema = z.object({
+interface RevisionPlanEntryPayloadRejection {
+  reason: 'too-short' | 'empty' | 'meta-response' | 'not-shorter' | 'scene-breaks-changed';
+  originalLength: number;
+  candidateLength: number;
+}
+
+interface RevisionPlanEntryPayload {
+  sceneStem: string;
+  checkedAt: string;
+  revisionCount: number;
+  remainingBlocking: number;
+  instructions: string[];
+  preservedOriginal?: boolean;
+  rejection?: RevisionPlanEntryPayloadRejection;
+}
+
+const revisionPlanEntrySchema: z.ZodType<RevisionPlanEntryPayload> = z.object({
   sceneStem: z.string().trim().min(1),
   checkedAt: z.string().datetime(),
   revisionCount: z.number().int().nonnegative(),
@@ -60,7 +76,12 @@ const revisionPlanEntrySchema = z.object({
     .optional(),
 });
 
-const revisionPlanSchema = z.object({
+interface RevisionPlanPayload {
+  version: string;
+  entries: RevisionPlanEntryPayload[];
+}
+
+const revisionPlanSchema: z.ZodType<RevisionPlanPayload> = z.object({
   version: z.literal(revisionPlanVersion),
   entries: z.array(revisionPlanEntrySchema).default([]),
 });
@@ -70,8 +91,8 @@ export function createEmptyRevisionPlan(): RevisionPlan {
 }
 
 export function upsertRevisionEntry(plan: RevisionPlan, entry: RevisionPlanEntry): RevisionPlan {
-  const others = plan.entries.filter((existing) => existing.sceneStem !== entry.sceneStem);
-  const entries = [...others, entry].sort((a, b) => a.sceneStem.localeCompare(b.sceneStem));
+  const others: RevisionPlanEntry[] = plan.entries.filter((existing) => existing.sceneStem !== entry.sceneStem);
+  const entries: RevisionPlanEntry[] = [...others, entry].sort((a, b) => a.sceneStem.localeCompare(b.sceneStem));
 
   return { version: revisionPlanVersion, entries };
 }
@@ -116,7 +137,7 @@ export async function readRevisionPlanFile(
   uri: StoryUri,
   fileSystem: RevisionPlanFileSystem,
 ): Promise<RevisionPlan> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseRevisionPlan(new TextDecoder().decode(bytes));
 }
 

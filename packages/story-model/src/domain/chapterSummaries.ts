@@ -2,6 +2,7 @@ import {
   formatChapterInputComment,
   isChapterInputComment,
   parseChapterInputComment,
+  type ChapterInputMark,
 } from '#model/format/chapterSummaryMarks';
 
 export interface ChapterSummary {
@@ -24,9 +25,9 @@ export function buildChapterSummariesMarkdown(
   }
 
   summaries.forEach((chapter, index) => {
-    const previousSummary = index > 0 ? summaries[index - 1]?.summary : undefined;
-    const recap = previousSummary ? `**이전 장 recap:** ${previousSummary}\n\n` : '';
-    const mark =
+    const previousSummary: string | undefined = index > 0 ? summaries[index - 1]?.summary : undefined;
+    const recap: string = previousSummary ? `**이전 장 recap:** ${previousSummary}\n\n` : '';
+    const mark: string =
       chapter.sourceHash === undefined
         ? ''
         : `${formatChapterInputComment(chapter.sourceHash, chapter.isStale === true)}\n\n`;
@@ -36,7 +37,7 @@ export function buildChapterSummariesMarkdown(
   return `${sections.join('\n\n')}\n`;
 }
 
-const recapPrefix = '**이전 장 recap:**';
+const recapPrefix: string = '**이전 장 recap:**';
 
 // The rolling summary is rebuilt one chapter at a time while a run is still going, so the file has
 // to be readable back into the sections it was written from. The recap line is derived from the
@@ -47,14 +48,14 @@ export function parseChapterSummariesMarkdown(markdown: string): ChapterSummary[
     .slice(1)
     .flatMap((section) => {
       const [heading, ...rest] = section.split('\n');
-      const chapterTitle = heading?.trim();
+      const chapterTitle: string | undefined = heading?.trim();
 
       if (chapterTitle === undefined || chapterTitle.length === 0) {
         return [];
       }
 
-      const mark = rest.map((line) => parseChapterInputComment(line)).find(Boolean);
-      const summary = rest
+      const mark: ChapterInputMark | undefined = rest.map((line) => parseChapterInputComment(line)).find(Boolean);
+      const summary: string = rest
         .filter((line) => !line.startsWith(recapPrefix) && !isChapterInputComment(line))
         .join('\n')
         .trim();
@@ -77,7 +78,7 @@ export function mergeChapterSummary(
   summaries: readonly ChapterSummary[],
   updated: ChapterSummary,
 ): ChapterSummary[] {
-  const index = summaries.findIndex((entry) => entry.chapterTitle === updated.chapterTitle);
+  const index: number = summaries.findIndex((entry) => entry.chapterTitle === updated.chapterTitle);
 
   if (index < 0) {
     return [...summaries, updated];
@@ -102,13 +103,13 @@ export function auditChapterSummaries(
   const staleChapterTitles: string[] = [];
   const unsealedChapterTitles: string[] = [];
 
-  const audited = summaries.map((chapter) => {
+  const audited: ChapterSummary[] = summaries.map((chapter) => {
     if (chapter.sourceHash === undefined) {
       unsealedChapterTitles.push(chapter.chapterTitle);
       return chapter;
     }
 
-    const isStale = currentSourceHashes.get(chapter.chapterTitle) !== chapter.sourceHash;
+    const isStale: boolean = currentSourceHashes.get(chapter.chapterTitle) !== chapter.sourceHash;
     if (isStale) {
       staleChapterTitles.push(chapter.chapterTitle);
     }

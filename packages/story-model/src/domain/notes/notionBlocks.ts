@@ -13,8 +13,8 @@ export type NotionChildReference =
   | { readonly kind: 'page'; readonly id: string; readonly title: string }
   | { readonly kind: 'database'; readonly id: string; readonly title: string };
 
-const notionIdPattern = /[0-9a-f]{32}/i;
-const listIndent = '  ';
+const notionIdPattern: RegExp = /[0-9a-f]{32}/i;
+const listIndent: string = '  ';
 
 export function asNotionRecord(value: unknown): NotionRecord | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -25,7 +25,7 @@ export function asNotionRecord(value: unknown): NotionRecord | undefined {
 function asRecordList(value: unknown): NotionRecord[] {
   return Array.isArray(value)
     ? value.flatMap((item) => {
-        const record = asNotionRecord(item);
+        const record: NotionRecord | undefined = asNotionRecord(item);
         return record === undefined ? [] : [record];
       })
     : [];
@@ -51,15 +51,15 @@ export function parseNotionPageId(pageUrl: string): string | undefined {
     return undefined;
   }
 
-  const peeked = url.searchParams.get('p');
-  const peekedId = peeked === null ? undefined : notionIdPattern.exec(normalizeNotionId(peeked));
+  const peeked: string | null = url.searchParams.get('p');
+  const peekedId: RegExpExecArray | null | undefined = peeked === null ? undefined : notionIdPattern.exec(normalizeNotionId(peeked));
 
   if (peekedId) {
     return peekedId[0].toLowerCase();
   }
 
-  const lastSegment = url.pathname.split('/').filter((segment) => segment.length > 0).pop() ?? '';
-  const compact = normalizeNotionId(lastSegment);
+  const lastSegment: string = url.pathname.split('/').filter((segment) => segment.length > 0).pop() ?? '';
+  const compact: string = normalizeNotionId(lastSegment);
 
   return compact.length >= 32 && /^[0-9a-f]{32}$/.test(compact.slice(-32))
     ? compact.slice(-32)
@@ -69,7 +69,7 @@ export function parseNotionPageId(pageUrl: string): string | undefined {
 // One page has many addresses — with or without its title, `?pvs=4`, a database peek — and this
 // is the one they all share, so an absorbed page is the same location however it was linked.
 export function canonicalNotionPageUrl(pageUrl: string): string {
-  const pageId = parseNotionPageId(pageUrl);
+  const pageId: string | undefined = parseNotionPageId(pageUrl);
 
   return pageId === undefined ? pageUrl : `https://www.notion.so/${pageId}`;
 }
@@ -113,7 +113,7 @@ function renderListItem(marker: string, node: NotionBlockNode): string[] {
 }
 
 function renderTableRow(block: NotionRecord): string {
-  const cells = Array.isArray(blockPayload(block).cells)
+  const cells: unknown[] = Array.isArray(blockPayload(block).cells)
     ? (blockPayload(block).cells as unknown[])
     : [];
 
@@ -122,8 +122,8 @@ function renderTableRow(block: NotionRecord): string {
 
 function renderNode(node: NotionBlockNode): string[] {
   const { block } = node;
-  const text = blockText(block);
-  const children = renderNodes(node.children);
+  const text: string = blockText(block);
+  const children: string[] = renderNodes(node.children);
 
   switch (blockType(block)) {
     case 'paragraph':
@@ -185,8 +185,8 @@ export function listNotionChildren(nodes: readonly NotionBlockNode[]): NotionChi
   const children: NotionChildReference[] = [];
 
   walk(nodes, (block) => {
-    const type = blockType(block);
-    const id = asText(block.id);
+    const type: string = blockType(block);
+    const id: string = asText(block.id);
 
     if ((type === 'child_page' || type === 'child_database') && id.length > 0) {
       children.push({
@@ -204,17 +204,17 @@ function linkedIdsInRichText(value: unknown): string[] {
   const ids: string[] = [];
 
   for (const part of asRecordList(value)) {
-    const mention = asNotionRecord(part.mention);
-    const mentionedPage = asNotionRecord(mention?.page);
+    const mention: NotionRecord | undefined = asNotionRecord(part.mention);
+    const mentionedPage: NotionRecord | undefined = asNotionRecord(mention?.page);
 
     if (asText(mention?.type) === 'page' && asText(mentionedPage?.id).length > 0) {
       ids.push(normalizeNotionId(asText(mentionedPage?.id)));
       continue;
     }
 
-    const href = asText(part.href);
-    const isInternal = href.startsWith('/') || isNotionUrl(href);
-    const linkedId = isInternal ? notionIdPattern.exec(normalizeNotionId(href)) : null;
+    const href: string = asText(part.href);
+    const isInternal: boolean = href.startsWith('/') || isNotionUrl(href);
+    const linkedId: RegExpExecArray | null = isInternal ? notionIdPattern.exec(normalizeNotionId(href)) : null;
 
     if (linkedId) {
       ids.push(linkedId[0].toLowerCase());
@@ -229,7 +229,7 @@ export function listNotionLinkedPageIds(nodes: readonly NotionBlockNode[]): stri
   const ids: string[] = [];
 
   walk(nodes, (block) => {
-    const payload = blockPayload(block);
+    const payload: NotionRecord = blockPayload(block);
 
     if (blockType(block) === 'link_to_page' && asText(payload.page_id).length > 0) {
       ids.push(normalizeNotionId(asText(payload.page_id)));
@@ -243,7 +243,7 @@ export function listNotionLinkedPageIds(nodes: readonly NotionBlockNode[]): stri
 
 export function notionPageTitle(page: NotionRecord): string {
   for (const property of Object.values(asNotionRecord(page.properties) ?? {})) {
-    const record = asNotionRecord(property);
+    const record: NotionRecord | undefined = asNotionRecord(property);
 
     if (asText(record?.type) === 'title') {
       return notionRichText(record?.title).trim();
@@ -254,8 +254,8 @@ export function notionPageTitle(page: NotionRecord): string {
 }
 
 function renderPropertyValue(property: NotionRecord): string {
-  const type = asText(property.type);
-  const value = property[type];
+  const type: string = asText(property.type);
+  const value: unknown = property[type];
 
   switch (type) {
     case 'rich_text':
@@ -287,8 +287,8 @@ function renderPropertyValue(property: NotionRecord): string {
 export function renderNotionProperties(page: NotionRecord): string {
   return Object.entries(asNotionRecord(page.properties) ?? {})
     .flatMap(([name, property]) => {
-      const record = asNotionRecord(property);
-      const value = record === undefined ? '' : renderPropertyValue(record).trim();
+      const record: NotionRecord | undefined = asNotionRecord(property);
+      const value: string = record === undefined ? '' : renderPropertyValue(record).trim();
 
       return value.length > 0 ? [`- ${name}: ${value}`] : [];
     })

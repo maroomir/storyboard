@@ -20,7 +20,7 @@ export function collectForeshadowing(plan: ChapterPlan): ForeshadowingChapter[] 
       return;
     }
 
-    const chapter = reserveChapter(
+    const chapter: ForeshadowingChapter = reserveChapter(
       chapters,
       flatScene.actIndex,
       flatScene.chapterIndex,
@@ -55,7 +55,9 @@ export function buildForeshadowingMarkdown(
   }
 
   for (const chapter of chapters) {
-    const lines = chapter.entries.map((entry) => `- [ ] ${entry.item} — ${entry.sceneTitle}`);
+    const lines: string[] = chapter.entries.map(
+      (entry) => `- [ ] ${entry.item} — ${entry.sceneTitle}`,
+    );
     sections.push(`## ${chapter.chapterTitle}\n\n${lines.join('\n')}`);
   }
 

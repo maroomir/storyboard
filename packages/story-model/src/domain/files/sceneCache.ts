@@ -73,20 +73,80 @@ export function sceneNarrationHashInput(scene: SceneFile): SceneNarrationHashInp
   return Object.keys(narration).length > 0 ? narration : undefined;
 }
 
-const sceneCacheBackgroundSnapshotSchema = z.object({
+const sceneCacheBackgroundSnapshotSchema: z.ZodType<SceneCacheBackgroundSnapshot> = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
 });
 
-const aiProviderIdSchema = z.enum(aiProviderIds);
-const sceneCacheProvidersSchema = z.object(
+const aiProviderIdSchema: z.ZodType<AiProviderId> = z.enum(aiProviderIds);
+interface SceneCacheProviders {
+  sceneGrounding?: AiProviderId;
+  sceneBeats?: AiProviderId;
+  sceneStructure?: AiProviderId;
+  situationExtraction?: AiProviderId;
+  personaGeneration?: AiProviderId;
+  personaDialogue?: AiProviderId;
+  backgroundDescription?: AiProviderId;
+  backgroundFactConflicts?: AiProviderId;
+  sceneDraft?: AiProviderId;
+  sceneSkeleton?: AiProviderId;
+  sceneDialoguePolish?: AiProviderId;
+  sceneDialogueAttribution?: AiProviderId;
+  sceneSectionExpansion?: AiProviderId;
+  sceneBeatActor?: AiProviderId;
+  sceneBeatArbiter?: AiProviderId;
+  sceneBeatJudge?: AiProviderId;
+  traitsExtraction?: AiProviderId;
+  factExtraction?: AiProviderId;
+  cardFactExtraction?: AiProviderId;
+  cardFactVerification?: AiProviderId;
+  backgroundFactExtraction?: AiProviderId;
+  grammarCheck?: AiProviderId;
+  continuityCheck?: AiProviderId;
+  inlineCompletion?: AiProviderId;
+  draftExpansion?: AiProviderId;
+  draftAugment?: AiProviderId;
+  outlineSynopsis?: AiProviderId;
+  chapterPlan?: AiProviderId;
+  outlineCharacters?: AiProviderId;
+  draftCritique?: AiProviderId;
+  draftRevision?: AiProviderId;
+  chapterSummary?: AiProviderId;
+  storyStateUpdate?: AiProviderId;
+  sceneCoverage?: AiProviderId;
+  cardRecommendation?: AiProviderId;
+  storyCompletion?: AiProviderId;
+  storyCardBuild?: AiProviderId;
+  noteExtraction?: AiProviderId;
+  noteSynthesis?: AiProviderId;
+  noteCardConsolidation?: AiProviderId;
+  studioAgent?: AiProviderId;
+  studioValidation?: AiProviderId;
+}
+
+const sceneCacheProvidersSchema: z.ZodType<SceneCacheProviders> = z.object(
   Object.fromEntries(
     aiTaskCatalog.map((task) => [task.name, aiProviderIdSchema.optional()]),
   ) as Record<AiTaskName, z.ZodOptional<typeof aiProviderIdSchema>>,
 );
 
-const sceneCacheRecordSchema = z.object({
+interface SceneCacheRecordPayload {
+  sceneStem: string;
+  generatedAt: string;
+  inputHash: string;
+  input: string;
+  detectedCharacters: string[];
+  personasUsed: Record<string, string>;
+  providers: SceneCacheProviders;
+  skeleton?: string;
+  sceneCoordinates?: string[];
+  bodyHash?: string;
+  backgroundSnapshot?: SceneCacheBackgroundSnapshot;
+  previousContext?: string;
+}
+
+const sceneCacheRecordSchema: z.ZodType<SceneCacheRecordPayload> = z.object({
   sceneStem: z.string().trim().min(1),
   generatedAt: z.string().datetime(),
   inputHash: z.string().regex(/^sha256:[a-f0-9]{64}$/),
@@ -116,7 +176,7 @@ export async function readSceneCacheFile(
   uri: StoryUri,
   fileSystem: SceneCacheFileSystem,
 ): Promise<SceneCacheRecord> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseSceneCache(new TextDecoder().decode(bytes));
 }
 
@@ -210,7 +270,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       : {}),
     ...(hasNarrationInput(input.narration) ? { narration: input.narration } : {}),
   };
-  const hash = createHash('sha256').update(JSON.stringify(digestSource)).digest('hex');
+  const hash: string = createHash('sha256').update(JSON.stringify(digestSource)).digest('hex');
 
   return `sha256:${hash}`;
 }

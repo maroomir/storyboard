@@ -38,9 +38,20 @@ export const narrativeTenseLabels: Record<NarrativeTense, string> = {
   present: '현재형',
 };
 
-const narratorIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+const narratorIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
-export const narratorCardSchema = z.object({
+export interface NarratorCard {
+  type: 'narrator';
+  id: string;
+  name: string;
+  person: NarratorPerson;
+  knowledge: NarratorKnowledge;
+  tense?: NarrativeTense;
+  focal?: string;
+  voice?: string[];
+}
+
+export const narratorCardSchema: z.ZodType<NarratorCard> = z.object({
   type: z.literal('narrator'),
   id: z.string().regex(narratorIdPattern, {
     message: 'Narrator id는 영소문자·숫자·하이픈만 쓸 수 있습니다.',
@@ -53,8 +64,6 @@ export const narratorCardSchema = z.object({
   focal: z.string().trim().min(1).optional(),
   voice: z.array(z.string().trim().min(1)).optional(),
 });
-
-export type NarratorCard = z.infer<typeof narratorCardSchema>;
 
 // 프롬프트·검수·연속성 필터가 보는 유일한 시점 표현. 서술자 카드에서 왔든 `setting.pov`에서
 // 파생됐든 이 형태로 수렴한다.
@@ -110,8 +119,8 @@ export interface NarrationSources {
 // NOTE: 아무것도 정해지지 않았으면 undefined를 돌려준다. 기본 시점을 끼워 넣으면 시점을 설정한 적
 // 없는 기존 작품의 프롬프트에 없던 지시가 들어가 결과가 달라진다.
 export function resolveNarration(sources: NarrationSources): NarrationDirective | undefined {
-  const narrator = resolveNarratorCard(sources);
-  const focal = narrator?.focal ?? trimmed(sources.focalFallback);
+  const narrator: NarratorCard | undefined = resolveNarratorCard(sources);
+  const focal: string | undefined = narrator?.focal ?? trimmed(sources.focalFallback);
 
   if (narrator) {
     return compact({
@@ -124,7 +133,9 @@ export function resolveNarration(sources: NarrationSources): NarrationDirective 
     });
   }
 
-  const derived = sources.pov ? pointOfViewDerivations[sources.pov] : undefined;
+  const derived: PointOfViewDerivation | undefined = sources.pov
+    ? pointOfViewDerivations[sources.pov]
+    : undefined;
 
   return compact({
     person: derived?.person,
@@ -135,7 +146,7 @@ export function resolveNarration(sources: NarrationSources): NarrationDirective 
 }
 
 function resolveNarratorCard(sources: NarrationSources): NarratorCard | undefined {
-  const id =
+  const id: string | undefined =
     trimmed(sources.sceneNarrator) ??
     trimmed(sources.chapterNarrator) ??
     trimmed(sources.defaultNarrator);
@@ -159,13 +170,15 @@ function resolveNarratorCard(sources: NarrationSources): NarratorCard | undefine
 }
 
 function compact(directive: NarrationDirective): NarrationDirective | undefined {
-  const entries = Object.entries(directive).filter(([, value]) => value !== undefined);
+  const entries: [string, unknown][] = Object.entries(directive).filter(
+    ([, value]) => value !== undefined,
+  );
 
   return entries.length > 0 ? (Object.fromEntries(entries) as NarrationDirective) : undefined;
 }
 
 function trimmed(value: string | undefined): string | undefined {
-  const text = value?.trim();
+  const text: string | undefined = value?.trim();
   return text !== undefined && text.length > 0 ? text : undefined;
 }
 

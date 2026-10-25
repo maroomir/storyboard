@@ -12,27 +12,27 @@ export interface SceneCoverageIssue {
   readonly note?: string;
 }
 
-const sceneCoverageIssueSchema = z.object({
+const sceneCoverageIssueSchema: z.ZodType<SceneCoverageIssue> = z.object({
   index: z.number().int().min(1),
   status: z.enum(coverageStatuses),
   note: z.string().trim().min(1).optional(),
 });
 
 export function coerceSceneCoverage(rawText: string, beatCount: number): SceneCoverageIssue[] {
-  const parsedArray = parseJsonArray(rawText);
+  const parsedArray: unknown[] | null = parseJsonArray(rawText);
 
   if (!parsedArray) {
     return [];
   }
 
-  const seen = new Set<string>();
+  const seen: Set<string> = new Set<string>();
   return parsedArray.flatMap((item) => {
     const parsed = sceneCoverageIssueSchema.safeParse(item);
     if (!parsed.success || parsed.data.index > beatCount) {
       return [];
     }
 
-    const key = `${parsed.data.index}:${parsed.data.status}`;
+    const key: string = `${parsed.data.index}:${parsed.data.status}`;
     if (seen.has(key)) {
       return [];
     }
@@ -53,15 +53,15 @@ export function summarizeSceneCoverage(
   totalBeats: number,
 ): SceneCoverageReport {
   const byIndex = (a: number, b: number): number => a - b;
-  const missing = issues
+  const missing: number[] = issues
     .filter((issue) => issue.status === 'missing')
     .map((issue) => issue.index)
     .sort(byIndex);
-  const outOfOrder = issues
+  const outOfOrder: number[] = issues
     .filter((issue) => issue.status === 'out-of-order')
     .map((issue) => issue.index)
     .sort(byIndex);
-  const coveredRatio = totalBeats === 0 ? 1 : (totalBeats - missing.length) / totalBeats;
+  const coveredRatio: number = totalBeats === 0 ? 1 : (totalBeats - missing.length) / totalBeats;
 
   return { totalBeats, missing, outOfOrder, coveredRatio };
 }

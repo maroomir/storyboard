@@ -3,7 +3,7 @@ export function detectCharactersInText(text: string, characterNames: readonly st
     return [];
   }
 
-  const detectedNames = new Set<string>();
+  const detectedNames: Set<string> = new Set<string>();
 
   for (const name of characterNames) {
     if (text.includes(name)) {

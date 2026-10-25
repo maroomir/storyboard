@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 import { parseJsonArray } from './aiResponseParser';
 
-export const unknownDialogueSpeaker = 'unknown';
+export const unknownDialogueSpeaker: string = 'unknown';
 
 export interface DialogueAttribution {
   readonly index: number;
   readonly speaker: string;
 }
 
-const dialogueAttributionSchema = z.object({
+const dialogueAttributionSchema: z.ZodType<DialogueAttribution> = z.object({
   index: z.number().int().min(1),
   speaker: z.string().trim().min(1),
 });
@@ -21,9 +21,9 @@ export function coerceDialogueAttribution(
   turnCount: number,
   knownSpeakerIds: readonly string[],
 ): DialogueAttribution[] {
-  const parsedArray = parseJsonArray(rawText) ?? [];
-  const known = new Set(knownSpeakerIds);
-  const speakerByIndex = new Map<number, string>();
+  const parsedArray: unknown[] = parseJsonArray(rawText) ?? [];
+  const known: Set<string> = new Set(knownSpeakerIds);
+  const speakerByIndex: Map<number, string> = new Map<number, string>();
 
   for (const item of parsedArray) {
     const parsed = dialogueAttributionSchema.safeParse(item);
@@ -35,7 +35,9 @@ export function coerceDialogueAttribution(
       continue;
     }
 
-    const speaker = known.has(parsed.data.speaker) ? parsed.data.speaker : unknownDialogueSpeaker;
+    const speaker: string = known.has(parsed.data.speaker)
+      ? parsed.data.speaker
+      : unknownDialogueSpeaker;
     speakerByIndex.set(parsed.data.index, speaker);
   }
 

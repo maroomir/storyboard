@@ -58,7 +58,15 @@ export interface StoryboardMessageError {
   readonly message: string;
 }
 
-const requestEnvelopeSchema = z.object({
+interface RequestEnvelope {
+  protocolVersion: string;
+  type: 'request';
+  id: string;
+  method: string;
+  payload: unknown;
+}
+
+const requestEnvelopeSchema: z.ZodType<RequestEnvelope> = z.object({
   protocolVersion: z.literal(storyboardMessageProtocolVersion),
   type: z.literal('request'),
   id: requestIdSchema,
@@ -88,9 +96,9 @@ export function createStoryboardSuccessResponse<M extends StoryboardResponseMeth
   request: { readonly id: string; readonly method: M },
   payload: StoryboardResponsePayload<M>,
 ): StoryboardSuccessResponseMessage<M> {
-  const parsedPayload = storyboardResponsePayloadSchemas[request.method].parse(
-    payload,
-  ) as StoryboardResponsePayload<M>;
+  const parsedPayload: StoryboardResponsePayload<M> = storyboardResponsePayloadSchemas[
+    request.method
+  ].parse(payload) as StoryboardResponsePayload<M>;
 
   return {
     protocolVersion: storyboardMessageProtocolVersion,

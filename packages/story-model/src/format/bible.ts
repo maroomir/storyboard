@@ -2,22 +2,32 @@ import { z } from 'zod';
 
 import { resolveSceneOrder } from './scene';
 
-export const storyBibleVersion = '1.0.0';
+export const storyBibleVersion: string = '1.0.0';
 
 export const bibleFactStatuses = ['canon', 'candidate'] as const;
 export type BibleFactStatus = (typeof bibleFactStatuses)[number];
 
 export const bibleSubjectKinds = ['character', 'background'] as const;
 
-export const bibleFactSubjectSchema = z.object({
+export interface BibleFactSubject {
+  kind: 'character' | 'background';
+  id: string;
+}
+
+export const bibleFactSubjectSchema: z.ZodType<BibleFactSubject> = z.object({
   kind: z.enum(bibleSubjectKinds),
   id: z.string().trim().min(1),
 });
 
 // A scene reference is an `NN-slug` stem or a bare order; both resolve to a numeric scene order.
-const sceneReferenceSchema = z.union([z.string().trim().min(1), z.number().int().positive()]);
+const sceneReferenceSchema: z.ZodType<string | number> = z.union([
+  z.string().trim().min(1),
+  z.number().int().positive(),
+]);
 
-const revealFromSchema = z.union([
+type RevealFrom = string | number | { scene: string | number; knownBy?: string[] };
+
+const revealFromSchema: z.ZodType<RevealFrom> = z.union([
   sceneReferenceSchema,
   z.object({
     scene: sceneReferenceSchema,
@@ -26,7 +36,20 @@ const revealFromSchema = z.union([
   }),
 ]);
 
-export const bibleFactSchema = z
+export interface BibleFact {
+  id: string;
+  subject: BibleFactSubject;
+  key: string;
+  value: string;
+  status: BibleFactStatus;
+  sourceScene?: string;
+  validFrom?: string | number;
+  validUntil?: string | number;
+  revealFrom?: string | number | { scene: string | number; knownBy?: string[] };
+  keywords?: string[];
+}
+
+export const bibleFactSchema: z.ZodType<BibleFact> = z
   .object({
     id: z.string().trim().min(1),
     subject: bibleFactSubjectSchema,
@@ -48,7 +71,8 @@ export const bibleFactSchema = z
   // bounds are file-agnostic and an inverted range is left to the resolver (treated as empty).
   .superRefine((fact, ctx) => {
     for (const field of ['validFrom', 'validUntil', 'revealFrom'] as const) {
-      const bound = field === 'revealFrom' ? revealFromScene(fact) : fact[field];
+      const bound: string | number | undefined =
+        field === 'revealFrom' ? revealFromScene(fact) : fact[field];
       if (typeof bound === 'string' && resolveSceneOrder(bound) === undefined) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -59,14 +83,15 @@ export const bibleFactSchema = z
     }
   });
 
-export const storyBibleSchema = z.object({
+export interface StoryBible {
+  version: string;
+  facts: BibleFact[];
+}
+
+export const storyBibleSchema: z.ZodType<StoryBible> = z.object({
   version: z.literal(storyBibleVersion),
   facts: z.array(bibleFactSchema).default([]),
 });
-
-export type BibleFactSubject = z.infer<typeof bibleFactSubjectSchema>;
-export type BibleFact = z.infer<typeof bibleFactSchema>;
-export type StoryBible = z.infer<typeof storyBibleSchema>;
 
 // revealFrom은 씬 참조 하나이거나 { scene, knownBy } 객체다. 두 모양을 읽는 자리는 여러 곳이므로
 // 씬 참조와 인지 목록을 꺼내는 함수를 하나씩 둔다.
@@ -116,7 +141,7 @@ export function selectBibleFacts(
     return [];
   }
 
-  const wanted = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
+  const wanted: Set<string> = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
 
   return bible.facts.filter(
     (fact) => fact.status === 'canon' && wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
@@ -148,7 +173,7 @@ function resolveBound(
     return openValue;
   }
 
-  const order = resolveSceneOrder(bound);
+  const order: number | undefined = resolveSceneOrder(bound);
 
   return order === undefined ? openValue : resolveStoryTime(order, storyTimeline);
 }
@@ -178,8 +203,8 @@ function resolveValidWinners(
   isActivated: FactActivationPredicate,
   storyTimeline?: ReadonlyMap<number, number>,
 ): ResolvedFactVersion[] {
-  const winners = new Map<string, ResolvedFactVersion>();
-  const sceneStoryTime = resolveStoryTime(sceneOrder, storyTimeline);
+  const winners: Map<string, ResolvedFactVersion> = new Map<string, ResolvedFactVersion>();
+  const sceneStoryTime: number = resolveStoryTime(sceneOrder, storyTimeline);
 
   bible.facts.forEach((fact, index) => {
     if (fact.status !== 'canon') {
@@ -190,16 +215,16 @@ function resolveValidWinners(
       return;
     }
 
-    const from = resolveBound(fact.validFrom, Number.NEGATIVE_INFINITY, storyTimeline);
-    const until = resolveBound(fact.validUntil, Number.POSITIVE_INFINITY, storyTimeline);
+    const from: number = resolveBound(fact.validFrom, Number.NEGATIVE_INFINITY, storyTimeline);
+    const until: number = resolveBound(fact.validUntil, Number.POSITIVE_INFINITY, storyTimeline);
 
     if (from > until || sceneStoryTime < from || sceneStoryTime > until) {
       return;
     }
 
-    const groupKey = `${fact.subject.kind}:${fact.subject.id}:${fact.key}`;
+    const groupKey: string = `${fact.subject.kind}:${fact.subject.id}:${fact.key}`;
     const candidate: ResolvedFactVersion = { fact, from, until, index };
-    const current = winners.get(groupKey);
+    const current: ResolvedFactVersion | undefined = winners.get(groupKey);
 
     if (!current || isLaterVersion(candidate, current)) {
       winners.set(groupKey, candidate);
@@ -219,7 +244,7 @@ export function selectValidBibleFacts(
     return [];
   }
 
-  const wanted = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
+  const wanted: Set<string> = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
 
   return resolveValidWinners(
     bible,
@@ -240,9 +265,9 @@ function countKeywordHits(keywords: readonly string[] | undefined, sceneTextLowe
     return 0;
   }
 
-  const distinctKeywords = new Set(keywords.map((keyword) => keyword.toLowerCase()));
+  const distinctKeywords: Set<string> = new Set(keywords.map((keyword) => keyword.toLowerCase()));
 
-  let hits = 0;
+  let hits: number = 0;
   for (const keyword of distinctKeywords) {
     if (sceneTextLower.includes(keyword)) {
       hits += 1;
@@ -265,8 +290,8 @@ function compareKeywordRank(first: ScoredKeywordFact, second: ScoredKeywordFact)
     return first.version.index - second.version.index;
   }
 
-  const firstId = first.version.fact.id;
-  const secondId = second.version.fact.id;
+  const firstId: string = first.version.fact.id;
+  const secondId: string = second.version.fact.id;
   return firstId < secondId ? -1 : firstId > secondId ? 1 : 0;
 }
 
@@ -275,7 +300,7 @@ function applyBudget(facts: BibleFact[], budget: number | undefined): BibleFact[
     return facts;
   }
 
-  const cap = Math.floor(budget);
+  const cap: number = Math.floor(budget);
   if (cap <= 0) {
     return [];
   }
@@ -297,29 +322,30 @@ export function selectInjectedFacts(
   // 공개 시점은 독자가 무엇을 읽었는지의 문제이므로 서술 순서(씬 순번)로 잰다. 회상 씬이라도
   // 이미 밝혀진 사실은 밝혀진 채다.
   const isRevealed = (fact: BibleFact): boolean => {
-    const reveal = revealFromScene(fact);
-    const revealOrder = reveal === undefined ? undefined : resolveSceneOrder(reveal);
+    const reveal: string | number | undefined = revealFromScene(fact);
+    const revealOrder: number | undefined =
+      reveal === undefined ? undefined : resolveSceneOrder(reveal);
 
     return revealOrder === undefined || sceneOrder >= revealOrder;
   };
 
-  const wanted = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
-  const entityWinners = resolveValidWinners(
+  const wanted: Set<string> = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
+  const entityWinners: ResolvedFactVersion[] = resolveValidWinners(
     bible,
     sceneOrder,
     (fact) => isRevealed(fact) && wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
     options?.storyTimeline,
   );
 
-  const sceneTextLower = sceneText.toLowerCase();
-  const keywordWinners = resolveValidWinners(
+  const sceneTextLower: string = sceneText.toLowerCase();
+  const keywordWinners: ResolvedFactVersion[] = resolveValidWinners(
     bible,
     sceneOrder,
     (fact) => isRevealed(fact) && countKeywordHits(fact.keywords, sceneTextLower) > 0,
     options?.storyTimeline,
   );
 
-  const entityIds = new Set(entityWinners.map((version) => version.fact.id));
+  const entityIds: Set<string> = new Set(entityWinners.map((version) => version.fact.id));
   const rankedKeyword = keywordWinners
     .filter((version) => !entityIds.has(version.fact.id))
     .map((version) => ({ version, score: countKeywordHits(version.fact.keywords, sceneTextLower) }))

@@ -15,7 +15,12 @@ export interface SceneGroundingGap {
   readonly fields: readonly SceneGroundingFieldKey[];
 }
 
-const sceneGroundingGapsSchema = z.object({
+interface SceneGroundingGapsPayload {
+  version: 1;
+  scenes: Record<string, { inputKey: string; fields: SceneGroundingFieldKey[] }>;
+}
+
+const sceneGroundingGapsSchema: z.ZodType<SceneGroundingGapsPayload> = z.object({
   version: z.literal(1),
   scenes: z.record(
     z.string(),
@@ -36,7 +41,7 @@ export function computeSceneGroundingInputKey(
   characterNames: readonly string[],
 ): string {
   const grounding = scene.frontmatter.grounding ?? {};
-  const source = JSON.stringify({
+  const source: string = JSON.stringify({
     body: scene.body,
     grounding: Object.fromEntries(
       sceneGroundingFieldKeys.flatMap((key) =>

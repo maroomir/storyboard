@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-export const sceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
-export const sceneStemPattern = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
+export const sceneFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
+export const sceneStemPattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
 // 창작자가 쓴 사건 산문은 카드 옆 `<stem>.summary.md`에 두고, 카드의 summary 에는 그 파일명만 적는다.
-export const sceneSummaryFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
+export const sceneSummaryFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
 
 // 씬을 구체적인 사건으로 못박는 4개 사실. 가사·분위기 스케치처럼 추상적인 씬이 은유만으로
 // 생성되는 것을 막는다.
@@ -11,14 +11,19 @@ export const sceneGroundingFieldKeys = ['incident', 'place', 'relation', 'time']
 
 export type SceneGroundingFieldKey = (typeof sceneGroundingFieldKeys)[number];
 
-export const sceneGroundingSchema = z.object({
+export interface SceneGrounding {
+  incident?: string;
+  place?: string;
+  relation?: string;
+  time?: string;
+}
+
+export const sceneGroundingSchema: z.ZodType<SceneGrounding> = z.object({
   incident: z.string().trim().min(1).optional(),
   place: z.string().trim().min(1).optional(),
   relation: z.string().trim().min(1).optional(),
   time: z.string().trim().min(1).optional(),
 });
-
-export type SceneGrounding = z.infer<typeof sceneGroundingSchema>;
 
 export const sceneGroundingFieldLabels: Readonly<Record<SceneGroundingFieldKey, string>> = {
   incident: '사건',
@@ -30,7 +35,15 @@ export const sceneGroundingFieldLabels: Readonly<Record<SceneGroundingFieldKey, 
 // NOTE: 비트는 문자열이거나, 그 사건의 좌표(출연·장소·시각)를 단 객체다. 좌표가 있으면 뼈대가 인물의
 // 등장·퇴장을 추론하지 않아도 되고, 구간별 검증과 «이 비트에서 누가 무엇을 아는가»의 자리가 생긴다.
 // 문자열만 쓰던 카드는 그대로 읽힌다.
-export const sceneBeatDetailSchema = z.object({
+export interface SceneBeatDetail {
+  text: string;
+  cast?: string[];
+  place?: string;
+  time?: string;
+  break?: boolean;
+}
+
+export const sceneBeatDetailSchema: z.ZodType<SceneBeatDetail> = z.object({
   text: z.string().trim().min(1),
   // 이 비트에 있는 인물. 카드 id 또는 이름.
   cast: z.array(z.string().trim().min(1)).optional(),
@@ -40,10 +53,10 @@ export const sceneBeatDetailSchema = z.object({
   break: z.boolean().optional(),
 });
 
-export const sceneBeatSchema = z.union([z.string().trim().min(1), sceneBeatDetailSchema]);
+export type SceneBeat = string | SceneBeatDetail;
 
-export type SceneBeatDetail = z.infer<typeof sceneBeatDetailSchema>;
-export type SceneBeat = z.infer<typeof sceneBeatSchema>;
+export const sceneBeatSchema: z.ZodType<SceneBeat> = z.union([z.string().trim().min(1), sceneBeatDetailSchema]);
+
 
 export function sceneBeatText(beat: SceneBeat): string {
   return typeof beat === 'string' ? beat : beat.text;
@@ -68,7 +81,7 @@ export function findUnknownBeatCast(
     readonly aliases?: readonly string[];
   }[],
 ): UnknownBeatCast[] {
-  const known = new Set(
+  const known: Set<string> = new Set(
     characters.flatMap((character) => [character.id, character.name, ...(character.aliases ?? [])]),
   );
 
@@ -90,7 +103,7 @@ export function formatSceneBeatCoordinates(
     return undefined;
   }
 
-  const coordinates = [
+  const coordinates: string[] = [
     beat.cast && beat.cast.length > 0
       ? `${sceneBeatCoordinateLabels.cast}: ${beat.cast.map(castName).join(', ')}`
       : undefined,
@@ -106,12 +119,27 @@ export function renderSceneBeat(
   beat: SceneBeat,
   castName: (ref: string) => string = (ref) => ref,
 ): string {
-  const coordinates = formatSceneBeatCoordinates(beat, castName);
+  const coordinates: string | undefined = formatSceneBeatCoordinates(beat, castName);
 
   return coordinates === undefined ? sceneBeatText(beat) : `${sceneBeatText(beat)}\n(${coordinates})`;
 }
 
-export const sceneFrontmatterSchema = z
+export interface SceneFrontmatter {
+  title?: string;
+  characters?: string[];
+  location?: string;
+  mood?: string;
+  relationStage?: string;
+  povCharacter?: string;
+  narrator?: string;
+  thread?: string;
+  targetWordCount?: number;
+  storyTime?: number;
+  grounding?: SceneGrounding;
+  [key: string]: unknown;
+}
+
+export const sceneFrontmatterSchema: z.ZodType<SceneFrontmatter> = z
   .object({
     title: z.string().trim().min(1).optional(),
     characters: z.array(z.string().trim().min(1)).optional(),
@@ -129,7 +157,32 @@ export const sceneFrontmatterSchema = z
   })
   .passthrough();
 
-export const sceneCardSchema = z.object({
+export interface SceneCard {
+  type: 'scene';
+  id: string;
+  title?: string;
+  characters?: string[];
+  location?: string;
+  mood?: string;
+  relationStage?: string;
+  povCharacter?: string;
+  narrator?: string;
+  thread?: string;
+  targetWordCount?: number;
+  storyTime?: number;
+  grounding?: SceneGrounding;
+  purpose?: string;
+  conflict?: string;
+  twist?: string;
+  emotionalShift?: string;
+  endState?: string;
+  foreshadowing?: string[];
+  neededCanon?: string[];
+  summary?: string;
+  beats?: SceneBeat[];
+}
+
+export const sceneCardSchema: z.ZodType<SceneCard> = z.object({
   type: z.literal('scene'),
   id: z.string().regex(sceneStemPattern, {
     message: "Scene card id는 'NN-slug' 형식이어야 합니다.",
@@ -157,16 +210,12 @@ export const sceneCardSchema = z.object({
   beats: z.array(sceneBeatSchema).optional(),
 });
 
-export type SceneCard = z.infer<typeof sceneCardSchema>;
-
 export interface SceneFileNameParts {
   readonly stem: string;
   readonly order: number;
   readonly orderText: string;
   readonly slug: string;
 }
-
-export type SceneFrontmatter = z.infer<typeof sceneFrontmatterSchema>;
 
 export interface SceneFile {
   readonly stem: string;
@@ -184,7 +233,7 @@ export function sceneSummaryFileName(stem: string): string {
 }
 
 export function sceneSummaryReference(summary: string | undefined): string | undefined {
-  const trimmed = summary?.trim();
+  const trimmed: string | undefined = summary?.trim();
   return trimmed !== undefined && sceneSummaryFileNamePattern.test(trimmed) ? trimmed : undefined;
 }
 
@@ -208,7 +257,7 @@ export function extractInlineSceneSummary(card: SceneCard): SceneSummaryExtracti
     return undefined;
   }
 
-  const summaryFileName = sceneSummaryFileName(card.id);
+  const summaryFileName: string = sceneSummaryFileName(card.id);
 
   return {
     card: { ...card, summary: summaryFileName },
@@ -244,7 +293,7 @@ export const sceneSeedSectionLabels = {
   targetWordCount: '목표 분량',
 } as const;
 
-export const sceneSummaryLabel = '창작자 요약';
+export const sceneSummaryLabel: string = '창작자 요약';
 
 // NOTE: 프롬프트는 씬 의도를 하나의 텍스트로 받는다. 구조 필드를 기존 씬 시드와 같은
 // `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다. 사건 재료는 라벨 없는 블록으로 놓이며
@@ -295,14 +344,14 @@ export function renderSceneCardBody(
   }
 
   const beats = card.beats ?? [];
-  const summary = summaryText?.trim();
-  const hasSummary = summary !== undefined && summary.length > 0;
+  const summary: string | undefined = summaryText?.trim();
+  const hasSummary: boolean = summary !== undefined && summary.length > 0;
   if (beats.length > 0) {
-    if (hasSummary) {
+    if (hasSummary && summary !== undefined) {
       blocks.push(`[${sceneSummaryLabel}]\n${summary.replace(/\n\s*\n+/g, '\n')}`);
     }
     blocks.push(beats.map((beat) => renderSceneBeat(beat, castName)).join('\n\n'));
-  } else if (hasSummary) {
+  } else if (hasSummary && summary !== undefined) {
     blocks.push(summary);
   }
 
@@ -329,11 +378,11 @@ export interface SceneNarrativeParts {
 // 실측(sonnet, 목표 3,000자·1구간)에서 뼈대가 1,801자 → 743자로 줄어 초안이 그만큼 짧아졌다.
 // 재료와 설계를 나눠 둘 다 넘기되, 섞지는 않는다.
 export function splitSceneNarrativeSource(body: string): SceneNarrativeParts {
-  const blocks = body
+  const blocks: string[] = body
     .split(/\n\s*\n+/)
     .map((block) => block.trim())
     .filter((block) => block.length > 0);
-  const narrative = blocks.filter((block) => !block.startsWith('['));
+  const narrative: string[] = blocks.filter((block) => !block.startsWith('['));
 
   if (narrative.length === 0) {
     return { narrative: body.trim(), design: '' };
@@ -346,14 +395,14 @@ export function splitSceneNarrativeSource(body: string): SceneNarrativeParts {
 }
 
 export function parseSceneFileName(fileName: string): SceneFileNameParts | undefined {
-  const match = sceneFileNamePattern.exec(fileName);
+  const match: RegExpExecArray | null = sceneFileNamePattern.exec(fileName);
 
   if (!match) {
     return undefined;
   }
 
-  const orderText = match[1];
-  const slug = match[2];
+  const orderText: string | undefined = match[1];
+  const slug: string | undefined = match[2];
 
   if (!orderText || !slug) {
     return undefined;
@@ -368,14 +417,14 @@ export function parseSceneFileName(fileName: string): SceneFileNameParts | undef
 }
 
 export function parseSceneStem(stem: string): SceneFileNameParts | undefined {
-  const match = sceneStemPattern.exec(stem);
+  const match: RegExpExecArray | null = sceneStemPattern.exec(stem);
 
   if (!match) {
     return undefined;
   }
 
-  const orderText = match[1];
-  const slug = match[2];
+  const orderText: string | undefined = match[1];
+  const slug: string | undefined = match[2];
 
   if (!orderText || !slug) {
     return undefined;
@@ -396,7 +445,7 @@ export function resolveSceneOrder(ref: string | number): number | undefined {
     return Number.isInteger(ref) && ref > 0 ? ref : undefined;
   }
 
-  const trimmed = ref.trim();
+  const trimmed: string = ref.trim();
 
   if (/^\d+$/.test(trimmed)) {
     return Number.parseInt(trimmed, 10);

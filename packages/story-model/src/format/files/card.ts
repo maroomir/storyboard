@@ -30,9 +30,9 @@ function toCardSchemaError(error: unknown): unknown {
     return error;
   }
 
-  const details = error.issues
+  const details: string = error.issues
     .map((issue) => {
-      const path = issue.path.join('.');
+      const path: string = issue.path.join('.');
       return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
     })
     .join('; ');
@@ -62,7 +62,7 @@ export function parseCard(rawCard: string): StoryboardCard {
 
 export function serializeCard(card: StoryboardCard): string {
   const parsedCard = cardSchema.parse(card);
-  const normalizedCard = normalizeCardForSerialization(parsedCard);
+  const normalizedCard: StoryboardCard = normalizeCardForSerialization(parsedCard);
 
   return yaml.dump(normalizedCard, {
     lineWidth: -1,
@@ -101,7 +101,7 @@ export async function readNarratorCardFile(
   uri: StoryUri,
   fileSystem: CardFileSystem,
 ): Promise<NarratorCard> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseNarratorCard(new TextDecoder().decode(bytes));
 }
 
@@ -126,7 +126,7 @@ export function parseWorkspaceCard(rawCard: string): WorkspaceCard {
     throw new CardParseError('invalid-yaml', 'Card YAML을 파싱할 수 없습니다.', error);
   }
 
-  const cardType =
+  const cardType: unknown =
     typeof parsedYaml === 'object' && parsedYaml !== null
       ? (parsedYaml as { type?: unknown }).type
       : undefined;
@@ -158,7 +158,7 @@ export function canonicalizeNarratorCardText(rawCard: string): {
   readonly text: string;
   readonly changed: boolean;
 } {
-  const text = serializeNarratorCard(parseNarratorCard(rawCard));
+  const text: string = serializeNarratorCard(parseNarratorCard(rawCard));
 
   return { text, changed: text !== rawCard };
 }
@@ -170,7 +170,7 @@ export function canonicalizeCardText(rawCard: string): {
   readonly text: string;
   readonly changed: boolean;
 } {
-  const text = serializeCard(parseCard(rawCard));
+  const text: string = serializeCard(parseCard(rawCard));
 
   return { text, changed: text !== rawCard };
 }
@@ -179,7 +179,7 @@ export async function readCardFile(
   uri: StoryUri,
   fileSystem: CardFileSystem,
 ): Promise<StoryboardCard> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseCard(new TextDecoder().decode(bytes));
 }
 

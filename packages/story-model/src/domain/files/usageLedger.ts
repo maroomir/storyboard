@@ -6,7 +6,13 @@ import type {
   UsageCacheAmount,
   UsageSummaryByEntity,
 } from '#model/contracts/ai';
-import type { AiUsage, EntityKind, UsageAttribution, UsageRecord } from '#model/contracts/aiTypes';
+import type {
+  AiUsage,
+  EntityKind,
+  EntityRef,
+  UsageAttribution,
+  UsageRecord,
+} from '#model/contracts/aiTypes';
 import { z } from 'zod';
 
 import {
@@ -22,26 +28,47 @@ export type UsageLedgerEntry = UsageRecord & {
   readonly recordedAt: string;
 };
 
-const entityKindSchema = z.enum(['scene', 'character', 'background', 'project']);
+const entityKindSchema: z.ZodType<EntityKind> = z.enum([
+  'scene',
+  'character',
+  'background',
+  'project',
+]);
 
-const entityRefSchema = z.object({
+const entityRefSchema: z.ZodType<EntityRef> = z.object({
   kind: entityKindSchema,
   id: z.string().trim().min(1),
 });
 
-const usageAttributionSchema = z.object({
+interface UsageAttributionPayload {
+  primary?: EntityRef;
+  participants?: EntityRef[];
+}
+
+const usageAttributionSchema: z.ZodType<UsageAttributionPayload> = z.object({
   primary: entityRefSchema.optional(),
   participants: z.array(entityRefSchema).optional(),
 });
 
-const aiUsageSchema = z.object({
+const aiUsageSchema: z.ZodType<AiUsage> = z.object({
   inputTokens: z.number().nonnegative(),
   outputTokens: z.number().nonnegative(),
   cacheReadInputTokens: z.number().nonnegative().optional(),
   cacheCreationInputTokens: z.number().nonnegative().optional(),
 });
 
-const usageLedgerEntrySchema = z.object({
+interface UsageLedgerEntryPayload {
+  id: string;
+  recordedAt: string;
+  taskName: AiTaskName;
+  providerId: AiProviderId;
+  attribution: UsageAttributionPayload;
+  model?: string;
+  usage?: AiUsage;
+  costUsd?: number;
+}
+
+const usageLedgerEntrySchema: z.ZodType<UsageLedgerEntryPayload> = z.object({
   id: z.string().trim().min(1),
   recordedAt: z.string().trim().min(1),
   taskName: z.enum(aiTaskNames),
@@ -52,7 +79,12 @@ const usageLedgerEntrySchema = z.object({
   attribution: usageAttributionSchema,
 });
 
-const usageLedgerFileSchema = z.object({
+interface UsageLedgerFile {
+  version: 1;
+  entries: UsageLedgerEntryPayload[];
+}
+
+const usageLedgerFileSchema: z.ZodType<UsageLedgerFile> = z.object({
   version: z.literal(usageLedgerVersion),
   entries: z.array(usageLedgerEntrySchema),
 });
@@ -92,7 +124,7 @@ function addUsageCache(
 }
 
 export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
-  const cache = addUsageCache(base.cache, delta.cache);
+  const cache: UsageCacheAmount | undefined = addUsageCache(base.cache, delta.cache);
 
   return {
     costUsd: base.costUsd + delta.costUsd,
@@ -107,7 +139,7 @@ export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmou
 function usageCacheOfEntry(
   entry: Pick<UsageLedgerEntry, 'usage' | 'providerId' | 'model'>,
 ): UsageCacheAmount | undefined {
-  const usage = entry.usage;
+  const usage: AiUsage | undefined = entry.usage;
   if (
     usage === undefined ||
     (usage.cacheReadInputTokens === undefined && usage.cacheCreationInputTokens === undefined)
@@ -115,12 +147,13 @@ function usageCacheOfEntry(
     return undefined;
   }
 
-  const cachedTokens = usage.cacheReadInputTokens ?? 0;
-  const table = storyboardModelPricing[entry.providerId] as Readonly<
-    Record<string, ModelPricePerMillion>
-  >;
-  const row = entry.model === undefined ? undefined : table[entry.model];
-  const savedPerMillion =
+  const cachedTokens: number = usage.cacheReadInputTokens ?? 0;
+  const table: Readonly<Record<string, ModelPricePerMillion>> = storyboardModelPricing[
+    entry.providerId
+  ] as Readonly<Record<string, ModelPricePerMillion>>;
+  const row: ModelPricePerMillion | undefined =
+    entry.model === undefined ? undefined : table[entry.model];
+  const savedPerMillion: number =
     row === undefined || row.cacheReadPricePerMillion === undefined
       ? 0
       : row.inputPricePerMillion - row.cacheReadPricePerMillion;
@@ -137,8 +170,8 @@ function usageCacheOfEntry(
 export function usageAmountOfEntry(
   entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'providerId' | 'model'>,
 ): UsageAmount {
-  const tokens = entry.usage ? entry.usage.inputTokens + entry.usage.outputTokens : 0;
-  const cache = usageCacheOfEntry(entry);
+  const tokens: number = entry.usage ? entry.usage.inputTokens + entry.usage.outputTokens : 0;
+  const cache: UsageCacheAmount | undefined = usageCacheOfEntry(entry);
 
   return {
     costUsd: entry.costUsd ?? 0,
@@ -204,8 +237,8 @@ export function mergeUsageLedgerEntryIntoSummary(
     }
   };
 
-  const amount = usageAmountOfEntry(entry);
-  const total = addUsageAmount(summary.total, amount);
+  const amount: UsageAmount = usageAmountOfEntry(entry);
+  const total: UsageAmount = addUsageAmount(summary.total, amount);
 
   const { primary, participants = [] } = entry.attribution;
 
@@ -214,7 +247,7 @@ export function mergeUsageLedgerEntryIntoSummary(
   }
 
   if (participants.length > 0) {
-    const share = scaleUsageAmount(amount, 1 / participants.length);
+    const share: UsageAmount = scaleUsageAmount(amount, 1 / participants.length);
 
     for (const participant of participants) {
       add(participant.kind, participant.id, share);
@@ -232,7 +265,7 @@ export function mergeUsageLedgerEntryIntoSummary(
 export function computeUsageSummaryFromEntries(
   entries: readonly UsageLedgerEntry[],
 ): UsageSummaryByEntity {
-  let summary = emptyUsageSummary();
+  let summary: UsageSummaryByEntity = emptyUsageSummary();
 
   for (const entry of entries) {
     summary = mergeUsageLedgerEntryIntoSummary(summary, entry);
@@ -290,7 +323,7 @@ export async function readUsageLedgerFromUri(
   warn?: (message: string) => void,
 ): Promise<UsageLedgerEntry[]> {
   try {
-    const bytes = await fs.readFile(ledgerUri);
+    const bytes: Uint8Array = await fs.readFile(ledgerUri);
     return parseUsageLedgerBytes(bytes, warn);
   } catch {
     return [];

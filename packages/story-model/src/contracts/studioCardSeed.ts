@@ -8,18 +8,18 @@ export interface StudioCardSeed {
 
 // NOTE: the id becomes a file name, so it is held to the card id grammar here rather than trusted
 // to the prompt.
-const cardSeedIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+const cardSeedIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
 export function coerceStudioCardSeed(response: string): StudioCardSeed | undefined {
-  const parsed = parseJsonObject(response);
+  const parsed: Record<string, unknown> | null = parseJsonObject(response);
 
   if (!parsed) {
     return undefined;
   }
 
-  const kind = parsed['kind'];
-  const name = typeof parsed['name'] === 'string' ? parsed['name'].trim() : '';
-  const id = typeof parsed['id'] === 'string' ? parsed['id'].trim().toLowerCase() : '';
+  const kind: unknown = parsed['kind'];
+  const name: string = typeof parsed['name'] === 'string' ? parsed['name'].trim() : '';
+  const id: string = typeof parsed['id'] === 'string' ? parsed['id'].trim().toLowerCase() : '';
 
   if (
     (kind !== 'character' && kind !== 'background') ||

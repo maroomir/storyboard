@@ -23,16 +23,16 @@ export interface CardMemoryFileSystem {
   readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
-const cardHashSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/);
+const cardHashSchema: z.ZodType<string> = z.string().regex(/^sha256:[a-f0-9]{64}$/);
 
-const personaMemoryRecordSchema = z.object({
+const personaMemoryRecordSchema: z.ZodType<PersonaMemoryRecord> = z.object({
   cardId: z.string().regex(cardIdPattern),
   persona: z.string(),
   updatedThroughScene: z.string(),
   cardHash: cardHashSchema,
 });
 
-const backgroundMemoryRecordSchema = z.object({
+const backgroundMemoryRecordSchema: z.ZodType<BackgroundMemoryRecord> = z.object({
   cardId: z.string().regex(cardIdPattern),
   atmosphere: z.string(),
   updatedThroughScene: z.string(),
@@ -86,7 +86,7 @@ export function computeBackgroundCardHash(card: BackgroundCard): string {
 }
 
 function digestCard(digestSource: unknown): string {
-  const hash = createHash('sha256').update(JSON.stringify(digestSource)).digest('hex');
+  const hash: string = createHash('sha256').update(JSON.stringify(digestSource)).digest('hex');
   return `sha256:${hash}`;
 }
 
@@ -94,7 +94,7 @@ export async function readPersonaMemoryFile(
   uri: StoryUri,
   fileSystem: CardMemoryFileSystem,
 ): Promise<PersonaMemoryRecord> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parsePersonaMemory(new TextDecoder().decode(bytes));
 }
 
@@ -110,7 +110,7 @@ export async function readBackgroundMemoryFile(
   uri: StoryUri,
   fileSystem: CardMemoryFileSystem,
 ): Promise<BackgroundMemoryRecord> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseBackgroundMemory(new TextDecoder().decode(bytes));
 }
 

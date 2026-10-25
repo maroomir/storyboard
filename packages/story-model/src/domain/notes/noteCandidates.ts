@@ -90,11 +90,11 @@ function addUnique(list: string[], values: readonly string[]): void {
 export function mergeNoteCandidateSources(
   sources: readonly NoteCandidateSource[],
 ): MergedNoteCardCandidate[] {
-  const cards = new Map<string, CardAccumulator>();
+  const cards: Map<string, CardAccumulator> = new Map<string, CardAccumulator>();
 
   for (const source of sources) {
     for (const candidate of source.candidates) {
-      const accumulator = cards.get(candidate.cardId) ?? {
+      const accumulator: CardAccumulator = cards.get(candidate.cardId) ?? {
         candidate,
         sourceNotes: [],
         locations: [],
@@ -123,7 +123,7 @@ function mergeCardOccurrences(accumulator: CardAccumulator): MergedNoteCardCandi
   >();
 
   for (const occurrence of accumulator.occurrences) {
-    const identity = noteChangeIdentity(occurrence.change);
+    const identity: string = noteChangeIdentity(occurrence.change);
     const existing = byIdentity.get(identity);
 
     if (existing === undefined) {
@@ -131,7 +131,7 @@ function mergeCardOccurrences(accumulator: CardAccumulator): MergedNoteCardCandi
       continue;
     }
 
-    const sourceScenes = [...existing.change.sourceScenes];
+    const sourceScenes: string[] = [...existing.change.sourceScenes];
     addUnique(sourceScenes, occurrence.change.sourceScenes);
     existing.change = { ...existing.change, sourceScenes };
     existing.occurrences.push(occurrence);
@@ -195,7 +195,7 @@ function withoutEmptyEntries(sources: readonly NoteCandidateSource[]): NoteCandi
 }
 
 function nextSourceId(sources: readonly NoteCandidateSource[]): string {
-  const highest = sources.reduce(
+  const highest: number = sources.reduce(
     (max, source) => Math.max(max, Number.parseInt(source.id.slice(1), 10)),
     0,
   );
@@ -243,7 +243,7 @@ export function keepNoteCandidateConflicts(
   file: NoteCandidateFile,
   card: MergedNoteCardCandidate,
 ): NoteCandidateFile {
-  const conflictKeys = new Set(card.conflicts.map((conflict) => conflict.key));
+  const conflictKeys: Set<string> = new Set(card.conflicts.map((conflict) => conflict.key));
 
   return mapCardChanges(file, card.cardId, (change) => conflictKeys.has(change.id));
 }
@@ -282,12 +282,12 @@ export function removeNoteCandidateChange(
     return undefined;
   }
 
-  const identity = noteChangeIdentity(target);
+  const identity: string = noteChangeIdentity(target);
 
   return mapCardChanges(file, cardId, (change) => noteChangeIdentity(change) !== identity);
 }
 
-const synopsisSourceMarker = /^<!-- note-source: (.+) -->$/;
+const synopsisSourceMarker: RegExp = /^<!-- note-source: (.+) -->$/;
 
 function synopsisSourceHeading(location: string): string {
   return `<!-- note-source: ${location} -->`;
@@ -304,7 +304,7 @@ export function mergeNoteSynopsisCandidate(
   const sections: { location: string; lines: string[] }[] = [];
 
   for (const line of (existing ?? '').split('\n')) {
-    const marker = synopsisSourceMarker.exec(line);
+    const marker: RegExpExecArray | null = synopsisSourceMarker.exec(line);
 
     if (marker?.[1] !== undefined) {
       sections.push({ location: marker[1], lines: [] });
@@ -316,7 +316,7 @@ export function mergeNoteSynopsisCandidate(
   const kept = sections.filter((section) => section.location !== location);
   const added =
     synopsisMarkdown === undefined ? [] : [{ location, lines: synopsisMarkdown.split('\n') }];
-  const blocks = [
+  const blocks: string[] = [
     preamble.join('\n').trim(),
     ...[...kept, ...added].map((section) =>
       [synopsisSourceHeading(section.location), section.lines.join('\n').trim()].join('\n'),

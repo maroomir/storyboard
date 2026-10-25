@@ -1,19 +1,38 @@
 import { z } from 'zod';
 
-import { aiTaskNameSchema, providerIdSchema, requestIdSchema } from './atoms';
+import { aiTaskNameSchema, providerIdSchema, requestIdSchema, type ProviderId } from './atoms';
+import type { AiMessage, AiProviderStatus, AiTaskName, AiUsage } from '#model/contracts/aiTypes';
 
-const aiMessageSchema = z.object({
+const aiMessageSchema: z.ZodType<AiMessage> = z.object({
   role: z.enum(['system', 'user', 'assistant']),
   content: z.string().min(1),
 });
 
-export const aiProvidersListRequestPayloadSchema = z.object({});
+export interface AiProvidersListRequestPayload {
+  [key: string]: never;
+}
 
-export const aiProvidersCheckConnectionRequestPayloadSchema = z.object({
-  providerId: providerIdSchema,
-});
+export const aiProvidersListRequestPayloadSchema: z.ZodType<AiProvidersListRequestPayload> =
+  z.object({});
 
-export const aiGenerateRequestPayloadSchema = z.object({
+export interface AiProvidersCheckConnectionRequestPayload {
+  providerId: ProviderId;
+}
+
+export const aiProvidersCheckConnectionRequestPayloadSchema: z.ZodType<AiProvidersCheckConnectionRequestPayload> =
+  z.object({
+    providerId: providerIdSchema,
+  });
+
+export interface AiGenerateRequestPayload {
+  providerId: ProviderId;
+  taskName: AiTaskName;
+  messages: AiMessage[];
+  temperature?: number;
+  maxTokens?: number;
+}
+
+export const aiGenerateRequestPayloadSchema: z.ZodType<AiGenerateRequestPayload> = z.object({
   providerId: providerIdSchema,
   taskName: aiTaskNameSchema,
   messages: z.array(aiMessageSchema).min(1),
@@ -22,7 +41,7 @@ export const aiGenerateRequestPayloadSchema = z.object({
 });
 export const aiGenerateStreamRequestPayloadSchema = aiGenerateRequestPayloadSchema;
 
-export const aiProviderStatusSchema = z.object({
+export const aiProviderStatusSchema: z.ZodType<AiProviderStatus> = z.object({
   providerId: providerIdSchema,
   displayName: z.string().min(1),
   model: z.string().optional(),
@@ -30,22 +49,40 @@ export const aiProviderStatusSchema = z.object({
   isAvailable: z.boolean(),
 });
 
-export const aiProvidersListResponsePayloadSchema = z.object({
-  providers: z.array(aiProviderStatusSchema),
-});
+export interface AiProvidersListResponsePayload {
+  providers: AiProviderStatus[];
+}
 
-export const aiProvidersCheckConnectionResponsePayloadSchema = z.object({
-  ok: z.boolean(),
-});
+export const aiProvidersListResponsePayloadSchema: z.ZodType<AiProvidersListResponsePayload> =
+  z.object({
+    providers: z.array(aiProviderStatusSchema),
+  });
 
-const aiUsageSchema = z.object({
+export interface AiProvidersCheckConnectionResponsePayload {
+  ok: boolean;
+}
+
+export const aiProvidersCheckConnectionResponsePayloadSchema: z.ZodType<AiProvidersCheckConnectionResponsePayload> =
+  z.object({
+    ok: z.boolean(),
+  });
+
+const aiUsageSchema: z.ZodType<AiUsage> = z.object({
   inputTokens: z.number().nonnegative(),
   outputTokens: z.number().nonnegative(),
   cacheReadInputTokens: z.number().nonnegative().optional(),
   cacheCreationInputTokens: z.number().nonnegative().optional(),
 });
 
-export const aiGenerateResponsePayloadSchema = z.object({
+export interface AiGenerateResponsePayload {
+  text: string;
+  providerId: ProviderId;
+  model?: string;
+  usage?: AiUsage;
+  costUsd?: number;
+}
+
+export const aiGenerateResponsePayloadSchema: z.ZodType<AiGenerateResponsePayload> = z.object({
   text: z.string(),
   providerId: providerIdSchema,
   model: z.string().optional(),
@@ -53,7 +90,13 @@ export const aiGenerateResponsePayloadSchema = z.object({
   costUsd: z.number().optional(),
 });
 export const aiGenerateStreamResponsePayloadSchema = aiGenerateResponsePayloadSchema;
-export const aiGenerateStreamChunkEventPayloadSchema = z.object({
-  requestId: requestIdSchema,
-  delta: z.string(),
-});
+export interface AiGenerateStreamChunkEventPayload {
+  requestId: string;
+  delta: string;
+}
+
+export const aiGenerateStreamChunkEventPayloadSchema: z.ZodType<AiGenerateStreamChunkEventPayload> =
+  z.object({
+    requestId: requestIdSchema,
+    delta: z.string(),
+  });

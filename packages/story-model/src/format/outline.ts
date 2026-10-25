@@ -9,7 +9,7 @@ import {
   type StoryboardProject,
 } from './project';
 
-export const outlineVersion = '1.0.0';
+export const outlineVersion: string = '1.0.0';
 
 export interface OutlineSynopsis {
   readonly logline: string;
@@ -70,7 +70,21 @@ export const outlineSynopsisSchema = z.object({
   styleRules: z.array(z.string().trim().min(1)).default([]),
 });
 
-const scenePlanSchema = z.object({
+interface ScenePlanPayload {
+  id: string;
+  title: string;
+  purpose: string;
+  characters: string[];
+  foreshadowing: string[];
+  neededCanon: string[];
+  location?: string;
+  conflict?: string;
+  twist?: string;
+  emotionalShift?: string;
+  targetWordCount?: number;
+}
+
+const scenePlanSchema: z.ZodType<ScenePlanPayload> = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1),
   purpose: z.string().trim().default(''),
@@ -84,7 +98,17 @@ const scenePlanSchema = z.object({
   targetWordCount: z.number().int().positive().optional(),
 });
 
-const chapterPlanChapterSchema = z.object({
+interface ChapterPlanChapterPayload {
+  id: string;
+  title: string;
+  scenes: ScenePlanPayload[];
+  summary?: string;
+  targetWordCount?: number;
+  narrator?: string;
+  thread?: string;
+}
+
+const chapterPlanChapterSchema: z.ZodType<ChapterPlanChapterPayload> = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).optional(),
@@ -94,14 +118,26 @@ const chapterPlanChapterSchema = z.object({
   scenes: z.array(scenePlanSchema).default([]),
 });
 
-const chapterPlanActSchema = z.object({
+interface ChapterPlanActPayload {
+  id: string;
+  title: string;
+  chapters: ChapterPlanChapterPayload[];
+  summary?: string;
+}
+
+const chapterPlanActSchema: z.ZodType<ChapterPlanActPayload> = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).optional(),
   chapters: z.array(chapterPlanChapterSchema).default([]),
 });
 
-export const chapterPlanSchema = z.object({
+export interface ChapterPlanPayload {
+  version: string;
+  acts: ChapterPlanActPayload[];
+}
+
+export const chapterPlanSchema: z.ZodType<ChapterPlanPayload> = z.object({
   version: z.literal(outlineVersion),
   acts: z.array(chapterPlanActSchema).default([]),
 });
@@ -166,8 +202,8 @@ export function findUncastCharacters(
   plan: ChapterPlan,
   existingIds: ReadonlySet<string>,
 ): UncastCharacters {
-  const sceneTitlesById = new Map<string, Set<string>>();
-  const unusableIds = new Set<string>();
+  const sceneTitlesById: Map<string, Set<string>> = new Map<string, Set<string>>();
+  const unusableIds: Set<string> = new Set<string>();
 
   for (const { scene } of flattenChapterPlan(plan)) {
     for (const id of scene.characters) {
@@ -193,18 +229,18 @@ export function coerceOutlineCharacters(
   raw: unknown,
   requestedIds: readonly string[],
 ): OutlineCharacterDraft[] {
-  const entries = isRecord(raw) ? asArray(raw.characters) : asArray(raw);
-  const drafts = new Map<string, OutlineCharacterDraft>();
+  const entries: unknown[] = isRecord(raw) ? asArray(raw.characters) : asArray(raw);
+  const drafts: Map<string, OutlineCharacterDraft> = new Map<string, OutlineCharacterDraft>();
 
   for (const entry of entries) {
-    const record = isRecord(entry) ? entry : {};
-    const id = text(record.id);
+    const record: Record<string, unknown> = isRecord(entry) ? entry : {};
+    const id: string | undefined = text(record.id);
 
     if (id === undefined || !requestedIds.includes(id) || drafts.has(id)) {
       continue;
     }
 
-    const role = text(record.role)?.toLowerCase();
+    const role: string | undefined = text(record.role)?.toLowerCase();
     drafts.set(id, {
       id,
       name: text(record.name) ?? id,
@@ -284,7 +320,7 @@ export function toOutlineBrief(
 }
 
 export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): OutlineSynopsis {
-  const record = isRecord(raw) ? raw : {};
+  const record: Record<string, unknown> = isRecord(raw) ? raw : {};
   const parsed = outlineSynopsisSchema.safeParse(record);
 
   if (parsed.success) {
@@ -299,14 +335,14 @@ export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): Outlin
     outlineSynopsisSchema.shape,
   ) as (keyof typeof outlineSynopsisSchema.shape)[]) {
     const fieldSchema = outlineSynopsisSchema.shape[key];
-    const fieldValue = record[key];
+    const fieldValue: unknown = record[key];
     const fieldParsed = fieldSchema.safeParse(fieldValue);
     if (fieldParsed.success && fieldParsed.data !== undefined) {
       salvaged[key] = fieldParsed.data;
     }
   }
 
-  const data = salvaged as unknown as OutlineSynopsis;
+  const data: OutlineSynopsis = salvaged as unknown as OutlineSynopsis;
   return { ...data, pov: data.pov ?? brief.pov };
 }
 
@@ -315,19 +351,19 @@ export function emptyOutlineSynopsis(): OutlineSynopsis {
 }
 
 export function coerceChapterPlan(raw: unknown): ChapterPlan {
-  const actsRaw = isRecord(raw) ? asArray(raw.acts) : asArray(raw);
+  const actsRaw: unknown[] = isRecord(raw) ? asArray(raw.acts) : asArray(raw);
 
   const acts = actsRaw.map((actRaw, actIndex) => {
-    const act = isRecord(actRaw) ? actRaw : {};
-    const chaptersRaw = asArray(act.chapters);
+    const act: Record<string, unknown> = isRecord(actRaw) ? actRaw : {};
+    const chaptersRaw: unknown[] = asArray(act.chapters);
 
     return {
       id: text(act.id) ?? `act-${actIndex + 1}`,
       title: text(act.title) ?? `${actIndex + 1}막`,
       ...optionalText('summary', act.summary),
       chapters: chaptersRaw.map((chapterRaw, chapterIndex) => {
-        const chapter = isRecord(chapterRaw) ? chapterRaw : {};
-        const scenesRaw = asArray(chapter.scenes);
+        const chapter: Record<string, unknown> = isRecord(chapterRaw) ? chapterRaw : {};
+        const scenesRaw: unknown[] = asArray(chapter.scenes);
 
         return {
           id: text(chapter.id) ?? `chapter-${actIndex + 1}-${chapterIndex + 1}`,
@@ -335,7 +371,7 @@ export function coerceChapterPlan(raw: unknown): ChapterPlan {
           ...optionalText('summary', chapter.summary),
           ...optionalPositiveInt('targetWordCount', chapter.targetWordCount),
           scenes: scenesRaw.map((sceneRaw, sceneIndex) => {
-            const scene = isRecord(sceneRaw) ? sceneRaw : {};
+            const scene: Record<string, unknown> = isRecord(sceneRaw) ? sceneRaw : {};
 
             return {
               id: text(scene.id) ?? `scene-${actIndex + 1}-${chapterIndex + 1}-${sceneIndex + 1}`,
@@ -378,12 +414,12 @@ function textList(value: unknown): string[] {
 }
 
 function optionalText(key: string, value: unknown): Record<string, string> {
-  const trimmed = text(value);
+  const trimmed: string | undefined = text(value);
   return trimmed !== undefined ? { [key]: trimmed } : {};
 }
 
 function optionalPositiveInt(key: string, value: unknown): Record<string, number> {
-  const parsed = typeof value === 'string' ? Number(value) : value;
+  const parsed: unknown = typeof value === 'string' ? Number(value) : value;
   return typeof parsed === 'number' && Number.isInteger(parsed) && parsed > 0
     ? { [key]: parsed }
     : {};
