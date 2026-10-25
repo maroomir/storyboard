@@ -23,8 +23,6 @@ import { defaultNoteSource, noteSources } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
 import { askSecret, readStdin } from './prompt';
 
-// A Notion address is read over the API, a `.zip` as Notion's Markdown export, anything else as an
-// Obsidian folder or note.
 export function parseNoteLocation(raw: string): NoteLocation {
   if (isNotionUrl(raw)) {
     return { kind: 'notion', pageUrl: raw };
@@ -184,8 +182,6 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
   return lines;
 }
 
-// Collect, estimate, plan, apply — with a person asked twice (before spending, before writing) and
-// an agent stopped after the estimate unless it said `--yes`. `--dry-run` stops after the plan.
 export async function runNoteAbsorb(
   container: CliContainer,
   args: ParsedArguments,
@@ -298,7 +294,6 @@ export const absorbNotes: CommandHandler = async ({ container, args }) => {
   });
 };
 
-// Writes outside the workspace, so it takes no run lock; the target folder is the author's.
 export const exportNotes: CommandHandler = async ({ container, args }) => {
   const rawTarget: string | undefined = args.positionals[0];
 
@@ -323,8 +318,6 @@ export const exportNotes: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// SECURITY: the token is read without echo (or from stdin for an agent) and goes only to the 0600
-// secrets file; it is never printed.
 export const connectNotes: CommandHandler = async ({ container, args }) => {
   const source: string = args.positionals[0] ?? defaultNoteSource;
 

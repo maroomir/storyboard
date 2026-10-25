@@ -28,11 +28,7 @@ function riskNoticeLines(): string[] {
   ]);
 }
 
-// The one question a one-shot command asks: nobody but the person whose subscription it is can
-// accept these risks, so there is no flag that answers for them and no answer without a terminal.
-// The browser-login path has no such notice: the provider opened it officially, so the switch
-// turns on at once and the next step is the login.
-async function switchOn(
+async function switchOnHiddenProvider(
   container: CliContainer,
   providerId: AiProviderId,
 ): Promise<CommandOutcome> {
@@ -85,8 +81,6 @@ async function switchOn(
   };
 }
 
-// The hidden providers' own keys. They live in the home file whatever `--global` says, and none of
-// them is a name until the switch is on — except the switch itself.
 export async function setHiddenProviderKey(
   container: CliContainer,
   key: string,
@@ -111,7 +105,7 @@ export async function setHiddenProviderKey(
     }
 
     if (isEnabled) {
-      return switchOn(container, providerId);
+      return switchOnHiddenProvider(container, providerId);
     }
 
     const clearedKeys: readonly string[] = await configBridge.disableHiddenProvider(providerId);
@@ -133,7 +127,6 @@ export async function setHiddenProviderKey(
     return { ok: false, message: unknownProviderMessage(providerId) };
   }
 
-  // The executable keys belong to the program-run path; any other provider's go the common way.
   if (getProviderTransport(providerId) !== 'cli') {
     return undefined;
   }
@@ -141,8 +134,6 @@ export async function setHiddenProviderKey(
   if (field === 'command') {
     const command: string = raw.trim();
 
-    // The config schema rejects a blank command, and a file it rejects stops every later command —
-    // including the one that would put it right.
     if (command.length === 0) {
       return { ok: false, message: `${key} 는 비워 둘 수 없습니다. 실행 파일의 경로를 적으세요.` };
     }
@@ -157,7 +148,6 @@ export async function setHiddenProviderKey(
 
     await configBridge.setCliProviderConfig(providerId, { timeoutMs });
   } else {
-    // `model` and anything else go the way every provider's keys go.
     return undefined;
   }
 
@@ -175,10 +165,6 @@ export interface HiddenProviderCheck {
   readonly fix?: string;
 }
 
-// What `doctor` adds when the default provider is a hidden one: for the program-run path whether
-// its risks were accepted and the executable is signed in — asked of the executable itself; for
-// the browser-login path whether a session is there and the configured model is one the account
-// may call.
 export async function collectHiddenProviderChecks(
   container: CliContainer,
   providerId: AiProviderId,
@@ -220,8 +206,6 @@ const previewCheck: HiddenProviderCheck = {
     '제공자가 미리보기로 연 경로입니다. 받는 파라미터와 한도 정책이 바뀔 수 있고, 금액이 계산되지 않아 실행 예산(budget.run.limitUsd)이 적용되지 않습니다.',
 };
 
-// The model list is the account's, not the catalog's, so the configured model is checked against
-// what the account actually offers — a warning, since the list may change under us.
 async function collectLoginProviderChecks(
   container: CliContainer,
   providerId: AiProviderId,

@@ -3,8 +3,6 @@ import { contractFieldLabels } from '@storyboard/story-model';
 
 import type { CommandHandler } from './outcome';
 
-// 엔진은 어느 단계가 열려 있는지만 말한다. 그 단계를 여는 명령은 이 표가 갖는다 — 대화형 화면의
-// 홈도 같은 표를 읽는다.
 export const nextStepCommands: Readonly<Record<WorkspaceNextStep, string | undefined>> = {
   'fill-contract': 'project set',
   'generate-outline': 'outline generate',

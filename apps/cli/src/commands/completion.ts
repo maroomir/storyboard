@@ -146,14 +146,14 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
     case 'language':
       return initLanguages.map((code) => ({ text: code, description: '' }));
     case 'workspace':
-      // Directories are the shell's own business; returning nothing lets it fall back to paths.
-      return [];
+      return leaveDirectoriesToTheShell;
     default:
       return findFlagSpec(flagName)?.valueLabel === undefined ? undefined : [];
   }
 }
 
-// `--provider <id>`, or the value of a `config set` key that names a provider.
+const leaveDirectoriesToTheShell: Completion[] = [];
+
 function findProviderWord(words: readonly string[]): string | undefined {
   const providerIndex: number = words.indexOf('--provider');
 
@@ -198,8 +198,6 @@ function choiceCompletions(choices: readonly string[], description: string): Com
   return choices.map((choice) => ({ text: choice, description }));
 }
 
-// Positional slots come from the catalog's usage line: `<stem>` is a scene, `<id>` after
-// `card rename <type>` is a card of that type, and so on.
 function positionalCompletions(
   spec: CommandSpec,
   positionals: readonly string[],
@@ -265,10 +263,6 @@ function positionalCompletions(
   }
 }
 
-// `words` is everything after `storyboard` up to and including the word being typed (possibly
-// empty). The answer is what could legally come next, filtered by that last word.
-// Everything an `@` at the interactive prompt can name: scenes, cards and narrators, with what each
-// one is.
 export function listWorkspaceMentions(cwd: string): Completion[] {
   return [
     ...listFiles(join(cwd, 'scene'), '.card').map((stem) => ({ text: stem, description: '씬' })),

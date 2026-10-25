@@ -15,7 +15,6 @@ import type { CliContainer } from '@/container';
 
 import type { CommandContext, CommandOutcome } from './outcome';
 
-// How a browser-login provider signs in and out. One entry per provider that has such a flow.
 interface LoginFlow {
   readonly login: (
     deps: Parameters<typeof loginChatGpt>[0],
@@ -30,7 +29,6 @@ const loginFlows: Partial<Record<AiProviderId, LoginFlow>> = {
   chatgpt: { login: loginChatGpt, logout: logoutChatGpt },
 };
 
-// The test seams: the browser, the network and the wait. A one-shot run uses the real ones.
 export interface LoginDependencies {
   readonly openBrowser: (url: string) => Promise<boolean>;
   readonly fetch?: FetchLike;
@@ -40,8 +38,6 @@ export interface LoginDependencies {
 
 const defaultLoginDependencies: LoginDependencies = { openBrowser };
 
-// The provider over the stored session, for the one call that confirms a login works and for
-// doctor's account checks. Throws `login-required` when there is no session.
 export async function createChatGptProvider(
   container: CliContainer,
   fetchImpl?: FetchLike,
@@ -60,7 +56,6 @@ function loginProviderIds(): AiProviderId[] {
   return availableProviderIds().filter((providerId) => loginFlows[providerId] !== undefined);
 }
 
-// The provider named on the command line, or the sentence that says why there is none.
 type LoginProviderResolution = { readonly providerId: AiProviderId } | { readonly problem: string };
 
 function resolveLoginProvider(given: string | undefined): LoginProviderResolution {
@@ -101,8 +96,6 @@ function describeLoginFailure(error: unknown): string {
   return `로그인을 마치지 못했습니다: ${detail}`;
 }
 
-// The sign-in a verb runs: the browser (or the URL to open by hand), the wait on the loopback
-// port, then one real call to confirm the session works. Shared by `login` and `setup`.
 export async function signIn(
   container: CliContainer,
   providerId: AiProviderId,
@@ -146,7 +139,6 @@ export async function signIn(
   const account: string = result.accountLabel === undefined ? '' : ` (${result.accountLabel})`;
   const saved: string = `${providerId} 에 로그인했습니다${account}: ${container.homePaths.secretsFile}`;
 
-  // One call right away: a login that cannot call anything is found here, not in a paid run.
   try {
     await (await createChatGptProvider(container, deps.fetch)).checkConnection();
     return {

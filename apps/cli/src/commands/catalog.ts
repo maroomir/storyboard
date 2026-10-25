@@ -18,8 +18,6 @@ export type CommandGroup =
   | '원고'
   | '측정';
 
-// 어느 verb 에나 붙는 옵션. 최상위 도움말·verb 도움말·자동완성이 같은 목록을 봐야 «있다고 적혀
-// 있는데 완성되지 않는» 옵션이 생기지 않는다.
 export type GlobalFlagName =
   | 'workspace'
   | 'provider'
@@ -43,7 +41,6 @@ export const globalFlagNames: readonly GlobalFlagName[] = [
   'version',
 ];
 
-// verb 도움말 아래에 늘 붙는 짧은 목록.
 export const sharedFlagNames: readonly GlobalFlagName[] = ['workspace', 'json', 'quiet', 'verbose'];
 
 export type CompletionShell = 'zsh' | 'bash' | 'fish';
@@ -54,8 +51,6 @@ export type InitLanguage = 'ko' | 'en' | 'ja';
 
 export const initLanguages: readonly InitLanguage[] = ['ko', 'en', 'ja'];
 
-// 종류는 명령 이름이 아니라 첫 인자다. usage 의 <type>·<kind> 칸, 핸들러의 검사, 자동완성이 같은
-// 목록을 본다.
 export type CardCategory = 'character' | 'background';
 
 export const cardCategories: readonly CardCategory[] = ['character', 'background'];
@@ -68,8 +63,6 @@ export const noteSources: readonly NoteSource[] = ['notion'];
 
 export const defaultNoteSource: NoteSource = 'notion';
 
-// `config show` 가 프로바이더마다 보여 주는 칸과, `config set` 이 실제로 쓸 수 있는 칸. 두 목록이
-// 다른 것은 뜻이 있어서다 — 보여 주기만 하는 값이 있다.
 export type ProviderKey = 'model' | 'baseUrl' | 'contextTokens';
 
 export type SettableProviderKey = ProviderKey;
@@ -93,7 +86,6 @@ export const commandGroups: readonly CommandGroup[] = [
   '측정',
 ];
 
-// `help <묶음>` 으로 칠 수 있는 이름. 한글 묶음 이름은 셸에서 띄어쓰기와 IME 때문에 치기 어렵다.
 export const commandGroupIds: Readonly<Record<CommandGroup, string>> = {
   시작하기: 'start',
   기획: 'plan',
@@ -117,12 +109,8 @@ export interface CommandSpec {
   readonly summary: string;
   readonly flags?: readonly string[];
   readonly examples?: readonly string[];
-  // `init` creates the workspace and the setup verbs are machine-wide, so they cannot demand one.
   readonly needsWorkspace?: false;
-  // Changes the workspace, so it takes the workspace run lock for its duration and refuses while
-  // another app (the desktop, the extension, another CLI) holds it.
   readonly writesWorkspace?: true;
-  // Rewrites the draft of the scene named by the first argument, so a terminal shows what changed.
   readonly rewritesDraft?: true;
 }
 
@@ -132,7 +120,6 @@ export interface FlagSpec {
   readonly summary: string;
 }
 
-// One table drives the parser (which flags take a value), `--help`, per-verb help and the README.
 export const flagCatalog: readonly FlagSpec[] = [
   { name: 'workspace', valueLabel: '<path>', summary: '대상 워크스페이스 (기본: 현재 디렉터리)' },
   {
@@ -235,7 +222,6 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'episodes',
     valueLabel: '<n>',
-    // NOTE: 도움말은 번들 기본값을 보인다. 작가의 compositionPresets.json 은 작품 명령이 돌 때 덮인다.
     summary: `옴니버스 구성이 만들 편 수 (기본 ${compositionPresetDefaults.omnibusEpisodeCount})`,
   },
   {
