@@ -17,7 +17,11 @@ export function listBackgroundFactLines(card: BackgroundCard): string[] {
     .map((line) => line.trim());
 }
 
-const backgroundFactConflictResponseSchema = z.object({
+interface BackgroundFactConflictResponse {
+  conflicts: { items: string[] }[];
+}
+
+const backgroundFactConflictResponseSchema: z.ZodType<BackgroundFactConflictResponse> = z.object({
   conflicts: z.array(z.object({ items: z.array(z.string()) })).default([]),
 });
 
@@ -32,8 +36,8 @@ export function readBackgroundFactConflictResponse(
     return [];
   }
 
-  const known = new Set(factLines);
-  const seen = new Set<string>();
+  const known: Set<string> = new Set(factLines);
+  const seen: Set<string> = new Set<string>();
 
   return parsed.data.conflicts.flatMap((conflict) => {
     const [first, second] = conflict.items.map((item) => item.trim());
@@ -44,7 +48,7 @@ export function readBackgroundFactConflictResponse(
       return [];
     }
 
-    const key = [first, second].sort().join('\n');
+    const key: string = [first, second].sort().join('\n');
     if (seen.has(key)) {
       return [];
     }

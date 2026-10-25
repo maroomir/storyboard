@@ -29,14 +29,14 @@ export interface StoryWorkspaceFolder {
 // 여기서 node 모듈을 하나만 끌어와도 웹뷰 빌드가 통째로 깨진다. 동작은 posix.join 과 같아야 하므로
 // storyUri.spec 이 표준 라이브러리와 결과를 대조한다.
 function joinPosixPath(segments: readonly string[]): string {
-  const joined = segments.filter((segment) => segment.length > 0).join('/');
+  const joined: string = segments.filter((segment) => segment.length > 0).join('/');
 
   if (joined.length === 0) {
     return '.';
   }
 
-  const isAbsolute = joined.startsWith('/');
-  const hasTrailingSlash = joined.endsWith('/');
+  const isAbsolute: boolean = joined.startsWith('/');
+  const hasTrailingSlash: boolean = joined.endsWith('/');
   const resolved: string[] = [];
 
   for (const part of joined.split('/')) {
@@ -49,7 +49,7 @@ function joinPosixPath(segments: readonly string[]): string {
       continue;
     }
 
-    const last = resolved[resolved.length - 1];
+    const last: string | undefined = resolved[resolved.length - 1];
 
     if (last !== undefined && last !== '..') {
       resolved.pop();
@@ -58,8 +58,8 @@ function joinPosixPath(segments: readonly string[]): string {
     }
   }
 
-  const body = resolved.join('/');
-  const trailing = hasTrailingSlash && body.length > 0 ? '/' : '';
+  const body: string = resolved.join('/');
+  const trailing: string = hasTrailingSlash && body.length > 0 ? '/' : '';
 
   if (isAbsolute) {
     return `/${body}${trailing}`;

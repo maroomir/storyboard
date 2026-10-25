@@ -133,7 +133,7 @@ export const STORYBOARD_GLOBS = {
 // NOTE: 스레드는 연속성 줄기다. 기본 줄기('main')는 종전 경로를 그대로 쓰고, 나머지 줄기만
 // 하위 디렉터리로 갈라 이야기 상태·요약·인물 기억이 줄기 밖으로 새지 않게 한다.
 export function threadMemoryRelativePath(threadId: string, leafRelativePath: string): string {
-  const leaf = leafRelativePath.startsWith(`${STORYBOARD_RELATIVE_PATHS.memoryDirectory}/`)
+  const leaf: string = leafRelativePath.startsWith(`${STORYBOARD_RELATIVE_PATHS.memoryDirectory}/`)
     ? leafRelativePath.slice(STORYBOARD_RELATIVE_PATHS.memoryDirectory.length + 1)
     : leafRelativePath;
 
@@ -191,14 +191,14 @@ function isDirectChildWithExtension(
   directory: string,
   extension: string,
 ): boolean {
-  const normalized = relativePath.replace(/\\/g, '/');
-  const prefix = `${directory}/`;
+  const normalized: string = relativePath.replace(/\\/g, '/');
+  const prefix: string = `${directory}/`;
 
   if (!normalized.startsWith(prefix)) {
     return false;
   }
 
-  const remainder = normalized.slice(prefix.length);
+  const remainder: string = normalized.slice(prefix.length);
   return !remainder.includes('/') && remainder.endsWith(extension);
 }
 

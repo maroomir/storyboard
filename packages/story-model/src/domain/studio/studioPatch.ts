@@ -2,7 +2,7 @@ import { cardSchema } from '#model/format/card';
 import { parseCard, serializeCard } from '#model/format/files/card';
 import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
 
-import type { StudioPatchPayload } from '#model/shared/messaging/index';
+import type { StudioPatch } from '#model/contracts/studioAgent';
 
 export type StudioPatchTarget = 'entityCard' | 'sceneCard' | 'draft';
 
@@ -17,13 +17,13 @@ interface StudioCardFieldChange {
 
 // NOTE: id and type key the file name and the codec branch, so renaming or retyping a card belongs
 // to the rename command, not to a chat patch that only rewrites the file in place.
-const protectedEntityCardFields = new Set(['id', 'type']);
+const protectedEntityCardFields: Set<string> = new Set(['id', 'type']);
 
 // NOTE: a scene card doubles as the generation contract. Narrative fields are free to edit;
 // characters and location are editable too but the apply path refuses ids that do not resolve to
 // real cards, so a chat fill cannot leave the pipeline pointing at nothing. grounding and the
 // numeric contract fields stay closed — the pipeline computes those.
-const editableSceneCardFields = new Set([
+const editableSceneCardFields: Set<string> = new Set([
   'title',
   'summary',
   'purpose',
@@ -40,7 +40,7 @@ const editableSceneCardFields = new Set([
 
 export function applyStudioPatch(
   baseline: string,
-  patch: StudioPatchPayload,
+  patch: StudioPatch,
   target: StudioPatchTarget,
 ): StudioPatchResult {
   if (target === 'draft') {
@@ -62,7 +62,9 @@ function applyEntityCardPatch(
   baseline: string,
   changes: readonly StudioCardFieldChange[],
 ): StudioPatchResult {
-  const blocked = changes.filter((change) => protectedEntityCardFields.has(change.field));
+  const blocked: StudioCardFieldChange[] = changes.filter((change) =>
+    protectedEntityCardFields.has(change.field),
+  );
 
   if (blocked.length > 0) {
     return {
@@ -99,7 +101,9 @@ function applySceneCardPatch(
   baseline: string,
   changes: readonly StudioCardFieldChange[],
 ): StudioPatchResult {
-  const blocked = changes.filter((change) => !editableSceneCardFields.has(change.field));
+  const blocked: StudioCardFieldChange[] = changes.filter(
+    (change) => !editableSceneCardFields.has(change.field),
+  );
 
   if (blocked.length > 0) {
     return {
@@ -172,7 +176,7 @@ function applyDraftPatch(
     }
   }
 
-  let text = baseline;
+  let text: string = baseline;
 
   for (const replacement of [...ordered].reverse()) {
     text = `${text.slice(0, replacement.startOffset)}${replacement.newText}${text.slice(replacement.endOffset)}`;

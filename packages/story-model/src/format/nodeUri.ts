@@ -2,21 +2,21 @@ import { isAbsolute, resolve, sep } from 'node:path';
 
 import type { StoryUri } from './storyUri';
 
-const isWindows = sep === '\\';
+const isWindows: boolean = sep === '\\';
 
 // A file URI for a host with no editor — the CLI uses it. `path` is always posix so the engine's path joining behaves
 // identically everywhere; `fsPath` converts back to what Node's fs expects.
 export class NodeUri implements StoryUri {
-  public readonly scheme = 'file';
-  public readonly authority = '';
-  public readonly query = '';
-  public readonly fragment = '';
+  public readonly scheme: string = 'file';
+  public readonly authority: string = '';
+  public readonly query: string = '';
+  public readonly fragment: string = '';
 
   private constructor(public readonly path: string) {}
 
   public static file(osPath: string): NodeUri {
-    const absolute = isAbsolute(osPath) ? osPath : resolve(osPath);
-    const posix = absolute.split(sep).join('/');
+    const absolute: string = isAbsolute(osPath) ? osPath : resolve(osPath);
+    const posix: string = absolute.split(sep).join('/');
     return new NodeUri(posix.startsWith('/') ? posix : `/${posix}`);
   }
 

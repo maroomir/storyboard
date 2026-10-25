@@ -1,5 +1,5 @@
 export function parseJsonArray(response: string): unknown[] | null {
-  const match = response.match(/\[[\s\S]*\]/);
+  const match: RegExpMatchArray | null = response.match(/\[[\s\S]*\]/);
 
   if (!match) {
     return null;
@@ -14,8 +14,8 @@ export function parseJsonArray(response: string): unknown[] | null {
 }
 
 export function parseJsonObject(response: string): Record<string, unknown> | null {
-  const match = response.match(/\{[\s\S]*\}/);
-  const greedy = match ? toPlainObject(match[0]) : null;
+  const match: RegExpMatchArray | null = response.match(/\{[\s\S]*\}/);
+  const greedy: Record<string, unknown> | null = match ? toPlainObject(match[0]) : null;
 
   // NOTE: the greedy span runs to the last brace in the response, so a stray trailing brace or a
   // closing remark would throw away an otherwise good object; fall back to the first span that
@@ -24,14 +24,18 @@ export function parseJsonObject(response: string): Record<string, unknown> | nul
 }
 
 function scanBalancedObject(response: string): Record<string, unknown> | null {
-  for (let start = response.indexOf('{'); start !== -1; start = response.indexOf('{', start + 1)) {
-    const end = findBalancedEnd(response, start);
+  for (
+    let start: number = response.indexOf('{');
+    start !== -1;
+    start = response.indexOf('{', start + 1)
+  ) {
+    const end: number = findBalancedEnd(response, start);
 
     if (end === -1) {
       continue;
     }
 
-    const parsed = toPlainObject(response.slice(start, end + 1));
+    const parsed: Record<string, unknown> | null = toPlainObject(response.slice(start, end + 1));
 
     if (parsed) {
       return parsed;
@@ -42,12 +46,12 @@ function scanBalancedObject(response: string): Record<string, unknown> | null {
 }
 
 function findBalancedEnd(text: string, start: number): number {
-  let depth = 0;
-  let isInString = false;
-  let isEscaped = false;
+  let depth: number = 0;
+  let isInString: boolean = false;
+  let isEscaped: boolean = false;
 
-  for (let index = start; index < text.length; index += 1) {
-    const character = text[index];
+  for (let index: number = start; index < text.length; index += 1) {
+    const character: string | undefined = text[index];
 
     if (isEscaped) {
       isEscaped = false;
@@ -95,7 +99,7 @@ function toPlainObject(candidate: string): Record<string, unknown> | null {
 }
 
 export function parseJsonNestedArray(response: string): unknown[][] | null {
-  const match = response.match(/\[\s*(?:\[[\s\S]*?\]\s*,?\s*)*\s*\]/);
+  const match: RegExpMatchArray | null = response.match(/\[\s*(?:\[[\s\S]*?\]\s*,?\s*)*\s*\]/);
 
   if (!match) {
     return null;
@@ -123,7 +127,7 @@ export function parseBulletList(response: string): string[] {
 }
 
 export function parseMBTI(response: string): string | null {
-  const match = response.match(/[IE][NS][FT][JP]/);
+  const match: RegExpMatchArray | null = response.match(/[IE][NS][FT][JP]/);
   return match ? match[0] : null;
 }
 
@@ -134,8 +138,8 @@ export function parseCharacterTraitSections(
   const result: Record<string, string[]> = {};
 
   for (const name of characterNames) {
-    const pattern = new RegExp(`\\[${escapeRegExp(name)}\\]([\\s\\S]*?)(?=\\[|$)`, 'g');
-    const matches = response.match(pattern);
+    const pattern: RegExp = new RegExp(`\\[${escapeRegExp(name)}\\]([\\s\\S]*?)(?=\\[|$)`, 'g');
+    const matches: RegExpMatchArray | null = response.match(pattern);
     result[name] = matches ? parseBulletList(matches[0]) : [];
   }
 
@@ -143,12 +147,12 @@ export function parseCharacterTraitSections(
 }
 
 export function detectCharactersFromDialogue(script: string): string[] {
-  const pattern = /^([^:\n]+):/gm;
-  const names = new Set<string>();
+  const pattern: RegExp = /^([^:\n]+):/gm;
+  const names: Set<string> = new Set<string>();
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(script)) !== null) {
-    const name = match[1]?.trim().replace(/^["']|["']$/g, '');
+    const name: string | undefined = match[1]?.trim().replace(/^["']|["']$/g, '');
 
     if (name && name.length >= 2 && name.length <= 10) {
       names.add(name);

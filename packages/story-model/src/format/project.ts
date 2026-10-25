@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { craftContractOverrideSchema } from './craftContract';
 
-export const storyboardProjectVersion = '1.0.0';
+export const storyboardProjectVersion: string = '1.0.0';
 
 export const projectFormats = ['novel', 'screenplay', 'play', 'essay', 'poem'] as const;
 
@@ -53,12 +53,15 @@ export const contractFieldLabels: Record<ContractFieldKey, string> = {
   targetWordCount: '목표 분량',
 };
 
-export const projectEditorSchema = z.object({
+export interface ProjectEditor {
+  scenePrefixDigits: number;
+  trackDraft?: boolean;
+}
+
+export const projectEditorSchema: z.ZodType<ProjectEditor> = z.object({
   scenePrefixDigits: z.number().int().positive(),
   trackDraft: z.boolean().optional(),
 });
-
-export type ProjectEditor = z.infer<typeof projectEditorSchema>;
 
 // 구성. 스레드와 서술자를 어떻게 배치할지 정하는 프리셋이며, 실제 배치는 프리셋이 threads와
 // 아웃라인 지시로 풀어낸다.
@@ -78,24 +81,59 @@ export const compositionKindLabels: Record<CompositionKind, string> = Object.fro
 ) as Record<CompositionKind, string>;
 
 // 연속성 줄기. 이야기 상태·장 요약·직전 씬 맥락은 스레드 안에서만 이어지고, 캐넌만 전역이다.
-export const storyThreadSchema = z.object({
+export interface StoryThread {
+  title: string;
+  wraps?: readonly string[];
+}
+
+export const storyThreadSchema: z.ZodType<StoryThread> = z.object({
   title: z.string().trim().min(1),
   // 액자식에서 이 스레드가 감싸는 내부 스레드. 조립할 때 외화를 앞뒤에 두는 근거가 된다.
   wraps: z.array(z.string().trim().min(1)).readonly().optional(),
 });
 
-export type StoryThread = z.infer<typeof storyThreadSchema>;
+export const mainThreadId: string = 'main';
 
-export const mainThreadId = 'main';
+export interface ProjectNarration {
+  defaultNarrator?: string;
+}
 
-export const projectNarrationSchema = z.object({
+export const projectNarrationSchema: z.ZodType<ProjectNarration> = z.object({
   // 이름 붙인 기본 서술자(`narrator/<id>.card`). 없으면 `pov`에서 암묵 서술자를 파생한다.
   defaultNarrator: z.string().trim().min(1).optional(),
 });
 
-export type ProjectNarration = z.infer<typeof projectNarrationSchema>;
+export interface ProjectSettingCraftContract {
+  banTelling?: boolean;
+  motifRepeatLimit?: number;
+  stockGestureBlacklist?: readonly string[];
+  requireCharacterInterior?: boolean;
+  actionClarity?: boolean;
+  modulateDensity?: boolean;
+  sceneLengthMultiplier?: number;
+}
 
-export const projectSettingSchema = z.object({
+export interface ProjectSetting {
+  tags: string[];
+  prohibitions: string[];
+  styleConstraints: string[];
+  qualityCriteria: string[];
+  genre?: string;
+  country?: string;
+  concept?: string;
+  description?: string;
+  audience?: string;
+  targetWordCount?: number;
+  pov?: PointOfView;
+  narration?: ProjectNarration;
+  composition?: CompositionKind;
+  threads?: Record<string, StoryThread>;
+  chapterCount?: number;
+  scenesPerChapter?: number;
+  craftContract?: ProjectSettingCraftContract;
+}
+
+export const projectSettingSchema: z.ZodType<ProjectSetting> = z.object({
   genre: z.string().trim().min(1).optional(),
   country: z.string().trim().min(1).optional(),
   concept: z.string().trim().min(1).optional(),
@@ -116,9 +154,18 @@ export const projectSettingSchema = z.object({
   craftContract: craftContractOverrideSchema.optional(),
 });
 
-export type ProjectSetting = z.infer<typeof projectSettingSchema>;
+export interface StoryboardProject {
+  version: string;
+  id: string;
+  name: string;
+  format: ProjectFormat;
+  language: string;
+  createdAt: string;
+  editor: ProjectEditor;
+  setting?: ProjectSetting;
+}
 
-export const storyboardProjectSchema = z.object({
+export const storyboardProjectSchema: z.ZodType<StoryboardProject> = z.object({
   version: z.literal(storyboardProjectVersion),
   id: z.string().min(1),
   name: z.string().trim().min(1),
@@ -128,5 +175,3 @@ export const storyboardProjectSchema = z.object({
   editor: projectEditorSchema,
   setting: projectSettingSchema.optional(),
 });
-
-export type StoryboardProject = z.infer<typeof storyboardProjectSchema>;

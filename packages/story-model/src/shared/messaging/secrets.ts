@@ -1,20 +1,41 @@
 import { z } from 'zod';
 
-import { providerIdSchema } from './atoms';
+import { providerIdSchema, type ProviderId } from './atoms';
 
-export const secretsWriteApiKeyRequestPayloadSchema = z.object({
-  providerId: providerIdSchema,
-  apiKey: z.string().min(1),
-});
+export interface SecretsWriteApiKeyRequestPayload {
+  providerId: ProviderId;
+  apiKey: string;
+}
 
-export const secretsWriteApiKeyResponsePayloadSchema = z.object({
-  hasApiKey: z.literal(true),
-});
+export const secretsWriteApiKeyRequestPayloadSchema: z.ZodType<SecretsWriteApiKeyRequestPayload> =
+  z.object({
+    providerId: providerIdSchema,
+    apiKey: z.string().min(1),
+  });
 
-export const secretsDeleteApiKeyRequestPayloadSchema = z.object({
-  providerId: providerIdSchema,
-});
+export interface SecretsWriteApiKeyResponsePayload {
+  hasApiKey: true;
+}
 
-export const secretsDeleteApiKeyResponsePayloadSchema = z.object({
-  hasApiKey: z.literal(false),
-});
+export const secretsWriteApiKeyResponsePayloadSchema: z.ZodType<SecretsWriteApiKeyResponsePayload> =
+  z.object({
+    hasApiKey: z.literal(true),
+  });
+
+export interface SecretsDeleteApiKeyRequestPayload {
+  providerId: ProviderId;
+}
+
+export const secretsDeleteApiKeyRequestPayloadSchema: z.ZodType<SecretsDeleteApiKeyRequestPayload> =
+  z.object({
+    providerId: providerIdSchema,
+  });
+
+export interface SecretsDeleteApiKeyResponsePayload {
+  hasApiKey: false;
+}
+
+export const secretsDeleteApiKeyResponsePayloadSchema: z.ZodType<SecretsDeleteApiKeyResponsePayload> =
+  z.object({
+    hasApiKey: z.literal(false),
+  });

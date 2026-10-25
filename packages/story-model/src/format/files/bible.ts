@@ -56,7 +56,7 @@ export async function readBibleFile(
   uri: StoryUri,
   fileSystem: BibleFileSystem,
 ): Promise<StoryBible> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseBible(new TextDecoder().decode(bytes));
 }
 

@@ -32,7 +32,7 @@ export function renameCardIdInCharacterCard(
     return card;
   }
 
-  let changed = false;
+  let changed: boolean = false;
   const relations = card.relations.map((relation) => {
     if (relation.target !== oldId) {
       return relation;

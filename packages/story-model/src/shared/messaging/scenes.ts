@@ -2,9 +2,26 @@ import { z } from 'zod';
 
 import { uriStringSchema } from './atoms';
 
-export const scenesListRequestPayloadSchema = z.object({});
+export interface ScenesListRequestPayload {
+  [key: string]: never;
+}
 
-const sceneListItemSchema = z.object({
+export const scenesListRequestPayloadSchema: z.ZodType<ScenesListRequestPayload> = z.object({});
+
+export interface SceneListItem {
+  stem: string;
+  order: number;
+  slug: string;
+  sceneUri: string;
+  status: 'ready' | 'stale' | 'missing';
+  sceneMtime: number;
+  title?: string;
+  draftUri?: string;
+  draftMtime?: number;
+  outlineStale?: boolean;
+}
+
+const sceneListItemSchema: z.ZodType<SceneListItem> = z.object({
   stem: z.string().trim().min(1),
   order: z.number().int(),
   slug: z.string().trim().min(1),
@@ -17,24 +34,56 @@ const sceneListItemSchema = z.object({
   outlineStale: z.boolean().optional(),
 });
 
-export type SceneListItem = z.infer<typeof sceneListItemSchema>;
+export interface ScenesListResponsePayload {
+  scenes: SceneListItem[];
+}
 
-export const scenesListResponsePayloadSchema = z.object({
+export const scenesListResponsePayloadSchema: z.ZodType<ScenesListResponsePayload> = z.object({
   scenes: z.array(sceneListItemSchema),
 });
 
-export const scenesOpenSceneRequestPayloadSchema = z.object({
-  uri: uriStringSchema,
-});
+export interface ScenesOpenSceneRequestPayload {
+  uri: string;
+}
 
-export const scenesOpenDraftRequestPayloadSchema = z.object({
-  uri: uriStringSchema,
-});
+export const scenesOpenSceneRequestPayloadSchema: z.ZodType<ScenesOpenSceneRequestPayload> =
+  z.object({
+    uri: uriStringSchema,
+  });
 
-export const scenesGenerateDraftRequestPayloadSchema = z.object({
-  uri: uriStringSchema,
-});
+export interface ScenesOpenDraftRequestPayload {
+  uri: string;
+}
 
-export const scenesOpenSceneResponsePayloadSchema = z.object({});
-export const scenesOpenDraftResponsePayloadSchema = z.object({});
-export const scenesGenerateDraftResponsePayloadSchema = z.object({});
+export const scenesOpenDraftRequestPayloadSchema: z.ZodType<ScenesOpenDraftRequestPayload> =
+  z.object({
+    uri: uriStringSchema,
+  });
+
+export interface ScenesGenerateDraftRequestPayload {
+  uri: string;
+}
+
+export const scenesGenerateDraftRequestPayloadSchema: z.ZodType<ScenesGenerateDraftRequestPayload> =
+  z.object({
+    uri: uriStringSchema,
+  });
+
+export interface ScenesOpenSceneResponsePayload {
+  [key: string]: never;
+}
+
+export const scenesOpenSceneResponsePayloadSchema: z.ZodType<ScenesOpenSceneResponsePayload> =
+  z.object({});
+export interface ScenesOpenDraftResponsePayload {
+  [key: string]: never;
+}
+
+export const scenesOpenDraftResponsePayloadSchema: z.ZodType<ScenesOpenDraftResponsePayload> =
+  z.object({});
+export interface ScenesGenerateDraftResponsePayload {
+  [key: string]: never;
+}
+
+export const scenesGenerateDraftResponsePayloadSchema: z.ZodType<ScenesGenerateDraftResponsePayload> =
+  z.object({});

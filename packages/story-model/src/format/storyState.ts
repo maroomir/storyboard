@@ -41,32 +41,37 @@ export interface StoryStateFileSystem {
   readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
-const throughLinePattern = /^<!--\s*through-scene:\s*(\d+)\s*-->$/;
-const sceneInputLinePattern = /^<!--\s*scene-input:\s*(\d+)\s+(sha256:[0-9a-f]{64})\s*-->$/;
-const sectionEntries = Object.entries(storyStateSectionLabels) as [StoryStateSection, string][];
-const labelToSection = new Map(sectionEntries.map(([section, label]) => [label, section]));
+const throughLinePattern: RegExp = /^<!--\s*through-scene:\s*(\d+)\s*-->$/;
+const sceneInputLinePattern: RegExp = /^<!--\s*scene-input:\s*(\d+)\s+(sha256:[0-9a-f]{64})\s*-->$/;
+const sectionEntries: [StoryStateSection, string][] = Object.entries(storyStateSectionLabels) as [
+  StoryStateSection,
+  string,
+][];
+const labelToSection: Map<string, 'relations' | 'facts' | 'revealed' | 'motifs'> = new Map(
+  sectionEntries.map(([section, label]) => [label, section]),
+);
 
 export function createEmptyStoryState(): StoryState {
   return { throughSceneOrder: 0, sceneInputHashes: new Map(), entries: [] };
 }
 
 export function parseStoryState(content: string): StoryState {
-  const lines = content.split('\n');
-  let throughSceneOrder = 0;
+  const lines: string[] = content.split('\n');
+  let throughSceneOrder: number = 0;
   let current: StoryStateSection | undefined;
   const entries: StoryStateEntry[] = [];
-  const sceneInputHashes = new Map<number, string>();
+  const sceneInputHashes: Map<number, string> = new Map<number, string>();
 
   for (const rawLine of lines) {
-    const line = rawLine.trim();
+    const line: string = rawLine.trim();
 
-    const throughMatch = throughLinePattern.exec(line);
+    const throughMatch: RegExpExecArray | null = throughLinePattern.exec(line);
     if (throughMatch?.[1]) {
       throughSceneOrder = Number.parseInt(throughMatch[1], 10);
       continue;
     }
 
-    const sceneInputMatch = sceneInputLinePattern.exec(line);
+    const sceneInputMatch: RegExpExecArray | null = sceneInputLinePattern.exec(line);
     if (sceneInputMatch?.[1] && sceneInputMatch[2]) {
       sceneInputHashes.set(Number.parseInt(sceneInputMatch[1], 10), sceneInputMatch[2]);
       continue;
@@ -78,7 +83,7 @@ export function parseStoryState(content: string): StoryState {
     }
 
     if (current && line.startsWith('- ')) {
-      const entry = parseEntryLine(current, line.slice(2).trim());
+      const entry: StoryStateEntry | undefined = parseEntryLine(current, line.slice(2).trim());
       if (entry) {
         entries.push(entry);
       }
@@ -90,16 +95,16 @@ export function parseStoryState(content: string): StoryState {
 
 // `[12]`·`[12!]`·`[12|hana,jun]`·`[12!|hana,jun]` 네 형태를 모두 읽는다. `!` 는 낡은 항목,
 // `|` 뒤는 목격자다. 둘 다 없는 형태가 구 버전 원장이다.
-const entrySceneTagPattern = /^\[(\d+)(!?)(?:\|([^\]]*))?\]\s*(.+)$/;
+const entrySceneTagPattern: RegExp = /^\[(\d+)(!?)(?:\|([^\]]*))?\]\s*(.+)$/;
 
 function parseEntryLine(section: StoryStateSection, text: string): StoryStateEntry | undefined {
   if (text.length === 0) {
     return undefined;
   }
 
-  const tagged = entrySceneTagPattern.exec(text);
+  const tagged: RegExpExecArray | null = entrySceneTagPattern.exec(text);
   if (tagged?.[1] && tagged[4]) {
-    const witnesses = parseWitnesses(tagged[3]);
+    const witnesses: readonly string[] | undefined = parseWitnesses(tagged[3]);
 
     return {
       section,
@@ -114,7 +119,7 @@ function parseEntryLine(section: StoryStateSection, text: string): StoryStateEnt
 }
 
 function parseWitnesses(raw: string | undefined): readonly string[] | undefined {
-  const names = (raw ?? '')
+  const names: string[] = (raw ?? '')
     .split(',')
     .map((name) => name.trim())
     .filter((name) => name.length > 0);
@@ -125,14 +130,14 @@ function parseWitnesses(raw: string | undefined): readonly string[] | undefined 
 // 태그처럼 생겼지만 태그로 읽히지 않는 줄. 손으로 고치다 `[3!!]`이나 `[삼]`처럼 만들면 대괄호가
 // 본문의 일부가 되어 씬 번호도 목격자도 붙지 않는다 — 파싱은 계속되지만 그 항목은 시점 필터도
 // 낡음 판정도 받지 못하므로, doctor가 사람에게 알린다.
-const suspectTagPattern = /^\[[^\]]*\]/;
+const suspectTagPattern: RegExp = /^\[[^\]]*\]/;
 
 export function findUnreadableStoryStateLines(content: string): string[] {
   const unreadable: string[] = [];
-  let insideSection = false;
+  let insideSection: boolean = false;
 
   for (const rawLine of content.split('\n')) {
-    const line = rawLine.trim();
+    const line: string = rawLine.trim();
 
     if (line.startsWith('## ')) {
       insideSection = labelToSection.has(line.slice(3).trim());
@@ -143,7 +148,7 @@ export function findUnreadableStoryStateLines(content: string): string[] {
       continue;
     }
 
-    const text = line.slice(2).trim();
+    const text: string = line.slice(2).trim();
     if (suspectTagPattern.test(text) && !entrySceneTagPattern.test(text)) {
       unreadable.push(text);
     }
@@ -160,7 +165,7 @@ export function serializeStoryState(state: StoryState): string {
   }
 
   for (const [section, label] of sectionEntries) {
-    const items = state.entries.filter((entry) => entry.section === section);
+    const items: StoryStateEntry[] = state.entries.filter((entry) => entry.section === section);
     if (items.length === 0) {
       continue;
     }
@@ -176,7 +181,7 @@ function formatEntryTag(entry: StoryStateEntry): string {
     return '';
   }
 
-  const witnesses =
+  const witnesses: string =
     entry.witnesses && entry.witnesses.length > 0 ? `|${entry.witnesses.join(',')}` : '';
 
   return `[${entry.throughScene}${entry.isStale === true ? '!' : ''}${witnesses}] `;
@@ -187,7 +192,7 @@ export async function readStoryState(
   fileSystem: Pick<StoryStateFileSystem, 'readFile'>,
 ): Promise<StoryState> {
   try {
-    const content = new TextDecoder().decode(await fileSystem.readFile(uri));
+    const content: string = new TextDecoder().decode(await fileSystem.readFile(uri));
     return parseStoryState(content);
   } catch {
     return createEmptyStoryState();
@@ -204,7 +209,7 @@ export async function writeStoryState(
 
 // 섹션별 주입 예산. 원장에서 항목을 버리는 상한이 아니라, 한 번의 프롬프트에 실어 보낼 개수다.
 // 버리기로 예산을 맞추면 32씬짜리 작품도 6씬 만에 1막의 사실을 잃는다.
-const sectionInjectionBudget = 24;
+const sectionInjectionBudget: number = 24;
 
 export function mergeStoryState(
   previous: StoryState,
@@ -218,15 +223,15 @@ export function mergeStoryState(
     previous.entries.filter((entry) => entry.throughScene !== throughSceneOrder),
     throughSceneOrder,
   );
-  const seen = new Set(merged.map((entry) => `${entry.section}:${entry.text}`));
+  const seen: Set<string> = new Set(merged.map((entry) => `${entry.section}:${entry.text}`));
 
   for (const addition of additions) {
-    const text = addition.text.trim();
+    const text: string = addition.text.trim();
     if (text.length === 0) {
       continue;
     }
 
-    const key = `${addition.section}:${text}`;
+    const key: string = `${addition.section}:${text}`;
     if (seen.has(key)) {
       continue;
     }
@@ -282,7 +287,7 @@ function withSceneInputHash(
   throughSceneOrder: number,
   sceneInputHash: string,
 ): ReadonlyMap<number, string> {
-  const sceneInputHashes = new Map(previous.sceneInputHashes);
+  const sceneInputHashes: Map<number, string> = new Map(previous.sceneInputHashes);
   sceneInputHashes.set(throughSceneOrder, sceneInputHash);
 
   return sceneInputHashes;
@@ -304,7 +309,7 @@ function selectWithinBudget(
     return entries.slice(-budget);
   }
 
-  const sceneTextCompact = compactForOverlap(sceneText);
+  const sceneTextCompact: string = compactForOverlap(sceneText);
   const ranked = entries
     .map((entry, position) => ({
       entry,
@@ -320,20 +325,20 @@ function selectWithinBudget(
 
 // NOTE: 한국어는 낱말에 조사가 붙어 "대상0호가"와 "대상0호를"이 다른 문자열이 된다. 낱말 단위로
 // 맞추면 같은 대상을 가리켜도 어긋나므로, 공백을 걷어낸 글자 3-gram이 얼마나 겹치는지로 센다.
-const overlapGramSize = 3;
+const overlapGramSize: number = 3;
 
 function countTextOverlap(text: string, sceneTextCompact: string): number {
-  const compact = compactForOverlap(text);
+  const compact: string = compactForOverlap(text);
   if (compact.length < overlapGramSize) {
     return 0;
   }
 
-  const grams = new Set<string>();
-  for (let offset = 0; offset + overlapGramSize <= compact.length; offset += 1) {
+  const grams: Set<string> = new Set<string>();
+  for (let offset: number = 0; offset + overlapGramSize <= compact.length; offset += 1) {
     grams.add(compact.slice(offset, offset + overlapGramSize));
   }
 
-  let hits = 0;
+  let hits: number = 0;
   for (const gram of grams) {
     if (sceneTextCompact.includes(gram)) {
       hits += 1;
@@ -351,7 +356,7 @@ function compactForOverlap(text: string): string {
 // 전체가 보였다. 뼈대·다듬기가 인물마다 이것만 보게 하면 «아직 못 들은 사실을 말하는» 경계 위반을
 // 지시문이 아니라 재료로 막는다. 목격자가 없는 구 항목은 판정할 수 없으므로 모두에게 보인다.
 const characterKnowledgeSections: readonly StoryStateSection[] = ['facts', 'revealed'];
-const characterKnowledgeBudget = 8;
+const characterKnowledgeBudget: number = 8;
 
 export function selectCharacterKnowledge(
   state: StoryState,
@@ -359,7 +364,7 @@ export function selectCharacterKnowledge(
   beforeSceneOrder: number | undefined,
   sceneText?: string,
 ): string[] {
-  const visible = state.entries.filter(
+  const visible: StoryStateEntry[] = state.entries.filter(
     (entry) =>
       characterKnowledgeSections.includes(entry.section) &&
       entry.isStale !== true &&
@@ -377,14 +382,14 @@ export function selectCharacterKnowledge(
 // NOTE: 인물별 «관계 변화». 카드 relations 의 speech 는 처음 정한 말투라, 앞선 장면에서 «이제 반말을
 // 쓴다»처럼 바뀐 관계를 모른다. 다듬기가 카드만 보면 뼈대가 맞게 바꾼 말투를 카드의 초기값으로
 // 되돌리므로, 원장의 관계 항목 중 그 인물의 이름이 나오는 최근 것을 함께 준다.
-const characterRelationBudget = 4;
+const characterRelationBudget: number = 4;
 
 export function selectCharacterRelations(
   state: StoryState,
   character: { readonly id: string; readonly names: readonly string[] },
   beforeSceneOrder: number | undefined,
 ): string[] {
-  const names = character.names.filter((name) => name.trim().length > 0);
+  const names: string[] = character.names.filter((name) => name.trim().length > 0);
 
   return state.entries
     .filter(
@@ -416,7 +421,7 @@ export function selectStoryStateEntries(
   sceneText?: string,
   focalFilter?: StoryStateFocalFilter,
 ): StoryStateEntry[] {
-  const visible = state.entries.filter(
+  const visible: StoryStateEntry[] = state.entries.filter(
     (entry) =>
       entry.section === section &&
       entry.isStale !== true &&
@@ -433,7 +438,7 @@ function isWitnessedBy(
   entry: StoryStateEntry,
   focalFilter: StoryStateFocalFilter | undefined,
 ): boolean {
-  const witnesses = entry.witnesses;
+  const witnesses: readonly string[] | undefined = entry.witnesses;
   if (!focalFilter || !witnesses || witnesses.length === 0) {
     return true;
   }
@@ -453,8 +458,14 @@ export function formatStoryStateForPrompt(
   sceneText?: string,
   focalFilter?: StoryStateFocalFilter,
 ): string | undefined {
-  const blocks = sectionEntries.flatMap(([section, label]) => {
-    const items = selectStoryStateEntries(state, section, beforeSceneOrder, sceneText, focalFilter);
+  const blocks: string[] = sectionEntries.flatMap(([section, label]) => {
+    const items: StoryStateEntry[] = selectStoryStateEntries(
+      state,
+      section,
+      beforeSceneOrder,
+      sceneText,
+      focalFilter,
+    );
     return items.length > 0 ? [`${label}:`, ...items.map((item) => `- ${item.text}`)] : [];
   });
 
@@ -478,7 +489,7 @@ export interface StoryStateAudit {
 }
 
 export function storyStateSceneOrders(state: StoryState): number[] {
-  const orders = new Set<number>();
+  const orders: Set<number> = new Set<number>();
 
   for (const entry of state.entries) {
     if (entry.throughScene !== undefined) {
@@ -498,10 +509,10 @@ export function auditStoryState(
   beforeSceneOrder?: number,
 ): StoryStateAudit {
   const unsealedSceneOrders: number[] = [];
-  const staleOrders = new Set<number>();
+  const staleOrders: Set<number> = new Set<number>();
 
   for (const order of storyStateSceneOrders(state)) {
-    const recorded = state.sceneInputHashes.get(order);
+    const recorded: string | undefined = state.sceneInputHashes.get(order);
 
     if (recorded === undefined) {
       unsealedSceneOrders.push(order);
@@ -520,7 +531,7 @@ export function auditStoryState(
     }
   }
 
-  const entries = state.entries.map((entry) =>
+  const entries: StoryStateEntry[] = state.entries.map((entry) =>
     entry.throughScene !== undefined && staleOrders.has(entry.throughScene)
       ? { ...entry, isStale: true }
       : entry,
@@ -528,10 +539,10 @@ export function auditStoryState(
 
   const isReported = (order: number): boolean =>
     beforeSceneOrder === undefined || order < beforeSceneOrder;
-  const reportedStaleOrders = [...staleOrders]
+  const reportedStaleOrders: number[] = [...staleOrders]
     .filter(isReported)
     .sort((left, right) => left - right);
-  const reportedStaleSet = new Set(reportedStaleOrders);
+  const reportedStaleSet: Set<number> = new Set(reportedStaleOrders);
 
   return {
     state: { ...state, entries },
@@ -549,10 +560,10 @@ export function sealStoryState(
   state: StoryState,
   currentSceneInputHashes: ReadonlyMap<number, string>,
 ): StoryState {
-  const sceneInputHashes = new Map(state.sceneInputHashes);
+  const sceneInputHashes: Map<number, string> = new Map(state.sceneInputHashes);
 
   for (const order of storyStateSceneOrders(state)) {
-    const current = currentSceneInputHashes.get(order);
+    const current: string | undefined = currentSceneInputHashes.get(order);
 
     if (current !== undefined && !sceneInputHashes.has(order)) {
       sceneInputHashes.set(order, current);
@@ -569,10 +580,10 @@ export function resealStoryState(
   currentSceneInputHashes: ReadonlyMap<number, string>,
   sceneOrders: ReadonlySet<number>,
 ): StoryState {
-  const sceneInputHashes = new Map(state.sceneInputHashes);
+  const sceneInputHashes: Map<number, string> = new Map(state.sceneInputHashes);
 
   for (const order of sceneOrders) {
-    const current = currentSceneInputHashes.get(order);
+    const current: string | undefined = currentSceneInputHashes.get(order);
 
     if (current !== undefined) {
       sceneInputHashes.set(order, current);
@@ -593,7 +604,7 @@ export function resealStoryState(
 }
 
 export function formatSceneOrderRanges(orders: readonly number[]): string {
-  const sorted = [...new Set(orders)].sort((left, right) => left - right);
+  const sorted: number[] = [...new Set(orders)].sort((left, right) => left - right);
   const ranges: { start: number; end: number }[] = [];
 
   for (const order of sorted) {

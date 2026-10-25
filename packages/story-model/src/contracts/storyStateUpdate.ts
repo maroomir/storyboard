@@ -15,7 +15,12 @@ export interface StoryStateUpdateItem {
   readonly witnesses?: readonly string[];
 }
 
-const taggedItemSchema = z.object({
+interface TaggedItem {
+  text: string;
+  witnesses?: unknown[];
+}
+
+const taggedItemSchema: z.ZodType<TaggedItem> = z.object({
   text: z.string(),
   witnesses: z.array(z.unknown()).optional(),
 });
@@ -30,22 +35,24 @@ function readTaggedItem(item: unknown): { text: string; witnesses?: string[] } |
     return undefined;
   }
 
-  const witnesses = (tagged.data.witnesses ?? [])
+  const witnesses: string[] = (tagged.data.witnesses ?? [])
     .flatMap((name) => (typeof name === 'string' ? [name.trim()] : []))
     .filter((name) => name.length > 0);
 
   return { text: tagged.data.text.trim(), ...(witnesses.length > 0 ? { witnesses } : {}) };
 }
 
-const sectionListSchema = z.array(z.unknown()).optional();
-const maxItemsPerSection = 5;
-const maxItemLength = 200;
+type SectionList = unknown[] | undefined;
+
+const sectionListSchema: z.ZodType<SectionList> = z.array(z.unknown()).optional();
+const maxItemsPerSection: number = 5;
+const maxItemLength: number = 200;
 
 function coerceSectionItems(
   raw: unknown,
   section: StoryStateUpdateSection,
 ): StoryStateUpdateItem[] {
-  const parsed = sectionListSchema.safeParse(raw);
+  const parsed: z.ZodSafeParseResult<unknown[] | undefined> = sectionListSchema.safeParse(raw);
   if (!parsed.success || !parsed.data) {
     return [];
   }
@@ -65,7 +72,7 @@ function coerceSectionItems(
 }
 
 export function coerceStoryStateUpdate(rawText: string): StoryStateUpdateItem[] {
-  const parsed = parseJsonObject(rawText);
+  const parsed: Record<string, unknown> | null = parseJsonObject(rawText);
   if (!parsed) {
     return [];
   }

@@ -13,13 +13,15 @@ export function diffCandidatesAgainstCanon(
   canon: StoryBible,
   candidateRecords: readonly BibleCandidateRecord[],
 ): CanonDiffResult {
-  const canonKeys = new Set(canon.facts.filter((fact) => fact.status === 'canon').map(factKey));
-  const seen = new Set<string>();
+  const canonKeys: Set<string> = new Set(
+    canon.facts.filter((fact) => fact.status === 'canon').map(factKey),
+  );
+  const seen: Set<string> = new Set<string>();
   const pending: BibleFact[] = [];
 
   for (const record of candidateRecords) {
     for (const fact of record.facts) {
-      const key = factKey(fact);
+      const key: string = factKey(fact);
       if (canonKeys.has(key) || seen.has(key)) {
         continue;
       }
@@ -41,7 +43,7 @@ export function buildCanonDiffMarkdown(
   if (pending.length === 0) {
     sections.push('미승격 설정 후보가 없습니다.');
   } else {
-    const lines = pending.map(
+    const lines: string[] = pending.map(
       (fact) => `- [${fact.subject.kind}:${fact.subject.id}] ${fact.key}: ${fact.value}`,
     );
     sections.push(
@@ -50,7 +52,7 @@ export function buildCanonDiffMarkdown(
     );
   }
 
-  const timeline = canon ? buildCanonTimelineSection(canon) : undefined;
+  const timeline: string | undefined = canon ? buildCanonTimelineSection(canon) : undefined;
   if (timeline) {
     sections.push(timeline);
   }
@@ -65,13 +67,13 @@ function rangeStart(fact: BibleFact): number {
 }
 
 function formatBound(bound: string | number): string {
-  const order = resolveSceneOrder(bound);
+  const order: number | undefined = resolveSceneOrder(bound);
   return order === undefined ? String(bound) : String(order).padStart(2, '0');
 }
 
 function formatRangeLabel(fact: BibleFact): string {
-  const left = fact.validFrom === undefined ? '…' : formatBound(fact.validFrom);
-  const right = fact.validUntil === undefined ? '' : formatBound(fact.validUntil);
+  const left: string = fact.validFrom === undefined ? '…' : formatBound(fact.validFrom);
+  const right: string = fact.validUntil === undefined ? '' : formatBound(fact.validUntil);
   return `${left}–${right}`;
 }
 
@@ -84,7 +86,7 @@ function buildCanonTimelineSection(canon: StoryBible): string | undefined {
     if (fact.status !== 'canon') {
       continue;
     }
-    const key = factKey(fact);
+    const key: string = factKey(fact);
     const group = groups.get(key);
     if (group) {
       group.push(fact);
@@ -102,15 +104,15 @@ function buildCanonTimelineSection(canon: StoryBible): string | undefined {
     // NOTE: Compare without subtraction so two open-start versions (both -Infinity) sort
     // stably instead of producing NaN, which would leave the timeline order undefined.
     const sorted = [...facts].sort((left, right) => {
-      const leftStart = rangeStart(left);
-      const rightStart = rangeStart(right);
+      const leftStart: number = rangeStart(left);
+      const rightStart: number = rangeStart(right);
       if (leftStart === rightStart) {
         return 0;
       }
       return leftStart < rightStart ? -1 : 1;
     });
     const { subject, key } = facts[0] as BibleFact;
-    const lines = sorted.map((fact) => `- \`${formatRangeLabel(fact)}\`: ${fact.value}`);
+    const lines: string[] = sorted.map((fact) => `- \`${formatRangeLabel(fact)}\`: ${fact.value}`);
     blocks.push([`### [${subject.kind}:${subject.id}] ${key}`, ...lines].join('\n'));
   }
 

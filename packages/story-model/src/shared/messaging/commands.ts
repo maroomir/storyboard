@@ -14,8 +14,18 @@ export const sidebarRunnableCommands = [
 
 export type SidebarRunnableCommand = (typeof sidebarRunnableCommands)[number];
 
-export const workspaceRunCommandRequestPayloadSchema = z.object({
-  command: z.enum(sidebarRunnableCommands),
-});
+export interface WorkspaceRunCommandRequestPayload {
+  command: SidebarRunnableCommand;
+}
 
-export const workspaceRunCommandResponsePayloadSchema = z.object({});
+export const workspaceRunCommandRequestPayloadSchema: z.ZodType<WorkspaceRunCommandRequestPayload> =
+  z.object({
+    command: z.enum(sidebarRunnableCommands),
+  });
+
+export interface WorkspaceRunCommandResponsePayload {
+  [key: string]: never;
+}
+
+export const workspaceRunCommandResponsePayloadSchema: z.ZodType<WorkspaceRunCommandResponsePayload> =
+  z.object({});

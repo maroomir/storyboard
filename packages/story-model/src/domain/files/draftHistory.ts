@@ -1,6 +1,6 @@
 import type { StoryUri } from '#model/format/storyUri';
 
-const draftHistoryArchivePattern = /^(\d{4}-\d{2}-\d{2}-\d{2}-\d{2})-rev-(\d{2,})\.md$/;
+const draftHistoryArchivePattern: RegExp = /^(\d{4}-\d{2}-\d{2}-\d{2}-\d{2})-rev-(\d{2,})\.md$/;
 
 function padTwo(value: number): string {
   return value.toString().padStart(2, '0');
@@ -17,15 +17,15 @@ export function formatDraftHistoryTimestamp(date: Date): string {
 }
 
 export function parseDraftHistoryRevision(fileName: string): number | undefined {
-  const match = draftHistoryArchivePattern.exec(fileName);
-  const rawRevision = match?.[2];
+  const match: RegExpExecArray | null = draftHistoryArchivePattern.exec(fileName);
+  const rawRevision: string | undefined = match?.[2];
 
   return rawRevision === undefined ? undefined : Number.parseInt(rawRevision, 10);
 }
 
 export function nextDraftHistoryRevision(existingFileNames: readonly string[]): number {
-  const maxRevision = existingFileNames.reduce((max, fileName) => {
-    const revision = parseDraftHistoryRevision(fileName);
+  const maxRevision: number = existingFileNames.reduce((max, fileName) => {
+    const revision: number | undefined = parseDraftHistoryRevision(fileName);
     return revision !== undefined && revision > max ? revision : max;
   }, 0);
 
@@ -61,13 +61,13 @@ export async function archiveExistingDraft(
     return undefined;
   }
 
-  const existingBytes = await fileSystem.readFile(draftUri);
+  const existingBytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(draftUri);
 
   await fileSystem.createDirectory(historyDirectory);
 
-  const existingFileNames = await fileSystem.listFileNames(historyDirectory);
-  const revision = nextDraftHistoryRevision(existingFileNames);
-  const fileName = draftHistoryArchiveFileName(
+  const existingFileNames: readonly string[] = await fileSystem.listFileNames(historyDirectory);
+  const revision: number = nextDraftHistoryRevision(existingFileNames);
+  const fileName: string = draftHistoryArchiveFileName(
     formatDraftHistoryTimestamp(params.now ?? new Date()),
     revision,
   );

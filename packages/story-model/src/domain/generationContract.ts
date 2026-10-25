@@ -2,8 +2,8 @@ import { contractFieldKeys, mainThreadId } from '#model/format/project';
 import { resolveCompositionPresetDefaults } from '#model/format/compositionPresets';
 import type { ContractFieldKey, ProjectSetting } from '#model/format/project';
 
-const minReasonableTargetWordCount = 1_000;
-const maxReasonableTargetWordCount = 2_000_000;
+const minReasonableTargetWordCount: number = 1_000;
+const maxReasonableTargetWordCount: number = 2_000_000;
 
 export interface GenerationContractReadiness {
   readonly isReady: boolean;
@@ -14,8 +14,8 @@ export interface GenerationContractReadiness {
 export function validateGenerationContract(
   setting: ProjectSetting | undefined,
 ): GenerationContractReadiness {
-  const missing = findMissingFields(setting);
-  const warnings = findWarnings(setting);
+  const missing: ContractFieldKey[] = findMissingFields(setting);
+  const warnings: string[] = findWarnings(setting);
 
   return {
     isReady: missing.length === 0 && warnings.length === 0,
@@ -77,7 +77,7 @@ function findWarnings(setting: ProjectSetting | undefined): string[] {
 function findCompositionWarnings(setting: ProjectSetting): string[] {
   const warnings: string[] = [];
   const threads = setting.threads ?? {};
-  const threadIds = new Set([...Object.keys(threads), mainThreadId]);
+  const threadIds: Set<string> = new Set([...Object.keys(threads), mainThreadId]);
 
   for (const [threadId, thread] of Object.entries(threads)) {
     for (const wrapped of thread.wraps ?? []) {
@@ -92,7 +92,7 @@ function findCompositionWarnings(setting: ProjectSetting): string[] {
     }
   }
 
-  const minimumOmnibusEpisodes = resolveCompositionPresetDefaults().minimumOmnibusEpisodes;
+  const minimumOmnibusEpisodes: number = resolveCompositionPresetDefaults().minimumOmnibusEpisodes;
 
   if (setting.composition === 'omnibus' && Object.keys(threads).length < minimumOmnibusEpisodes) {
     warnings.push(
@@ -117,7 +117,7 @@ function hasWrappingThread(setting: ProjectSetting): boolean {
 
 function findProhibitionConflicts(setting: ProjectSetting): string[] {
   // project.json is hand-editable, so an omitted array reaches here as undefined despite the type.
-  const allowedTerms = new Set(
+  const allowedTerms: Set<string> = new Set(
     [setting.genre, ...(setting.tags ?? [])]
       .filter(isNonEmpty)
       .map((term) => term.trim().toLowerCase()),

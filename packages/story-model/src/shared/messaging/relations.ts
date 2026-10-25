@@ -2,14 +2,33 @@ import { z } from 'zod';
 
 import { uriStringSchema } from './atoms';
 
-export const relationsListRequestPayloadSchema = z.object({});
+export interface RelationsListRequestPayload {
+  [key: string]: never;
+}
 
-const relationListItemRelationSchema = z.object({
+export const relationsListRequestPayloadSchema: z.ZodType<RelationsListRequestPayload> = z.object(
+  {},
+);
+
+interface RelationListItemRelation {
+  target: string;
+  type: string;
+}
+
+const relationListItemRelationSchema: z.ZodType<RelationListItemRelation> = z.object({
   target: z.string().trim().min(1),
   type: z.string().trim().min(1),
 });
 
-const relationListCharacterSchema = z.object({
+export interface RelationListCharacter {
+  id: string;
+  name: string;
+  uri: string;
+  relations: RelationListItemRelation[];
+  role?: string;
+}
+
+const relationListCharacterSchema: z.ZodType<RelationListCharacter> = z.object({
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),
   role: z.string().trim().min(1).optional(),
@@ -17,8 +36,12 @@ const relationListCharacterSchema = z.object({
   relations: z.array(relationListItemRelationSchema),
 });
 
-export const relationsListResponsePayloadSchema = z.object({
-  characters: z.array(relationListCharacterSchema),
-});
+export interface RelationsListResponsePayload {
+  characters: RelationListCharacter[];
+}
 
-export type RelationListCharacter = z.infer<typeof relationListCharacterSchema>;
+export const relationsListResponsePayloadSchema: z.ZodType<RelationsListResponsePayload> = z.object(
+  {
+    characters: z.array(relationListCharacterSchema),
+  },
+);

@@ -65,7 +65,7 @@ export async function readChapterPlanFile(
   uri: StoryUri,
   fileSystem: OutlineFileSystem,
 ): Promise<ChapterPlan> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseChapterPlan(new TextDecoder().decode(bytes));
 }
 
@@ -101,14 +101,14 @@ export async function writeSynopsisFile(
 }
 
 function appendTextSection(sections: string[], heading: string, value: string): void {
-  const trimmed = value.trim();
+  const trimmed: string = value.trim();
   sections.push(
     `## ${heading}\n\n${trimmed.length > 0 ? escapeSynopsisValue(trimmed) : '_미작성_'}`,
   );
 }
 
 function appendListSection(sections: string[], heading: string, values: readonly string[]): void {
-  const body =
+  const body: string =
     values.length > 0
       ? values.map((value) => `- ${escapeSynopsisValue(value)}`).join('\n')
       : '_미작성_';
@@ -119,7 +119,7 @@ function appendListSection(sections: string[], heading: string, values: readonly
 // '_미작성_' means "empty". A VALUE containing any of those would corrupt the round trip, so
 // serialization escapes them and parsing reverses it — parse(serialize(x)) must equal x.
 function escapeSynopsisValue(value: string): string {
-  let escaped = value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n');
+  let escaped: string = value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n');
   if (escaped.startsWith('#') || escaped === '_미작성_') {
     escaped = `\\${escaped}`;
   }
@@ -145,7 +145,7 @@ export class SynopsisParseError extends Error {
 // Inverse of serializeSynopsisMarkdown, so a synopsis written by one app can seed chapter planning
 // in the other. Only the exact sectioned format that serializer emits is accepted.
 export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
-  const sections = new Map<string, string>();
+  const sections: Map<string, string> = new Map<string, string>();
   let currentHeading: string | undefined;
   let currentLines: string[] = [];
 
@@ -157,7 +157,7 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
   };
 
   for (const line of rawSynopsis.replace(/\r\n/g, '\n').split('\n')) {
-    const heading = line.match(/^## (.+)$/);
+    const heading: RegExpMatchArray | null = line.match(/^## (.+)$/);
     if (heading?.[1] !== undefined) {
       flush();
       currentHeading = heading[1].trim();
@@ -168,11 +168,11 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
   flush();
 
   const text = (heading: string): string => {
-    const value = sections.get(heading) ?? '';
+    const value: string = sections.get(heading) ?? '';
     return value === '_미작성_' ? '' : unescapeSynopsisValue(value);
   };
   const list = (heading: string): string[] => {
-    const raw = sections.get(heading) ?? '';
+    const raw: string = sections.get(heading) ?? '';
     if (raw === '_미작성_') {
       return [];
     }
@@ -190,7 +190,7 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
     );
   }
 
-  const povLabel = text('시점');
+  const povLabel: string = text('시점');
   const pov = (Object.entries(pointOfViewLabels) as [PointOfView, string][]).find(
     ([, label]) => label === povLabel,
   )?.[0];

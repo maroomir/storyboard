@@ -10,7 +10,7 @@ export function seedPromotedFact(fact: BibleFact): BibleFact {
     return fact;
   }
 
-  const order = resolveSceneOrder(fact.sourceScene);
+  const order: number | undefined = resolveSceneOrder(fact.sourceScene);
   if (order === undefined) {
     return fact;
   }
@@ -38,7 +38,7 @@ export function selectNewCandidates(
   candidates: readonly BibleFact[],
   canon: StoryBible,
 ): BibleFact[] {
-  const canonIds = new Set(canon.facts.map((fact) => fact.id));
+  const canonIds: Set<string> = new Set(canon.facts.map((fact) => fact.id));
 
   return candidates.filter((fact) => !canonIds.has(fact.id));
 }

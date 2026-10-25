@@ -18,7 +18,7 @@ export async function readCardCandidateFile(
   uri: StoryUri,
   fileSystem: CardCandidateFileSystem,
 ): Promise<CardCandidateRecord> {
-  const bytes = await fileSystem.readFile(uri);
+  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
   return parseCardCandidates(new TextDecoder().decode(bytes));
 }
 

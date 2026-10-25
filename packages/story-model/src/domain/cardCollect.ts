@@ -20,7 +20,7 @@ export function normalizeCardListText(value: string): string {
 }
 
 function hasCardListText(list: readonly string[], value: string): boolean {
-  const normalized = normalizeCardListText(value);
+  const normalized: string = normalizeCardListText(value);
 
   return list.some((item) => normalizeCardListText(item) === normalized);
 }
@@ -44,13 +44,13 @@ function applyToCharacter(
   const attributes = { ...(card.attributes ?? {}) };
   const relations: CharacterRelation[] = [...(card.relations ?? [])];
   const arc = [...(card.arc ?? [])];
-  let traits = [...(card.traits ?? [])];
-  let recentDialogues = [...(card.recentDialogues ?? [])];
-  let description = [...(card.description ?? [])];
-  let voice = [...(card.voice ?? [])];
-  let desire = [...(card.desire ?? [])];
-  let aliases = [...(card.aliases ?? [])];
-  let tags = [...(card.tags ?? [])];
+  let traits: string[] = [...(card.traits ?? [])];
+  let recentDialogues: string[] = [...(card.recentDialogues ?? [])];
+  let description: string[] = [...(card.description ?? [])];
+  let voice: string[] = [...(card.voice ?? [])];
+  let desire: string[] = [...(card.desire ?? [])];
+  let aliases: string[] = [...(card.aliases ?? [])];
+  let tags: string[] = [...(card.tags ?? [])];
 
   for (const proposal of accepted) {
     switch (proposal.kind) {
@@ -58,7 +58,9 @@ function applyToCharacter(
         attributes[proposal.key] = proposal.value;
         break;
       case 'relation': {
-        const index = relations.findIndex((relation) => relation.target === proposal.target);
+        const index: number = relations.findIndex(
+          (relation) => relation.target === proposal.target,
+        );
         if (index >= 0) {
           relations[index] = { target: proposal.target, type: proposal.type };
         } else {
@@ -67,7 +69,7 @@ function applyToCharacter(
         break;
       }
       case 'arc': {
-        const index = arc.findIndex((entry) => entry.sceneRef === proposal.sceneRef);
+        const index: number = arc.findIndex((entry) => entry.sceneRef === proposal.sceneRef);
         if (index >= 0) {
           arc[index] = {
             stage: arc[index]?.stage ?? proposal.sceneRef,
@@ -128,13 +130,13 @@ function applyToBackground(
   card: BackgroundCard,
   accepted: readonly CardCollectProposal[],
 ): BackgroundCard {
-  let description = [...(card.description ?? [])];
-  let senses = [...(card.senses ?? [])];
-  let characterIds = [...(card.characterIds ?? [])];
-  let time = card.time;
-  let weather = card.weather;
-  let aliases = [...(card.aliases ?? [])];
-  let tags = [...(card.tags ?? [])];
+  let description: string[] = [...(card.description ?? [])];
+  let senses: string[] = [...(card.senses ?? [])];
+  let characterIds: string[] = [...(card.characterIds ?? [])];
+  let time: string | undefined = card.time;
+  let weather: string | undefined = card.weather;
+  let aliases: string[] = [...(card.aliases ?? [])];
+  let tags: string[] = [...(card.tags ?? [])];
 
   for (const proposal of accepted) {
     if (proposal.kind === 'descriptionLine') {
@@ -194,7 +196,7 @@ export function shouldProposeCardCollect(
   if (card.type === 'character') {
     switch (proposal.kind) {
       case 'attribute': {
-        const current = attributeValueAsString(card.attributes?.[proposal.key]);
+        const current: string | undefined = attributeValueAsString(card.attributes?.[proposal.key]);
         return current !== proposal.value;
       }
       case 'relation': {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { applyStudioPatch } from "@storyboard/story-model"
-import type { StudioPatchPayload } from "@storyboard/story-model"
+import type { StudioPatch } from "@storyboard/story-model"
 
 const characterCard = [
   "type: character",
@@ -17,7 +17,7 @@ function cardPatch(
     field: string
     value: string | string[] | Record<string, string>[]
   }[]
-): StudioPatchPayload {
+): StudioPatch {
   return { target: "card", changes }
 }
 

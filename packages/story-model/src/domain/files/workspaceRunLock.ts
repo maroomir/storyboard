@@ -28,7 +28,18 @@ export interface WorkspaceRunLockRecord extends WorkspaceRunLockHolder {
   readonly heartbeatAt: string;
 }
 
-const workspaceRunLockSchema = z.object({
+interface WorkspaceRunLock {
+  version: 1;
+  token: string;
+  owner: WorkspaceRunLockOwner;
+  label: string;
+  pid: number;
+  hostname: string;
+  acquiredAt: string;
+  heartbeatAt: string;
+}
+
+const workspaceRunLockSchema: z.ZodType<WorkspaceRunLock> = z.object({
   version: z.literal(workspaceRunLockVersion),
   token: z.string().min(1),
   owner: z.enum(workspaceRunLockOwners),
@@ -59,7 +70,7 @@ export function createWorkspaceRunLockRecord(
   token: string,
   now: Date,
 ): WorkspaceRunLockRecord {
-  const timestamp = now.toISOString();
+  const timestamp: string = now.toISOString();
 
   return {
     version: workspaceRunLockVersion,

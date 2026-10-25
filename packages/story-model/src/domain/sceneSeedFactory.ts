@@ -10,14 +10,14 @@ export interface GeneratedSceneSeed {
 }
 
 export function buildSceneSeeds(plan: ChapterPlan, digitCount: number): GeneratedSceneSeed[] {
-  const flatScenes = flattenChapterPlan(plan);
-  const usedSlugs = new Set<string>();
+  const flatScenes: FlatChapterScene[] = flattenChapterPlan(plan);
+  const usedSlugs: Set<string> = new Set<string>();
 
   return flatScenes.map((flatScene, index) => {
-    const order = index + 1;
-    const prefix = String(order).padStart(digitCount, '0');
-    const slug = reserveUniqueSlug(deriveSlug(flatScene.scene, order), usedSlugs);
-    const stem = `${prefix}-${slug}`;
+    const order: number = index + 1;
+    const prefix: string = String(order).padStart(digitCount, '0');
+    const slug: string = reserveUniqueSlug(deriveSlug(flatScene.scene, order), usedSlugs);
+    const stem: string = `${prefix}-${slug}`;
 
     return {
       stem,
@@ -32,7 +32,7 @@ function deriveSlug(scene: ScenePlan, order: number): string {
 }
 
 function slugify(value: string): string | undefined {
-  const slug = value
+  const slug: string = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
@@ -46,12 +46,12 @@ function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
     return slug;
   }
 
-  let suffix = 2;
+  let suffix: number = 2;
   while (usedSlugs.has(`${slug}-${suffix}`)) {
     suffix += 1;
   }
 
-  const uniqueSlug = `${slug}-${suffix}`;
+  const uniqueSlug: string = `${slug}-${suffix}`;
   usedSlugs.add(uniqueSlug);
   return uniqueSlug;
 }

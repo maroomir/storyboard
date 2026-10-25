@@ -5,17 +5,22 @@ import { z } from 'zod';
 // over the bundled order (`.storyboard/pipelines/<name>.yaml`). The stages themselves are code; the
 // file only says which run, in what order. A stage entry is its id, or `{ id, enabled: false }` to
 // leave a stage out while keeping it listed.
-const stageEntrySchema = z.union([
+type StageEntry = string | { id: string; enabled?: boolean };
+
+const stageEntrySchema: z.ZodType<StageEntry> = z.union([
   z.string().trim().min(1),
   z.object({ id: z.string().trim().min(1), enabled: z.boolean().optional() }),
 ]);
 
-export const pipelineSpecSchema = z.object({
+export interface PipelineSpec {
+  version: 1;
+  stages: StageEntry[];
+}
+
+export const pipelineSpecSchema: z.ZodType<PipelineSpec> = z.object({
   version: z.literal(1),
   stages: z.array(stageEntrySchema).min(1),
 });
-
-export type PipelineSpec = z.infer<typeof pipelineSpecSchema>;
 
 export interface PipelineStageEntry {
   readonly id: string;
@@ -60,7 +65,7 @@ export function parsePipelineSpec(text: string): PipelineSpec {
   try {
     loaded = yaml.load(text);
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
+    const detail: string = error instanceof Error ? error.message : String(error);
     throw new PipelineSpecError(
       'invalid-yaml',
       `파이프라인 명세를 YAML로 읽을 수 없습니다: ${detail}`,
@@ -70,8 +75,8 @@ export function parsePipelineSpec(text: string): PipelineSpec {
   const parsed = pipelineSpecSchema.safeParse(loaded);
 
   if (!parsed.success) {
-    const issue = parsed.error.issues[0];
-    const path = issue?.path.map(String).join('.') ?? '';
+    const issue: z.core.$ZodIssue | undefined = parsed.error.issues[0];
+    const path: string = issue?.path.map(String).join('.') ?? '';
     throw new PipelineSpecError(
       'invalid-shape',
       `파이프라인 명세의 꼴이 맞지 않습니다: ${[path, issue?.message].filter(Boolean).join(' ')}`,
@@ -103,8 +108,10 @@ export function resolvePipelinePlan(
   spec: PipelineSpec,
   catalog: readonly PipelineStageDefinition[],
 ): readonly string[] {
-  const known = new Map(catalog.map((definition) => [definition.id, definition]));
-  const seen = new Set<string>();
+  const known: Map<string, PipelineStageDefinition> = new Map(
+    catalog.map((definition) => [definition.id, definition]),
+  );
+  const seen: Set<string> = new Set<string>();
   const plan: string[] = [];
 
   for (const entry of pipelineStageEntries(spec)) {
@@ -124,10 +131,10 @@ export function resolvePipelinePlan(
   }
 
   // replaced stage id → the enabled stage standing in for it.
-  const standIns = new Map<string, string>();
+  const standIns: Map<string, string> = new Map<string, string>();
 
   for (const id of plan) {
-    const replaces = known.get(id)?.replaces;
+    const replaces: string | undefined = known.get(id)?.replaces;
 
     if (replaces === undefined) {
       continue;
@@ -154,7 +161,7 @@ export function resolvePipelinePlan(
 
   for (const [index, id] of plan.entries()) {
     for (const dependency of known.get(id)?.requires ?? []) {
-      const position = plan.indexOf(standIns.get(dependency) ?? dependency);
+      const position: number = plan.indexOf(standIns.get(dependency) ?? dependency);
 
       if (position === -1 || position > index) {
         throw new PipelineSpecError(

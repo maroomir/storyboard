@@ -12,7 +12,7 @@ import type {
   StudioPatchTarget,
   StudioChatTurn,
   StudioFollowUpTarget,
-  StudioPatchPayload,
+  StudioPatch,
   StudioValidation,
   StudioValidationVerdict,
 } from '@storyboard/story-model';
@@ -102,7 +102,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
       ];
     }
 
-    const patch: StudioPatchPayload = action.patch as StudioPatchPayload;
+    const patch: StudioPatch = action.patch as StudioPatch;
 
     return [
       {
@@ -124,7 +124,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
   private async validate(
     request: StudioChatRequest,
     action: Extract<StudioAgentAction, { readonly kind: 'propose' }>,
-    patch: StudioPatchPayload,
+    patch: StudioPatch,
   ): Promise<StudioValidation> {
     if (!request.isValidationEnabled) {
       return { state: 'skipped', warnings: [] };
@@ -228,7 +228,7 @@ function toPlainTurn(
   };
 }
 
-export function describePatch(patch: StudioPatchPayload): string {
+export function describePatch(patch: StudioPatch): string {
   if (patch.target === 'card') {
     return patch.changes
       .map((change) =>

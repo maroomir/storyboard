@@ -439,10 +439,9 @@ export const providerCatalog = {
 
 export type AiProviderId = keyof typeof providerCatalog;
 
-export const aiProviderIds = Object.keys(providerCatalog) as unknown as readonly [
-  AiProviderId,
-  ...AiProviderId[],
-];
+export const aiProviderIds: readonly [AiProviderId, ...AiProviderId[]] = Object.keys(
+  providerCatalog,
+) as unknown as readonly [AiProviderId, ...AiProviderId[]];
 
 // `as const` 는 행마다 실제로 적힌 필드만 남기므로, 선택 필드를 읽는 파생 표는 선언된 모양으로
 // 한 번 넓혀서 읽는다.
@@ -502,17 +501,20 @@ export interface ModelPricePerMillion {
   readonly cacheReadPricePerMillion?: number;
 }
 
-export const storyboardModelCatalog = Object.fromEntries(
-  aiProviderIds.map((providerId) => [
-    providerId,
-    catalogRows[providerId].models.map((model) => ({
-      id: model.id,
-      displayName: model.displayName,
-    })),
-  ]),
-) as unknown as Readonly<Record<AiProviderId, ProviderModelOptions>>;
+export const storyboardModelCatalog: Readonly<Record<AiProviderId, ProviderModelOptions>> =
+  Object.fromEntries(
+    aiProviderIds.map((providerId) => [
+      providerId,
+      catalogRows[providerId].models.map((model) => ({
+        id: model.id,
+        displayName: model.displayName,
+      })),
+    ]),
+  ) as unknown as Readonly<Record<AiProviderId, ProviderModelOptions>>;
 
-export const storyboardModelPricing = Object.fromEntries(
+export const storyboardModelPricing: Readonly<
+  Record<AiProviderId, Readonly<Record<string, ModelPricePerMillion>>>
+> = Object.fromEntries(
   aiProviderIds.map((providerId) => [
     providerId,
     Object.fromEntries(
@@ -553,17 +555,23 @@ export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: s
 
 // 카탈로그에 없는 모델(로컬 ollama 태그 등)은 temperature 를 받는다고 본다 — 거부가 확인된 모델만 뺀다.
 export function acceptsTemperature(providerId: AiProviderId, modelId: string): boolean {
-  const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
+  const model: ProviderModelEntry | undefined = catalogRows[providerId].models.find(
+    (entry) => entry.id === modelId,
+  );
   return model?.acceptsTemperature !== false;
 }
 
 export function acceptsReasoningEffort(providerId: AiProviderId, modelId: string): boolean {
-  const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
+  const model: ProviderModelEntry | undefined = catalogRows[providerId].models.find(
+    (entry) => entry.id === modelId,
+  );
   return model?.acceptsReasoningEffort === true;
 }
 
 export function acceptsMaxTokens(providerId: AiProviderId, modelId: string): boolean {
-  const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
+  const model: ProviderModelEntry | undefined = catalogRows[providerId].models.find(
+    (entry) => entry.id === modelId,
+  );
   return model?.acceptsMaxTokens !== false;
 }
 
@@ -579,7 +587,7 @@ export function requiresSubscriptionRiskNotice(providerId: AiProviderId): boolea
 
 // 프로바이더가 내는 네 가지 실패 문구. 여섯 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
 // 호스트가 «키가 없다»를 알아보려고 문구 조각을 손으로 베껴 두게 된다.
-export const missingApiKeyMarker = 'API 키가 설정되어 있지 않습니다';
+export const missingApiKeyMarker: string = 'API 키가 설정되어 있지 않습니다';
 
 export function missingApiKeyMessage(providerId: AiProviderId): string {
   return `${getProviderDisplayName(providerId)} ${missingApiKeyMarker}.`;
@@ -591,8 +599,9 @@ export function missingModelMessage(providerId: AiProviderId): string {
 
 // The provider's own words (status, quota, rejected parameter) are what a person can act on.
 function withProviderErrorDetail(message: string, cause: unknown): string {
-  const detail = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
-  const singleLineDetail = detail.replace(/\s+/g, ' ').trim();
+  const detail: string =
+    cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
+  const singleLineDetail: string = detail.replace(/\s+/g, ' ').trim();
 
   return singleLineDetail ? `${message}: ${singleLineDetail}` : `${message}.`;
 }
@@ -612,7 +621,7 @@ export function generationFailedMessage(providerId: AiProviderId, cause?: unknow
 }
 
 // 구독 로그인 경로를 켜기 전에 사람이 읽고 답하는 고지문. 세 앱이 같은 글을 보여 준다.
-export const subscriptionRiskNoticeTitle = '구독 로그인으로 생성하기 전에 확인해 주세요.';
+export const subscriptionRiskNoticeTitle: string = '구독 로그인으로 생성하기 전에 확인해 주세요.';
 
 export const subscriptionRiskNoticeItems = [
   {
@@ -640,10 +649,10 @@ export const subscriptionRiskNoticeItems = [
   },
 ] as const;
 
-export const subscriptionRiskNoticeQuestion = '이 위험을 이해했고 내 책임으로 켭니다.';
+export const subscriptionRiskNoticeQuestion: string = '이 위험을 이해했고 내 책임으로 켭니다.';
 
 export function formatSubscriptionRiskNotice(): string {
-  const items = subscriptionRiskNoticeItems.flatMap((item, index) => [
+  const items: string[] = subscriptionRiskNoticeItems.flatMap((item, index) => [
     `${index + 1}. ${item.title}`,
     `   ${item.detail}`,
   ]);
@@ -651,10 +660,10 @@ export function formatSubscriptionRiskNotice(): string {
   return [subscriptionRiskNoticeTitle, '', ...items].join('\n');
 }
 
-export const subscriptionRiskWarning =
+export const subscriptionRiskWarning: string =
   '구독 로그인으로 생성합니다 — 구독 한도를 쓰고, 실행 예산이 적용되지 않으며, 예고 없이 멈출 수 있습니다.';
 
-export const planUsagePreviewWarning =
+export const planUsagePreviewWarning: string =
   '구독 로그인(미리보기)으로 생성합니다 — 사용량은 ChatGPT 구독 한도에서 나가고, 금액이 계산되지 않아 실행 예산이 적용되지 않습니다. 한도에 닿으면 씬 경계에서 멈춥니다.';
 
 // 숨은 프로바이더를 처음 부를 때 한 번 알리는 문장. 경로마다 위험이 다르다.
@@ -664,7 +673,7 @@ export function hiddenProviderRunWarning(providerId: AiProviderId): string {
     : planUsagePreviewWarning;
 }
 
-export const planUsageSettingsUrl = 'https://chatgpt.com/settings/usage';
+export const planUsageSettingsUrl: string = 'https://chatgpt.com/settings/usage';
 
 export function loginRequiredMessage(providerId: AiProviderId): string {
   return `${getProviderDisplayName(providerId)} 에 로그인돼 있지 않습니다. \`storyboard login ${providerId}\` 로 로그인하세요.`;

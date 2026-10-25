@@ -1,16 +1,16 @@
 export function findFirstJsonArray(text: string): string | null {
-  const startIndex = text.indexOf('[');
+  const startIndex: number = text.indexOf('[');
 
   if (startIndex === -1) {
     return null;
   }
 
-  let depth = 0;
-  let isInString = false;
-  let shouldEscapeNext = false;
+  let depth: number = 0;
+  let isInString: boolean = false;
+  let shouldEscapeNext: boolean = false;
 
-  for (let index = startIndex; index < text.length; index += 1) {
-    const character = text[index];
+  for (let index: number = startIndex; index < text.length; index += 1) {
+    const character: string | undefined = text[index];
 
     if (shouldEscapeNext) {
       shouldEscapeNext = false;
@@ -46,21 +46,21 @@ export function findFirstJsonArray(text: string): string | null {
 }
 
 export function extractCompleteObjectsFromJsonArray(jsonText: string): string {
-  const startIndex = jsonText.indexOf('[');
+  const startIndex: number = jsonText.indexOf('[');
 
   if (startIndex === -1) {
     return jsonText;
   }
 
   const completeObjects: string[] = [];
-  let arrayDepth = 0;
-  let objectDepth = 0;
-  let isInString = false;
-  let shouldEscapeNext = false;
-  let currentObjectStart = -1;
+  let arrayDepth: number = 0;
+  let objectDepth: number = 0;
+  let isInString: boolean = false;
+  let shouldEscapeNext: boolean = false;
+  let currentObjectStart: number = -1;
 
-  for (let index = startIndex + 1; index < jsonText.length; index += 1) {
-    const character = jsonText[index];
+  for (let index: number = startIndex + 1; index < jsonText.length; index += 1) {
+    const character: string | undefined = jsonText[index];
 
     if (shouldEscapeNext) {
       shouldEscapeNext = false;

@@ -220,7 +220,7 @@ export function findGenerationParameter(id: string): GenerationParameterDefiniti
 
 // The one setting a model profile may also carry: it is a user setting first, so it is not in the
 // generation catalog, but a measured model may say what it can output per call.
-export const sectionOutputLimitParameterId = 'generation.section.outputLimit';
+export const sectionOutputLimitParameterId: string = 'generation.section.outputLimit';
 
 export const modelProfileKnobIds: readonly string[] = [
   ...generationParameterIds,

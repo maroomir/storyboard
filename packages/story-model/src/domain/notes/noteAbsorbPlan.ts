@@ -85,7 +85,7 @@ export interface NoteAbsorbPlanInput {
   readonly scenePrefixDigits: number;
 }
 
-const slugPattern = /^[a-z0-9][a-z0-9-]*$/;
+const slugPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 const roleRank = { main: 3, supporting: 2, extra: 1 } as const;
 
 function normalizeName(value: string): string {
@@ -93,7 +93,7 @@ function normalizeName(value: string): string {
 }
 
 function slugify(value: string): string | undefined {
-  const slug = value
+  const slug: string = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
@@ -119,14 +119,14 @@ function mergeEntity(
   first: NoteExtractionEntity,
   second: NoteExtractionEntity,
 ): NoteExtractionEntity {
-  const firstRank = first.role === undefined ? 0 : roleRank[first.role];
-  const secondRank = second.role === undefined ? 0 : roleRank[second.role];
-  const knownAttributeKeys = new Set(first.attributes.map((attribute) => attribute.key));
-  const knownCanonKeys = new Set(first.canonFacts.map((fact) => fact.key));
-  const knownRelationTargets = new Set(
+  const firstRank: number = first.role === undefined ? 0 : roleRank[first.role];
+  const secondRank: number = second.role === undefined ? 0 : roleRank[second.role];
+  const knownAttributeKeys: Set<string> = new Set(first.attributes.map((attribute) => attribute.key));
+  const knownCanonKeys: Set<string> = new Set(first.canonFacts.map((fact) => fact.key));
+  const knownRelationTargets: Set<string> = new Set(
     first.relations.map((relation) => normalizeName(relation.target)),
   );
-  const otherNames = normalizeName(second.name) === normalizeName(first.name) ? [] : [second.name];
+  const otherNames: string[] = normalizeName(second.name) === normalizeName(first.name) ? [] : [second.name];
 
   return {
     type: first.type,
@@ -192,15 +192,15 @@ function findSameSubject(
   merged: readonly NoteExtractionEntity[],
   entity: NoteExtractionEntity,
 ): number | undefined {
-  const sameType = [...merged.keys()].filter((index) => merged[index]?.type === entity.type);
-  const name = normalizeName(entity.name);
-  const byName = sameType.find((index) => normalizeName(merged[index]?.name ?? '') === name);
+  const sameType: number[] = [...merged.keys()].filter((index) => merged[index]?.type === entity.type);
+  const name: string = normalizeName(entity.name);
+  const byName: number | undefined = sameType.find((index) => normalizeName(merged[index]?.name ?? '') === name);
 
   if (byName !== undefined) {
     return byName;
   }
 
-  const ids = idsOf(entity);
+  const ids: string[] = idsOf(entity);
 
   return sameType.find((index) => {
     const known = merged[index];
@@ -221,8 +221,8 @@ function findAliasTarget(
     return undefined;
   }
 
-  const name = normalizeName(entity.name);
-  const carriers = [...groups.keys()].filter((other) => {
+  const name: string = normalizeName(entity.name);
+  const carriers: number[] = [...groups.keys()].filter((other) => {
     const known = groups[other];
     return other !== index && known?.type === entity.type && namesOf(known).includes(name);
   });
@@ -231,7 +231,7 @@ function findAliasTarget(
 }
 
 function findRoot(parents: number[], index: number): number {
-  let root = index;
+  let root: number = index;
 
   while (parents[root] !== root) {
     root = parents[root] as number;
@@ -251,7 +251,7 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): MergedEntity[
   const readingsByGroup: NoteExtractionEntity[][] = [];
 
   for (const entity of entities) {
-    const index = findSameSubject(groups, entity);
+    const index: number | undefined = findSameSubject(groups, entity);
     const known = index === undefined ? undefined : groups[index];
 
     if (index === undefined || known === undefined) {
@@ -263,10 +263,10 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): MergedEntity[
     }
   }
 
-  const parents = [...groups.keys()];
+  const parents: number[] = [...groups.keys()];
 
   for (const index of groups.keys()) {
-    const target = findAliasTarget(groups, index);
+    const target: number | undefined = findAliasTarget(groups, index);
 
     if (target !== undefined) {
       const [first, second] = [findRoot(parents, index), findRoot(parents, target)].sort(
@@ -276,11 +276,11 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): MergedEntity[
     }
   }
 
-  const merged = new Map<number, MergedEntity>();
+  const merged: Map<number, MergedEntity> = new Map<number, MergedEntity>();
 
   groups.forEach((entity, index) => {
-    const root = findRoot(parents, index);
-    const known = merged.get(root);
+    const root: number = findRoot(parents, index);
+    const known: MergedEntity | undefined = merged.get(root);
     const readings = readingsByGroup[index] ?? [];
     merged.set(
       root,
@@ -311,12 +311,12 @@ export function listKnownNoteEntities(
   extractions: readonly NoteExtraction[],
   cards: readonly NoteExtractionKnownCard[],
 ): NoteExtractionKnownCard[] {
-  const takenIds = new Set(cards.map((card) => card.id));
-  const provisional = mergeEntities(extractions.flatMap((extraction) => extraction.entities))
+  const takenIds: Set<string> = new Set(cards.map((card) => card.id));
+  const provisional: NoteExtractionKnownCard[] = mergeEntities(extractions.flatMap((extraction) => extraction.entities))
     .map((merged) => merged.entity)
     .filter((entity) => entity.existingId === undefined)
     .flatMap((entity): NoteExtractionKnownCard[] => {
-      const id = provisionalCardId(entity);
+      const id: string | undefined = provisionalCardId(entity);
 
       if (id === undefined || takenIds.has(id)) {
         return [];
@@ -335,10 +335,10 @@ function takeUniqueId(
   fallbackPrefix: string,
   takenIds: Set<string>,
 ): string {
-  const base = candidates.find((candidate) => candidate !== undefined) ?? fallbackPrefix;
-  let id = base;
+  const base: string = candidates.find((candidate) => candidate !== undefined) ?? fallbackPrefix;
+  let id: string = base;
 
-  for (let suffix = 2; takenIds.has(id); suffix += 1) {
+  for (let suffix: number = 2; takenIds.has(id); suffix += 1) {
     id = `${base}-${suffix}`;
   }
 
@@ -374,8 +374,8 @@ interface ResolvedEntity {
 // relation between two people who both arrive from the notes still lands. A card's own name wins
 // over another card's alias, and an alias two cards share resolves to neither.
 class CardNameIndex {
-  private readonly idsByName = new Map<string, string>();
-  private readonly idsByAlias = new Map<string, Set<string>>();
+  private readonly idsByName: Map<string, string> = new Map<string, string>();
+  private readonly idsByAlias: Map<string, Set<string>> = new Map<string, Set<string>>();
 
   public constructor(private readonly kind: NoteExtractionEntity['type']) {}
 
@@ -384,21 +384,21 @@ class CardNameIndex {
       return;
     }
 
-    const nameKey = normalizeName(card.name);
+    const nameKey: string = normalizeName(card.name);
 
     if (!this.idsByName.has(nameKey)) {
       this.idsByName.set(nameKey, card.id);
     }
 
     for (const alias of [...(card.aliases ?? []), ...extraAliases]) {
-      const key = normalizeName(alias);
+      const key: string = normalizeName(alias);
       this.idsByAlias.set(key, new Set([...(this.idsByAlias.get(key) ?? []), card.id]));
     }
   }
 
   public resolve(name: string): string | undefined {
-    const key = normalizeName(name);
-    const aliasIds = [...(this.idsByAlias.get(key) ?? [])];
+    const key: string = normalizeName(name);
+    const aliasIds: string[] = [...(this.idsByAlias.get(key) ?? [])];
 
     return this.idsByName.get(key) ?? (aliasIds.length === 1 ? aliasIds[0] : undefined);
   }
@@ -424,7 +424,7 @@ function toProposalDrafts(
     );
 
     for (const relation of entity.relations) {
-      const target = characters.resolve(relation.target);
+      const target: string | undefined = characters.resolve(relation.target);
 
       if (target !== undefined && target !== card.id) {
         drafts.push({ kind: 'relation', target, type: relation.type });
@@ -445,7 +445,7 @@ function toProposalDrafts(
   }
 
   for (const name of entity.characterNames) {
-    const id = characters.resolve(name);
+    const id: string | undefined = characters.resolve(name);
 
     if (id !== undefined) {
       drafts.push({ kind: 'characterId', value: id });
@@ -465,18 +465,18 @@ function planCards(
   readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
   readonly canonCandidates: NoteCanonCandidate[];
 } {
-  const characters = new CardNameIndex('character');
-  const backgrounds = new CardNameIndex('background');
+  const characters: CardNameIndex = new CardNameIndex('character');
+  const backgrounds: CardNameIndex = new CardNameIndex('background');
   const cardsById = new Map(cards.map((card) => [card.id, card]));
-  const takenIds = new Set(cardsById.keys());
+  const takenIds: Set<string> = new Set(cardsById.keys());
 
   for (const card of cards) {
     characters.add(card);
     backgrounds.add(card);
   }
 
-  const resolved = entities.map(({ entity, readings }, index): ResolvedEntity => {
-    const kindIndex = entity.type === 'character' ? characters : backgrounds;
+  const resolved: ResolvedEntity[] = entities.map(({ entity, readings }, index): ResolvedEntity => {
+    const kindIndex: CardNameIndex = entity.type === 'character' ? characters : backgrounds;
     const byId = entity.existingId === undefined ? undefined : cardsById.get(entity.existingId);
     const existing =
       byId !== undefined && entityKind(byId) === entity.type
@@ -487,18 +487,18 @@ function planCards(
       return { entity, readings, card: existing, isNew: false };
     }
 
-    const id = takeUniqueId(
+    const id: string = takeUniqueId(
       [validCardId(entity.suggestedId), slugify(entity.name)],
       `${entity.type}-${index + 1}`,
       takenIds,
     );
-    const card = createNewCard(entity, id);
+    const card: StoryboardCard = createNewCard(entity, id);
     kindIndex.add(card, entity.aliases);
 
     return { entity, readings, card, isNew: true };
   });
 
-  const plans = resolved.flatMap((entry): NoteCardPlan[] => {
+  const plans: NoteCardPlan[] = resolved.flatMap((entry): NoteCardPlan[] => {
     const changes = toProposalDrafts(entry, characters)
       .map(
         (draft) =>
@@ -559,10 +559,10 @@ function beatsOf(scene: NoteExtractionScene): string[] {
 // requests, gives several scenes for one source; they become the first one with every part a beat.
 function mergeScenesBySourceNote(scenes: readonly NoteExtractionScene[]): NoteExtractionScene[] {
   const merged: NoteExtractionScene[] = [];
-  const indexBySourceNote = new Map<string, number>();
+  const indexBySourceNote: Map<string, number> = new Map<string, number>();
 
   for (const scene of scenes) {
-    const index =
+    const index: number | undefined =
       scene.sourceNote === undefined ? undefined : indexBySourceNote.get(scene.sourceNote);
     const known = index === undefined ? undefined : merged[index];
 
@@ -591,8 +591,8 @@ function orderScenes(
   extractions: readonly NoteExtraction[],
   notes: readonly NoteDocument[],
 ): NoteExtractionScene[] {
-  const noteIndexById = new Map(notes.map((note, index) => [note.id, index]));
-  const draftNoteIds = findDraftNoteIds(extractions);
+  const noteIndexById: Map<string, number> = new Map(notes.map((note, index) => [note.id, index]));
+  const draftNoteIds: Set<string> = findDraftNoteIds(extractions);
   const scenes = extractions
     .flatMap((extraction) => extraction.scenes)
     .filter((scene) => scene.sourceNote === undefined || !draftNoteIds.has(scene.sourceNote));
@@ -616,19 +616,19 @@ function planScenes(
   readonly skipped: NoteLeftOut[];
   readonly warnings: string[];
 } {
-  const existingTitles = new Set(
+  const existingTitles: Set<string> = new Set(
     input.scenes.flatMap((scene) =>
       scene.card.title === undefined ? [] : [normalizeName(scene.card.title)],
     ),
   );
-  const takenSlugs = new Set(input.scenes.map((scene) => scene.slug));
-  const lastOrder = Math.max(0, ...input.scenes.map((scene) => scene.order));
+  const takenSlugs: Set<string> = new Set(input.scenes.map((scene) => scene.slug));
+  const lastOrder: number = Math.max(0, ...input.scenes.map((scene) => scene.order));
   const plans: NoteScenePlan[] = [];
   const skipped: NoteLeftOut[] = [];
   const warnings: string[] = [];
 
   for (const scene of orderScenes(input.extractions, input.notes)) {
-    const titleKey = normalizeName(scene.title);
+    const titleKey: string = normalizeName(scene.title);
 
     if (existingTitles.has(titleKey)) {
       skipped.push({ label: scene.title, reason: '같은 제목의 씬이 이미 있습니다' });
@@ -637,13 +637,13 @@ function planScenes(
 
     existingTitles.add(titleKey);
 
-    const slug = takeUniqueId(
+    const slug: string = takeUniqueId(
       [scene.slug !== undefined && slugPattern.test(scene.slug) ? scene.slug : undefined],
       'scene',
       takenSlugs,
     );
-    const stem = `${String(lastOrder + plans.length + 1).padStart(input.scenePrefixDigits, '0')}-${slug}`;
-    const fileName = `${stem}.card`;
+    const stem: string = `${String(lastOrder + plans.length + 1).padStart(input.scenePrefixDigits, '0')}-${slug}`;
+    const fileName: string = `${stem}.card`;
 
     if (!sceneFileNamePattern.test(fileName)) {
       skipped.push({ label: scene.title, reason: `만들 수 없는 씬 파일 이름: ${fileName}` });
@@ -653,7 +653,7 @@ function planScenes(
     const characterIds: string[] = [];
 
     for (const name of scene.characterNames) {
-      const id = characters.resolve(name);
+      const id: string | undefined = characters.resolve(name);
 
       if (id === undefined) {
         warnings.push(`씬 「${scene.title}」의 인물 「${name}」은 카드가 없어 연결하지 않았습니다.`);
@@ -662,7 +662,7 @@ function planScenes(
       }
     }
 
-    const locationId =
+    const locationId: string | undefined =
       scene.locationName === undefined ? undefined : backgrounds.resolve(scene.locationName);
 
     if (scene.locationName !== undefined && locationId === undefined) {
@@ -692,7 +692,7 @@ function planScenes(
 }
 
 function findUnclassifiedNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {
-  const usedNoteIds = new Set<string>();
+  const usedNoteIds: Set<string> = new Set<string>();
 
   for (const extraction of input.extractions) {
     for (const note of extraction.notes) {
@@ -718,7 +718,7 @@ function findUnclassifiedNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {
 }
 
 function findDraftNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {
-  const draftNoteIds = findDraftNoteIds(input.extractions);
+  const draftNoteIds: Set<string> = findDraftNoteIds(input.extractions);
 
   return input.notes
     .filter((note) => draftNoteIds.has(note.id))
@@ -727,7 +727,7 @@ function findDraftNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {
 
 function toSynopsis(synthesis: NoteSynthesis): OutlineSynopsis | undefined {
   const { synopsis, setting } = synthesis;
-  const hasContent =
+  const hasContent: boolean =
     [synopsis.logline, synopsis.genrePromise, synopsis.ending, synopsis.theme, synopsis.tone].some(
       (value) => value !== undefined,
     ) ||
@@ -745,10 +745,10 @@ function toSynopsis(synthesis: NoteSynthesis): OutlineSynopsis | undefined {
 // Everything the notes would become, decided without touching the workspace: which cards are new,
 // which only add to a card that exists, which scenes follow the last one, and what was left out.
 export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan {
-  const entities = mergeEntities(input.extractions.flatMap((extraction) => extraction.entities));
+  const entities: MergedEntity[] = mergeEntities(input.extractions.flatMap((extraction) => extraction.entities));
   const cards = planCards(entities, input.cards);
   const scenes = planScenes(input, cards.characters, cards.backgrounds);
-  const synopsis = toSynopsis(input.synthesis);
+  const synopsis: OutlineSynopsis | undefined = toSynopsis(input.synthesis);
 
   return {
     cards: cards.plans,

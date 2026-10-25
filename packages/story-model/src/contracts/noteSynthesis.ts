@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { pointOfViews, type PointOfView } from '#model/format/project';
 
-const optionalText = z.preprocess(
+const optionalText: z.ZodPreprocess<z.ZodCatch<z.ZodOptional<z.ZodString>>> = z.preprocess(
   (value) => (typeof value === 'string' && value.trim().length === 0 ? undefined : value),
   z.string().trim().min(1).optional().catch(undefined),
 );
@@ -19,7 +19,30 @@ const textList = z
   .optional()
   .transform((value) => value ?? []);
 
-const noteSynthesisSchema = z.object({
+interface NoteSynthesisPayloadSetting {
+  genre?: string;
+  audience?: string;
+  concept?: string;
+  description?: string;
+  pov?: PointOfView;
+}
+
+interface NoteSynthesisPayloadSynopsis {
+  mainConflicts: string[];
+  styleRules: string[];
+  logline?: string;
+  genrePromise?: string;
+  ending?: string;
+  theme?: string;
+  tone?: string;
+}
+
+interface NoteSynthesisPayload {
+  setting: NoteSynthesisPayloadSetting;
+  synopsis: NoteSynthesisPayloadSynopsis;
+}
+
+const noteSynthesisSchema: z.ZodType<NoteSynthesisPayload> = z.object({
   setting: z
     .object({
       genre: optionalText,

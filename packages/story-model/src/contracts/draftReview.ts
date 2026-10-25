@@ -32,7 +32,7 @@ export const critiqueCategoryLabels: Record<CritiqueCategory, string> = {
   repetition: '반복',
 };
 
-const draftCritiqueIssueSchema = z.object({
+const draftCritiqueIssueSchema: z.ZodType<DraftCritiqueIssue> = z.object({
   category: z.enum(critiqueCategories),
   severity: z.enum(severities).default('low'),
   excerpt: z.string().trim().min(1).optional(),
@@ -41,7 +41,7 @@ const draftCritiqueIssueSchema = z.object({
 });
 
 export function coerceCritiqueIssues(rawText: string): DraftCritiqueIssue[] {
-  const parsedArray = parseJsonArray(rawText);
+  const parsedArray: unknown[] | null = parseJsonArray(rawText);
 
   if (!parsedArray) {
     return [];
@@ -57,8 +57,12 @@ export function countBlockingIssues(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[],
 ): number {
-  const blockingContinuity = continuityIssues.filter((issue) => issue.severity === 'high').length;
-  const blockingCritique = critiqueIssues.filter((issue) => issue.severity === 'high').length;
+  const blockingContinuity: number = continuityIssues.filter(
+    (issue) => issue.severity === 'high',
+  ).length;
+  const blockingCritique: number = critiqueIssues.filter(
+    (issue) => issue.severity === 'high',
+  ).length;
   return blockingContinuity + blockingCritique;
 }
 
@@ -83,7 +87,7 @@ export const critiqueScoring: {
 };
 
 export function scoreCritique(critiqueIssues: readonly DraftCritiqueIssue[]): CritiqueScore {
-  const perCategory = Object.fromEntries(
+  const perCategory: Record<CritiqueCategory, number> = Object.fromEntries(
     critiqueCategories.map((category) => [category, 0]),
   ) as Record<CritiqueCategory, number>;
 
@@ -91,11 +95,11 @@ export function scoreCritique(critiqueIssues: readonly DraftCritiqueIssue[]): Cr
     perCategory[issue.category] += critiqueScoring.deduction[issue.category][issue.severity];
   }
 
-  const totalDeduction = critiqueCategories.reduce(
+  const totalDeduction: number = critiqueCategories.reduce(
     (total, category) => total + perCategory[category],
     0,
   );
-  const overall = Math.max(
+  const overall: number = Math.max(
     0,
     Math.min(critiqueScoring.baseScore, critiqueScoring.baseScore - totalDeduction),
   );
@@ -126,8 +130,8 @@ export function buildRevisionInstructions(
   }
 
   for (const issue of critiqueIssues) {
-    const label = critiqueCategoryLabels[issue.category];
-    const excerpt = issue.excerpt ? ` ("${issue.excerpt}")` : '';
+    const label: string = critiqueCategoryLabels[issue.category];
+    const excerpt: string = issue.excerpt ? ` ("${issue.excerpt}")` : '';
     instructions.push(`${label}${excerpt}: ${issue.comment}`);
   }
 

@@ -4,8 +4,9 @@ import {
   isBackgroundCard,
   type BackgroundCard,
   type CharacterCard,
+  type StoryboardCard,
 } from './card';
-import { parseSceneFileName, type SceneFile } from './scene';
+import { parseSceneFileName, type SceneFile, type SceneFileNameParts } from './scene';
 import { parseSceneCard } from './files/scene';
 import { readCardFile } from './files/card';
 import { readBibleFile } from './files/bible';
@@ -67,8 +68,8 @@ export async function buildSceneContext(
     listProjectBackgrounds(paths, fileSystem),
   ]);
 
-  const characters = resolveSceneCharacters(scene, allCharacters);
-  const background = resolveSceneBackground(scene, allBackgrounds);
+  const characters: readonly CharacterCard[] = resolveSceneCharacters(scene, allCharacters);
+  const background: BackgroundCard | undefined = resolveSceneBackground(scene, allBackgrounds);
 
   return {
     scene,
@@ -77,7 +78,7 @@ export async function buildSceneContext(
   };
 }
 
-const summaryContextBudget = 8000;
+const summaryContextBudget: number = 8000;
 
 // NOTE: previousSceneOrder는 같은 스레드의 직전 씬이다. 주지 않으면 종전대로 바로 앞 번호를 본다 —
 // 스레드를 쓰지 않는 작품은 그 둘이 언제나 같다.
@@ -87,13 +88,13 @@ export async function readPreviousSceneContext(
   fileSystem: SceneContextWorkspaceFileSystem,
   previousSceneOrder?: number,
 ): Promise<string | undefined> {
-  const previousOrder = previousSceneOrder ?? currentSceneOrder - 1;
+  const previousOrder: number = previousSceneOrder ?? currentSceneOrder - 1;
 
   if (previousOrder < 1) {
     return undefined;
   }
 
-  const rollingSummary = await readRollingSummary(paths, fileSystem);
+  const rollingSummary: string | undefined = await readRollingSummary(paths, fileSystem);
   if (rollingSummary) {
     return rollingSummary;
   }
@@ -110,8 +111,10 @@ async function readRollingSummary(
   }
 
   try {
-    const content = new TextDecoder().decode(await fileSystem.readFile(paths.chapterSummaries));
-    const fresh = dropStaleChapters(content.trim());
+    const content: string = new TextDecoder().decode(
+      await fileSystem.readFile(paths.chapterSummaries),
+    );
+    const fresh: string | undefined = dropStaleChapters(content.trim());
     return fresh === undefined ? undefined : boundSummary(fresh);
   } catch {
     return undefined;
@@ -127,7 +130,7 @@ function dropStaleChapters(content: string): string | undefined {
   }
 
   const [preamble, ...chapters] = content.split(/^(?=## )/m);
-  const fresh = chapters.filter((chapter) => !isStaleChapterSection(chapter));
+  const fresh: string[] = chapters.filter((chapter) => !isStaleChapterSection(chapter));
 
   if (chapters.length > 0 && fresh.length === 0) {
     return undefined;
@@ -140,24 +143,24 @@ function dropStaleChapters(content: string): string | undefined {
 // being cut from the front: a raw tail cut drops the opening chapters entirely, which is exactly
 // where a long-range setup a later scene has to honour was established.
 function boundSummary(content: string): string {
-  const trimmed = content.trim();
+  const trimmed: string = content.trim();
 
   if (trimmed.length <= summaryContextBudget) {
     return trimmed;
   }
 
   const [preamble, ...chapters] = trimmed.split(/^(?=## )/m);
-  const sections = [preamble ?? '', ...chapters];
+  const sections: string[] = [preamble ?? '', ...chapters];
 
   for (
-    let index = 1;
+    let index: number = 1;
     index < sections.length && joinSections(sections).length > summaryContextBudget;
     index += 1
   ) {
     sections[index] = firstLines(sections[index] ?? '');
   }
 
-  const compressed = joinSections(sections);
+  const compressed: string = joinSections(sections);
   return compressed.length <= summaryContextBudget
     ? compressed
     : compressed.slice(-summaryContextBudget).trim();
@@ -170,9 +173,9 @@ function joinSections(sections: readonly string[]): string {
 // The heading plus the first sentence-bearing line — enough to say which chapter it was and what
 // happened, without the beat-by-beat detail a recent chapter still needs.
 function firstLines(section: string): string {
-  const lines = section.split('\n');
-  const heading = lines[0] ?? '';
-  const summary = lines.slice(1).find((line) => line.trim().length > 0) ?? '';
+  const lines: string[] = section.split('\n');
+  const heading: string = lines[0] ?? '';
+  const summary: string = lines.slice(1).find((line) => line.trim().length > 0) ?? '';
 
   return `${heading}\n${summary.trim()}\n\n`;
 }
@@ -189,7 +192,7 @@ async function readPreviousDraftTail(
     );
 
     const previousFileName = draftFiles.find(([name]) => {
-      const match = /^(\d+)-/.exec(name);
+      const match: RegExpExecArray | null = /^(\d+)-/.exec(name);
       return match && Number.parseInt(match[1] as string, 10) === previousOrder;
     });
 
@@ -197,10 +200,10 @@ async function readPreviousDraftTail(
       return undefined;
     }
 
-    const uri = paths.joinPath(paths.draftDirectory, previousFileName[0]);
-    const body = extractDraftBody(new TextDecoder().decode(await fileSystem.readFile(uri)));
+    const uri: StoryUri = paths.joinPath(paths.draftDirectory, previousFileName[0]);
+    const body: string = extractDraftBody(new TextDecoder().decode(await fileSystem.readFile(uri)));
 
-    const lastCharacters = body.slice(-1000).trim();
+    const lastCharacters: string = body.slice(-1000).trim();
     return lastCharacters.length > 0 ? lastCharacters : undefined;
   } catch {
     return undefined;
@@ -230,8 +233,12 @@ export async function resolveSceneBibleFacts(
   context: SceneContext,
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<readonly BibleFact[]> {
-  const bible = await readSceneBible(paths, fileSystem);
-  const storyTimeline = await readStoryTimeline(paths, fileSystem, bible);
+  const bible: StoryBible = await readSceneBible(paths, fileSystem);
+  const storyTimeline: ReadonlyMap<number, number> | undefined = await readStoryTimeline(
+    paths,
+    fileSystem,
+    bible,
+  );
 
   return selectInjectedFacts(
     bible,
@@ -251,7 +258,7 @@ async function readStoryTimeline(
   fileSystem: SceneContextWorkspaceFileSystem,
   bible: StoryBible,
 ): Promise<ReadonlyMap<number, number> | undefined> {
-  const usesRanges = bible.facts.some(
+  const usesRanges: boolean = bible.facts.some(
     (fact) => fact.validFrom !== undefined || fact.validUntil !== undefined,
   );
 
@@ -259,8 +266,8 @@ async function readStoryTimeline(
     return undefined;
   }
 
-  const sceneDirectory = paths.sceneDirectory;
-  const timeline = new Map<number, number>();
+  const sceneDirectory: StoryUri = paths.sceneDirectory;
+  const timeline: Map<number, number> = new Map<number, number>();
   let entries: [string, { type: 'file' | 'directory' }][];
 
   try {
@@ -271,17 +278,18 @@ async function readStoryTimeline(
 
   await Promise.all(
     entries.map(async ([fileName, entry]) => {
-      const parts = entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
+      const parts: SceneFileNameParts | undefined =
+        entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
 
       if (parts === undefined) {
         return;
       }
 
       try {
-        const raw = new TextDecoder().decode(
+        const raw: string = new TextDecoder().decode(
           await fileSystem.readFile(paths.joinPath(sceneDirectory, fileName)),
         );
-        const storyTime = parseSceneCard(raw).storyTime;
+        const storyTime: number | undefined = parseSceneCard(raw).storyTime;
 
         if (storyTime !== undefined) {
           timeline.set(parts.order, storyTime);
@@ -303,17 +311,21 @@ export async function buildNarrativeContext(
   fileSystem: SceneContextWorkspaceFileSystem,
   options?: NarrativeContextOptions,
 ): Promise<NarrativeContext> {
-  const rawPreviousContext = await readPreviousSceneContext(
+  const rawPreviousContext: string | undefined = await readPreviousSceneContext(
     paths,
     context.scene.order,
     fileSystem,
     options?.previousSceneOrder,
   );
-  const previousContext =
+  const previousContext: string | undefined =
     rawPreviousContext === undefined ? undefined : stripForeignScript(rawPreviousContext);
-  const bibleFacts = await resolveSceneBibleFacts(paths, context, fileSystem);
-  const ledger = await readSceneStoryLedger(paths, context.scene.order, fileSystem);
-  const storyState =
+  const bibleFacts: readonly BibleFact[] = await resolveSceneBibleFacts(paths, context, fileSystem);
+  const ledger: StoryState | undefined = await readSceneStoryLedger(
+    paths,
+    context.scene.order,
+    fileSystem,
+  );
+  const storyState: string | undefined =
     ledger === undefined
       ? undefined
       : formatStoryStateForPrompt(
@@ -322,14 +334,14 @@ export async function buildNarrativeContext(
           context.scene.body,
           options?.focalFilter,
         );
-  const prompt = composeNarrativePrompt(
+  const prompt: string | undefined = composeNarrativePrompt(
     formatBibleFactLines(context, bibleFacts),
     storyState,
     previousContext,
   );
-  const characterKnowledge =
+  const characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined =
     ledger === undefined ? undefined : selectSceneCharacterKnowledge(ledger, context);
-  const characterRelations =
+  const characterRelations: ReadonlyMap<string, readonly string[]> | undefined =
     ledger === undefined ? undefined : selectSceneCharacterRelations(ledger, context);
 
   return {
@@ -344,10 +356,10 @@ function selectSceneCharacterRelations(
   ledger: StoryState,
   context: SceneContext,
 ): ReadonlyMap<string, readonly string[]> | undefined {
-  const relations = new Map<string, readonly string[]>();
+  const relations: Map<string, readonly string[]> = new Map<string, readonly string[]>();
 
   for (const character of context.characters) {
-    const changes = selectCharacterRelations(
+    const changes: string[] = selectCharacterRelations(
       ledger,
       { id: character.id, names: [character.name, ...(character.aliases ?? [])] },
       context.scene.order,
@@ -364,10 +376,10 @@ function selectSceneCharacterKnowledge(
   ledger: StoryState,
   context: SceneContext,
 ): ReadonlyMap<string, readonly string[]> | undefined {
-  const knowledge = new Map<string, readonly string[]>();
+  const knowledge: Map<string, readonly string[]> = new Map<string, readonly string[]>();
 
   for (const character of context.characters) {
-    const known = selectCharacterKnowledge(
+    const known: string[] = selectCharacterKnowledge(
       ledger,
       character.id,
       context.scene.order,
@@ -396,10 +408,10 @@ async function readSceneStoryLedger(
 }
 
 export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {
-  const names = sceneEntityNames(context);
+  const names: ReadonlyMap<string, string> = sceneEntityNames(context);
 
   return facts.map((fact) => {
-    const subject = names.get(`${fact.subject.kind}:${fact.subject.id}`) ?? fact.subject.id;
+    const subject: string = names.get(`${fact.subject.kind}:${fact.subject.id}`) ?? fact.subject.id;
 
     return `${subject} — ${fact.key}: ${fact.value}${formatUnawareSuffix(context, fact)}`;
   });
@@ -408,13 +420,13 @@ export function formatBibleFactLines(context: SceneContext, facts: readonly Bibl
 // 독자에게 공개된 사실이라고 등장 인물이 다 아는 것은 아니다. knownBy가 적힌 사실은 아직 모르는
 // 인물을 이름으로 적어, 서술자는 알고 그 인물은 모르는 장면을 쓸 수 있게 한다.
 function formatUnawareSuffix(context: SceneContext, fact: BibleFact): string {
-  const knownBy = revealKnownBy(fact);
+  const knownBy: readonly string[] | undefined = revealKnownBy(fact);
 
   if (knownBy === undefined) {
     return '';
   }
 
-  const unaware = context.characters
+  const unaware: string[] = context.characters
     .filter((character) => !knownBy.includes(character.id))
     .map((character) => character.name);
 
@@ -450,7 +462,7 @@ function sceneSubjects(context: SceneContext): BibleFactSubject[] {
 }
 
 function sceneEntityNames(context: SceneContext): ReadonlyMap<string, string> {
-  const names = new Map<string, string>();
+  const names: Map<string, string> = new Map<string, string>();
 
   for (const character of context.characters) {
     names.set(`character:${character.id}`, character.name);
@@ -484,7 +496,7 @@ function composeNarrativePrompt(
     );
   }
 
-  const trimmedPrevious = previousContext?.trim();
+  const trimmedPrevious: string | undefined = previousContext?.trim();
   if (trimmedPrevious) {
     sections.push(`[이전 장면]\n${trimmedPrevious}`);
   }
@@ -508,9 +520,9 @@ async function listProjectCharacters(
 
     const cards = await Promise.all(
       cardFiles.map(async ([name]) => {
-        const uri = paths.joinPath(paths.characterDirectory, name);
+        const uri: StoryUri = paths.joinPath(paths.characterDirectory, name);
         try {
-          const card = await readCardFile(uri, fileSystem);
+          const card: StoryboardCard = await readCardFile(uri, fileSystem);
           return card.type === 'character' ? card : undefined;
         } catch {
           return undefined;
@@ -534,11 +546,11 @@ async function listProjectBackgrounds(
       ([name, entry]) => entry.type === 'file' && isWorkingCardFileName(name),
     );
 
-    const cards = await Promise.all(
+    const cards: (BackgroundCard | undefined)[] = await Promise.all(
       cardFiles.map(async ([name]) => {
-        const uri = paths.joinPath(paths.backgroundDirectory, name);
+        const uri: StoryUri = paths.joinPath(paths.backgroundDirectory, name);
         try {
-          const card = await readCardFile(uri, fileSystem);
+          const card: StoryboardCard = await readCardFile(uri, fileSystem);
           return isBackgroundCard(card) ? card : undefined;
         } catch {
           return undefined;
@@ -557,12 +569,12 @@ function resolveSceneCharacters(
   allCharacters: readonly CharacterCard[],
 ): readonly CharacterCard[] {
   if (scene.frontmatter.characters && scene.frontmatter.characters.length > 0) {
-    const targetIds = new Set(scene.frontmatter.characters);
+    const targetIds: Set<string> = new Set(scene.frontmatter.characters);
     return allCharacters.filter((char) => targetIds.has(char.id));
   }
 
-  const detectableTokens = allCharacters.flatMap((char) => characterMatchTokens(char));
-  const detectedTokens = new Set(detectCharactersInText(scene.body, detectableTokens));
+  const detectableTokens: string[] = allCharacters.flatMap((char) => characterMatchTokens(char));
+  const detectedTokens: Set<string> = new Set(detectCharactersInText(scene.body, detectableTokens));
 
   return allCharacters.filter((char) =>
     characterMatchTokens(char).some((token) => detectedTokens.has(token)),
@@ -587,14 +599,14 @@ function detectSceneBackground(
   let best: { card: BackgroundCard; matchLength: number } | undefined;
 
   for (const background of allBackgrounds) {
-    const tokens = [background.name, ...(background.aliases ?? [])];
-    const matched = detectCharactersInText(body, tokens);
+    const tokens: string[] = [background.name, ...(background.aliases ?? [])];
+    const matched: string[] = detectCharactersInText(body, tokens);
     if (matched.length === 0) {
       continue;
     }
 
-    const matchLength = Math.max(...matched.map((token) => token.length));
-    const isBetter =
+    const matchLength: number = Math.max(...matched.map((token) => token.length));
+    const isBetter: boolean =
       best === undefined ||
       matchLength > best.matchLength ||
       (matchLength === best.matchLength && background.id < best.card.id);

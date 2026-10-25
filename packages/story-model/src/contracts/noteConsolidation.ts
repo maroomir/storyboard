@@ -72,7 +72,11 @@ export interface NoteConsolidationResult {
   readonly failure?: NoteConsolidationFailure;
 }
 
-const answerIdSchema = z.object({ id: z.string().trim().min(1) });
+interface AnswerId {
+  id: string;
+}
+
+const answerIdSchema: z.ZodType<AnswerId> = z.object({ id: z.string().trim().min(1) });
 
 function readTextList(value: unknown): string[] | undefined {
   return Array.isArray(value)
@@ -85,7 +89,7 @@ function readTextList(value: unknown): string[] | undefined {
 function readGroups(value: unknown): string[][] | undefined {
   return Array.isArray(value) && value.length > 0 && value.every(Array.isArray)
     ? value.flatMap((group) => {
-        const items = readTextList(group) ?? [];
+        const items: string[] = readTextList(group) ?? [];
         return items.length === 0 ? [] : [items];
       })
     : undefined;
@@ -97,9 +101,9 @@ function readConflicts(value: unknown): NoteConsolidationConflict[] {
   }
 
   return value.flatMap((entry) => {
-    const record = typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>) : {};
-    const field = noteConsolidatedFields.find((name) => name === record.field);
-    const items = readTextList(record.items) ?? [];
+    const record: Record<string, unknown> = typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>) : {};
+    const field: "tags" | "description" | "voice" | "aliases" | "traits" | "desire" | "senses" | undefined = noteConsolidatedFields.find((name) => name === record.field);
+    const items: string[] = readTextList(record.items) ?? [];
 
     return field === undefined || items.length < 2 ? [] : [{ field, items }];
   });
@@ -112,13 +116,13 @@ function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
     return undefined;
   }
 
-  const record = entry as Record<string, unknown>;
+  const record: Record<string, unknown> = entry as Record<string, unknown>;
   const values: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
   const groups: Partial<Record<NoteConsolidatedField, readonly (readonly string[])[]>> = {};
 
   for (const field of noteConsolidatedFields) {
-    const fieldGroups = readGroups(record[field]);
-    const list = fieldGroups === undefined ? readTextList(record[field]) : undefined;
+    const fieldGroups: string[][] | undefined = readGroups(record[field]);
+    const list: string[] | undefined = fieldGroups === undefined ? readTextList(record[field]) : undefined;
 
     if (fieldGroups !== undefined) {
       groups[field] = fieldGroups;
@@ -127,7 +131,7 @@ function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
     }
   }
 
-  const conflicts = readConflicts(record.conflicts);
+  const conflicts: NoteConsolidationConflict[] = readConflicts(record.conflicts);
 
   return {
     cardId: id.data.id,
@@ -151,7 +155,7 @@ export function readNoteConsolidationResponse(
 
   return {
     consolidated: parsed.cards.flatMap((entry) => {
-      const answer = readAnswer(entry);
+      const answer: NoteConsolidatedLists | undefined = readAnswer(entry);
       return answer === undefined ? [] : [answer];
     }),
   };

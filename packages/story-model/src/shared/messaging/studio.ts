@@ -1,21 +1,51 @@
 import { z } from 'zod';
 
-import { studioAgentToolNames } from '#model/contracts/studioAgent';
+import {
+  studioAgentToolNames,
+  type StudioAgentEntityKind,
+  type StudioAgentToolName,
+  type StudioCardFieldChange,
+  type StudioDraftReplacement,
+  type StudioPatch,
+} from '#model/contracts/studioAgent';
 
 import { uriStringSchema } from './atoms';
+import type {
+  StudioValidationState,
+  StudioValidationWarning,
+} from '#model/contracts/studioValidation';
 
-export const studioEntityKindSchema = z.enum(['character', 'background', 'scene', 'project']);
+export type StudioEntityKind = 'character' | 'scene' | 'background' | 'project';
 
-export type StudioEntityKind = z.infer<typeof studioEntityKindSchema>;
+export const studioEntityKindSchema: z.ZodType<StudioEntityKind> = z.enum([
+  'character',
+  'background',
+  'scene',
+  'project',
+]);
 
-export const studioEntitySchema = z.object({
+export interface StudioEntity {
+  kind: StudioEntityKind;
+  key: string;
+}
+
+export const studioEntitySchema: z.ZodType<StudioEntity> = z.object({
   kind: studioEntityKindSchema,
   key: z.string().min(1),
 });
 
-export type StudioEntity = z.infer<typeof studioEntitySchema>;
+export interface StudioTarget {
+  kind: 'character' | 'scene' | 'background' | 'project' | 'draft' | 'none';
+  hasSelection: boolean;
+  label?: string;
+  entity?: StudioEntity;
+  sceneUri?: string;
+  draftUri?: string;
+  cardUri?: string;
+  draftExists?: boolean;
+}
 
-export const studioTargetSchema = z.object({
+export const studioTargetSchema: z.ZodType<StudioTarget> = z.object({
   kind: z.enum(['draft', 'scene', 'character', 'background', 'project', 'none']),
   label: z.string().optional(),
   // NOTE: draft and scene targets share one entity so their chat sessions live under the same key.
@@ -27,9 +57,12 @@ export const studioTargetSchema = z.object({
   draftExists: z.boolean().optional(),
 });
 
-export type StudioTarget = z.infer<typeof studioTargetSchema>;
+export interface StudioStageCard {
+  kind: 'character' | 'background';
+  name: string;
+}
 
-export const studioStageCardSchema = z.object({
+export const studioStageCardSchema: z.ZodType<StudioStageCard> = z.object({
   kind: z.enum(['character', 'background']),
   name: z.string().min(1),
 });
@@ -45,7 +78,12 @@ export const studioSceneStageSchema = z.object({
   cards: z.array(studioStageCardSchema),
 });
 
-export const studioCardStageRelationSchema = z.object({
+export interface StudioCardStageRelation {
+  target: string;
+  type: string;
+}
+
+export const studioCardStageRelationSchema: z.ZodType<StudioCardStageRelation> = z.object({
   target: z.string().min(1),
   type: z.string().min(1),
 });
@@ -60,49 +98,106 @@ export const studioCardStageSchema = z.object({
   appearsInScenes: z.array(z.string().min(1)),
 });
 
-export const studioStageSchema = z.discriminatedUnion('kind', [
+export type StudioStage =
+  | {
+      kind: 'scene';
+      sceneStem: string;
+      review: 'unreviewed' | 'clean' | 'issues';
+      cards: StudioStageCard[];
+      title?: string;
+      draftLength?: number;
+      draftUpdatedAt?: string;
+      draftRevision?: number;
+    }
+  | {
+      kind: 'card';
+      cardKind: 'character' | 'background';
+      cardId: string;
+      name: string;
+      relations: StudioCardStageRelation[];
+      appearsInScenes: string[];
+      role?: string;
+    };
+
+export const studioStageSchema: z.ZodType<StudioStage> = z.discriminatedUnion('kind', [
   studioSceneStageSchema,
   studioCardStageSchema,
 ]);
 
-export type StudioStageCard = z.infer<typeof studioStageCardSchema>;
 export type StudioSceneStage = z.infer<typeof studioSceneStageSchema>;
 export type StudioCardStage = z.infer<typeof studioCardStageSchema>;
-export type StudioCardStageRelation = z.infer<typeof studioCardStageRelationSchema>;
-export type StudioStage = z.infer<typeof studioStageSchema>;
 
-export const studioStageRequestPayloadSchema = z.object({});
+export interface StudioStageRequestPayload {
+  [key: string]: never;
+}
 
-export const studioStageResponsePayloadSchema = z.object({
+export const studioStageRequestPayloadSchema: z.ZodType<StudioStageRequestPayload> = z.object({});
+
+export interface StudioStageResponsePayload {
+  stage?:
+    | {
+        kind: 'scene';
+        sceneStem: string;
+        review: 'unreviewed' | 'clean' | 'issues';
+        cards: StudioStageCard[];
+        title?: string;
+        draftLength?: number;
+        draftUpdatedAt?: string;
+        draftRevision?: number;
+      }
+    | {
+        kind: 'card';
+        cardKind: 'character' | 'background';
+        cardId: string;
+        name: string;
+        relations: StudioCardStageRelation[];
+        appearsInScenes: string[];
+        role?: string;
+      };
+}
+
+export const studioStageResponsePayloadSchema: z.ZodType<StudioStageResponsePayload> = z.object({
   stage: studioStageSchema.optional(),
 });
 
-export const studioProposalStatusSchema = z.enum(['pending', 'applied', 'rejected', 'failed']);
+export type StudioProposalStatus = 'pending' | 'applied' | 'rejected' | 'failed';
 
-export type StudioProposalStatus = z.infer<typeof studioProposalStatusSchema>;
+export const studioProposalStatusSchema: z.ZodType<StudioProposalStatus> = z.enum([
+  'pending',
+  'applied',
+  'rejected',
+  'failed',
+]);
 
-export const studioValidationStateSchema = z.enum(['pass', 'warn', 'skipped']);
+export const studioValidationStateSchema: z.ZodType<StudioValidationState> = z.enum([
+  'pass',
+  'warn',
+  'skipped',
+]);
 
-export const studioValidationWarningSchema = z.object({
+export const studioValidationWarningSchema: z.ZodType<StudioValidationWarning> = z.object({
   message: z.string().min(1),
   source: z.string().optional(),
 });
 
-export const studioValidationSchema = z.object({
+export interface StudioValidation {
+  state: StudioValidationState;
+  warnings: StudioValidationWarning[];
+}
+
+export const studioValidationSchema: z.ZodType<StudioValidation> = z.object({
   state: studioValidationStateSchema,
   warnings: z.array(studioValidationWarningSchema),
 });
 
-export type StudioValidation = z.infer<typeof studioValidationSchema>;
-
-export const studioCardFieldChangeSchema = z.object({
+export const studioCardFieldChangeSchema: z.ZodType<StudioCardFieldChange> = z.object({
   field: z.string().min(1),
   // NOTE: the object arm carries structured fields such as a character's arc; the card schema is
   // what actually validates the shape when the patch is applied.
   value: z.union([z.string(), z.array(z.string()), z.array(z.record(z.string(), z.string()))]),
 });
 
-export const studioDraftReplacementSchema = z.object({
+export const studioDraftReplacementSchema: z.ZodType<StudioDraftReplacement> = z.object({
   startOffset: z.number().int().nonnegative(),
   endOffset: z.number().int().nonnegative(),
   // NOTE: the anchor the offsets must match; a drifted range is refused rather than applied.
@@ -110,7 +205,7 @@ export const studioDraftReplacementSchema = z.object({
   newText: z.string(),
 });
 
-export const studioPatchSchema = z.discriminatedUnion('target', [
+export const studioPatchSchema: z.ZodType<StudioPatch> = z.discriminatedUnion('target', [
   z.object({ target: z.literal('card'), changes: z.array(studioCardFieldChangeSchema).min(1) }),
   z.object({
     target: z.literal('draft'),
@@ -118,9 +213,15 @@ export const studioPatchSchema = z.discriminatedUnion('target', [
   }),
 ]);
 
-export type StudioPatchPayload = z.infer<typeof studioPatchSchema>;
+export interface StudioFollowUpTarget {
+  kind: StudioAgentEntityKind;
+  key: string;
+  reason: string;
+  instruction: string;
+  targetFile: string;
+}
 
-export const studioFollowUpTargetSchema = z.object({
+export const studioFollowUpTargetSchema: z.ZodType<StudioFollowUpTarget> = z.object({
   kind: z.enum(['character', 'background', 'scene']),
   key: z.string().min(1),
   reason: z.string().min(1),
@@ -128,15 +229,27 @@ export const studioFollowUpTargetSchema = z.object({
   targetFile: z.string().min(1),
 });
 
-export type StudioFollowUpTarget = z.infer<typeof studioFollowUpTargetSchema>;
+interface StudioUserTurn {
+  id: string;
+  role: 'user';
+  text: string;
+}
 
-const studioUserTurnSchema = z.object({
+const studioUserTurnSchema: z.ZodType<StudioUserTurn> = z.object({
   id: z.string().min(1),
   role: z.literal('user'),
   text: z.string(),
 });
 
-const studioSayTurnSchema = z.object({
+interface StudioSayTurn {
+  id: string;
+  role: 'assistant';
+  kind: 'say';
+  message: string;
+  followUps?: StudioFollowUpTarget[];
+}
+
+const studioSayTurnSchema: z.ZodType<StudioSayTurn> = z.object({
   id: z.string().min(1),
   role: z.literal('assistant'),
   kind: z.literal('say'),
@@ -144,7 +257,15 @@ const studioSayTurnSchema = z.object({
   followUps: z.array(studioFollowUpTargetSchema).optional(),
 });
 
-const studioAskTurnSchema = z.object({
+interface StudioAskTurn {
+  id: string;
+  role: 'assistant';
+  kind: 'ask';
+  question: string;
+  options: string[];
+}
+
+const studioAskTurnSchema: z.ZodType<StudioAskTurn> = z.object({
   id: z.string().min(1),
   role: z.literal('assistant'),
   kind: z.literal('ask'),
@@ -152,7 +273,22 @@ const studioAskTurnSchema = z.object({
   options: z.array(z.string()),
 });
 
-const studioProposalTurnSchema = z.object({
+export interface StudioProposalTurn {
+  id: string;
+  role: 'assistant';
+  kind: 'proposal';
+  summary: string;
+  message?: string;
+  targetFile: string;
+  patch: StudioPatch;
+  baselineHash: string;
+  validation: StudioValidation;
+  status: StudioProposalStatus;
+  errorMessage?: string;
+  followUps?: StudioFollowUpTarget[];
+}
+
+const studioProposalTurnSchema: z.ZodType<StudioProposalTurn> = z.object({
   id: z.string().min(1),
   role: z.literal('assistant'),
   kind: z.literal('proposal'),
@@ -170,14 +306,28 @@ const studioProposalTurnSchema = z.object({
   followUps: z.array(studioFollowUpTargetSchema).optional(),
 });
 
-const studioResultTurnSchema = z.object({
+interface StudioResultTurn {
+  id: string;
+  role: 'assistant';
+  kind: 'result';
+  message: string;
+}
+
+const studioResultTurnSchema: z.ZodType<StudioResultTurn> = z.object({
   id: z.string().min(1),
   role: z.literal('assistant'),
   kind: z.literal('result'),
   message: z.string().min(1),
 });
 
-export const studioChatTurnSchema = z.union([
+export type StudioChatTurn =
+  | StudioUserTurn
+  | StudioSayTurn
+  | StudioAskTurn
+  | StudioProposalTurn
+  | StudioResultTurn;
+
+export const studioChatTurnSchema: z.ZodType<StudioChatTurn> = z.union([
   studioUserTurnSchema,
   studioSayTurnSchema,
   studioAskTurnSchema,
@@ -185,98 +335,207 @@ export const studioChatTurnSchema = z.union([
   studioResultTurnSchema,
 ]);
 
-export type StudioChatTurn = z.infer<typeof studioChatTurnSchema>;
-export type StudioProposalTurn = Extract<StudioChatTurn, { readonly kind: 'proposal' }>;
+export type StudioAgentToolNameValue = StudioAgentToolName;
 
-export const studioAgentToolNameSchema = z.enum(studioAgentToolNames);
+export const studioAgentToolNameSchema: z.ZodType<StudioAgentToolNameValue> =
+  z.enum(studioAgentToolNames);
 
-export type StudioAgentToolNameValue = z.infer<typeof studioAgentToolNameSchema>;
+export interface StudioChatSendRequestPayload {
+  entity: StudioEntity;
+  instruction: string;
+  history: StudioChatTurn[];
+  tool?: StudioAgentToolName;
+}
 
-export const studioChatSendRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-  instruction: z.string().min(1),
-  history: z.array(studioChatTurnSchema),
-  // NOTE: set when the author pinned a tool with the composer's slash menu; the agent must use
-  // that tool this turn instead of deciding for itself.
-  tool: studioAgentToolNameSchema.optional(),
-});
+export const studioChatSendRequestPayloadSchema: z.ZodType<StudioChatSendRequestPayload> = z.object(
+  {
+    entity: studioEntitySchema,
+    instruction: z.string().min(1),
+    history: z.array(studioChatTurnSchema),
+    // NOTE: set when the author pinned a tool with the composer's slash menu; the agent must use
+    // that tool this turn instead of deciding for itself.
+    tool: studioAgentToolNameSchema.optional(),
+  },
+);
 
-export const studioChatSendResponsePayloadSchema = z.object({
-  turns: z.array(studioChatTurnSchema),
-});
+export interface StudioChatSendResponsePayload {
+  turns: StudioChatTurn[];
+}
 
-export const studioChatCancelRequestPayloadSchema = z.object({});
+export const studioChatSendResponsePayloadSchema: z.ZodType<StudioChatSendResponsePayload> =
+  z.object({
+    turns: z.array(studioChatTurnSchema),
+  });
 
-export const studioCardUpdateRequestPayloadSchema = z.object({
-  description: z.string().min(1),
-});
+export interface StudioChatCancelRequestPayload {
+  [key: string]: never;
+}
 
-export const studioCardUpdateResponsePayloadSchema = z.object({
-  ok: z.boolean(),
-  message: z.string().optional(),
-  // NOTE: the composer stages this as the first instruction of the new card's fill conversation.
-  instruction: z.string().optional(),
-});
+export const studioChatCancelRequestPayloadSchema: z.ZodType<StudioChatCancelRequestPayload> =
+  z.object({});
 
-export const studioChatCancelResponsePayloadSchema = z.object({});
+export interface StudioCardUpdateRequestPayload {
+  description: string;
+}
 
-export const studioProposalPreviewRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-  turn: studioChatTurnSchema,
-});
+export const studioCardUpdateRequestPayloadSchema: z.ZodType<StudioCardUpdateRequestPayload> =
+  z.object({
+    description: z.string().min(1),
+  });
 
-export const studioProposalPreviewResponsePayloadSchema = z.object({
-  shown: z.boolean(),
-  message: z.string().optional(),
-});
+export interface StudioCardUpdateResponsePayload {
+  ok: boolean;
+  message?: string;
+  instruction?: string;
+}
 
-export const studioProposalApplyRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-  turn: studioChatTurnSchema,
-});
+export const studioCardUpdateResponsePayloadSchema: z.ZodType<StudioCardUpdateResponsePayload> =
+  z.object({
+    ok: z.boolean(),
+    message: z.string().optional(),
+    // NOTE: the composer stages this as the first instruction of the new card's fill conversation.
+    instruction: z.string().optional(),
+  });
 
-export const studioProposalApplyResponsePayloadSchema = z.object({
-  status: studioProposalStatusSchema,
-  message: z.string().min(1),
-});
+export interface StudioChatCancelResponsePayload {
+  [key: string]: never;
+}
 
-export const studioFollowUpListRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-});
+export const studioChatCancelResponsePayloadSchema: z.ZodType<StudioChatCancelResponsePayload> =
+  z.object({});
 
-export const studioPendingFollowUpSchema = z.object({
+export interface StudioProposalPreviewRequestPayload {
+  entity: StudioEntity;
+  turn: StudioChatTurn;
+}
+
+export const studioProposalPreviewRequestPayloadSchema: z.ZodType<StudioProposalPreviewRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+    turn: studioChatTurnSchema,
+  });
+
+export interface StudioProposalPreviewResponsePayload {
+  shown: boolean;
+  message?: string;
+}
+
+export const studioProposalPreviewResponsePayloadSchema: z.ZodType<StudioProposalPreviewResponsePayload> =
+  z.object({
+    shown: z.boolean(),
+    message: z.string().optional(),
+  });
+
+export interface StudioProposalApplyRequestPayload {
+  entity: StudioEntity;
+  turn: StudioChatTurn;
+}
+
+export const studioProposalApplyRequestPayloadSchema: z.ZodType<StudioProposalApplyRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+    turn: studioChatTurnSchema,
+  });
+
+export interface StudioProposalApplyResponsePayload {
+  status: StudioProposalStatus;
+  message: string;
+}
+
+export const studioProposalApplyResponsePayloadSchema: z.ZodType<StudioProposalApplyResponsePayload> =
+  z.object({
+    status: studioProposalStatusSchema,
+    message: z.string().min(1),
+  });
+
+export interface StudioFollowUpListRequestPayload {
+  entity: StudioEntity;
+}
+
+export const studioFollowUpListRequestPayloadSchema: z.ZodType<StudioFollowUpListRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+  });
+
+export interface StudioPendingFollowUp {
+  id: string;
+  origin: StudioEntity;
+  reason: string;
+  instruction: string;
+}
+
+export const studioPendingFollowUpSchema: z.ZodType<StudioPendingFollowUp> = z.object({
   id: z.string().min(1),
   origin: studioEntitySchema,
   reason: z.string().min(1),
   instruction: z.string().min(1),
 });
 
-export type StudioPendingFollowUp = z.infer<typeof studioPendingFollowUpSchema>;
+export interface StudioFollowUpListResponsePayload {
+  followUps: StudioPendingFollowUp[];
+}
 
-export const studioFollowUpListResponsePayloadSchema = z.object({
-  followUps: z.array(studioPendingFollowUpSchema),
-});
+export const studioFollowUpListResponsePayloadSchema: z.ZodType<StudioFollowUpListResponsePayload> =
+  z.object({
+    followUps: z.array(studioPendingFollowUpSchema),
+  });
 
-export const studioFollowUpDismissRequestPayloadSchema = z.object({
-  id: z.string().min(1),
-});
+export interface StudioFollowUpDismissRequestPayload {
+  id: string;
+}
 
-export const studioFollowUpDismissResponsePayloadSchema = z.object({});
+export const studioFollowUpDismissRequestPayloadSchema: z.ZodType<StudioFollowUpDismissRequestPayload> =
+  z.object({
+    id: z.string().min(1),
+  });
 
-export const studioFollowUpOpenRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-  targetFile: z.string().min(1),
-});
+export interface StudioFollowUpDismissResponsePayload {
+  [key: string]: never;
+}
 
-export const studioFollowUpOpenResponsePayloadSchema = z.object({
-  opened: z.boolean(),
-});
+export const studioFollowUpDismissResponsePayloadSchema: z.ZodType<StudioFollowUpDismissResponsePayload> =
+  z.object({});
 
-export const studioChatProgressEventPayloadSchema = z.object({
-  stage: z.enum(['thinking', 'looking-up', 'validating', 'idle']),
-});
+export interface StudioFollowUpOpenRequestPayload {
+  entity: StudioEntity;
+  targetFile: string;
+}
 
-const studioSessionSnapshotSchema = z.object({
+export const studioFollowUpOpenRequestPayloadSchema: z.ZodType<StudioFollowUpOpenRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+    targetFile: z.string().min(1),
+  });
+
+export interface StudioFollowUpOpenResponsePayload {
+  opened: boolean;
+}
+
+export const studioFollowUpOpenResponsePayloadSchema: z.ZodType<StudioFollowUpOpenResponsePayload> =
+  z.object({
+    opened: z.boolean(),
+  });
+
+export interface StudioChatProgressEventPayload {
+  stage: 'thinking' | 'looking-up' | 'validating' | 'idle';
+}
+
+export const studioChatProgressEventPayloadSchema: z.ZodType<StudioChatProgressEventPayload> =
+  z.object({
+    stage: z.enum(['thinking', 'looking-up', 'validating', 'idle']),
+  });
+
+export interface StudioSessionSnapshot {
+  id: string;
+  entity: StudioEntity;
+  createdAt: string;
+  updatedAt: string;
+  title: string;
+  hasAppliedChanges: boolean;
+  turns: StudioChatTurn[];
+}
+
+const studioSessionSnapshotSchema: z.ZodType<StudioSessionSnapshot> = z.object({
   id: z.string().min(1),
   entity: studioEntitySchema,
   createdAt: z.string().datetime(),
@@ -286,9 +545,15 @@ const studioSessionSnapshotSchema = z.object({
   turns: z.array(studioChatTurnSchema),
 });
 
-export type StudioSessionSnapshot = z.infer<typeof studioSessionSnapshotSchema>;
+export interface StudioSessionSummary {
+  id: string;
+  title: string;
+  updatedAt: string;
+  turnCount: number;
+  hasAppliedChanges: boolean;
+}
 
-const studioSessionSummarySchema = z.object({
+const studioSessionSummarySchema: z.ZodType<StudioSessionSummary> = z.object({
   id: z.string().min(1),
   title: z.string(),
   updatedAt: z.string().datetime(),
@@ -296,39 +561,82 @@ const studioSessionSummarySchema = z.object({
   hasAppliedChanges: z.boolean(),
 });
 
-export type StudioSessionSummary = z.infer<typeof studioSessionSummarySchema>;
+export interface StudioSessionSaveRequestPayload {
+  id: string;
+  entity: StudioEntity;
+  createdAt: string;
+  hasAppliedChanges: boolean;
+  turns: StudioChatTurn[];
+}
 
-export const studioSessionSaveRequestPayloadSchema = z.object({
-  id: z.string().min(1),
-  entity: studioEntitySchema,
-  createdAt: z.string().datetime(),
-  hasAppliedChanges: z.boolean(),
-  turns: z.array(studioChatTurnSchema).min(1),
-});
+export const studioSessionSaveRequestPayloadSchema: z.ZodType<StudioSessionSaveRequestPayload> =
+  z.object({
+    id: z.string().min(1),
+    entity: studioEntitySchema,
+    createdAt: z.string().datetime(),
+    hasAppliedChanges: z.boolean(),
+    turns: z.array(studioChatTurnSchema).min(1),
+  });
 
-export const studioSessionSaveResponsePayloadSchema = z.object({});
+export interface StudioSessionSaveResponsePayload {
+  [key: string]: never;
+}
 
-export const studioSessionListRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-});
+export const studioSessionSaveResponsePayloadSchema: z.ZodType<StudioSessionSaveResponsePayload> =
+  z.object({});
 
-export const studioSessionListResponsePayloadSchema = z.object({
-  sessions: z.array(studioSessionSummarySchema),
-});
+export interface StudioSessionListRequestPayload {
+  entity: StudioEntity;
+}
 
-export const studioSessionLatestRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-});
+export const studioSessionListRequestPayloadSchema: z.ZodType<StudioSessionListRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+  });
 
-export const studioSessionLatestResponsePayloadSchema = z.object({
-  session: studioSessionSnapshotSchema.optional(),
-});
+export interface StudioSessionListResponsePayload {
+  sessions: StudioSessionSummary[];
+}
 
-export const studioSessionLoadRequestPayloadSchema = z.object({
-  entity: studioEntitySchema,
-  id: z.string().min(1),
-});
+export const studioSessionListResponsePayloadSchema: z.ZodType<StudioSessionListResponsePayload> =
+  z.object({
+    sessions: z.array(studioSessionSummarySchema),
+  });
 
-export const studioSessionLoadResponsePayloadSchema = z.object({
-  session: studioSessionSnapshotSchema.optional(),
-});
+export interface StudioSessionLatestRequestPayload {
+  entity: StudioEntity;
+}
+
+export const studioSessionLatestRequestPayloadSchema: z.ZodType<StudioSessionLatestRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+  });
+
+export interface StudioSessionLatestResponsePayload {
+  session?: StudioSessionSnapshot;
+}
+
+export const studioSessionLatestResponsePayloadSchema: z.ZodType<StudioSessionLatestResponsePayload> =
+  z.object({
+    session: studioSessionSnapshotSchema.optional(),
+  });
+
+export interface StudioSessionLoadRequestPayload {
+  entity: StudioEntity;
+  id: string;
+}
+
+export const studioSessionLoadRequestPayloadSchema: z.ZodType<StudioSessionLoadRequestPayload> =
+  z.object({
+    entity: studioEntitySchema,
+    id: z.string().min(1),
+  });
+
+export interface StudioSessionLoadResponsePayload {
+  session?: StudioSessionSnapshot;
+}
+
+export const studioSessionLoadResponsePayloadSchema: z.ZodType<StudioSessionLoadResponsePayload> =
+  z.object({
+    session: studioSessionSnapshotSchema.optional(),
+  });
