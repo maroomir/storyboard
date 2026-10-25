@@ -6,6 +6,7 @@ import {
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
+type StoryboardSettingDefinition,
 } from '@storyboard/story-model';
 import {
   ConfigBridge,
@@ -28,11 +29,11 @@ import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 import { fail, succeed, type ServiceResult } from './serviceResult';
 
 // Shown on the settings screen's first section; the rest of the catalog sits under "advanced".
-const basicSettingKeys = new Set(['budget.run.limitUsd', 'revise.loop.afterGenerate', 'editor.draft.keepHistory']);
+const basicSettingKeys: Set<string> = new Set(['budget.run.limitUsd', 'revise.loop.afterGenerate', 'editor.draft.keepHistory']);
 
 // A value one work needs differently from another. Everything else is the writer's habit and follows
 // them into every work, like the provider and the model.
-const workspaceScopedSettingKeys = new Set(['budget.run.limitUsd']);
+const workspaceScopedSettingKeys: Set<string> = new Set(['budget.run.limitUsd']);
 
 export interface SettingsStores {
   readonly configuration: FileConfiguration;
@@ -47,16 +48,16 @@ export function createHomeSettingsStores(
   homePaths: StoryboardHomePaths,
   onInvalidConfigFile: (error: ConfigFileError) => void,
 ): SettingsStores {
-  const configuration = createFileConfiguration({
+  const configuration: FileConfiguration = createFileConfiguration({
     userConfigFile: homePaths.configFile,
     onInvalidFile: onInvalidConfigFile,
   });
-  const configBridge = new ConfigBridge({
+  const configBridge: ConfigBridge = new ConfigBridge({
     getConfiguration: () => configuration,
     writeTarget: configurationTargets.user,
   });
-  const secretStore = new SecretStore(createFileSecretStorage(homePaths.secretsFile));
-  const aiProviderRegistry = createAiProviderRegistry({
+  const secretStore: SecretStore = new SecretStore(createFileSecretStorage(homePaths.secretsFile));
+  const aiProviderRegistry: AiProviderRegistry = createAiProviderRegistry({
     secretStore,
     configBridge,
     requireConfiguredProvider: true,
@@ -81,7 +82,7 @@ export class SettingsService {
 
   public async read(): Promise<DesktopSettings> {
     const { configBridge, secretStore } = this.dependencies.stores();
-    const defaultProvider = configBridge.isDefaultProviderConfigured()
+    const defaultProvider: AiProviderId | undefined = configBridge.isDefaultProviderConfigured()
       ? configBridge.getDefaultProvider()
       : undefined;
     const providers: ProviderOption[] = [];
@@ -157,19 +158,19 @@ export class SettingsService {
       await aiProviderRegistry.checkConnection(providerId);
       return succeed(await this.read());
     } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
+      const reason: string = error instanceof Error ? error.message : String(error);
       return fail('provider-rejected', this.dependencies.translate('error.keyUnverified', { reason }));
     }
   }
 
   public async setValue(key: string, value: boolean | number | string): Promise<ServiceResult<DesktopSettings>> {
-    const definition = findStoryboardSetting(key);
+    const definition: StoryboardSettingDefinition | undefined = findStoryboardSetting(key);
 
     if (definition === undefined || !isValidStoryboardSettingValue(definition, value)) {
       return fail('invalid-request', this.dependencies.translate('error.invalidRequest'));
     }
 
-    const isWorkspaceScoped = workspaceScopedSettingKeys.has(key) && this.dependencies.hasOpenWorkspace();
+    const isWorkspaceScoped: boolean = workspaceScopedSettingKeys.has(key) && this.dependencies.hasOpenWorkspace();
     await this.dependencies
       .stores()
       .configuration.update(

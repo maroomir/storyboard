@@ -1,4 +1,4 @@
-import type { RunSnapshot, WorkspaceOverview } from '@/shared/dto';
+import type { RunSnapshot, RunStatus, WorkspaceOverview } from '@/shared/dto';
 
 import { useI18n } from '@/renderer/lib/i18n';
 
@@ -22,7 +22,7 @@ interface TopBarProps {
 
 export function TopBar(props: TopBarProps): JSX.Element {
   const { t } = useI18n();
-  const status = props.run?.status ?? 'idle';
+  const status: RunStatus = props.run?.status ?? 'idle';
 
   return (
     <header className="topbar">

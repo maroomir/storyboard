@@ -10,7 +10,7 @@ interface I18nValue {
   readonly t: Translate;
 }
 
-const I18nContext = createContext<I18nValue>({
+const I18nContext: React.Context<I18nValue> = createContext<I18nValue>({
   language: 'ko',
   t: (key, params) => translate('ko', key, params),
 });

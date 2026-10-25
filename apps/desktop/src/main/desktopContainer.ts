@@ -56,13 +56,13 @@ export interface DesktopContainerOptions {
 // The desktop's side of the composition for one open workspace: only the host adapters are built
 // here. The engine graph they feed is assembled once, for every app, by StoryboardApplication.
 export function createDesktopContainer(options: DesktopContainerOptions): DesktopContainer {
-  const workspaceRoot = NodeUri.file(options.workspacePath);
+  const workspaceRoot: NodeUri = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
   const { logger } = options;
 
-  const fileSystem = new NodeFileSystem();
-  const secretStore = new SecretStore(createFileSecretStorage(options.homePaths.secretsFile));
-  const configuration = createFileConfiguration({
+  const fileSystem: NodeFileSystem = new NodeFileSystem();
+  const secretStore: SecretStore = new SecretStore(createFileSecretStorage(options.homePaths.secretsFile));
+  const configuration: FileConfiguration = createFileConfiguration({
     userConfigFile: options.homePaths.configFile,
     workspaceConfigFile: resolveWorkspaceConfigFile(workspaceRoot.fsPath),
     onInvalidFile: options.onInvalidConfigFile,
@@ -70,13 +70,13 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
   });
   // NOTE: 프로바이더·모델·키처럼 작가가 한 번 고르는 값은 모든 작품에 걸린다(홈 파일). 작품마다
   // 다른 값(예산)은 호출하는 쪽이 작품 파일을 지정해 쓴다.
-  const configBridge = new ConfigBridge({
+  const configBridge: ConfigBridge = new ConfigBridge({
     getConfiguration: () => configuration,
     writeTarget: configurationTargets.user,
   });
-  const usageLedger = new UsageLedgerRecorder(fileSystem, (message) => logger.warn(message));
+  const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder(fileSystem, (message) => logger.warn(message));
 
-  const application = new StoryboardApplication(
+  const application: StoryboardApplication = new StoryboardApplication(
     {
       fileSystem,
       workspaceLocator: new NodeWorkspaceLocator(folder),

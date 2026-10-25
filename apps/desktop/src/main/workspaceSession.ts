@@ -7,6 +7,10 @@ import {
   createWorkspace,
   readProjectJson,
   readWorkspaceRunLock,
+type AugmentDraftResult,
+type CompositionPreset,
+type RenameSceneResult,
+type SaveDraftEditResult,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
@@ -16,6 +20,9 @@ import {
   STORYBOARD_RELATIVE_PATHS,
   readSceneFile,
   type ProjectSetting,
+type StoryboardProjectPaths,
+type WorkspaceRunLockRecord,
+type SceneFile,
 } from '@storyboard/story-model';
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
 import { NodeFileSystem } from '@storyboard/story-node';
@@ -38,6 +45,7 @@ import { fail, succeed, type ServiceFailure, type ServiceResult } from './servic
 import { locateSnapshotRepository, SnapshotService } from './snapshotService';
 import { watchWorkspace, type WorkspaceChange } from './workspaceWatcher';
 import { readDraftDocument, readSceneNotes, readWorkspaceOverview } from './workspaceReader';
+import type { ResourceOverrideReport } from '@storyboard/story-app';
 
 export interface WorkspaceSessionOptions {
   readonly workspacePath: string;
@@ -53,7 +61,7 @@ export interface WorkspaceSessionOptions {
 // NOTE: 폴더 이름으로 쓸 수 없는 글자만 바꾼다. 한글 제목은 그대로 둔다 — 작가가 파인더·탐색기에서
 // 자기 작품을 제목으로 알아봐야 한다.
 export function workspaceFolderName(title: string): string {
-  const cleaned = [...title]
+  const cleaned: string = [...title]
     .map((character) => (character.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(character) ? ' ' : character))
     .join('')
     .replace(/\s+/g, ' ')
@@ -67,7 +75,7 @@ export function contractSettingFrom(request: WorkspaceCreateRequest): {
   readonly setting: ProjectSetting;
   readonly preset: ReturnType<typeof buildCompositionPreset>;
 } {
-  const preset = buildCompositionPreset({ composition: request.composition, pov: request.pov });
+  const preset: CompositionPreset = buildCompositionPreset({ composition: request.composition, pov: request.pov });
 
   return {
     preset,
@@ -98,8 +106,8 @@ const sceneRenameErrorCodes = {
 // One open work: its engine container, its version history, its run, and the author's editing
 // sessions. Closing it ends every session and records a last snapshot.
 export class WorkspaceSession {
-  private readonly editedStems = new Set<string>();
-  private readonly archivedStems = new Set<string>();
+  private readonly editedStems: Set<string> = new Set<string>();
+  private readonly archivedStems: Set<string> = new Set<string>();
   private readonly watcher: { readonly dispose: () => void };
 
   private constructor(
@@ -122,18 +130,18 @@ export class WorkspaceSession {
       return fail('not-a-workspace', options.translate('error.notAWorkspace', { path: options.workspacePath }));
     }
 
-    const container = createDesktopContainer({
+    const container: DesktopContainer = createDesktopContainer({
       workspacePath: options.workspacePath,
       homePaths: options.homePaths,
       logger: options.logger,
       version: options.version,
       onInvalidConfigFile: options.onInvalidConfigFile,
     });
-    const resources = await container.loadResourceOverrides();
+    const resources: ResourceOverrideReport = await container.loadResourceOverrides();
     for (const problem of resources.problems) {
       options.logger.warn(problem.message);
     }
-    const snapshots = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
+    const snapshots: SnapshotService = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
     const takeSnapshot = async (message: string): Promise<void> => {
       // NOTE: 버전 기록이 실패해도 작가의 글은 이미 디스크에 있다. 기록 실패로 작업을 막지 않는다.
       try {
@@ -142,16 +150,16 @@ export class WorkspaceSession {
         options.logger.error('Snapshot failed', error);
       }
     };
-    const runs = new RunController({
+    const runs: RunController = new RunController({
       container,
       translate: options.translate,
       snapshot: takeSnapshot,
       onChange: options.onRunChanged,
     });
-    const bible = new BibleService(container.fileSystem, container.workspaceRoot, (message) =>
+    const bible: BibleService = new BibleService(container.fileSystem, container.workspaceRoot, (message) =>
       options.translate('error.invalidCard', { message }),
     );
-    const session = new WorkspaceSession(
+    const session: WorkspaceSession = new WorkspaceSession(
       options,
       container,
       snapshots,
@@ -186,7 +194,7 @@ export class WorkspaceSession {
       narratorCards: preset.narratorCards,
     });
 
-    const snapshots = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
+    const snapshots: SnapshotService = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
     await snapshots.snapshot(options.translate('snapshot.workspaceCreated', { title: options.request.title }));
 
     return await WorkspaceSession.open(options);
@@ -197,7 +205,7 @@ export class WorkspaceSession {
   }
 
   public async title(): Promise<string> {
-    const paths = getStoryboardProjectPaths(this.container.workspaceRoot);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
     return (await readProjectJson(this.container.fileSystem, paths.projectJson)).name;
   }
 
@@ -225,17 +233,17 @@ export class WorkspaceSession {
     body: string,
     reason: 'autosave' | 'ai-edit',
   ): Promise<ServiceResult<{ readonly kind: 'saved' | 'unchanged' }>> {
-    const refusal = await this.refuseWhileBusy();
+    const refusal: ServiceFailure | undefined = await this.refuseWhileBusy();
 
     if (refusal !== undefined) {
       return refusal;
     }
 
-    const archivePrevious =
+    const archivePrevious: boolean =
       reason === 'ai-edit'
         ? this.container.configBridge.isKeepDraftHistoryEnabled()
         : !this.archivedStems.has(stem);
-    const result = await this.container.drafts.saveEdit({
+    const result: SaveDraftEditResult = await this.container.drafts.saveEdit({
       workspaceRoot: this.container.workspaceRoot,
       sceneStem: stem,
       body,
@@ -281,8 +289,8 @@ export class WorkspaceSession {
   public async renameScene(from: string, to: string): Promise<ServiceResult<{ readonly stem: string }>> {
     await this.endDraftSession(from);
 
-    const title = await this.sceneTitle(from);
-    const result = await this.container.drafts.renameScene({
+    const title: string = await this.sceneTitle(from);
+    const result: RenameSceneResult = await this.container.drafts.renameScene({
       workspaceRoot: this.container.workspaceRoot,
       fromStem: from,
       toStem: to,
@@ -312,7 +320,7 @@ export class WorkspaceSession {
       return fail('provider-missing', translate('error.providerMissing'));
     }
 
-    const result = await container.drafts.prepareAugmentation({
+    const result: AugmentDraftResult = await container.drafts.prepareAugmentation({
       draftSceneStem: stem,
       sceneUri: scenePath(container.workspaceRoot, stem),
       scope: 'selection',
@@ -362,7 +370,7 @@ export class WorkspaceSession {
   }
 
   private async foreignLockMessage(): Promise<string | undefined> {
-    const holder = await readWorkspaceRunLock({
+    const holder: WorkspaceRunLockRecord | undefined = await readWorkspaceRunLock({
       fileSystem: this.container.fileSystem,
       workspaceRoot: this.container.workspaceRoot,
     });
@@ -374,7 +382,7 @@ export class WorkspaceSession {
 
   private async sceneTitle(stem: string): Promise<string> {
     try {
-      const scene = await readSceneFile(
+      const scene: SceneFile = await readSceneFile(
         scenePath(this.container.workspaceRoot, stem),
         this.container.fileSystem,
         `${stem}.card`,

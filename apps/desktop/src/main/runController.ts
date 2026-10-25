@@ -10,12 +10,21 @@ import {
   contractFieldLabels,
   readSceneFile,
   usageCacheHitRate,
+type UsageAmount,
+type StoryboardProjectPaths,
+type StoryboardProject,
+type GenerationContractReadiness,
+type StoryUri,
+type SceneFile,
 } from '@storyboard/story-model';
 import {
   describeReviseOutcome,
   readProjectJson,
+  type AcquireWorkspaceRunLockResult,
   type GenerateDraftRequest,
+  type GenerateDraftResult,
   type NovelApprovalKind,
+  type ReviseDraftWorkflowResult,
   type UsageMeterSession,
   type WorkspaceRunLock,
 } from '@storyboard/story-engine';
@@ -35,13 +44,17 @@ import { fail, succeed, type ServiceResult } from './serviceResult';
 
 type SceneStage = Parameters<NonNullable<GenerateDraftRequest['onPipelineProgress']>>[0];
 
-const maxLogLines = 300;
+const maxLogLines: number = 300;
 
 export interface RunControllerDependencies {
   readonly container: DesktopContainer;
   readonly translate: (key: MessageKey, params?: MessageParams) => string;
   readonly snapshot: (message: string) => Promise<void>;
   readonly onChange: (snapshot: RunSnapshot) => void;
+}
+
+interface PendingApproval extends RunApprovalRequest {
+  readonly resolve: (approved: boolean) => void;
 }
 
 interface ActiveRun {
@@ -55,7 +68,7 @@ interface ActiveRun {
   currentStage?: NovelStageName;
   furthestStageIndex: number;
   isPauseRequested: boolean;
-  approval?: RunApprovalRequest & { readonly resolve: (approved: boolean) => void };
+  approval?: PendingApproval;
   lastProgressMessage?: string;
   readonly finished: Promise<void>;
   readonly markFinished: () => void;
@@ -68,7 +81,7 @@ export class RunController {
   private log: RunLogLine[] = [];
   private lastOutcome: RunSnapshot['lastOutcome'];
   private resumable: RunSnapshot['resumable'];
-  private projectSpentUsd = 0;
+  private projectSpentUsd: number = 0;
   // Settles after the last run's closing snapshot, which happens after the run stops being active.
   private lastRunFinished: Promise<void> = Promise.resolve();
 
@@ -95,8 +108,8 @@ export class RunController {
   }
 
   public snapshot(): RunSnapshot {
-    const run = this.active;
-    const reading = run?.spending.reading();
+    const run: ActiveRun | undefined = this.active;
+    const reading: UsageAmount | undefined = run?.spending.reading();
 
     return {
       status: run?.status ?? 'idle',
@@ -122,9 +135,9 @@ export class RunController {
 
   public async startNovel(mode: NovelRunMode, resume: boolean): Promise<ServiceResult<RunSnapshot>> {
     const { container, translate } = this.dependencies;
-    const paths = getStoryboardProjectPaths(container.workspaceRoot);
-    const project = await readProjectJson(container.fileSystem, paths.projectJson);
-    const readiness = validateGenerationContract(project.setting);
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
+    const project: StoryboardProject = await readProjectJson(container.fileSystem, paths.projectJson);
+    const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
 
     if (readiness.missing.length > 0) {
       return fail(
@@ -135,15 +148,15 @@ export class RunController {
       );
     }
 
-    const resumeState = resume ? await this.readResumableState() : undefined;
-    const runMode = resumeState?.runMode ?? mode;
-    const started = await this.begin({ kind: 'novel', mode: runMode, label: translate('lock.novel') });
+    const resumeState: NovelRunState | undefined = resume ? await this.readResumableState() : undefined;
+    const runMode: "auto" | "outline-approval" | "chapter-approval" | "review-approval" = resumeState?.runMode ?? mode;
+    const started: ServiceResult<ActiveRun> = await this.begin({ kind: 'novel', mode: runMode, label: translate('lock.novel') });
 
     if (!started.ok) {
       return started;
     }
 
-    const run = started.data;
+    const run: ActiveRun = started.data;
     this.appendLog(
       translate(resumeState ? 'log.novelResumed' : 'log.novelStarted', {
         mode: translate(`run.mode.${runMode}`),
@@ -168,7 +181,7 @@ export class RunController {
         .then((result) => {
           const outcome: RunOutcome =
             result.outcome === 'paused' && result.spending.isOverBudget ? 'budget' : result.outcome;
-          const message =
+          const message: string =
             outcome === 'budget'
               ? translate('run.outcome.budget', { budget: result.spending.budgetUsd })
               : outcome === 'completed'
@@ -189,10 +202,10 @@ export class RunController {
       return fail('provider-missing', translate('error.providerMissing'));
     }
 
-    const sceneUri = scenePath(container.workspaceRoot, stem);
-    const scene = await readSceneFile(sceneUri, container.fileSystem, `${stem}.card`);
-    const title = scene.card.title ?? scene.slug;
-    const started = await this.begin({
+    const sceneUri: StoryUri = scenePath(container.workspaceRoot, stem);
+    const scene: SceneFile = await readSceneFile(sceneUri, container.fileSystem, `${stem}.card`);
+    const title: string = scene.card.title ?? scene.slug;
+    const started: ServiceResult<ActiveRun> = await this.begin({
       kind: 'scene',
       sceneStem: stem,
       label: translate('lock.scene', { title }),
@@ -202,7 +215,7 @@ export class RunController {
       return started;
     }
 
-    const run = started.data;
+    const run: ActiveRun = started.data;
     this.appendLog(translate('log.sceneStarted', { title }));
 
     void this.finishWhenDone(run, this.writeScene(run, sceneUri, title, force));
@@ -211,7 +224,7 @@ export class RunController {
   }
 
   public pause(): RunSnapshot {
-    const run = this.active;
+    const run: ActiveRun | undefined = this.active;
 
     if (run !== undefined && !run.isPauseRequested) {
       run.isPauseRequested = true;
@@ -224,7 +237,7 @@ export class RunController {
   }
 
   public answerApproval(approved: boolean): RunSnapshot {
-    const approval = this.active?.approval;
+    const approval: PendingApproval | undefined = this.active?.approval;
 
     if (this.active !== undefined && approval !== undefined) {
       this.active.approval = undefined;
@@ -257,14 +270,14 @@ export class RunController {
       return fail('provider-missing', translate('error.providerMissing'));
     }
 
-    const acquired = await container.runGate.acquire(container.workspaceRoot, request.label);
+    const acquired: AcquireWorkspaceRunLockResult = await container.runGate.acquire(container.workspaceRoot, request.label);
 
     if (!acquired.ok) {
       return fail('workspace-locked', describeWorkspaceRunLockHolder(acquired.heldBy));
     }
 
     let markFinished: () => void = () => undefined;
-    const finished = new Promise<void>((resolve) => {
+    const finished: Promise<void> = new Promise<void>((resolve) => {
       markFinished = resolve;
     });
     const run: ActiveRun = {
@@ -337,7 +350,7 @@ export class RunController {
   ): Promise<{ outcome: RunOutcome; message: string; snapshotMessage: string }> {
     const { container, translate } = this.dependencies;
     const shouldCancel = (): boolean => run.isPauseRequested;
-    const result = await container.drafts.generate({
+    const result: GenerateDraftResult = await container.drafts.generate({
       sceneUri,
       force,
       // A writer is not asked to approve a fact sheet: the proposal is taken as written, like the
@@ -347,7 +360,7 @@ export class RunController {
         this.appendLog(translate('log.sceneStage', { title, stage: this.sceneStageLabel(stage, current, total) })),
       shouldCancel,
     });
-    const snapshotMessage = translate('snapshot.sceneGenerated', { title });
+    const snapshotMessage: string = translate('snapshot.sceneGenerated', { title });
 
     if (!result.ok) {
       return result.kind === 'cancelled'
@@ -359,12 +372,12 @@ export class RunController {
       return { outcome: 'completed', message: translate('log.sceneCached', { title }), snapshotMessage };
     }
 
-    const revised = await container.drafts.reviseAfterGenerate(sceneUri, {
+    const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseAfterGenerate(sceneUri, {
       onProgress: (message) => this.appendLog(translate('log.sceneRevising', { title, message })),
       shouldCancel,
     });
     // Engine messages stay Korean in both languages, so the warning goes out as the engine wrote it.
-    const reviseWarning = revised && describeReviseOutcome(revised).warning;
+    const reviseWarning: string | undefined = revised && describeReviseOutcome(revised).warning;
     if (reviseWarning) {
       this.appendLog(translate('log.sceneRevising', { title, message: reviseWarning }), 'warn');
     }
@@ -391,7 +404,7 @@ export class RunController {
   }
 
   private recordProgress(run: ActiveRun, stage: NovelStageName, message: string): void {
-    const stageIndex = novelStageNames.indexOf(stage);
+    const stageIndex: number = novelStageNames.indexOf(stage);
 
     run.currentStage = stage;
     run.furthestStageIndex = Math.max(run.furthestStageIndex, stageIndex);
@@ -423,7 +436,7 @@ export class RunController {
   }
 
   private async readResumable(): Promise<RunSnapshot['resumable']> {
-    const state = await this.readResumableState();
+    const state: NovelRunState | undefined = await this.readResumableState();
 
     return state === undefined ? undefined : { mode: state.runMode, completedStages: state.completedStages };
   }

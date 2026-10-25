@@ -29,7 +29,7 @@ export function useDraftEditor(
   const [text, setText] = useState('');
   const [saveState, setSaveState] = useState<AutosaveState>('saved');
   const [hasConflict, setConflict] = useState(false);
-  const autosave = useRef<DraftAutosave>();
+  const autosave: React.MutableRefObject<DraftAutosave | undefined> = useRef<DraftAutosave>();
 
   useEffect(() => {
     if (stem === undefined) {
@@ -37,7 +37,7 @@ export function useDraftEditor(
       return;
     }
 
-    let isCurrent = true;
+    let isCurrent: boolean = true;
 
     void call('draft.read', { stem })
       .then((loaded) => {
@@ -57,9 +57,9 @@ export function useDraftEditor(
       })
       .catch((failure: unknown) => onError(messageOf(failure)));
 
-    return () => {
+    return (): void => {
       isCurrent = false;
-      const closing = autosave.current;
+      const closing: DraftAutosave | undefined = autosave.current;
       autosave.current = undefined;
       void closing
         ?.flush()
@@ -77,7 +77,7 @@ export function useDraftEditor(
     }
 
     void call('draft.read', { stem }).then((disk) => {
-      const current = autosave.current;
+      const current: DraftAutosave | undefined = autosave.current;
       if (current === undefined) {
         return;
       }
@@ -97,16 +97,16 @@ export function useDraftEditor(
     });
   }, [changeSequence]);
 
-  const change = useCallback((next: string) => {
+  const change: (next: string) => void = useCallback((next: string) => {
     setText(next);
     autosave.current?.change(next);
   }, []);
 
-  const flush = useCallback(async () => {
+  const flush: () => Promise<void> = useCallback(async () => {
     await autosave.current?.flush();
   }, []);
 
-  const replaceWithAiEdit = useCallback(
+  const replaceWithAiEdit: (next: string) => Promise<void> = useCallback(
     async (next: string) => {
       if (stem === undefined) {
         return;
@@ -118,16 +118,16 @@ export function useDraftEditor(
     [stem],
   );
 
-  const keepMine = useCallback(() => {
+  const keepMine: () => void = useCallback(() => {
     setConflict(false);
     void autosave.current?.flush();
   }, []);
 
-  const loadDisk = useCallback(async () => {
+  const loadDisk: () => Promise<void> = useCallback(async () => {
     if (stem === undefined) {
       return;
     }
-    const disk = await call('draft.read', { stem });
+    const disk: DraftDocument = await call('draft.read', { stem });
     autosave.current?.acceptDisk(disk.body);
     setDocument(disk);
     setText(disk.body);

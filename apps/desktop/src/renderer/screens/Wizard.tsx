@@ -8,7 +8,7 @@ import type { WorkspaceCreateRequest } from '@/shared/ipcContract';
 import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { compositionLabel, pointOfViewLabel } from '@/renderer/lib/narrativeLabels';
-import { initialWizardForm, isStepComplete, lengthHint, wizardSteps, type WizardStep } from '@/renderer/lib/wizardForm';
+import { initialWizardForm, isStepComplete, lengthHint, wizardSteps, type SceneLengthHint, type WizardStep } from '@/renderer/lib/wizardForm';
 
 interface WizardProps {
   readonly defaultParentDirectory: string;
@@ -26,10 +26,10 @@ export function Wizard(props: WizardProps): JSX.Element {
   const [error, setError] = useState<string>();
 
   const step: WizardStep = wizardSteps[stepIndex] ?? 'story';
-  const isLastStep = stepIndex === wizardSteps.length - 1;
+  const isLastStep: boolean = stepIndex === wizardSteps.length - 1;
   const update = <K extends keyof WorkspaceCreateRequest>(key: K, value: WorkspaceCreateRequest[K]): void =>
     setForm((previous) => ({ ...previous, [key]: value }));
-  const hint = lengthHint(form);
+  const hint: SceneLengthHint = lengthHint(form);
 
   const chooseLocation = async (): Promise<void> => {
     const { directory } = await call('workspace.chooseParentDirectory', {});

@@ -2,17 +2,17 @@ import { watch, type FSWatcher } from 'node:fs';
 import { sep } from 'node:path';
 
 import { workspaceConfigRelativePath } from '@storyboard/story-config';
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
+import { STORYBOARD_RELATIVE_PATHS, type StoryboardRelativePaths } from '@storyboard/story-model';
 
-import type { WorkspaceArea } from '@/shared/ipcContract';
+import type { DesktopEvents, WorkspaceArea } from '@/shared/ipcContract';
 
 export interface WorkspaceChange {
   readonly areas: readonly WorkspaceArea[];
   readonly draftStems: readonly string[];
 }
 
-const settleDelayMs = 250;
-const paths = STORYBOARD_RELATIVE_PATHS;
+const settleDelayMs: number = 250;
+const paths: StoryboardRelativePaths = STORYBOARD_RELATIVE_PATHS;
 
 function isInside(path: string, directory: string): boolean {
   return path.startsWith(`${directory}/`);
@@ -24,7 +24,7 @@ export function classifyWorkspacePath(relativePath: string): {
   readonly area?: WorkspaceArea;
   readonly draftStem?: string;
 } {
-  const path = relativePath.split(sep).join('/');
+  const path: string = relativePath.split(sep).join('/');
 
   if (isInside(path, paths.draftDirectory) && path.endsWith('.md')) {
     return { area: 'draft', draftStem: path.slice(paths.draftDirectory.length + 1, -'.md'.length) };
@@ -63,14 +63,14 @@ export function watchWorkspace(
   workspaceRoot: string,
   onChange: (change: WorkspaceChange) => void,
 ): { readonly dispose: () => void } {
-  const areas = new Set<WorkspaceArea>();
-  const draftStems = new Set<string>();
+  const areas: Set<WorkspaceArea> = new Set<WorkspaceArea>();
+  const draftStems: Set<string> = new Set<string>();
   let timer: NodeJS.Timeout | undefined;
   let watcher: FSWatcher | undefined;
 
   const flush = (): void => {
     timer = undefined;
-    const change = { areas: [...areas], draftStems: [...draftStems] };
+    const change: DesktopEvents['workspace.changed'] = { areas: [...areas], draftStems: [...draftStems] };
     areas.clear();
     draftStems.clear();
     onChange(change);

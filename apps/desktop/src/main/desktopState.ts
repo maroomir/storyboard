@@ -5,17 +5,21 @@ import { z } from 'zod';
 
 import type { RecentWorkspace, UiLanguage } from '@/shared/dto';
 
-const maxRecentWorkspaces = 10;
+const maxRecentWorkspaces: number = 10;
 
-const desktopStateSchema = z.object({
+export interface DesktopState {
+  readonly version: 1;
+  readonly language?: UiLanguage;
+  readonly recentWorkspaces: RecentWorkspace[];
+}
+
+const desktopStateSchema: z.ZodType<DesktopState> = z.object({
   version: z.literal(1),
   language: z.enum(['ko', 'en']).optional(),
   recentWorkspaces: z
     .array(z.object({ path: z.string().min(1), title: z.string(), openedAt: z.string() }))
     .default([]),
 });
-
-export type DesktopState = z.infer<typeof desktopStateSchema>;
 
 // App-operational state only the desktop needs (the recent list, the chosen language), kept under
 // the shared Storyboard home as `desktop.json`. Settings and keys stay in config.json/secrets.json.
@@ -46,8 +50,8 @@ export class DesktopStateStore {
   }
 
   public rememberWorkspace(path: string, title: string, now: Date = new Date()): void {
-    const others = this.state.recentWorkspaces.filter((entry) => entry.path !== path);
-    const recentWorkspaces = [{ path, title, openedAt: now.toISOString() }, ...others].slice(
+    const others: RecentWorkspace[] = this.state.recentWorkspaces.filter((entry) => entry.path !== path);
+    const recentWorkspaces: RecentWorkspace[] = [{ path, title, openedAt: now.toISOString() }, ...others].slice(
       0,
       maxRecentWorkspaces,
     );
@@ -78,7 +82,7 @@ export class DesktopStateStore {
     try {
       return desktopStateSchema.parse(JSON.parse(readFileSync(this.stateFile, 'utf8')));
     } catch {
-      const backupFile = `${this.stateFile}.corrupt-${Date.now().toString(36)}`;
+      const backupFile: string = `${this.stateFile}.corrupt-${Date.now().toString(36)}`;
       renameSync(this.stateFile, backupFile);
       onDiscardedCorruptFile(backupFile);
       return { version: 1, recentWorkspaces: [] };

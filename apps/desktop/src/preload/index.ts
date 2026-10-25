@@ -12,7 +12,7 @@ const bridge: DesktopBridge = {
       return () => undefined;
     }
 
-    const channel = ipcEventChannelName(event);
+    const channel: string = ipcEventChannelName(event);
     const forward = (_event: IpcRendererEvent, payload: unknown): void => listener(payload as never);
     ipcRenderer.on(channel, forward);
     return () => ipcRenderer.removeListener(channel, forward);

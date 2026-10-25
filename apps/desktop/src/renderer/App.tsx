@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AppBootstrap, RunSnapshot, UiLanguage, WorkspaceOverview } from '@/shared/dto';
+import type { AppBootstrap, DesktopSettings, RunSnapshot, UiLanguage, WorkspaceOverview } from '@/shared/dto';
 
 import { ProviderSetup } from './components/ProviderSetup';
 import { RunDrawer } from './components/RunDrawer';
@@ -16,6 +16,7 @@ import { Settings } from './screens/Settings';
 import { Welcome } from './screens/Welcome';
 import { Wizard } from './screens/Wizard';
 import { NotesAbsorb } from './components/NotesAbsorb';
+import type { DesktopBridge, InvokeResponses } from '@/shared/ipcContract';
 
 export function App(): JSX.Element {
   const [bootstrap, setBootstrap] = useState<AppBootstrap>();
@@ -64,15 +65,15 @@ function Workbench(props: WorkbenchProps): JSX.Element {
   const [notesAbsorb, setNotesAbsorb] = useState<{ readonly fillContract: boolean; readonly hasNotionToken: boolean }>();
 
   const openNotesAbsorb = async (fillContract: boolean): Promise<void> => {
-    const settings = await call('settings.read', {});
+    const settings: DesktopSettings = await call('settings.read', {});
     setNotesAbsorb({ fillContract, hasNotionToken: settings.hasNotionToken });
   };
 
-  const refreshBootstrap = useCallback(async () => {
+  const refreshBootstrap: () => Promise<void> = useCallback(async () => {
     props.onBootstrapChange(await call('app.bootstrap', {}));
   }, [props]);
 
-  const refreshOverview = useCallback(async () => {
+  const refreshOverview: () => Promise<void> = useCallback(async () => {
     try {
       setOverview(await call('workspace.overview', {}));
     } catch (failure) {
@@ -81,14 +82,14 @@ function Workbench(props: WorkbenchProps): JSX.Element {
   }, []);
 
   useEffect(() => {
-    const bridge = desktopBridge();
-    const offRun = bridge.on('run.changed', setRun);
-    const offChange = bridge.on('workspace.changed', (payload) =>
+    const bridge: DesktopBridge = desktopBridge();
+    const offRun: () => void = bridge.on('run.changed', setRun);
+    const offChange: () => void = bridge.on('workspace.changed', (payload) =>
       setChange((previous) => ({ ...payload, sequence: previous.sequence + 1 })),
     );
-    const offUpdate = bridge.on('app.updateReady', ({ version }) => setUpdateVersion(version));
+    const offUpdate: () => void = bridge.on('app.updateReady', ({ version }) => setUpdateVersion(version));
 
-    return () => {
+    return (): void => {
       offRun();
       offChange();
       offUpdate();
@@ -111,7 +112,7 @@ function Workbench(props: WorkbenchProps): JSX.Element {
   const openWorkspace = async (recentPath?: string): Promise<void> => {
     setError(undefined);
     try {
-      const opened = await call('workspace.open', recentPath === undefined ? {} : { recentPath });
+      const opened: InvokeResponses['workspace.open'] = await call('workspace.open', recentPath === undefined ? {} : { recentPath });
       if (!('cancelled' in opened)) {
         setOverview(opened);
         setView('desk');
@@ -140,7 +141,7 @@ function Workbench(props: WorkbenchProps): JSX.Element {
     props.onLanguageChange(language);
   };
 
-  const banners = (
+  const banners: React.JSX.Element = (
     <>
       {error === undefined ? null : (
         <div className="banner banner-error" role="alert">
@@ -161,7 +162,7 @@ function Workbench(props: WorkbenchProps): JSX.Element {
     </>
   );
 
-  const providerSetup = isProviderSetupOpen ? (
+  const providerSetup: React.JSX.Element | null = isProviderSetupOpen ? (
     <ProviderSetup
       onDone={() => {
         setProviderSetupOpen(false);

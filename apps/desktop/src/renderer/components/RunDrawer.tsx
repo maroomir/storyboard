@@ -23,11 +23,11 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
   const { run } = props;
   const [mode, setMode] = useState<NovelRunMode>(run.resumable?.mode ?? 'chapter-approval');
   const [budget, setBudget] = useState(String(run.budgetUsd));
-  const logEnd = useRef<HTMLLIElement>(null);
-  const progress = budgetProgress(run);
-  const missing = props.overview.missingContractFields;
-  const isIdle = run.status === 'idle';
-  const isForeignLocked = props.overview.foreignLock !== undefined;
+  const logEnd: React.RefObject<HTMLLIElement> = useRef<HTMLLIElement>(null);
+  const progress: number | undefined = budgetProgress(run);
+  const missing: readonly ("genre" | "audience" | "pov" | "targetWordCount")[] = props.overview.missingContractFields;
+  const isIdle: boolean = run.status === 'idle';
+  const isForeignLocked: boolean = props.overview.foreignLock !== undefined;
 
   useEffect(() => {
     logEnd.current?.scrollIntoView({ block: 'nearest' });
@@ -40,7 +40,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
       }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return (): void => window.removeEventListener('keydown', onKey);
   }, [props.onClose]);
 
   const act = async (action: () => Promise<RunSnapshot>): Promise<void> => {
@@ -52,12 +52,12 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
   };
 
   const saveBudget = (): void => {
-    const typed = parseSettingNumberInput(budget);
+    const typed: number | undefined = parseSettingNumberInput(budget);
     if (typed === undefined) {
       setBudget(String(run.budgetUsd));
       return;
     }
-    const value = Math.max(0, typed);
+    const value: number = Math.max(0, typed);
     if (value !== run.budgetUsd) {
       void act(() => call('run.setBudget', { budgetUsd: value }));
     }

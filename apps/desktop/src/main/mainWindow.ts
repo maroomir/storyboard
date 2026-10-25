@@ -12,7 +12,7 @@ export interface MainWindowOptions {
 // SECURITY: the page runs sandboxed with context isolation and no Node. It may not navigate away or
 // open windows; an https link opens in the system browser instead.
 export function createMainWindow(options: MainWindowOptions): BrowserWindow {
-  const window = new BrowserWindow({
+  const window: BrowserWindow = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 960,
