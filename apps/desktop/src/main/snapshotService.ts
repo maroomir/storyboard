@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 
-import git from 'isomorphic-git';
+import git, { type ReadCommitResult } from 'isomorphic-git';
 
 import type { SnapshotEntry } from '@/shared/dto';
 
@@ -9,9 +9,14 @@ import type { SnapshotEntry } from '@/shared/dto';
 // 데스크톱만의 예외다(CLI·확장은 커밋하지 않는다). isomorphic-git 을 쓰는 이유는 git 이 깔려 있지
 // 않은 Windows·macOS 에서도 같은 저장소 형식을 만들기 위해서다. 사용자가 나중에 git 을 써도 그대로
 // 읽힌다.
-const snapshotAuthor = { name: 'Storyboard Desktop', email: 'desktop@storyboard.local' };
-const listLimit = 200;
-const vanishedFileRetries = 5;
+interface CommitAuthor {
+  readonly name: string;
+  readonly email: string;
+}
+
+const snapshotAuthor: CommitAuthor = { name: 'Storyboard Desktop', email: 'desktop@storyboard.local' };
+const listLimit: number = 200;
+const vanishedFileRetries: number = 5;
 
 export interface SnapshotLocation {
   readonly repositoryRoot: string;
@@ -27,7 +32,7 @@ function toGitPath(path: string): string {
 
 export async function locateSnapshotRepository(workspaceRoot: string): Promise<SnapshotLocation> {
   try {
-    const repositoryRoot = await git.findRoot({ fs, filepath: workspaceRoot });
+    const repositoryRoot: string = await git.findRoot({ fs, filepath: workspaceRoot });
     return { repositoryRoot, workspacePrefix: toGitPath(relative(repositoryRoot, workspaceRoot)) };
   } catch {
     await git.init({ fs, dir: workspaceRoot, defaultBranch: 'main' });
@@ -43,7 +48,7 @@ function isStagedAsInHead([, head, , stage]: StatusRow): boolean {
 
 // NOTE: 원자적 쓰기는 옆에 임시 파일을 만들고 이름을 바꾼다. 생성이 돌며 쓰는 도중에 찍으면 그
 // 임시 파일이 목록에 잡혔다가 사라지므로, 버전에 넣지 않고 사라진 파일은 지워진 것으로 다룬다.
-const atomicWriteLeftover = /\.tmp-[0-9a-z]+$/;
+const atomicWriteLeftover: RegExp = /\.tmp-[0-9a-z]+$/;
 
 function isAtomicWriteLeftover(filepath: string): boolean {
   return atomicWriteLeftover.test(filepath);
@@ -83,7 +88,7 @@ export class SnapshotService {
   public list(): Promise<SnapshotEntry[]> {
     return this.serialize(async () => {
       try {
-        const commits = await git.log({ fs, dir: this.location.repositoryRoot, depth: listLimit });
+        const commits: Array<ReadCommitResult> = await git.log({ fs, dir: this.location.repositoryRoot, depth: listLimit });
         return commits.map((entry) => ({
           id: entry.oid,
           // A commit made outside the app may carry a long body; the history shows its subject only.
@@ -104,9 +109,9 @@ export class SnapshotService {
     return this.serialize(async () => {
       await this.commitChanges('되돌리기 전 자동 저장');
 
-      const target = await this.listWorkspaceFiles(commitId);
-      const current = await this.listWorkspaceFiles('HEAD');
-      const targetSet = new Set(target);
+      const target: string[] = await this.listWorkspaceFiles(commitId);
+      const current: string[] = await this.listWorkspaceFiles('HEAD');
+      const targetSet: Set<string> = new Set(target);
 
       for (const filepath of target) {
         const { blob } = await git.readBlob({
@@ -115,7 +120,7 @@ export class SnapshotService {
           oid: commitId,
           filepath,
         });
-        const absolute = join(this.location.repositoryRoot, filepath);
+        const absolute: string = join(this.location.repositoryRoot, filepath);
         await fs.promises.mkdir(dirname(absolute), { recursive: true });
         await fs.promises.writeFile(absolute, blob);
       }
@@ -131,8 +136,8 @@ export class SnapshotService {
   }
 
   private async listWorkspaceFiles(ref: string): Promise<string[]> {
-    const files = await git.listFiles({ fs, dir: this.location.repositoryRoot, ref });
-    const prefix = this.location.workspacePrefix;
+    const files: Array<string> = await git.listFiles({ fs, dir: this.location.repositoryRoot, ref });
+    const prefix: string = this.location.workspacePrefix;
 
     return prefix === '' ? files : files.filter((file) => file.startsWith(`${prefix}/`));
   }
@@ -140,7 +145,7 @@ export class SnapshotService {
   // NOTE: 상태 행렬은 무시 목록의 폴더까지 한 번 훑는다. 그 사이 생성 작업이 임시 파일을 이름 바꿔
   // 없애면 통째로 ENOENT 가 난다. 잠깐 쉬었다 다시 찍으면 새 파일로 보인다.
   private async commitChangesRetryingVanishedFiles(message: string): Promise<string | undefined> {
-    for (let attempt = 1; ; attempt += 1) {
+    for (let attempt: number = 1; ; attempt += 1) {
       try {
         return await this.commitChanges(message);
       } catch (error) {
@@ -153,8 +158,8 @@ export class SnapshotService {
   }
 
   private async commitChanges(message: string): Promise<string | undefined> {
-    const dir = this.location.repositoryRoot;
-    const scope = this.location.workspacePrefix === '' ? {} : { filepaths: [this.location.workspacePrefix] };
+    const dir: string = this.location.repositoryRoot;
+    const scope: { readonly filepaths?: string[] } = this.location.workspacePrefix === '' ? {} : { filepaths: [this.location.workspacePrefix] };
 
     // NOTE: 상태 행렬의 작업 트리 열은 파일 시각·크기가 색인과 같으면 내용을 보지 않는다. 자동 저장처럼
     // 같은 초 안에 길이가 같은 편집이 오면 «변경 없음»으로 잘못 나오므로, 모든 파일을 다시 올려
@@ -169,7 +174,7 @@ export class SnapshotService {
       }
     }
 
-    const staged = (await git.statusMatrix({ fs, dir, ...scope })) as StatusRow[];
+    const staged: StatusRow[] = (await git.statusMatrix({ fs, dir, ...scope })) as StatusRow[];
 
     if (staged.every(isStagedAsInHead)) {
       return undefined;
@@ -179,7 +184,7 @@ export class SnapshotService {
   }
 
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
-    const next = this.queue.then(operation, operation);
+    const next: Promise<T> = this.queue.then(operation, operation);
     this.queue = next.catch(() => undefined);
     return next;
   }

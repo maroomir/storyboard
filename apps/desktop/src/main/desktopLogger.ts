@@ -19,14 +19,14 @@ export class DesktopLogger implements IStoryboardLogger {
   }
 
   public error(message: string, error?: unknown): void {
-    const detail = error instanceof Error ? `\n${error.stack ?? error.message}` : error === undefined ? '' : `\n${String(error)}`;
+    const detail: string = error instanceof Error ? `\n${error.stack ?? error.message}` : error === undefined ? '' : `\n${String(error)}`;
     this.write('error', `${message}${detail}`);
   }
 
   public show(): void {}
 
   private write(level: string, message: string): void {
-    const line = `${new Date().toISOString()} [${level}] ${message}\n`;
+    const line: string = `${new Date().toISOString()} [${level}] ${message}\n`;
 
     // NOTE: 로그 파일을 못 써도 앱은 계속 돌아야 한다. 로그는 진단용이지 작업의 일부가 아니다.
     try {

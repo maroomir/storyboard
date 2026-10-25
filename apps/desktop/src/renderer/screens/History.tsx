@@ -16,8 +16,8 @@ export function History(props: HistoryProps): JSX.Element {
   const { t, language } = useI18n();
   const [entries, setEntries] = useState<readonly SnapshotEntry[]>();
   const [isRestoring, setRestoring] = useState(false);
-  const isBusy = props.run !== undefined && props.run.status !== 'idle';
-  const timeFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });
+  const isBusy: boolean = props.run !== undefined && props.run.status !== 'idle';
+  const timeFormat: Intl.DateTimeFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });
 
   useEffect(() => {
     void call('history.list', {})

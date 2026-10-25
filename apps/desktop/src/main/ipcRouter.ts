@@ -16,7 +16,12 @@ export type InvokeHandlers = {
   readonly [C in InvokeChannel]: (request: InvokeRequest<C>) => Promise<ServiceResult<InvokeResponses[C]>>;
 };
 
-const envelopeSchema = z.object({ channel: z.string(), request: z.unknown() });
+interface InvokeEnvelope {
+  readonly channel: string;
+  readonly request?: unknown;
+}
+
+const envelopeSchema: z.ZodType<InvokeEnvelope> = z.object({ channel: z.string(), request: z.unknown() });
 
 function isInvokeChannel(channel: string): channel is InvokeChannel {
   return Object.prototype.hasOwnProperty.call(invokeRequestSchemas, channel);
@@ -32,14 +37,14 @@ export function createIpcRouter(
   describe: { readonly invalidRequest: () => string; readonly internal: (message: string) => string },
 ): (message: unknown) => Promise<InvokeResult<InvokeChannel>> {
   return async (message) => {
-    const envelope = envelopeSchema.safeParse(message);
+    const envelope: z.ZodSafeParseResult<InvokeEnvelope> = envelopeSchema.safeParse(message);
 
     if (!envelope.success || !isInvokeChannel(envelope.data.channel)) {
       return fail('invalid-request', describe.invalidRequest());
     }
 
-    const channel = envelope.data.channel;
-    const request = invokeRequestSchemas[channel].safeParse(envelope.data.request);
+    const channel: InvokeChannel = envelope.data.channel;
+    const request: z.ZodSafeParseResult<InvokeRequest<InvokeChannel>> = invokeRequestSchemas[channel].safeParse(envelope.data.request);
 
     if (!request.success) {
       logger.warn(`Rejected ${channel}: ${request.error.issues.map((issue) => issue.message).join('; ')}`);
@@ -47,7 +52,7 @@ export function createIpcRouter(
     }
 
     try {
-      const handler = handlers[channel] as (request: unknown) => Promise<InvokeResult<InvokeChannel>>;
+      const handler: (request: unknown) => Promise<InvokeResult<InvokeChannel>> = handlers[channel] as (request: unknown) => Promise<InvokeResult<InvokeChannel>>;
       return await handler(request.data);
     } catch (error) {
       logger.error(`${channel} failed`, error);

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { parseSceneStem } from '@storyboard/story-model/contracts';
+import { parseSceneStem, type SceneFileNameParts } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, SceneNotes, TocScene, WorkspaceOverview } from '@/shared/dto';
 
@@ -11,7 +11,7 @@ import { TableOfContents } from '@/renderer/components/TableOfContents';
 import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { hasSelection, replaceSelection, type TextSelection } from '@/renderer/lib/selectionEdit';
-import { useDraftEditor } from '@/renderer/lib/useDraftEditor';
+import { useDraftEditor, type DraftEditor } from '@/renderer/lib/useDraftEditor';
 import { composeSceneStem } from '@/renderer/lib/sceneRename';
 
 interface DeskProps {
@@ -30,13 +30,13 @@ function allScenes(overview: WorkspaceOverview): TocScene[] {
 
 export function Desk(props: DeskProps): JSX.Element {
   const { t, language } = useI18n();
-  const scenes = allScenes(props.overview);
+  const scenes: TocScene[] = allScenes(props.overview);
   const [selectedStem, setSelectedStem] = useState<string | undefined>(props.requestedStem ?? scenes[0]?.stem);
   const [notes, setNotes] = useState<SceneNotes>();
   const [isRenaming, setRenaming] = useState(false);
-  const editor = useDraftEditor(selectedStem, props.change.sequence, props.change.draftStems, props.onError);
-  const selectedScene = scenes.find((scene) => scene.stem === selectedStem);
-  const isReadOnly = (props.run !== undefined && props.run.status !== 'idle') || props.overview.foreignLock !== undefined;
+  const editor: DraftEditor = useDraftEditor(selectedStem, props.change.sequence, props.change.draftStems, props.onError);
+  const selectedScene: TocScene | undefined = scenes.find((scene) => scene.stem === selectedStem);
+  const isReadOnly: boolean = (props.run !== undefined && props.run.status !== 'idle') || props.overview.foreignLock !== undefined;
 
   useEffect(() => {
     if (props.requestedStem !== undefined) {
@@ -88,7 +88,7 @@ export function Desk(props: DeskProps): JSX.Element {
     );
   }
 
-  const readOnlyReason =
+  const readOnlyReason: string | undefined =
     props.overview.foreignLock !== undefined
       ? t('desk.readOnlyForeign', { message: props.overview.foreignLock.message })
       : isReadOnly
@@ -198,11 +198,11 @@ interface SceneRenameFormProps {
 
 function SceneRenameForm(props: SceneRenameFormProps): JSX.Element {
   const { t } = useI18n();
-  const current = parseSceneStem(props.stem);
+  const current: SceneFileNameParts | undefined = parseSceneStem(props.stem);
   const [orderText, setOrderText] = useState(String(current?.order ?? ''));
   const [slug, setSlug] = useState(current?.slug ?? '');
   const [isSaving, setSaving] = useState(false);
-  const nextStem = composeSceneStem(orderText, slug, current?.orderText.length ?? 2);
+  const nextStem: string | undefined = composeSceneStem(orderText, slug, current?.orderText.length ?? 2);
 
   const rename = async (): Promise<void> => {
     if (nextStem === undefined || nextStem === props.stem) {
@@ -263,7 +263,7 @@ interface ManuscriptProps {
 
 function Manuscript(props: ManuscriptProps): JSX.Element {
   const { t } = useI18n();
-  const area = useRef<HTMLTextAreaElement>(null);
+  const area: React.RefObject<HTMLTextAreaElement> = useRef<HTMLTextAreaElement>(null);
   const [selection, setSelection] = useState<TextSelection>();
   const [editRequest, setEditRequest] = useState<{ readonly selection: TextSelection; readonly original: string }>();
   const [instruction, setInstruction] = useState('');
@@ -271,7 +271,7 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
   const [isProposing, setProposing] = useState(false);
 
   useLayoutEffect(() => {
-    const element = area.current;
+    const element: HTMLTextAreaElement | null = area.current;
     if (element !== null) {
       element.style.height = 'auto';
       element.style.height = `${element.scrollHeight}px`;
@@ -308,7 +308,7 @@ function Manuscript(props: ManuscriptProps): JSX.Element {
     if (editRequest === undefined || proposal === undefined) {
       return;
     }
-    const next = replaceSelection(props.text, editRequest.selection, editRequest.original, proposal);
+    const next: string | undefined = replaceSelection(props.text, editRequest.selection, editRequest.original, proposal);
     if (next === undefined) {
       props.onError(t('desk.externalChange'));
       return;

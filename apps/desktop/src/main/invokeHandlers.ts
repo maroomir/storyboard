@@ -1,13 +1,15 @@
+import type { BibleCard, CanonFact, DesktopSettings, NotesApplyView, SnapshotEntry } from '@/shared/dto';
 import type { DesktopApp } from './desktopApp';
 import type { InvokeHandlers } from './ipcRouter';
 import { fail, succeed, type ServiceResult } from './serviceResult';
 import type { WorkspaceSession } from './workspaceSession';
+import type { RemovedBibleCard } from '@/main/bibleService';
 
 async function withSession<T>(
   app: DesktopApp,
   run: (session: WorkspaceSession) => Promise<ServiceResult<T>>,
 ): Promise<ServiceResult<T>> {
-  const session = app.requireSession();
+  const session: ServiceResult<WorkspaceSession> = app.requireSession();
   return session.ok ? await run(session.data) : session;
 }
 
@@ -81,7 +83,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       await withSession(app, async (session) => succeed(session.runs.answerApproval(approved))),
     'run.setBudget': async ({ budgetUsd }) =>
       await withSession(app, async (session) => {
-        const saved = await app.settings.setValue('budget.run.limitUsd', budgetUsd);
+        const saved: ServiceResult<DesktopSettings> = await app.settings.setValue('budget.run.limitUsd', budgetUsd);
         return saved.ok ? succeed(await session.runs.refresh()) : saved;
       }),
 
@@ -89,7 +91,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
     'bible.read': async ({ kind, id }) => await withSession(app, async (session) => await session.bible.read(kind, id)),
     'bible.save': async ({ kind, card }) =>
       await withWritableSession(app, async (session) => {
-        const saved = await session.bible.save(kind, card);
+        const saved: ServiceResult<BibleCard> = await session.bible.save(kind, card);
         if (saved.ok) {
           await session.snapshot('snapshot.bibleSaved', { name: saved.data.name });
         }
@@ -97,7 +99,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       }),
     'bible.create': async ({ kind, id, name }) =>
       await withWritableSession(app, async (session) => {
-        const created = await session.bible.create(kind, id, name);
+        const created: ServiceResult<BibleCard> = await session.bible.create(kind, id, name);
         if (created.ok) {
           await session.snapshot('snapshot.bibleSaved', { name });
         }
@@ -105,7 +107,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       }),
     'bible.delete': async ({ kind, id }) =>
       await withWritableSession(app, async (session) => {
-        const removed = await session.bible.remove(kind, id);
+        const removed: ServiceResult<RemovedBibleCard> = await session.bible.remove(kind, id);
         if (!removed.ok) {
           return removed;
         }
@@ -115,14 +117,14 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
     'canon.list': async () => await withSession(app, async (session) => succeed(await session.bible.listCanon())),
     'canon.save': async ({ fact }) =>
       await withWritableSession(app, async (session) => {
-        const facts = await session.bible.saveCanonFact(fact);
+        const facts: CanonFact[] = await session.bible.saveCanonFact(fact);
         await session.snapshot('snapshot.canonSaved', { key: fact.key });
         return succeed(facts);
       }),
     'canon.delete': async ({ id }) =>
       await withWritableSession(app, async (session) => {
-        const key = (await session.bible.listCanon()).find((fact) => fact.id === id)?.key ?? id;
-        const facts = await session.bible.deleteCanonFact(id);
+        const key: string = (await session.bible.listCanon()).find((fact) => fact.id === id)?.key ?? id;
+        const facts: CanonFact[] = await session.bible.deleteCanonFact(id);
         await session.snapshot('snapshot.canonDeleted', { key });
         return succeed(facts);
       }),
@@ -144,7 +146,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
     'notes.plan': async () => await withSession(app, async (session) => await session.notesImport.planAbsorb()),
     'notes.apply': async ({ fillContract }) =>
       await withWritableSession(app, async (session) => {
-        const applied = await session.notesImport.apply(fillContract);
+        const applied: ServiceResult<NotesApplyView> = await session.notesImport.apply(fillContract);
         if (applied.ok) {
           await session.snapshot('snapshot.notesAbsorbed', {
             cards: String(applied.data.createdCards.length),
@@ -158,7 +160,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
     'history.list': async () => await withSession(app, async (session) => succeed(await session.snapshots.list())),
     'history.restore': async ({ id }) =>
       await withWritableSession(app, async (session) => {
-        const target = (await session.snapshots.list()).find((entry) => entry.id === id);
+        const target: SnapshotEntry | undefined = (await session.snapshots.list()).find((entry) => entry.id === id);
 
         if (target === undefined) {
           return fail('not-found', app.t('error.notFound'));

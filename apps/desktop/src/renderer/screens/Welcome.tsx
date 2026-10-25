@@ -10,7 +10,7 @@ interface WelcomeProps {
 
 export function Welcome(props: WelcomeProps): JSX.Element {
   const { t, language } = useI18n();
-  const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium' });
+  const dateFormat: Intl.DateTimeFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium' });
 
   return (
     <main className="centered">

@@ -2,7 +2,7 @@ export type AutosaveState = 'saved' | 'dirty' | 'saving';
 
 export type DiskChange = 'echo' | 'reload' | 'conflict';
 
-const defaultDelayMs = 1200;
+const defaultDelayMs: number = 1200;
 
 // Keeps the editor's text and the draft on disk in step. Typing marks the draft dirty and saves it
 // after a pause; a change on disk is classified against what this editor last wrote.
@@ -46,7 +46,7 @@ export class DraftAutosave {
       return;
     }
 
-    const body = this.body;
+    const body: string = this.body;
     this.setState('saving');
     this.inFlight = this.save(body).then(
       () => {

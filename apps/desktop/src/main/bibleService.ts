@@ -19,9 +19,10 @@ import {
   writeBibleFile,
   type BibleFact,
   type StoryUri,
+type StoryBible,
 } from '@storyboard/story-model';
 import { type IFileSystem } from '@storyboard/story-engine';
-import { ZodError, type ZodType } from 'zod';
+import { ZodError, type ZodSafeParseResult, type ZodType } from 'zod';
 
 import type { BibleCard, BibleCardKind, BibleCardSummary, CanonFact } from '@/shared/dto';
 
@@ -84,6 +85,10 @@ function summaryDetail(card: BibleCard): string | undefined {
 // The story bible screen: character, background and narrator cards, and the canon facts. Every
 // write goes through the story-model schema and codec, so a card saved here serializes to the same
 // bytes the extension and the CLI would write.
+export interface RemovedBibleCard {
+  readonly name: string;
+}
+
 export class BibleService {
   private readonly paths: StoryboardProjectPaths;
 
@@ -96,7 +101,7 @@ export class BibleService {
   }
 
   public async list(kind: BibleCardKind): Promise<BibleCardSummary[]> {
-    const directory = directoryOf(this.paths, kind);
+    const directory: StoryUri = directoryOf(this.paths, kind);
 
     if (!(await this.fileSystem.exists(directory))) {
       return [];
@@ -105,14 +110,14 @@ export class BibleService {
     const summaries: BibleCardSummary[] = [];
 
     for (const fileName of await this.fileSystem.listFileNames(directory)) {
-      const id = parseCardIdFromFileName(fileName);
+      const id: string | undefined = parseCardIdFromFileName(fileName);
 
       if (id === undefined || isIgnoredSampleCardFileName(fileName)) {
         continue;
       }
 
-      const card = await this.tryRead(kind, id);
-      const detail = card === undefined ? undefined : summaryDetail(card);
+      const card: BibleCard | undefined = await this.tryRead(kind, id);
+      const detail: string | undefined = card === undefined ? undefined : summaryDetail(card);
 
       summaries.push({
         kind,
@@ -126,7 +131,7 @@ export class BibleService {
   }
 
   public async read(kind: BibleCardKind, id: string): Promise<ServiceResult<BibleCard>> {
-    const uri = this.cardUri(kind, id);
+    const uri: StoryUri = this.cardUri(kind, id);
 
     if (!(await this.fileSystem.exists(uri))) {
       return fail('not-found', id);
@@ -140,14 +145,14 @@ export class BibleService {
   }
 
   public async save(kind: BibleCardKind, input: Record<string, unknown>): Promise<ServiceResult<BibleCard>> {
-    const parsed = schemaFor(kind, input).safeParse(input);
+    const parsed: ZodSafeParseResult<BibleCard> = schemaFor(kind, input).safeParse(input);
 
     if (!parsed.success) {
       return fail('invalid-request', this.describeInvalidCard(describeZodError(parsed.error)));
     }
 
-    const card = parsed.data;
-    const uri = this.cardUri(kind, card.id);
+    const card: BibleCard = parsed.data;
+    const uri: StoryUri = this.cardUri(kind, card.id);
 
     // The id is the file name. Renaming rewrites references across the workspace, which is its own
     // command (`card rename`), so a save may only write a card that already exists under that id.
@@ -160,7 +165,7 @@ export class BibleService {
   }
 
   public async create(kind: BibleCardKind, id: string, name: string): Promise<ServiceResult<BibleCard>> {
-    const uri = this.cardUri(kind, id);
+    const uri: StoryUri = this.cardUri(kind, id);
 
     if (await this.fileSystem.exists(uri)) {
       return fail('already-exists', id);
@@ -186,21 +191,21 @@ export class BibleService {
     return succeed(card);
   }
 
-  public async remove(kind: BibleCardKind, id: string): Promise<ServiceResult<{ readonly name: string }>> {
-    const uri = this.cardUri(kind, id);
+  public async remove(kind: BibleCardKind, id: string): Promise<ServiceResult<RemovedBibleCard>> {
+    const uri: StoryUri = this.cardUri(kind, id);
 
     if (!(await this.fileSystem.exists(uri))) {
       return fail('not-found', id);
     }
 
-    const name = (await this.tryRead(kind, id))?.name ?? id;
+    const name: string = (await this.tryRead(kind, id))?.name ?? id;
     await this.fileSystem.delete(uri);
     return succeed({ name });
   }
 
   public async listCanon(): Promise<CanonFact[]> {
-    const facts = (await this.readCanon()).facts;
-    const names = new Map<string, string>();
+    const facts: BibleFact[] = (await this.readCanon()).facts;
+    const names: Map<string, string> = new Map<string, string>();
 
     for (const kind of ['character', 'background'] as const) {
       for (const summary of await this.list(kind)) {
@@ -209,16 +214,16 @@ export class BibleService {
     }
 
     return facts.map((fact) => {
-      const subjectName = names.get(`${fact.subject.kind}:${fact.subject.id}`);
+      const subjectName: string | undefined = names.get(`${fact.subject.kind}:${fact.subject.id}`);
       return subjectName === undefined ? fact : { ...fact, subjectName };
     });
   }
 
   public async saveCanonFact(fact: BibleFact): Promise<CanonFact[]> {
-    const bible = await this.readCanon();
-    const others = bible.facts.filter((existing) => existing.id !== fact.id);
-    const isNew = others.length === bible.facts.length;
-    const facts = isNew
+    const bible: StoryBible = await this.readCanon();
+    const others: BibleFact[] = bible.facts.filter((existing) => existing.id !== fact.id);
+    const isNew: boolean = others.length === bible.facts.length;
+    const facts: BibleFact[] = isNew
       ? [...bible.facts, fact]
       : bible.facts.map((existing) => (existing.id === fact.id ? fact : existing));
 
@@ -227,13 +232,13 @@ export class BibleService {
   }
 
   public async deleteCanonFact(id: string): Promise<CanonFact[]> {
-    const bible = await this.readCanon();
+    const bible: StoryBible = await this.readCanon();
 
     await this.writeCanon({ ...bible, facts: bible.facts.filter((fact) => fact.id !== id) });
     return await this.listCanon();
   }
 
-  private async readCanon(): Promise<ReturnType<typeof createEmptyBible>> {
+  private async readCanon(): Promise<StoryBible> {
     // A workspace starts without canon; the first confirmed fact creates the file.
     if (!(await this.fileSystem.exists(this.paths.bibleCanon))) {
       return createEmptyBible();
@@ -248,7 +253,7 @@ export class BibleService {
   }
 
   private async tryRead(kind: BibleCardKind, id: string): Promise<BibleCard | undefined> {
-    const result = await this.read(kind, id);
+    const result: ServiceResult<BibleCard> = await this.read(kind, id);
     return result.ok ? result.data : undefined;
   }
 

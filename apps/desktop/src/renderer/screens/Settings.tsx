@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { decimalSettingStep, parseSettingNumberInput, type AiProviderId } from '@storyboard/story-model/contracts';
 
-import type { DesktopSettings, SettingEntry, UiLanguage } from '@/shared/dto';
+import type { DesktopSettings, ProviderOption, SettingEntry, UiLanguage } from '@/shared/dto';
 
 import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
@@ -53,8 +53,8 @@ export function Settings(props: SettingsProps): JSX.Element {
     return <main className="workspace-page" aria-busy="true" />;
   }
 
-  const providers = settings.providers.filter((provider) => showAdvancedProviders || !provider.isAdvanced || provider.id === settings.defaultProvider);
-  const selected = settings.providers.find((provider) => provider.id === settings.defaultProvider);
+  const providers: ProviderOption[] = settings.providers.filter((provider) => showAdvancedProviders || !provider.isAdvanced || provider.id === settings.defaultProvider);
+  const selected: ProviderOption | undefined = settings.providers.find((provider) => provider.id === settings.defaultProvider);
 
   const saveKey = async (): Promise<void> => {
     if (selected === undefined || apiKey.trim().length === 0) {
@@ -172,7 +172,7 @@ export function Settings(props: SettingsProps): JSX.Element {
                 disabled={notionToken.trim().length === 0}
                 onClick={() =>
                   void update(async () => {
-                    const next = await call('notes.connectNotion', { token: notionToken.trim() });
+                    const next: DesktopSettings = await call('notes.connectNotion', { token: notionToken.trim() });
                     setNotionToken('');
                     return next;
                   })
@@ -193,7 +193,7 @@ export function Settings(props: SettingsProps): JSX.Element {
             value={settings.language}
             aria-label={t('settings.language')}
             onChange={(event) => {
-              const next = event.target.value as UiLanguage;
+              const next: UiLanguage = event.target.value as UiLanguage;
               setSettings({ ...settings, language: next });
               props.onLanguageChange(next);
             }}
@@ -280,12 +280,12 @@ function SettingControl(props: {
   }
 
   const commit = (): void => {
-    const typed = entry.kind === 'string' ? draft : parseSettingNumberInput(draft);
+    const typed: string | number | undefined = entry.kind === 'string' ? draft : parseSettingNumberInput(draft);
     if (typed === undefined) {
       setDraft(String(entry.value));
       return;
     }
-    const value = entry.kind === 'integer' && typeof typed === 'number' ? Math.floor(typed) : typed;
+    const value: string | number = entry.kind === 'integer' && typeof typed === 'number' ? Math.floor(typed) : typed;
     if (String(value) !== String(entry.value)) {
       props.onChange(value);
     }

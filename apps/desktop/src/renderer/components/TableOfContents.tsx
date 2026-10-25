@@ -10,8 +10,8 @@ interface TableOfContentsProps {
 
 export function TableOfContents(props: TableOfContentsProps): JSX.Element {
   const { t, language } = useI18n();
-  const target = props.overview.targetWordCount;
-  const progress = target === undefined || target === 0 ? undefined : Math.min(1, props.overview.totalLength / target);
+  const target: number | undefined = props.overview.targetWordCount;
+  const progress: number | undefined = target === undefined || target === 0 ? undefined : Math.min(1, props.overview.totalLength / target);
 
   return (
     <nav className="toc" aria-label={t('desk.toc')}>

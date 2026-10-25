@@ -7,6 +7,7 @@ import {
   narratorPersons,
   type BackgroundCard,
   type CharacterCard,
+  type CharacterRelation,
   type NarratorCard,
 } from '@storyboard/story-model/contracts';
 
@@ -30,7 +31,7 @@ interface BibleProps {
 export function Bible(props: BibleProps): JSX.Element {
   const { t } = useI18n();
   const [tab, setTab] = useState<BibleTab>('character');
-  const isReadOnly = props.run !== undefined && props.run.status !== 'idle';
+  const isReadOnly: boolean = props.run !== undefined && props.run.status !== 'idle';
 
   return (
     <main className="workspace-page">
@@ -104,7 +105,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
   const [notice, setNotice] = useState<string>();
 
   const loadList = async (): Promise<void> => {
-    const list = await call('bible.list', { kind: props.kind });
+    const list: readonly BibleCardSummary[] = await call('bible.list', { kind: props.kind });
     setSummaries(list);
     setSelectedId((current) => current ?? list[0]?.id);
   };
@@ -139,7 +140,7 @@ function CardShelf(props: ShelfProps): JSX.Element {
 
   const create = async (): Promise<void> => {
     try {
-      const created = await call('bible.create', { kind: props.kind, id: newId.trim(), name: newName.trim() });
+      const created: BibleCard = await call('bible.create', { kind: props.kind, id: newId.trim(), name: newName.trim() });
       setCreating(false);
       setNewId('');
       setNewName('');
@@ -282,7 +283,7 @@ function CharacterFields(props: { readonly card: CharacterCard; readonly onChang
 
 function RelationsInput(props: { readonly card: CharacterCard; readonly onChange: (card: CharacterCard) => void }): JSX.Element {
   const { t } = useI18n();
-  const relations = props.card.relations ?? [];
+  const relations: CharacterRelation[] = props.card.relations ?? [];
   const setRelations = (next: CharacterCard['relations']): void => props.onChange({ ...props.card, relations: next });
 
   return (
@@ -417,7 +418,7 @@ function withOptional<T extends object, K extends keyof T>(card: T, key: K, valu
 }
 
 function withoutKey<T extends object, K extends keyof T>(card: T, key: K): T {
-  const copy = { ...card };
+  const copy: T = { ...card };
   delete copy[key];
   return copy;
 }
@@ -489,7 +490,7 @@ function Canon(props: { readonly isReadOnly: boolean; readonly change: Workspace
     }
   };
 
-  const firstSubject = subjects[0];
+  const firstSubject: BibleCardSummary | undefined = subjects[0];
 
   return (
     <section className="stack">
@@ -533,8 +534,8 @@ function FactRow(props: {
 }): JSX.Element {
   const { t } = useI18n();
   const [fact, setFact] = useState(props.fact);
-  const subjectValue = `${fact.subject.kind}:${fact.subject.id}`;
-  const isComplete = fact.key.trim() !== '' && fact.value.trim() !== '';
+  const subjectValue: string = `${fact.subject.kind}:${fact.subject.id}`;
+  const isComplete: boolean = fact.key.trim() !== '' && fact.value.trim() !== '';
 
   return (
     <div className="fact">

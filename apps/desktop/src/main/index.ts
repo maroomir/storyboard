@@ -8,51 +8,52 @@ import { resolveStoryboardHomePaths } from '@storyboard/story-config';
 
 import { ipcEventChannelName, ipcInvokeChannelName } from '@/shared/ipcChannelNames';
 
-import { DesktopApp } from './desktopApp';
+import { DesktopApp, type ConfirmQuestion } from './desktopApp';
 import { createInvokeHandlers } from './invokeHandlers';
 import { createIpcRouter } from './ipcRouter';
 import { createMainWindow, defaultMainWindowFiles } from './mainWindow';
+import type { InvokeChannel, InvokeResult } from '@/shared/ipcContract';
 
 let mainWindow: BrowserWindow | undefined;
-let isQuitting = false;
+let isQuitting: boolean = false;
 
 // NOTE: the release workflow starts the packaged app with STORYBOARD_DESKTOP_SMOKE=1 and reads
 // only the exit code: 0 once the renderer has mounted its first screen, 1 on a load failure, a
 // renderer crash or the time limit. Nothing is written and no update check runs.
-const isSmokeRun = process.env.STORYBOARD_DESKTOP_SMOKE === '1';
-const smokeLimitMs = 30_000;
+const isSmokeRun: boolean = process.env.STORYBOARD_DESKTOP_SMOKE === '1';
+const smokeLimitMs: number = 30_000;
 
 function startDesktopApp(): DesktopApp {
-  const desktop = new DesktopApp({
+  const desktop: DesktopApp = new DesktopApp({
     homePaths: resolveStoryboardHomePaths(process.env),
     logFile: join(app.getPath('logs'), 'desktop.log'),
     version: app.getVersion(),
     systemLocale: app.getLocale(),
     documentsDirectory: app.getPath('documents'),
-    chooseDirectory: async (title, defaultPath) => {
-      const options = {
+    chooseDirectory: async (title: string, defaultPath?: string): Promise<string | undefined> => {
+      const options: Electron.OpenDialogOptions = {
         title,
         properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[],
         ...(defaultPath === undefined ? {} : { defaultPath }),
       };
-      const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
+      const result: Electron.OpenDialogReturnValue = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
       return result.canceled ? undefined : result.filePaths[0];
     },
-    chooseFile: async (title, extensions) => {
-      const options = {
+    chooseFile: async (title: string, extensions: readonly string[]): Promise<string | undefined> => {
+      const options: Electron.OpenDialogOptions = {
         title,
         properties: ['openFile'] as 'openFile'[],
         filters: [{ name: extensions.join(', '), extensions: [...extensions] }],
       };
-      const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
+      const result: Electron.OpenDialogReturnValue = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
       return result.canceled ? undefined : result.filePaths[0];
     },
     emit: (event, payload) => mainWindow?.webContents.send(ipcEventChannelName(event), payload),
-    notify: (message) => {
+    notify: (message: string): void => {
       void dialog.showMessageBox({ type: 'warning', message });
     },
-    confirm: async ({ title, detail, acceptLabel, declineLabel }) => {
-      const options = {
+    confirm: async ({ title, detail, acceptLabel, declineLabel }: ConfirmQuestion): Promise<boolean> => {
+      const options: Electron.MessageBoxOptions = {
         type: 'warning' as const,
         message: title,
         detail,
@@ -66,13 +67,13 @@ function startDesktopApp(): DesktopApp {
 
       return response === 1;
     },
-    installUpdate: () => {
+    installUpdate: (): void => {
       isQuitting = true;
       autoUpdater.quitAndInstall();
     },
   });
 
-  const route = createIpcRouter(createInvokeHandlers(desktop), desktop.logger, {
+  const route: (message: unknown) => Promise<InvokeResult<InvokeChannel>> = createIpcRouter(createInvokeHandlers(desktop), desktop.logger, {
     invalidRequest: () => desktop.t('error.invalidRequest'),
     internal: (message) => desktop.t('error.internal', { message }),
   });
@@ -92,7 +93,7 @@ async function confirmClose(desktop: DesktopApp): Promise<'finish-scene' | 'now'
     return 'now';
   }
 
-  const options = {
+  const options: Electron.MessageBoxOptions = {
     type: 'question' as const,
     message: desktop.t('quit.runningTitle'),
     detail: desktop.t('quit.runningDetail'),
@@ -140,14 +141,14 @@ function runSmoke(window: BrowserWindow): void {
     isQuitting = true;
     app.exit(code);
   };
-  const deadline = setTimeout(() => finish(1, `the renderer did not mount within ${smokeLimitMs} ms`), smokeLimitMs);
+  const deadline: NodeJS.Timeout = setTimeout(() => finish(1, `the renderer did not mount within ${smokeLimitMs} ms`), smokeLimitMs);
 
   window.webContents.on('did-fail-load', (_event, code, description) => finish(1, `load failed (${code} ${description})`));
   window.webContents.on('render-process-gone', (_event, details) => finish(1, `renderer gone (${details.reason})`));
   window.webContents.once('did-finish-load', () => {
     const poll = async (): Promise<void> => {
-      for (let attempt = 0; attempt < 100; attempt += 1) {
-        const isMounted = (await window.webContents.executeJavaScript(
+      for (let attempt: number = 0; attempt < 100; attempt += 1) {
+        const isMounted: boolean = (await window.webContents.executeJavaScript(
           'document.getElementById("root")?.childElementCount > 0',
         )) as boolean;
         if (isMounted) {
@@ -186,7 +187,7 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   void app.whenReady().then(() => {
-    const desktop = startDesktopApp();
+    const desktop: DesktopApp = startDesktopApp();
     openMainWindow(desktop);
     if (isSmokeRun && mainWindow !== undefined) {
       runSmoke(mainWindow);

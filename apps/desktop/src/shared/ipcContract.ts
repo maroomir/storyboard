@@ -9,11 +9,14 @@ import {
   isOnDecimalStep,
   sceneStemPattern,
   novelRunModes,
+  type CompositionKind,
+  type PointOfView,
 } from '@storyboard/story-model/contracts';
 
 import type {
   AppBootstrap,
   BibleCard,
+  BibleCardKind,
   BibleCardSummary,
   CanonFact,
   DesktopSettings,
@@ -31,13 +34,25 @@ import type {
 // SECURITY: 렌더러는 신뢰하지 않는 쪽이다. 경로는 한 번도 렌더러에서 오지 않고(폴더는 main 이 연
 // 대화상자로만 고른다), 씬·카드는 패턴이 맞는 id 로만 가리킨다. 그래서 `../` 같은 값이 파일 경로로
 // 이어질 길이 없다.
-const sceneStemSchema = z.string().regex(sceneStemPattern);
-const cardIdSchema = z.string().regex(cardIdPattern);
-const uiLanguageSchema = z.enum(['ko', 'en']);
-const bibleCardKindSchema = z.enum(['character', 'background', 'narrator']);
-const empty = z.object({}).strict();
+const sceneStemSchema: z.ZodType<string> = z.string().regex(sceneStemPattern);
+const cardIdSchema: z.ZodType<string> = z.string().regex(cardIdPattern);
+const uiLanguageSchema: z.ZodType<UiLanguage> = z.enum(['ko', 'en']);
+const bibleCardKindSchema: z.ZodType<BibleCardKind> = z.enum(['character', 'background', 'narrator']);
+const empty: z.ZodType<Record<string, never>> = z.object({}).strict();
 
-export const workspaceCreateRequestSchema = z.object({
+export interface WorkspaceCreateRequest {
+  readonly title: string;
+  readonly genre: string;
+  readonly audience: string;
+  readonly pov: PointOfView;
+  readonly composition: CompositionKind;
+  readonly chapterCount: number;
+  readonly scenesPerChapter: number;
+  readonly targetWordCount: number;
+  readonly concept: string;
+}
+
+export const workspaceCreateRequestSchema: z.ZodType<WorkspaceCreateRequest> = z.object({
   title: z.string().trim().min(1).max(120),
   genre: z.string().trim().min(1).max(60),
   audience: z.string().trim().min(1).max(60),
@@ -48,8 +63,6 @@ export const workspaceCreateRequestSchema = z.object({
   targetWordCount: z.number().int().min(1_000).max(2_000_000),
   concept: z.string().trim().min(1).max(4_000),
 });
-
-export type WorkspaceCreateRequest = z.infer<typeof workspaceCreateRequestSchema>;
 
 export const invokeRequestSchemas = {
   'app.bootstrap': empty,
@@ -131,13 +144,13 @@ export const invokeRequestSchemas = {
   'notes.plan': empty,
   'notes.apply': z.object({ fillContract: z.boolean() }),
   'notes.connectNotion': z.object({ token: z.string().trim().min(8).max(500) }),
-} as const;
+} satisfies Readonly<Record<string, z.ZodType>>;
 
 export type InvokeChannel = keyof typeof invokeRequestSchemas;
 
 export type InvokeRequest<C extends InvokeChannel> = z.infer<(typeof invokeRequestSchemas)[C]>;
 
-export const invokeChannels = Object.keys(invokeRequestSchemas) as readonly InvokeChannel[];
+export const invokeChannels: readonly InvokeChannel[] = Object.keys(invokeRequestSchemas) as readonly InvokeChannel[];
 
 export interface InvokeResponses {
   'app.bootstrap': AppBootstrap;

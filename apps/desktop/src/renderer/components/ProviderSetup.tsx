@@ -19,7 +19,7 @@ export function ProviderSetup(props: { readonly onDone: () => void }): JSX.Eleme
 
   useEffect(() => {
     void call('settings.read', {}).then((settings) => {
-      const keyed = settings.providers.filter((provider) => !provider.isAdvanced);
+      const keyed: ProviderOption[] = settings.providers.filter((provider) => !provider.isAdvanced);
       setProviders(keyed);
       setProviderId(keyed[0]?.id);
     });

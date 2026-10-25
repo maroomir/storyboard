@@ -20,7 +20,7 @@ export function replaceSelection(
     return body.slice(0, selection.start) + replacement + body.slice(selection.end);
   }
 
-  const index = body.indexOf(original);
+  const index: number = body.indexOf(original);
 
   if (index === -1 || body.indexOf(original, index + 1) !== -1) {
     return undefined;

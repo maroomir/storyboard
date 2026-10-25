@@ -27,7 +27,12 @@ export function isStepComplete(step: WizardStep, form: WorkspaceCreateRequest): 
   }
 }
 
-export function lengthHint(form: WorkspaceCreateRequest): { readonly scenes: number; readonly perScene: number } {
-  const scenes = Math.max(1, form.chapterCount * form.scenesPerChapter);
+export interface SceneLengthHint {
+  readonly scenes: number;
+  readonly perScene: number;
+}
+
+export function lengthHint(form: WorkspaceCreateRequest): SceneLengthHint {
+  const scenes: number = Math.max(1, form.chapterCount * form.scenesPerChapter);
   return { scenes, perScene: Math.round(form.targetWordCount / scenes) };
 }

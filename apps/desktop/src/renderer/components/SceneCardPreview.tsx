@@ -5,8 +5,8 @@ import { useI18n } from '@/renderer/lib/i18n';
 export function SceneCardPreview(props: { readonly notes: SceneNotes }): JSX.Element | null {
   const { t } = useI18n();
   const { notes } = props;
-  const characterNames = notes.characters.map((card) => card.name);
-  const hasContent =
+  const characterNames: string[] = notes.characters.map((card) => card.name);
+  const hasContent: boolean =
     notes.summary !== undefined ||
     notes.beats.length > 0 ||
     characterNames.length > 0 ||

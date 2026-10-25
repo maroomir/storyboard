@@ -46,9 +46,9 @@ export class DesktopApp {
   public readonly settings: SettingsService;
   private readonly state: DesktopStateStore;
   private readonly homeStores: SettingsStores;
-  private readonly offeredParentDirectories = new Set<string>();
-  private readonly offeredNoteLocations = new Set<string>();
-  private readonly reportedConfigFiles = new Set<string>();
+  private readonly offeredParentDirectories: Set<string> = new Set<string>();
+  private readonly offeredNoteLocations: Set<string> = new Set<string>();
+  private readonly reportedConfigFiles: Set<string> = new Set<string>();
   private current: WorkspaceSession | undefined;
 
   public constructor(private readonly ports: DesktopAppPorts) {
@@ -58,10 +58,10 @@ export class DesktopApp {
     );
     this.homeStores = createHomeSettingsStores(ports.homePaths, (error) => this.reportInvalidConfig(error));
     this.settings = new SettingsService({
-      stores: () => this.current?.container ?? this.homeStores,
-      hasOpenWorkspace: () => this.current !== undefined,
-      language: () => this.language,
-      translate: (key, params) => this.t(key, params),
+      stores: (): SettingsStores => this.current?.container ?? this.homeStores,
+      hasOpenWorkspace: (): boolean => this.current !== undefined,
+      language: (): UiLanguage => this.language,
+      translate: (key: MessageKey, params?: MessageParams): string => this.t(key, params),
     });
   }
 
@@ -109,7 +109,7 @@ export class DesktopApp {
       return fail('invalid-request', this.t('error.invalidRequest'));
     }
 
-    const path = recentPath ?? (await this.ports.chooseDirectory(this.t('dialog.openWorkspace')));
+    const path: string | undefined = recentPath ?? (await this.ports.chooseDirectory(this.t('dialog.openWorkspace')));
 
     if (path === undefined) {
       return succeed({ cancelled: true });
@@ -124,7 +124,7 @@ export class DesktopApp {
   }
 
   public async chooseParentDirectory(): Promise<{ readonly directory?: string }> {
-    const directory = await this.ports.chooseDirectory(this.t('dialog.chooseParent'), this.defaultParentDirectory());
+    const directory: string | undefined = await this.ports.chooseDirectory(this.t('dialog.chooseParent'), this.defaultParentDirectory());
 
     if (directory !== undefined) {
       this.offeredParentDirectories.add(resolve(directory));
@@ -136,7 +136,7 @@ export class DesktopApp {
   // The author picks a notes folder or a Notion export zip in main's dialog; only a path offered this
   // way is later accepted by notes.collect.
   public async chooseNotesLocation(kind: 'folder' | 'zip'): Promise<{ readonly path?: string }> {
-    const path =
+    const path: string | undefined =
       kind === 'folder'
         ? await this.ports.chooseDirectory(this.t('dialog.chooseNotesFolder'))
         : await this.ports.chooseFile(this.t('dialog.chooseNotesZip'), ['zip']);
@@ -156,14 +156,14 @@ export class DesktopApp {
     parentDirectory: string,
     request: WorkspaceCreateRequest,
   ): Promise<ServiceResult<WorkspaceOverview>> {
-    const parent = resolve(parentDirectory);
+    const parent: string = resolve(parentDirectory);
 
     // SECURITY: 새 작품은 main 이 권한 기본 위치이거나 대화상자로 고르게 한 폴더 안에만 만든다.
     if (parent !== resolve(this.defaultParentDirectory()) && !this.offeredParentDirectories.has(parent)) {
       return fail('invalid-request', this.t('error.invalidRequest'));
     }
 
-    const path = join(parent, workspaceFolderName(request.title));
+    const path: string = join(parent, workspaceFolderName(request.title));
     return await this.activate(() => WorkspaceSession.create({ ...this.sessionOptions(path), request }));
   }
 
@@ -172,7 +172,7 @@ export class DesktopApp {
       return succeed({});
     }
 
-    const closed = await this.current.close();
+    const closed: ServiceResult<Record<string, never>> = await this.current.close();
 
     if (closed.ok) {
       this.current = undefined;
@@ -184,7 +184,7 @@ export class DesktopApp {
   // Quitting mid-run either lets the scene in progress finish (and pauses there) or leaves at once;
   // both resume on the next open.
   public async shutdown(mode: 'finish-scene' | 'now'): Promise<void> {
-    const session = this.current;
+    const session: WorkspaceSession | undefined = this.current;
 
     if (session === undefined) {
       return;
@@ -209,13 +209,13 @@ export class DesktopApp {
   private async activate(
     openSession: () => Promise<ServiceResult<WorkspaceSession>>,
   ): Promise<ServiceResult<WorkspaceOverview>> {
-    const closed = await this.closeWorkspace();
+    const closed: ServiceResult<Record<string, never>> = await this.closeWorkspace();
 
     if (!closed.ok) {
       return closed;
     }
 
-    const opened = await openSession();
+    const opened: ServiceResult<WorkspaceSession> = await openSession();
 
     if (!opened.ok) {
       return opened;
@@ -227,7 +227,7 @@ export class DesktopApp {
     await requestHiddenProviderConsent(opened.data.container.configBridge, (question) =>
       this.ports.confirm({ ...question, declineLabel: this.t('common.cancel') }),
     );
-    const overview = await opened.data.overview();
+    const overview: WorkspaceOverview = await opened.data.overview();
     this.state.rememberWorkspace(opened.data.path, overview.title);
     this.ports.emit('run.changed', opened.data.runs.snapshot());
 

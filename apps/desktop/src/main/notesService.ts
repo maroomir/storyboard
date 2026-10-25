@@ -1,6 +1,6 @@
 import { isNotionUrl, NodeUri } from '@storyboard/story-model';
 import type { NoteAbsorbPlan, NoteBundle } from '@storyboard/story-model';
-import type { NoteLocation } from '@storyboard/story-engine';
+import type { ApplyNoteAbsorbResult, CollectNotesResult, NoteLocation, PlanNoteAbsorbResult } from '@storyboard/story-engine';
 
 import type { NotesApplyView, NotesEstimateView, NotesPlanView } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
@@ -24,13 +24,13 @@ export class NotesService {
   ) {}
 
   public async collect(request: NotesLocationRequest): Promise<ServiceResult<NotesEstimateView>> {
-    const location = toNoteLocation(request);
+    const location: NoteLocation | undefined = toNoteLocation(request);
 
     if (location === undefined) {
       return fail('invalid-request', this.translate('error.invalidRequest'));
     }
 
-    const collected = await this.container.notes.collect({ workspaceRoot: this.container.workspaceRoot, location });
+    const collected: CollectNotesResult = await this.container.notes.collect({ workspaceRoot: this.container.workspaceRoot, location });
 
     if (!collected.ok) {
       return fail('failed', collected.message);
@@ -65,7 +65,7 @@ export class NotesService {
       return fail('invalid-request', this.translate('notes.noBundle'));
     }
 
-    const planned = await this.container.notes.plan({ workspaceRoot: this.container.workspaceRoot, bundle: this.bundle });
+    const planned: PlanNoteAbsorbResult = await this.container.notes.plan({ workspaceRoot: this.container.workspaceRoot, bundle: this.bundle });
 
     if (!planned.ok) {
       return fail('failed', planned.message);
@@ -90,7 +90,7 @@ export class NotesService {
       return fail('invalid-request', this.translate('notes.noPlan'));
     }
 
-    const applied = await this.container.notes.apply({
+    const applied: ApplyNoteAbsorbResult = await this.container.notes.apply({
       workspaceRoot: this.container.workspaceRoot,
       plan: this.plan,
       location: this.bundle.location,
