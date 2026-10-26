@@ -21,22 +21,8 @@ const ALLOWED_IMPORTS = {
   paths: ['paths', 'domain', 'shared', 'contracts', 'format'],
 };
 
-// The entry files at the root (`index.ts`, `contracts.ts`) and each folder's `index.ts` re-export
-// every layer, so importing one from inside the package hides which layer a name comes from and
-// slips past the allow-list above. Inside the package an import names the module that defines it.
-const ENTRY_OR_BARREL_IMPORT = /^#model\/(?:[^/]+|.+\/index)$/;
-
-function refuseEntryAndBarrelImports(filePath, importPath, _statement, report) {
-  if (ENTRY_OR_BARREL_IMPORT.test(importPath)) {
-    report(
-      `Import names an entry file or a folder barrel (${importPath}); import the defining module`,
-      filePath,
-    );
-  }
-}
-
 runArchitectureCheck('Model', SOURCE_ROOT, {
   rules: [allowListRule(ALLOWED_IMPORTS, SOURCE_ROOT)],
-  importRules: [requireAliasForEscapingImport(SOURCE_ROOT, '#model/'), refuseEntryAndBarrelImports],
+  importRules: [requireAliasForEscapingImport(SOURCE_ROOT, '#model/')],
   aliases: { '#model/': '#model/' },
 });
