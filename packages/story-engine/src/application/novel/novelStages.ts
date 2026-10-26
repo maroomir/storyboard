@@ -52,8 +52,8 @@ import type {
   NovelApprovalKind,
   NovelPipelineOptions,
   NovelPipelineResult,
-} from './novelPipelineTypes';
-import type { GenerateDraftResult } from '#engine/application/drafts/generateDraftTypes';
+} from './novelPipelineContract';
+import type { GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
 import type { ReviseDraftWorkflowResult } from '#engine/application/drafts/reviseDraftUseCase';
 import type { ICardWriterRepository } from '#engine/application/cards/cardRepositories';
 

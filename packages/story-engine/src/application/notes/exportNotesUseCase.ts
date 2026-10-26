@@ -12,7 +12,7 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-model';
 
-import type { StoryFeatureSource } from '#engine/application/story/storyFeatureTypes';
+import type { StoryFeatureSource } from '#engine/application/story/storyFeatureSource';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface ExportNotesRequest {

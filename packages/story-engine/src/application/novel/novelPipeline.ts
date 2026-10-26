@@ -34,7 +34,7 @@ import type {
   NovelPipelineOptions,
   NovelPipelineResult,
   NovelPipelineRunOptions,
-} from './novelPipelineTypes';
+} from './novelPipelineContract';
 
 export type {
   INovelOutlineRepository,
@@ -49,7 +49,7 @@ export type {
   NovelPipelineOutcome,
   NovelPipelineResult,
   NovelPipelineRunOptions,
-} from './novelPipelineTypes';
+} from './novelPipelineContract';
 
 interface NovelRunContext {
   readonly options: NovelPipelineOptions;

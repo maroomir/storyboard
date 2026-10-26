@@ -8,7 +8,7 @@ import {
 } from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { StoryState, StoryStateUpdateItem } from '@storyboard/story-model';
-import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import type { GenerateDraftWorkflowOptions } from './draftGenerationContract';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 
 export interface StoryStateEntryMapping {

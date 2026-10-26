@@ -9,7 +9,7 @@ import {
   readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
-import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import type { GenerateDraftWorkflowOptions } from './draftGenerationContract';
 import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from './sceneGenerationInputs';
 import { recordStoryStateFromDraft } from './updateStoryState';
 import type { StoryboardAiService } from '@storyboard/story-ai';

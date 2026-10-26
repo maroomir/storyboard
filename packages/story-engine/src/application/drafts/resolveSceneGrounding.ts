@@ -6,7 +6,7 @@ import {
   type SceneFile,
   type SceneGrounding,
 } from '@storyboard/story-model';
-import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import type { GenerateDraftWorkflowOptions } from './draftGenerationContract';
 import type { ISceneGroundingGapRepository } from '#engine/application/drafts/draftRepositories';
 
 export type SceneGroundingOutcome =

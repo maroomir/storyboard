@@ -4,8 +4,8 @@ import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import { sceneFileNamePattern, serializeSceneCard, parseJsonObject } from '@storyboard/story-model';
-import type { StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
-import { StoryFeatureSourceError } from './storyFeatureTypes';
+import type { StoryFeatureSource, StoryFileSnapshot } from './storyFeatureSource';
+import { StoryFeatureSourceError } from './storyFeatureSource';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 
 const MAX_COMPLETE_SCENES: number = 20;

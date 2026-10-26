@@ -63,10 +63,16 @@ import {
   describeReviseOutcome,
   ReviseDraftUseCase,
   type ReviseDraftRequest,
-  type ReviseDraftServices,
   type ReviseDraftWorkflowResult
 } from "@storyboard/story-engine"
+import type { AiServices, HostAdapters, WorkspaceRepositories } from "@storyboard/story-engine"
 import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
+
+interface ReviseDraftServices {
+  readonly host: HostAdapters
+  readonly ai: AiServices
+  readonly repositories: WorkspaceRepositories
+}
 
 const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순", severity: "high" }
 const lowContinuity: ContinuityIssueLike = { original: "설정", reason: "사소함", severity: "low" }

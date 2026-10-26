@@ -21,7 +21,7 @@ import type {
   IOutlineRepository,
   ISceneSeedRepository,
 } from '#engine/application/novel/novelPipelinePorts';
-import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureTypes';
+import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureSource';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { IUsageSink } from '#engine/ports/usageSink';
