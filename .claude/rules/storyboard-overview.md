@@ -78,8 +78,10 @@ What each check actually enforces, so a green run is not read as more than it is
 
 - `scripts/architecture/check-workspace.mjs` (repo root, the first step of the root `npm run lint`)
   — every shared package stays free of `vscode` (including inline `import('vscode')` types), of app
-  imports (`@/`, `@webview/`) and of another package's `#` internal prefix; and an owned literal
-  (`OWNED_LITERALS`) appears only in its owner file across every app and package.
+  imports (`@/`, `@webview/`) and of another package's `#` internal prefix; no package imports its
+  own entry file (its package.json `exports`) or a folder `index` through its prefix, since those
+  re-export whole layers; and an owned literal (`OWNED_LITERALS`) appears only in its owner file
+  across every app and package.
 - `apps/vscode/scripts/check-architecture.mjs` — the extension entry may import only `vscode` and
   `./bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles.
   The inner layers left for the engine, so nothing here validates them any more.
@@ -88,9 +90,8 @@ What each check actually enforces, so a green run is not read as more than it is
   `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. The
   desktop applies the same rule.
 - `packages/story-model` — its own layer direction: `format` may import only itself, `contracts`
-  only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; no
-  import of an entry file (`#model/contracts`, `#model/index`) or a folder barrel (`#model/…/index`)
-  from inside the package, since those re-export every layer; plus no cycles.
+  only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; plus
+  no cycles.
 - `packages/story-engine` — `pipeline`, `ports` and `ai` may each import only themselves (and other
   packages); plus no cycles. `persistence` and `application` are a mutually dependent pair by design
   (application declares the repository ports, persistence implements them), so no order is imposed

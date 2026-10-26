@@ -214,6 +214,9 @@ Two kinds of reference, two mechanisms. The architecture checks enforce both.
   the point: apps bundle package source, and a bundler's alias table is global, so a package using
   `@/` would silently resolve to the *app's* `src/` — a wrong file, no error, in a green build. A
   package must never use another package's prefix.
+- **Inside a package, name the defining module**: never the package's own entry file
+  (`#model/contracts`, `#engine/index`) or a folder barrel (`#ai/ai/index`); those re-export whole
+  layers and hide where a name lives. `scripts/architecture/check-workspace.mjs` fails on one.
 - **Across packages**: the package name (`@storyboard/story-model`), never a path.
 - **One source of truth**: a project's own `tsconfig.json` holds its `paths`; `scripts/aliases.mjs`
   reads it and hands the same table to esbuild, Vite and Vitest. Never restate a path in a bundler

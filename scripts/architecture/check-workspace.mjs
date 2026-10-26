@@ -33,6 +33,24 @@ const PACKAGE_INTERNAL_PREFIXES = {
   'story-sim': '#sim/',
 };
 
+// The package's entry files (its package.json `exports`) and every folder `index.ts` re-export
+// whole layers, so an import of one from inside the package hides where a name is defined and
+// slips past the package's own layer check. Inside a package an import names the defining module.
+function listEntryModules(name) {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(PACKAGES_ROOT, name, 'package.json'), 'utf8'),
+  );
+  return Object.values(manifest.exports ?? {})
+    .map((target) => (typeof target === 'string' ? target : target.default))
+    .filter((target) => typeof target === 'string')
+    .map((target) => target.replace(/^\.\/src\//, '').replace(/\.ts$/, ''));
+}
+
+function isEntryOrBarrelImport(importPath, prefix, entryModules) {
+  const subpath = importPath.slice(prefix.length);
+  return entryModules.includes(subpath) || subpath === 'index' || subpath.endsWith('/index');
+}
+
 const summary = [];
 
 function checkSharedPackages(failures) {
@@ -45,6 +63,8 @@ function checkSharedPackages(failures) {
     }
 
     const files = collectSourceFiles(packageRoot);
+    const prefix = PACKAGE_INTERNAL_PREFIXES[name];
+    const entryModules = listEntryModules(name);
     summary.push(`${files.length} ${name}`);
 
     for (const filePath of files) {
@@ -72,9 +92,18 @@ function checkSharedPackages(failures) {
           failures.push(`${name} imports an app module: ${relative} -> ${importPath}`);
         }
 
-        if (importPath.startsWith('#') && !importPath.startsWith(PACKAGE_INTERNAL_PREFIXES[name])) {
+        if (importPath.startsWith('#') && !importPath.startsWith(prefix)) {
           failures.push(
             `${name} reaches into another package's internals: ${relative} -> ${importPath}`,
+          );
+        }
+
+        if (
+          importPath.startsWith(prefix) &&
+          isEntryOrBarrelImport(importPath, prefix, entryModules)
+        ) {
+          failures.push(
+            `${name} imports its own entry file or a folder barrel; import the defining module: ${relative} -> ${importPath}`,
           );
         }
       }
@@ -97,7 +126,10 @@ const OWNED_LITERALS = [
   },
   { literal: "'storyboard.card'", owner: 'apps/vscode/src/contributionIds.ts' },
   { literal: "'gpt-5.6-sol'", owner: 'packages/story-model/src/contracts/providerCatalog.ts' },
-  { literal: "'http://localhost:11434'", owner: 'packages/story-model/src/contracts/providerCatalog.ts' },
+  {
+    literal: "'http://localhost:11434'",
+    owner: 'packages/story-model/src/contracts/providerCatalog.ts',
+  },
 ];
 
 const OWNED_LITERAL_ROOTS = [
