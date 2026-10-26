@@ -80,8 +80,7 @@ export class DraftSkeletonStage implements ISceneStage {
         ),
       };
     } else {
-      skeleton = await draftSkeletonInCalls({
-        run,
+      skeleton = await draftSkeletonInCalls(run, {
         base,
         options,
         calls,

@@ -95,16 +95,20 @@ export function curlDialogueQuotes(text: string): string {
   return text.replace(/"([^"\n]+)"/g, '“$1”');
 }
 
-export async function draftSkeletonInCalls(input: {
-  readonly run: SceneGenerationRun;
+export interface SkeletonCallBatch {
   readonly base: SkeletonCallInput;
   readonly options: GenerateTextOptions;
   readonly calls: readonly SkeletonCall[];
   readonly plan: SceneBreakPlan;
   readonly beats: readonly SceneBeat[];
   readonly targetLength: number;
-}): Promise<CombinedSkeletonDraft> {
-  const { run, base, options, calls, plan, beats, targetLength } = input;
+}
+
+export async function draftSkeletonInCalls(
+  run: SceneGenerationRun,
+  batch: SkeletonCallBatch,
+): Promise<CombinedSkeletonDraft> {
+  const { base, options, calls, plan, beats, targetLength } = batch;
   const castName: (ref: string) => string = castNameOf(run.context);
   const totalBeats: number = calls.reduce((sum, call) => sum + call.beats.length, 0);
   const endState: string | undefined = run.context.scene.card?.endState;

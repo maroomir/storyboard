@@ -9,7 +9,6 @@ import {
   withAttribution,
 } from '#engine/pipeline/sceneGenerationStages';
 import type { ResolvedSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
-import type { SceneGenerationPipelineAiService } from '#engine/pipeline/sceneGenerationTypes';
 import {
   countRecapPhrases,
   describeThinExpansionSpots,
@@ -31,7 +30,6 @@ import {
   formatBackgroundFactConflict,
   type Background,
   type SceneBeat,
-  type SceneContext,
   type StyleDirective,
 } from '@storyboard/story-model';
 
@@ -50,87 +48,6 @@ export function backgroundFactLines(background: Background): string[] {
     ...(background.description ?? []),
     ...(background.senses ?? []),
   ].filter((line) => line.trim().length > 0);
-}
-
-export async function expandSectionWithRetries(input: {
-  readonly aiService: Pick<SceneGenerationPipelineAiService, 'expandSceneSection'>;
-  readonly section: string;
-  readonly skeleton: string;
-  readonly previousSection: string | undefined;
-  readonly targetLength: number;
-  readonly backgroundFacts: readonly string[];
-  readonly backgroundConflicts: readonly string[];
-  readonly sceneCoordinates: readonly string[];
-  readonly sectionPlaces: readonly string[];
-  readonly characters: SceneContext['characters'];
-  readonly options: GenerateTextOptions;
-  readonly tuning: ResolvedSceneGenerationTuning;
-}): Promise<CheckedSectionText> {
-  let reasons: string[] = [];
-  let isUnderLengthRetry: boolean = false;
-  let best: {
-    text: string;
-    violations: readonly SectionViolation[];
-    weight: number;
-    distance: number;
-  } = {
-    text: input.section,
-    violations: [],
-    weight: Number.POSITIVE_INFINITY,
-    distance: Number.POSITIVE_INFINITY,
-  };
-
-  for (let attempt: number = 0; attempt <= input.tuning.sectionRetryLimit; attempt += 1) {
-    const expanded: string = await input.aiService.expandSceneSection(
-      {
-        skeleton: input.skeleton,
-        section: input.section,
-        previousSection: input.previousSection,
-        targetLength: input.targetLength,
-        backgroundFacts: input.backgroundFacts,
-        backgroundConflicts: input.backgroundConflicts,
-        sceneCoordinates: input.sceneCoordinates,
-        retryReasons: reasons,
-        isUnderLengthRetry,
-      },
-      input.options,
-    );
-
-    const violations: SectionViolation[] = validateExpandedSection({
-      skeleton: input.skeleton,
-      section: input.section,
-      expanded,
-      characters: input.characters,
-      targetLength: input.targetLength,
-      ...(input.previousSection === undefined ? {} : { previousSection: input.previousSection }),
-      sectionPlaces: input.sectionPlaces,
-      backgroundFacts: input.backgroundFacts,
-      tuning: input.tuning,
-    });
-
-    if (violations.length === 0) {
-      return { text: expanded, violations: [] };
-    }
-
-    const weight: number = weighViolations(violations, input.tuning.violationWeights);
-    const distance: number = Math.abs(expanded.length - input.targetLength);
-    if (weight < best.weight || (weight === best.weight && distance < best.distance)) {
-      best = { text: expanded, violations, weight, distance };
-    }
-
-    isUnderLengthRetry = violations.some((violation) => violation.kind === 'too-short');
-    const thinSpots: string | undefined = isUnderLengthRetry
-      ? describeThinExpansionSpots(
-          findThinExpansionSpots(input.section, expanded, input.tuning.dialogueMinimumQuotedLength),
-        )
-      : undefined;
-    reasons = [
-      ...violations.map((violation) => violation.detail),
-      ...(thinSpots === undefined ? [] : [thinSpots]),
-    ];
-  }
-
-  return { text: best.text, violations: best.violations };
 }
 
 export function restoreSectionBreaks(
@@ -195,6 +112,15 @@ export function trimRunAhead(
   };
 }
 
+interface SectionExpansionRequest {
+  readonly section: string;
+  readonly previousSection: string | undefined;
+  readonly targetLength: number;
+  readonly backgroundFacts: readonly string[];
+  readonly sceneCoordinates: readonly string[];
+  readonly sectionPlaces: readonly string[];
+}
+
 export class ExpandSectionStage implements ISceneStage {
   public readonly id: SceneStageId = 'expandSection';
 
@@ -222,30 +148,28 @@ export class ExpandSectionStage implements ISceneStage {
     for (let index: number = 0; index < sections.length; index += 1) {
       run.onProgress?.('expandSection', index + 1, sections.length);
 
-      const outcome: CheckedSectionText = await expandSectionWithRetries({
-        aiService: run.aiService,
-        section: sections[index] as string,
-        skeleton: run.polishedText,
-        previousSection: expandedSections.at(-1),
-        targetLength: targetLengths[index] as number,
-        backgroundFacts: scopeBackgroundFacts(
-          backgroundFacts,
-          placesBySection[index] ?? [],
-          scenePlaces,
-        ),
-        backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),
-        sceneCoordinates: coordinatesBySection[index] ?? [],
-        sectionPlaces: placesBySection[index] ?? [],
-        characters: run.context.characters,
-        options: withAttribution(
+      const outcome: CheckedSectionText = await this.expandSectionWithRetries(
+        run,
+        {
+          section: sections[index] as string,
+          previousSection: expandedSections.at(-1),
+          targetLength: targetLengths[index] as number,
+          backgroundFacts: scopeBackgroundFacts(
+            backgroundFacts,
+            placesBySection[index] ?? [],
+            scenePlaces,
+          ),
+          sceneCoordinates: coordinatesBySection[index] ?? [],
+          sectionPlaces: placesBySection[index] ?? [],
+        },
+        withAttribution(
           {
             ...buildGenerateOptions(run.providers, 'sceneSectionExpansion'),
             styleDirective: run.styleDirective,
           },
           { primary: run.sceneRef },
         ),
-        tuning: run.tuning,
-      });
+      );
 
       const repaired: CheckedSectionText = restoreSectionBreaks(
         sections[index] as string,
@@ -273,5 +197,83 @@ export class ExpandSectionStage implements ISceneStage {
         tuning: run.tuning,
       }),
     );
+  }
+
+  private async expandSectionWithRetries(
+    run: SceneGenerationRun,
+    request: SectionExpansionRequest,
+    options: GenerateTextOptions,
+  ): Promise<CheckedSectionText> {
+    let reasons: string[] = [];
+    let isUnderLengthRetry: boolean = false;
+    let best: {
+      text: string;
+      violations: readonly SectionViolation[];
+      weight: number;
+      distance: number;
+    } = {
+      text: request.section,
+      violations: [],
+      weight: Number.POSITIVE_INFINITY,
+      distance: Number.POSITIVE_INFINITY,
+    };
+
+    for (let attempt: number = 0; attempt <= run.tuning.sectionRetryLimit; attempt += 1) {
+      const expanded: string = await run.aiService.expandSceneSection(
+        {
+          skeleton: run.polishedText,
+          section: request.section,
+          previousSection: request.previousSection,
+          targetLength: request.targetLength,
+          backgroundFacts: request.backgroundFacts,
+          backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),
+          sceneCoordinates: request.sceneCoordinates,
+          retryReasons: reasons,
+          isUnderLengthRetry,
+        },
+        options,
+      );
+
+      const violations: SectionViolation[] = validateExpandedSection({
+        skeleton: run.polishedText,
+        section: request.section,
+        expanded,
+        characters: run.context.characters,
+        targetLength: request.targetLength,
+        ...(request.previousSection === undefined
+          ? {}
+          : { previousSection: request.previousSection }),
+        sectionPlaces: request.sectionPlaces,
+        backgroundFacts: request.backgroundFacts,
+        tuning: run.tuning,
+      });
+
+      if (violations.length === 0) {
+        return { text: expanded, violations: [] };
+      }
+
+      const weight: number = weighViolations(violations, run.tuning.violationWeights);
+      const distance: number = Math.abs(expanded.length - request.targetLength);
+      if (weight < best.weight || (weight === best.weight && distance < best.distance)) {
+        best = { text: expanded, violations, weight, distance };
+      }
+
+      isUnderLengthRetry = violations.some((violation) => violation.kind === 'too-short');
+      const thinSpots: string | undefined = isUnderLengthRetry
+        ? describeThinExpansionSpots(
+            findThinExpansionSpots(
+              request.section,
+              expanded,
+              run.tuning.dialogueMinimumQuotedLength,
+            ),
+          )
+        : undefined;
+      reasons = [
+        ...violations.map((violation) => violation.detail),
+        ...(thinSpots === undefined ? [] : [thinSpots]),
+      ];
+    }
+
+    return { text: best.text, violations: best.violations };
   }
 }
