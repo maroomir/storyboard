@@ -1,4 +1,9 @@
 import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
+import type {
   StoryUri,
   BackgroundCard,
   AiProviderId,
@@ -39,7 +44,6 @@ import {
   emptyDraftBodyMessage,
   type GenerateDraftRequest,
   type GenerateDraftResult,
-  type GenerateDraftUseCaseDependencies,
   type GenerateDraftWorkflowOptions,
 } from './generateDraftTypes';
 import {
@@ -51,12 +55,9 @@ import {
 import type { IUseCase } from '#engine/application/useCase';
 import { schedulePostGenerationUpdates } from './postGenerationScheduling';
 import { updateStoryStateAfterGeneration } from './updateStoryState';
+import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 
-export type {
-  GenerateDraftRequest,
-  GenerateDraftResult,
-  GenerateDraftUseCaseDependencies,
-} from './generateDraftTypes';
+export type { GenerateDraftRequest, GenerateDraftResult } from './generateDraftTypes';
 
 function toBackgroundSnapshot(
   background: BackgroundCard | undefined,
@@ -76,20 +77,20 @@ async function isCacheHit(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
 ): Promise<boolean> {
-  if (!(await options.fileSystem.exists(inputs.draftUri))) {
+  if (!(await options.host.fileSystem.exists(inputs.draftUri))) {
     return false;
   }
 
-  if (!(await options.fileSystem.exists(inputs.cacheUri))) {
+  if (!(await options.host.fileSystem.exists(inputs.cacheUri))) {
     const ledger: StoryState = await readStoryState(
       inputs.threadPaths.storyState,
-      options.fileSystem,
+      options.host.fileSystem,
     );
     return ledger.sceneInputHashes.get(inputs.scene.order) === inputs.inputHash;
   }
 
   try {
-    const record: SceneCacheRecord = await options.sceneCacheRepository.read(inputs.cacheUri);
+    const record: SceneCacheRecord = await options.repositories.sceneCache.read(inputs.cacheUri);
     return record.inputHash === inputs.inputHash;
   } catch {
     return false;
@@ -130,18 +131,18 @@ async function isDraftOursToOverwrite(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
 ): Promise<boolean> {
-  if (!(await options.fileSystem.exists(inputs.draftUri))) {
+  if (!(await options.host.fileSystem.exists(inputs.draftUri))) {
     return true;
   }
 
   try {
-    const record: SceneCacheRecord = await options.sceneCacheRepository.read(inputs.cacheUri);
+    const record: SceneCacheRecord = await options.repositories.sceneCache.read(inputs.cacheUri);
     if (record.bodyHash === undefined) {
       return false;
     }
 
     const existing: Draft = parseDraft(
-      new TextDecoder().decode(await options.fileSystem.readFile(inputs.draftUri)),
+      new TextDecoder().decode(await options.host.fileSystem.readFile(inputs.draftUri)),
     );
     return computeDraftBodyHash(existing.body) === record.bodyHash;
   } catch {
@@ -154,7 +155,7 @@ async function maybeArchiveExistingDraft(
   options: GenerateDraftWorkflowOptions,
   force: boolean,
 ): Promise<void> {
-  if (!force && !options.configBridge.isKeepDraftHistoryEnabled()) {
+  if (!force && !options.host.configBridge.isKeepDraftHistoryEnabled()) {
     return;
   }
 
@@ -168,10 +169,10 @@ async function maybeArchiveExistingDraft(
       draftUri: inputs.draftUri,
       historyDirectory,
       resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-      fileSystem: options.fileSystem,
+      fileSystem: options.host.fileSystem,
     });
   } catch (error) {
-    options.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
   }
 }
 
@@ -190,23 +191,23 @@ async function persistGeneratedDraft(
 
   if (pipelineResult.dialoguePolish) {
     const { lineCount, polishedCount, contestedCount } = pipelineResult.dialoguePolish;
-    options.logger.info(
+    options.host.logger.info(
       `${scene.stem}: 대사 다듬기 ${polishedCount}/${lineCount}개 손봄${contestedCount > 0 ? `, ${contestedCount}개는 화자가 겹쳐 뼈대 유지` : ''}`,
     );
   }
 
-  const sceneDraftConfig: TaskAiConfigResolved = options.aiGateway.getTaskAiConfig('sceneDraft');
+  const sceneDraftConfig: TaskAiConfigResolved = options.ai.gateway.getTaskAiConfig('sceneDraft');
   const draft: Draft = createDraft({
     sceneStem: scene.stem,
     format: project.format,
     body: pipelineResult.draftBody,
     warnings: pipelineResult.warnings,
-    generator: options.generator,
+    generator: options.host.generator,
     providerId: sceneDraftConfig.providerId,
     model: sceneDraftConfig.model,
   });
 
-  await options.sceneCacheRepository.ensureDirectory(paths.sceneCacheDirectory);
+  await options.repositories.sceneCache.ensureDirectory(paths.sceneCacheDirectory);
 
   options.onSaving?.();
 
@@ -220,25 +221,25 @@ async function persistGeneratedDraft(
 
   const isOurs: boolean = await isDraftOursToOverwrite(inputs, options);
   if (!isOurs) {
-    options.logger.warn(
+    options.host.logger.warn(
       `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${scene.stem}`,
     );
   }
   await maybeArchiveExistingDraft(inputs, options, !isOurs);
 
-  await options.draftRepository.write(draftUri, draft);
+  await options.repositories.drafts.write(draftUri, draft);
 
   if (pipelineResult.dialogueRecord) {
-    await createSceneDialogueStore(options.fileSystem, threadPaths).save(
+    await createSceneDialogueStore(options.host.fileSystem, threadPaths).save(
       pipelineResult.dialogueRecord,
     );
   }
 
-  await options.sceneCacheRepository.write(cacheUri, cacheRecord);
+  await options.repositories.sceneCache.write(cacheUri, cacheRecord);
 
   await updateStoryStateAfterGeneration(inputs, options, aiService, pipelineResult.draftBody);
 
-  if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
+  if (options.host.configBridge.isUpdateCardsAfterGenerateEnabled()) {
     schedulePostGenerationUpdates(inputs, options, aiService, pipelineResult);
   }
 
@@ -256,25 +257,25 @@ async function runAndPersistDraft(
 ): Promise<GenerateDraftResult> {
   const { workspaceFolder, paths, threadPaths, scene, project, context, previousContext } = inputs;
 
-  const aiService: StoryboardAiService = options.aiGateway.createService(workspaceFolder.uri);
+  const aiService: StoryboardAiService = options.ai.gateway.createService(workspaceFolder.uri);
   const pipelineProviders: SceneGenerationPipelineTaskProviders = {
-    personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
-    sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
-    sceneBeatActor: options.aiGateway.getTaskProvider('sceneBeatActor'),
-    sceneBeatArbiter: options.aiGateway.getTaskProvider('sceneBeatArbiter'),
-    sceneBeatJudge: options.aiGateway.getTaskProvider('sceneBeatJudge'),
-    sceneDialoguePolish: options.aiGateway.getTaskProvider('sceneDialoguePolish'),
-    sceneDialogueAttribution: options.aiGateway.getTaskProvider('sceneDialogueAttribution'),
-    sceneSectionExpansion: options.aiGateway.getTaskProvider('sceneSectionExpansion'),
+    personaGeneration: options.ai.gateway.getTaskProvider('personaGeneration'),
+    sceneSkeleton: options.ai.gateway.getTaskProvider('sceneSkeleton'),
+    sceneBeatActor: options.ai.gateway.getTaskProvider('sceneBeatActor'),
+    sceneBeatArbiter: options.ai.gateway.getTaskProvider('sceneBeatArbiter'),
+    sceneBeatJudge: options.ai.gateway.getTaskProvider('sceneBeatJudge'),
+    sceneDialoguePolish: options.ai.gateway.getTaskProvider('sceneDialoguePolish'),
+    sceneDialogueAttribution: options.ai.gateway.getTaskProvider('sceneDialogueAttribution'),
+    sceneSectionExpansion: options.ai.gateway.getTaskProvider('sceneSectionExpansion'),
   };
   const cacheProviders = {
     ...pipelineProviders,
-    traitsExtraction: options.aiGateway.getTaskProvider('traitsExtraction'),
+    traitsExtraction: options.ai.gateway.getTaskProvider('traitsExtraction'),
   } satisfies Partial<Record<AiTaskName, AiProviderId>>;
 
   const backgroundId: string | undefined = context.background?.id;
   const backgroundRecentExcerpt: string | undefined = backgroundId
-    ? await findRecentBackgroundExcerpt(options.fileSystem, paths, scene.stem, backgroundId)
+    ? await findRecentBackgroundExcerpt(options.host.fileSystem, paths, scene.stem, backgroundId)
     : undefined;
 
   try {
@@ -303,13 +304,20 @@ async function runAndPersistDraft(
         options.onPipelineProgress?.(stage, current, total);
       },
       shouldCancel: options.shouldCancel,
-      useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
-      sectionOutputLimit: options.configBridge.getSectionOutputLimit(),
-      tuning: options.configBridge.getSceneGenerationTuning(),
-      personaStore: createPersonaMemoryStore(options.fileSystem, threadPaths, scene.stem),
-      backgroundStore: createBackgroundMemoryStore(options.fileSystem, threadPaths, scene.stem),
-      backgroundFactConflictStore: createBackgroundFactConflictStore(options.fileSystem, paths),
-      dialogueCorpus: createSceneDialogueStore(options.fileSystem, threadPaths),
+      useContextCondense: options.host.configBridge.isAiContextCondenseEnabled(),
+      sectionOutputLimit: options.host.configBridge.getSectionOutputLimit(),
+      tuning: options.host.configBridge.getSceneGenerationTuning(),
+      personaStore: createPersonaMemoryStore(options.host.fileSystem, threadPaths, scene.stem),
+      backgroundStore: createBackgroundMemoryStore(
+        options.host.fileSystem,
+        threadPaths,
+        scene.stem,
+      ),
+      backgroundFactConflictStore: createBackgroundFactConflictStore(
+        options.host.fileSystem,
+        paths,
+      ),
+      dialogueCorpus: createSceneDialogueStore(options.host.fileSystem, threadPaths),
       backgroundRecentExcerpt,
     }).run();
 
@@ -351,12 +359,24 @@ async function generateDraftForWorkspaceSceneWorkflow(
   return await runAndPersistDraft(inputs, options);
 }
 
+export interface GenerateDraftCollaborators {
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
+}
+
 export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
-  public constructor(private readonly dependencies: GenerateDraftUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+    private readonly collaborators: GenerateDraftCollaborators,
+  ) {}
 
   public async execute(request: GenerateDraftRequest): Promise<GenerateDraftResult> {
     return await generateDraftForWorkspaceSceneWorkflow(request.sceneUri, {
-      ...this.dependencies,
+      host: this.host,
+      ai: this.ai,
+      repositories: this.repositories,
+      ...this.collaborators,
       ...request,
     });
   }

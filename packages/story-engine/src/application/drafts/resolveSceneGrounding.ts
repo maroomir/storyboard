@@ -27,7 +27,7 @@ export async function resolveSceneGrounding(
     return { kind: 'resolved', scene };
   }
 
-  const gaps: ISceneGroundingGapRepository = options.sceneGroundingGapRepository;
+  const gaps: ISceneGroundingGapRepository = options.repositories.sceneGroundingGaps;
   const gap: SceneGroundingGap | undefined = await gaps.read(workspaceRoot, scene.stem);
   if (
     gap?.inputKey === computeSceneGroundingInputKey(scene, characterNames) &&
@@ -51,7 +51,7 @@ export async function resolveSceneGrounding(
   const merged: SceneGrounding = mergeSceneGrounding(existing, proposed);
 
   const approved: SceneGrounding | undefined =
-    options.configBridge.isSceneGroundingAutoApproveEnabled()
+    options.host.configBridge.isSceneGroundingAutoApproveEnabled()
       ? merged
       : await requestApproval(scene, merged, missingFields, options);
 
@@ -60,9 +60,9 @@ export async function resolveSceneGrounding(
   }
 
   try {
-    await options.sceneRepository.writeGrounding(sceneUri, approved);
+    await options.repositories.scenes.writeGrounding(sceneUri, approved);
   } catch (error) {
-    options.logger.warn(`씬 사실 시트를 저장하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`씬 사실 시트를 저장하지 못했습니다: ${String(error)}`);
   }
 
   const groundedScene: SceneFile = {
@@ -89,9 +89,9 @@ async function recordGroundingGap(
       : { inputKey: computeSceneGroundingInputKey(scene, characterNames), fields: stillMissing };
 
   try {
-    await options.sceneGroundingGapRepository.write(workspaceRoot, scene.stem, gap);
+    await options.repositories.sceneGroundingGaps.write(workspaceRoot, scene.stem, gap);
   } catch (error) {
-    options.logger.warn(`비어 있는 사실 시트 칸을 기록하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`비어 있는 사실 시트 칸을 기록하지 못했습니다: ${String(error)}`);
   }
 }
 
@@ -103,7 +103,7 @@ async function proposeGrounding(
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGrounding | undefined> {
   try {
-    return await options.aiGateway.createService(sceneUri).proposeSceneGrounding(
+    return await options.ai.gateway.createService(sceneUri).proposeSceneGrounding(
       {
         sceneBody: scene.body,
         missingFields,
@@ -111,12 +111,12 @@ async function proposeGrounding(
         knownGrounding: scene.frontmatter.grounding,
       },
       {
-        providerId: options.aiGateway.getTaskProvider('sceneGrounding'),
+        providerId: options.ai.gateway.getTaskProvider('sceneGrounding'),
         attribution: { primary: { kind: 'scene', id: scene.stem } },
       },
     );
   } catch (error) {
-    options.logger.warn(`씬 사실 시트를 제안하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`씬 사실 시트를 제안하지 못했습니다: ${String(error)}`);
     return undefined;
   }
 }

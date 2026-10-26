@@ -36,3 +36,12 @@ export interface ISceneGroundingGapRepository {
     gap: SceneGroundingGap | undefined,
   ): Promise<void>;
 }
+
+export interface ISceneBatchRepository {
+  listStoryboardScenes(): Promise<BatchSceneList>;
+}
+
+export type BatchSceneList = {
+  readonly projectCount: number;
+  readonly scenes: readonly StoryUri[];
+};

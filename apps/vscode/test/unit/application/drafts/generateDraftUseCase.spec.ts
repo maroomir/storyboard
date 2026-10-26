@@ -51,9 +51,10 @@ import {
   GenerateDraftUseCase,
   type GenerateDraftRequest,
   type GenerateDraftResult,
-  type GenerateDraftUseCaseDependencies,
+  type GenerateDraftServices,
   SceneGenerationPipelineCancelledError,
 } from "@storyboard/story-engine"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
@@ -231,32 +232,42 @@ function createGroundingGapRepository(): unknown {
   }
 }
 
-function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftUseCaseDependencies {
+function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftServices {
   return {
-    aiGateway: {
-      createService: () => aiServiceStub,
-      getTaskProvider: (task: string) => `provider:${task}`,
-      getTaskAiConfig: (task: string) => ({ providerId: `provider:${task}`, model: `model:${task}` })
-    },
-    configBridge: overrides.configBridge ?? createConfigBridge(),
-    draftRepository: overrides.draftRepository ?? createDraftRepository(),
-    fileSystem: overrides.fileSystem ?? { ...stubFileSystem, exists: uriExistsMock },
-    generator: "storyboard@0.0.0-test",
-    logger: overrides.logger ?? createLogger(),
-    postGenerationUpdates: overrides.postGenerationUpdates,
-    projectRepository: { read: vi.fn(async () => fakeProject) },
-    sceneCacheRepository: overrides.sceneCacheRepository ?? createSceneCacheRepository(),
-    workspaceLocator: {
-      folders: () => workspace.workspaceFolders ?? [],
-      folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
-    },
-    sceneRepository: overrides.sceneRepository ?? {
-      read: vi.fn(async () => fakeScene),
-      writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined),
-      writeBeats: overrides.writeBeats ?? vi.fn(async () => undefined)
-    },
-    sceneGroundingGapRepository: overrides.sceneGroundingGapRepository ?? createGroundingGapRepository()
-  } as never
+    host: createTestHost({
+      configBridge: overrides.configBridge ?? createConfigBridge(),
+      fileSystem: overrides.fileSystem ?? { ...stubFileSystem, exists: uriExistsMock },
+      generator: "storyboard@0.0.0-test",
+      logger: overrides.logger ?? createLogger(),
+      workspaceLocator: {
+        folders: () => workspace.workspaceFolders ?? [],
+        folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
+      }
+    } as never),
+    ai: createTestAi({
+      gateway: {
+        createService: () => aiServiceStub,
+        getTaskProvider: (task: string) => `provider:${task}`,
+        getTaskAiConfig: (task: string) => ({ providerId: `provider:${task}`, model: `model:${task}` })
+      } as never
+    }),
+    repositories: createTestRepositories({
+      drafts: overrides.draftRepository ?? createDraftRepository(),
+      project: { read: vi.fn(async () => fakeProject) },
+      sceneCache: overrides.sceneCacheRepository ?? createSceneCacheRepository(),
+      scenes: overrides.sceneRepository ?? {
+        read: vi.fn(async () => fakeScene),
+        writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined),
+        writeBeats: overrides.writeBeats ?? vi.fn(async () => undefined)
+      },
+      sceneGroundingGaps: overrides.sceneGroundingGapRepository ?? createGroundingGapRepository()
+    } as never),
+    postGenerationUpdates: overrides.postGenerationUpdates
+  }
+}
+
+function withFileSystem(dependencies: GenerateDraftServices, fileSystem: unknown): GenerateDraftServices {
+  return { ...dependencies, host: createTestHost({ ...dependencies.host, fileSystem: fileSystem as never }) }
 }
 
 const ourDraftBody = pipelineSuccessResult.draftBody
@@ -280,10 +291,12 @@ function createRequest(overrides: Partial<GenerateDraftRequest> = {}): GenerateD
 }
 
 async function execute(
-  dependencies: GenerateDraftUseCaseDependencies,
+  dependencies: GenerateDraftServices,
   request: GenerateDraftRequest
 ): Promise<GenerateDraftResult> {
-  return await new GenerateDraftUseCase(dependencies).execute({ ...request, sceneUri })
+  return await new GenerateDraftUseCase(dependencies.host, dependencies.ai, dependencies.repositories, {
+    postGenerationUpdates: dependencies.postGenerationUpdates
+  }).execute({ ...request, sceneUri })
 }
 
 describe("GenerateDraftUseCase", () => {
@@ -491,12 +504,9 @@ describe("GenerateDraftUseCase", () => {
     it("archives the previous draft through archiveExistingDraft when keep-draft-history is enabled", async () => {
       archiveExistingDraftMock.mockResolvedValueOnce("2026-01-01-00-00-rev-01.md")
       const fileSystem = { ...stubFileSystem, exists: uriExistsMock, marker: "fs" }
-      const dependencies = {
-        ...createDependencies({
+      const dependencies = withFileSystem(createDependencies({
           configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => true })
-        }),
-        fileSystem
-      } as never as GenerateDraftUseCaseDependencies
+        }), fileSystem)
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
@@ -517,15 +527,12 @@ describe("GenerateDraftUseCase", () => {
     })
 
     it("does not archive the previous draft when keep-draft-history is disabled and the draft is our own", async () => {
-      const dependencies = {
-        ...createDependencies({
+      const dependencies = withFileSystem(createDependencies({
           configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
           sceneCacheRepository: createSceneCacheRepository({
             read: vi.fn(async () => ({ inputHash: "sha256:0", bodyHash: ourDraftBodyHash }))
           })
-        }),
-        fileSystem: ourDraftFileSystem()
-      } as never as GenerateDraftUseCaseDependencies
+        }), ourDraftFileSystem())
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
@@ -548,15 +555,12 @@ describe("GenerateDraftUseCase", () => {
     })
 
     it("archives a draft whose body no longer matches the recorded hash", async () => {
-      const dependencies = {
-        ...createDependencies({
+      const dependencies = withFileSystem(createDependencies({
           configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
           sceneCacheRepository: createSceneCacheRepository({
             read: vi.fn(async () => ({ inputHash: "sha256:0", bodyHash: computeDraftBodyHash("다른 본문") }))
           })
-        }),
-        fileSystem: ourDraftFileSystem()
-      } as never as GenerateDraftUseCaseDependencies
+        }), ourDraftFileSystem())
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
@@ -597,7 +601,7 @@ describe("GenerateDraftUseCase", () => {
 
       await execute(dependencies, createRequest({ force: true }))
 
-      const lines = (dependencies as never as { logger: { info: ReturnType<typeof vi.fn> } }).logger.info.mock.calls.map(
+      const lines = (dependencies.host.logger as never as { info: ReturnType<typeof vi.fn> }).info.mock.calls.map(
         (call) => String(call[0])
       )
       expect(lines.some((line) => line.includes("대사 다듬기 3/5개 손봄, 1개는 화자가 겹쳐 뼈대 유지"))).toBe(true)
@@ -787,7 +791,7 @@ describe("GenerateDraftUseCase", () => {
       buildSceneContextMock.mockReset().mockResolvedValue(sceneContext({ scene: grounded }))
       const writeGrounding = vi.fn(async () => undefined)
       const dependencies = createDependencies({ writeGrounding })
-      dependencies.sceneRepository.read = vi.fn(async () => grounded) as never
+      dependencies.repositories.scenes.read = vi.fn(async () => grounded) as never
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
@@ -844,14 +848,14 @@ describe("GenerateDraftUseCase", () => {
 
     function createBeatsDependencies(
       overrides: DependencyOverrides & { readonly scene?: typeof beatScene } = {}
-    ): GenerateDraftUseCaseDependencies {
+    ): GenerateDraftServices {
       const scene = overrides.scene ?? beatScene
       buildSceneContextMock.mockReset().mockResolvedValue(sceneContext({ scene }))
       const dependencies = createDependencies({
         configBridge: createConfigBridge({ isAutoBeatsEnabled: () => true }),
         ...overrides
       })
-      dependencies.sceneRepository.read = vi.fn(async () => scene) as never
+      dependencies.repositories.scenes.read = vi.fn(async () => scene) as never
       return dependencies
     }
 

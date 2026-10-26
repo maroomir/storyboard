@@ -1,3 +1,4 @@
+import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { SceneFileNameParts, StoryboardProjectPaths, StoryState, StoryUri } from '@storyboard/story-model';
 import {
   draftPath,
@@ -8,16 +9,11 @@ import {
   readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
-import type { GenerateDraftUseCaseDependencies, GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from './sceneGenerationInputs';
 import { recordStoryStateFromDraft } from './updateStoryState';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
-
-export type GenerateStoryStateUseCaseDependencies = Omit<
-  GenerateDraftUseCaseDependencies,
-  'postGenerationUpdates'
->;
 
 export interface GenerateStoryStateRequest {
   readonly workspaceRoot: StoryUri;
@@ -47,11 +43,15 @@ export interface ScenesWithDrafts {
 }
 
 export class GenerateStoryStateUseCase {
-  public constructor(private readonly deps: GenerateStoryStateUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     const scenes: ScenesWithDrafts = await this.listScenesWithDrafts(request);
-    const aiService: StoryboardAiService = this.deps.aiGateway.createService(request.workspaceRoot);
+    const aiService: StoryboardAiService = this.ai.gateway.createService(request.workspaceRoot);
     const recorded: string[] = [];
     const kept: string[] = [];
     const failures: { stem: string; message: string }[] = [];
@@ -73,7 +73,7 @@ export class GenerateStoryStateUseCase {
         const outcome: 'recorded' | 'kept' = await this.recordScene(request, scene, aiService);
         (outcome === 'kept' ? kept : recorded).push(scene.stem);
       } catch (error) {
-        this.deps.logger.error(`Failed to record the story state of ${scene.stem}`, error);
+        this.host.logger.error(`Failed to record the story state of ${scene.stem}`, error);
         failures.push({ stem: scene.stem, message: String(error) });
       }
     }
@@ -84,10 +84,12 @@ export class GenerateStoryStateUseCase {
   private async recordScene(
     request: GenerateStoryStateRequest,
     scene: { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri },
-    aiService: ReturnType<GenerateStoryStateUseCaseDependencies['aiGateway']['createService']>,
+    aiService: StoryboardAiService,
   ): Promise<'recorded' | 'kept'> {
     const options: GenerateDraftWorkflowOptions = {
-      ...this.deps,
+      host: this.host,
+      ai: this.ai,
+      repositories: this.repositories,
       sceneUri: scene.sceneUri,
       force: true,
       skipSceneGrounding: true,
@@ -105,7 +107,7 @@ export class GenerateStoryStateUseCase {
 
     const { inputs } = loaded;
     if (request.force !== true) {
-      const state: StoryState = await readStoryState(inputs.threadPaths.storyState, this.deps.fileSystem);
+      const state: StoryState = await readStoryState(inputs.threadPaths.storyState, this.host.fileSystem);
       if (
         state.sceneInputHashes.has(scene.order) ||
         storyStateSceneOrders(state).includes(scene.order)
@@ -115,7 +117,7 @@ export class GenerateStoryStateUseCase {
     }
 
     const draftText: string = new TextDecoder().decode(
-      await this.deps.fileSystem.readFile(draftPath(request.workspaceRoot, scene.stem)),
+      await this.host.fileSystem.readFile(draftPath(request.workspaceRoot, scene.stem)),
     );
     await recordStoryStateFromDraft(inputs, options, aiService, extractDraftBody(draftText));
 
@@ -124,7 +126,7 @@ export class GenerateStoryStateUseCase {
 
   private async listScenesWithDrafts(request: GenerateStoryStateRequest): Promise<ScenesWithDrafts> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const entries: never[] | FileSystemDirectoryEntry[] = await this.deps.fileSystem.readDirectory(paths.sceneDirectory).catch(() => []);
+    const entries: never[] | FileSystemDirectoryEntry[] = await this.host.fileSystem.readDirectory(paths.sceneDirectory).catch(() => []);
     const requested: readonly number[] | undefined = request.sceneOrders;
     const targets: { stem: string; order: number; sceneUri: StoryUri }[] = [];
     const withoutDraft: string[] = [];
@@ -136,7 +138,7 @@ export class GenerateStoryStateUseCase {
       }
 
       const stem: string = fileName.slice(0, -'.card'.length);
-      if (!(await this.deps.fileSystem.exists(draftPath(request.workspaceRoot, stem)))) {
+      if (!(await this.host.fileSystem.exists(draftPath(request.workspaceRoot, stem)))) {
         withoutDraft.push(stem);
         continue;
       }

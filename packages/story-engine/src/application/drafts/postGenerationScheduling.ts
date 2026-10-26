@@ -36,9 +36,9 @@ export function schedulePostGenerationUpdates(
     draftBody: pipelineResult.draftBody,
     detectedCharacterCards,
     aiService,
-    fileSystem: options.fileSystem,
+    fileSystem: options.host.fileSystem,
     resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
-    logger: options.logger,
+    logger: options.host.logger,
     onComplete: options.onTraitsUpdateComplete,
   });
 
@@ -48,10 +48,10 @@ export function schedulePostGenerationUpdates(
     draftBody: pipelineResult.draftBody,
     detectedCharacterCards,
     aiService,
-    fileSystem: options.fileSystem,
-    ensureDirectory: () => ensureBibleCacheDirectory(options.fileSystem, paths),
+    fileSystem: options.host.fileSystem,
+    ensureDirectory: () => ensureBibleCacheDirectory(options.host.fileSystem, paths),
     resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
-    logger: options.logger,
+    logger: options.host.logger,
   });
 
   updates.scheduleCardCandidates({
@@ -61,11 +61,11 @@ export function schedulePostGenerationUpdates(
     detectedCharacterCards,
     characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
     aiService,
-    verify: options.configBridge.isVerifyCardCandidatesEnabled(),
-    fileSystem: options.fileSystem,
-    ensureDirectory: () => ensureCardCacheDirectory(options.fileSystem, paths),
+    verify: options.host.configBridge.isVerifyCardCandidatesEnabled(),
+    fileSystem: options.host.fileSystem,
+    ensureDirectory: () => ensureCardCacheDirectory(options.host.fileSystem, paths),
     resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),
-    logger: options.logger,
+    logger: options.host.logger,
   });
 
   if (context.background) {
@@ -73,10 +73,10 @@ export function schedulePostGenerationUpdates(
       queueKey: `${workspaceFolder.uri.toString()}#background`,
       backgroundId: context.background.id,
       detectedCharacterCards,
-      fileSystem: options.fileSystem,
+      fileSystem: options.host.fileSystem,
       resolveBackgroundCardUri: (backgroundId) =>
         backgroundCardPath(workspaceFolder.uri, backgroundId),
-      logger: options.logger,
+      logger: options.host.logger,
     });
   }
 }

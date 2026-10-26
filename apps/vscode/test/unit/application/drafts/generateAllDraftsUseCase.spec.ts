@@ -5,6 +5,7 @@ import {
   GenerateAllDraftsUseCase,
   type ISceneBatchRepository
 } from "@storyboard/story-engine"
+import { createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const firstScene = vscode.Uri.file("/workspace/.storyboard/scene/01-opening.txt")
 const secondScene = vscode.Uri.file("/workspace/.storyboard/scene/02-conflict.txt")
@@ -22,12 +23,7 @@ describe("GenerateAllDraftsUseCase", () => {
   it("reports when no Storyboard project is available", async () => {
     const generateDraftUseCase = { execute: vi.fn() }
 
-    const result = await new GenerateAllDraftsUseCase({
-      generateDraftUseCase: generateDraftUseCase as never,
-      logger: logger(),
-      reviseAfterGenerateGate: {} as never,
-      sceneRepository: repository(0, [])
-    }).execute()
+    const result = await new GenerateAllDraftsUseCase(createTestHost({ logger: logger() }), createTestRepositories({ sceneBatches: repository(0, []) }), { generateDraftUseCase: generateDraftUseCase as never, reviseAfterGenerateGate: {} as never }).execute()
 
     expect(result).toEqual({ kind: "no_projects", ok: false })
     expect(generateDraftUseCase.execute).not.toHaveBeenCalled()
@@ -44,12 +40,7 @@ describe("GenerateAllDraftsUseCase", () => {
     const reviseAfterGenerateGate = { maybeRunAfterGenerate: vi.fn(async () => undefined) }
     const currentLogger = logger() as { error: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> }
 
-    const result = await new GenerateAllDraftsUseCase({
-      generateDraftUseCase: generateDraftUseCase as never,
-      logger: currentLogger as never,
-      reviseAfterGenerateGate: reviseAfterGenerateGate as never,
-      sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
-    }).execute()
+    const result = await new GenerateAllDraftsUseCase(createTestHost({ logger: currentLogger as never }), createTestRepositories({ sceneBatches: repository(1, [firstScene, secondScene, thirdScene]) }), { generateDraftUseCase: generateDraftUseCase as never, reviseAfterGenerateGate: reviseAfterGenerateGate as never }).execute()
 
     expect(currentLogger.warn).toHaveBeenCalledWith(
       "01-opening.txt: 1구간: 목표 3,000자에 크게 못 미칩니다"
@@ -77,12 +68,7 @@ describe("GenerateAllDraftsUseCase", () => {
       execute: vi.fn(async () => ({ kind: "cancelled", ok: false }))
     }
 
-    const result = await new GenerateAllDraftsUseCase({
-      generateDraftUseCase: generateDraftUseCase as never,
-      logger: logger(),
-      reviseAfterGenerateGate: {} as never,
-      sceneRepository: repository(1, [firstScene, secondScene])
-    }).execute()
+    const result = await new GenerateAllDraftsUseCase(createTestHost({ logger: logger() }), createTestRepositories({ sceneBatches: repository(1, [firstScene, secondScene]) }), { generateDraftUseCase: generateDraftUseCase as never, reviseAfterGenerateGate: {} as never }).execute()
 
     expect(result).toEqual({
       kind: "completed",
@@ -107,12 +93,7 @@ describe("GenerateAllDraftsUseCase", () => {
     }
     const currentLogger = logger() as { error: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> }
 
-    const result = await new GenerateAllDraftsUseCase({
-      generateDraftUseCase: generateDraftUseCase as never,
-      logger: currentLogger as never,
-      reviseAfterGenerateGate: {} as never,
-      sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
-    }).execute()
+    const result = await new GenerateAllDraftsUseCase(createTestHost({ logger: currentLogger as never }), createTestRepositories({ sceneBatches: repository(1, [firstScene, secondScene, thirdScene]) }), { generateDraftUseCase: generateDraftUseCase as never, reviseAfterGenerateGate: {} as never }).execute()
 
     expect(generateDraftUseCase.execute).toHaveBeenCalledTimes(2)
     expect(currentLogger.warn).toHaveBeenCalledWith("02-conflict.txt: 한도에 닿았습니다.")
@@ -140,12 +121,7 @@ describe("GenerateAllDraftsUseCase", () => {
       })
     }
 
-    const result = await new GenerateAllDraftsUseCase({
-      generateDraftUseCase: generateDraftUseCase as never,
-      logger: logger(),
-      reviseAfterGenerateGate: {} as never,
-      sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
-    }).execute({ shouldPause: () => isPauseRequested })
+    const result = await new GenerateAllDraftsUseCase(createTestHost({ logger: logger() }), createTestRepositories({ sceneBatches: repository(1, [firstScene, secondScene, thirdScene]) }), { generateDraftUseCase: generateDraftUseCase as never, reviseAfterGenerateGate: {} as never }).execute({ shouldPause: () => isPauseRequested })
 
     expect(generateDraftUseCase.execute).toHaveBeenCalledOnce()
     expect(result).toEqual({

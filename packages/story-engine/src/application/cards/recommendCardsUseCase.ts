@@ -1,25 +1,20 @@
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 import type { BibleSubjectKind, StoryUri } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   buildCardRecommendations,
   type CardRecommendationAiService,
-  type RecommendationSource,
   type RecommendedCard,
 } from '#engine/ai/cardRecommendationBuilder';
-
-export interface ICardRecommendationRepository {
-  load(workspaceRoot: StoryUri, category: BibleSubjectKind): Promise<CardRecommendationInput>;
-}
+import type { CardRecommendationInput } from '#engine/application/cards/cardRepositories';
 
 export interface ICardRecommendationAiGateway {
   createService(workspaceRoot: StoryUri): CardRecommendationAiService;
 }
-
-export type CardRecommendationInput = {
-  readonly existingNames: readonly string[];
-  readonly sources: readonly RecommendationSource[];
-};
 
 export type RecommendCardsRequest = {
   readonly category: BibleSubjectKind;
@@ -37,17 +32,15 @@ export type RecommendCardsResult =
       readonly recommendations: readonly RecommendedCard[];
     };
 
-export interface RecommendCardsUseCaseDependencies {
-  readonly aiGateway: ICardRecommendationAiGateway;
-  readonly logger: IStoryboardLogger;
-  readonly repository: ICardRecommendationRepository;
-}
-
 export class RecommendCardsUseCase implements IUseCase<
   RecommendCardsRequest,
   RecommendCardsResult
 > {
-  public constructor(private readonly deps: RecommendCardsUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: RecommendCardsRequest): Promise<RecommendCardsResult> {
     if (request.shouldCancel?.()) {
@@ -55,7 +48,7 @@ export class RecommendCardsUseCase implements IUseCase<
     }
 
     try {
-      const input: CardRecommendationInput = await this.deps.repository.load(
+      const input: CardRecommendationInput = await this.repositories.cardRecommendations.load(
         request.workspaceRoot,
         request.category,
       );
@@ -68,7 +61,7 @@ export class RecommendCardsUseCase implements IUseCase<
         category: request.category,
         sources: input.sources,
         existingNames: input.existingNames,
-        aiService: this.deps.aiGateway.createService(request.workspaceRoot),
+        aiService: this.ai.gateway.createService(request.workspaceRoot),
       });
 
       if (request.shouldCancel?.()) {
@@ -77,7 +70,7 @@ export class RecommendCardsUseCase implements IUseCase<
 
       return { kind: 'recommended', ok: true, recommendations };
     } catch (error) {
-      this.deps.logger.error('Card recommendation failed', error);
+      this.host.logger.error('Card recommendation failed', error);
 
       return {
         kind: 'failed',

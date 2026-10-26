@@ -5,6 +5,7 @@ import {
   type IOutlineRepository
 } from "@storyboard/story-engine"
 import { parseProjectJson } from "@storyboard/story-engine"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 function project(): ReturnType<typeof parseProjectJson> {
   return parseProjectJson(
@@ -43,11 +44,7 @@ describe("GenerateOutlineUseCase", () => {
       )
     }
     const gateway = { createService: vi.fn() }
-    const result = await new GenerateOutlineUseCase({
-      aiGateway: gateway as never,
-      repository,
-      logger: { error: () => undefined } as never
-    }).execute({ workspaceRoot: {} as never, overwrite: false })
+    const result = await new GenerateOutlineUseCase(createTestHost({ logger: { error: () => undefined } as never }), createTestAi({ gateway: gateway as never }), createTestRepositories({ outline: repository })).execute({ workspaceRoot: {} as never, overwrite: false })
     expect(result).toEqual(expect.objectContaining({ kind: "missing_contract", ok: false }))
     expect(gateway.createService).not.toHaveBeenCalled()
   })
@@ -64,11 +61,7 @@ describe("GenerateOutlineUseCase", () => {
       generateOutlineSynopsis: vi.fn(async () => ({})),
       generateChapterPlan: vi.fn(async () => ({}))
     }
-    const result = await new GenerateOutlineUseCase({
-      aiGateway: { createService: () => service } as never,
-      repository,
-      logger: { error: () => undefined } as never
-    }).execute({ workspaceRoot: {} as never, overwrite: false })
+    const result = await new GenerateOutlineUseCase(createTestHost({ logger: { error: () => undefined } as never }), createTestAi({ gateway: { createService: () => service } as never }), createTestRepositories({ outline: repository })).execute({ workspaceRoot: {} as never, overwrite: false })
     expect(result).toEqual(expect.objectContaining({ kind: "generated", ok: true }))
     expect(repository.save).toHaveBeenCalledOnce()
   })
@@ -91,11 +84,7 @@ describe("GenerateOutlineUseCase", () => {
         acts: [{ title: "1막", chapters: [{ title: "1장", scenes: [] }] }]
       }))
     }
-    const result = await new GenerateOutlineUseCase({
-      aiGateway: { createService: () => service } as never,
-      repository,
-      logger: { error: () => undefined } as never
-    }).execute({ workspaceRoot: {} as never, overwrite: false })
+    const result = await new GenerateOutlineUseCase(createTestHost({ logger: { error: () => undefined } as never }), createTestAi({ gateway: { createService: () => service } as never }), createTestRepositories({ outline: repository })).execute({ workspaceRoot: {} as never, overwrite: false })
     expect(result).toEqual({
       kind: "failed",
       ok: false,

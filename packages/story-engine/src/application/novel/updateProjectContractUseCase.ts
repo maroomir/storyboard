@@ -1,3 +1,4 @@
+import type { HostAdapters } from '#engine/application/engineServices';
 import {
   getStoryboardProjectPaths,
   type NarratorCard,
@@ -7,8 +8,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 import { writeNarratorCardsIfMissing } from '#engine/persistence/projectInitializer';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
@@ -28,11 +27,6 @@ export type UpdateProjectContractResult =
     }
   | UseCaseFailure;
 
-export interface UpdateProjectContractUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-}
-
 export function mergeProjectSetting(
   current: ProjectSetting | undefined,
   patch: Partial<ProjectSetting>,
@@ -51,16 +45,16 @@ export class UpdateProjectContractUseCase implements IUseCase<
   UpdateProjectContractRequest,
   UpdateProjectContractResult
 > {
-  public constructor(private readonly deps: UpdateProjectContractUseCaseDependencies) {}
+  public constructor(private readonly host: HostAdapters) {}
 
   public async execute(
     request: UpdateProjectContractRequest,
   ): Promise<UpdateProjectContractResult> {
     return await runUseCase<UpdateProjectContractResult>(
-      this.deps.logger,
+      this.host.logger,
       'Update project contract failed',
       async () => {
-        const { fileSystem } = this.deps;
+        const { fileSystem } = this.host;
         const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
         const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
         const setting: ProjectSetting = mergeProjectSetting(project.setting, request.setting);

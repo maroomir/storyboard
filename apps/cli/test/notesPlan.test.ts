@@ -39,6 +39,7 @@ import {
   parseJsonObject,
   readNoteExtractionResponse,
 } from '@storyboard/story-model';
+import { createTestAi, createTestHost, createTestRepositories } from '@storyboard/story-engine/testing';
 
 function note(id: string, body = '본문', origin: NoteDocument['origin'] = 'tree'): NoteDocument {
   return { id, title: id.replace(/\.md$/, ''), path: [], body, origin };
@@ -1140,24 +1141,19 @@ describe('PlanNoteAbsorbUseCase', () => {
           : (consolidation as NoteConsolidationResult);
       },
     };
-    const useCase = new PlanNoteAbsorbUseCase({
-      aiGateway: { createService: () => aiService } as unknown as AiGateway,
-      logger: {
+    const useCase = new PlanNoteAbsorbUseCase(createTestHost({ logger: {
         info: () => undefined,
         warn: (message: string) => warnings.push(message),
         error: () => undefined,
-      } as unknown as IStoryboardLogger,
-      storyRepository: {
+      } as unknown as IStoryboardLogger }), createTestAi({ gateway: { createService: () => aiService } as unknown as AiGateway }), createTestRepositories({ storyFeatures: {
         load: async () => ({ cards: [], scenes: [], project: { editor: { scenePrefixDigits: 2 } } }),
-      } as unknown as IStoryFeatureRepository,
-      noteRepository: {
+      } as unknown as IStoryFeatureRepository, noteAbsorb: {
         loadCandidates: async () => ({ kind: 'none' }),
         savePlan: async () => undefined,
         saveExtractionResponses: async (_root: unknown, responses: NoteExtractionResponse[]) => {
           savedResponses.push(responses);
         },
-      } as unknown as INoteAbsorbRepository,
-    });
+      } as unknown as INoteAbsorbRepository }));
 
     return { useCase, savedResponses, warnings, consolidationRequests, knownCardRequests };
   }

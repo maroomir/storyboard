@@ -8,19 +8,6 @@ import {
   type ChapterSummary,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type {
-  IManuscriptAssemblyRepository,
-  ManuscriptAssemblySource,
-} from '#engine/application/manuscript/assembleManuscriptUseCase';
-import type {
-  IManuscriptExportRepository,
-  ManuscriptExportSource,
-} from '#engine/application/manuscript/exportManuscriptUseCase';
-import type {
-  IManuscriptReviewRepository,
-  ManuscriptReviewSource,
-} from '#engine/application/manuscript/reviewManuscriptUseCase';
-import type { IChapterSummaryRepository } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
   AssembledManuscript,
@@ -29,6 +16,15 @@ import type {
 } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { readProjectJson } from '#engine/persistence/projectJson';
+import type {
+  IChapterSummaryRepository,
+  IManuscriptAssemblyRepository,
+  IManuscriptExportRepository,
+  IManuscriptReviewRepository,
+  ManuscriptAssemblySource,
+  ManuscriptExportSource,
+  ManuscriptReviewSource,
+} from '#engine/application/manuscript/manuscriptRepositories';
 
 export const manuscriptReviewFileName: string = 'REVIEW.md';
 

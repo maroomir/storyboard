@@ -1,6 +1,5 @@
-import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type { StoryUri, ProjectFormat } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import {
   resolveMinimumDraftLength,
@@ -39,13 +38,11 @@ export type CondenseDraftResult =
     }
   | { readonly kind: 'failed'; readonly ok: false; readonly message: string };
 
-export interface CondenseDraftUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly logger: IStoryboardLogger;
-}
-
 export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, CondenseDraftResult> {
-  public constructor(private readonly deps: CondenseDraftUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+  ) {}
 
   public async execute(request: CondenseDraftRequest): Promise<CondenseDraftResult> {
     const lengthPolicy: DraftCandidateLengthPolicy = {
@@ -54,10 +51,10 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
     const minimumLength: number = resolveMinimumDraftLength(request.body.length, lengthPolicy);
 
     return await runUseCase<CondenseDraftResult>(
-      this.deps.logger,
+      this.host.logger,
       'Condense draft failed',
       async () => {
-        const text: string = await this.deps.aiGateway
+        const text: string = await this.ai.gateway
           .createService(request.workspaceRoot)
           .condenseDraft(
             {
@@ -69,7 +66,7 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
               characterCards: request.characterCards,
             },
             {
-              providerId: this.deps.aiGateway.getTaskProvider('draftRevision'),
+              providerId: this.ai.gateway.getTaskProvider('draftRevision'),
               attribution: { primary: { kind: 'scene', id: request.sceneStem } },
             },
           );

@@ -1,3 +1,8 @@
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 import {
   NoteCardConsolidationPrompt,
   NoteExtractionPrompt,
@@ -36,19 +41,13 @@ import type {
   NoteConsolidationOutcome,
 } from '@storyboard/story-model';
 
-import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type {
-  IStoryFeatureRepository,
-  StoryFeatureSource,
-} from '#engine/application/story/storyFeatureTypes';
+import type { StoryFeatureSource } from '#engine/application/story/storyFeatureTypes';
 import {
   failedResult,
   runUseCase,
   type IUseCase,
   type UseCaseFailure,
 } from '#engine/application/useCase';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 
 export interface NoteAbsorbEstimate extends NoteAbsorbWorkload {
   readonly providerId: AiProviderId;
@@ -64,13 +63,6 @@ export interface PlanNoteAbsorbRequest {
 export type PlanNoteAbsorbResult =
   | { readonly ok: true; readonly plan: NoteAbsorbPlan }
   | UseCaseFailure;
-
-export interface PlanNoteAbsorbUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly logger: IStoryboardLogger;
-  readonly storyRepository: IStoryFeatureRepository;
-  readonly noteRepository: INoteAbsorbRepository;
-}
 
 function toKnownCard(card: StoryboardCard): NoteExtractionKnownCard {
   return {
@@ -111,10 +103,14 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult
 > {
-  public constructor(private readonly deps: PlanNoteAbsorbUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public estimate(bundle: NoteBundle): NoteAbsorbEstimate {
-    const { providerId, model } = this.deps.aiGateway.getTaskAiConfig('noteExtraction');
+    const { providerId, model } = this.ai.gateway.getTaskAiConfig('noteExtraction');
     const workload: NoteAbsorbWorkload = measureNoteAbsorbWorkload(bundle.notes, {
       extractionMaxTokens: NoteExtractionPrompt.config.maxTokens,
       synthesisMaxTokens: NoteSynthesisPrompt.config.maxTokens,
@@ -137,11 +133,11 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
   public async execute(request: PlanNoteAbsorbRequest): Promise<PlanNoteAbsorbResult> {
     const { workspaceRoot, bundle } = request;
 
-    return await runUseCase(this.deps.logger, '노트를 정리하지 못했습니다.', async () => {
-      await this.deps.noteRepository.loadCandidates(workspaceRoot);
+    return await runUseCase(this.host.logger, '노트를 정리하지 못했습니다.', async () => {
+      await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
 
-      const source: StoryFeatureSource = await this.deps.storyRepository.load(workspaceRoot);
-      const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+      const source: StoryFeatureSource = await this.repositories.storyFeatures.load(workspaceRoot);
+      const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
       const knownCards: NoteExtractionKnownCard[] = source.cards.map(toKnownCard);
       const chunks: NoteDocument[][] = groupNotesIntoChunks(bundle.notes);
       const extractions: NoteExtraction[] = [];
@@ -150,7 +146,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
 
       for (const [index, chunk] of chunks.entries()) {
         const position: string = `${index + 1}/${chunks.length}`;
-        this.deps.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
+        this.host.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
 
         const extraction: NoteExtractionResult = await aiService.extractNotes(
           chunk,
@@ -166,12 +162,12 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
 
         if (extraction.failure !== undefined) {
           const warning: string = describeExtractionFailure(extraction.failure, chunk, position);
-          this.deps.logger.warn(warning);
+          this.host.logger.warn(warning);
           failureWarnings.push(warning);
         }
       }
 
-      await this.deps.noteRepository.saveExtractionResponses(workspaceRoot, responses);
+      await this.repositories.noteAbsorb.saveExtractionResponses(workspaceRoot, responses);
 
       const responsesHint: string = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
 
@@ -218,7 +214,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
           ? plan
           : { ...plan, warnings: [...leadingWarnings, ...plan.warnings] };
 
-      await this.deps.noteRepository.savePlan(workspaceRoot, checkedPlan);
+      await this.repositories.noteAbsorb.savePlan(workspaceRoot, checkedPlan);
 
       return { ok: true as const, plan: checkedPlan };
     });
@@ -251,7 +247,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     const requests: NoteConsolidationTarget[][] = groupNoteConsolidationTargets(targets);
     const answers: NoteConsolidatedLists[] = [];
     const warnings: string[] = [];
-    this.deps.logger.info(
+    this.host.logger.info(
       `카드 ${targets.length}장의 목록과 별칭을 요청 ${requests.length}개로 정리하는 중입니다.`,
     );
 
@@ -276,7 +272,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
 
     const consolidated: NoteConsolidationOutcome = applyNoteConsolidation(plan, targets, answers);
     warnings.push(...consolidated.warnings);
-    warnings.forEach((warning) => this.deps.logger.warn(warning));
+    warnings.forEach((warning) => this.host.logger.warn(warning));
 
     return { plan: consolidated.plan, warnings };
   }

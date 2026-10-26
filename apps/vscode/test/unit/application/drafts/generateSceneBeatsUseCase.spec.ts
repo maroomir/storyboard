@@ -10,6 +10,7 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
 }))
 import { GenerateSceneBeatsUseCase } from "@storyboard/story-engine"
 import { planSceneBeatCount, SceneParseError } from "@storyboard/story-model"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const sceneUri = vscode.Uri.file("/workspace/scene/01-intro.card")
 const workspaceRoot = vscode.Uri.file("/workspace")
@@ -49,20 +50,14 @@ function createUseCase(sceneFile: unknown): {
   return {
     proposeSceneBeats,
     writeBeats,
-    useCase: new GenerateSceneBeatsUseCase({
-      aiGateway: {
-        createService: () => ({ proposeSceneBeats }),
-        getTaskProvider: (task: string) => `provider:${task}`
-      } as never,
-      configBridge: {
+    useCase: new GenerateSceneBeatsUseCase(createTestHost({ configBridge: {
         isAutoBeatsEnabled: () => true,
         getCharsPerBeat: () => 1500,
         getMinBeats: () => 2
-      } as never,
-      fileSystem: stubFileSystem,
-      logger: { error: vi.fn(), warn: vi.fn() } as never,
-      sceneRepository: { read, writeBeats } as never
-    })
+      } as never, fileSystem: stubFileSystem, logger: { error: vi.fn(), warn: vi.fn() } as never }), createTestAi({ gateway: {
+        createService: () => ({ proposeSceneBeats }),
+        getTaskProvider: (task: string) => `provider:${task}`
+      } as never }), createTestRepositories({ scenes: { read, writeBeats } as never }))
   }
 }
 

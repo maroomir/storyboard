@@ -18,6 +18,7 @@ import {
   resetNovelPipelinePlan,
   resolveNovelPipelinePlan,
 } from "@storyboard/story-engine"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const generatedResult = {
   ok: true,
@@ -91,7 +92,7 @@ vi.mock("@storyboard/story-ai", async (importOriginal) => ({
 
 import {
   NovelPipeline,
-  type NovelPipelineDependencies,
+  type NovelPipelineServices,
   type NovelPipelineRunOptions
 } from "@storyboard/story-engine"
 
@@ -135,7 +136,7 @@ const project: StoryboardProject = {
 const workspaceUri = vscode.Uri.file("/ws/project")
 
 interface PipelineHarness {
-  readonly dependencies: NovelPipelineDependencies
+  readonly dependencies: NovelPipelineServices
   readonly options: NovelPipelineRunOptions
   readonly progressStages: NovelStageName[]
   readonly progressMessages: { stage: NovelStageName; message: string }[]
@@ -149,8 +150,14 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
   const persistedStates: NovelRunState[] = []
   const approvals: { kind: string; info: string }[] = []
 
-  const dependencies: NovelPipelineDependencies = {
-    aiGateway: {
+  const dependencies: NovelPipelineServices = {
+    host: createTestHost({
+      configBridge: { inspectScenePrefixDigits: (): undefined => undefined } as never,
+      logger: { error: () => undefined, info: () => undefined } as never,
+      fileSystem: stubFileSystem
+    }),
+    ai: createTestAi({
+      gateway: {
       createService: () => ({
         generateOutlineSynopsis: async (): Promise<unknown> => generateOutlineSynopsisMock(),
         generateChapterPlan: async (): Promise<unknown> => ({ version: "1.0.0", acts: [] }),
@@ -161,18 +168,15 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       }),
       getTaskProvider: () => "mock"
     } as never,
-    aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
-    cardWriter: {
+      providerRegistry: { getTaskProvider: () => "mock" } as never,
+      usageSink: { record: async (): Promise<void> => undefined }
+    }),
+    repositories: createTestRepositories({
+      cardWriter: {
       exists: async (): Promise<boolean> => false,
       write: async (): Promise<unknown> => workspaceUri
     } as never,
-    assembleManuscriptUseCase: {
-      execute: async (): Promise<unknown> => ({ ok: true, kind: "assembled" })
-    } as never,
-    configBridge: { inspectScenePrefixDigits: (): undefined => undefined } as never,
-    generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
-    logger: { error: () => undefined, info: () => undefined } as never,
-    novelReviewRepository: {
+      novelReviews: {
       loadReviewSource: async (): Promise<unknown> => ({
         draftsByOrder: new Map([
           [1, { stem: "01-s1", body: "씬1 본문" }],
@@ -186,14 +190,14 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
         saveReviewMock(markdown)
       }
     } as never,
-    novelRunStateRepository: {
+      novelRunState: {
       readExisting: async (): Promise<undefined> => undefined,
       loadProject: async (): Promise<unknown> => project,
       save: async (_root: unknown, state: NovelRunState): Promise<void> => {
         persistedStates.push(parseNovelRunState(serializeNovelRunState(state)))
       }
     } as never,
-    outlineRepository: {
+      novelOutline: {
       hasChapterPlan: async (): Promise<boolean> => false,
       loadCharacterBriefs: async (): Promise<unknown[]> => [{ id: "hero", name: "주인공" }],
       loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
@@ -201,20 +205,25 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       saveSynopsis: async (): Promise<void> => saveSynopsisMock(),
       save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, "outline")
     } as never,
-    reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
-    sceneSeedRepository: {
+      sceneSeeds: {
       saveSeeds: async (): Promise<void> => undefined,
       listSceneStemsByOrder: async (): Promise<ReadonlyMap<number, string>> => new Map(),
       saveMissingSeeds: async (): Promise<number> => 0
+    } as never
+    }),
+    collaborators: {
+      assembleManuscriptUseCase: {
+      execute: async (): Promise<unknown> => ({ ok: true, kind: "assembled" })
     } as never,
-    summarizeChaptersUseCase: {
+      generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
+      reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
+      summarizeChaptersUseCase: {
       execute: async (...args: unknown[]): Promise<unknown> => {
         summarizeChaptersMock(...args)
         return { ok: true, kind: "summarized" }
       }
-    } as never,
-    usageSink: { record: async (): Promise<void> => undefined },
-    fileSystem: stubFileSystem
+    } as never
+    }
   }
 
   const options: NovelPipelineRunOptions = {
@@ -282,7 +291,7 @@ describe("NovelPipeline", () => {
   it("emits stage progress in pipeline order and completes", async () => {
     const harness = createHarness()
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
 
@@ -295,7 +304,7 @@ describe("NovelPipeline", () => {
   it("emits one chapters progress event per chapter group", async () => {
     const harness = createHarness()
 
-    await new NovelPipeline(harness.dependencies).run(harness.options)
+    await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     const chapterMessages = harness.progressMessages.filter((entry) => entry.stage === "chapters")
     expect(chapterMessages).toHaveLength(2)
@@ -306,7 +315,7 @@ describe("NovelPipeline", () => {
   it("refreshes the rolling summary after each chapter, not only at the end", async () => {
     const harness = createHarness()
 
-    await new NovelPipeline(harness.dependencies).run(harness.options)
+    await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     const chapterIndexes = summarizeChaptersMock.mock.calls
       .map((call) => (call[0] as { chapterIndex?: number }).chapterIndex)
@@ -319,7 +328,7 @@ describe("NovelPipeline", () => {
   it("drafts and revises every scene of every chapter in order", async () => {
     const harness = createHarness()
 
-    await new NovelPipeline(harness.dependencies).run(harness.options)
+    await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     const draftedStems = generateDraftMock.mock.calls.map((call) => {
       const { sceneUri } = call[0] as { readonly sceneUri: vscode.Uri }
@@ -333,7 +342,7 @@ describe("NovelPipeline", () => {
   it("persists status done and reports completion message on success", async () => {
     const harness = createHarness()
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     const finalState = harness.persistedStates.at(-1)
@@ -354,7 +363,7 @@ describe("NovelPipeline", () => {
     }
     const harness = createHarness({ resumeState })
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     expect(harness.progressStages).toEqual(["assemble", "review", "summaries"])
@@ -375,7 +384,7 @@ describe("NovelPipeline", () => {
       }
     }) as NovelPipelineRunOptions["onProgress"]
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("cancelled")
     expect(result.message).toContain("취소")
@@ -389,7 +398,7 @@ describe("NovelPipeline", () => {
       shouldPause: (): boolean => generateDraftMock.mock.calls.length >= 1
     })
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("paused")
     expect(generateDraftMock).toHaveBeenCalledTimes(1)
@@ -402,7 +411,7 @@ describe("NovelPipeline", () => {
       shouldPause: (): boolean => generateDraftMock.mock.calls.length >= 2
     })
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("paused")
     expect(generateDraftMock).toHaveBeenCalledTimes(2)
@@ -415,7 +424,7 @@ describe("NovelPipeline", () => {
       requestApproval: async (): Promise<boolean> => false
     })
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("paused")
     expect(harness.progressStages).toEqual(["outline"])
@@ -424,9 +433,9 @@ describe("NovelPipeline", () => {
 
   it("refuses to run a kept chapter plan whose chapter count the contract no longer matches", async () => {
     const harness = createHarness({ project: { ...project, setting: { chapterCount: 3 } } })
-    harness.dependencies.outlineRepository.hasChapterPlan = async (): Promise<boolean> => true
+    harness.dependencies.repositories.novelOutline.hasChapterPlan = async (): Promise<boolean> => true
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("failed")
     expect(result.message).toBe(
@@ -437,14 +446,14 @@ describe("NovelPipeline", () => {
 
   it("refuses to save a generated chapter plan whose chapter count the contract did not get", async () => {
     const harness = createHarness({ project: { ...project, setting: { chapterCount: 3 } } })
-    harness.dependencies.aiGateway.createService = (() => ({
+    harness.dependencies.ai.gateway.createService = (() => ({
       generateOutlineSynopsis: async (): Promise<unknown> => generateOutlineSynopsisMock(),
       generateChapterPlan: async (): Promise<ChapterPlan> => samplePlan
     })) as never
     const save = vi.fn()
-    harness.dependencies.outlineRepository.save = save
+    harness.dependencies.repositories.novelOutline.save = save
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("failed")
     expect(result.message).toBe(
@@ -455,16 +464,16 @@ describe("NovelPipeline", () => {
 
   it("writes the synopsis a hand-written chapter plan lacks, without a new plan", async () => {
     const harness = createHarness()
-    harness.dependencies.outlineRepository.hasChapterPlan = async (): Promise<boolean> => true
+    harness.dependencies.repositories.novelOutline.hasChapterPlan = async (): Promise<boolean> => true
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     expect(generateOutlineSynopsisMock).toHaveBeenCalledTimes(1)
     expect(saveSynopsisMock).toHaveBeenCalledTimes(1)
 
-    harness.dependencies.outlineRepository.loadSynopsis = async (): Promise<unknown> => ({ logline: "있음" })
-    await new NovelPipeline(harness.dependencies).run(harness.options)
+    harness.dependencies.repositories.novelOutline.loadSynopsis = async (): Promise<unknown> => ({ logline: "있음" })
+    await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(generateOutlineSynopsisMock).toHaveBeenCalledTimes(1)
   })
@@ -485,10 +494,10 @@ describe("NovelPipeline", () => {
       ]
     }
     const harness = createHarness()
-    harness.dependencies.outlineRepository.loadChapterPlan = async (): Promise<ChapterPlan> => plan
-    harness.dependencies.outlineRepository.loadCharacterBriefs = async (): Promise<unknown[]> => []
+    harness.dependencies.repositories.novelOutline.loadChapterPlan = async (): Promise<ChapterPlan> => plan
+    harness.dependencies.repositories.novelOutline.loadCharacterBriefs = async (): Promise<unknown[]> => []
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     expect(harness.progressMessages.filter((entry) => entry.stage === "characters").map((entry) => entry.message)).toEqual([
@@ -499,7 +508,7 @@ describe("NovelPipeline", () => {
     ])
 
     generateOutlineCharactersMock.mockResolvedValue([])
-    const failed = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const failed = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(failed.outcome).toBe("failed")
     expect(failed.message).toContain("인물 카드를 하나도 만들지 못했습니다: hero")
@@ -514,7 +523,7 @@ describe("NovelPipeline", () => {
     } as never)
     const harness = createHarness()
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("paused")
     expect(result.message).toBe("ChatGPT 사용 한도에 닿아 멈췄습니다. 다시 실행하면 이어서 진행합니다.")
@@ -531,7 +540,7 @@ describe("NovelPipeline", () => {
     } as never)
     const harness = createHarness()
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("failed")
     expect(result.message).toContain("초안")
@@ -556,7 +565,7 @@ describe("NovelPipeline", () => {
       checkContinuityMock.mockResolvedValueOnce([highContinuityIssue])
       const harness = createHarness()
 
-      await new NovelPipeline(harness.dependencies).run(harness.options)
+      await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
       const reviseFromReview = runReviseDraftWorkflowMock.mock.calls.filter(
         (call) => (call[0] as { maxIterations: number }).maxIterations === 1
@@ -580,7 +589,7 @@ describe("NovelPipeline", () => {
       })
       const harness = createHarness()
 
-      await new NovelPipeline(harness.dependencies).run(harness.options)
+      await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
       expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview * 2)
       expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain("재작성한 씬: 02-s2")
@@ -589,7 +598,7 @@ describe("NovelPipeline", () => {
     it("skips the rewrite entirely when the review found no high issues", async () => {
       const harness = createHarness()
 
-      await new NovelPipeline(harness.dependencies).run(harness.options)
+      await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
       expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview)
       expect(
@@ -605,7 +614,7 @@ describe("NovelPipeline", () => {
       ])
       const harness = createHarness()
 
-      await new NovelPipeline(harness.dependencies).run(harness.options)
+      await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
       expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview)
       expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain(
@@ -617,7 +626,7 @@ describe("NovelPipeline", () => {
       checkContinuityMock.mockResolvedValueOnce([highContinuityIssue])
       const harness = createHarness({ runMode: "review-approval" })
 
-      const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+      const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
       expect(result.outcome).toBe("completed")
       expect(harness.approvals.map((approval) => approval.kind)).toContain("review")
@@ -631,7 +640,7 @@ describe("NovelPipeline", () => {
         requestApproval: async (): Promise<boolean> => false
       })
 
-      const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+      const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
       expect(result.outcome).toBe("paused")
       expect(
@@ -655,7 +664,7 @@ describe("NovelPipeline — 단계 계획", () => {
   it("runs only the stages the plan names and records only those as completed", async () => {
     const harness = createHarness({ stages: ["outline", "seeds", "chapters", "summaries"] })
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     expect(harness.progressStages).not.toContain("assemble")
@@ -676,7 +685,7 @@ describe("NovelPipeline — 단계 계획", () => {
     })
     const harness = createHarness()
 
-    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+    const result = await new NovelPipeline(harness.dependencies.host, harness.dependencies.ai, harness.dependencies.repositories, harness.dependencies.collaborators).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     expect(harness.progressStages).toEqual([

@@ -8,9 +8,9 @@ import {
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
-import type { ICardCollectRepository } from '#engine/application/cards/collectCardProposalsUseCase';
 import { loadCharacterRoster } from '#engine/persistence/relationGraphData';
 import type { CollectDraft } from '#engine/ai/cardCollectBuilder';
+import type { ICardCollectRepository } from '#engine/application/cards/cardRepositories';
 
 export class CardCollectRepository implements ICardCollectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

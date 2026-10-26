@@ -6,6 +6,7 @@ import {
   type IManuscriptAssemblyRepository
 } from "@storyboard/story-engine"
 import type { ChapterPlan } from '@storyboard/story-model';
+import { createTestHost, createTestRepositories } from "@storyboard/story-engine/testing";
 
 const plan: ChapterPlan = {
   version: "1.0.0",
@@ -40,7 +41,7 @@ function repository(hasChapterPlan: boolean, draftCount: number): IManuscriptAss
 }
 
 function useCase(repository: IManuscriptAssemblyRepository): AssembleManuscriptUseCase {
-  return new AssembleManuscriptUseCase({ logger: { warn: vi.fn() } as never, repository })
+  return new AssembleManuscriptUseCase(createTestHost({ logger: { warn: vi.fn() } as never }), createTestRepositories({ manuscriptAssembly: repository }))
 }
 
 describe("AssembleManuscriptUseCase", () => {

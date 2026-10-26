@@ -9,8 +9,8 @@ import {
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
-import type { IBibleCandidateRepository } from '#engine/application/project/promoteBibleCandidatesUseCase';
 import type { StoryBible } from '@storyboard/story-model';
+import type { IBibleCandidateRepository } from '#engine/application/project/bibleRepositories';
 export class BibleCandidateRepository implements IBibleCandidateRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

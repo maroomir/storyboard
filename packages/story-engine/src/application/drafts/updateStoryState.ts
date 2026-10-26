@@ -97,7 +97,7 @@ export async function updateStoryStateAfterGeneration(
   try {
     await recordStoryStateFromDraft(inputs, options, aiService, draftBody);
   } catch (error) {
-    options.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);
   }
 }
 
@@ -109,7 +109,10 @@ export async function recordStoryStateFromDraft(
 ): Promise<void> {
   const { threadPaths, scene, context, inputHash } = inputs;
 
-  const previous: StoryState = await readStoryState(threadPaths.storyState, options.fileSystem);
+  const previous: StoryState = await readStoryState(
+    threadPaths.storyState,
+    options.host.fileSystem,
+  );
   const items: StoryStateUpdateItem[] = await aiService.updateStoryState(
     {
       sceneTitle: scene.stem,
@@ -118,14 +121,14 @@ export async function recordStoryStateFromDraft(
       characterNames: witnessNameLabels(context.characters),
     },
     {
-      providerId: options.aiGateway.getTaskProvider('storyStateUpdate'),
+      providerId: options.ai.gateway.getTaskProvider('storyStateUpdate'),
       attribution: { primary: { kind: 'scene', id: scene.stem } },
     },
   );
 
   const mapping: StoryStateEntryMapping = toStoryStateEntries(items, context.characters);
   if (mapping.unknownWitnesses.length > 0) {
-    options.logger.warn(
+    options.host.logger.warn(
       `${scene.stem}: 이야기 상태의 목격자 이름 ${mapping.unknownWitnesses.join(', ')}이(가) 등장인물 카드와 맞지 않아 그 항목은 씬의 모든 인물이 아는 것으로 기록했습니다. 가명·호칭이면 그 카드의 aliases 에 적어 주세요`,
     );
   }
@@ -135,5 +138,5 @@ export async function recordStoryStateFromDraft(
       ? recordStoryStateScene(previous, scene.order, inputHash)
       : mergeStoryState(previous, mapping.entries, scene.order, inputHash);
 
-  await writeStoryState(threadPaths.storyState, merged, options.fileSystem);
+  await writeStoryState(threadPaths.storyState, merged, options.host.fileSystem);
 }

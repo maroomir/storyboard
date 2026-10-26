@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
 import { ExpandDraftUseCase } from "@storyboard/story-engine"
+import { createTestAi, createTestHost } from "@storyboard/story-engine/testing"
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }
@@ -17,7 +18,7 @@ function createUseCase(): {
   return {
     gateway,
     logger,
-    useCase: new ExpandDraftUseCase({ aiGateway: gateway as never, logger: logger as never })
+    useCase: new ExpandDraftUseCase(createTestHost({ logger: logger as never }), createTestAi({ gateway: gateway as never }))
   }
 }
 

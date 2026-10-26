@@ -7,6 +7,7 @@ import {
   type ManuscriptReviewSource
 } from "@storyboard/story-engine"
 import type { ChapterPlan } from '@storyboard/story-model';
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing";
 
 const plan: ChapterPlan = {
   version: "1.0.0",
@@ -86,14 +87,10 @@ function useCase(
 ): ReviewManuscriptUseCase {
   const checkContinuity = ai.checkContinuity ?? vi.fn(async () => [])
   const critiqueDraft = ai.critiqueDraft ?? vi.fn(async () => [])
-  return new ReviewManuscriptUseCase({
-    aiGateway: {
+  return new ReviewManuscriptUseCase(createTestHost({ logger: { warn: vi.fn(), error: vi.fn() } as never }), createTestAi({ gateway: {
       createService: () => ({ checkContinuity, critiqueDraft }),
       getTaskProvider: () => "mock"
-    } as never,
-    repository: storage,
-    logger: { warn: vi.fn(), error: vi.fn() } as never
-  })
+    } as never }), createTestRepositories({ manuscriptReview: storage }))
 }
 
 describe("ReviewManuscriptUseCase", () => {

@@ -20,6 +20,7 @@ vi.mock("../../../../../../packages/story-engine/src/persistence/projectJson", (
 }))
 import { AugmentDraftUseCase } from "@storyboard/story-engine"
 import { SceneParseError } from '@storyboard/story-model';
+import { createTestAi, createTestHost } from "@storyboard/story-engine/testing";
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }
@@ -32,12 +33,7 @@ function createUseCase(): {
 
   return {
     gateway,
-    useCase: new AugmentDraftUseCase({
-      fileSystem: stubFileSystem,
-      aiGateway: gateway as never,
-      logger: { error: vi.fn(), warn: vi.fn() } as never,
-      configBridge: { isKeepDraftHistoryEnabled: () => false } as never
-    })
+    useCase: new AugmentDraftUseCase(createTestHost({ fileSystem: stubFileSystem, logger: { error: vi.fn(), warn: vi.fn() } as never, configBridge: { isKeepDraftHistoryEnabled: () => false } as never }), createTestAi({ gateway: gateway as never }))
   }
 }
 

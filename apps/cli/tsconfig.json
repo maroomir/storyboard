@@ -15,6 +15,9 @@
       "@storyboard/story-engine": [
         "../../packages/story-engine/src/index.ts"
       ],
+      "@storyboard/story-engine/testing": [
+        "../../packages/story-engine/src/testing/index.ts"
+      ],
       "@storyboard/story-model": [
         "../../packages/story-model/src/index.ts"
       ],

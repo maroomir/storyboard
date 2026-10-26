@@ -16,6 +16,7 @@ import {
 } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createTestHost } from '@storyboard/story-engine/testing';
 
 const fromStem = '03-night-market';
 const silentLogger: IStoryboardLogger = {
@@ -45,7 +46,7 @@ function rename(
   toStem: string,
   fileSystem: NodeFileSystem = new NodeFileSystem(),
 ): ReturnType<RenameSceneUseCase['execute']> {
-  return new RenameSceneUseCase({ fileSystem, logger: silentLogger }).execute({
+  return new RenameSceneUseCase(createTestHost({ fileSystem, logger: silentLogger })).execute({
     workspaceRoot: NodeUri.file(workspace),
     fromStem,
     toStem,

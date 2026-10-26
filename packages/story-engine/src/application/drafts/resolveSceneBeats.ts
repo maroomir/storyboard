@@ -1,3 +1,8 @@
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 import type { SceneCard, StoryUri } from '@storyboard/story-model';
 import {
   planSceneBeatCount,
@@ -7,16 +12,11 @@ import {
   type ExpandedSceneBeat,
   type SceneFile,
 } from '@storyboard/story-model';
-import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
-import type { ConfigBridge } from '@storyboard/story-ai';
 
 export interface SceneBeatsOptions {
-  readonly aiGateway: AiGateway;
-  readonly configBridge: ConfigBridge;
-  readonly sceneRepository: ISceneRepository;
-  readonly logger: IStoryboardLogger;
+  readonly host: HostAdapters;
+  readonly ai: AiServices;
+  readonly repositories: WorkspaceRepositories;
 }
 
 export function hasSceneBeats(scene: SceneFile): boolean {
@@ -35,7 +35,7 @@ export async function resolveSceneBeats(
   characters: readonly SceneBeatCastCard[],
   options: SceneBeatsOptions,
 ): Promise<SceneFile> {
-  if (!options.configBridge.isAutoBeatsEnabled() || hasSceneBeats(scene)) {
+  if (!options.host.configBridge.isAutoBeatsEnabled() || hasSceneBeats(scene)) {
     return scene;
   }
 
@@ -43,19 +43,19 @@ export async function resolveSceneBeats(
   try {
     beats = await proposeSceneBeats(sceneUri, scene, characters, options);
   } catch (error) {
-    options.logger.warn(`씬 비트를 전개하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`씬 비트를 전개하지 못했습니다: ${String(error)}`);
     return scene;
   }
 
   if (beats.length === 0) {
-    options.logger.warn('씬 비트 전개 응답이 비어 있어 카드의 재료로만 생성합니다.');
+    options.host.logger.warn('씬 비트 전개 응답이 비어 있어 카드의 재료로만 생성합니다.');
     return scene;
   }
 
   try {
-    await options.sceneRepository.writeBeats(sceneUri, beats);
+    await options.repositories.scenes.writeBeats(sceneUri, beats);
   } catch (error) {
-    options.logger.warn(`씬 비트를 저장하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`씬 비트를 저장하지 못했습니다: ${String(error)}`);
   }
 
   return withSceneBeats(scene, beats);
@@ -73,11 +73,11 @@ export async function proposeSceneBeats(
   );
   const beatCount: number = planSceneBeatCount(
     targetLength,
-    options.configBridge.getCharsPerBeat(),
-    options.configBridge.getMinBeats(),
+    options.host.configBridge.getCharsPerBeat(),
+    options.host.configBridge.getMinBeats(),
   );
 
-  const proposals: ExpandedSceneBeat[] = await options.aiGateway
+  const proposals: ExpandedSceneBeat[] = await options.ai.gateway
     .createService(sceneUri)
     .proposeSceneBeats(
       {
@@ -88,7 +88,7 @@ export async function proposeSceneBeats(
         beatCount,
       },
       {
-        providerId: options.aiGateway.getTaskProvider('sceneBeats'),
+        providerId: options.ai.gateway.getTaskProvider('sceneBeats'),
         attribution: { primary: { kind: 'scene', id: scene.stem } },
       },
     );

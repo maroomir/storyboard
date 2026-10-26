@@ -8,7 +8,6 @@ import type {
   NarratorCard,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IOutlineRepository } from '#engine/application/novel/generateOutlineUseCase';
 import { listCharacterBriefs } from '#engine/persistence/characterBriefs';
 import {
   getStoryboardProjectPaths,
@@ -19,6 +18,7 @@ import {
 } from '@storyboard/story-model';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';
+import type { IOutlineRepository } from '#engine/application/novel/novelPipelinePorts';
 export class OutlineRepository implements IOutlineRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

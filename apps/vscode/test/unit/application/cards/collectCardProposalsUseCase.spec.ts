@@ -4,6 +4,7 @@ import {
   CollectCardProposalsUseCase,
   type ICardCollectRepository
 } from "@storyboard/story-engine"
+import { createTestAi, createTestRepositories } from "@storyboard/story-engine/testing"
 
 describe("CollectCardProposalsUseCase", () => {
   it("collects drafts and roster before requesting card proposals", async () => {
@@ -27,7 +28,7 @@ describe("CollectCardProposalsUseCase", () => {
       extractTraitsByCharacter: vi.fn(async () => ({ 엘리아: [] }))
     }
     const gateway = { createService: vi.fn(() => service) }
-    const useCase = new CollectCardProposalsUseCase({ aiGateway: gateway as never, repository })
+    const useCase = new CollectCardProposalsUseCase(createTestAi({ gateway: gateway as never }), createTestRepositories({ cardCollect: repository }))
 
     const result = await useCase.execute({
       workspaceRoot: {} as never,
@@ -54,7 +55,7 @@ describe("CollectCardProposalsUseCase", () => {
       loadDrafts: vi.fn(async () => [{ body: "다른 인물만 등장한다.", sceneStem: "01-arrival" }])
     }
     const gateway = { createService: vi.fn(() => ({})) }
-    const useCase = new CollectCardProposalsUseCase({ aiGateway: gateway as never, repository })
+    const useCase = new CollectCardProposalsUseCase(createTestAi({ gateway: gateway as never }), createTestRepositories({ cardCollect: repository }))
 
     const result = await useCase.execute({
       workspaceRoot: {} as never,

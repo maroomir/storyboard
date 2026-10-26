@@ -12,9 +12,9 @@ import {
   writeCardCandidateFile,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
-import type { ICardCandidateRepository } from '#engine/application/cards/promoteCardCandidatesUseCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { CharacterCard, CardCandidateRecord, StoryboardCard } from '@storyboard/story-model';
+import type { ICardCandidateRepository } from '#engine/application/cards/cardRepositories';
 
 export class CardCandidateRepository implements ICardCandidateRepository {
   public constructor(

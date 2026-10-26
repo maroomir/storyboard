@@ -1,3 +1,4 @@
+import type { HostAdapters } from '#engine/application/engineServices';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -8,7 +9,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import { applyStoryCardChanges, type StoryCardTarget } from './buildStoryCardsUseCase';
 import type { CompletedStoryScene } from './completeStoryScenesUseCase';
 
@@ -22,12 +22,8 @@ export interface ApplyCompletedScenesResult {
   readonly skippedFileNames: readonly string[];
 }
 
-export interface ApplyStoryProposalsDependencies {
-  readonly fileSystem: IFileSystem;
-}
-
 export class ApplyStoryProposals {
-  public constructor(private readonly deps: ApplyStoryProposalsDependencies) {}
+  public constructor(private readonly host: HostAdapters) {}
 
   public async applyCardTargets(
     workspaceRoot: StoryUri,
@@ -51,7 +47,7 @@ export class ApplyStoryProposals {
           ? characterCardPath(workspaceRoot, card.id)
           : backgroundCardPath(workspaceRoot, card.id);
 
-      await this.deps.fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
+      await this.host.fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
       writtenIds.push(card.id);
     }
 
@@ -62,7 +58,7 @@ export class ApplyStoryProposals {
     workspaceRoot: StoryUri,
     scenes: readonly CompletedStoryScene[],
   ): Promise<ApplyCompletedScenesResult> {
-    const { fileSystem } = this.deps;
+    const { fileSystem } = this.host;
     const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
     const writtenFileNames: string[] = [];
     const skippedFileNames: string[] = [];

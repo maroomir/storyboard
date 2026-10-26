@@ -1,3 +1,4 @@
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import { createHash } from 'node:crypto';
 import type { IUseCase } from '#engine/application/useCase';
 
@@ -17,9 +18,6 @@ import type {
   StudioAgentEntityKind,
 } from '@storyboard/story-model';
 import type { StoryboardAiService, StudioAgentMessage } from '@storyboard/story-ai';
-
-import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 
 export interface StudioChatContext {
   readonly agentEntityKind: StudioAgentEntityKind;
@@ -52,16 +50,14 @@ export type StudioChatStage = 'thinking' | 'looking-up' | 'invoking' | 'validati
 
 export const maxStudioQuestions: number = 5;
 
-export interface StudioChatUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly logger: IStoryboardLogger;
-}
-
 export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly StudioChatTurn[]> {
-  public constructor(private readonly deps: StudioChatUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+  ) {}
 
   public async execute(request: StudioChatRequest): Promise<readonly StudioChatTurn[]> {
-    const service: StoryboardAiService = this.deps.aiGateway.createService(request.workspaceRoot);
+    const service: StoryboardAiService = this.ai.gateway.createService(request.workspaceRoot);
 
     const action: StudioAgentAction = await service.runStudioAgent(
       {
@@ -131,7 +127,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
     request.onStage?.('validating');
 
     try {
-      const verdict: StudioValidationVerdict = await this.deps.aiGateway
+      const verdict: StudioValidationVerdict = await this.ai.gateway
         .createService(request.workspaceRoot)
         .validateStudioProposal(
           {
@@ -148,7 +144,7 @@ export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly S
         warnings: verdict.warnings.map((warning) => ({ ...warning })),
       };
     } catch (error) {
-      this.deps.logger.warn(`Studio 정합성 검사 실패: ${String(error)}`);
+      this.host.logger.warn(`Studio 정합성 검사 실패: ${String(error)}`);
       return { state: 'skipped', warnings: [] };
     }
   }

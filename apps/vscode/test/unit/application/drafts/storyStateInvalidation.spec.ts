@@ -317,9 +317,8 @@ describe("ledger updates after generation", () => {
 
   function generationOptions(fileSystem: MemoryWorkspace): never {
     return {
-      fileSystem,
-      logger,
-      aiGateway: { getTaskProvider: () => "provider:storyStateUpdate" }
+      host: { fileSystem, logger },
+      ai: { gateway: { getTaskProvider: () => "provider:storyStateUpdate" } }
     } as never
   }
 

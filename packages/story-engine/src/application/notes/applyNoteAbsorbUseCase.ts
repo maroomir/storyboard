@@ -1,3 +1,4 @@
+import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type {
   ProjectSetting,
   StoryUri,
@@ -11,7 +12,6 @@ BibleFact,
 BibleSubjectKind,
 } from '@storyboard/story-model';
 
-import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 import {
   addNoteCandidateSource,
@@ -22,8 +22,7 @@ import {
   mergeNoteSynopsisCandidate,
   serializeSynopsisMarkdown,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { INoteAbsorbRepository, NoteCandidateLoad } from './noteAbsorbRepository';
+import type { NoteCandidateLoad } from './noteAbsorbRepository';
 
 export interface ApplyNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;
@@ -49,12 +48,6 @@ export interface ApplyNoteAbsorbOutcome {
 
 export type ApplyNoteAbsorbResult = ApplyNoteAbsorbOutcome | UseCaseFailure;
 
-export interface ApplyNoteAbsorbUseCaseDependencies {
-  readonly logger: IStoryboardLogger;
-  readonly noteRepository: INoteAbsorbRepository;
-  readonly cardWriter: ICardWriterRepository;
-}
-
 type FillableSettingKey = 'genre' | 'audience' | 'concept' | 'description' | 'pov';
 
 const settingKeys: readonly FillableSettingKey[] = ['genre', 'audience', 'concept', 'description', 'pov'];
@@ -79,17 +72,20 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   ApplyNoteAbsorbRequest,
   ApplyNoteAbsorbResult
 > {
-  public constructor(private readonly deps: ApplyNoteAbsorbUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: ApplyNoteAbsorbRequest): Promise<ApplyNoteAbsorbResult> {
-    return await runUseCase(this.deps.logger, '노트 정리 결과를 반영하지 못했습니다.', async () => {
+    return await runUseCase(this.host.logger, '노트 정리 결과를 반영하지 못했습니다.', async () => {
       const cards: AppliedNoteCards = await this.applyCards(request);
       const scenes: AppliedNoteScenes = await this.applyScenes(request);
       const synopsis: 'written' | 'candidate' | 'none' = await this.applySynopsis(request);
       const setting: AppliedNoteSetting = await this.applySetting(request);
       const seededCharacters: string[] = Object.keys(request.plan.voiceSeeds);
       if (seededCharacters.length > 0) {
-        await this.deps.noteRepository.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
+        await this.repositories.noteAbsorb.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
       }
       const canonCandidates: number = await this.applyCanonCandidates(request);
 
@@ -109,7 +105,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     const facts: BibleFact[] = request.plan.canonCandidates.map((candidate) =>
       buildCandidateFact(candidate.subject, candidate.key, candidate.value),
     );
-    await this.deps.noteRepository.saveCanonCandidates(
+    await this.repositories.noteAbsorb.saveCanonCandidates(
       request.workspaceRoot,
       request.location,
       facts,
@@ -120,10 +116,10 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
 
   private async applyCards(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteCards> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
-    const loaded: NoteCandidateLoad = await this.deps.noteRepository.loadCandidates(workspaceRoot);
+    const loaded: NoteCandidateLoad = await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
 
     if (loaded.kind === 'legacy') {
-      this.deps.logger.warn(
+      this.host.logger.warn(
         '이전 버전이 남긴 카드 후보(.storyboard/cache/notes/candidates.json)는 읽지 않고 이번 후보로 바꿉니다. 필요하면 그 노트를 다시 흡수하세요.',
       );
     }
@@ -135,10 +131,10 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       const cardType: BibleSubjectKind = entry.card.type === 'character' ? 'character' : 'background';
       const isStillNew: boolean =
         entry.isNew &&
-        !(await this.deps.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));
+        !(await this.repositories.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));
 
       if (isStillNew) {
-        await this.deps.cardWriter.write(
+        await this.repositories.cardWriter.write(
           workspaceRoot,
           applyCardCollectProposals(entry.card, entry.changes),
         );
@@ -162,7 +158,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       { location, absorbedAt: new Date().toISOString(), candidates },
       shouldReplaceCandidates,
     );
-    await this.deps.noteRepository.saveCandidates(workspaceRoot, file);
+    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, file);
 
     return {
       createdCards,
@@ -177,7 +173,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     const skippedScenes: SkippedNote[] = [...plan.skippedScenes];
 
     for (const scene of plan.scenes) {
-      if (await this.deps.noteRepository.sceneExists(workspaceRoot, scene.fileName)) {
+      if (await this.repositories.noteAbsorb.sceneExists(workspaceRoot, scene.fileName)) {
         skippedScenes.push({
           label: scene.fileName,
           reason: '같은 이름의 씬 파일이 이미 있습니다',
@@ -185,7 +181,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
         continue;
       }
 
-      await this.deps.noteRepository.writeScene(workspaceRoot, scene.fileName, scene.card);
+      await this.repositories.noteAbsorb.writeScene(workspaceRoot, scene.fileName, scene.card);
       createdScenes.push(scene.fileName);
     }
 
@@ -196,7 +192,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     request: ApplyNoteAbsorbRequest,
   ): Promise<'written' | 'candidate' | 'none'> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
-    const { noteRepository } = this.deps;
+    const { noteAbsorb: noteRepository } = this.repositories;
     const isCandidate: boolean =
       plan.synopsis !== undefined && (await noteRepository.synopsisExists(workspaceRoot));
 
@@ -228,7 +224,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
 
   private async applySetting(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteSetting> {
     const { workspaceRoot, plan, shouldFillContract } = request;
-    const project: StoryboardProject = await this.deps.noteRepository.loadProject(workspaceRoot);
+    const project: StoryboardProject = await this.repositories.noteAbsorb.loadProject(workspaceRoot);
     const current: Partial<ProjectSetting> = project.setting ?? {};
     const filled: Record<string, string> = {};
     const proposals: Record<string, string> = {};
@@ -248,7 +244,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     }
 
     if (Object.keys(filled).length > 0) {
-      await this.deps.noteRepository.saveProject(workspaceRoot, {
+      await this.repositories.noteAbsorb.saveProject(workspaceRoot, {
         ...project,
         setting: {
           tags: [],

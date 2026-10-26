@@ -1,3 +1,4 @@
+import type { HostAdapters } from '#engine/application/engineServices';
 import {
   parseDraft,
   serializeDraft,
@@ -9,7 +10,6 @@ import {
   type Draft,
 } from '@storyboard/story-model';
 
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IUseCase } from '#engine/application/useCase';
 
 export interface SaveDraftEditRequest {
@@ -24,22 +24,18 @@ export type SaveDraftEditResult =
   | { readonly ok: true; readonly kind: 'unchanged' }
   | { readonly ok: false; readonly kind: 'missing' };
 
-export interface SaveDraftEditUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-}
-
 export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, SaveDraftEditResult> {
-  public constructor(private readonly deps: SaveDraftEditUseCaseDependencies) {}
+  public constructor(private readonly host: HostAdapters) {}
 
   public async execute(request: SaveDraftEditRequest): Promise<SaveDraftEditResult> {
     const draftUri: StoryUri = draftPath(request.workspaceRoot, request.sceneStem);
 
-    if (!(await this.deps.fileSystem.exists(draftUri))) {
+    if (!(await this.host.fileSystem.exists(draftUri))) {
       return { ok: false, kind: 'missing' };
     }
 
     const existing: Draft = parseDraft(
-      new TextDecoder().decode(await this.deps.fileSystem.readFile(draftUri)),
+      new TextDecoder().decode(await this.host.fileSystem.readFile(draftUri)),
     );
 
     if (existing.body === request.body) {
@@ -50,7 +46,7 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
       ? await this.archive(request.workspaceRoot, request.sceneStem, draftUri)
       : undefined;
 
-    await this.deps.fileSystem.writeFile(
+    await this.host.fileSystem.writeFile(
       draftUri,
       new TextEncoder().encode(serializeDraft({ ...existing, body: request.body })),
     );
@@ -71,7 +67,7 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
       draftUri,
       historyDirectory,
       resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-      fileSystem: this.deps.fileSystem,
+      fileSystem: this.host.fileSystem,
     });
   }
 }

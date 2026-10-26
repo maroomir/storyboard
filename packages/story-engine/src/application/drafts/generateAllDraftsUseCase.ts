@@ -1,19 +1,10 @@
-import type { StoryUri } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
+import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 import type { GenerateDraftResult, GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
 import { describeReviseOutcome, type ReviseDraftWorkflowResult } from './reviseDraftUseCase';
 import type { IUseCase } from '#engine/application/useCase';
-
-export interface ISceneBatchRepository {
-  listStoryboardScenes(): Promise<BatchSceneList>;
-}
-
-export type BatchSceneList = {
-  readonly projectCount: number;
-  readonly scenes: readonly StoryUri[];
-};
+import type { BatchSceneList } from '#engine/application/drafts/draftRepositories';
 
 export type GenerateAllDraftsProgress = {
   readonly current: number;
@@ -45,21 +36,23 @@ export type GenerateAllDraftsOptions = {
   readonly shouldPause?: () => boolean;
 };
 
-export interface GenerateAllDraftsUseCaseDependencies {
+export interface GenerateAllDraftsCollaborators {
   readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly logger: IStoryboardLogger;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
-  readonly sceneRepository: ISceneBatchRepository;
 }
 
 export class GenerateAllDraftsUseCase implements IUseCase<
   GenerateAllDraftsOptions,
   GenerateAllDraftsResult
 > {
-  public constructor(private readonly deps: GenerateAllDraftsUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly repositories: WorkspaceRepositories,
+    private readonly collaborators: GenerateAllDraftsCollaborators,
+  ) {}
 
   public async execute(options: GenerateAllDraftsOptions = {}): Promise<GenerateAllDraftsResult> {
-    const scenes: BatchSceneList = await this.deps.sceneRepository.listStoryboardScenes();
+    const scenes: BatchSceneList = await this.repositories.sceneBatches.listStoryboardScenes();
 
     if (scenes.projectCount === 0) {
       return { kind: 'no_projects', ok: false };
@@ -88,46 +81,47 @@ export class GenerateAllDraftsUseCase implements IUseCase<
       const current: number = index + 1;
       const label: string = sceneUri.path.split('/').at(-1) ?? sceneUri.fsPath;
       options.onProgress?.({ current, kind: 'prepared', label, total });
-      const draftResult: GenerateDraftResult = await this.deps.generateDraftUseCase.execute({
-        sceneUri,
-        force: false,
-        suppressLoggerPanel: true,
-        onPipelineProgress: (stage, stageCurrent, stageTotal) => {
-          if (!options.shouldCancel?.()) {
-            options.onProgress?.({
-              current,
-              kind: 'pipeline',
-              label,
-              stage,
-              stageCurrent,
-              stageTotal,
-              total,
-            });
-          }
-        },
-        onSaving: () => {
-          if (!options.shouldCancel?.())
-            options.onProgress?.({ current, kind: 'saving', label, total });
-        },
-        shouldCancel: options.shouldCancel,
-      });
+      const draftResult: GenerateDraftResult =
+        await this.collaborators.generateDraftUseCase.execute({
+          sceneUri,
+          force: false,
+          suppressLoggerPanel: true,
+          onPipelineProgress: (stage, stageCurrent, stageTotal) => {
+            if (!options.shouldCancel?.()) {
+              options.onProgress?.({
+                current,
+                kind: 'pipeline',
+                label,
+                stage,
+                stageCurrent,
+                stageTotal,
+                total,
+              });
+            }
+          },
+          onSaving: () => {
+            if (!options.shouldCancel?.())
+              options.onProgress?.({ current, kind: 'saving', label, total });
+          },
+          shouldCancel: options.shouldCancel,
+        });
 
       if (draftResult.ok) {
         if (draftResult.kind === 'cache_hit') cacheHits += 1;
         else {
           generated += 1;
           if (draftResult.warnings.length > 0) {
-            this.deps.logger.warn(`${label}: ${draftResult.warnings.join(' / ')}`);
+            this.host.logger.warn(`${label}: ${draftResult.warnings.join(' / ')}`);
           }
           const revised: ReviseDraftWorkflowResult | undefined =
-            await this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
+            await this.collaborators.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
               onWillRun: () => options.onProgress?.({ current, kind: 'revising', label, total }),
               shouldCancel: options.shouldCancel,
             });
           const reviseWarning: string | undefined =
             revised && describeReviseOutcome(revised).warning;
           if (reviseWarning) {
-            this.deps.logger.warn(`${label}: ${reviseWarning}`);
+            this.host.logger.warn(`${label}: ${reviseWarning}`);
           }
         }
         continue;
@@ -135,13 +129,13 @@ export class GenerateAllDraftsUseCase implements IUseCase<
 
       if (draftResult.kind === 'cancelled') break;
       if (draftResult.reason === 'usage-limit') {
-        this.deps.logger.warn(`${label}: ${draftResult.message}`);
+        this.host.logger.warn(`${label}: ${draftResult.message}`);
         pausedWithRemaining = total - index;
         break;
       }
       failures += 1;
       if (failureLabels.length < 5) failureLabels.push(`${label}: ${draftResult.message}`);
-      this.deps.logger.error(
+      this.host.logger.error(
         `Draft generation failed for ${label}`,
         new Error(draftResult.message),
       );
