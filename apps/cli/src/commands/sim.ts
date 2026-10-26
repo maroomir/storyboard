@@ -91,7 +91,9 @@ import { createSimWorkspaceFactory } from '@/adapters/simWorkspaceFactory';
 import { createCliContainer } from '@/container';
 import type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 import { availableProviderIds, isAvailableProviderId } from '@/adapters/availableProviders';
-import type { ZodSafeParseResult } from 'zod';
+import { type ZodSafeParseResult } from 'zod';
+import { success } from './outcomes';
+import { failure } from '@/commands/outcomes';
 
 interface TrackScene {
   readonly sceneStem: string;
@@ -113,7 +115,7 @@ function requireFlag(context: CommandContext, name: string): string | undefined 
 }
 
 function refuse(message: string): CommandOutcome {
-  return { ok: false, message };
+  return failure(message);
 }
 
 async function readTrackScenes(genreRoot: string): Promise<readonly TrackScene[]> {
@@ -418,9 +420,8 @@ function reportEstimate(
   const cost: string =
     estimate.estimatedUsd === undefined ? '금액 불명' : formatUsd(estimate.estimatedUsd);
 
-  return {
-    ok: true,
-    message: [
+  return success(
+    [
       `지점 ${estimate.points} × ${estimate.repeats}회 = 실행 ${estimate.points * estimate.repeats}회`,
       `생성 호출 ${estimate.generationCalls.toLocaleString()} · 심판 호출 ${estimate.judgeCalls.toLocaleString()}`,
       `예상 비용 ${cost} · 예상 시간 ${estimate.estimatedWallClockHours.toFixed(1)}시간`,
@@ -429,8 +430,8 @@ function reportEstimate(
       '',
       '이대로 돌리려면 --yes 를 붙이세요.',
     ].join('\n'),
-    data: estimate,
-  };
+    estimate,
+  );
 }
 
 async function executePoints(
@@ -638,11 +639,10 @@ async function executePoints(
     }
   }
 
-  return {
-    ok: true,
-    message: `실행 ${ran}회 완료${skipped > 0 ? ` (이미 끝난 ${skipped}회는 건너뜀)` : ''} → ${input.outPath}`,
-    data: { ran, skipped, out: input.outPath, trackCommit: track.commit },
-  };
+  return success(
+    `실행 ${ran}회 완료${skipped > 0 ? ` (이미 끝난 ${skipped}회는 건너뜀)` : ''} → ${input.outPath}`,
+    { ran, skipped, out: input.outPath, trackCommit: track.commit },
+  );
 }
 
 async function refuseMissingLocalModels(input: {
@@ -1015,7 +1015,7 @@ export const reportSim: CommandHandler = async (context) => {
   const runs: readonly RunRecord[] = await readRuns(outPath);
 
   if (runs.length === 0) {
-    return { ok: true, message: '아직 기록된 실행이 없습니다.', data: { runs: [] } };
+    return success('아직 기록된 실행이 없습니다.', { runs: [] });
   }
 
   const totalUsd: number | undefined = runs.reduce<number | undefined>(
@@ -1076,9 +1076,8 @@ export const reportSim: CommandHandler = async (context) => {
       }),
   ]);
 
-  return {
-    ok: true,
-    message: [
+  return success(
+    [
       `실행 ${runs.length}회 (유효 ${judgedRuns}회) · 지점 ${scored.length}개 · 시험체 ${genres.length}개 (* 는 그 시험체의 파레토 경계)`,
       `비용 축: ${costAxisLabels[axis]}`,
       '품질 축은 유효 회차의 중앙값, 비용 축은 전체 회차의 중앙값 · 관문은 유효 회차 중 심판이 훼손본을 가려낸 수',
@@ -1090,8 +1089,8 @@ export const reportSim: CommandHandler = async (context) => {
       ...lines,
       ...regressionLines(runs),
     ].join('\n'),
-    data: { runs: runs.length, costAxis: axis, points: scored, frontier },
-  };
+    { runs: runs.length, costAxis: axis, points: scored, frontier },
+  );
 };
 
 export const rejudgeSim: CommandHandler = async (context) => {
@@ -1164,11 +1163,10 @@ export const rejudgeSim: CommandHandler = async (context) => {
   ];
 
   if (!flagBoolean(context.args.flags, 'yes')) {
-    return {
-      ok: true,
-      message: [...plan, '이대로 돌리려면 --yes 를 붙이세요.'].join('\n'),
-      data: { point, sources: sources.length },
-    };
+    return success([...plan, '이대로 돌리려면 --yes 를 붙이세요.'].join('\n'), {
+      point,
+      sources: sources.length,
+    });
   }
 
   const judgeRegistry: AiProviderRegistry =
@@ -1243,11 +1241,11 @@ export const rejudgeSim: CommandHandler = async (context) => {
     );
   }
 
-  return {
-    ok: true,
-    message: `다시 채점 ${done}회 완료 → ${prepared.outPath}`,
-    data: { point, done, out: prepared.outPath },
-  };
+  return success(`다시 채점 ${done}회 완료 → ${prepared.outPath}`, {
+    point,
+    done,
+    out: prepared.outPath,
+  });
 };
 
 async function readKeptDrafts(
@@ -1321,11 +1319,14 @@ export const applySim: CommandHandler = async (context) => {
   ];
 
   if (flagBoolean(context.args.flags, 'dry-run')) {
-    return {
-      ok: true,
-      message: ['적지 않고 계획만 보여 줍니다.', ...plan].join('\n'),
-      data: { point, key, fields, measured, runs: runs.length, judged: judged.length },
-    };
+    return success(['적지 않고 계획만 보여 줍니다.', ...plan].join('\n'), {
+      point,
+      key,
+      fields,
+      measured,
+      runs: runs.length,
+      judged: judged.length,
+    });
   }
 
   const profilesPath: string | undefined =
@@ -1356,14 +1357,11 @@ export const applySim: CommandHandler = async (context) => {
     );
   }
 
-  return {
-    ok: true,
-    message: [
-      ...plan,
-      `적었습니다: ${profilesPath}`,
-      '검토 후 커밋하세요. 이 파일은 엔진 소스입니다.',
-    ].join('\n'),
-    data: {
+  return success(
+    [...plan, `적었습니다: ${profilesPath}`, '검토 후 커밋하세요. 이 파일은 엔진 소스입니다.'].join(
+      '\n',
+    ),
+    {
       point,
       key,
       fields,
@@ -1372,7 +1370,7 @@ export const applySim: CommandHandler = async (context) => {
       runs: runs.length,
       judged: judged.length,
     },
-  };
+  );
 };
 
 async function findModelProfilesFile(): Promise<string | undefined> {

@@ -14,13 +14,9 @@ import {
 } from '@storyboard/story-model';
 
 import { createCliContainer } from '../src/container';
-import {
-  runConfigSet,
-  runConfigShow,
-  runConfigUnset,
-  runDoctor,
-  runSetup,
-} from '../src/commands/setup';
+import { runConfigSet, runConfigShow, runConfigUnset } from '../src/commands/config';
+import { runDoctor } from '../src/commands/doctor';
+import { runSetup } from '../src/commands/setup';
 import { commands } from '../src/commands';
 import type { ParsedArguments } from '../src/cliArguments';
 import { createTheme } from '../src/terminal/theme';

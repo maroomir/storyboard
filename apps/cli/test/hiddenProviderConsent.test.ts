@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ChoiceRequest, IPrompter } from '@/adapters/prompter';
 import type { ParsedArguments } from '@/cliArguments';
-import { runConfigSet, runSetup } from '@/commands/setup';
+import { runConfigSet } from '@/commands/config';
+import { runSetup } from '@/commands/setup';
 import { createCliContainer } from '@/container';
 
 const enabledKey = 'providers.claude-code.enabled';

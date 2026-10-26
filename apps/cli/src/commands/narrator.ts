@@ -19,6 +19,8 @@ import type { CliContainer } from '@/container';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
 import type { CreateNarratorCardResult, RemoveNarratorCardResult } from '@storyboard/story-engine';
+import { success } from './outcomes';
+import { failure } from '@/commands/outcomes';
 
 const narratorIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -28,29 +30,23 @@ export const listNarrators: CommandHandler = async ({ container }) => {
   ];
 
   if (narrators.length === 0) {
-    return {
-      ok: true,
-      message: '서술자 카드가 없습니다. 작품 계약의 시점 하나가 모든 씬에 적용됩니다.',
-      data: { narrators: [] },
-    };
+    return success('서술자 카드가 없습니다. 작품 계약의 시점 하나가 모든 씬에 적용됩니다.', {
+      narrators: [],
+    });
   }
 
   const lines: string[] = narrators.map(
     (card) => `${card.id}\t${card.name}\t${describeCard(card)}`,
   );
 
-  return {
-    ok: true,
-    message: lines.join('\n'),
-    data: { narrators: narrators.map(toNarratorData) },
-  };
+  return success(lines.join('\n'), { narrators: narrators.map(toNarratorData) });
 };
 
 export const showNarrator: CommandHandler = async ({ container, args }) => {
   const id: string | undefined = args.positionals[0];
 
   if (id === undefined) {
-    return { ok: false, message: '서술자 id 를 지정해 주세요.' };
+    return failure('서술자 id 를 지정해 주세요.');
   }
 
   const narrator: NarratorCard | undefined = (
@@ -58,30 +54,26 @@ export const showNarrator: CommandHandler = async ({ container, args }) => {
   ).get(id);
 
   if (!narrator) {
-    return { ok: false, message: `서술자 '${id}' 를 찾을 수 없습니다.` };
+    return failure(`서술자 '${id}' 를 찾을 수 없습니다.`);
   }
 
-  return {
-    ok: true,
-    message: [
+  return success(
+    [
       `${narrator.name} (${narrator.id})`,
       describeCard(narrator),
       ...(narrator.voice && narrator.voice.length > 0
         ? [`목소리: ${narrator.voice.join(' / ')}`]
         : []),
     ].join('\n'),
-    data: toNarratorData(narrator),
-  };
+    toNarratorData(narrator),
+  );
 };
 
 export const createNarrator: CommandHandler = async ({ container, args }) => {
   const id: string | undefined = flagString(args.flags, 'id') ?? args.positionals[0];
 
   if (id === undefined || !narratorIdPattern.test(id)) {
-    return {
-      ok: false,
-      message: '서술자 id 는 영소문자·숫자·하이픈만 쓸 수 있습니다 (예: hana-first).',
-    };
+    return failure('서술자 id 는 영소문자·숫자·하이픈만 쓸 수 있습니다 (예: hana-first).');
   }
 
   const card: BuildCardResult = buildCard(id, args.flags);
@@ -96,21 +88,20 @@ export const createNarrator: CommandHandler = async ({ container, args }) => {
   );
 
   if (!created.ok) {
-    return { ok: false, message: `이미 있습니다: narrator/${id}.card` };
+    return failure(`이미 있습니다: narrator/${id}.card`);
   }
 
-  return {
-    ok: true,
-    message: `narrator/${id}.card 를 만들었습니다. 씬 카드의 narrator 에 이 id 를 적으면 그 씬에 적용됩니다.`,
-    data: { ...toNarratorData(card.card), path: (created.uri as StoryUri).fsPath },
-  };
+  return success(
+    `narrator/${id}.card 를 만들었습니다. 씬 카드의 narrator 에 이 id 를 적으면 그 씬에 적용됩니다.`,
+    { ...toNarratorData(card.card), path: (created.uri as StoryUri).fsPath },
+  );
 };
 
 export const removeNarrator: CommandHandler = async ({ container, args }) => {
   const id: string | undefined = args.positionals[0];
 
   if (id === undefined) {
-    return { ok: false, message: '서술자 id 를 지정해 주세요.' };
+    return failure('서술자 id 를 지정해 주세요.');
   }
 
   const removed: RemoveNarratorCardResult = await container.cards.removeNarrator(
@@ -119,14 +110,13 @@ export const removeNarrator: CommandHandler = async ({ container, args }) => {
   );
 
   if (!removed.ok) {
-    return { ok: false, message: `서술자 '${id}' 를 찾을 수 없습니다.` };
+    return failure(`서술자 '${id}' 를 찾을 수 없습니다.`);
   }
 
-  return {
-    ok: true,
-    message: `narrator/${id}.card 를 지웠습니다. 이 id 를 참조하는 씬이 남아 있으면 doctor 가 알려 줍니다.`,
-    data: { id },
-  };
+  return success(
+    `narrator/${id}.card 를 지웠습니다. 이 id 를 참조하는 씬이 남아 있으면 doctor 가 알려 줍니다.`,
+    { id },
+  );
 };
 
 export async function describeSceneNarration(
@@ -200,7 +190,7 @@ function buildCard(id: string, flags: Readonly<Record<string, string | boolean>>
 function invalid(flagName: string, allowed: readonly string[]): BuildCardResult {
   return {
     ok: false,
-    outcome: { ok: false, message: `--${flagName} 는 ${allowed.join(', ')} 중 하나여야 합니다.` },
+    outcome: failure(`--${flagName} 는 ${allowed.join(', ')} 중 하나여야 합니다.`),
   };
 }
 
