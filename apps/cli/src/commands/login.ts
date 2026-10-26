@@ -19,6 +19,7 @@ import { openBrowser } from '@/adapters/openBrowser';
 import type { CliContainer } from '@/container';
 
 import type { CommandContext, CommandOutcome } from './outcome';
+import { failure, success } from '@/commands/outcomes';
 
 interface LoginFlow {
   readonly login: (
@@ -109,7 +110,7 @@ export async function signIn(
   const flow: LoginFlow | undefined = loginFlows[providerId];
 
   if (flow === undefined) {
-    return { ok: false, message: `${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.` };
+    return failure(`${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.`);
   }
 
   const displayName: string = getProviderDisplayName(providerId);
@@ -138,7 +139,7 @@ export async function signIn(
       },
     });
   } catch (error) {
-    return { ok: false, message: describeLoginFailure(error) };
+    return failure(describeLoginFailure(error));
   }
 
   const account: string = signedIn.accountLabel === undefined ? '' : ` (${signedIn.accountLabel})`;
@@ -146,18 +147,18 @@ export async function signIn(
 
   try {
     await (await createChatGptProvider(container, deps.fetch)).checkConnection();
-    return {
-      ok: true,
-      message: `${saved}\n연결을 확인했습니다.`,
-      data: { providerId, accountLabel: signedIn.accountLabel ?? null, verified: true },
-    };
+    return success(`${saved}\n연결을 확인했습니다.`, {
+      providerId,
+      accountLabel: signedIn.accountLabel ?? null,
+      verified: true,
+    });
   } catch (error) {
     const reason: string = extractErrorMessage(error);
-    return {
-      ok: true,
-      message: `${saved}\n다만 연결 확인에 실패했습니다: ${reason}`,
-      data: { providerId, accountLabel: signedIn.accountLabel ?? null, verified: false },
-    };
+    return success(`${saved}\n다만 연결 확인에 실패했습니다: ${reason}`, {
+      providerId,
+      accountLabel: signedIn.accountLabel ?? null,
+      verified: false,
+    });
   }
 }
 
@@ -165,7 +166,7 @@ export async function runLogin({ container, args }: CommandContext): Promise<Com
   const resolved: LoginProviderResolution = resolveLoginProvider(args.positionals[0]);
 
   if ('problem' in resolved) {
-    return { ok: false, message: resolved.problem };
+    return failure(resolved.problem);
   }
 
   return signIn(container, resolved.providerId);
@@ -179,7 +180,7 @@ export async function signOut(
   const flow: LoginFlow | undefined = loginFlows[providerId];
 
   if (flow === undefined) {
-    return { ok: false, message: `${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.` };
+    return failure(`${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.`);
   }
 
   const logout: ChatGptLogoutResult = await flow.logout({
@@ -188,23 +189,22 @@ export async function signOut(
   });
 
   if (!logout.wasConnected) {
-    return { ok: true, message: `${providerId} 에 로그인돼 있지 않았습니다.`, data: logout };
+    return success(`${providerId} 에 로그인돼 있지 않았습니다.`, logout);
   }
 
-  return {
-    ok: true,
-    message: logout.isRevoked
+  return success(
+    logout.isRevoked
       ? `${providerId} 에서 로그아웃했습니다.`
       : `${providerId} 의 로그인 정보를 지웠습니다. 서버 쪽 세션 종료는 확인하지 못했으니 제공자의 계정 설정에서 앱 연결을 확인하세요.`,
-    data: logout,
-  };
+    logout,
+  );
 }
 
 export async function runLogout({ container, args }: CommandContext): Promise<CommandOutcome> {
   const resolved: LoginProviderResolution = resolveLoginProvider(args.positionals[0]);
 
   if ('problem' in resolved) {
-    return { ok: false, message: resolved.problem };
+    return failure(resolved.problem);
   }
 
   return signOut(container, resolved.providerId);

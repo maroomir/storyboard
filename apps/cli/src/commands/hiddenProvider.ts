@@ -19,6 +19,8 @@ import type { CliContainer } from '@/container';
 import { createChatGptProvider } from './login';
 
 import type { CommandOutcome } from './outcome';
+import { success } from './outcomes';
+import { failure } from '@/commands/outcomes';
 
 const booleanWords: Readonly<Record<string, boolean>> = { true: true, false: false };
 
@@ -40,20 +42,17 @@ async function switchOnHiddenProvider(
     await configBridge.enableHiddenProvider(providerId);
     container.logger.warn(hiddenProviderRunWarning(providerId));
 
-    return {
-      ok: true,
-      message: `${key} = true 저장했습니다: ${container.homePaths.configFile}\n다음: storyboard login ${providerId}`,
-      data: { key, value: true },
-    };
+    return success(
+      `${key} = true 저장했습니다: ${container.homePaths.configFile}\n다음: storyboard login ${providerId}`,
+      { key, value: true },
+    );
   }
 
   if (!configBridge.isHiddenProviderRiskAcknowledged(providerId)) {
     if (prompter === undefined) {
-      return {
-        ok: false,
-        message:
-          '이 설정은 위험 고지를 읽고 직접 동의해야 켤 수 있습니다. 터미널에서 다시 실행하세요.',
-      };
+      return failure(
+        '이 설정은 위험 고지를 읽고 직접 동의해야 켤 수 있습니다. 터미널에서 다시 실행하세요.',
+      );
     }
 
     const isAccepted: boolean | undefined = await prompter.choose({
@@ -66,7 +65,7 @@ async function switchOnHiddenProvider(
     });
 
     if (isAccepted !== true) {
-      return { ok: false, message: '켜지 않았습니다. 설정은 바뀌지 않았습니다.' };
+      return failure('켜지 않았습니다. 설정은 바뀌지 않았습니다.');
     }
 
     await configBridge.acknowledgeHiddenProviderRisk(providerId);
@@ -75,11 +74,10 @@ async function switchOnHiddenProvider(
   await configBridge.enableHiddenProvider(providerId);
   container.logger.warn(hiddenProviderRunWarning(providerId));
 
-  return {
-    ok: true,
-    message: `${key} = true 저장했습니다: ${container.homePaths.configFile}`,
-    data: { key, value: true },
-  };
+  return success(`${key} = true 저장했습니다: ${container.homePaths.configFile}`, {
+    key,
+    value: true,
+  });
 }
 
 export async function setHiddenProviderKey(
@@ -102,7 +100,7 @@ export async function setHiddenProviderKey(
     const isEnabled: boolean | undefined = booleanWords[raw];
 
     if (isEnabled === undefined) {
-      return { ok: false, message: `${key} 는 true 또는 false 여야 합니다.` };
+      return failure(`${key} 는 true 또는 false 여야 합니다.`);
     }
 
     if (isEnabled) {
@@ -110,9 +108,8 @@ export async function setHiddenProviderKey(
     }
 
     const clearedKeys: readonly string[] = await configBridge.disableHiddenProvider(providerId);
-    return {
-      ok: true,
-      message: [
+    return success(
+      [
         `${key} = false 저장했습니다: ${container.homePaths.configFile}`,
         ...(clearedKeys.length === 0
           ? []
@@ -120,12 +117,12 @@ export async function setHiddenProviderKey(
               `이 프로바이더를 가리키던 설정도 지웠습니다(${clearedKeys.join(', ')}). 다시 고르세요: storyboard setup`,
             ]),
       ].join('\n'),
-      data: { key, value: false, clearedKeys },
-    };
+      { key, value: false, clearedKeys },
+    );
   }
 
   if (!configBridge.isHiddenProviderEnabled(providerId)) {
-    return { ok: false, message: unknownProviderMessage(providerId) };
+    return failure(unknownProviderMessage(providerId));
   }
 
   if (getProviderTransport(providerId) !== 'cli') {
@@ -136,7 +133,7 @@ export async function setHiddenProviderKey(
     const command: string = raw.trim();
 
     if (command.length === 0) {
-      return { ok: false, message: `${key} 는 비워 둘 수 없습니다. 실행 파일의 경로를 적으세요.` };
+      return failure(`${key} 는 비워 둘 수 없습니다. 실행 파일의 경로를 적으세요.`);
     }
 
     await configBridge.setCliProviderConfig(providerId, { command });
@@ -144,7 +141,7 @@ export async function setHiddenProviderKey(
     const timeoutMs: number = Number(raw);
 
     if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
-      return { ok: false, message: `${key} 는 0보다 큰 정수(밀리초)여야 합니다.` };
+      return failure(`${key} 는 0보다 큰 정수(밀리초)여야 합니다.`);
     }
 
     await configBridge.setCliProviderConfig(providerId, { timeoutMs });
@@ -152,11 +149,10 @@ export async function setHiddenProviderKey(
     return undefined;
   }
 
-  return {
-    ok: true,
-    message: `${key} = ${raw} 저장했습니다: ${container.homePaths.configFile}`,
-    data: { key, value: raw },
-  };
+  return success(`${key} = ${raw} 저장했습니다: ${container.homePaths.configFile}`, {
+    key,
+    value: raw,
+  });
 }
 
 export interface DoctorCheck {

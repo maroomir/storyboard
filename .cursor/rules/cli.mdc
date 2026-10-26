@@ -64,6 +64,17 @@ exception: it runs before a workspace exists, so it calls the engine's workspace
 (`createWorkspace`, `ensureWorkspaceGitignore`, `sealStoryMemory`, …) directly, and `git init`
 stays in the CLI's `gitRepository` adapter.
 
+## Command files
+
+A command's first word is its file: `storyboard draft generate` lives in `commands/draft.ts`, `card list`
+in `commands/card.ts`, and the one-word verbs in files of their own (`init.ts`, `setup.ts`, `doctor.ts`,
+`status.ts`). `commands/index.ts` is only the handler table that maps each verb string to its handler.
+What two nouns share has a module named for what it is — `sceneArguments.ts` (the `<stem>` argument),
+`paidRunConfirmation.ts` (the estimate prompt before a paid run), `contractInput.ts` (the project
+contract read from flags or a file) — never a `shared.ts`. A handler builds its `CommandOutcome`
+with `failure(message, data?)` and `success(message, data?)` from `commands/outcomes.ts`; only an
+outcome that carries `stop` or `isDrawn` is written as a literal.
+
 ## Layering
 
 `terminal → adapters → commands → tui`. A layer may import itself and anything to its left;
@@ -123,7 +134,7 @@ variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params
 files in force and fails on one it cannot use. `dispatch.ts` loads them before a
 workspace verb runs, warning about files it cannot use.
 `setup` / `doctor` / `config show|set|unset` / `params show` are the onboarding
-verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
+verbs (`apps/cli/src/commands/{setup,doctor,config,params}.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
 is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and
 `apps/cli/test/help.test.ts` fails when a verb is implemented without a catalog entry.
 

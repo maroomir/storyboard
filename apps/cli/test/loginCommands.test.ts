@@ -8,7 +8,9 @@ import type { ParsedArguments } from '@/cliArguments';
 import { commands } from '@/commands';
 import { collectHiddenProviderChecks } from '@/commands/hiddenProvider';
 import { signIn, signOut } from '@/commands/login';
-import { runConfigSet, runDoctor, runSetup } from '@/commands/setup';
+import { runConfigSet } from '@/commands/config';
+import { runDoctor } from '@/commands/doctor';
+import { runSetup } from '@/commands/setup';
 import { createCliContainer } from '@/container';
 
 import { createAuthorizationServer, jsonResponse } from './fixtures/chatGptAuthServer';

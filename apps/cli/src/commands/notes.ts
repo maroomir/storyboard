@@ -23,6 +23,7 @@ import type { CliContainer } from '@/container';
 import { defaultNoteSource, noteSources } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
 import { askSecret, readStdin } from './prompt';
+import { failure, success } from '@/commands/outcomes';
 
 export function parseNoteLocation(raw: string): NoteLocation {
   if (isNotionUrl(raw)) {
@@ -196,7 +197,7 @@ export async function runNoteAbsorb(
   });
 
   if (!collected.ok) {
-    return { ok: false, message: collected.message };
+    return failure(collected.message);
   }
 
   const { bundle } = collected;
@@ -206,15 +207,12 @@ export async function runNoteAbsorb(
 
   if (!isConfirmed) {
     if (container.prompter === undefined) {
-      return {
-        ok: true,
-        message: [
-          ...estimateLines,
-          '',
-          `이대로 진행하려면 --yes 를 붙이세요: ${options.retryCommand}`,
-        ].join('\n'),
-        data: { estimate, skipped: bundle.skipped },
-      };
+      return success(
+        [...estimateLines, '', `이대로 진행하려면 --yes 를 붙이세요: ${options.retryCommand}`].join(
+          '\n',
+        ),
+        { estimate, skipped: bundle.skipped },
+      );
     }
 
     if (!(await confirm(container.prompter, '노트를 AI 로 정리할까요?', estimateLines, '정리'))) {
@@ -233,17 +231,16 @@ export async function runNoteAbsorb(
   });
 
   if (!planned.ok) {
-    return { ok: false, message: planned.message };
+    return failure(planned.message);
   }
 
   const planLines: string[] = describePlan(planned.plan);
 
   if (flagBoolean(args.flags, 'dry-run')) {
-    return {
-      ok: true,
-      message: [...planLines, '', '--dry-run 이라 반영하지 않았습니다.'].join('\n'),
-      data: { estimate, plan: planned.plan },
-    };
+    return success([...planLines, '', '--dry-run 이라 반영하지 않았습니다.'].join('\n'), {
+      estimate,
+      plan: planned.plan,
+    });
   }
 
   if (!isConfirmed && container.prompter !== undefined) {
@@ -268,25 +265,19 @@ export async function runNoteAbsorb(
   });
 
   if (!applied.ok) {
-    return { ok: false, message: applied.message };
+    return failure(applied.message);
   }
 
-  return {
-    ok: true,
-    message: describeOutcome(applied).join('\n'),
-    data: { estimate, plan: planned.plan, applied },
-  };
+  return success(describeOutcome(applied).join('\n'), { estimate, plan: planned.plan, applied });
 }
 
 export const absorbNotes: CommandHandler = async ({ container, args }) => {
   const rawLocation: string | undefined = args.positionals[0];
 
   if (rawLocation === undefined) {
-    return {
-      ok: false,
-      message:
-        '노트 위치를 지정해 주세요: storyboard notes absorb <Obsidian 폴더·노트 | Notion 페이지 주소 | Notion 내보내기 zip>',
-    };
+    return failure(
+      '노트 위치를 지정해 주세요: storyboard notes absorb <Obsidian 폴더·노트 | Notion 페이지 주소 | Notion 내보내기 zip>',
+    );
   }
 
   return await runNoteAbsorb(container, args, rawLocation, {
@@ -299,7 +290,7 @@ export const exportNotes: CommandHandler = async ({ container, args }) => {
   const rawTarget: string | undefined = args.positionals[0];
 
   if (rawTarget === undefined) {
-    return { ok: false, message: '내보낼 폴더를 지정해 주세요: storyboard notes export <folder>' };
+    return failure('내보낼 폴더를 지정해 주세요: storyboard notes export <folder>');
   }
 
   const target: NodeUri = NodeUri.file(resolve(rawTarget));
@@ -309,24 +300,22 @@ export const exportNotes: CommandHandler = async ({ container, args }) => {
   });
 
   if (!notesExport.ok) {
-    return { ok: false, message: notesExport.message };
+    return failure(notesExport.message);
   }
 
-  return {
-    ok: true,
-    message: `${target.fsPath} 에 노트 ${notesExport.written.length}장을 썼습니다. Obsidian 에서 폴더를 열거나 Notion 의 가져오기(Markdown)에 넣으세요. 다시 흡수하면 같은 카드로 이어집니다.`,
-    data: { target: target.fsPath, written: notesExport.written },
-  };
+  return success(
+    `${target.fsPath} 에 노트 ${notesExport.written.length}장을 썼습니다. Obsidian 에서 폴더를 열거나 Notion 의 가져오기(Markdown)에 넣으세요. 다시 흡수하면 같은 카드로 이어집니다.`,
+    { target: target.fsPath, written: notesExport.written },
+  );
 };
 
 export const connectNotes: CommandHandler = async ({ container, args }) => {
   const source: string = args.positionals[0] ?? defaultNoteSource;
 
   if (!noteSources.some((candidate) => candidate === source)) {
-    return {
-      ok: false,
-      message: `연결할 수 있는 노트 출처가 아닙니다: ${source}\n쓸 수 있는 값: ${noteSources.join(', ')}`,
-    };
+    return failure(
+      `연결할 수 있는 노트 출처가 아닙니다: ${source}\n쓸 수 있는 값: ${noteSources.join(', ')}`,
+    );
   }
 
   const token: string = (
@@ -340,12 +329,11 @@ export const connectNotes: CommandHandler = async ({ container, args }) => {
   await container.notes.connectNotion(token);
 
   return token.length === 0
-    ? { ok: true, message: 'Notion 토큰을 지웠습니다.' }
-    : {
-        ok: true,
-        message: [
+    ? success('Notion 토큰을 지웠습니다.')
+    : success(
+        [
           `Notion 토큰을 저장했습니다: ${container.homePaths.secretsFile}`,
           '읽을 페이지마다 Notion 에서 「연결」에 이 통합을 추가해야 합니다.',
         ].join('\n'),
-      };
+      );
 };

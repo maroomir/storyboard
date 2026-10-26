@@ -2,6 +2,7 @@ import type { WorkspaceNextStep, WorkspaceStatus } from '@storyboard/story-app';
 import { contractFieldLabels } from '@storyboard/story-model';
 
 import type { CommandHandler } from './outcome';
+import { success } from './outcomes';
 
 export const nextStepCommands: Readonly<Record<WorkspaceNextStep, string | undefined>> = {
   'fill-contract': 'project set',
@@ -64,9 +65,8 @@ export const showStatus: CommandHandler = async ({ container }) => {
   const command: string | undefined = nextStepCommands[status.nextStep];
   const reason: string = describeNextStep(status);
 
-  return {
-    ok: true,
-    message: [
+  return success(
+    [
       status.project.name,
       `계약      ${status.project.missingContract.length === 0 ? '채워짐' : `${describeMissingContract(status)} 비어 있음`}`,
       `아웃라인  ${status.outline.hasChapterPlan ? '있음' : '없음'}`,
@@ -78,6 +78,6 @@ export const showStatus: CommandHandler = async ({ container }) => {
       '',
       command === undefined ? `다음      ${reason}` : `다음      storyboard ${command} — ${reason}`,
     ].join('\n'),
-    data: { ...status, next: { step: status.nextStep, command: command ?? null, reason } },
-  };
+    { ...status, next: { step: status.nextStep, command: command ?? null, reason } },
+  );
 };
