@@ -32,10 +32,10 @@ vi.mock("../../../../../../packages/story-model/src/domain/files/draftHistory", 
   >()),
   archiveExistingDraft: (...args: unknown[]): unknown => archiveExistingDraftMock(...args)
 }))
-vi.mock('../../../../../../packages/story-engine/src/pipeline/sceneGenerationPipeline', async () => {
+vi.mock('../../../../../../packages/story-engine/src/pipeline/scene/sceneGenerationPipeline', async () => {
   const actual = await vi.importActual<
-    typeof import('../../../../../../packages/story-engine/src/pipeline/sceneGenerationPipeline')
-  >('../../../../../../packages/story-engine/src/pipeline/sceneGenerationPipeline')
+    typeof import('../../../../../../packages/story-engine/src/pipeline/scene/sceneGenerationPipeline')
+  >('../../../../../../packages/story-engine/src/pipeline/scene/sceneGenerationPipeline')
   return {
     ...actual,
     SceneGenerationPipeline: class {

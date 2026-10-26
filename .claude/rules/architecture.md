@@ -21,8 +21,8 @@ Keep runtime boundaries explicit and introduce object-oriented patterns only whe
 
 ## Pipelines Are Data
 
-- Both generation loops are stage lists: the scene pipeline (`packages/story-engine/src/pipeline`,
-  `ISceneStage` over a shared run state) and the novel pipeline (`packages/story-engine`,
+- Both generation loops are stage lists: the scene pipeline (`packages/story-engine/src/pipeline/scene`,
+  one `ISceneStage` class per file under `stages/` over a `SceneGenerationRun`) and the novel pipeline (`packages/story-engine`,
   `INovelStage` over the run context). A runner walks the plan in force and calls each stage.
 - The plan is the stage catalog's order until an author's `pipelines/{scene,novel}.yaml` is laid
   over it (`@storyboard/story-model`'s `pipelineSpec`); the catalog (`id`, `label`, `required`,
