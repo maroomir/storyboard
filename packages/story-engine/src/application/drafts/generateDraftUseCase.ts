@@ -34,7 +34,7 @@ import {
 } from '#engine/persistence/cardMemoryWorkspace';
 import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
 import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/story-ai';
-import { SceneGenerationPipeline } from '#engine/pipeline/sceneGenerationPipeline';
+import { SceneGenerationPipeline } from '#engine/pipeline/scene/sceneGenerationPipeline';
 import {
   SceneGenerationPipelineCancelledError,
   type RunSceneGenerationPipelineResult,
