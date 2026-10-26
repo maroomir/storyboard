@@ -17,8 +17,8 @@ import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
   StoryFileSnapshot,
-} from '#engine/application/story/storyFeatureTypes';
-import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureTypes';
+} from '#engine/application/story/storyFeatureSource';
+import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureSource';
 import { parseProjectJson } from '#engine/persistence/projectJson';
 export class StoryFeatureRepository implements IStoryFeatureRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

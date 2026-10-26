@@ -96,14 +96,6 @@ async function resolveReviseNarration(
   };
 }
 
-export interface ReviseDraftServices {
-  readonly host: HostAdapters;
-  readonly ai: AiServices;
-  readonly repositories: WorkspaceRepositories;
-}
-
-type ReviseDraftWorkflowOptions = ReviseDraftServices & ReviseDraftRequest;
-
 export interface ReviseDraftRequest {
   readonly workspaceUri: StoryUri;
   readonly paths: StoryboardProjectPaths;
@@ -277,102 +269,6 @@ async function prepareReviseDraftContext(
     },
   };
 }
-async function runReviseDraftWorkflow(
-  options: ReviseDraftWorkflowOptions,
-): Promise<ReviseDraftWorkflowResult> {
-  const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
-    options;
-
-  const aiService: StoryboardAiService = new StoryboardAiService(options.ai.providerRegistry, {
-    onUsage: (record): void => {
-      void options.ai.usageSink
-        .record(options.workspaceUri, record)
-        .catch((error: unknown) => options.host.logger.error('사용량 기록에 실패했습니다.', error));
-    },
-  });
-  const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
-  const reviseContext: ReviseDraftContext = await prepareReviseDraftContext(
-    options.host.fileSystem,
-    paths,
-    draftUri,
-    sceneStem,
-    options.repositories.sceneCache,
-  );
-
-  const loopResult: ReviseLoopResult = await runReviseLoop({
-    aiService,
-    registry: options.ai.providerRegistry,
-    attribution,
-    loopContext: reviseContext.loop,
-    body: reviseContext.draft.body,
-    maxIterations,
-    reviseScoreThreshold,
-    maxCompressionPercent,
-    onProgress: options.onProgress,
-    shouldCancel: options.shouldCancel,
-    ...(options.seedIssues === undefined ? {} : { seedIssues: options.seedIssues }),
-    onRound: (round) => options.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
-  });
-
-  try {
-    await recordRevisionRounds(options.host.fileSystem, paths, sceneStem, loopResult.rounds);
-  } catch (error) {
-    options.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
-  }
-
-  if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
-    const revisionConfig: TaskAiConfigResolved = options.ai.providerRegistry.getTaskAiConfig('draftRevision');
-    const revised: Draft = createDraft({
-      sceneStem,
-      format: reviseContext.draft.format,
-      body: loopResult.body,
-      warnings: reviseContext.draft.warnings,
-      generator: options.host.generator,
-      providerId: revisionConfig.providerId,
-      model: revisionConfig.model,
-    });
-
-    await writeDraftFile(draftUri, options.host.fileSystem, revised);
-    await refreshSceneCacheBodyHash(options, sceneStem, revised);
-  }
-
-  return {
-    passed: loopResult.passed,
-    revisionCount: loopResult.revisionCount,
-    remainingBlocking: loopResult.remainingBlocking,
-    cancelled: loopResult.cancelled,
-    instructions: loopResult.instructions,
-    preservedOriginal: loopResult.preservedOriginal,
-    rejection: loopResult.rejection,
-    ...(loopResult.failure === undefined ? {} : { failure: loopResult.failure }),
-    rounds: loopResult.rounds,
-  };
-}
-
-async function refreshSceneCacheBodyHash(
-  options: ReviseDraftWorkflowOptions,
-  sceneStem: string,
-  revised: ReturnType<typeof createDraft>,
-): Promise<void> {
-  const repository: ISceneCacheRepository | undefined = options.repositories.sceneCache;
-
-  if (!repository) {
-    return;
-  }
-
-  const cacheUri: StoryUri = sceneCacheFilePath(options.paths, sceneStem);
-
-  try {
-    const record: SceneCacheRecord = await repository.read(cacheUri);
-    await repository.write(cacheUri, {
-      ...record,
-      bodyHash: computeDraftBodyHash(parseDraft(serializeDraft(revised)).body),
-    });
-  } catch (error) {
-    options.host.logger.warn(`씬 캐시의 본문 해시를 갱신하지 못했습니다: ${String(error)}`);
-  }
-}
-
 export class ReviseDraftUseCase {
   public constructor(
     private readonly host: HostAdapters,
@@ -381,11 +277,102 @@ export class ReviseDraftUseCase {
   ) {}
 
   public async execute(request: ReviseDraftRequest): Promise<ReviseDraftWorkflowResult> {
-    return await runReviseDraftWorkflow({
-      host: this.host,
-      ai: this.ai,
-      repositories: this.repositories,
-      ...request,
+    return await this.runReviseDraftWorkflow(request);
+  }
+
+  private async runReviseDraftWorkflow(
+      request: ReviseDraftRequest,
+    ): Promise<ReviseDraftWorkflowResult> {
+    const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
+      request;
+
+    const aiService: StoryboardAiService = new StoryboardAiService(this.ai.providerRegistry, {
+      onUsage: (record): void => {
+        void this.ai.usageSink
+          .record(request.workspaceUri, record)
+          .catch((error: unknown) => this.host.logger.error('사용량 기록에 실패했습니다.', error));
+      },
     });
+    const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
+    const reviseContext: ReviseDraftContext = await prepareReviseDraftContext(
+      this.host.fileSystem,
+      paths,
+      draftUri,
+      sceneStem,
+      this.repositories.sceneCache,
+    );
+
+    const loopResult: ReviseLoopResult = await runReviseLoop({
+      aiService,
+      registry: this.ai.providerRegistry,
+      attribution,
+      loopContext: reviseContext.loop,
+      body: reviseContext.draft.body,
+      maxIterations,
+      reviseScoreThreshold,
+      maxCompressionPercent,
+      onProgress: request.onProgress,
+      shouldCancel: request.shouldCancel,
+      ...(request.seedIssues === undefined ? {} : { seedIssues: request.seedIssues }),
+      onRound: (round) => this.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
+    });
+
+    try {
+      await recordRevisionRounds(this.host.fileSystem, paths, sceneStem, loopResult.rounds);
+    } catch (error) {
+      this.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
+    }
+
+    if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
+      const revisionConfig: TaskAiConfigResolved = this.ai.providerRegistry.getTaskAiConfig('draftRevision');
+      const revised: Draft = createDraft({
+        sceneStem,
+        format: reviseContext.draft.format,
+        body: loopResult.body,
+        warnings: reviseContext.draft.warnings,
+        generator: this.host.generator,
+        providerId: revisionConfig.providerId,
+        model: revisionConfig.model,
+      });
+
+      await writeDraftFile(draftUri, this.host.fileSystem, revised);
+      await this.refreshSceneCacheBodyHash(paths, sceneStem, revised);
+    }
+
+    return {
+      passed: loopResult.passed,
+      revisionCount: loopResult.revisionCount,
+      remainingBlocking: loopResult.remainingBlocking,
+      cancelled: loopResult.cancelled,
+      instructions: loopResult.instructions,
+      preservedOriginal: loopResult.preservedOriginal,
+      rejection: loopResult.rejection,
+      ...(loopResult.failure === undefined ? {} : { failure: loopResult.failure }),
+      rounds: loopResult.rounds,
+    };
+  }
+
+  private async refreshSceneCacheBodyHash(
+      paths: StoryboardProjectPaths,
+      sceneStem: string,
+      revised: ReturnType<typeof createDraft>,
+    ): Promise<void> {
+    const repository: ISceneCacheRepository | undefined = this.repositories.sceneCache;
+
+    if (!repository) {
+      return;
+    }
+
+    const cacheUri: StoryUri = sceneCacheFilePath(paths, sceneStem);
+
+    try {
+      const record: SceneCacheRecord = await repository.read(cacheUri);
+      await repository.write(cacheUri, {
+        ...record,
+        bodyHash: computeDraftBodyHash(parseDraft(serializeDraft(revised)).body),
+      });
+    } catch (error) {
+      this.host.logger.warn(`씬 캐시의 본문 해시를 갱신하지 못했습니다: ${String(error)}`);
+    }
   }
 }

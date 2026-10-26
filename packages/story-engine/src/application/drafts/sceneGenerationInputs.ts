@@ -36,7 +36,7 @@ import {
 import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '#engine/pipeline/sceneGenerationPolicies';
-import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './draftGenerationContract';
 import { resolveSceneBeats } from './resolveSceneBeats';
 import { resolveSceneGrounding, type SceneGroundingOutcome } from './resolveSceneGrounding';
 import {

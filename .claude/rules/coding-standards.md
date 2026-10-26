@@ -24,6 +24,9 @@ for schema-first types and the error-class template. Generic readability and ver
 - Packages ship TypeScript source (no build); every app must resolve `@storyboard/*` identically in
   tsconfig `paths`, esbuild `alias`, and vitest `alias` — keep all three in sync when adding a
   package.
+- A use case is one file: its request and result types, the class, and the private methods that
+  are its steps. Shared contracts of a workflow go in a module named for what they are
+  (`draftGenerationContract.ts`, `novelPipelineContract.ts`), never in a `*Types.ts` grab bag.
 - Tests belong to the apps (packages have no runners). The CLI uses flat `test/*.test.ts`; vscode
   uses `test/unit/**/*.spec.ts(x)` mirroring layers. A new app follows the CLI's shape. Git tests
   run against real repositories in a temp directory — never replace them with stubs.

@@ -41,7 +41,7 @@ import type {
   NoteConsolidationOutcome,
 } from '@storyboard/story-model';
 
-import type { StoryFeatureSource } from '#engine/application/story/storyFeatureTypes';
+import type { StoryFeatureSource } from '#engine/application/story/storyFeatureSource';
 import {
   failedResult,
   runUseCase,
