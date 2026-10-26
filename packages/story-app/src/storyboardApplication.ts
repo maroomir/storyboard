@@ -66,7 +66,15 @@ import {
   type IUsageSink,
   type IWorkspaceLocator,
   type NoteHttpFetch,
-  type GenerateDraftUseCaseDependencies,
+  type HostAdapters,
+  type AiServices,
+  type WorkspaceRepositories,
+  type IBibleCandidateRepository,
+  type ICardSidebarRepository,
+  type INarratorCardRepository,
+  type INovelRunStateRepository,
+  type IOutlineRepository,
+  type ISceneSidebarRepository,
 } from '@storyboard/story-engine';
 import { type WorkspaceRunLockOwner } from '@storyboard/story-model';
 import {
@@ -113,12 +121,12 @@ interface EngineGraph {
   readonly logger: IStoryboardLogger;
   readonly usageMeter: UsageMeter;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
-  readonly bibleCandidateRepository: BibleCandidateRepository;
-  readonly cardSidebarRepository: CardSidebarRepository;
-  readonly narratorCardRepository: NarratorCardRepository;
-  readonly novelRunStateRepository: NovelRunStateRepository;
-  readonly outlineRepository: OutlineRepository;
-  readonly sceneSidebarRepository: SceneSidebarRepository;
+  readonly bibleCandidateRepository: IBibleCandidateRepository;
+  readonly cardSidebarRepository: ICardSidebarRepository;
+  readonly narratorCardRepository: INarratorCardRepository;
+  readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly outlineRepository: IOutlineRepository;
+  readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
   readonly exportNotesUseCase: ExportNotesUseCase;
@@ -157,11 +165,6 @@ interface EngineGraph {
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
 }
-
-type DraftUseCaseSharedDependencies = Omit<
-  GenerateDraftUseCaseDependencies,
-  'postGenerationUpdates'
->;
 
 export class StoryboardApplication {
   public readonly drafts: DraftManager;
@@ -253,75 +256,37 @@ function buildServices(
   const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
   const postGenerationUpdates: PostGenerationUpdateManager = new PostGenerationUpdateManager();
 
-  const draftRepository: DraftRepository = new DraftRepository(fileSystem);
-  const projectRepository: ProjectRepository = new ProjectRepository(fileSystem);
-  const sceneRepository: SceneRepository = new SceneRepository(fileSystem);
-  const sceneCacheRepository: SceneCacheRepository = new SceneCacheRepository(fileSystem);
-  const sceneSeedRepository: SceneSeedRepository = new SceneSeedRepository(fileSystem);
-  const sceneBatchRepository: SceneBatchRepository = new SceneBatchRepository(
+  const host: HostAdapters = {
     fileSystem,
     workspaceLocator,
-  );
-  const sceneSidebarRepository: SceneSidebarRepository = new SceneSidebarRepository(fileSystem);
-  const outlineRepository: OutlineRepository = new OutlineRepository(fileSystem);
-  const novelRunStateRepository: NovelRunStateRepository = new NovelRunStateRepository(fileSystem);
-  const novelReviewRepository: NovelReviewRepository = new NovelReviewRepository(fileSystem);
-  const manuscriptAssemblyRepository: ManuscriptAssemblyRepository =
-    new ManuscriptAssemblyRepository(fileSystem);
-  const cardWriterRepository: CardWriterRepository = new CardWriterRepository(fileSystem);
-  const cardCandidateRepository: CardCandidateRepository = new CardCandidateRepository(
-    fileSystem,
     logger,
-  );
-  const cardCollectRepository: CardCollectRepository = new CardCollectRepository(fileSystem);
-  const cardRecommendationRepository: CardRecommendationRepository =
-    new CardRecommendationRepository(fileSystem);
-  const cardSidebarRepository: CardSidebarRepository = new CardSidebarRepository(fileSystem);
-  const bibleCandidateRepository: BibleCandidateRepository = new BibleCandidateRepository(
-    fileSystem,
-  );
-  const storyFeatureRepository: StoryFeatureRepository = new StoryFeatureRepository(fileSystem);
-  const noteAbsorbRepository: NoteAbsorbRepository = new NoteAbsorbRepository(fileSystem);
-
-  const assembleManuscriptUseCase: AssembleManuscriptUseCase = new AssembleManuscriptUseCase({
-    logger,
-    repository: manuscriptAssemblyRepository,
-  });
-  const summarizeChaptersUseCase: SummarizeChaptersUseCase = new SummarizeChaptersUseCase({
-    aiGateway,
-    logger,
-    repository: manuscriptAssemblyRepository,
-  });
-  const draftUseCaseDependencies: DraftUseCaseSharedDependencies = {
-    aiGateway,
     configBridge,
-    draftRepository,
-    fileSystem,
+    secretStore,
     generator,
-    logger,
-    projectRepository,
-    sceneCacheRepository,
-    sceneGroundingGapRepository: new SceneGroundingGapRepository(fileSystem),
-    sceneRepository,
-    workspaceLocator,
   };
-  const generateDraftUseCase: GenerateDraftUseCase = new GenerateDraftUseCase({
-    ...draftUseCaseDependencies,
-    ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
-  });
-  const reviseDraftUseCase: ReviseDraftUseCase = new ReviseDraftUseCase({
-    aiProviderRegistry,
-    usageSink,
-    fileSystem,
-    logger,
-    generator,
-    sceneCacheRepository,
-  });
-  const reviseAfterGenerateGate: ReviseAfterGenerateGate = new ReviseAfterGenerateGate({
-    fileSystem,
-    workspaceLocator,
-    configBridge,
-    logger,
+  const ai: AiServices = { gateway: aiGateway, providerRegistry: aiProviderRegistry, usageSink };
+  const repositories: WorkspaceRepositories = buildWorkspaceRepositories(
+    host,
+    dependencies.fetch ?? globalThis.fetch,
+  );
+
+  const assembleManuscriptUseCase: AssembleManuscriptUseCase = new AssembleManuscriptUseCase(
+    host,
+    repositories,
+  );
+  const summarizeChaptersUseCase: SummarizeChaptersUseCase = new SummarizeChaptersUseCase(
+    host,
+    ai,
+    repositories,
+  );
+  const generateDraftUseCase: GenerateDraftUseCase = new GenerateDraftUseCase(
+    host,
+    ai,
+    repositories,
+    options.postGenerationUpdates === false ? {} : { postGenerationUpdates },
+  );
+  const reviseDraftUseCase: ReviseDraftUseCase = new ReviseDraftUseCase(host, ai, repositories);
+  const reviseAfterGenerateGate: ReviseAfterGenerateGate = new ReviseAfterGenerateGate(host, {
     reviseDraftUseCase,
   });
 
@@ -334,133 +299,97 @@ function buildServices(
     logger,
     usageMeter,
     postGenerationUpdates,
-    bibleCandidateRepository,
-    cardSidebarRepository,
-    narratorCardRepository: new NarratorCardRepository(fileSystem),
-    novelRunStateRepository,
-    outlineRepository,
-    sceneSidebarRepository,
-    applyDraftFormatUseCase: new ApplyDraftFormatUseCase({
-      fileSystem,
-      aiGateway,
-      logger,
-      generator,
-    }),
-    applyNoteAbsorbUseCase: new ApplyNoteAbsorbUseCase({
-      logger,
-      noteRepository: noteAbsorbRepository,
-      cardWriter: cardWriterRepository,
-    }),
-    exportNotesUseCase: new ExportNotesUseCase({
-      logger,
-      fileSystem,
-      storyRepository: storyFeatureRepository,
-      synopsis: outlineRepository,
-    }),
-    applyStoryProposals: new ApplyStoryProposals({ fileSystem }),
+    bibleCandidateRepository: repositories.bibleCandidates,
+    cardSidebarRepository: repositories.cardSidebar,
+    narratorCardRepository: repositories.narratorCards,
+    novelRunStateRepository: repositories.novelRunState,
+    outlineRepository: repositories.outline,
+    sceneSidebarRepository: repositories.sceneSidebar,
+    applyDraftFormatUseCase: new ApplyDraftFormatUseCase(host, ai),
+    applyNoteAbsorbUseCase: new ApplyNoteAbsorbUseCase(host, repositories),
+    exportNotesUseCase: new ExportNotesUseCase(host, repositories),
+    applyStoryProposals: new ApplyStoryProposals(host),
     assembleManuscriptUseCase,
-    augmentDraftUseCase: new AugmentDraftUseCase({ fileSystem, aiGateway, logger, configBridge }),
-    buildStoryCardsUseCase: new BuildStoryCardsUseCase({
-      aiGateway,
-      repository: storyFeatureRepository,
-    }),
-    checkDraftUseCase: new CheckDraftUseCase({ aiGateway, fileSystem, logger }),
-    collectCardProposalsUseCase: new CollectCardProposalsUseCase({
-      aiGateway,
-      repository: cardCollectRepository,
-    }),
-    collectNotesUseCase: new CollectNotesUseCase({
-      sources: new NoteSourceProvider({
-        fileSystem,
-        secretStore,
-        fetch: dependencies.fetch ?? globalThis.fetch,
-      }),
-      repository: noteAbsorbRepository,
-    }),
-    completeStoryScenesUseCase: new CompleteStoryScenesUseCase({
-      aiGateway,
-      repository: storyFeatureRepository,
-    }),
-    condenseDraftUseCase: new CondenseDraftUseCase({ aiGateway, logger }),
-    createCardUseCase: new CreateCardUseCase({ repository: cardWriterRepository }),
-    createSceneUseCase: new CreateSceneUseCase({ fileSystem, logger }),
-    expandDraftUseCase: new ExpandDraftUseCase({ aiGateway, logger }),
-    exportManuscriptUseCase: new ExportManuscriptUseCase({
-      repository: manuscriptAssemblyRepository,
-    }),
-    generateAllDraftsUseCase: new GenerateAllDraftsUseCase({
+    augmentDraftUseCase: new AugmentDraftUseCase(host, ai),
+    buildStoryCardsUseCase: new BuildStoryCardsUseCase(ai, repositories),
+    checkDraftUseCase: new CheckDraftUseCase(host, ai),
+    collectCardProposalsUseCase: new CollectCardProposalsUseCase(ai, repositories),
+    collectNotesUseCase: new CollectNotesUseCase(repositories),
+    completeStoryScenesUseCase: new CompleteStoryScenesUseCase(ai, repositories),
+    condenseDraftUseCase: new CondenseDraftUseCase(host, ai),
+    createCardUseCase: new CreateCardUseCase(repositories),
+    createSceneUseCase: new CreateSceneUseCase(host),
+    expandDraftUseCase: new ExpandDraftUseCase(host, ai),
+    exportManuscriptUseCase: new ExportManuscriptUseCase(repositories),
+    generateAllDraftsUseCase: new GenerateAllDraftsUseCase(host, repositories, {
       generateDraftUseCase,
-      logger,
       reviseAfterGenerateGate,
-      sceneRepository: sceneBatchRepository,
     }),
     generateDraftUseCase,
-    generateOutlineUseCase: new GenerateOutlineUseCase({
-      aiGateway,
-      logger,
-      repository: outlineRepository,
-    }),
-    generateSceneBeatsUseCase: new GenerateSceneBeatsUseCase({
-      aiGateway,
-      configBridge,
-      fileSystem,
-      logger,
-      sceneRepository,
-    }),
-    generateStoryStateUseCase: new GenerateStoryStateUseCase(draftUseCaseDependencies),
-    novelPipeline: new NovelPipeline({
-      aiGateway,
-      aiProviderRegistry,
+    generateOutlineUseCase: new GenerateOutlineUseCase(host, ai, repositories),
+    generateSceneBeatsUseCase: new GenerateSceneBeatsUseCase(host, ai, repositories),
+    generateStoryStateUseCase: new GenerateStoryStateUseCase(host, ai, repositories),
+    novelPipeline: new NovelPipeline(host, ai, repositories, {
       assembleManuscriptUseCase,
-      cardWriter: cardWriterRepository,
-      configBridge,
       generateDraftUseCase,
-      logger,
-      novelReviewRepository,
-      novelRunStateRepository,
-      outlineRepository,
       reviseDraftUseCase,
-      sceneSeedRepository,
       summarizeChaptersUseCase,
-      usageSink,
-      fileSystem,
     }),
-    planNoteAbsorbUseCase: new PlanNoteAbsorbUseCase({
-      aiGateway,
-      logger,
-      storyRepository: storyFeatureRepository,
-      noteRepository: noteAbsorbRepository,
-    }),
-    promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase({
-      repository: bibleCandidateRepository,
-    }),
-    promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase({
-      repository: cardCandidateRepository,
-    }),
-    promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase({
-      logger,
-      noteRepository: noteAbsorbRepository,
-      cardWriter: cardWriterRepository,
-    }),
-    recommendCardsUseCase: new RecommendCardsUseCase({
-      aiGateway,
-      logger,
-      repository: cardRecommendationRepository,
-    }),
-    renameCardUseCase: new RenameCardUseCase({ fileSystem, logger }),
-    renameSceneUseCase: new RenameSceneUseCase({ fileSystem, logger }),
-    reviewManuscriptUseCase: new ReviewManuscriptUseCase({
-      aiGateway,
-      logger,
-      repository: manuscriptAssemblyRepository,
-    }),
+    planNoteAbsorbUseCase: new PlanNoteAbsorbUseCase(host, ai, repositories),
+    promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(repositories),
+    promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(repositories),
+    promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase(host, repositories),
+    recommendCardsUseCase: new RecommendCardsUseCase(host, ai, repositories),
+    renameCardUseCase: new RenameCardUseCase(host),
+    renameSceneUseCase: new RenameSceneUseCase(host),
+    reviewManuscriptUseCase: new ReviewManuscriptUseCase(host, ai, repositories),
     reviseAfterGenerateGate,
     reviseDraftUseCase,
-    saveDraftEditUseCase: new SaveDraftEditUseCase({ fileSystem }),
-    seedScenesUseCase: new SeedScenesUseCase({ fileSystem, logger, sceneSeedRepository }),
-    studioChatUseCase: new StudioChatUseCase({ aiGateway, logger }),
+    saveDraftEditUseCase: new SaveDraftEditUseCase(host),
+    seedScenesUseCase: new SeedScenesUseCase(host, repositories),
+    studioChatUseCase: new StudioChatUseCase(host, ai),
     summarizeChaptersUseCase,
-    updateProjectContractUseCase: new UpdateProjectContractUseCase({ fileSystem, logger }),
+    updateProjectContractUseCase: new UpdateProjectContractUseCase(host),
+  };
+}
+
+function buildWorkspaceRepositories(
+  host: HostAdapters,
+  fetch: NoteHttpFetch,
+): WorkspaceRepositories {
+  const { fileSystem, workspaceLocator, logger } = host;
+  const outline: OutlineRepository = new OutlineRepository(fileSystem);
+  const manuscriptAssembly: ManuscriptAssemblyRepository = new ManuscriptAssemblyRepository(
+    fileSystem,
+  );
+
+  return {
+    drafts: new DraftRepository(fileSystem),
+    scenes: new SceneRepository(fileSystem),
+    sceneBatches: new SceneBatchRepository(fileSystem, workspaceLocator),
+    sceneSeeds: new SceneSeedRepository(fileSystem),
+    sceneCache: new SceneCacheRepository(fileSystem),
+    sceneGroundingGaps: new SceneGroundingGapRepository(fileSystem),
+    sceneSidebar: new SceneSidebarRepository(fileSystem),
+    project: new ProjectRepository(fileSystem),
+    outline,
+    novelOutline: outline,
+    novelRunState: new NovelRunStateRepository(fileSystem),
+    novelReviews: new NovelReviewRepository(fileSystem),
+    manuscriptAssembly,
+    chapterSummaries: manuscriptAssembly,
+    manuscriptExport: manuscriptAssembly,
+    manuscriptReview: manuscriptAssembly,
+    cardWriter: new CardWriterRepository(fileSystem),
+    cardCandidates: new CardCandidateRepository(fileSystem, logger),
+    cardCollect: new CardCollectRepository(fileSystem),
+    cardRecommendations: new CardRecommendationRepository(fileSystem),
+    cardSidebar: new CardSidebarRepository(fileSystem),
+    narratorCards: new NarratorCardRepository(fileSystem),
+    bibleCandidates: new BibleCandidateRepository(fileSystem),
+    storyFeatures: new StoryFeatureRepository(fileSystem),
+    noteAbsorb: new NoteAbsorbRepository(fileSystem),
+    noteSources: new NoteSourceProvider(host, { fetch }),
   };
 }
 

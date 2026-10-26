@@ -1,4 +1,4 @@
-import type { SecretStore } from '@storyboard/story-ai';
+import type { HostAdapters } from '#engine/application/engineServices';
 
 import {
   NoteSourceError,
@@ -6,33 +6,33 @@ import {
   type INoteSourceProvider,
   type NoteLocation,
 } from '#engine/application/notes/noteSource';
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import { NotionExportNoteSource } from './notionExportNoteSource';
 import { NotionNoteSource, type NoteHttpFetch } from './notionNoteSource';
 import { ObsidianNoteSource } from './obsidianNoteSource';
 
-export interface NoteSourceProviderDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly secretStore: SecretStore;
+export interface NoteSourceProviderCollaborators {
   readonly fetch: NoteHttpFetch;
 }
 
 export class NoteSourceProvider implements INoteSourceProvider {
-  public constructor(private readonly deps: NoteSourceProviderDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly collaborators: NoteSourceProviderCollaborators,
+  ) {}
 
   public async open(location: NoteLocation): Promise<INoteSource> {
     if (location.kind === 'obsidian') {
-      return new ObsidianNoteSource({ fileSystem: this.deps.fileSystem, root: location.root });
+      return new ObsidianNoteSource({ fileSystem: this.host.fileSystem, root: location.root });
     }
 
     if (location.kind === 'notion-export') {
       return new NotionExportNoteSource({
-        fileSystem: this.deps.fileSystem,
+        fileSystem: this.host.fileSystem,
         archive: location.archive,
       });
     }
 
-    const token: string | undefined = await this.deps.secretStore.getNotionToken();
+    const token: string | undefined = await this.host.secretStore.getNotionToken();
 
     if (token === undefined) {
       throw new NoteSourceError(
@@ -41,6 +41,10 @@ export class NoteSourceProvider implements INoteSourceProvider {
       );
     }
 
-    return new NotionNoteSource({ pageUrl: location.pageUrl, token, fetch: this.deps.fetch });
+    return new NotionNoteSource({
+      pageUrl: location.pageUrl,
+      token,
+      fetch: this.collaborators.fetch,
+    });
   }
 }

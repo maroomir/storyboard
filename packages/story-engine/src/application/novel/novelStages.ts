@@ -42,7 +42,6 @@ import type {
 } from '@storyboard/story-model';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { ReviseSeedIssues } from '#engine/pipeline/reviseLoop';
-import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,
@@ -56,6 +55,7 @@ import type {
 } from './novelPipelineTypes';
 import type { GenerateDraftResult } from '#engine/application/drafts/generateDraftTypes';
 import type { ReviseDraftWorkflowResult } from '#engine/application/drafts/reviseDraftUseCase';
+import type { ICardWriterRepository } from '#engine/application/cards/cardRepositories';
 
 interface SceneReviewIssues {
   continuity: ContinuityIssueLike[];
@@ -228,12 +228,13 @@ async function runChapterDraftsAndRevise(
     }
 
     const sceneUri: StoryUri = scenePath(options.workspaceUri, stem);
-    const draftResult: GenerateDraftResult = await options.deps.generateDraftUseCase.execute({
-      sceneUri,
-      force: false,
-      suppressLoggerPanel: true,
-      shouldCancel: options.shouldCancel,
-    });
+    const draftResult: GenerateDraftResult =
+      await options.deps.collaborators.generateDraftUseCase.execute({
+        sceneUri,
+        force: false,
+        suppressLoggerPanel: true,
+        shouldCancel: options.shouldCancel,
+      });
 
     if (!draftResult.ok) {
       if (draftResult.kind === 'cancelled') {
@@ -245,20 +246,21 @@ async function runChapterDraftsAndRevise(
       throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`);
     }
 
-    const reviseResult: ReviseDraftWorkflowResult = await options.deps.reviseDraftUseCase.execute({
-      workspaceUri: options.workspaceUri,
-      paths,
-      draftUri: draftPath(options.workspaceUri, stem),
-      sceneStem: stem,
-      maxIterations: options.reviseMaxIterations,
-      maxCompressionPercent:
-        options.deps.configBridge.getMaxCompressionPercent?.() ??
-        integerSettingDefault('revise.length.maxCompressionPercent'),
-      reviseScoreThreshold: 0,
-      shouldCancel: options.shouldCancel,
-    });
+    const reviseResult: ReviseDraftWorkflowResult =
+      await options.deps.collaborators.reviseDraftUseCase.execute({
+        workspaceUri: options.workspaceUri,
+        paths,
+        draftUri: draftPath(options.workspaceUri, stem),
+        sceneStem: stem,
+        maxIterations: options.reviseMaxIterations,
+        maxCompressionPercent:
+          options.deps.host.configBridge.getMaxCompressionPercent?.() ??
+          integerSettingDefault('revise.length.maxCompressionPercent'),
+        reviseScoreThreshold: 0,
+        shouldCancel: options.shouldCancel,
+      });
 
-    await recordRevisionEntry(options.deps.fileSystem, paths, {
+    await recordRevisionEntry(options.deps.host.fileSystem, paths, {
       sceneStem: stem,
       checkedAt: new Date().toISOString(),
       revisionCount: reviseResult.revisionCount,
@@ -354,7 +356,7 @@ async function refreshChapterSummary(
   chapterIndex: number,
 ): Promise<void> {
   const summaryResult: SummarizeChaptersResult =
-    await options.deps.summarizeChaptersUseCase.execute({
+    await options.deps.collaborators.summarizeChaptersUseCase.execute({
       workspaceRoot: options.workspaceUri,
       chapterIndex,
     });
@@ -526,25 +528,26 @@ export async function runReviseFromReviewStage(
 
     options.onProgress('revise-from-review', `«${target.sceneStem}» 재작성 중…`);
 
-    const reviseResult: ReviseDraftWorkflowResult = await options.deps.reviseDraftUseCase.execute({
-      workspaceUri: options.workspaceUri,
-      paths,
-      draftUri: draftPath(options.workspaceUri, target.sceneStem),
-      sceneStem: target.sceneStem,
-      maxIterations: 1,
-      maxCompressionPercent:
-        options.deps.configBridge.getMaxCompressionPercent?.() ??
-        integerSettingDefault('revise.length.maxCompressionPercent'),
-      reviseScoreThreshold: 0,
-      seedIssues: target.seedIssues,
-      shouldCancel: options.shouldCancel,
-    });
+    const reviseResult: ReviseDraftWorkflowResult =
+      await options.deps.collaborators.reviseDraftUseCase.execute({
+        workspaceUri: options.workspaceUri,
+        paths,
+        draftUri: draftPath(options.workspaceUri, target.sceneStem),
+        sceneStem: target.sceneStem,
+        maxIterations: 1,
+        maxCompressionPercent:
+          options.deps.host.configBridge.getMaxCompressionPercent?.() ??
+          integerSettingDefault('revise.length.maxCompressionPercent'),
+        reviseScoreThreshold: 0,
+        seedIssues: target.seedIssues,
+        shouldCancel: options.shouldCancel,
+      });
 
     if (reviseResult.revisionCount > 0) {
       revisedStems.push(target.sceneStem);
     }
 
-    await recordRevisionEntry(options.deps.fileSystem, paths, {
+    await recordRevisionEntry(options.deps.host.fileSystem, paths, {
       sceneStem: target.sceneStem,
       checkedAt: new Date().toISOString(),
       revisionCount: reviseResult.revisionCount,

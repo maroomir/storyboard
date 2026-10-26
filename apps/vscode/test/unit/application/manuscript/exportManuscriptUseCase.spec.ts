@@ -7,6 +7,7 @@ import {
   type ManuscriptExportSource
 } from "@storyboard/story-engine"
 import { renderManuscriptExport } from "@storyboard/story-model"
+import { createTestRepositories } from "@storyboard/story-engine/testing"
 
 const volumeMarkdown = ["# 제목", "", "> 인용", "**굵게** 그리고 `코드`", "- 항목"].join("\n")
 
@@ -26,7 +27,7 @@ function repository(
 }
 
 function useCase(storage: IManuscriptExportRepository): ExportManuscriptUseCase {
-  return new ExportManuscriptUseCase({ repository: storage })
+  return new ExportManuscriptUseCase(createTestRepositories({ manuscriptExport: storage }))
 }
 
 describe("ExportManuscriptUseCase", () => {

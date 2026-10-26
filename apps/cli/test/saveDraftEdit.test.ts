@@ -6,6 +6,7 @@ import { SaveDraftEditUseCase } from '@storyboard/story-engine';
 import { createDraft, NodeUri, parseDraft, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createTestHost } from '@storyboard/story-engine/testing';
 
 const stem = '01-harbor';
 
@@ -24,7 +25,7 @@ function historyFiles(): string[] {
 }
 
 function save(body: string, archivePrevious: boolean): ReturnType<SaveDraftEditUseCase['execute']> {
-  return new SaveDraftEditUseCase({ fileSystem: new NodeFileSystem() }).execute({
+  return new SaveDraftEditUseCase(createTestHost({ fileSystem: new NodeFileSystem() })).execute({
     workspaceRoot: NodeUri.file(workspace),
     sceneStem: stem,
     body,

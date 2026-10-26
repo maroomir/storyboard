@@ -1,12 +1,15 @@
 import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
+import type {
   AiProviderId,
   AssembledChapter,
   AssembledManuscript,
   StoryUri,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
-import type { AiGateway } from '#engine/application/ai/aiGateway';
 import {
   auditChapterSummaries,
   buildChapterSummariesMarkdown,
@@ -16,15 +19,8 @@ import {
   assembleManuscript,
   computeDraftBodyHash,
 } from '@storyboard/story-model';
-import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-
-export interface IChapterSummaryRepository {
-  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
-  loadAssemblySource(workspaceRoot: StoryUri): Promise<ManuscriptAssemblySource>;
-  readChapterSummaries(workspaceRoot: StoryUri): Promise<string | undefined>;
-  saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
-}
+import type { ManuscriptAssemblySource } from '#engine/application/manuscript/manuscriptRepositories';
 
 export type SummarizeChaptersOptions = {
   readonly chapterIndex?: number;
@@ -44,12 +40,6 @@ export type SummarizeChaptersResult =
       readonly summaryUri: StoryUri;
     };
 
-export interface SummarizeChaptersUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly repository: IChapterSummaryRepository;
-  readonly logger: IStoryboardLogger;
-}
-
 export type SummarizeChaptersRequest = SummarizeChaptersOptions & {
   readonly workspaceRoot: StoryUri;
 };
@@ -58,21 +48,25 @@ export class SummarizeChaptersUseCase implements IUseCase<
   SummarizeChaptersRequest,
   SummarizeChaptersResult
 > {
-  public constructor(private readonly deps: SummarizeChaptersUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: SummarizeChaptersRequest): Promise<SummarizeChaptersResult> {
     const { workspaceRoot, ...options } = request;
 
     return await runUseCase<SummarizeChaptersResult>(
-      this.deps.logger,
+      this.host.logger,
       'Summarize chapters failed',
       async () => {
-        if (!(await this.deps.repository.hasChapterPlan(workspaceRoot))) {
+        if (!(await this.repositories.chapterSummaries.hasChapterPlan(workspaceRoot))) {
           return { kind: 'missing_outline', ok: false };
         }
 
         const source: ManuscriptAssemblySource =
-          await this.deps.repository.loadAssemblySource(workspaceRoot);
+          await this.repositories.chapterSummaries.loadAssemblySource(workspaceRoot);
         if (source.draftsByOrder.size === 0) {
           return { kind: 'missing_drafts', ok: false };
         }
@@ -91,8 +85,8 @@ export class SummarizeChaptersUseCase implements IUseCase<
           return { kind: 'missing_drafts', ok: false };
         }
 
-        const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
-        const providerId: AiProviderId = this.deps.aiGateway.getTaskProvider('chapterSummary');
+        const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
+        const providerId: AiProviderId = this.ai.gateway.getTaskProvider('chapterSummary');
         const sourceHashes: Map<string, string> = new Map(
           manuscript.chapters.map((chapter) => [
             chapter.chapterTitle,
@@ -122,7 +116,7 @@ export class SummarizeChaptersUseCase implements IUseCase<
           });
         }
 
-        const summaryUri: StoryUri = await this.deps.repository.saveChapterSummaries(
+        const summaryUri: StoryUri = await this.repositories.chapterSummaries.saveChapterSummaries(
           workspaceRoot,
           buildChapterSummariesMarkdown(source.projectName, summaries),
         );
@@ -134,7 +128,7 @@ export class SummarizeChaptersUseCase implements IUseCase<
 
   private async readExisting(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
     const markdown: string | undefined =
-      await this.deps.repository.readChapterSummaries(workspaceRoot);
+      await this.repositories.chapterSummaries.readChapterSummaries(workspaceRoot);
     return markdown === undefined ? [] : parseChapterSummariesMarkdown(markdown);
   }
 }

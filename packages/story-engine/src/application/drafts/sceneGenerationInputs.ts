@@ -90,10 +90,10 @@ export function reportWorkflowFailure(
   error: unknown,
   userMessage: string,
 ): GenerateDraftResult {
-  options.logger.error(logMessage, error);
+  options.host.logger.error(logMessage, error);
 
   if (!options.suppressLoggerPanel) {
-    options.logger.show();
+    options.host.logger.show();
   }
 
   return { ok: false, kind: 'failed', message: userMessage };
@@ -113,14 +113,16 @@ async function resolveSceneGenerationTarget(
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGenerationTargetResult> {
   const workspaceFolder: StoryWorkspaceFolder | undefined =
-    options.workspaceLocator.folderFor(sceneUri);
+    options.host.workspaceLocator.folderFor(sceneUri);
 
   if (!workspaceFolder) {
     return inputsFailure('씬 파일이 속한 워크스페이스 폴더를 찾을 수 없습니다.');
   }
 
   if (
-    !(await hasStoryboardProjectAt(workspaceFolder.uri, (uri) => options.fileSystem.exists(uri)))
+    !(await hasStoryboardProjectAt(workspaceFolder.uri, (uri) =>
+      options.host.fileSystem.exists(uri),
+    ))
   ) {
     return inputsFailure(
       'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
@@ -163,7 +165,7 @@ async function loadSceneAndProject(
 ): Promise<SceneAndProjectResult> {
   let scene: SceneFile;
   try {
-    scene = await options.sceneRepository.read(sceneUri, fileName);
+    scene = await options.repositories.scenes.read(sceneUri, fileName);
   } catch (error) {
     if (error instanceof SceneParseError) {
       return inputsFailure(`씬 파일을 읽을 수 없습니다: ${error.message}`);
@@ -182,7 +184,7 @@ async function loadSceneAndProject(
 
   let project: StoryboardProject;
   try {
-    project = await options.projectRepository.read(paths.projectJson);
+    project = await options.repositories.project.read(paths.projectJson);
   } catch (error) {
     return {
       ok: false,
@@ -286,7 +288,7 @@ async function loadSceneContextBundle(
   const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
   let builtContext: SceneContext;
   try {
-    builtContext = await buildSceneContext(ctxPaths, rawScene, options.fileSystem);
+    builtContext = await buildSceneContext(ctxPaths, rawScene, options.host.fileSystem);
   } catch (error) {
     return {
       ok: false,
@@ -319,13 +321,13 @@ async function loadSceneContextBundle(
   const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
     paths,
     scene.order,
-    options.fileSystem,
+    options.host.fileSystem,
   );
   const thread: SceneThreadContext = await resolveSceneThread(
     paths,
     scene,
     project,
-    options.fileSystem,
+    options.host.fileSystem,
     chapterDefaults.thread,
   );
   const narration: NarrationDirective | undefined = await resolveSceneNarration(
@@ -333,23 +335,23 @@ async function loadSceneContextBundle(
     scene,
     project,
     chapterDefaults,
-    options.fileSystem,
+    options.host.fileSystem,
   );
   const sceneBreakJoiner: string | undefined = resolveSceneBreakJoiner(
-    options.configBridge.getDraftSceneBreakSeparator(),
+    options.host.configBridge.getDraftSceneBreakSeparator(),
   );
 
   const memoryAudit: StoryMemoryAudit = await auditStoryMemory({
-    fileSystem: options.fileSystem,
+    fileSystem: options.host.fileSystem,
     paths: thread.threadPaths,
     format: project.format,
     sceneBreakJoiner,
     beforeSceneOrder: scene.order,
   });
-  await markStoryStateStaleEntries(thread.threadPaths, options.fileSystem, memoryAudit);
+  await markStoryStateStaleEntries(thread.threadPaths, options.host.fileSystem, memoryAudit);
 
   const chapterAuditRequest: ChapterSummaryAuditRequest = {
-    fileSystem: options.fileSystem,
+    fileSystem: options.host.fileSystem,
     paths: thread.threadPaths,
   };
   const chapterAudit: ChapterMemoryAudit = await auditChapterMemory(chapterAuditRequest);
@@ -358,7 +360,7 @@ async function loadSceneContextBundle(
   const narrativeContext: NarrativeContext = await buildNarrativeContext(
     sceneContextPaths(thread.threadPaths),
     context,
-    options.fileSystem,
+    options.host.fileSystem,
     {
       previousSceneOrder: thread.previousSceneOrder,
       focalFilter: {

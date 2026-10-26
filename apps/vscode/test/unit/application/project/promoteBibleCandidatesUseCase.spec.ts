@@ -4,6 +4,7 @@ import {
   PromoteBibleCandidatesUseCase,
   type IBibleCandidateRepository
 } from "@storyboard/story-engine"
+import { createTestRepositories } from "@storyboard/story-engine/testing"
 
 describe("PromoteBibleCandidatesUseCase", () => {
   it("returns no candidates without loading the canon", async () => {
@@ -12,7 +13,7 @@ describe("PromoteBibleCandidatesUseCase", () => {
       loadRecords: vi.fn(async () => []),
       saveCanon: vi.fn()
     }
-    const useCase = new PromoteBibleCandidatesUseCase({ repository })
+    const useCase = new PromoteBibleCandidatesUseCase(createTestRepositories({ bibleCandidates: repository }))
 
     const result = await useCase.prepare({} as never)
 
@@ -26,7 +27,7 @@ describe("PromoteBibleCandidatesUseCase", () => {
       loadRecords: vi.fn(),
       saveCanon: vi.fn(async () => undefined)
     }
-    const useCase = new PromoteBibleCandidatesUseCase({ repository })
+    const useCase = new PromoteBibleCandidatesUseCase(createTestRepositories({ bibleCandidates: repository }))
     const fact = {
       id: "character:elia:occupation",
       key: "occupation",

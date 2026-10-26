@@ -36,6 +36,7 @@ vi.mock('@storyboard/story-ai', async (importOriginal) => ({
 }));
 
 import { ReviseDraftUseCase, type IFileSystem } from '@storyboard/story-engine';
+import { createTestAi, createTestHost, createTestRepositories } from '@storyboard/story-engine/testing';
 
 class InMemoryFileSystem implements IFileSystem {
   private readonly files = new Map<string, Uint8Array>();
@@ -170,16 +171,10 @@ function threadedWorkspace(): InMemoryFileSystem {
 }
 
 async function reviseAlleyScene(fs: InMemoryFileSystem): Promise<void> {
-  const useCase = new ReviseDraftUseCase({
-    aiProviderRegistry: {
+  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
       getTaskProvider: () => 'mock',
       getTaskAiConfig: () => ({ providerId: 'mock', model: 'mock-model' }),
-    } as never,
-    usageSink: { record: async (): Promise<void> => undefined },
-    fileSystem: fs,
-    logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never,
-    generator: 'storyboard@0.0.0-test',
-  });
+    } as never, usageSink: { record: async (): Promise<void> => undefined } }), createTestRepositories());
 
   await useCase.execute({
     workspaceUri,

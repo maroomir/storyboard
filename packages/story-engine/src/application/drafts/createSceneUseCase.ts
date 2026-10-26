@@ -1,3 +1,4 @@
+import type { HostAdapters } from '#engine/application/engineServices';
 import {
   getStoryboardProjectPaths,
   parseSceneFileName,
@@ -9,8 +10,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
@@ -25,22 +24,17 @@ export type CreateSceneResult =
   | { readonly ok: false; readonly kind: 'exists'; readonly message: string }
   | UseCaseFailure;
 
-export interface CreateSceneUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-}
-
 export class CreateSceneUseCase implements IUseCase<CreateSceneRequest, CreateSceneResult> {
-  public constructor(private readonly deps: CreateSceneUseCaseDependencies) {}
+  public constructor(private readonly host: HostAdapters) {}
 
   public async execute(request: CreateSceneRequest): Promise<CreateSceneResult> {
-    return await runUseCase<CreateSceneResult>(this.deps.logger, 'Create scene failed', () =>
+    return await runUseCase<CreateSceneResult>(this.host.logger, 'Create scene failed', () =>
       this.create(request),
     );
   }
 
   private async create(request: CreateSceneRequest): Promise<CreateSceneResult> {
-    const { fileSystem } = this.deps;
+    const { fileSystem } = this.host;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
     const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
     const existing: readonly string[] = await listDirectoryFileNames(

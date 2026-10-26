@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CondenseDraftUseCase } from '@storyboard/story-engine';
+import { createTestAi, createTestHost } from '@storyboard/story-engine/testing';
 
 function createUseCase(result: string): {
   readonly condenseDraft: ReturnType<typeof vi.fn>;
@@ -14,7 +15,7 @@ function createUseCase(result: string): {
   };
   const logger = { error: vi.fn() };
 
-  return { condenseDraft, useCase: new CondenseDraftUseCase({ aiGateway: aiGateway as never, logger: logger as never }) };
+  return { condenseDraft, useCase: new CondenseDraftUseCase(createTestHost({ logger: logger as never }), createTestAi({ gateway: aiGateway as never })) };
 }
 
 const body = '가'.repeat(600);

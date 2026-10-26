@@ -1,12 +1,10 @@
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type {
   Draft,
   StoryboardProject,
   StoryboardProjectPaths,
   StoryUri,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { failedResult, type IUseCase } from '#engine/application/useCase';
 import {
   draftPath,
@@ -34,18 +32,14 @@ export type ApplyDraftFormatResult =
   | { readonly kind: 'draft_invalid'; readonly ok: false }
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false };
 
-export interface ApplyDraftFormatUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly aiGateway: AiGateway;
-  readonly logger: IStoryboardLogger;
-  readonly generator: string;
-}
-
 export class ApplyDraftFormatUseCase implements IUseCase<
   ApplyDraftFormatRequest,
   ApplyDraftFormatResult
 > {
-  public constructor(private readonly deps: ApplyDraftFormatUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+  ) {}
 
   public async execute(request: ApplyDraftFormatRequest): Promise<ApplyDraftFormatResult> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
@@ -53,15 +47,15 @@ export class ApplyDraftFormatUseCase implements IUseCase<
 
     let project: StoryboardProject;
     try {
-      project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
+      project = await readProjectJson(this.host.fileSystem, paths.projectJson);
     } catch (error) {
-      this.deps.logger.error('Failed to read project.json', error);
+      this.host.logger.error('Failed to read project.json', error);
       return { kind: 'project_unreadable', ok: false };
     }
 
     let rawDraft: string;
     try {
-      rawDraft = await readDraftFile(draftUri, this.deps.fileSystem);
+      rawDraft = await readDraftFile(draftUri, this.host.fileSystem);
     } catch {
       return { kind: 'draft_missing', ok: false };
     }
@@ -70,7 +64,7 @@ export class ApplyDraftFormatUseCase implements IUseCase<
     try {
       existing = parseDraft(rawDraft);
     } catch (error) {
-      this.deps.logger.error('Failed to parse draft', error);
+      this.host.logger.error('Failed to parse draft', error);
       return { kind: 'draft_invalid', ok: false };
     }
 
@@ -79,10 +73,10 @@ export class ApplyDraftFormatUseCase implements IUseCase<
         return { kind: 'cancelled', ok: false };
       }
 
-      const formattedBody: string = await this.deps.aiGateway
+      const formattedBody: string = await this.ai.gateway
         .createService(request.workspaceRoot)
         .applyGenreFormat(existing.body, project.format, {
-          providerId: this.deps.aiGateway.getTaskProvider('sceneDraft'),
+          providerId: this.ai.gateway.getTaskProvider('sceneDraft'),
           attribution: { primary: { kind: 'scene', id: request.sceneStem } },
         });
 
@@ -90,24 +84,23 @@ export class ApplyDraftFormatUseCase implements IUseCase<
         return { kind: 'cancelled', ok: false };
       }
 
-      const sceneDraftConfig: TaskAiConfigResolved =
-        this.deps.aiGateway.getTaskAiConfig('sceneDraft');
+      const sceneDraftConfig: TaskAiConfigResolved = this.ai.gateway.getTaskAiConfig('sceneDraft');
       const draft: Draft = createDraft({
         sceneStem: existing.sceneStem,
         format: project.format,
         body: formattedBody,
         generatedAt: existing.generatedAt,
-        generator: this.deps.generator,
+        generator: this.host.generator,
         providerId: sceneDraftConfig.providerId,
         model: sceneDraftConfig.model,
       });
 
       request.onSaving?.();
-      await writeDraftFile(draftUri, this.deps.fileSystem, draft);
+      await writeDraftFile(draftUri, this.host.fileSystem, draft);
 
       return { kind: 'formatted', ok: true, draftUri };
     } catch (error) {
-      this.deps.logger.error('Apply draft format failed', error);
+      this.host.logger.error('Apply draft format failed', error);
       return failedResult(error);
     }
   }

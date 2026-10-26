@@ -44,3 +44,16 @@ export interface INovelReviewRepository {
   loadReviewSource(workspaceRoot: StoryUri): Promise<NovelReviewSource>;
   saveReview(workspaceRoot: StoryUri, markdown: string): Promise<void>;
 }
+
+export interface IOutlineRepository {
+  hasExisting(workspaceRoot: StoryUri): Promise<boolean>;
+  loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined>;
+  loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
+  loadNarratorIds(workspaceRoot: StoryUri): Promise<readonly string[]>;
+  loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
+  save(
+    workspaceRoot: StoryUri,
+    synopsis: OutlineSynopsis,
+    chapterPlan: ChapterPlan,
+  ): Promise<StoryUri>;
+}

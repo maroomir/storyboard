@@ -1,6 +1,5 @@
-import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type { StoryUri } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 
 export type ExpandDraftRequest = {
@@ -14,26 +13,24 @@ export type ExpandDraftResult =
   | { readonly kind: 'empty'; readonly ok: false }
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false };
 
-export interface ExpandDraftUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly logger: IStoryboardLogger;
-}
-
 export class ExpandDraftUseCase implements IUseCase<ExpandDraftRequest, ExpandDraftResult> {
-  public constructor(private readonly deps: ExpandDraftUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+  ) {}
 
   public async execute(request: ExpandDraftRequest): Promise<ExpandDraftResult> {
     return await runUseCase<ExpandDraftResult>(
-      this.deps.logger,
+      this.host.logger,
       'Expand draft failed',
       async () => {
-        const expanded: string = await this.deps.aiGateway
+        const expanded: string = await this.ai.gateway
           .createService(request.workspaceRoot)
           .expandDraft(
             request.selectedText,
             {},
             {
-              providerId: this.deps.aiGateway.getTaskProvider('draftExpansion'),
+              providerId: this.ai.gateway.getTaskProvider('draftExpansion'),
               attribution: { primary: { kind: 'scene', id: request.sceneStem } },
             },
           );

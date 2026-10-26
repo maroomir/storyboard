@@ -1,10 +1,10 @@
+import type { AiServices, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { StoryUri, SceneCard, SceneFile, StoryboardCard, AiGenerateResponse } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
-import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { sceneFileNamePattern, serializeSceneCard, parseJsonObject } from '@storyboard/story-model';
-import type { IStoryFeatureRepository, StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
+import type { StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 
@@ -54,28 +54,26 @@ export interface CompleteStoryScenesProposal {
   readonly snapshots: readonly StoryFileSnapshot[];
 }
 
-export interface CompleteStoryScenesUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly repository: IStoryFeatureRepository;
-}
-
 export interface CompleteStoryScenesRequest {
   readonly workspaceRoot: StoryUri;
 }
 
 export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesRequest, CompleteStoryScenesProposal> {
-  public constructor(private readonly deps: CompleteStoryScenesUseCaseDependencies) {}
+  public constructor(
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: CompleteStoryScenesRequest): Promise<CompleteStoryScenesProposal> {
     const { workspaceRoot } = request;
-    const source: StoryFeatureSource = await this.deps.repository.load(workspaceRoot);
+    const source: StoryFeatureSource = await this.repositories.storyFeatures.load(workspaceRoot);
 
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('no-valid-scenes', '완결할 유효한 씬이 없습니다.');
     }
 
     const sceneContext: unknown = await this.buildSceneContext(workspaceRoot, source.scenes);
-    const response: AiGenerateResponse = await this.deps.aiGateway.createService(workspaceRoot).generateText(
+    const response: AiGenerateResponse = await this.ai.gateway.createService(workspaceRoot).generateText(
       'storyCompletion',
       [
         {
@@ -175,7 +173,7 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
   }
 
   public async hasCurrentSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
-    return await this.deps.repository.hasCurrentSnapshots(snapshots);
+    return await this.repositories.storyFeatures.hasCurrentSnapshots(snapshots);
   }
 
   private async buildSceneContext(
@@ -192,7 +190,7 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
     const tail: Record<string, unknown>[] = fullScenes.slice(-5);
     const previousText: string = JSON.stringify(fullScenes.slice(0, -5));
     const chunks: string[] = splitText(previousText, SUMMARY_CHUNK_SIZE);
-    const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
     const summaries: string[] = await Promise.all(
       chunks.map(async (chunk) => {
         const response: AiGenerateResponse = await aiService.generateText(

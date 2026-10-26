@@ -1,3 +1,8 @@
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 import {
   getStoryboardProjectPaths,
   type StoryboardProjectPaths,
@@ -25,7 +30,7 @@ import {
 import { resolveNovelPipelinePlan } from './novelStageCatalog';
 import type {
   NovelAiService,
-  NovelPipelineDependencies,
+  NovelPipelineCollaborators,
   NovelPipelineOptions,
   NovelPipelineResult,
   NovelPipelineRunOptions,
@@ -40,7 +45,6 @@ export type {
 } from './novelPipelinePorts';
 export type {
   NovelApprovalKind,
-  NovelPipelineDependencies,
   NovelPipelineOptions,
   NovelPipelineOutcome,
   NovelPipelineResult,
@@ -89,11 +93,11 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
 
   const persist = async (patch: Partial<NovelRunState>): Promise<void> => {
     Object.assign(state, { ...patch, updatedAt: now(), completedStages: [...completed] });
-    await options.deps.novelRunStateRepository.save(options.workspaceUri, state);
+    await options.deps.repositories.novelRunState.save(options.workspaceUri, state);
   };
 
   const newAiService = (): NovelAiService =>
-    options.deps.aiGateway.createService(options.workspaceUri);
+    options.deps.ai.gateway.createService(options.workspaceUri);
 
   const runStageOnce = async (
     stage: NovelStageName,
@@ -111,7 +115,7 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
 
   let loadedPlan: Promise<ChapterPlan> | undefined;
   const chapterPlan = (): Promise<ChapterPlan> => {
-    loadedPlan ??= options.deps.outlineRepository.loadChapterPlan(options.workspaceUri);
+    loadedPlan ??= options.deps.repositories.novelOutline.loadChapterPlan(options.workspaceUri);
     return loadedPlan;
   };
 
@@ -120,10 +124,10 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
     loadedGroups ??= chapterPlan().then(async (plan) => {
       const digitCount: number = resolveScenePrefixDigitCount(
         options.project.editor.scenePrefixDigits,
-        options.deps.configBridge.inspectScenePrefixDigits(),
+        options.deps.host.configBridge.inspectScenePrefixDigits(),
       );
       const sceneStemsByOrder: ReadonlyMap<number, string> =
-        await options.deps.sceneSeedRepository.listSceneStemsByOrder(options.workspaceUri);
+        await options.deps.repositories.sceneSeeds.listSceneStemsByOrder(options.workspaceUri);
       return groupChapterStems(plan, digitCount, sceneStemsByOrder);
     });
     return loadedGroups;
@@ -162,7 +166,7 @@ const outlineStage: INovelStage = {
         options.workspaceUri,
         options.project,
         runContext.newAiService(),
-        options.deps.outlineRepository,
+        options.deps.repositories.novelOutline,
       ),
     );
 
@@ -197,8 +201,8 @@ const charactersStage: INovelStage = {
         options.project,
         plan,
         runContext.newAiService(),
-        options.deps.outlineRepository,
-        options.deps.cardWriter,
+        options.deps.repositories.novelOutline,
+        options.deps.repositories.cardWriter,
       );
 
       if (report.writtenCount > 0) {
@@ -229,11 +233,11 @@ const seedsStage: INovelStage = {
     const plan: ChapterPlan = await runContext.chapterPlan();
     const digitCount: number = resolveScenePrefixDigitCount(
       options.project.editor.scenePrefixDigits,
-      options.deps.configBridge.inspectScenePrefixDigits(),
+      options.deps.host.configBridge.inspectScenePrefixDigits(),
     );
 
     await runContext.runStageOnce('seeds', '씬 시드 생성 중…', () =>
-      runSeedsStage(options.workspaceUri, plan, digitCount, options.deps.sceneSeedRepository),
+      runSeedsStage(options.workspaceUri, plan, digitCount, options.deps.repositories.sceneSeeds),
     );
 
     return await checkpoint(runContext);
@@ -265,7 +269,7 @@ const assembleStage: INovelStage = {
     await runContext.runStageOnce('assemble', '원고 조립 중…', () =>
       runAssembleStage(
         runContext.options.workspaceUri,
-        runContext.options.deps.assembleManuscriptUseCase,
+        runContext.options.deps.collaborators.assembleManuscriptUseCase,
       ),
     );
     return undefined;
@@ -283,8 +287,8 @@ async function reviewVolume(
     options.project,
     await runContext.chapterPlan(),
     runContext.newAiService(),
-    options.deps.aiProviderRegistry,
-    options.deps.novelReviewRepository,
+    options.deps.ai.providerRegistry,
+    options.deps.repositories.novelReviews,
     revisedStems,
   );
 }
@@ -374,7 +378,7 @@ const summariesStage: INovelStage = {
     await runContext.runStageOnce('summaries', '장별 요약 중…', () =>
       runSummariesStage(
         runContext.options.workspaceUri,
-        runContext.options.deps.summarizeChaptersUseCase,
+        runContext.options.deps.collaborators.summarizeChaptersUseCase,
       ),
     );
     return undefined;
@@ -408,7 +412,7 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     await runContext.persist({ status: 'done' });
     return { outcome: 'completed', message: '장편 생성을 완료했습니다.' };
   } catch (error) {
-    options.deps.logger.error('Novel pipeline failed', error);
+    options.deps.host.logger.error('Novel pipeline failed', error);
     const message: string = extractErrorMessage(error);
     await runContext.persist({ status: 'failed', lastError: message }).catch(() => undefined);
     return { outcome: 'failed', message };
@@ -416,10 +420,23 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
 }
 
 export class NovelPipeline {
-  public constructor(private readonly dependencies: NovelPipelineDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+    private readonly collaborators: NovelPipelineCollaborators,
+  ) {}
 
   public async run(options: NovelPipelineRunOptions): Promise<NovelPipelineResult> {
-    return await runNovelPipeline({ ...options, deps: this.dependencies });
+    return await runNovelPipeline({
+      ...options,
+      deps: {
+        host: this.host,
+        ai: this.ai,
+        repositories: this.repositories,
+        collaborators: this.collaborators,
+      },
+    });
   }
 }
 

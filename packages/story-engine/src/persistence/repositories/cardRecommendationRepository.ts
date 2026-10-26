@@ -15,11 +15,11 @@ import {
   type BibleSubjectKind,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
 import type {
   CardRecommendationInput,
   ICardRecommendationRepository,
-} from '#engine/application/cards/recommendCardsUseCase';
-import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
+} from '#engine/application/cards/cardRepositories';
 
 export class CardRecommendationRepository implements ICardRecommendationRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

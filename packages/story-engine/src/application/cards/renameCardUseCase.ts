@@ -1,3 +1,4 @@
+import type { HostAdapters } from '#engine/application/engineServices';
 import {
   cardIdPattern,
   getStoryboardProjectPaths,
@@ -13,8 +14,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { listCardFileUris } from '#engine/persistence/cardFiles';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
@@ -41,27 +40,22 @@ export type RenameCardResult =
     }
   | UseCaseFailure;
 
-export interface RenameCardUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-}
-
 export interface ReferenceRewrite {
   readonly rewrittenCount: number;
   readonly unreadableFiles: readonly string[];
 }
 
 export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCardResult> {
-  public constructor(private readonly deps: RenameCardUseCaseDependencies) {}
+  public constructor(private readonly host: HostAdapters) {}
 
   public async execute(request: RenameCardRequest): Promise<RenameCardResult> {
-    return await runUseCase<RenameCardResult>(this.deps.logger, 'Rename card failed', () =>
+    return await runUseCase<RenameCardResult>(this.host.logger, 'Rename card failed', () =>
       this.rename(request),
     );
   }
 
   private async rename(request: RenameCardRequest): Promise<RenameCardResult> {
-    const { fileSystem } = this.deps;
+    const { fileSystem } = this.host;
     const { workspaceRoot, category, fromId, toId } = request;
 
     if (!cardIdPattern.test(toId)) {
@@ -113,7 +107,7 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
     fromId: string,
     toId: string,
   ): Promise<ReferenceRewrite> {
-    const { fileSystem } = this.deps;
+    const { fileSystem } = this.host;
     const unreadableFiles: string[] = [];
     let rewrittenCount: number = 0;
 

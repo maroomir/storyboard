@@ -1,19 +1,12 @@
-import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri, SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-model';
-import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type {
-  IDraftRepository,
-  IProjectRepository,
-  ISceneCacheRepository,
-  ISceneGroundingGapRepository,
-  ISceneRepository,
-} from '#engine/application/drafts/draftRepositories';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 
 export function emptyDraftBodyMessage(sceneStem: string): string {
   return `모델이 빈 본문을 돌려줘 초안을 저장하지 않았습니다. 기존 초안은 그대로입니다: ${sceneStem}`;
@@ -24,21 +17,6 @@ export type ConfirmSceneGrounding = (input: {
   readonly grounding: SceneGrounding;
   readonly proposedFields: readonly SceneGroundingFieldKey[];
 }) => Promise<SceneGrounding | undefined>;
-
-export interface GenerateDraftUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly configBridge: ConfigBridge;
-  readonly draftRepository: IDraftRepository;
-  readonly fileSystem: IFileSystem;
-  readonly generator: string;
-  readonly logger: IStoryboardLogger;
-  readonly postGenerationUpdates?: PostGenerationUpdateManager;
-  readonly projectRepository: IProjectRepository;
-  readonly sceneCacheRepository: ISceneCacheRepository;
-  readonly sceneGroundingGapRepository: ISceneGroundingGapRepository;
-  readonly sceneRepository: ISceneRepository;
-  readonly workspaceLocator: IWorkspaceLocator;
-}
 
 export interface GenerateDraftRequest {
   readonly sceneUri: StoryUri;
@@ -73,4 +51,11 @@ export type GenerateDraftResult =
     }
   | { readonly ok: false; readonly kind: 'cancelled' };
 
-export type GenerateDraftWorkflowOptions = GenerateDraftUseCaseDependencies & GenerateDraftRequest;
+export interface GenerateDraftServices {
+  readonly host: HostAdapters;
+  readonly ai: AiServices;
+  readonly repositories: WorkspaceRepositories;
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
+}
+
+export type GenerateDraftWorkflowOptions = GenerateDraftServices & GenerateDraftRequest;

@@ -63,9 +63,10 @@ import {
   describeReviseOutcome,
   ReviseDraftUseCase,
   type ReviseDraftRequest,
-  type ReviseDraftUseCaseDependencies,
+  type ReviseDraftServices,
   type ReviseDraftWorkflowResult
 } from "@storyboard/story-engine"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순", severity: "high" }
 const lowContinuity: ContinuityIssueLike = { original: "설정", reason: "사소함", severity: "low" }
@@ -73,16 +74,21 @@ const highCritique: DraftCritiqueIssue = { category: "voice", severity: "high", 
 
 function baseOptions(
   overrides: Partial<ReviseDraftRequest> = {}
-): ReviseDraftUseCaseDependencies & ReviseDraftRequest {
+): ReviseDraftServices & ReviseDraftRequest {
   return {
-    aiProviderRegistry: {
+    host: createTestHost({
+      logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
+      fileSystem: { createDirectory: async () => undefined, writeFile: fileWriteMock, exists: async () => false } as never,
+      generator: "storyboard@0.0.0-test"
+    }),
+    ai: createTestAi({
+      providerRegistry: {
       getTaskProvider: () => "mock",
       getTaskAiConfig: () => ({ providerId: "mock", model: "mock-model" })
     } as never,
-    usageRecorder: {} as never,
-    logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
-    fileSystem: { createDirectory: async () => undefined, writeFile: fileWriteMock, exists: async () => false } as never,
-    generator: "storyboard@0.0.0-test",
+      usageSink: { record: async (): Promise<void> => undefined }
+    }),
+    repositories: createTestRepositories(),
     workspaceUri: vscode.Uri.file("/ws/project"),
     paths: {
       sceneDirectory: vscode.Uri.file("/ws/project/scene"),
@@ -104,9 +110,9 @@ function baseOptions(
 }
 
 async function runReviseDraftWorkflow(
-  options: ReviseDraftUseCaseDependencies & ReviseDraftRequest
+  options: ReviseDraftServices & ReviseDraftRequest
 ): Promise<ReviseDraftWorkflowResult> {
-  return await new ReviseDraftUseCase(options).execute(options)
+  return await new ReviseDraftUseCase(options.host, options.ai, options.repositories).execute(options)
 }
 
 describe("ReviseDraftUseCase", () => {
@@ -146,8 +152,11 @@ describe("ReviseDraftUseCase", () => {
     await runReviseDraftWorkflow({
       ...options,
       paths: { ...(options.paths as object), sceneCacheDirectory: vscode.Uri.file("/ws/project/.storyboard/cache/scenes") } as never,
-      fileSystem: { ...(options.fileSystem as object), exists: async () => true } as never,
-      sceneCacheRepository: sceneCacheRepository as never
+      host: createTestHost({
+        ...options.host,
+        fileSystem: { ...(options.host.fileSystem as object), exists: async () => true } as never
+      }),
+      repositories: createTestRepositories({ sceneCache: sceneCacheRepository as never })
     })
 
     const facts = (critiqueDraftMock.mock.calls[0]?.[0] as { facts: readonly string[] }).facts

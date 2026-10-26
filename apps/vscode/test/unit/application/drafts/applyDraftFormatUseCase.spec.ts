@@ -20,6 +20,7 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
 }))
 
 import { ApplyDraftFormatUseCase } from "@storyboard/story-engine"
+import { createTestAi, createTestHost } from "@storyboard/story-engine/testing"
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }
@@ -36,12 +37,7 @@ function createUseCase(): {
   return {
     gateway,
     logger,
-    useCase: new ApplyDraftFormatUseCase({
-      fileSystem: stubFileSystem,
-      aiGateway: gateway as never,
-      logger: logger as never,
-      generator: "storyboard@0.0.0-test"
-    })
+    useCase: new ApplyDraftFormatUseCase(createTestHost({ fileSystem: stubFileSystem, logger: logger as never, generator: "storyboard@0.0.0-test" }), createTestAi({ gateway: gateway as never }))
   }
 }
 

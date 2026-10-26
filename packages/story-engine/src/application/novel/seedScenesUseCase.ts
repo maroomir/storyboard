@@ -1,3 +1,4 @@
+import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
   buildSceneSeeds,
   getStoryboardProjectPaths,
@@ -10,12 +11,9 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import type { ISceneSeedRepository } from './novelPipelinePorts';
 
 export interface SeedScenesRequest {
   readonly workspaceRoot: StoryUri;
@@ -29,23 +27,21 @@ export type SeedScenesResult =
   | { readonly ok: false; readonly kind: 'existing_scenes'; readonly existingCount: number }
   | UseCaseFailure;
 
-export interface SeedScenesUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-  readonly sceneSeedRepository: ISceneSeedRepository;
-}
-
 export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenesResult> {
-  public constructor(private readonly deps: SeedScenesUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: SeedScenesRequest): Promise<SeedScenesResult> {
-    return await runUseCase<SeedScenesResult>(this.deps.logger, 'Seed scenes failed', () =>
+    return await runUseCase<SeedScenesResult>(this.host.logger, 'Seed scenes failed', () =>
       this.seed(request),
     );
   }
 
   private async seed(request: SeedScenesRequest): Promise<SeedScenesResult> {
-    const { fileSystem, sceneSeedRepository } = this.deps;
+    const { fileSystem } = this.host;
+    const { sceneSeeds: sceneSeedRepository } = this.repositories;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
 
     if (!(await fileSystem.exists(paths.outlineChapters))) {

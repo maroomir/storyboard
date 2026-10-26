@@ -1,33 +1,14 @@
-import type { StoryUri, ChapterPlan, ForeshadowingChapter } from '@storyboard/story-model';
+import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
+import type { StoryUri, ForeshadowingChapter } from '@storyboard/story-model';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   assembleManuscript,
   type AssembledManuscript,
-  type ManuscriptDraftEntry,
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing,
 } from '@storyboard/story-model';
-
-export type ManuscriptAssemblySource = {
-  readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;
-  readonly plan: ChapterPlan;
-  readonly projectName: string;
-};
-
-export interface IManuscriptAssemblyRepository {
-  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
-  loadAssemblySource(
-    workspaceRoot: StoryUri,
-    logger: Pick<IStoryboardLogger, 'warn'>,
-  ): Promise<ManuscriptAssemblySource>;
-  saveAssembly(
-    workspaceRoot: StoryUri,
-    manuscript: AssembledManuscript,
-    foreshadowingMarkdown: string,
-  ): Promise<StoryUri>;
-}
+import type { ManuscriptAssemblySource } from '#engine/application/manuscript/manuscriptRepositories';
 
 export type AssembleManuscriptResult =
   | { readonly kind: 'missing_drafts'; readonly ok: false }
@@ -46,11 +27,6 @@ export type AssembleManuscriptResult =
       };
     };
 
-export interface AssembleManuscriptUseCaseDependencies {
-  readonly logger: IStoryboardLogger;
-  readonly repository: IManuscriptAssemblyRepository;
-}
-
 export interface AssembleManuscriptRequest {
   readonly workspaceRoot: StoryUri;
 }
@@ -59,23 +35,27 @@ export class AssembleManuscriptUseCase implements IUseCase<
   AssembleManuscriptRequest,
   AssembleManuscriptResult
 > {
-  public constructor(private readonly deps: AssembleManuscriptUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: AssembleManuscriptRequest): Promise<AssembleManuscriptResult> {
     const { workspaceRoot } = request;
 
     return await runUseCase<AssembleManuscriptResult>(
-      this.deps.logger,
+      this.host.logger,
       'Assemble manuscript failed',
       async () => {
-        if (!(await this.deps.repository.hasChapterPlan(workspaceRoot))) {
+        if (!(await this.repositories.manuscriptAssembly.hasChapterPlan(workspaceRoot))) {
           return { kind: 'missing_outline', ok: false };
         }
 
-        const source: ManuscriptAssemblySource = await this.deps.repository.loadAssemblySource(
-          workspaceRoot,
-          this.deps.logger,
-        );
+        const source: ManuscriptAssemblySource =
+          await this.repositories.manuscriptAssembly.loadAssemblySource(
+            workspaceRoot,
+            this.host.logger,
+          );
         if (source.draftsByOrder.size === 0) {
           return { kind: 'missing_drafts', ok: false };
         }
@@ -86,7 +66,7 @@ export class AssembleManuscriptUseCase implements IUseCase<
           projectName: source.projectName,
         });
         const foreshadowing: ForeshadowingChapter[] = collectForeshadowing(source.plan);
-        const volumeUri: StoryUri = await this.deps.repository.saveAssembly(
+        const volumeUri: StoryUri = await this.repositories.manuscriptAssembly.saveAssembly(
           workspaceRoot,
           manuscript,
           buildForeshadowingMarkdown(source.projectName, foreshadowing),

@@ -1,9 +1,9 @@
+import type { AiServices, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { StoryUri, SceneFile, StoryboardCard, AiGenerateResponse, CharacterRole, BibleSubjectKind } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 import { normalizeEntityName, slugify } from '@storyboard/story-model';
 
-import type { AiGateway } from '#engine/application/ai/aiGateway';
 import {
   applyCardCollectProposals,
   shouldProposeCardCollect,
@@ -12,7 +12,7 @@ import {
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '@storyboard/story-model';
-import type { IStoryFeatureRepository, StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
+import type { StoryFeatureSource, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 
@@ -113,28 +113,26 @@ export interface BuildStoryCardsProposal {
   readonly snapshots: readonly StoryFileSnapshot[];
 }
 
-export interface BuildStoryCardsUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly repository: IStoryFeatureRepository;
-}
-
 export interface BuildStoryCardsRequest {
   readonly workspaceRoot: StoryUri;
 }
 
 export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, BuildStoryCardsProposal> {
-  public constructor(private readonly deps: BuildStoryCardsUseCaseDependencies) {}
+  public constructor(
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: BuildStoryCardsRequest): Promise<BuildStoryCardsProposal> {
     const { workspaceRoot } = request;
-    const source: StoryFeatureSource = await this.deps.repository.load(workspaceRoot);
+    const source: StoryFeatureSource = await this.repositories.storyFeatures.load(workspaceRoot);
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('no-valid-scenes', '카드를 구성할 유효한 씬이 없습니다.');
     }
 
     const sceneStems: Set<string> = new Set(source.scenes.map((scene) => scene.stem));
     const chunks: SceneFile[][] = groupScenes(source.scenes);
-    const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
     const responses: StoryCardEntity[][] = await mapWithConcurrency(chunks, MAX_PARALLEL_REQUESTS, async (chunk) => {
       const response: AiGenerateResponse = await aiService.generateText(
         'storyCardBuild',
@@ -210,7 +208,7 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
   }
 
   public async hasCurrentSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
-    return await this.deps.repository.hasCurrentSnapshots(snapshots);
+    return await this.repositories.storyFeatures.hasCurrentSnapshots(snapshots);
   }
 }
 

@@ -5,6 +5,7 @@ import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
 } from '@storyboard/story-engine';
+import { createTestAi, createTestRepositories } from '@storyboard/story-engine/testing';
 
 const workspaceRoot = {} as never;
 
@@ -65,7 +66,7 @@ function useCase(response: object): CompleteStoryScenesUseCase {
       generateText: vi.fn(async () => ({ text: JSON.stringify(response) })),
     })),
   };
-  return new CompleteStoryScenesUseCase({ aiGateway: gateway as never, repository });
+  return new CompleteStoryScenesUseCase(createTestAi({ gateway: gateway as never }), createTestRepositories({ storyFeatures: repository }));
 }
 
 describe('CompleteStoryScenesUseCase', () => {

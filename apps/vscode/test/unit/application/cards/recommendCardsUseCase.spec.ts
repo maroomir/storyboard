@@ -5,6 +5,7 @@ import {
   type ICardRecommendationAiGateway,
   type ICardRecommendationRepository
 } from "@storyboard/story-engine"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 describe("RecommendCardsUseCase", () => {
   it("reports no sources without invoking the AI provider", async () => {
@@ -12,7 +13,7 @@ describe("RecommendCardsUseCase", () => {
       load: vi.fn(async () => ({ existingNames: [], sources: [] }))
     }
     const gateway: ICardRecommendationAiGateway = { createService: vi.fn() }
-    const useCase = new RecommendCardsUseCase({ aiGateway: gateway, logger: { error: vi.fn() } as never, repository })
+    const useCase = new RecommendCardsUseCase(createTestHost({ logger: { error: vi.fn() } as never }), createTestAi({ gateway }), createTestRepositories({ cardRecommendations: repository }))
 
     const result = await useCase.execute({
       category: "character",
@@ -36,7 +37,7 @@ describe("RecommendCardsUseCase", () => {
     const gateway: ICardRecommendationAiGateway = {
       createService: vi.fn(() => ({ extractCardRecommendations }))
     }
-    const useCase = new RecommendCardsUseCase({ aiGateway: gateway, logger: { error: vi.fn() } as never, repository })
+    const useCase = new RecommendCardsUseCase(createTestHost({ logger: { error: vi.fn() } as never }), createTestAi({ gateway }), createTestRepositories({ cardRecommendations: repository }))
 
     const result = await useCase.execute({
       category: "character",
@@ -60,7 +61,7 @@ describe("RecommendCardsUseCase", () => {
   it("preserves cancellation before repository access", async () => {
     const repository: ICardRecommendationRepository = { load: vi.fn() }
     const gateway: ICardRecommendationAiGateway = { createService: vi.fn() }
-    const useCase = new RecommendCardsUseCase({ aiGateway: gateway, logger: { error: vi.fn() } as never, repository })
+    const useCase = new RecommendCardsUseCase(createTestHost({ logger: { error: vi.fn() } as never }), createTestAi({ gateway }), createTestRepositories({ cardRecommendations: repository }))
 
     const result = await useCase.execute({
       category: "background",

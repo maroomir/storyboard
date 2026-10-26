@@ -23,8 +23,9 @@ import {
   GenerateDraftUseCase,
   type GenerateDraftResult,
   type GenerateDraftRequest,
-  type GenerateDraftUseCaseDependencies
+  type GenerateDraftServices
 } from "@storyboard/story-engine"
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
@@ -45,33 +46,37 @@ function createLogger(): LoggerSpy {
 function createOptions(
   logger: LoggerSpy,
   overrides: Partial<GenerateDraftRequest> = {}
-): GenerateDraftUseCaseDependencies & GenerateDraftRequest {
+): GenerateDraftServices & GenerateDraftRequest {
   return {
     force: false,
-    aiGateway: {
-      createService: () => ({ proposeSceneGrounding: async () => ({}) }),
-      getTaskProvider: () => "mock"
-    } as never,
-    configBridge: {
+    host: createTestHost({
+      configBridge: {
       isAiContextCondenseEnabled: () => false,
       isSceneGroundingAutoApproveEnabled: () => true
     } as never,
-    draftRepository: {} as never,
-    fileSystem: stubFileSystem,
-    logger: logger as never,
-    projectRepository: {
+      fileSystem: stubFileSystem,
+      logger: logger as never,
+      workspaceLocator: {
+      folders: () => workspace.workspaceFolders ?? [],
+      folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
+    } as never
+    }),
+    ai: createTestAi({ gateway: {
+      createService: () => ({ proposeSceneGrounding: async () => ({}) }),
+      getTaskProvider: () => "mock"
+    } as never }),
+    repositories: createTestRepositories({
+      drafts: {} as never,
+      project: {
       read: (...args: unknown[]): unknown => readProjectJsonMock(...args)
     } as never,
-    sceneCacheRepository: {} as never,
-    sceneRepository: {
+      sceneCache: {} as never,
+      scenes: {
       read: (...args: unknown[]): unknown => readSceneFileMock(...args),
       writeGrounding: async (): Promise<void> => undefined,
       writeBeats: async (): Promise<void> => undefined
-    } as never,
-    workspaceLocator: {
-      folders: () => workspace.workspaceFolders ?? [],
-      folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
-    } as never,
+    } as never
+    }),
     suppressLoggerPanel: false,
     ...overrides
   }
@@ -79,9 +84,12 @@ function createOptions(
 
 async function generateDraftForWorkspaceSceneWorkflow(
   sceneUri: vscode.Uri,
-  options: GenerateDraftUseCaseDependencies & GenerateDraftRequest
+  options: GenerateDraftServices & GenerateDraftRequest
 ): Promise<GenerateDraftResult> {
-  return await new GenerateDraftUseCase(options).execute({ ...options, sceneUri })
+  return await new GenerateDraftUseCase(options.host, options.ai, options.repositories, {}).execute({
+    ...options,
+    sceneUri
+  })
 }
 
 const fakeScene = {

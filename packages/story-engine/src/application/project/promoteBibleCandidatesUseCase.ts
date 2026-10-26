@@ -1,37 +1,23 @@
+import type { WorkspaceRepositories } from '#engine/application/engineServices';
 import {
   aggregateCandidateFacts,
   mergeCanonFacts,
   seedPromotedFact,
   selectNewCandidates,
 } from '@storyboard/story-model';
-import type {
-  BibleCandidateRecord,
-  StoryUri,
-  BibleFact,
-  StoryBible,
-} from '@storyboard/story-model';
-
-export interface IBibleCandidateRepository {
-  loadCanon(workspaceRoot: StoryUri): Promise<StoryBible>;
-  loadRecords(workspaceRoot: StoryUri): Promise<readonly BibleCandidateRecord[]>;
-  saveCanon(workspaceRoot: StoryUri, canon: StoryBible): Promise<void>;
-}
+import type { StoryUri, BibleFact, StoryBible } from '@storyboard/story-model';
 
 export type PrepareBibleCandidatePromotionResult =
   | { readonly facts: readonly BibleFact[]; readonly kind: 'ready' }
   | { readonly kind: 'no_candidates' }
   | { readonly kind: 'no_new_candidates' };
 
-export interface PromoteBibleCandidatesUseCaseDependencies {
-  readonly repository: IBibleCandidateRepository;
-}
-
 export class PromoteBibleCandidatesUseCase {
-  public constructor(private readonly deps: PromoteBibleCandidatesUseCaseDependencies) {}
+  public constructor(private readonly repositories: WorkspaceRepositories) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareBibleCandidatePromotionResult> {
     const candidates: BibleFact[] = aggregateCandidateFacts(
-      await this.deps.repository.loadRecords(workspaceRoot),
+      await this.repositories.bibleCandidates.loadRecords(workspaceRoot),
     );
 
     if (candidates.length === 0) {
@@ -40,16 +26,16 @@ export class PromoteBibleCandidatesUseCase {
 
     const facts: BibleFact[] = selectNewCandidates(
       candidates,
-      await this.deps.repository.loadCanon(workspaceRoot),
+      await this.repositories.bibleCandidates.loadCanon(workspaceRoot),
     );
 
     return facts.length === 0 ? { kind: 'no_new_candidates' } : { facts, kind: 'ready' };
   }
 
   public async promote(workspaceRoot: StoryUri, facts: readonly BibleFact[]): Promise<void> {
-    const canon: StoryBible = await this.deps.repository.loadCanon(workspaceRoot);
+    const canon: StoryBible = await this.repositories.bibleCandidates.loadCanon(workspaceRoot);
     const nextCanon: StoryBible = mergeCanonFacts(canon, facts.map(seedPromotedFact));
 
-    await this.deps.repository.saveCanon(workspaceRoot, nextCanon);
+    await this.repositories.bibleCandidates.saveCanon(workspaceRoot, nextCanon);
   }
 }

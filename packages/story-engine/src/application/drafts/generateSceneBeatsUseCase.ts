@@ -1,4 +1,4 @@
-import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { SceneContext, SceneFile, StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
 import {
   buildSceneContext,
@@ -7,19 +7,7 @@ import {
   getStoryboardProjectPaths,
   type SceneBeat,
 } from '@storyboard/story-model';
-import type { ConfigBridge } from '@storyboard/story-ai';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
 import { hasSceneBeats, proposeSceneBeats } from './resolveSceneBeats';
-
-export interface GenerateSceneBeatsUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly configBridge: ConfigBridge;
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-  readonly sceneRepository: ISceneRepository;
-}
 
 export interface GenerateSceneBeatsRequest {
   readonly workspaceRoot: StoryUri;
@@ -40,12 +28,16 @@ export type GenerateSceneBeatsResult =
   | { readonly ok: false; readonly kind: 'failed'; readonly message: string };
 
 export class GenerateSceneBeatsUseCase {
-  public constructor(private readonly deps: GenerateSceneBeatsUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: GenerateSceneBeatsRequest): Promise<GenerateSceneBeatsResult> {
     let scene: SceneFile;
     try {
-      scene = await this.deps.sceneRepository.read(request.sceneUri, request.fileName);
+      scene = await this.repositories.scenes.read(request.sceneUri, request.fileName);
     } catch (error) {
       if (error instanceof SceneParseError) {
         return { ok: false, kind: 'failed', message: `씬 파일을 읽을 수 없습니다: ${error.message}` };
@@ -58,13 +50,17 @@ export class GenerateSceneBeatsUseCase {
     }
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, this.deps.fileSystem);
+    const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, this.host.fileSystem);
 
     let beats: SceneBeat[];
     try {
-      beats = await proposeSceneBeats(request.sceneUri, scene, context.characters, this.deps);
+      beats = await proposeSceneBeats(request.sceneUri, scene, context.characters, {
+        host: this.host,
+        ai: this.ai,
+        repositories: this.repositories,
+      });
     } catch (error) {
-      this.deps.logger.error('Failed to propose scene beats', error);
+      this.host.logger.error('Failed to propose scene beats', error);
       return { ok: false, kind: 'failed', message: `씬 비트를 전개하지 못했습니다: ${String(error)}` };
     }
 
@@ -76,7 +72,7 @@ export class GenerateSceneBeatsUseCase {
       return { ok: true, kind: 'proposed', beats, written: false };
     }
 
-    await this.deps.sceneRepository.writeBeats(request.sceneUri, beats);
+    await this.repositories.scenes.writeBeats(request.sceneUri, beats);
 
     return { ok: true, kind: 'proposed', beats, written: true };
   }

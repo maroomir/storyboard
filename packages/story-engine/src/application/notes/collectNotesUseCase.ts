@@ -1,12 +1,11 @@
+import type { WorkspaceRepositories } from '#engine/application/engineServices';
 import { canonicalNotionPageUrl, type StoryUri, type NoteBundle } from '@storyboard/story-model';
 
 import { failedResult, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 import {
   NoteSourceError,
   type CollectedNotes,
   type INoteSource,
-  type INoteSourceProvider,
   type NoteLocation,
 } from './noteSource';
 
@@ -19,19 +18,14 @@ export type CollectNotesResult =
   | { readonly ok: true; readonly bundle: NoteBundle }
   | UseCaseFailure;
 
-export interface CollectNotesUseCaseDependencies {
-  readonly sources: INoteSourceProvider;
-  readonly repository: INoteAbsorbRepository;
-}
-
 export class CollectNotesUseCase implements IUseCase<CollectNotesRequest, CollectNotesResult> {
-  public constructor(private readonly deps: CollectNotesUseCaseDependencies) {}
+  public constructor(private readonly repositories: WorkspaceRepositories) {}
 
   public async execute(request: CollectNotesRequest): Promise<CollectNotesResult> {
     const { workspaceRoot, location } = request;
 
     try {
-      const source: INoteSource = await this.deps.sources.open(location);
+      const source: INoteSource = await this.repositories.noteSources.open(location);
       const collected: CollectedNotes = await source.collect();
 
       if (collected.notes.length === 0) {
@@ -51,7 +45,7 @@ export class CollectNotesUseCase implements IUseCase<CollectNotesRequest, Collec
         skipped: [...collected.skipped],
       };
 
-      await this.deps.repository.saveBundle(workspaceRoot, bundle);
+      await this.repositories.noteAbsorb.saveBundle(workspaceRoot, bundle);
 
       return { ok: true, bundle };
     } catch (error) {

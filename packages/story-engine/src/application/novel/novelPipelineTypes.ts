@@ -1,9 +1,4 @@
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { GenerateDraftUseCase } from '#engine/application/drafts/generateDraftUseCase';
-import type { ReviseDraftUseCase } from '#engine/application/drafts/reviseDraftUseCase';
-import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
-import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import type {
   StoryUri,
   StoryboardProject,
@@ -11,36 +6,17 @@ import type {
   NovelRunState,
   NovelStageName,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
-import type { IUsageSink } from '#engine/ports/usageSink';
-import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import type {
-  INovelOutlineRepository,
-  INovelReviewRepository,
-  INovelRunStateRepository,
-  ISceneSeedRepository,
-} from './novelPipelinePorts';
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
+import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
+import type { GenerateDraftUseCase } from '#engine/application/drafts/generateDraftUseCase';
+import type { ReviseDraftUseCase } from '#engine/application/drafts/reviseDraftUseCase';
+import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 
 export type NovelAiService = ReturnType<AiGateway['createService']>;
-
-export interface NovelPipelineDependencies {
-  readonly aiGateway: AiGateway;
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
-  readonly cardWriter: ICardWriterRepository;
-  readonly configBridge: ConfigBridge;
-  readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly logger: IStoryboardLogger;
-  readonly novelReviewRepository: INovelReviewRepository;
-  readonly novelRunStateRepository: INovelRunStateRepository;
-  readonly outlineRepository: INovelOutlineRepository;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
-  readonly sceneSeedRepository: ISceneSeedRepository;
-  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
-  readonly usageSink: IUsageSink;
-  readonly fileSystem: IFileSystem;
-}
 
 export type NovelApprovalKind = 'outline' | 'chapter' | 'review';
 
@@ -57,8 +33,15 @@ export interface NovelPipelineRunOptions {
   readonly stages?: readonly NovelStageName[];
 }
 
+export interface NovelPipelineServices {
+  readonly host: HostAdapters;
+  readonly ai: AiServices;
+  readonly repositories: WorkspaceRepositories;
+  readonly collaborators: NovelPipelineCollaborators;
+}
+
 export type NovelPipelineOptions = NovelPipelineRunOptions & {
-  readonly deps: NovelPipelineDependencies;
+  readonly deps: NovelPipelineServices;
 };
 
 export type NovelPipelineOutcome = 'completed' | 'paused' | 'cancelled' | 'failed';
@@ -66,4 +49,11 @@ export type NovelPipelineOutcome = 'completed' | 'paused' | 'cancelled' | 'faile
 export interface NovelPipelineResult {
   readonly outcome: NovelPipelineOutcome;
   readonly message: string;
+}
+
+export interface NovelPipelineCollaborators {
+  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
+  readonly generateDraftUseCase: GenerateDraftUseCase;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
 }

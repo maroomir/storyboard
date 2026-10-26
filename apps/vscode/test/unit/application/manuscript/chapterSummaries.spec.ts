@@ -8,6 +8,7 @@ import {
   mergeChapterSummary,
   parseChapterSummariesMarkdown,
 } from '@storyboard/story-model';
+import { createTestAi, createTestHost, createTestRepositories } from '@storyboard/story-engine/testing';
 
 describe('chapter summaries markdown', () => {
   it('round-trips what it renders', () => {
@@ -93,11 +94,7 @@ describe('SummarizeChaptersUseCase', () => {
       },
     } as never;
 
-    return { useCase: new SummarizeChaptersUseCase({
-      aiGateway,
-      repository,
-      logger: { error: () => undefined } as never,
-    }), saved, summarized };
+    return { useCase: new SummarizeChaptersUseCase(createTestHost({ logger: { error: () => undefined } as never }), createTestAi({ gateway: aiGateway }), createTestRepositories({ chapterSummaries: repository })), saved, summarized };
   }
 
   it('summarizes every chapter when no index is given', async () => {

@@ -6,6 +6,7 @@ import {
   type IChapterSummaryRepository
 } from "@storyboard/story-engine"
 import type { ChapterPlan } from '@storyboard/story-model';
+import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing";
 
 const plan: ChapterPlan = {
   version: "1.0.0",
@@ -42,14 +43,10 @@ function useCase(
   repository: IChapterSummaryRepository,
   summarizeChapter = vi.fn(async () => "요약")
 ): SummarizeChaptersUseCase {
-  return new SummarizeChaptersUseCase({
-    aiGateway: {
+  return new SummarizeChaptersUseCase(createTestHost({ logger: { error: vi.fn() } as never }), createTestAi({ gateway: {
       createService: () => ({ summarizeChapter }),
       getTaskProvider: () => "mock"
-    } as never,
-    repository,
-    logger: { error: vi.fn() } as never
-  })
+    } as never }), createTestRepositories({ chapterSummaries: repository }))
 }
 
 describe("SummarizeChaptersUseCase", () => {

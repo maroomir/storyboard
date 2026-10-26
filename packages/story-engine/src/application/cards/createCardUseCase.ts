@@ -1,16 +1,8 @@
+import type { WorkspaceRepositories } from '#engine/application/engineServices';
 import type { StoryUri, StoryboardCard } from '@storyboard/story-model';
 
-export interface ICardWriterRepository {
-  exists(workspaceRoot: StoryUri, cardType: StoryboardCard['type'], id: string): Promise<boolean>;
-  write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri>;
-}
-
-export interface CreateCardUseCaseDependencies {
-  readonly repository: ICardWriterRepository;
-}
-
 export class CreateCardUseCase {
-  public constructor(private readonly deps: CreateCardUseCaseDependencies) {}
+  public constructor(private readonly repositories: WorkspaceRepositories) {}
 
   public async deriveUniqueId(
     workspaceRoot: StoryUri,
@@ -22,7 +14,7 @@ export class CreateCardUseCase {
     let candidate: string = base;
     let suffix: number = 2;
 
-    while (await this.deps.repository.exists(workspaceRoot, cardType, candidate)) {
+    while (await this.repositories.cardWriter.exists(workspaceRoot, cardType, candidate)) {
       candidate = `${base}-${suffix}`;
       suffix += 1;
     }
@@ -35,10 +27,10 @@ export class CreateCardUseCase {
     cardType: StoryboardCard['type'],
     id: string,
   ): Promise<boolean> {
-    return await this.deps.repository.exists(workspaceRoot, cardType, id);
+    return await this.repositories.cardWriter.exists(workspaceRoot, cardType, id);
   }
 
   public async write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
-    return await this.deps.repository.write(workspaceRoot, card);
+    return await this.repositories.cardWriter.write(workspaceRoot, card);
   }
 }

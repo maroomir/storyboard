@@ -1,3 +1,4 @@
+import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
   getStoryboardProjectPaths,
   joinStoryPath,
@@ -11,10 +12,8 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-model';
 
-import type { IStoryFeatureRepository, StoryFeatureSource } from '#engine/application/story/storyFeatureTypes';
+import type { StoryFeatureSource } from '#engine/application/story/storyFeatureTypes';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 
 export interface ExportNotesRequest {
   readonly workspaceRoot: StoryUri;
@@ -27,13 +26,6 @@ export interface ExportNotesOutcome {
 }
 
 export type ExportNotesResult = ExportNotesOutcome | UseCaseFailure;
-
-export interface ExportNotesUseCaseDependencies {
-  readonly logger: IStoryboardLogger;
-  readonly fileSystem: IFileSystem;
-  readonly storyRepository: IStoryFeatureRepository;
-  readonly synopsis: { loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined> };
-}
 
 interface NoteExportFolders {
   readonly characters: string;
@@ -50,19 +42,22 @@ export const noteExportFolders: NoteExportFolders = {
 };
 
 export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNotesResult> {
-  public constructor(private readonly deps: ExportNotesUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: ExportNotesRequest): Promise<ExportNotesResult> {
-    return await runUseCase(this.deps.logger, '노트를 내보내지 못했습니다.', async () => {
-      const source: StoryFeatureSource = await this.deps.storyRepository.load(request.workspaceRoot);
-      const synopsis: OutlineSynopsis | undefined = await this.deps.synopsis.loadSynopsis(request.workspaceRoot);
+    return await runUseCase(this.host.logger, '노트를 내보내지 못했습니다.', async () => {
+      const source: StoryFeatureSource = await this.repositories.storyFeatures.load(request.workspaceRoot);
+      const synopsis: OutlineSynopsis | undefined = await this.repositories.outline.loadSynopsis(request.workspaceRoot);
       const nameOf: (id: string) => string = cardNameResolver(source.cards);
       const written: string[] = [];
 
       const write = async (folder: string | undefined, fileName: string, text: string): Promise<void> => {
         const directory: StoryUri = folder === undefined ? request.target : joinStoryPath(request.target, folder);
-        await this.deps.fileSystem.createDirectory(directory);
-        await this.deps.fileSystem.writeFile(
+        await this.host.fileSystem.createDirectory(directory);
+        await this.host.fileSystem.writeFile(
           joinStoryPath(directory, fileName),
           new TextEncoder().encode(text),
         );
@@ -103,8 +98,8 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
       return reference;
     }
     const uri: StoryUri = joinStoryPath(getStoryboardProjectPaths(workspaceRoot).sceneDirectory, reference);
-    return (await this.deps.fileSystem.exists(uri))
-      ? new TextDecoder().decode(await this.deps.fileSystem.readFile(uri))
+    return (await this.host.fileSystem.exists(uri))
+      ? new TextDecoder().decode(await this.host.fileSystem.readFile(uri))
       : undefined;
   }
 }

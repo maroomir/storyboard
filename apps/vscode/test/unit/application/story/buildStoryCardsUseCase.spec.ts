@@ -8,6 +8,7 @@ import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
 } from '@storyboard/story-engine';
+import { createTestAi, createTestRepositories } from '@storyboard/story-engine/testing';
 
 const workspaceRoot = {} as never;
 
@@ -57,7 +58,7 @@ function useCase(response: object): BuildStoryCardsUseCase {
       generateText: vi.fn(async () => ({ text: JSON.stringify(response) })),
     })),
   };
-  return new BuildStoryCardsUseCase({ aiGateway: gateway as never, repository });
+  return new BuildStoryCardsUseCase(createTestAi({ gateway: gateway as never }), createTestRepositories({ storyFeatures: repository }));
 }
 
 describe('tolerating empty optional fields', () => {

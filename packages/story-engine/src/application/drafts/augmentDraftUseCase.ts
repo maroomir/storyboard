@@ -1,4 +1,4 @@
-import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type {
   StoryUri,
   BibleFact,
@@ -10,7 +10,6 @@ import type {
   SceneFile,
   StoryboardProject,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { failedResult } from '#engine/application/useCase';
 import {
   sceneContextPaths,
@@ -25,8 +24,7 @@ import {
   archiveExistingDraft,
 } from '@storyboard/story-model';
 import { formatAugmentCards } from '@storyboard/story-ai';
-import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { DraftAugmentScope } from '@storyboard/story-ai';
 import { readProjectJson } from '#engine/persistence/projectJson';
 type AugmentContextResult =
   | {
@@ -57,15 +55,11 @@ export type ApplyAugmentedDraftRequest = {
   readonly workspaceRoot: StoryUri;
 };
 
-export interface AugmentDraftUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly aiGateway: AiGateway;
-  readonly logger: IStoryboardLogger;
-  readonly configBridge: ConfigBridge;
-}
-
 export class AugmentDraftUseCase {
-  public constructor(private readonly deps: AugmentDraftUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+  ) {}
 
   public async prepareAugmentedDraft(request: AugmentDraftRequest): Promise<AugmentDraftResult> {
     const context: AugmentContextResult = await this.loadContext(
@@ -78,38 +72,36 @@ export class AugmentDraftUseCase {
     }
 
     try {
-      const text: string = await this.deps.aiGateway
-        .createService(request.workspaceRoot)
-        .augmentDraft(
-          {
-            target: request.target,
-            scope: request.scope,
-            format: context.format,
-            cards: formatAugmentCards(
-              context.sceneContext.characters,
-              context.sceneContext.background,
-            ),
-            facts: formatBibleFactLines(context.sceneContext, context.bibleFacts),
-            intent: context.sceneContext.scene.body,
-            instruction: request.instruction,
-          },
-          {
-            providerId: this.deps.aiGateway.getTaskProvider('draftAugment'),
-            attribution: { primary: { kind: 'scene', id: request.draftSceneStem } },
-          },
-        );
+      const text: string = await this.ai.gateway.createService(request.workspaceRoot).augmentDraft(
+        {
+          target: request.target,
+          scope: request.scope,
+          format: context.format,
+          cards: formatAugmentCards(
+            context.sceneContext.characters,
+            context.sceneContext.background,
+          ),
+          facts: formatBibleFactLines(context.sceneContext, context.bibleFacts),
+          intent: context.sceneContext.scene.body,
+          instruction: request.instruction,
+        },
+        {
+          providerId: this.ai.gateway.getTaskProvider('draftAugment'),
+          attribution: { primary: { kind: 'scene', id: request.draftSceneStem } },
+        },
+      );
 
       return text.trim().length === 0
         ? { kind: 'empty', ok: false }
         : { kind: 'augmented', ok: true, text };
     } catch (error) {
-      this.deps.logger.error('Augment draft failed', error);
+      this.host.logger.error('Augment draft failed', error);
       return failedResult(error);
     }
   }
 
   public async applyAugmentedDraft(request: ApplyAugmentedDraftRequest): Promise<void> {
-    if (!this.deps.configBridge.isKeepDraftHistoryEnabled()) {
+    if (!this.host.configBridge.isKeepDraftHistoryEnabled()) {
       return;
     }
 
@@ -123,10 +115,10 @@ export class AugmentDraftUseCase {
         draftUri: request.draftUri,
         historyDirectory,
         resolveArchiveUri: (archiveFileName) => joinUri(historyDirectory, archiveFileName),
-        fileSystem: this.deps.fileSystem,
+        fileSystem: this.host.fileSystem,
       });
     } catch (error) {
-      this.deps.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
+      this.host.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
     }
   }
 
@@ -138,7 +130,7 @@ export class AugmentDraftUseCase {
 
     let scene: SceneFile;
     try {
-      scene = await readSceneFile(sceneUri, this.deps.fileSystem, fileName);
+      scene = await readSceneFile(sceneUri, this.host.fileSystem, fileName);
     } catch (error) {
       return error instanceof SceneParseError
         ? { message: `연결된 씬 파일을 읽을 수 없습니다: ${error.message}`, ok: false }
@@ -148,7 +140,7 @@ export class AugmentDraftUseCase {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     let project: StoryboardProject;
     try {
-      project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
+      project = await readProjectJson(this.host.fileSystem, paths.projectJson);
     } catch {
       return { message: 'project.json을 읽을 수 없습니다.', ok: false };
     }
@@ -156,7 +148,7 @@ export class AugmentDraftUseCase {
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
     let sceneContext: SceneContext;
     try {
-      sceneContext = await buildSceneContext(contextPaths, scene, this.deps.fileSystem);
+      sceneContext = await buildSceneContext(contextPaths, scene, this.host.fileSystem);
     } catch {
       return { message: '씬 컨텍스트를 구성하지 못했습니다.', ok: false };
     }
@@ -164,7 +156,7 @@ export class AugmentDraftUseCase {
     const narrativeContext: NarrativeContext = await buildNarrativeContext(
       contextPaths,
       sceneContext,
-      this.deps.fileSystem,
+      this.host.fileSystem,
     );
 
     return {

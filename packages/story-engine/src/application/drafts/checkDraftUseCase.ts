@@ -1,3 +1,4 @@
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type { ContinuityIssue, GrammarIssue } from '@storyboard/story-ai';
 import {
   analyzeSlop,
@@ -18,9 +19,6 @@ import {
   type UsageAttribution,
 } from '@storyboard/story-model';
 
-import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export type DraftCheckKind = 'grammar' | 'continuity' | 'slop';
@@ -49,25 +47,22 @@ export type CheckDraftResult =
   | { readonly ok: true; readonly kind: 'slop'; readonly findings: readonly SlopFinding[] }
   | UseCaseFailure;
 
-export interface CheckDraftUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-}
-
 export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraftResult> {
-  public constructor(private readonly deps: CheckDraftUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+  ) {}
 
   public async execute(request: CheckDraftRequest): Promise<CheckDraftResult> {
     return await runUseCase<CheckDraftResult>(
-      this.deps.logger,
+      this.host.logger,
       `Draft ${request.kind} check failed`,
       () => this.check(request),
     );
   }
 
   private async check(request: CheckDraftRequest): Promise<CheckDraftResult> {
-    const { aiGateway } = this.deps;
+    const { gateway: aiGateway } = this.ai;
     const attribution: UsageAttribution = { primary: { kind: 'scene', id: request.sceneStem } };
 
     switch (request.kind) {
@@ -109,7 +104,7 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
     workspaceRoot: StoryUri,
     sceneStem: string,
   ): Promise<readonly string[]> {
-    const { fileSystem } = this.deps;
+    const { fileSystem } = this.host;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const scene: SceneFile = await readSceneFile(
       scenePath(workspaceRoot, sceneStem),

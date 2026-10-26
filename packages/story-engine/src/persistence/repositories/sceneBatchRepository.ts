@@ -12,7 +12,7 @@ import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSy
 import type {
   BatchSceneList,
   ISceneBatchRepository,
-} from '#engine/application/drafts/generateAllDraftsUseCase';
+} from '#engine/application/drafts/draftRepositories';
 
 interface NumberedSceneCardFile {
   name: string;

@@ -1,3 +1,4 @@
+import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type {
   CardCollectProposal,
   MergedNoteCardCandidate,
@@ -6,7 +7,6 @@ import type {
   StoryUri,
 } from '@storyboard/story-model';
 
-import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import {
   applyCardCollectProposals,
   emptyNoteCandidateFile,
@@ -16,8 +16,7 @@ import {
   removeNoteCandidateChange,
   shouldProposeCardCollect,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { INoteAbsorbRepository, NoteCandidateLoad } from './noteAbsorbRepository';
+import type { NoteCandidateLoad } from './noteAbsorbRepository';
 
 export type PrepareNoteCandidatePromotionResult =
   | { readonly kind: 'no_candidates' }
@@ -40,14 +39,11 @@ export type DiscardNoteCandidatesResult =
   | { readonly kind: 'discarded'; readonly cardIds: readonly string[] }
   | { readonly kind: 'change_not_found' };
 
-export interface PromoteNoteCandidatesUseCaseDependencies {
-  readonly logger: IStoryboardLogger;
-  readonly noteRepository: INoteAbsorbRepository;
-  readonly cardWriter: ICardWriterRepository;
-}
-
 export class PromoteNoteCandidatesUseCase {
-  public constructor(private readonly deps: PromoteNoteCandidatesUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareNoteCandidatePromotionResult> {
     const file: NoteCandidateFile = await this.loadFile(workspaceRoot);
@@ -60,7 +56,7 @@ export class PromoteNoteCandidatesUseCase {
     const heldCards: MergedNoteCardCandidate[] = [];
 
     for (const candidate of mergeNoteCandidateSources(file.sources)) {
-      const card: StoryboardCard | undefined = await this.deps.noteRepository.loadCard(
+      const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
         workspaceRoot,
         candidate.cardType,
         candidate.cardId,
@@ -90,7 +86,7 @@ export class PromoteNoteCandidatesUseCase {
     let file: NoteCandidateFile = await this.loadFile(workspaceRoot);
 
     for (const candidate of candidates) {
-      const card: StoryboardCard | undefined = await this.deps.noteRepository.loadCard(
+      const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
         workspaceRoot,
         candidate.cardType,
         candidate.cardId,
@@ -100,7 +96,7 @@ export class PromoteNoteCandidatesUseCase {
         continue;
       }
 
-      await this.deps.cardWriter.write(
+      await this.repositories.cardWriter.write(
         workspaceRoot,
         applyCardCollectProposals(card, candidate.changes),
       );
@@ -108,7 +104,7 @@ export class PromoteNoteCandidatesUseCase {
       file = keepNoteCandidateConflicts(file, candidate);
     }
 
-    await this.deps.noteRepository.saveCandidates(workspaceRoot, file);
+    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, file);
 
     return { updatedCardIds };
   }
@@ -127,7 +123,7 @@ export class PromoteNoteCandidatesUseCase {
       return { kind: 'change_not_found' };
     }
 
-    await this.deps.noteRepository.saveCandidates(workspaceRoot, next);
+    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, next);
 
     const before: string[] = mergeNoteCandidateSources(file.sources).map((card) => card.cardId);
     const remaining: Set<string> = new Set(
@@ -144,10 +140,11 @@ export class PromoteNoteCandidatesUseCase {
   }
 
   private async loadFile(workspaceRoot: StoryUri): Promise<NoteCandidateFile> {
-    const loaded: NoteCandidateLoad = await this.deps.noteRepository.loadCandidates(workspaceRoot);
+    const loaded: NoteCandidateLoad =
+      await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
 
     if (loaded.kind === 'legacy') {
-      this.deps.logger.warn(
+      this.host.logger.warn(
         '이전 버전이 남긴 노트 카드 후보는 읽지 않습니다. 필요하면 그 노트를 다시 흡수하세요.',
       );
     }

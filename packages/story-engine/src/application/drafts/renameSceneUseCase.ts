@@ -1,3 +1,4 @@
+import type { HostAdapters } from '#engine/application/engineServices';
 import {
   parseBible,
   parseCard,
@@ -36,8 +37,7 @@ import {
   type CharacterCard,
 } from '@storyboard/story-model';
 
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
-import type { IStoryboardLogger } from '#engine/ports/logger';
+import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface RenameSceneRequest {
@@ -63,11 +63,6 @@ export type RenameSceneResult =
     }
   | UseCaseFailure;
 
-export interface RenameSceneUseCaseDependencies {
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-}
-
 interface PlannedWrite {
   readonly from?: StoryUri;
   readonly to: StoryUri;
@@ -83,10 +78,10 @@ const sceneStemFieldNames: Set<string> = new Set([
 const sceneEntityKeyFieldNames: Set<string> = new Set(['id', 'key']);
 
 export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSceneResult> {
-  public constructor(private readonly deps: RenameSceneUseCaseDependencies) {}
+  public constructor(private readonly host: HostAdapters) {}
 
   public async execute(request: RenameSceneRequest): Promise<RenameSceneResult> {
-    return await runUseCase(this.deps.logger, 'RenameSceneUseCase', () => this.rename(request));
+    return await runUseCase(this.host.logger, 'RenameSceneUseCase', () => this.rename(request));
   }
 
   private async rename(request: RenameSceneRequest): Promise<RenameSceneResult> {
@@ -107,7 +102,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     const root: StoryUri = request.workspaceRoot;
 
-    if (!(await this.deps.fileSystem.exists(scenePath(root, from.stem)))) {
+    if (!(await this.host.fileSystem.exists(scenePath(root, from.stem)))) {
       return { ok: false, kind: 'missing', message: `씬이 없습니다: ${from.stem}` };
     }
 
@@ -132,23 +127,23 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     const rewrites: PlannedWrite[] = await this.planRewrites(paths, memoryScopes, rename);
 
-    await this.deps.fileSystem.writeFile(
+    await this.host.fileSystem.writeFile(
       paths.sceneRenameJournal,
       toBytes(serializeSceneRenameJournal(rename)),
     );
 
     for (const write of [...moves, ...rewrites]) {
-      await this.deps.fileSystem.writeFile(write.to, toBytes(write.content));
+      await this.host.fileSystem.writeFile(write.to, toBytes(write.content));
     }
 
     for (const move of moves) {
       if (move.from !== undefined) {
-        await this.deps.fileSystem.delete(move.from);
+        await this.host.fileSystem.delete(move.from);
       }
     }
 
     await this.deleteEmptyDirectories(paths, rename);
-    await this.deps.fileSystem.delete(paths.sceneRenameJournal);
+    await this.host.fileSystem.delete(paths.sceneRenameJournal);
 
     return {
       ok: true,
@@ -173,7 +168,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     if (
       journaled?.from.stem !== rename.from.stem ||
       journaled.to.stem !== rename.to.stem ||
-      !(await this.deps.fileSystem.exists(scenePath(paths.workspaceRoot, rename.to.stem)))
+      !(await this.host.fileSystem.exists(scenePath(paths.workspaceRoot, rename.to.stem)))
     ) {
       return false;
     }
@@ -383,31 +378,31 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       joinUri(paths.studioSessionDirectory, 'scene', rename.from.stem),
     ]) {
       if (
-        (await this.deps.fileSystem.exists(directory)) &&
+        (await this.host.fileSystem.exists(directory)) &&
         (await this.listEntries(directory)).length === 0
       ) {
-        await this.deps.fileSystem.delete(directory);
+        await this.host.fileSystem.delete(directory);
       }
     }
   }
 
   private async readTextIfExists(uri: StoryUri): Promise<string | undefined> {
-    if (!(await this.deps.fileSystem.exists(uri))) {
+    if (!(await this.host.fileSystem.exists(uri))) {
       return undefined;
     }
 
-    return new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
+    return new TextDecoder().decode(await this.host.fileSystem.readFile(uri));
   }
 
   private async listFileNames(directory: StoryUri): Promise<readonly string[]> {
-    return (await this.deps.fileSystem.exists(directory))
-      ? await this.deps.fileSystem.listFileNames(directory)
+    return (await this.host.fileSystem.exists(directory))
+      ? await this.host.fileSystem.listFileNames(directory)
       : [];
   }
 
   private async listEntries(directory: StoryUri): Promise<FileSystemDirectoryEntry[]> {
-    return (await this.deps.fileSystem.exists(directory))
-      ? await this.deps.fileSystem.readDirectory(directory)
+    return (await this.host.fileSystem.exists(directory))
+      ? await this.host.fileSystem.readDirectory(directory)
       : [];
   }
 }

@@ -1,3 +1,4 @@
+import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type {
   StoryUri,
   NarrationDirective,
@@ -11,7 +12,6 @@ Draft,
 SceneCacheRecord,
 ProjectSetting,
 } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   sceneContextPaths,
   joinUri,
@@ -40,8 +40,7 @@ import { readProjectJson } from '#engine/persistence/projectJson';
 import { readChapterNarrationDefaults, resolveSceneNarration, type ChapterNarrationDefaults } from './resolveSceneNarration';
 import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
 import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
-import type { AiProviderRegistry, TaskAiConfigResolved } from '@storyboard/story-ai';
-import type { IUsageSink } from '#engine/ports/usageSink';
+import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
 import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
 import { recordRevisionRounds } from '#engine/persistence/revisionPlanRecorder';
@@ -97,14 +96,13 @@ async function resolveReviseNarration(
   };
 }
 
-export interface ReviseDraftUseCaseDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly usageSink: IUsageSink;
-  readonly fileSystem: IFileSystem;
-  readonly logger: IStoryboardLogger;
-  readonly generator: string;
-  readonly sceneCacheRepository?: ISceneCacheRepository;
+export interface ReviseDraftServices {
+  readonly host: HostAdapters;
+  readonly ai: AiServices;
+  readonly repositories: WorkspaceRepositories;
 }
+
+type ReviseDraftWorkflowOptions = ReviseDraftServices & ReviseDraftRequest;
 
 export interface ReviseDraftRequest {
   readonly workspaceUri: StoryUri;
@@ -280,30 +278,30 @@ async function prepareReviseDraftContext(
   };
 }
 async function runReviseDraftWorkflow(
-  options: ReviseDraftUseCaseDependencies & ReviseDraftRequest,
+  options: ReviseDraftWorkflowOptions,
 ): Promise<ReviseDraftWorkflowResult> {
   const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
     options;
 
-  const aiService: StoryboardAiService = new StoryboardAiService(options.aiProviderRegistry, {
+  const aiService: StoryboardAiService = new StoryboardAiService(options.ai.providerRegistry, {
     onUsage: (record): void => {
-      void options.usageSink
+      void options.ai.usageSink
         .record(options.workspaceUri, record)
-        .catch((error: unknown) => options.logger.error('사용량 기록에 실패했습니다.', error));
+        .catch((error: unknown) => options.host.logger.error('사용량 기록에 실패했습니다.', error));
     },
   });
   const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
   const reviseContext: ReviseDraftContext = await prepareReviseDraftContext(
-    options.fileSystem,
+    options.host.fileSystem,
     paths,
     draftUri,
     sceneStem,
-    options.sceneCacheRepository,
+    options.repositories.sceneCache,
   );
 
   const loopResult: ReviseLoopResult = await runReviseLoop({
     aiService,
-    registry: options.aiProviderRegistry,
+    registry: options.ai.providerRegistry,
     attribution,
     loopContext: reviseContext.loop,
     body: reviseContext.draft.body,
@@ -313,28 +311,28 @@ async function runReviseDraftWorkflow(
     onProgress: options.onProgress,
     shouldCancel: options.shouldCancel,
     ...(options.seedIssues === undefined ? {} : { seedIssues: options.seedIssues }),
-    onRound: (round) => options.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
+    onRound: (round) => options.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
   });
 
   try {
-    await recordRevisionRounds(options.fileSystem, paths, sceneStem, loopResult.rounds);
+    await recordRevisionRounds(options.host.fileSystem, paths, sceneStem, loopResult.rounds);
   } catch (error) {
-    options.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
   }
 
   if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
-    const revisionConfig: TaskAiConfigResolved = options.aiProviderRegistry.getTaskAiConfig('draftRevision');
+    const revisionConfig: TaskAiConfigResolved = options.ai.providerRegistry.getTaskAiConfig('draftRevision');
     const revised: Draft = createDraft({
       sceneStem,
       format: reviseContext.draft.format,
       body: loopResult.body,
       warnings: reviseContext.draft.warnings,
-      generator: options.generator,
+      generator: options.host.generator,
       providerId: revisionConfig.providerId,
       model: revisionConfig.model,
     });
 
-    await writeDraftFile(draftUri, options.fileSystem, revised);
+    await writeDraftFile(draftUri, options.host.fileSystem, revised);
     await refreshSceneCacheBodyHash(options, sceneStem, revised);
   }
 
@@ -352,11 +350,11 @@ async function runReviseDraftWorkflow(
 }
 
 async function refreshSceneCacheBodyHash(
-  options: ReviseDraftRequest & ReviseDraftUseCaseDependencies,
+  options: ReviseDraftWorkflowOptions,
   sceneStem: string,
   revised: ReturnType<typeof createDraft>,
 ): Promise<void> {
-  const repository: ISceneCacheRepository | undefined = options.sceneCacheRepository;
+  const repository: ISceneCacheRepository | undefined = options.repositories.sceneCache;
 
   if (!repository) {
     return;
@@ -371,14 +369,23 @@ async function refreshSceneCacheBodyHash(
       bodyHash: computeDraftBodyHash(parseDraft(serializeDraft(revised)).body),
     });
   } catch (error) {
-    options.logger.warn(`씬 캐시의 본문 해시를 갱신하지 못했습니다: ${String(error)}`);
+    options.host.logger.warn(`씬 캐시의 본문 해시를 갱신하지 못했습니다: ${String(error)}`);
   }
 }
 
 export class ReviseDraftUseCase {
-  public constructor(private readonly dependencies: ReviseDraftUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: ReviseDraftRequest): Promise<ReviseDraftWorkflowResult> {
-    return await runReviseDraftWorkflow({ ...this.dependencies, ...request });
+    return await runReviseDraftWorkflow({
+      host: this.host,
+      ai: this.ai,
+      repositories: this.repositories,
+      ...request,
+    });
   }
 }

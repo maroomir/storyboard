@@ -1,32 +1,17 @@
-import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
-import type { StoryUri, ChapterSummary, AssembledManuscript } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
+import type { StoryUri, AssembledManuscript } from '@storyboard/story-model';
 import {
   assembleManuscript,
   buildManuscriptReviewMarkdown,
   collectChapterPlanCharacterIds,
 } from '@storyboard/story-model';
-import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 import { reviewChapterWindows } from './reviewChapterWindows';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-
-export type ManuscriptReviewSource = {
-  readonly source: ManuscriptAssemblySource;
-  readonly styleConstraints: readonly string[];
-  readonly qualityCriteria: readonly string[];
-  readonly canonFactLines: readonly string[];
-  readonly chapterSummaries: readonly ChapterSummary[];
-};
-
-export interface IManuscriptReviewRepository {
-  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
-  loadReviewSource(
-    workspaceRoot: StoryUri,
-    logger: Pick<IStoryboardLogger, 'warn'>,
-  ): Promise<ManuscriptReviewSource>;
-  saveReview(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
-}
 
 export type ReviewManuscriptResult =
   | { readonly kind: 'missing_drafts'; readonly ok: false }
@@ -40,12 +25,6 @@ export type ReviewManuscriptResult =
       readonly reportUri: StoryUri;
     };
 
-export interface ReviewManuscriptUseCaseDependencies {
-  readonly aiGateway: AiGateway;
-  readonly repository: IManuscriptReviewRepository;
-  readonly logger: IStoryboardLogger;
-}
-
 export interface ReviewManuscriptRequest {
   readonly workspaceRoot: StoryUri;
 }
@@ -54,21 +33,28 @@ export class ReviewManuscriptUseCase implements IUseCase<
   ReviewManuscriptRequest,
   ReviewManuscriptResult
 > {
-  public constructor(private readonly deps: ReviewManuscriptUseCaseDependencies) {}
+  public constructor(
+    private readonly host: HostAdapters,
+    private readonly ai: AiServices,
+    private readonly repositories: WorkspaceRepositories,
+  ) {}
 
   public async execute(request: ReviewManuscriptRequest): Promise<ReviewManuscriptResult> {
     const { workspaceRoot } = request;
 
     return await runUseCase<ReviewManuscriptResult>(
-      this.deps.logger,
+      this.host.logger,
       'Review manuscript failed',
       async () => {
-        if (!(await this.deps.repository.hasChapterPlan(workspaceRoot))) {
+        if (!(await this.repositories.manuscriptReview.hasChapterPlan(workspaceRoot))) {
           return { kind: 'missing_outline', ok: false };
         }
 
         const { source, styleConstraints, qualityCriteria, canonFactLines, chapterSummaries } =
-          await this.deps.repository.loadReviewSource(workspaceRoot, this.deps.logger);
+          await this.repositories.manuscriptReview.loadReviewSource(
+            workspaceRoot,
+            this.host.logger,
+          );
         if (source.draftsByOrder.size === 0) {
           return { kind: 'missing_drafts', ok: false };
         }
@@ -80,7 +66,7 @@ export class ReviewManuscriptUseCase implements IUseCase<
           annotateSceneStems: true,
         });
         const characters: string[] = collectChapterPlanCharacterIds(source.plan);
-        const aiService: StoryboardAiService = this.deps.aiGateway.createService(workspaceRoot);
+        const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
 
         const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
           aiService,
@@ -91,8 +77,8 @@ export class ReviewManuscriptUseCase implements IUseCase<
           styleConstraints,
           qualityCriteria,
           hasSceneMarkers: true,
-          continuityProviderId: this.deps.aiGateway.getTaskProvider('continuityCheck'),
-          critiqueProviderId: this.deps.aiGateway.getTaskProvider('draftCritique'),
+          continuityProviderId: this.ai.gateway.getTaskProvider('continuityCheck'),
+          critiqueProviderId: this.ai.gateway.getTaskProvider('draftCritique'),
         });
 
         const reportMarkdown: string = buildManuscriptReviewMarkdown({
@@ -102,7 +88,7 @@ export class ReviewManuscriptUseCase implements IUseCase<
           continuityIssues,
           critiqueIssues,
         });
-        const reportUri: StoryUri = await this.deps.repository.saveReview(
+        const reportUri: StoryUri = await this.repositories.manuscriptReview.saveReview(
           workspaceRoot,
           reportMarkdown,
         );
