@@ -72,6 +72,11 @@ for schema-first types and the error-class template. Generic readability and ver
   (`GenerateDraftUseCaseDependencies` pattern). Repository ports are declared next to the use case
   that consumes them (`application/drafts/draftRepositories.ts` is the shared one for the draft
   use cases); `ports/` holds only host ports.
+- **A class is the unit that holds dependencies or state** (`.cursor/rules/architecture-oop.mdc`,
+  "Objects and Functions"): deps through the constructor, steps as `private` methods, the domain
+  verbs as public methods, and a method handed out as a callback as an arrow field. Helpers that
+  take no dependency stay functions in a module named for the subject; a module whose functions
+  all take the same `run`/`container`/`deps` first parameter is a class waiting to be written.
 - **Use cases implement `IUseCase<Request, Result>`** (`story-engine/src/application/useCase.ts`):
   one `execute(request)` taking a single request object, expected failures returned through
   `runUseCase` / `failedResult`, never positional arguments. Apps do not call a use case: they call

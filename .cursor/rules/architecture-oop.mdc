@@ -1,17 +1,33 @@
 ---
-description: Runtime boundaries and pattern adoption when complexity warrants it
-globs: apps/vscode/src/**/*,apps/vscode/webview-ui/src/**/*,apps/vscode/test/**/*
+description: Runtime boundaries and the objects-and-functions rule (a hidden this becomes a class, pure computation stays a function)
+globs: apps/*/src/**/*,apps/vscode/webview-ui/src/**/*,packages/*/src/**/*
 alwaysApply: false
 ---
 
 # Architecture and patterns
 
+The code is class-centred: one `StoryboardApplication` owns the object graph, a manager fronts each
+domain, and the work under them is done by objects that hold their dependencies. Functions are for
+pure computation.
+
 - Keep extension activation focused on lifecycle and high-level wiring.
 - Keep VSCode APIs, file access, terminals, subprocesses, and integrations behind extension-host services or adapters when it improves testability.
 - Shared code must not depend on `vscode` or browser-only APIs; webview code owns rendering and transient UI state.
 - Keep long-running work in the extension host and avoid blocking activation or message handling.
-- Use Strategy or Factory only for implementations that already vary behind one contract.
-- Use Command-style handlers when commands need independent validation, execution, and tests.
-- Use a Facade or controller only when multi-service orchestration is no longer readable as a direct flow.
-- Do not create interfaces, classes, or layers for simple single-use behavior.
+
+## Objects and functions
+
+- **Pure computation stays a function**: input in, output out, no dependency and no state between calls. Group by subject.
+- **A hidden `this` becomes a class**: several functions in one module taking the same large first parameter (`run`, `container`, `deps`, `fetch`, a store) become one class that takes it in the constructor and exposes the verbs as public methods; so does anything that keeps state between calls or is one of several variants behind an `I`-port. Deps through the constructor as one `readonly` interface, steps as `private` methods, callbacks as arrow fields.
+- **Values stay values**: `readonly` `interface`s, discriminated unions, `as const` tables; a `Builder` only for multi-step assembly.
+- By eye: the same large first parameter three times in one file means a class; only strings, numbers and value types mean a function; `interface` and `type` alone are values.
+- Keep functions and values where the ecosystem asks: React and Ink components, zod schemas, `as const` catalogs, `*.params.json`, tests.
+
+## Patterns
+
+- Strategy and Factory only for implementations that already vary behind one `I`-port; a self-registering registry when adding a variant must not edit the factory (`registerProviderFactory`).
+- Command-style handlers for CLI verbs and contributed commands, each with its own validation, execution and tests.
+- `StoryboardApplication` is the one composition root and a manager fronts each domain; a further facade only when multi-service orchestration is no longer readable as a direct flow.
+- Adapters keep external APIs and runtime details out of domain code.
+- An `I`-port, Strategy or Factory needs at least two real implementations or a defined extension point; single-use behaviour is a plain class (holds deps or state) or a function (does not), never an interface with one implementation.
 - Existing code and tests define the actual directory layout; avoid speculative file trees in rules.

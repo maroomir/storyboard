@@ -24,7 +24,7 @@ Apply this priority when instructions conflict:
 6. `CLAUDE.md` as the Claude Code rule index.
 
 - `.claude/rules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
-- `.claude/rules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
+- `.claude/rules/architecture.md` defines layer boundaries and the objects-and-functions rule: a module whose functions share one large first parameter becomes a class that owns it, pure computation stays a function, values stay values.
 - `.claude/rules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
 - `.claude/rules/coding-standards.md` (and `.cursor/rules/coding-standards.mdc`) define the monorepo-wide structure, naming, typing, and error-handling standards; the reference module is `apps/cli`, with `packages/story-model` as the package-side reference.
 - `.claude/rules/comments.md` forbids comments in TypeScript/TSX (only tool directives such as `eslint-disable` and `@ts-expect-error` stay): intent goes into names and explicit types; Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
@@ -204,6 +204,7 @@ Code should be easy for another person to understand quickly and modify safely.
 - Prefer clear names that reveal role and intent.
 - Keep related state, derived values, and behavior close together.
 - Split large functions/classes when the meaningful unit no longer fits in one readable view.
+- Give dependencies and state to a class (deps through the constructor, steps as `private` methods); keep pure computation as functions grouped by subject.
 - Write no comments; carry intent, constraints, and tradeoffs in names (named constants, booleans, extracted functions).
 - Annotate every local, class field and function return explicitly, even when inferable.
 - Keep code testable by separating pure logic from VSCode API and webview runtime dependencies.
