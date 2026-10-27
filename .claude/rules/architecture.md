@@ -1,6 +1,8 @@
 # Architecture and Pattern Rules
 
-Keep runtime boundaries explicit and introduce object-oriented patterns only when current complexity justifies them.
+Keep runtime boundaries explicit. The code is class-centred: one `StoryboardApplication` owns the
+object graph, a manager fronts each domain, and the work under them is done by objects that hold
+their dependencies. Functions are for pure computation.
 
 ## Runtime Boundaries
 
@@ -10,14 +12,46 @@ Keep runtime boundaries explicit and introduce object-oriented patterns only whe
 - Keep webview rendering and transient UI state separate from persisted extension-host state.
 - Long-running work belongs in the extension host and must report progress without blocking activation or message handling.
 
+## Objects and Functions
+
+Every exported function falls into one of three buckets, and the bucket decides its shape.
+
+- **Pure computation stays a function.** Input in, output out: no dependency (file system, AI,
+  logger, repository) and no state between calls — string work, planning arithmetic, validators,
+  codecs, path rules. Group these in a module named for the subject.
+- **A hidden `this` becomes a class.** When several functions in one module take the same large
+  first parameter (`run`, `container`, `deps`, `fetch`, a store), that parameter is the hidden
+  `this`: the functions become one class that takes it in the constructor and exposes the verbs as
+  public methods. The same holds for anything that keeps state between calls or is one of several
+  variants behind an `I`-port. Dependencies arrive through the constructor as one `readonly` deps
+  interface, steps are `private` methods, and a method handed out as a callback is an arrow field
+  so `this` survives.
+- **Values stay values.** Record shapes are `readonly` `interface`s, outcomes are discriminated
+  unions, tables are `as const`. A `Builder` only when assembly takes several steps.
+
+How to tell by eye: the same large first parameter three times in one file means a class;
+parameters that are only strings, numbers and value types mean a function; a file of `interface`
+and `type` alone is values.
+
+Where the ecosystem asks for functions and values, keep them: React and Ink components, zod
+schemas, `as const` catalogs, `*.params.json`, and tests (a vitest suite stays functions; a test
+of a class builds an instance).
+
 ## Pattern Adoption
 
-- Use Strategy or Factory when multiple implementations already vary behind one contract.
-- Use Command-style handlers when contributed commands need independent validation, execution, and tests.
-- Use a Facade or controller only when orchestration spans multiple services and the simpler direct flow is no longer readable.
-- Keep external APIs and runtime-specific details behind adapters when domain code would otherwise depend on them.
-- Do not create interfaces, classes, or layers for simple single-use behavior.
-- Prefer plain functions and focused modules until substitution, lifecycle, or state ownership requires an object.
+- Strategy and Factory where several implementations already vary behind one `I`-port; a registry
+  with self-registration when adding a variant must not edit the factory
+  (`registerProviderFactory` is the model).
+- Command-style handlers for CLI verbs and contributed commands, so each has its own validation,
+  execution and tests.
+- Facade: `StoryboardApplication` is the one composition root and a manager fronts each domain; a
+  further facade only when orchestration spans several services and the direct flow is no longer
+  readable.
+- Adapters keep external APIs and runtime-specific details out of domain code.
+- Abstraction follows variation: an `I`-port, a Strategy or a Factory needs at least two real
+  implementations or a defined extension point. A single-use behaviour is a plain class (when it
+  holds dependencies or state) or a function (when it does not), never an interface with one
+  implementation.
 
 ## Pipelines Are Data
 
