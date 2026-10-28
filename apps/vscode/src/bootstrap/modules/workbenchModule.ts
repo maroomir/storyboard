@@ -4,7 +4,7 @@ import { OpenRelationGraphCommand } from '@/presentation/commands/openRelationGr
 import { OpenSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 import {
   ChooseProviderCommand,
-  nudgeToChooseProvider,
+  ProviderChooser,
 } from '@/presentation/commands/chooseProviderCommand';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { RelationGraphProvider } from '@/presentation/providers/RelationGraphProvider';
@@ -78,7 +78,11 @@ export class WorkbenchModule implements IApplicationModule {
 
     void resolveStoryboardWorkspaceRoot().then((root) => {
       if (root !== undefined) {
-        return nudgeToChooseProvider({ configBridge, registry: aiProviderRegistry, secretStore });
+        return new ProviderChooser({
+          configBridge,
+          registry: aiProviderRegistry,
+          secretStore,
+        }).nudge();
       }
 
       return undefined;

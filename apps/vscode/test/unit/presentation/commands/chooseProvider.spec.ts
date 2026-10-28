@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { ConfigBridge, SecretStore } from "@storyboard/story-ai"
 import type { AiProviderRegistry, StoryboardConfigurationLike, StoryboardSecretStorageLike } from "@storyboard/story-ai"
 
-import { chooseDefaultProvider, nudgeToChooseProvider } from "@/presentation/commands/chooseProviderCommand"
+import { ProviderChooser } from "@/presentation/commands/chooseProviderCommand"
 
 function createConfigBridge(values: Map<string, unknown>): ConfigBridge {
   const configuration: StoryboardConfigurationLike = {
@@ -42,7 +42,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("chooseDefaultProvider", () => {
+describe("ProviderChooser.choose", () => {
   it("stores the picked provider and asks for a key when the provider needs one", async () => {
     const values = new Map<string, unknown>()
     const configBridge = createConfigBridge(values)
@@ -55,7 +55,7 @@ describe("chooseDefaultProvider", () => {
     })
     vi.spyOn(vscode.window, "showInputBox").mockResolvedValue("sk-new")
 
-    const picked = await chooseDefaultProvider({ configBridge, registry, secretStore })
+    const picked = await new ProviderChooser({ configBridge, registry, secretStore }).choose()
 
     expect(picked).toBe("openai")
     expect(values.get("ai.provider.default")).toBe("openai")
@@ -70,13 +70,13 @@ describe("chooseDefaultProvider", () => {
       (items as Array<{ providerId: string }>).find((item) => item.providerId === "ollama")
     )
 
-    await chooseDefaultProvider({ configBridge: createConfigBridge(values), registry, secretStore })
+    await new ProviderChooser({ configBridge: createConfigBridge(values), registry, secretStore }).choose()
     expect(values.get("ai.provider.default")).toBe("ollama")
     expect(inputBox).not.toHaveBeenCalled()
 
     vi.spyOn(vscode.window, "showQuickPick").mockResolvedValue(undefined)
     const untouched = new Map<string, unknown>()
-    const cancelled = await chooseDefaultProvider({ configBridge: createConfigBridge(untouched), registry, secretStore })
+    const cancelled = await new ProviderChooser({ configBridge: createConfigBridge(untouched), registry, secretStore }).choose()
     expect(cancelled).toBeUndefined()
     expect(untouched.size).toBe(0)
   })
@@ -89,12 +89,12 @@ describe("chooseDefaultProvider", () => {
     })
     const secretStore = createSecretStore()
 
-    await chooseDefaultProvider({ configBridge: createConfigBridge(new Map()), registry, secretStore })
-    await chooseDefaultProvider({
+    await new ProviderChooser({ configBridge: createConfigBridge(new Map()), registry, secretStore }).choose()
+    await new ProviderChooser({
       configBridge: createConfigBridge(new Map([["ai.provider.default", "mock"]])),
       registry,
       secretStore
-    })
+    }).choose()
 
     expect(offeredIds[0]).not.toContain("mock")
     expect(offeredIds[0]).toContain("openai")
@@ -102,15 +102,15 @@ describe("chooseDefaultProvider", () => {
   })
 })
 
-describe("nudgeToChooseProvider", () => {
+describe("ProviderChooser.nudge", () => {
   it("stays silent once a provider is configured", async () => {
     const info = vi.spyOn(vscode.window, "showInformationMessage")
 
-    await nudgeToChooseProvider({
+    await new ProviderChooser({
       configBridge: createConfigBridge(new Map([["ai.provider.default", "mock"]])),
       registry,
       secretStore: createSecretStore()
-    })
+    }).nudge()
 
     expect(info).not.toHaveBeenCalled()
   })
@@ -122,7 +122,7 @@ describe("nudgeToChooseProvider", () => {
       (items as Array<{ providerId: string }>).find((item) => item.providerId === "ollama")
     )
 
-    await nudgeToChooseProvider({ configBridge: createConfigBridge(values), registry, secretStore: createSecretStore() })
+    await new ProviderChooser({ configBridge: createConfigBridge(values), registry, secretStore: createSecretStore() }).nudge()
 
     expect(values.get("ai.provider.default")).toBe("ollama")
   })
