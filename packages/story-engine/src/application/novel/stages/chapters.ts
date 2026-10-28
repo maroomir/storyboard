@@ -7,7 +7,7 @@ import type { ChapterGroup } from '#engine/application/novel/chapterGrouping';
 import type { INovelStage } from '#engine/application/novel/novelStage';
 import type { NovelPipelineResult } from '#engine/application/novel/novelPipelineContract';
 import type { NovelRun } from '#engine/application/novel/novelRun';
-import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
+import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 
 type ChapterDraftsOutcome = 'finished' | 'paused' | { readonly limitReached: string };
 
@@ -129,7 +129,7 @@ export class ChaptersStage implements INovelStage {
           shouldCancel: options.shouldCancel,
         });
 
-      await recordRevisionEntry(run.services.host.fileSystem, paths, {
+      await new RevisionPlanRecorder(run.services.host.fileSystem).recordEntry(paths, {
         sceneStem: stem,
         checkedAt: new Date().toISOString(),
         revisionCount: reviseResult.revisionCount,

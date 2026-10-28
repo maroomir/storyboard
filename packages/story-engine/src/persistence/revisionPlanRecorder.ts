@@ -12,41 +12,40 @@ import {
   writeRevisionPlanFile,
 } from '@storyboard/story-model';
 
-export async function recordRevisionEntry(
-  fs: IFileSystem,
-  paths: StoryboardProjectPaths,
-  entry: RevisionPlanEntry,
-): Promise<void> {
-  const current: RevisionPlan = await readRevisionPlanOrEmpty(fs, paths.outlineRevisionPlan);
-  const next: RevisionPlan = upsertRevisionEntry(current, entry);
+export class RevisionPlanRecorder {
+  public constructor(private readonly fileSystem: IFileSystem) {}
 
-  await fs.createDirectory(paths.outlineDirectory);
-  await writeRevisionPlanFile(paths.outlineRevisionPlan, fs, next);
-}
+  public async recordEntry(paths: StoryboardProjectPaths, entry: RevisionPlanEntry): Promise<void> {
+    const current: RevisionPlan = await this.readPlanOrEmpty(paths.outlineRevisionPlan);
+    const next: RevisionPlan = upsertRevisionEntry(current, entry);
 
-async function readRevisionPlanOrEmpty(fs: IFileSystem, uri: StoryUri): Promise<RevisionPlan> {
-  if (!(await fs.exists(uri))) {
-    return createEmptyRevisionPlan();
+    await this.fileSystem.createDirectory(paths.outlineDirectory);
+    await writeRevisionPlanFile(paths.outlineRevisionPlan, this.fileSystem, next);
   }
 
-  try {
-    return await readRevisionPlanFile(uri, fs);
-  } catch {
-    return createEmptyRevisionPlan();
+  public async recordRounds(
+    paths: StoryboardProjectPaths,
+    sceneStem: string,
+    rounds: readonly ReviseRound[],
+  ): Promise<void> {
+    await this.fileSystem.createDirectory(paths.revisionRoundsDirectory);
+    await this.fileSystem.writeFile(
+      joinStoryPath(paths.revisionRoundsDirectory, `${sceneStem}.json`),
+      new TextEncoder().encode(
+        `${JSON.stringify({ sceneStem, checkedAt: new Date().toISOString(), rounds }, null, 2)}\n`,
+      ),
+    );
   }
-}
 
-export async function recordRevisionRounds(
-  fs: IFileSystem,
-  paths: StoryboardProjectPaths,
-  sceneStem: string,
-  rounds: readonly ReviseRound[],
-): Promise<void> {
-  await fs.createDirectory(paths.revisionRoundsDirectory);
-  await fs.writeFile(
-    joinStoryPath(paths.revisionRoundsDirectory, `${sceneStem}.json`),
-    new TextEncoder().encode(
-      `${JSON.stringify({ sceneStem, checkedAt: new Date().toISOString(), rounds }, null, 2)}\n`,
-    ),
-  );
+  private async readPlanOrEmpty(uri: StoryUri): Promise<RevisionPlan> {
+    if (!(await this.fileSystem.exists(uri))) {
+      return createEmptyRevisionPlan();
+    }
+
+    try {
+      return await readRevisionPlanFile(uri, this.fileSystem);
+    } catch {
+      return createEmptyRevisionPlan();
+    }
+  }
 }

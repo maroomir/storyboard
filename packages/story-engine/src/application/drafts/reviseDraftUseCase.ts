@@ -51,7 +51,7 @@ import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
 import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
-import { recordRevisionRounds } from '#engine/persistence/revisionPlanRecorder';
+import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import {
   ReviseLoop,
   describeReviseRound,
@@ -356,7 +356,11 @@ export class ReviseDraftUseCase {
     }).run();
 
     try {
-      await recordRevisionRounds(this.host.fileSystem, paths, sceneStem, loopResult.rounds);
+      await new RevisionPlanRecorder(this.host.fileSystem).recordRounds(
+        paths,
+        sceneStem,
+        loopResult.rounds,
+      );
     } catch (error) {
       this.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
     }
