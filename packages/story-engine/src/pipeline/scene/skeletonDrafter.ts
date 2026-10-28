@@ -33,7 +33,7 @@ import {
   withAttribution,
 } from '#engine/pipeline/sceneGenerationStages';
 import type { SceneGenerationPipelineAiService } from '#engine/pipeline/sceneGenerationTypes';
-import { validateSceneSkeleton, type SectionViolation } from '#engine/pipeline/sceneSectionPlan';
+import { validateSceneSkeleton, type SectionViolation } from '#engine/pipeline/sectionValidation';
 import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/story-ai';
 import {
   formatBackgroundFactConflict,

@@ -19,6 +19,7 @@ export * from './sceneGenerationPolicies';
 export * from './sceneGenerationStages';
 export * from './sceneGenerationTuning';
 export * from './sceneGenerationTypes';
-export * from './sceneSectionPlan';
+export * from './sectionPlanning';
+export * from './sectionValidation';
 export * from './sceneStageCatalog';
 export * from './sectionBackgroundFacts';

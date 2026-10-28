@@ -4,7 +4,7 @@ import {
   type SceneBreakPlan,
 } from '#engine/pipeline/sceneBreakPlan';
 import type { ResolvedSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
-import type { SectionViolation } from '#engine/pipeline/sceneSectionPlan';
+import type { SectionViolation } from '#engine/pipeline/sectionValidation';
 import type { SceneBeat, StyleDirective } from '@storyboard/story-model';
 
 export function beatText(beat: SceneBeat | undefined): string | undefined {
