@@ -53,7 +53,7 @@
 ![씬 파이프라인 7단계와 되먹임 루프](docs/figures/scene-pipeline.svg)
 
 1층의 ④가 씬마다 이 길을 한 번 돈다. `drafts.generate`가 `SceneGenerationPipeline`을, 그 뒤
-`drafts.revise`가 `runReviseLoop`를 부른다.
+`drafts.revise`가 `ReviseLoop`를 만들어 돌린다.
 
 ### 입력: 프롬프트에 실리는 것
 

@@ -1,16 +1,20 @@
-import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
 import type {
   StoryUri,
   NarrationDirective,
   StoryboardProject,
   UsageAttribution,
-SceneFile,
-SceneContext,
-NarrativeContext,
-StoryState,
-Draft,
-SceneCacheRecord,
-ProjectSetting,
+  SceneFile,
+  SceneContext,
+  NarrativeContext,
+  StoryState,
+  Draft,
+  SceneCacheRecord,
+  ProjectSetting,
 } from '@storyboard/story-model';
 import {
   sceneContextPaths,
@@ -37,7 +41,11 @@ import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { readProjectJson } from '#engine/persistence/projectJson';
-import { readChapterNarrationDefaults, resolveSceneNarration, type ChapterNarrationDefaults } from './resolveSceneNarration';
+import {
+  readChapterNarrationDefaults,
+  resolveSceneNarration,
+  type ChapterNarrationDefaults,
+} from './resolveSceneNarration';
 import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
 import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { TaskAiConfigResolved } from '@storyboard/story-ai';
@@ -45,8 +53,8 @@ import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandid
 import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
 import { recordRevisionRounds } from '#engine/persistence/revisionPlanRecorder';
 import {
+  ReviseLoop,
   describeReviseRound,
-  runReviseLoop,
   type ReviseLoopContext,
   type ReviseLoopFailure,
   type ReviseLoopResult,
@@ -85,9 +93,25 @@ async function resolveReviseNarration(
     };
   }
 
-  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(paths, scene.order, fs);
-  const thread: SceneThreadContext = await resolveSceneThread(paths, scene, project, fs, chapterDefaults.thread);
-  const narration: NarrationDirective | undefined = await resolveSceneNarration(paths, scene, project, chapterDefaults, fs);
+  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
+    paths,
+    scene.order,
+    fs,
+  );
+  const thread: SceneThreadContext = await resolveSceneThread(
+    paths,
+    scene,
+    project,
+    fs,
+    chapterDefaults.thread,
+  );
+  const narration: NarrationDirective | undefined = await resolveSceneNarration(
+    paths,
+    scene,
+    project,
+    chapterDefaults,
+    fs,
+  );
 
   return {
     threadPaths: thread.threadPaths,
@@ -142,10 +166,11 @@ export interface ReviseOutcome {
 
 export function describeReviseOutcome(reviseResult: ReviseDraftWorkflowResult): ReviseOutcome {
   const { revisionCount } = reviseResult;
-  const kept: string = revisionCount > 0 ? `재작성 ${revisionCount}회는 반영했습니다` : '초안은 생성된 그대로입니다';
+  const kept: string =
+    revisionCount > 0 ? `재작성 ${revisionCount}회는 반영했습니다` : '초안은 생성된 그대로입니다';
 
   if (reviseResult.failure) {
-    const stage: "검사" | "재작성" = reviseResult.failure.stage === 'check' ? '검사' : '재작성';
+    const stage: '검사' | '재작성' = reviseResult.failure.stage === 'check' ? '검사' : '재작성';
     return {
       status: reviseResult.failure.kind === 'timeout' ? 'timeout' : 'failed',
       revisionCount,
@@ -199,7 +224,9 @@ async function loadSceneCoordinateLines(
     }
   }
 
-  const nameById: Map<string, string> = new Map(characters.map((character) => [character.id, character.name]));
+  const nameById: Map<string, string> = new Map(
+    characters.map((character) => [character.id, character.name]),
+  );
   const coordinates: readonly string[] =
     recorded ??
     listSceneCoordinates(
@@ -231,12 +258,17 @@ async function prepareReviseDraftContext(
     scene,
     project,
   );
-  const narrative: NarrativeContext = await buildNarrativeContext(sceneContextPaths(threadPaths), context, fs, {
-    ...(previousSceneOrder === undefined ? {} : { previousSceneOrder }),
-    ...(narration?.knowledge === 'witnessed' && narration.focal
-      ? { focalFilter: { focal: narration.focal } }
-      : {}),
-  });
+  const narrative: NarrativeContext = await buildNarrativeContext(
+    sceneContextPaths(threadPaths),
+    context,
+    fs,
+    {
+      ...(previousSceneOrder === undefined ? {} : { previousSceneOrder }),
+      ...(narration?.knowledge === 'witnessed' && narration.focal
+        ? { focalFilter: { focal: narration.focal } }
+        : {}),
+    },
+  );
   const canonFactLines: string[] = formatBibleFactLines(context, narrative.bibleFacts);
   const priorState: StoryState = await readStoryState(threadPaths.storyState, fs);
   const factLines: string[] = [
@@ -281,10 +313,16 @@ export class ReviseDraftUseCase {
   }
 
   private async runReviseDraftWorkflow(
-      request: ReviseDraftRequest,
-    ): Promise<ReviseDraftWorkflowResult> {
-    const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
-      request;
+    request: ReviseDraftRequest,
+  ): Promise<ReviseDraftWorkflowResult> {
+    const {
+      paths,
+      draftUri,
+      sceneStem,
+      maxIterations,
+      reviseScoreThreshold,
+      maxCompressionPercent,
+    } = request;
 
     const aiService: StoryboardAiService = new StoryboardAiService(this.ai.providerRegistry, {
       onUsage: (record): void => {
@@ -302,7 +340,7 @@ export class ReviseDraftUseCase {
       this.repositories.sceneCache,
     );
 
-    const loopResult: ReviseLoopResult = await runReviseLoop({
+    const loopResult: ReviseLoopResult = await new ReviseLoop({
       aiService,
       registry: this.ai.providerRegistry,
       attribution,
@@ -315,7 +353,7 @@ export class ReviseDraftUseCase {
       shouldCancel: request.shouldCancel,
       ...(request.seedIssues === undefined ? {} : { seedIssues: request.seedIssues }),
       onRound: (round) => this.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
-    });
+    }).run();
 
     try {
       await recordRevisionRounds(this.host.fileSystem, paths, sceneStem, loopResult.rounds);
@@ -324,7 +362,8 @@ export class ReviseDraftUseCase {
     }
 
     if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
-      const revisionConfig: TaskAiConfigResolved = this.ai.providerRegistry.getTaskAiConfig('draftRevision');
+      const revisionConfig: TaskAiConfigResolved =
+        this.ai.providerRegistry.getTaskAiConfig('draftRevision');
       const revised: Draft = createDraft({
         sceneStem,
         format: reviseContext.draft.format,
@@ -353,10 +392,10 @@ export class ReviseDraftUseCase {
   }
 
   private async refreshSceneCacheBodyHash(
-      paths: StoryboardProjectPaths,
-      sceneStem: string,
-      revised: ReturnType<typeof createDraft>,
-    ): Promise<void> {
+    paths: StoryboardProjectPaths,
+    sceneStem: string,
+    revised: ReturnType<typeof createDraft>,
+  ): Promise<void> {
     const repository: ISceneCacheRepository | undefined = this.repositories.sceneCache;
 
     if (!repository) {

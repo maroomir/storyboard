@@ -38,7 +38,7 @@ const PIPELINE_ASSEMBLY_SYMBOLS = new Set([
   'SceneGenerationPipeline',
   'runSceneGenerationPipeline',
   'sceneStages',
-  'runReviseLoop',
+  'ReviseLoop',
 ]);
 
 export function refusePipelineAssembly(appName) {

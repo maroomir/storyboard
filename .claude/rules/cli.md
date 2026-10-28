@@ -10,7 +10,7 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
   stages by hand here would be the third copy of the generation loop (after the extension and the
   harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
   the engine's pipeline assembly symbols (`SceneGenerationPipeline`, `runSceneGenerationPipeline`,
-  `sceneStages`, `runReviseLoop`).
+  `sceneStages`, `ReviseLoop`).
 - **Parity is a test, not a promise.** `apps/cli/test/parity.test.ts` maps every
   `contributes.commands` entry in `apps/vscode/package.json` to a CLI verb, an editor-only
   exemption, or a tracked gap. Adding a command to the extension without a verb fails CI. The

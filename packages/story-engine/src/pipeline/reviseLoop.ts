@@ -199,42 +199,9 @@ export function planSectionRevisions(
   });
 }
 
-interface ReviseSession {
-  readonly aiService: StoryboardAiService;
-  readonly registry: AiProviderRegistry;
-  readonly attribution: UsageAttribution;
-  readonly loopContext: ReviseLoopContext;
-}
-
 interface ReviewCheckResults {
   continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>;
   critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>;
-}
-
-async function runReviewChecks(session: ReviseSession, body: string): Promise<ReviewCheckResults> {
-  const { aiService, registry, attribution, loopContext } = session;
-
-  const [continuityIssues, critiqueIssues] = await Promise.all([
-    aiService.checkContinuity(body, loopContext.factLines, {
-      providerId: registry.getTaskProvider('continuityCheck'),
-      attribution,
-    }),
-    aiService.critiqueDraft(
-      {
-        body,
-        intent: loopContext.intent,
-        characters: loopContext.characterNames,
-        characterCards: loopContext.characterCards,
-        facts: loopContext.factLines,
-        styleConstraints: loopContext.styleConstraints,
-        qualityCriteria: loopContext.qualityCriteria,
-        styleDirective: loopContext.styleDirective,
-      },
-      { providerId: registry.getTaskProvider('draftCritique'), attribution },
-    ),
-  ]);
-
-  return { continuityIssues, critiqueIssues };
 }
 
 interface ReviewEvaluation {
@@ -279,78 +246,6 @@ interface SectionRevisionOutcome {
   readonly failure?: ReviseLoopFailure;
 }
 
-async function applySectionRevisions(
-  session: ReviseSession,
-  plans: readonly SectionRevisionPlan[],
-  currentBody: string,
-  isCancelled: () => boolean,
-  maxCompressionPercent: number,
-  onSection?: (done: number, total: number) => void,
-): Promise<SectionRevisionOutcome> {
-  const { aiService, registry, attribution, loopContext } = session;
-  const split: DraftSections = splitDraftSections(currentBody);
-  const sections: string[] = [...split.sections];
-  const acceptedSections: number[] = [];
-  const rejectedSections: SectionRejection[] = [];
-  let failure: ReviseLoopFailure | undefined;
-
-  for (const [done, plan] of plans.entries()) {
-    if (isCancelled()) {
-      break;
-    }
-
-    onSection?.(done + 1, plans.length);
-
-    const original: string = sections[plan.section] ?? '';
-    const originalText: string = original.trim();
-    let candidate: string;
-    try {
-      candidate = await aiService.reviseDraft(
-        {
-          body: originalText,
-          format: loopContext.format,
-          instructions: plan.instructions,
-          intent: loopContext.intent,
-          facts: loopContext.factLines,
-          characterCards: loopContext.characterCards,
-        },
-        { providerId: registry.getTaskProvider('draftRevision'), attribution },
-      );
-    } catch (error) {
-      failure = toReviseLoopFailure('revise', error);
-      break;
-    }
-    const sectionTarget: number | undefined =
-      loopContext.targetLength === undefined || currentBody.length === 0
-        ? undefined
-        : Math.round((loopContext.targetLength * originalText.length) / currentBody.length);
-    const validation: DraftCandidateValidation = validateDraftCandidate(originalText, candidate, {
-      maxCompressionPercent,
-      ...(sectionTarget === undefined ? {} : { targetLength: sectionTarget }),
-    });
-
-    if (!validation.accepted) {
-      rejectedSections.push({
-        section: plan.section,
-        reason: validation.reason ?? 'empty',
-        originalLength: originalText.length,
-        candidateLength: validation.candidateLength,
-      });
-      continue;
-    }
-
-    sections[plan.section] = replaceSectionText(original, candidate);
-    acceptedSections.push(plan.section);
-  }
-
-  return {
-    body: joinDraftSections({ sections, breakLines: split.breakLines }),
-    acceptedSections,
-    rejectedSections,
-    ...(failure === undefined ? {} : { failure }),
-  };
-}
-
 function summarizeRejection(
   rejected: readonly SectionRejection[],
 ): NonNullable<ReviseLoopResult['rejection']> {
@@ -361,142 +256,241 @@ function summarizeRejection(
   };
 }
 
-export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseLoopResult> {
-  const { aiService, registry, attribution, loopContext, maxIterations, reviseScoreThreshold } =
-    options;
-  const isCancelled = (): boolean => options.shouldCancel?.() ?? false;
-  const session: ReviseSession = { aiService, registry, attribution, loopContext };
+export class ReviseLoop {
+  public constructor(private readonly options: ReviseLoopOptions) {}
 
-  let body: string = options.body;
-  let revisionCount: number = 0;
-  let blocking: number = 0;
-  let passed: boolean = false;
-  let lastInstructions: string[] = [];
-  let rejection: ReviseLoopResult['rejection'];
-  let failure: ReviseLoopFailure | undefined;
-  const rounds: ReviseRound[] = [];
-  const endRound = (round: ReviseRound): void => {
-    rounds.push(round);
-    options.onRound?.(round);
-  };
+  public async run(): Promise<ReviseLoopResult> {
+    const { options } = this;
+    const { loopContext, maxIterations, reviseScoreThreshold } = options;
 
-  while (!isCancelled()) {
-    const round: number = revisionCount + 1;
-    options.onProgress?.(`검사 중 (${round}/${maxIterations + 1})…`);
-
-    let checked: Awaited<ReturnType<typeof runReviewChecks>>;
-    try {
-      checked = await runReviewChecks(session, body);
-    } catch (error) {
-      failure = toReviseLoopFailure('check', error);
-      endRound({
-        round,
-        continuityIssues: [],
-        critiqueIssues: [],
-        blocking,
-        passed: false,
-        instructions: [],
-        failure,
-      });
-      break;
-    }
-
-    const seed: ReviseSeedIssues | undefined = revisionCount === 0 ? options.seedIssues : undefined;
-    const continuityIssues: ContinuityIssueLike[] = [
-      ...checked.continuityIssues,
-      ...(seed?.continuityIssues ?? []),
-    ];
-    const critiqueIssues: DraftCritiqueIssue[] = [
-      ...checked.critiqueIssues,
-      ...(seed?.critiqueIssues ?? []),
-    ];
-    const review: ReviewEvaluation = evaluateReviewResult(
-      continuityIssues,
-      critiqueIssues,
-      reviseScoreThreshold,
-    );
-    blocking = review.blocking;
-    lastInstructions = review.instructions;
-    const checkedRound: ReviseRound = {
-      round,
-      continuityIssues,
-      critiqueIssues,
-      blocking: review.blocking,
-      passed: review.passed,
-      instructions: review.instructions,
+    let body: string = options.body;
+    let revisionCount: number = 0;
+    let blocking: number = 0;
+    let passed: boolean = false;
+    let lastInstructions: string[] = [];
+    let rejection: ReviseLoopResult['rejection'];
+    let failure: ReviseLoopFailure | undefined;
+    const rounds: ReviseRound[] = [];
+    const endRound = (round: ReviseRound): void => {
+      rounds.push(round);
+      options.onRound?.(round);
     };
 
-    if (review.passed) {
-      passed = true;
-      endRound(checkedRound);
-      break;
-    }
+    while (!this.isCancelled()) {
+      const round: number = revisionCount + 1;
+      options.onProgress?.(`검사 중 (${round}/${maxIterations + 1})…`);
 
-    if (revisionCount >= maxIterations || isCancelled()) {
-      endRound(checkedRound);
-      break;
-    }
-
-    options.onProgress?.(`재작성 중 (${round}/${maxIterations})…`);
-
-    const plans: SectionRevisionPlan[] = planSectionRevisions(
-      body,
-      continuityIssues,
-      critiqueIssues,
-      loopContext.characters,
-    );
-    if (plans.length === 0) {
-      endRound(checkedRound);
-      break;
-    }
-
-    const applied: SectionRevisionOutcome = await applySectionRevisions(
-      session,
-      plans,
-      body,
-      isCancelled,
-      options.maxCompressionPercent,
-      (done, total) =>
-        options.onProgress?.(`재작성 중 (${round}/${maxIterations}) · 구간 ${done}/${total}…`),
-    );
-    failure = applied.failure;
-    endRound({
-      ...checkedRound,
-      rewrite: {
-        plannedSections: plans.map((plan) => plan.section),
-        acceptedSections: applied.acceptedSections,
-        rejectedSections: applied.rejectedSections,
-      },
-      ...(failure === undefined ? {} : { failure }),
-    });
-
-    if (applied.acceptedSections.length === 0) {
-      if (applied.rejectedSections.length > 0 && failure === undefined) {
-        rejection = summarizeRejection(applied.rejectedSections);
+      let checked: ReviewCheckResults;
+      try {
+        checked = await this.runReviewChecks(body);
+      } catch (error) {
+        failure = toReviseLoopFailure('check', error);
+        endRound({
+          round,
+          continuityIssues: [],
+          critiqueIssues: [],
+          blocking,
+          passed: false,
+          instructions: [],
+          failure,
+        });
+        break;
       }
-      break;
+
+      const seed: ReviseSeedIssues | undefined =
+        revisionCount === 0 ? options.seedIssues : undefined;
+      const continuityIssues: ContinuityIssueLike[] = [
+        ...checked.continuityIssues,
+        ...(seed?.continuityIssues ?? []),
+      ];
+      const critiqueIssues: DraftCritiqueIssue[] = [
+        ...checked.critiqueIssues,
+        ...(seed?.critiqueIssues ?? []),
+      ];
+      const review: ReviewEvaluation = evaluateReviewResult(
+        continuityIssues,
+        critiqueIssues,
+        reviseScoreThreshold,
+      );
+      blocking = review.blocking;
+      lastInstructions = review.instructions;
+      const checkedRound: ReviseRound = {
+        round,
+        continuityIssues,
+        critiqueIssues,
+        blocking: review.blocking,
+        passed: review.passed,
+        instructions: review.instructions,
+      };
+
+      if (review.passed) {
+        passed = true;
+        endRound(checkedRound);
+        break;
+      }
+
+      if (revisionCount >= maxIterations || this.isCancelled()) {
+        endRound(checkedRound);
+        break;
+      }
+
+      options.onProgress?.(`재작성 중 (${round}/${maxIterations})…`);
+
+      const plans: SectionRevisionPlan[] = planSectionRevisions(
+        body,
+        continuityIssues,
+        critiqueIssues,
+        loopContext.characters,
+      );
+      if (plans.length === 0) {
+        endRound(checkedRound);
+        break;
+      }
+
+      const applied: SectionRevisionOutcome = await this.applySectionRevisions(
+        plans,
+        body,
+        (done, total) =>
+          options.onProgress?.(`재작성 중 (${round}/${maxIterations}) · 구간 ${done}/${total}…`),
+      );
+      failure = applied.failure;
+      endRound({
+        ...checkedRound,
+        rewrite: {
+          plannedSections: plans.map((plan) => plan.section),
+          acceptedSections: applied.acceptedSections,
+          rejectedSections: applied.rejectedSections,
+        },
+        ...(failure === undefined ? {} : { failure }),
+      });
+
+      if (applied.acceptedSections.length === 0) {
+        if (applied.rejectedSections.length > 0 && failure === undefined) {
+          rejection = summarizeRejection(applied.rejectedSections);
+        }
+        break;
+      }
+
+      body = applied.body;
+      revisionCount += 1;
+
+      if (failure) {
+        break;
+      }
     }
 
-    body = applied.body;
-    revisionCount += 1;
-
-    if (failure) {
-      break;
-    }
+    return {
+      body,
+      passed,
+      revisionCount,
+      remainingBlocking: blocking,
+      cancelled: this.isCancelled(),
+      instructions: lastInstructions,
+      preservedOriginal: rejection !== undefined,
+      rejection,
+      ...(failure === undefined ? {} : { failure }),
+      rounds,
+    };
   }
 
-  return {
-    body,
-    passed,
-    revisionCount,
-    remainingBlocking: blocking,
-    cancelled: isCancelled(),
-    instructions: lastInstructions,
-    preservedOriginal: rejection !== undefined,
-    rejection,
-    ...(failure === undefined ? {} : { failure }),
-    rounds,
-  };
+  private isCancelled(): boolean {
+    return this.options.shouldCancel?.() ?? false;
+  }
+
+  private async runReviewChecks(body: string): Promise<ReviewCheckResults> {
+    const { aiService, registry, attribution, loopContext } = this.options;
+
+    const [continuityIssues, critiqueIssues] = await Promise.all([
+      aiService.checkContinuity(body, loopContext.factLines, {
+        providerId: registry.getTaskProvider('continuityCheck'),
+        attribution,
+      }),
+      aiService.critiqueDraft(
+        {
+          body,
+          intent: loopContext.intent,
+          characters: loopContext.characterNames,
+          characterCards: loopContext.characterCards,
+          facts: loopContext.factLines,
+          styleConstraints: loopContext.styleConstraints,
+          qualityCriteria: loopContext.qualityCriteria,
+          styleDirective: loopContext.styleDirective,
+        },
+        { providerId: registry.getTaskProvider('draftCritique'), attribution },
+      ),
+    ]);
+
+    return { continuityIssues, critiqueIssues };
+  }
+
+  private async applySectionRevisions(
+    plans: readonly SectionRevisionPlan[],
+    currentBody: string,
+    onSection: (done: number, total: number) => void,
+  ): Promise<SectionRevisionOutcome> {
+    const { aiService, registry, attribution, loopContext, maxCompressionPercent } = this.options;
+    const split: DraftSections = splitDraftSections(currentBody);
+    const sections: string[] = [...split.sections];
+    const acceptedSections: number[] = [];
+    const rejectedSections: SectionRejection[] = [];
+    let failure: ReviseLoopFailure | undefined;
+
+    for (const [done, plan] of plans.entries()) {
+      if (this.isCancelled()) {
+        break;
+      }
+
+      onSection(done + 1, plans.length);
+
+      const original: string = sections[plan.section] ?? '';
+      const originalText: string = original.trim();
+      let candidate: string;
+      try {
+        candidate = await aiService.reviseDraft(
+          {
+            body: originalText,
+            format: loopContext.format,
+            instructions: plan.instructions,
+            intent: loopContext.intent,
+            facts: loopContext.factLines,
+            characterCards: loopContext.characterCards,
+          },
+          { providerId: registry.getTaskProvider('draftRevision'), attribution },
+        );
+      } catch (error) {
+        failure = toReviseLoopFailure('revise', error);
+        break;
+      }
+      const sectionTarget: number | undefined =
+        loopContext.targetLength === undefined || currentBody.length === 0
+          ? undefined
+          : Math.round((loopContext.targetLength * originalText.length) / currentBody.length);
+      const validation: DraftCandidateValidation = validateDraftCandidate(originalText, candidate, {
+        maxCompressionPercent,
+        ...(sectionTarget === undefined ? {} : { targetLength: sectionTarget }),
+      });
+
+      if (!validation.accepted) {
+        rejectedSections.push({
+          section: plan.section,
+          reason: validation.reason ?? 'empty',
+          originalLength: originalText.length,
+          candidateLength: validation.candidateLength,
+        });
+        continue;
+      }
+
+      sections[plan.section] = replaceSectionText(original, candidate);
+      acceptedSections.push(plan.section);
+    }
+
+    return {
+      body: joinDraftSections({ sections, breakLines: split.breakLines }),
+      acceptedSections,
+      rejectedSections,
+      ...(failure === undefined ? {} : { failure }),
+    };
+  }
 }
 
 const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
