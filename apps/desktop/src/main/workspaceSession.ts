@@ -39,7 +39,7 @@ import { RunController } from './runController';
 import { fail, succeed, type ServiceFailure, type ServiceResult } from './serviceResult';
 import { locateSnapshotRepository, SnapshotService } from './snapshotService';
 import { watchWorkspace, type WorkspaceChange } from './workspaceWatcher';
-import { readDraftDocument, readSceneNotes, readWorkspaceOverview } from './workspaceReader';
+import { WorkspaceReader } from './workspaceReader';
 import type { ResourceOverrideReport } from '@storyboard/story-app';
 
 export interface WorkspaceSessionOptions {
@@ -218,19 +218,17 @@ export class WorkspaceSession {
   }
 
   public async overview(): Promise<WorkspaceOverview> {
-    return await readWorkspaceOverview(
-      this.container,
-      this.runs.generatingSceneStem,
+    return await new WorkspaceReader(this.container).readOverview(this.runs.generatingSceneStem,
       await this.foreignLockMessage(),
     );
   }
 
   public async notes(stem: string): Promise<SceneNotes> {
-    return await readSceneNotes(this.container, stem);
+    return await new WorkspaceReader(this.container).readSceneNotes(stem);
   }
 
   public async readDraft(stem: string): Promise<DraftDocument> {
-    return await readDraftDocument(this.container, stem);
+    return await new WorkspaceReader(this.container).readDraftDocument(stem);
   }
 
   public async saveDraft(
