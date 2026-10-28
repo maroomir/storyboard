@@ -1,3 +1,4 @@
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type {
@@ -17,8 +18,6 @@ import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
   joinUri,
-  buildNarrativeContext,
-  buildSceneContext,
   formatBibleFactLines,
   readSceneFile,
   SceneParseError,
@@ -148,16 +147,14 @@ export class AugmentDraftUseCase {
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
     let sceneContext: SceneContext;
     try {
-      sceneContext = await buildSceneContext(contextPaths, scene, this.host.fileSystem);
+      sceneContext = await new SceneContextReader(this.host.fileSystem).build(contextPaths, scene);
     } catch {
       return { message: '씬 컨텍스트를 구성하지 못했습니다.', ok: false };
     }
 
-    const narrativeContext: NarrativeContext = await buildNarrativeContext(
-      contextPaths,
-      sceneContext,
+    const narrativeContext: NarrativeContext = await new SceneContextReader(
       this.host.fileSystem,
-    );
+    ).buildNarrative(contextPaths, sceneContext);
 
     return {
       bibleFacts: narrativeContext.bibleFacts,

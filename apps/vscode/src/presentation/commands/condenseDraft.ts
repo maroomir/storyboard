@@ -1,10 +1,10 @@
+import { SceneContextReader } from '@storyboard/story-engine';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { CondenseDraftResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import {
-  buildNarrativeContext,
-  buildSceneContext,
   createDraft,
   formatBibleFactLines,
   parseDraft,
@@ -28,7 +28,6 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import {
   draftHistoryFileSystem,
-  sceneContextFileSystem,
   vscodeFsAdapter,
 } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
@@ -127,16 +126,13 @@ async function loadCondenseContext(target: CondenseTarget): Promise<CondenseCont
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(
       getStoryboardProjectPaths(target.workspaceFolder.uri),
     );
-    const context: SceneContext = await buildSceneContext(
+    const context: SceneContext = await new SceneContextReader(vscodeFileSystem).build(
       contextPaths,
       scene,
-      sceneContextFileSystem,
     );
-    const narrative: NarrativeContext = await buildNarrativeContext(
-      contextPaths,
-      context,
-      sceneContextFileSystem,
-    );
+    const narrative: NarrativeContext = await new SceneContextReader(
+      vscodeFileSystem,
+    ).buildNarrative(contextPaths, context);
 
     return {
       intent: scene.body,

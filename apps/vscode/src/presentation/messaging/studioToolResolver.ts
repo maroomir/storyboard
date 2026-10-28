@@ -1,4 +1,4 @@
-import { ProjectRepository } from '@storyboard/story-engine';
+import { SceneContextReader, ProjectRepository } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type * as vscode from 'vscode';
 
@@ -17,8 +17,6 @@ import type {
   UsageAttribution,
 } from '@storyboard/story-model';
 import {
-  buildNarrativeContext,
-  buildSceneContext,
   extractDraftBody,
   formatBibleFactLines,
   readSceneFile,
@@ -29,10 +27,7 @@ import {
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import {
-  sceneContextFileSystem,
-  vscodeFsAdapter,
-} from '@/infrastructure/vscode/workspaceFsAdapters';
+import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 
 export interface StudioInvokeResolverDependencies {
@@ -215,7 +210,7 @@ async function transformSpan(
 
 interface LoadedSceneContext {
   readonly sceneContext: SceneContext;
-  readonly bibleFacts: Awaited<ReturnType<typeof buildNarrativeContext>>['bibleFacts'];
+  readonly bibleFacts: NarrativeContext['bibleFacts'];
   readonly format: ProjectFormat;
 }
 
@@ -232,16 +227,13 @@ async function loadSceneContext(
       sceneFileName,
     );
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-    const sceneContext: SceneContext = await buildSceneContext(
+    const sceneContext: SceneContext = await new SceneContextReader(vscodeFileSystem).build(
       contextPaths,
       scene,
-      sceneContextFileSystem,
     );
-    const narrative: NarrativeContext = await buildNarrativeContext(
-      contextPaths,
-      sceneContext,
-      sceneContextFileSystem,
-    );
+    const narrative: NarrativeContext = await new SceneContextReader(
+      vscodeFileSystem,
+    ).buildNarrative(contextPaths, sceneContext);
     const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
       paths.projectJson,
     );

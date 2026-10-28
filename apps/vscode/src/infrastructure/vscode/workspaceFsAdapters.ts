@@ -1,6 +1,5 @@
 import type {
   StoryUri,
-  SceneContextWorkspaceFileSystem,
   ReadWriteFileSystem,
   DraftHistoryFileSystem,
 } from '@storyboard/story-model';
@@ -33,19 +32,5 @@ export const draftHistoryFileSystem: DraftHistoryFileSystem = {
       uri as vscode.Uri,
     );
     return entries.filter(([, type]) => type === vscode.FileType.File).map(([name]) => name);
-  },
-};
-
-export const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
-  readFile: vscodeFsAdapter.readFile,
-  writeFile: vscodeFsAdapter.writeFile,
-  readDirectory: async (uri: StoryUri): Promise<[string, { type: 'file' | 'directory' }][]> => {
-    const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
-      uri as vscode.Uri,
-    );
-    return entries.map(([name, fileType]) => [
-      name,
-      { type: fileType === vscode.FileType.Directory ? ('directory' as const) : ('file' as const) },
-    ]);
   },
 };

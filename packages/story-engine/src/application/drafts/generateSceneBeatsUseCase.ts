@@ -1,7 +1,16 @@
-import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
-import type { SceneContext, SceneFile, StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
+import type {
+  AiServices,
+  HostAdapters,
+  WorkspaceRepositories,
+} from '#engine/application/engineServices';
+import type {
+  SceneContext,
+  SceneFile,
+  StoryboardProjectPaths,
+  StoryUri,
+} from '@storyboard/story-model';
 import {
-  buildSceneContext,
   SceneParseError,
   sceneContextPaths,
   getStoryboardProjectPaths,
@@ -40,7 +49,11 @@ export class GenerateSceneBeatsUseCase {
       scene = await this.repositories.scenes.read(request.sceneUri, request.fileName);
     } catch (error) {
       if (error instanceof SceneParseError) {
-        return { ok: false, kind: 'failed', message: `씬 파일을 읽을 수 없습니다: ${error.message}` };
+        return {
+          ok: false,
+          kind: 'failed',
+          message: `씬 파일을 읽을 수 없습니다: ${error.message}`,
+        };
       }
       throw error;
     }
@@ -50,7 +63,10 @@ export class GenerateSceneBeatsUseCase {
     }
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, this.host.fileSystem);
+    const context: SceneContext = await new SceneContextReader(this.host.fileSystem).build(
+      sceneContextPaths(paths),
+      scene,
+    );
 
     let beats: SceneBeat[];
     try {
@@ -61,7 +77,11 @@ export class GenerateSceneBeatsUseCase {
       });
     } catch (error) {
       this.host.logger.error('Failed to propose scene beats', error);
-      return { ok: false, kind: 'failed', message: `씬 비트를 전개하지 못했습니다: ${String(error)}` };
+      return {
+        ok: false,
+        kind: 'failed',
+        message: `씬 비트를 전개하지 못했습니다: ${String(error)}`,
+      };
     }
 
     if (beats.length === 0) {

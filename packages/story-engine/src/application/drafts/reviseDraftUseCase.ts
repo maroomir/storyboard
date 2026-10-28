@@ -1,3 +1,4 @@
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type {
   AiServices,
@@ -21,8 +22,6 @@ import {
   sceneContextPaths,
   joinUri,
   type StoryboardProjectPaths,
-  buildNarrativeContext,
-  buildSceneContext,
   createDraft,
   formatBibleFactLines,
   readStoryState,
@@ -246,7 +245,10 @@ async function prepareReviseDraftContext(
     fs,
     sceneFileName,
   );
-  const context: SceneContext = await buildSceneContext(sceneContextPaths(paths), scene, fs);
+  const context: SceneContext = await new SceneContextReader(fs).build(
+    sceneContextPaths(paths),
+    scene,
+  );
   const project: StoryboardProject | undefined = await readProjectIfPresent(fs, paths.projectJson);
   const setting: ProjectSetting | undefined = project?.setting;
   const { threadPaths, previousSceneOrder, narration } = await resolveReviseNarration(
@@ -255,10 +257,9 @@ async function prepareReviseDraftContext(
     scene,
     project,
   );
-  const narrative: NarrativeContext = await buildNarrativeContext(
+  const narrative: NarrativeContext = await new SceneContextReader(fs).buildNarrative(
     sceneContextPaths(threadPaths),
     context,
-    fs,
     {
       ...(previousSceneOrder === undefined ? {} : { previousSceneOrder }),
       ...(narration?.knowledge === 'witnessed' && narration.focal

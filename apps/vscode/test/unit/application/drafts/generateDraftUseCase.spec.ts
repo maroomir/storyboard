@@ -20,9 +20,17 @@ const archiveExistingDraftMock = vi.fn()
 const pipelineRunMock = vi.fn()
 
 vi.mock("@storyboard/story-model", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
-  buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
+  ...(await importOriginal<typeof import("@storyboard/story-model")>())
+}))
+vi.mock("../../../../../../packages/story-engine/src/persistence/sceneContextReader", () => ({
+  SceneContextReader: class {
+    public build(...args: unknown[]): unknown {
+      return ((...args: unknown[]): unknown => buildSceneContextMock(...args))(...args)
+    }
+    public buildNarrative(...args: unknown[]): unknown {
+      return ((...args: unknown[]): unknown => buildNarrativeContextMock(...args))(...args)
+    }
+  }
 }))
 vi.mock("../../../../../../packages/story-model/src/domain/files/draftHistory", async (
   importOriginal
