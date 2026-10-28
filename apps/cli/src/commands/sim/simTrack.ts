@@ -1,8 +1,12 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-
-import { parseSceneCard, parseSceneFileName } from '@storyboard/story-model';
-import type { AiProviderId, SceneCard, SceneFileNameParts } from '@storyboard/story-model';
+import {
+  parseSceneCard,
+  parseSceneFileName,
+  type AiProviderId,
+  type SceneCard,
+  type SceneFileNameParts,
+} from '@storyboard/story-model';
 import type { PromptVariantId } from '@storyboard/story-ai';
 import {
   applyOverlay,

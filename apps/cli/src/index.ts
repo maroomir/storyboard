@@ -3,7 +3,7 @@ import { ConsoleLogger } from './adapters/consoleLogger';
 import { LiveArea } from './adapters/liveArea';
 import { PauseRequests } from './adapters/pauseRequests';
 import { TerminalPrompter } from './adapters/prompter';
-import { dispatch, type DispatchResult } from './commands/dispatch';
+import { CommandDispatcher, type DispatchResult } from './commands/commandDispatcher';
 import {
   bellSignal,
   createWindowTitle,
@@ -94,7 +94,7 @@ async function main(argv: readonly string[]): Promise<number> {
   exitNormallyOnTerminationSoChildProcessesStop();
 
   const isInteractive: boolean = process.stdin.isTTY === true && process.stderr.isTTY === true;
-  const dispatched: DispatchResult = await dispatch(argv, {
+  const dispatched: DispatchResult = await new CommandDispatcher({
     version,
     cwd: process.cwd(),
     isInteractive,
@@ -115,7 +115,7 @@ async function main(argv: readonly string[]): Promise<number> {
       stderr: { isTty: process.stderr.isTTY === true, columns: process.stderr.columns },
       env: process.env,
     },
-  });
+  }).dispatch(argv);
 
   if (dispatched.launchTui) {
     return runTui({ version, cwd: process.cwd() });

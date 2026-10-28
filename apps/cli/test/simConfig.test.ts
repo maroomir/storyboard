@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseSimConfig, readSimConfig, simConfigFileName } from '@storyboard/story-sim';
 
 import type { ParsedArguments } from '../src/cliArguments';
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
 let home: string;
@@ -22,7 +22,7 @@ const silentLogger = {
 
 async function run(verb: string, flags: Record<string, string | boolean>) {
   const args: ParsedArguments = { path: verb.split(' '), flags, positionals: [] };
-  return await commands[verb]?.({
+  return await findCommand(verb)?.execute({
     container: createCliContainer({ workspacePath: track, logger: silentLogger, canPrompt: false, version: '9.9.9' }),
     args,
   });

@@ -6,13 +6,13 @@ import {
   NodeUri,
   formatUsd,
 } from '@storyboard/story-model';
-import {
-  type ApplyNoteAbsorbOutcome,
-  type ApplyNoteAbsorbResult,
-  type CollectNotesResult,
-  type NoteAbsorbEstimate,
-  type NoteLocation,
-  type PlanNoteAbsorbResult,
+import type {
+  ApplyNoteAbsorbOutcome,
+  ApplyNoteAbsorbResult,
+  CollectNotesResult,
+  NoteAbsorbEstimate,
+  NoteLocation,
+  PlanNoteAbsorbResult,
 } from '@storyboard/story-engine';
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
 import type { IPrompter } from '@/adapters/prompter';

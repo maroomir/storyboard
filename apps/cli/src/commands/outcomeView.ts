@@ -1,9 +1,7 @@
 import type { WorkspaceStatus } from '@storyboard/story-app';
-
 import type { TerminalStream } from '@/terminal/profile';
 import { wrapWordsToWidth } from '@/terminal/width';
-
-import { describeNextStep, nextStepCommands } from './status';
+import { describeNextStep, nextStepCommands } from '@/commands/workspaceNextStep';
 
 export interface OutcomeMarking {
   readonly ok: boolean;

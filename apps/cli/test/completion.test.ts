@@ -9,7 +9,7 @@ import {
   formatCompletions,
   renderCompletionScript,
 } from '../src/commands/completion';
-import { dispatch } from '../src/commands/dispatch';
+import { CommandDispatcher } from '../src/commands/commandDispatcher';
 
 let cwd: string;
 let home: string;
@@ -137,12 +137,12 @@ describe('completion scripts', () => {
   });
 
   it('answers __complete through dispatch without parsing the partial line', async () => {
-    const result = await dispatch(['__complete', 'draft', 'generate', '--fo'], {
+    const result = await new CommandDispatcher({
       version: '0.0.0',
       cwd,
       isInteractive: false,
       createLogger: () => silentLogger,
-    });
+    }).dispatch(['__complete', 'draft', 'generate', '--fo']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('--force\t');
@@ -151,7 +151,7 @@ describe('completion scripts', () => {
   it('emits the script through the completion verb and rejects unknown shells', async () => {
     const deps = { version: '0.0.0', cwd, isInteractive: false, createLogger: () => silentLogger };
 
-    expect((await dispatch(['completion', 'zsh'], deps)).stdout).toContain('#compdef storyboard');
-    expect((await dispatch(['completion', 'tcsh'], deps)).exitCode).toBe(1);
+    expect((await new CommandDispatcher(deps).dispatch(['completion', 'zsh'])).stdout).toContain('#compdef storyboard');
+    expect((await new CommandDispatcher(deps).dispatch(['completion', 'tcsh'])).exitCode).toBe(1);
   });
 });

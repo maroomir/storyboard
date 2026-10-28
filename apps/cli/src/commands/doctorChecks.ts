@@ -14,7 +14,6 @@ import {
 import {
   backgroundCardRelativePath,
   findUnknownBeatCast,
-  findUnreadableStoryStateLines,
   flattenChapterPlan,
   formatBackgroundFactConflict,
   formatSceneOrderRanges,
@@ -37,6 +36,7 @@ import {
   type StoryboardProject,
   type StoryboardProjectPaths,
   type StoryUri,
+  findUnreadableStoryStateLines,
 } from '@storyboard/story-model';
 import { existsSync, readFileSync } from 'fs';
 import { basename } from 'path';

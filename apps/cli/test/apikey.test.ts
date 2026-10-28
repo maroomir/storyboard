@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ParsedArguments } from '../src/cliArguments';
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
 const silentLogger = { info: (): void => {}, warn: (): void => {}, error: (): void => {} };
@@ -39,7 +39,7 @@ describe('apikey show', () => {
     });
     await container.secretStore.setApiKey('claude', 'sk-secret-value');
 
-    const outcome = await commands['apikey show']?.({ container, args: args(['apikey', 'show']) });
+    const outcome = await findCommand('apikey show')?.execute({ container, args: args(['apikey', 'show']) });
 
     expect(outcome?.ok).toBe(true);
     expect(outcome?.message).toContain('claude  저장됨');
@@ -56,7 +56,7 @@ describe('apikey show', () => {
       version: '9.9.9',
     });
 
-    const outcome = await commands['apikey set']?.({ container, args: args(['apikey', 'set'], ['nope']) });
+    const outcome = await findCommand('apikey set')?.execute({ container, args: args(['apikey', 'set'], ['nope']) });
 
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toContain('모르는 프로바이더');

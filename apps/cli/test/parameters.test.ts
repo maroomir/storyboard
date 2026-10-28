@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { dispatch, type DispatchDependencies } from '../src/commands/dispatch';
+import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
 
 let home: string;
 let cwd: string;
@@ -32,10 +32,10 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  await dispatch(['params', 'show', '--json'], {
+  await new CommandDispatcher({
     ...deps(),
     cwd: mkdtempSync(join(tmpdir(), 'x-')),
-  });
+  }).dispatch(['params', 'show', '--json']);
   vi.unstubAllEnvs();
   rmSync(home, { recursive: true, force: true });
   rmSync(cwd, { recursive: true, force: true });
@@ -53,7 +53,7 @@ async function parameters(): Promise<{
   readonly parameters: ParameterRow[];
   readonly resources: { applied: { kind: string; file: string }[] };
 }> {
-  const result = await dispatch(['params', 'show', '--json'], deps());
+  const result = await new CommandDispatcher(deps()).dispatch(['params', 'show', '--json']);
 
   expect(result.exitCode).toBe(0);
 
@@ -153,14 +153,14 @@ describe('params show', () => {
       origin: 'provider-unsupported',
     });
 
-    const text = await dispatch(['params', 'show'], deps());
+    const text = await new CommandDispatcher(deps()).dispatch(['params', 'show']);
     expect(text.stdout).toMatch(/prompt\.grammarCheck\.maxTokens +2500 +프로바이더 미지원\n/);
   });
 
   it('prints the sections and the resource files as text', async () => {
     writeFile(home, 'craftContract.json', '{ "motifRepeatLimit": 5 }');
 
-    const result = await dispatch(['params', 'show'], deps());
+    const result = await new CommandDispatcher(deps()).dispatch(['params', 'show']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('[설정 (config.json)]');

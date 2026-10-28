@@ -1,3 +1,5 @@
+import { ConfigSetCommand } from '@/commands/config/configSetCommand';
+import { SetupCommand } from '@/commands/setupCommand';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,8 +8,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ChoiceRequest, IPrompter } from '@/adapters/prompter';
 import type { ParsedArguments } from '@/cliArguments';
-import { runConfigSet } from '@/commands/config';
-import { runSetup } from '@/commands/setup';
 import { createCliContainer } from '@/container';
 
 const enabledKey = 'providers.claude-code.enabled';
@@ -72,7 +72,7 @@ afterEach(() => {
 
 describe('switching the hidden subscription provider on', () => {
   it('shows every risk and offers no as the first answer', async () => {
-    await runConfigSet({
+    await new ConfigSetCommand().execute({
       container: container(prompterAnswering(false)),
       args: args([enabledKey, 'true']),
     });
@@ -94,7 +94,7 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('changes nothing when the answer is no', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(prompterAnswering(false)),
       args: args([enabledKey, 'true']),
     });
@@ -104,7 +104,7 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('changes nothing when the person backs out of the question', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(prompterAnswering(undefined)),
       args: args([enabledKey, 'true']),
     });
@@ -114,7 +114,7 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('refuses without a person to ask, whatever flags are given', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: { path: [], flags: { yes: true, global: true }, positionals: [enabledKey, 'true'] },
     });
@@ -125,7 +125,7 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('records the acceptance in the home file and warns', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(prompterAnswering(true)),
       args: args([enabledKey, 'true']),
     });
@@ -138,15 +138,15 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('asks only once: after a yes, switching it back on is a warning', async () => {
-    await runConfigSet({
+    await new ConfigSetCommand().execute({
       container: container(prompterAnswering(true)),
       args: args([enabledKey, 'true']),
     });
-    await runConfigSet({ container: container(), args: args([enabledKey, 'false']) });
+    await new ConfigSetCommand().execute({ container: container(), args: args([enabledKey, 'false']) });
     questions = [];
     warnings = [];
 
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args([enabledKey, 'true']),
     });
@@ -160,17 +160,17 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('can be switched off and back on after it became the default', async () => {
-    await runConfigSet({
+    await new ConfigSetCommand().execute({
       container: container(prompterAnswering(true)),
       args: args([enabledKey, 'true']),
     });
-    const chosen = await runSetup({
+    const chosen = await new SetupCommand().execute({
       container: container(),
       args: { path: [], flags: { provider: 'claude-code', global: true }, positionals: [] },
     });
     expect(chosen.ok).toBe(true);
 
-    const off = await runConfigSet({ container: container(), args: args([enabledKey, 'false']) });
+    const off = await new ConfigSetCommand().execute({ container: container(), args: args([enabledKey, 'false']) });
     expect(off.ok).toBe(true);
     expect(off.message).toContain('storyboard setup');
     expect(homeConfig()).toEqual({
@@ -179,7 +179,7 @@ describe('switching the hidden subscription provider on', () => {
     expect(container().configBridge.isDefaultProviderConfigured()).toBe(false);
 
     warnings = [];
-    const on = await runConfigSet({ container: container(), args: args([enabledKey, 'true']) });
+    const on = await new ConfigSetCommand().execute({ container: container(), args: args([enabledKey, 'true']) });
     expect(on.ok).toBe(true);
     expect(warnings).toHaveLength(1);
   });
@@ -203,7 +203,7 @@ describe('switching the hidden subscription provider on', () => {
       JSON.stringify({ 'ai.provider.default': 'claude-code', 'budget.run.limitUsd': 3 }),
     );
 
-    const off = await runConfigSet({ container: container(), args: args([enabledKey, 'false']) });
+    const off = await new ConfigSetCommand().execute({ container: container(), args: args([enabledKey, 'false']) });
 
     expect(off.ok).toBe(true);
     expect(homeConfig()).toEqual({
@@ -220,15 +220,15 @@ describe('switching the hidden subscription provider on', () => {
   it('writes its keys to the home file even inside a workspace', async () => {
     writeFileSync(join(home, 'config.json'), JSON.stringify({ [enabledKey]: true }));
 
-    const command = await runConfigSet({
+    const command = await new ConfigSetCommand().execute({
       container: container(),
       args: args(['providers.claude-code.command', '/opt/bin/claude']),
     });
-    const timeout = await runConfigSet({
+    const timeout = await new ConfigSetCommand().execute({
       container: container(),
       args: args(['providers.claude-code.timeoutMs', '900000']),
     });
-    const badTimeout = await runConfigSet({
+    const badTimeout = await new ConfigSetCommand().execute({
       container: container(),
       args: args(['providers.claude-code.timeoutMs', 'soon']),
     });
@@ -247,7 +247,7 @@ describe('switching the hidden subscription provider on', () => {
     const before = homeConfig();
 
     for (const blank of ['', '   ']) {
-      const outcome = await runConfigSet({
+      const outcome = await new ConfigSetCommand().execute({
         container: container(),
         args: args(['providers.claude-code.command', blank]),
       });
@@ -256,7 +256,7 @@ describe('switching the hidden subscription provider on', () => {
       expect(homeConfig()).toEqual(before);
     }
 
-    const fixed = await runConfigSet({
+    const fixed = await new ConfigSetCommand().execute({
       container: container(),
       args: args(['providers.claude-code.command', '/opt/bin/claude']),
     });
@@ -264,7 +264,7 @@ describe('switching the hidden subscription provider on', () => {
   });
 
   it('treats its other keys as an unknown provider while it is off', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args(['providers.claude-code.command', '/opt/bin/claude']),
     });

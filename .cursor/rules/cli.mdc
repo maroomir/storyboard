@@ -53,7 +53,7 @@ change recorded in the changelog — and a freed name is not reused for a differ
 Verbs read and write the work through manager verbs, not the file system: reads
 `drafts.listScenes`, `drafts.readDraft`, `cards.list`, `cards.read`, `cards.listNarrators`,
 `novel.readProject`, and `describeWorkspace` for `status` (the engine names the open step as a
-`WorkspaceNextStep`; `nextStepCommands` in `apps/cli/src/commands/status.ts` owns the command for
+`WorkspaceNextStep`; `nextStepCommands` in `apps/cli/src/commands/workspaceNextStep.ts` owns the command for
 each), `drafts.readScene`; writes `drafts.createScene`, `novel.seedScenes`, `novel.updateContract`,
 `drafts.resealStoryState`, `cards.rename`, `cards.createNarrator`/`removeNarrator`,
 `cards.applyBuildTargets`, `novel.applyCompletedScenes`, `drafts.saveEdit` and

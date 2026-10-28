@@ -1,3 +1,8 @@
+import { ConfigSetCommand } from '@/commands/config/configSetCommand';
+import { DoctorCommand } from '@/commands/doctorCommand';
+import { LoginCommand } from '@/commands/loginCommand';
+import { LogoutCommand } from '@/commands/logoutCommand';
+import { SetupCommand } from '@/commands/setupCommand';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -5,12 +10,8 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ParsedArguments } from '@/cliArguments';
-import { commands } from '@/commands';
+import { commands, findCommand } from '@/commands';
 import { HiddenProviderSwitch } from '@/commands/hiddenProviderSwitch';
-import { signIn, signOut } from '@/commands/login';
-import { runConfigSet } from '@/commands/config';
-import { runDoctor } from '@/commands/doctor';
-import { runSetup } from '@/commands/setup';
 import { createCliContainer } from '@/container';
 
 import { createAuthorizationServer, jsonResponse } from './fixtures/chatGptAuthServer';
@@ -69,7 +70,7 @@ afterEach(() => {
 
 describe('storyboard login', () => {
   it('does not know the provider while the switch is off', async () => {
-    const outcome = await commands.login?.({ container: container(), args: args(['chatgpt']) });
+    const outcome = await findCommand('login')?.execute({ container: container(), args: args(['chatgpt']) });
 
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toContain('모르는 프로바이더입니다: chatgpt');
@@ -77,14 +78,14 @@ describe('storyboard login', () => {
   });
 
   it('says there is nothing to log into when no such provider is on', async () => {
-    const outcome = await commands.login?.({ container: container(), args: args() });
+    const outcome = await findCommand('login')?.execute({ container: container(), args: args() });
 
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toBe('로그인으로 연결하는 프로바이더가 없습니다.');
   });
 
   it('sends an API-key provider to apikey set', async () => {
-    const outcome = await commands.login?.({ container: container(), args: args(['claude']) });
+    const outcome = await findCommand('login')?.execute({ container: container(), args: args(['claude']) });
 
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toContain('storyboard apikey set claude');
@@ -102,7 +103,7 @@ describe('storyboard login', () => {
       });
 
     try {
-      const outcome = await signIn(container(), 'chatgpt', {
+      const outcome = await new LoginCommand().signIn(container(), 'chatgpt', {
         fetch: server.fetchImpl,
         preferredPort: 0,
         openBrowser: async (url) => {
@@ -136,7 +137,7 @@ describe('storyboard login', () => {
     const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     try {
-      const outcome = await signIn(container(), 'chatgpt', {
+      const outcome = await new LoginCommand().signIn(container(), 'chatgpt', {
         fetch: server.fetchImpl,
         preferredPort: 0,
         openBrowser: async (url) => {
@@ -171,7 +172,7 @@ describe('storyboard logout', () => {
       },
     });
 
-    const outcome = await signOut(current, 'chatgpt', { fetch: server.fetchImpl });
+    const outcome = await new LogoutCommand().signOut(current, 'chatgpt', { fetch: server.fetchImpl });
 
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toBe('chatgpt 에서 로그아웃했습니다.');
@@ -180,7 +181,7 @@ describe('storyboard logout', () => {
       registration: { clientId: 'oaiapp_1', subject: 'user-1' },
     });
 
-    const again = await commands.logout?.({ container: current, args: args(['chatgpt']) });
+    const again = await findCommand('logout')?.execute({ container: current, args: args(['chatgpt']) });
     expect(again?.ok).toBe(true);
     expect(again?.message).toContain('로그인돼 있지 않았습니다');
   });
@@ -201,20 +202,20 @@ describe('apikey show with a login provider', () => {
       },
     });
 
-    const outcome = await commands['apikey show']?.({ container: current, args: args() });
+    const outcome = await findCommand('apikey show')?.execute({ container: current, args: args() });
 
     expect(outcome?.ok).toBe(true);
     expect(outcome?.message).toContain('chatgpt  로그인됨 (writer@example.com)');
     expect(outcome?.message).not.toContain('secret-');
     expect(outcome?.message).not.toContain('oaiapp_1');
 
-    await signOut(current, 'chatgpt', { fetch: createAuthorizationServer().fetchImpl });
-    const after = await commands['apikey show']?.({ container: current, args: args() });
+    await new LogoutCommand().signOut(current, 'chatgpt', { fetch: createAuthorizationServer().fetchImpl });
+    const after = await findCommand('apikey show')?.execute({ container: current, args: args() });
     expect(after?.message).toContain('chatgpt  로그인 안 됨');
   });
 
   it('shows no login section while the switch is off', async () => {
-    const outcome = await commands['apikey show']?.({ container: container(), args: args() });
+    const outcome = await findCommand('apikey show')?.execute({ container: container(), args: args() });
 
     expect(outcome?.message).not.toContain('로그인');
   });
@@ -222,7 +223,7 @@ describe('apikey show with a login provider', () => {
 
 describe('switching the login provider on', () => {
   it('needs no risk notice: the switch turns on at once and the next step is the login', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args([enabledKey, 'true']),
     });
@@ -239,7 +240,7 @@ describe('switching the login provider on', () => {
   it('refuses the executable keys for it', async () => {
     writeHome({ [enabledKey]: true });
 
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args(['providers.chatgpt.command', '/opt/x']),
     });
@@ -253,7 +254,7 @@ describe('setup and doctor with the login provider', () => {
   it('saves the default and names the login command when nobody can log in now', async () => {
     writeHome({ [enabledKey]: true });
 
-    const outcome = await runSetup({
+    const outcome = await new SetupCommand().execute({
       container: container(),
       args: args([], { provider: 'chatgpt', global: true }),
     });
@@ -266,7 +267,7 @@ describe('setup and doctor with the login provider', () => {
   it('fails doctor with the login fix and the preview note while signed out', async () => {
     writeHome({ [enabledKey]: true, 'ai.provider.default': 'chatgpt' });
 
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('미리보기');

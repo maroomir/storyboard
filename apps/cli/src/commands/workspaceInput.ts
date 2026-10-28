@@ -3,14 +3,6 @@ import {
   type StoryUri,
   parseSceneCard,
   type SceneCard,
-} from '@storyboard/story-model';
-import type { CliContainer } from '@/container';
-import type { CommandOutcome } from '@/commands/outcome';
-import type { WorkspaceStatus } from '@storyboard/story-app';
-import type { AiProviderId } from '@storyboard/story-model';
-import { flagString, type ParsedArguments } from '@/cliArguments';
-import { buildCompositionPreset, type CompositionPreset } from '@storyboard/story-engine';
-import {
   compositionKinds,
   extractErrorMessage,
   NodeUri,
@@ -19,7 +11,13 @@ import {
   type NarratorCard,
   type PointOfView,
   type ProjectSetting,
+  type AiProviderId,
 } from '@storyboard/story-model';
+import type { CliContainer } from '@/container';
+import type { CommandOutcome } from '@/commands/outcome';
+import type { WorkspaceStatus } from '@storyboard/story-app';
+import { flagString, type ParsedArguments } from '@/cliArguments';
+import { buildCompositionPreset, type CompositionPreset } from '@storyboard/story-engine';
 import { resolve } from 'node:path';
 
 export interface ReadSceneCardsResult {

@@ -1,3 +1,5 @@
+import type { CommandOutcome } from '@/commands/outcome';
+import { SetupCommand } from '@/commands/setupCommand';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -5,7 +7,6 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createCliContainer } from '../src/container';
-import { runSetup } from '../src/commands/setup';
 
 const prompt = vi.hoisted(() => ({ answer: '' }));
 
@@ -32,9 +33,9 @@ function interactiveContainer(): ReturnType<typeof createCliContainer> {
   });
 }
 
-async function runPicker(answer: string): Promise<Awaited<ReturnType<typeof runSetup>>> {
+async function runPicker(answer: string): Promise<CommandOutcome> {
   prompt.answer = answer;
-  return runSetup({
+  return new SetupCommand().execute({
     container: interactiveContainer(),
     args: { path: [], flags: {}, positionals: [] },
   });

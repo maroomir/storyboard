@@ -35,7 +35,7 @@ import {
 } from '@storyboard/story-ai';
 import { createFileConfiguration } from '@storyboard/story-config';
 
-import { commandCatalog } from '@/commands/catalog';
+import { commandCatalog } from '@/commands/index';
 
 import {
   createAuthorizationServer,

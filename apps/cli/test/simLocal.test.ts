@@ -12,7 +12,7 @@ import { storyboardModelCatalog } from '@storyboard/story-model';
 import type { OllamaClientLike, StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { chooseCostAxis } from '@storyboard/story-sim';
 
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
 let home: string;
@@ -35,7 +35,7 @@ function container() {
 }
 
 async function configSet(key: string, value: string) {
-  return await commands['config set']?.({
+  return await findCommand('config set')?.execute({
     container: container(),
     args: { path: ['config', 'set'], flags: { global: true }, positionals: [key, value] },
   });
@@ -242,7 +242,7 @@ describe('the judge runs on the measured machine', () => {
     const baseUrl = await startStub();
     const root = trackRepo(baseUrl);
 
-    const outcome = await commands['sim run']?.({
+    const outcome = await findCommand('sim run')?.execute({
       container: createCliContainer({
         workspacePath: root,
         logger: silentLogger,
@@ -273,7 +273,7 @@ describe('the judge runs on the measured machine', () => {
     const baseUrl = await startStub();
     const root = trackRepo(baseUrl);
 
-    const outcome = await commands['sim run']?.({
+    const outcome = await findCommand('sim run')?.execute({
       container: createCliContainer({
         workspacePath: root,
         logger: silentLogger,

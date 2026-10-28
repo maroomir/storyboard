@@ -9,7 +9,7 @@ import type { GenerationKnobs, UsageRecord } from '@storyboard/story-model';
 import { ConfigBridge } from '@storyboard/story-ai';
 
 import type { ParsedArguments } from '../src/cliArguments';
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer, type CliContainerOptions } from '../src/container';
 
 let home: string;
@@ -38,7 +38,7 @@ function containerWith(overrides: Partial<CliContainerOptions> = {}) {
 }
 
 async function generateScene(overrides: Partial<CliContainerOptions> = {}) {
-  return await commands['draft generate']({
+  return await findCommand('draft generate')!.execute({
     container: containerWith(overrides),
     args: args(['draft', 'generate'], { force: true }, ['01-opening']),
   });
@@ -55,7 +55,7 @@ beforeEach(async () => {
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-sim-ws-'));
   writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
 
-  await commands['init']({
+  await findCommand('init')!.execute({
     container: containerWith(),
     args: args(['init'], { title: '시그널' }),
   });
