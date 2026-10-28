@@ -2,7 +2,7 @@ import type { SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationR
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
 import { assertNotCancelled } from '#engine/pipeline/sceneGenerationStages';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
-import type { BackgroundMemoryStore } from '#engine/pipeline/sceneGenerationTypes';
+import type { IBackgroundMemoryStore } from '#engine/pipeline/memoryStore';
 import type { Background, BackgroundCard } from '@storyboard/story-model';
 
 export class DescribeBackgroundStage implements ISceneStage {
@@ -16,7 +16,7 @@ export class DescribeBackgroundStage implements ISceneStage {
   }
 
   private async describe(run: SceneGenerationRun, card: BackgroundCard): Promise<Background> {
-    const store: BackgroundMemoryStore | undefined = run.input.backgroundStore;
+    const store: IBackgroundMemoryStore | undefined = run.input.backgroundStore;
     const recentExcerpt: string | undefined = run.input.backgroundRecentExcerpt;
     const cached: string | undefined =
       recentExcerpt === undefined ? await store?.load(card) : undefined;

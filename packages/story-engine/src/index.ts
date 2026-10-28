@@ -82,7 +82,7 @@ export * from './persistence/notes/notionExportNoteSource';
 export * from './persistence/notes/notionNoteSource';
 export * from './persistence/notes/obsidianNoteSource';
 export * from './persistence/repositories/noteAbsorbRepository';
-export * from './persistence/cardMemoryWorkspace';
+export * from './persistence/cardMemoryStores';
 export * from './persistence/memoryMigration';
 export * from './persistence/projectInitializer';
 export * from './persistence/workspaceAgentGuide';

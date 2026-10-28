@@ -10,7 +10,6 @@ import type {
   IBackgroundMemoryStore,
   IPersonaMemoryStore,
   ISceneDialogueCorpus,
-  ISceneDialogueStore,
 } from './memoryStore';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { SceneGenerationTuning } from './sceneGenerationTuning';
@@ -49,12 +48,6 @@ export interface SceneGenerationPipelineTaskProviders {
   readonly sceneSectionExpansion?: AiProviderId;
 }
 
-export type PersonaMemoryStore = IPersonaMemoryStore;
-export type BackgroundMemoryStore = IBackgroundMemoryStore;
-export type BackgroundFactConflictStore = IBackgroundFactConflictStore;
-export type SceneDialogueStore = ISceneDialogueStore;
-export type SceneDialogueCorpus = ISceneDialogueCorpus;
-
 export class SceneGenerationPipelineCancelledError extends Error {
   public constructor() {
     super('씬 초안 생성이 취소되었습니다.');
@@ -85,10 +78,10 @@ export interface RunSceneGenerationPipelineInput {
   readonly useContextCondense?: boolean;
   readonly sectionOutputLimit?: number;
   readonly tuning?: SceneGenerationTuning;
-  readonly personaStore?: PersonaMemoryStore;
-  readonly backgroundStore?: BackgroundMemoryStore;
-  readonly backgroundFactConflictStore?: BackgroundFactConflictStore;
-  readonly dialogueCorpus?: SceneDialogueCorpus;
+  readonly personaStore?: IPersonaMemoryStore;
+  readonly backgroundStore?: IBackgroundMemoryStore;
+  readonly backgroundFactConflictStore?: IBackgroundFactConflictStore;
+  readonly dialogueCorpus?: ISceneDialogueCorpus;
   readonly backgroundRecentExcerpt?: string;
   readonly stages?: readonly SceneStageId[];
 }

@@ -28,7 +28,7 @@ import type {
   StoryFileSnapshot,
   IBackgroundFactConflictStore,
 } from '@storyboard/story-engine';
-import { createBackgroundFactConflictStore } from '@storyboard/story-engine';
+import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -106,7 +106,7 @@ export class CardManager {
   public async listBackgroundFactConflicts(
     workspaceRoot: StoryUri,
   ): Promise<BackgroundFactConflictReport[]> {
-    const store: IBackgroundFactConflictStore = createBackgroundFactConflictStore(
+    const store: IBackgroundFactConflictStore = new BackgroundFactConflictStore(
       this.deps.fileSystem,
       getStoryboardProjectPaths(workspaceRoot),
     );

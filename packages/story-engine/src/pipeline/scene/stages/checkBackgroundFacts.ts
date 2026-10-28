@@ -2,7 +2,7 @@ import type { SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationR
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
 import { assertNotCancelled } from '#engine/pipeline/sceneGenerationStages';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
-import type { BackgroundFactConflictStore } from '#engine/pipeline/sceneGenerationTypes';
+import type { IBackgroundFactConflictStore } from '#engine/pipeline/memoryStore';
 import {
   formatBackgroundFactConflict,
   listBackgroundFactLines,
@@ -36,7 +36,7 @@ export class CheckBackgroundFactsStage implements ISceneStage {
       return [];
     }
 
-    const store: BackgroundFactConflictStore | undefined = run.input.backgroundFactConflictStore;
+    const store: IBackgroundFactConflictStore | undefined = run.input.backgroundFactConflictStore;
     const cached: readonly BackgroundFactConflict[] | undefined = await store?.load(card);
     if (cached !== undefined) {
       return cached;
