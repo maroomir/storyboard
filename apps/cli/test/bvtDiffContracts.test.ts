@@ -47,7 +47,7 @@ describe('diff contracts', () => {
   });
 
   it('requires both changelogs once any source file changed', () => {
-    const source = 'packages/story-engine/src/application/novel/novelStages.ts';
+    const source = 'packages/story-engine/src/application/novel/stages/outline.ts';
     expect(statusOf({ changed: [source, 'CHANGELOG.md'] }, 'changelog-both')).toBe('failed');
     expect(statusOf({ changed: [source, 'CHANGELOG.md', 'CHANGELOG.en.md'] }, 'changelog-both')).toBe('passed');
     expect(statusOf({ changed: ['apps/vscode/webview-ui/src/App.tsx', 'CHANGELOG.md'] }, 'changelog-both')).toBe('failed');
