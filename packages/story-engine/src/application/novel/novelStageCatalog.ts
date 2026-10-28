@@ -7,7 +7,6 @@ import {
   type NovelStageName,
 } from '@storyboard/story-model';
 
-
 export const novelStageCatalog = [
   { id: 'outline', label: '아웃라인', required: true },
   { id: 'characters', label: '인물 카드', required: true, requires: ['outline'] },

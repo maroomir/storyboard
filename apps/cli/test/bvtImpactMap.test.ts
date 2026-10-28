@@ -61,7 +61,7 @@ describe('impact map', () => {
 
   it('gives a file to the first matching area and merges shared checks', () => {
     const result = plan([
-      'packages/story-engine/src/application/novel/novelStages.ts',
+      'packages/story-engine/src/application/novel/stages/outline.ts',
       'packages/story-engine/src/application/drafts/generateDraftUseCase.ts',
       'packages/story-engine/src/index.ts',
       'README.md',
