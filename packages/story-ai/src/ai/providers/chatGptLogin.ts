@@ -5,18 +5,15 @@ import type { OAuthRegistration, SecretStore } from '#ai/ports/SecretStore';
 import type { OAuthConnection } from '#ai/ports/SecretStore';
 import type { AiProviderId } from '@storyboard/story-model';
 import {
+  ChatGptOAuthClient,
   ChatGptOAuthError,
   chatGptCallbackPath,
   chatGptPreferredCallbackPort,
   createAuthorizationAttempt,
   createHostId,
-  exchangeAuthorizationCode,
-  fetchDiscoveryDocument,
-  fetchJsonWebKeys,
   hasPlanUsageScope,
   loopbackRedirectUri,
   readAuthorizationCallback,
-  revokeRefreshToken,
   tokensFromResponse,
   validateIdToken,
   type AuthorizationAttempt,
@@ -54,9 +51,7 @@ interface CallbackListener {
   readonly query: Promise<URLSearchParams>;
 }
 
-async function listenForCallback(
-  preferredPort: number,
-): Promise<CallbackListener> {
+async function listenForCallback(preferredPort: number): Promise<CallbackListener> {
   const server: Server = createServer();
   let settle: ((query: URLSearchParams) => void) | undefined;
   const query: Promise<URLSearchParams> = new Promise<URLSearchParams>((resolve) => {
@@ -122,13 +117,16 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 }
 
 export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<ChatGptLoginResult> {
-  const fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response> = deps.fetch ?? globalThis.fetch;
+  const oauth: ChatGptOAuthClient = new ChatGptOAuthClient(deps.fetch ?? globalThis.fetch);
   const now: () => Date = deps.now ?? ((): Date => new Date());
-  const existing: OAuthConnection | undefined = await deps.secretStore.getOAuthConnection(providerId);
+  const existing: OAuthConnection | undefined =
+    await deps.secretStore.getOAuthConnection(providerId);
   const hostId: string = existing?.hostId ?? createHostId();
   const registration: OAuthRegistration | undefined = existing?.registration;
 
-  const listener: CallbackListener = await listenForCallback(deps.preferredPort ?? chatGptPreferredCallbackPort);
+  const listener: CallbackListener = await listenForCallback(
+    deps.preferredPort ?? chatGptPreferredCallbackPort,
+  );
 
   try {
     const attempt: AuthorizationAttempt = createAuthorizationAttempt({
@@ -149,7 +147,7 @@ export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<Chat
     );
     const callback: AuthorizedCallback = readAuthorizationCallback(query, attempt);
 
-    const tokenResponse: TokenResponse = await exchangeAuthorizationCode(fetchImpl, {
+    const tokenResponse: TokenResponse = await oauth.exchangeAuthorizationCode({
       clientId: callback.clientId,
       code: callback.code,
       codeVerifier: attempt.codeVerifier,
@@ -163,11 +161,11 @@ export async function loginChatGpt(deps: ChatGptLoginDependencies): Promise<Chat
       );
     }
 
-    const discovery: DiscoveryDocument = await fetchDiscoveryDocument(fetchImpl);
+    const discovery: DiscoveryDocument = await oauth.fetchDiscoveryDocument();
     const identity: IdTokenIdentity = validateIdToken(tokenResponse.idToken, {
       clientId: callback.clientId,
       nonce: attempt.nonce,
-      keys: await fetchJsonWebKeys(fetchImpl, discovery.jwksUri),
+      keys: await oauth.fetchJsonWebKeys(discovery.jwksUri),
       now: now(),
     });
 
@@ -211,8 +209,9 @@ export async function logoutChatGpt(deps: {
   readonly secretStore: SecretStore;
   readonly fetch?: FetchLike;
 }): Promise<ChatGptLogoutResult> {
-  const fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response> = deps.fetch ?? globalThis.fetch;
-  const existing: OAuthConnection | undefined = await deps.secretStore.getOAuthConnection(providerId);
+  const oauth: ChatGptOAuthClient = new ChatGptOAuthClient(deps.fetch ?? globalThis.fetch);
+  const existing: OAuthConnection | undefined =
+    await deps.secretStore.getOAuthConnection(providerId);
 
   if (existing?.tokens === undefined || existing.registration === undefined) {
     return { wasConnected: false, isRevoked: false };
@@ -220,9 +219,9 @@ export async function logoutChatGpt(deps: {
 
   let isRevoked: boolean = false;
   try {
-    const discovery: DiscoveryDocument = await fetchDiscoveryDocument(fetchImpl);
+    const discovery: DiscoveryDocument = await oauth.fetchDiscoveryDocument();
     if (discovery.revocationEndpoint !== undefined) {
-      await revokeRefreshToken(fetchImpl, {
+      await oauth.revokeRefreshToken({
         revocationEndpoint: discovery.revocationEndpoint,
         clientId: existing.registration.clientId,
         refreshToken: existing.tokens.refreshToken,

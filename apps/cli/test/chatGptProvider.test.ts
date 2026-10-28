@@ -15,6 +15,7 @@ import {
   type AiStreamChunk,
 } from '@storyboard/story-model';
 import {
+  ChatGptOAuthClient,
   ChatGptOAuthError,
   ChatGptProvider,
   ConfigBridge,
@@ -23,11 +24,9 @@ import {
   computeCostUsd,
   createAiProviderRegistry,
   createAuthorizationAttempt,
-  exchangeAuthorizationCode,
   loginChatGpt,
   logoutChatGpt,
   readAuthorizationCallback,
-  refreshAccessToken,
   shouldRefreshTokens,
   toResponsesInput,
   tokensFromResponse,
@@ -265,7 +264,7 @@ describe('the ChatGPT plan provider: the authorization request', () => {
       }),
     );
 
-    const response = await exchangeAuthorizationCode(fetchImpl, {
+    const response = await new ChatGptOAuthClient(fetchImpl).exchangeAuthorizationCode({
       clientId: 'oaiapp_1',
       code: 'code-1',
       codeVerifier: 'verifier',
@@ -295,9 +294,9 @@ describe('the ChatGPT plan provider: the authorization request', () => {
   it('says a spent refresh token is spent', async () => {
     const fetchImpl = fakeFetch(() => jsonResponse({ error: 'refresh_token_reused' }, 400));
 
-    const error = await refreshAccessToken(fetchImpl, { clientId: 'c', refreshToken: 'r' }).catch(
-      (caught: unknown) => caught,
-    );
+    const error = await new ChatGptOAuthClient(fetchImpl)
+      .refreshAccessToken({ clientId: 'c', refreshToken: 'r' })
+      .catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ChatGptOAuthError);
     expect((error as ChatGptOAuthError).code).toBe('refresh-rejected');
