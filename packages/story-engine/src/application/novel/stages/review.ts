@@ -2,7 +2,8 @@ import type { NovelStageName } from '@storyboard/story-model';
 import type { INovelStage } from '#engine/application/novel/novelStage';
 import type { NovelPipelineResult } from '#engine/application/novel/novelPipelineContract';
 import type { NovelRun } from '#engine/application/novel/novelRun';
-import { VolumeReviewer, type ReviewStageResult } from './volumeReviewer';
+import type { ReviewStageResult } from '#engine/application/novel/novelPipelineContract';
+import { VolumeReviewer } from './volumeReviewer';
 
 export class ReviewStage implements INovelStage {
   public readonly id: NovelStageName = 'review';
