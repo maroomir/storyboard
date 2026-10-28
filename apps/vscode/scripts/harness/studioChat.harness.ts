@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import nodeFs from 'node:fs/promises';
 
 import * as vscode from 'vscode';
@@ -12,18 +13,17 @@ import type {
   StudioEntity,
 } from '@storyboard/story-model';
 
-import { StudioChatUseCase, type StudioChatRequest } from '@storyboard/story-engine';
+import {
+  StudioContextRepository,
+  StudioChatUseCase,
+  type StudioChatRequest,
+} from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
 import { StudioFollowUpRepository } from '@storyboard/story-engine';
 import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
-import {
-  readStudioEntityContext,
-  resolveStudioFollowUps,
-  resolveStudioLookups,
-  type StudioSceneFocus,
-} from '@storyboard/story-engine';
+import type { StudioSceneFocus } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { createUsageSummary } from './usageSummary';
@@ -37,7 +37,8 @@ const workspace = process.env.STUDIO_WS ?? process.env.SCENE_WS ?? '';
 const providerId = resolveHarnessProviderId(
   process.env.STUDIO_PROVIDER ?? process.env.SCENE_PROVIDER,
 );
-const model = process.env.STUDIO_MODEL ?? process.env.SCENE_MODEL ?? defaultHarnessModel(providerId);
+const model =
+  process.env.STUDIO_MODEL ?? process.env.SCENE_MODEL ?? defaultHarnessModel(providerId);
 const onlyScenario = process.env.STUDIO_CASE;
 const applyProposals = process.env.STUDIO_APPLY !== '0';
 
@@ -304,7 +305,9 @@ test('studio chat against a real workspace', async () => {
   if (process.env.STUDIO_SEED) {
     const usage = createUsageSummary();
     const seed = await (
-      createGateway(provider, usage.onUsage).createService(vscode.Uri.file(workspace) as never) as never as {
+      createGateway(provider, usage.onUsage).createService(
+        vscode.Uri.file(workspace) as never,
+      ) as never as {
         extractStudioCardSeed: (description: string) => Promise<unknown>;
       }
     ).extractStudioCardSeed(process.env.STUDIO_SEED);
@@ -323,7 +326,11 @@ test('studio chat against a real workspace', async () => {
 
   try {
     for (const scenario of selected) {
-      const context = await readStudioEntityContext(root, scenario.entity, scenario.sceneFocus);
+      const context = await new StudioContextRepository(vscodeFileSystem).readEntityContext(
+        root,
+        scenario.entity,
+        scenario.sceneFocus,
+      );
 
       if (!context) {
         console.log(`\n### ${scenario.name} — 대상을 찾을 수 없음`);
@@ -343,7 +350,8 @@ test('studio chat against a real workspace', async () => {
         instruction: scenario.instruction,
         hasSelection: false,
         isValidationEnabled: true,
-        resolveLookup: (requests) => resolveStudioLookups(root, requests),
+        resolveLookup: (requests) =>
+          new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
         ...(context.patchTarget === 'draft' &&
         context.baseline !== undefined &&
         context.targetUri !== undefined
@@ -359,7 +367,8 @@ test('studio chat against a real workspace', async () => {
               ),
             }
           : {}),
-        resolveFollowUps: (followUps) => resolveStudioFollowUps(root, followUps),
+        resolveFollowUps: (followUps) =>
+          new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
         createTurnId: () => `${scenario.name}-${Math.random().toString(36).slice(2, 8)}`,
         onStage: (stage) => console.log(`  [${stage}]`),
       };

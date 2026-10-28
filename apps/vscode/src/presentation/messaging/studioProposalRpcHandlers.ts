@@ -15,8 +15,8 @@ import {
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-import { hashBaseline } from '@storyboard/story-engine';
-import { readStudioEntityContext, type StudioSceneFocus } from '@storyboard/story-engine';
+import { StudioContextRepository, hashBaseline } from '@storyboard/story-engine';
+import type { StudioSceneFocus } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { IStudioFollowUpRepository, StudioEntityContext } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -124,12 +124,9 @@ async function prepareApply(
     return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
   }
 
-  const entityContext: StudioEntityContext | undefined = await readStudioEntityContext(
+  const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
     vscodeFileSystem,
-    root,
-    entity,
-    sceneFocusOf(proposal.targetFile),
-  );
+  ).readEntityContext(root, entity, sceneFocusOf(proposal.targetFile));
 
   if (!entityContext?.targetUri || entityContext.baseline === undefined) {
     return { ok: false, message: '수정할 파일을 찾을 수 없습니다.' };
