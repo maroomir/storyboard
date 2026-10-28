@@ -1,3 +1,10 @@
+import { findCommand } from '../src/commands/index';
+import type { CommandOutcome } from '@/commands/outcome';
+import { ConfigSetCommand } from '@/commands/config/configSetCommand';
+import { ConfigShowCommand } from '@/commands/config/configShowCommand';
+import { ConfigUnsetCommand } from '@/commands/config/configUnsetCommand';
+import { DoctorCommand } from '@/commands/doctorCommand';
+import { SetupCommand } from '@/commands/setupCommand';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -14,9 +21,6 @@ import {
 } from '@storyboard/story-model';
 
 import { createCliContainer } from '../src/container';
-import { runConfigSet, runConfigShow, runConfigUnset } from '../src/commands/config';
-import { runDoctor } from '../src/commands/doctor';
-import { runSetup } from '../src/commands/setup';
 import { commands } from '../src/commands';
 import type { ParsedArguments } from '../src/cliArguments';
 import { createTheme } from '../src/terminal/theme';
@@ -60,7 +64,7 @@ afterEach(() => {
 
 describe('storyboard setup', () => {
   it('writes the provider given on the command line into the shared config', async () => {
-    const outcome = await runSetup({ container: container(), args: args({ provider: 'claude' }) });
+    const outcome = await new SetupCommand().execute({ container: container(), args: args({ provider: 'claude' }) });
 
     expect(outcome.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
@@ -70,7 +74,7 @@ describe('storyboard setup', () => {
   });
 
   it('refuses to guess when there is no terminal and no --provider', async () => {
-    const outcome = await runSetup({ container: container(), args: args() });
+    const outcome = await new SetupCommand().execute({ container: container(), args: args() });
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('--provider');
@@ -79,7 +83,7 @@ describe('storyboard setup', () => {
 
 describe('storyboard doctor', () => {
   it('fails with the setup hint when no provider is configured', async () => {
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('storyboard setup');
@@ -89,7 +93,7 @@ describe('storyboard doctor', () => {
   it('passes for a configured mock provider and reports the workspace state', async () => {
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
 
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toContain('mock');
@@ -106,7 +110,7 @@ describe('storyboard doctor', () => {
       'version: 1\nstages:\n  - expandSection\n',
     );
 
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain(
@@ -121,7 +125,7 @@ describe('storyboard doctor at a terminal', () => {
   const terminal = { isTty: true, columns: 80, theme: createTheme(false) };
 
   it('draws one aligned box per section with a count and the first fix', async () => {
-    const outcome = await runDoctor({ container: container(), args: args(), stdout: terminal });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args(), stdout: terminal });
     const lines = outcome.message.split('\n');
     const boxLines = lines.filter((line) => /^[╭│╰]/.test(line));
 
@@ -135,8 +139,8 @@ describe('storyboard doctor at a terminal', () => {
   });
 
   it('keeps the plain lines and the check list for a pipe', async () => {
-    const piped = await runDoctor({ container: container(), args: args() });
-    const drawn = await runDoctor({ container: container(), args: args(), stdout: terminal });
+    const piped = await new DoctorCommand().execute({ container: container(), args: args() });
+    const drawn = await new DoctorCommand().execute({ container: container(), args: args(), stdout: terminal });
 
     expect(piped.message).not.toContain('╭');
     expect(piped.data).toEqual(drawn.data);
@@ -145,7 +149,7 @@ describe('storyboard doctor at a terminal', () => {
 
 describe('storyboard doctor on a pre-0.8 workspace', () => {
   function checksOf(
-    outcome: Awaited<ReturnType<typeof runDoctor>>,
+    outcome: CommandOutcome,
   ): { label: string; detail: string }[] {
     return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
   }
@@ -157,7 +161,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     mkdirSync(join(workspace, 'scene'));
     writeFileSync(join(workspace, 'scene', '01-old.txt'), '[목적] 오래된 시드\n');
 
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     expect(outcome.ok).toBe(true);
     const checks = checksOf(outcome);
@@ -194,13 +198,13 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     verb: string,
     parsed: ParsedArguments,
   ): Promise<{ ok: boolean; data?: unknown }> {
-    const handler = commands[verb] as (context: never) => Promise<{ ok: boolean; data?: unknown }>;
+    const command = findCommand(verb)!;
 
-    return await handler({ container: container(), args: parsed } as never);
+    return await command.execute({ container: container(), args: parsed });
   }
 
   async function staleCheckStatus(): Promise<string | undefined> {
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     return checksOf(outcome).find((entry) => entry.label === '이야기 상태')?.status;
   }
@@ -208,7 +212,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   it('asks for a repair when the ledger carries no input record', async () => {
     writeWorkspaceWithLedger(unsealedLedger);
 
-    const outcome = await runDoctor({ container: container(), args: args() });
+    const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
     const check = checksOf(outcome).find((entry) => entry.label === '이야기 상태');
     expect(check?.status).toBe('info');
@@ -218,7 +222,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   it('reports a ledger that no longer matches its scene after the repair sealed it', async () => {
     writeWorkspaceWithLedger(unsealedLedger);
 
-    const repaired = await (commands['init'] as (context: never) => Promise<{ ok: boolean }>)({
+    const repaired = await findCommand('init')!.execute({
       container: container(),
       args: args({ repair: true }),
     });
@@ -227,7 +231,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
       readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8'),
     ).toContain('<!-- scene-input: 1 sha256:');
 
-    const sealed = await runDoctor({ container: container(), args: args() });
+    const sealed = await new DoctorCommand().execute({ container: container(), args: args() });
     expect(checksOf(sealed).find((entry) => entry.label === '이야기 상태')?.status).toBe('ok');
 
     writeFileSync(
@@ -235,7 +239,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
       'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
     );
 
-    const stale = await runDoctor({ container: container(), args: args() });
+    const stale = await new DoctorCommand().execute({ container: container(), args: args() });
     const check = checksOf(stale).find((entry) => entry.label === '이야기 상태');
     expect(check?.status).toBe('warn');
     expect(check?.detail).toContain('씬 1');
@@ -320,7 +324,7 @@ describe('storyboard doctor chapter summaries', () => {
   it('reports a summary that no longer matches its chapter drafts', async () => {
     writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
 
-    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '장별 요약',
     );
 
@@ -337,7 +341,7 @@ describe('storyboard doctor chapter summaries', () => {
     }).collectCurrentChapterHashes('테스트');
     writeWorkspaceWithSummary('첫 장 본문', current.get('1장') as string);
 
-    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '장별 요약',
     );
 
@@ -347,20 +351,20 @@ describe('storyboard doctor chapter summaries', () => {
 
 describe('storyboard config', () => {
   it('sets a catalog key with type validation and shows it with its origin', async () => {
-    const bad = await runConfigSet({
+    const bad = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['revise.loop.maxIterations', 'nine']),
     });
     expect(bad.ok).toBe(false);
 
-    const unknown = await runConfigSet({
+    const unknown = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['draft.nope', '1']),
     });
     expect(unknown.ok).toBe(false);
     expect(unknown.message).toContain('쓸 수 있는 키');
 
-    const good = await runConfigSet({
+    const good = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['revise.loop.maxIterations', '3']),
     });
@@ -369,13 +373,13 @@ describe('storyboard config', () => {
       revise: { loop: { maxIterations: 3 } },
     });
 
-    const shown = await runConfigShow({ container: container(), args: args() });
+    const shown = await new ConfigShowCommand().execute({ container: container(), args: args() });
     expect(shown.message).toMatch(/revise\.loop\.maxIterations\s+3\s+공통/);
     expect(shown.message).toMatch(/ai\.provider\.default\s+\(없음\)\s+기본값/);
   });
 
   it('keeps a run budget in cents and refuses a finer amount', async () => {
-    const cents = await runConfigSet({
+    const cents = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['budget.run.limitUsd', '0.25']),
     });
@@ -385,14 +389,14 @@ describe('storyboard config', () => {
     });
     expect(container().configBridge.getRunBudgetUsd()).toBe(0.25);
 
-    const finer = await runConfigSet({
+    const finer = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['budget.run.limitUsd', '0.255']),
     });
     expect(finer.ok).toBe(false);
     expect(finer.message).toContain('소수 둘째 자리');
 
-    const notNumber = await runConfigSet({
+    const notNumber = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['budget.run.limitUsd', '1달러']),
     });
@@ -400,19 +404,19 @@ describe('storyboard config', () => {
   });
 
   it('validates provider fields against the catalog', async () => {
-    const badModel = await runConfigSet({
+    const badModel = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['providers.openai.model', 'gpt-99']),
     });
     expect(badModel.ok).toBe(false);
 
-    const goodModel = await runConfigSet({
+    const goodModel = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['providers.claude.model', 'claude-haiku-4-5']),
     });
     expect(goodModel.ok).toBe(true);
 
-    const provider = await runConfigSet({
+    const provider = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['ai.provider.default', 'claude']),
     });
@@ -430,14 +434,14 @@ describe('storyboard config', () => {
       JSON.stringify({ revise: { loop: { maxIterations: 4 } } }),
     );
 
-    const shown = await runConfigShow({ container: container(), args: args() });
+    const shown = await new ConfigShowCommand().execute({ container: container(), args: args() });
 
     expect(shown.message).not.toContain('이 작품 설정');
     expect(shown.message).toMatch(/revise\.loop\.maxIterations\s+2\s+기본값/);
   });
 
   it('names the current keys when it refuses one', async () => {
-    const unknown = await runConfigSet({
+    const unknown = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['defaultProvider', 'claude']),
     });
@@ -449,13 +453,13 @@ describe('storyboard config', () => {
   });
 
   it('sets the default provider and its model in one command', async () => {
-    const badModel = await runConfigSet({
+    const badModel = await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'gpt-99' }, ['ai.provider.default', 'claude']),
     });
     expect(badModel.ok).toBe(false);
 
-    const saved = await runConfigSet({
+    const saved = await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'claude-sonnet-5' }, ['ai.provider.default', 'claude']),
     });
@@ -468,7 +472,7 @@ describe('storyboard config', () => {
   });
 
   it('refuses --model on a key that names no provider', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'claude-sonnet-5' }, ['revise.loop.maxIterations', '3']),
     });
@@ -484,7 +488,7 @@ describe('storyboard config set tasks', () => {
   }
 
   it('routes a task to a provider and model given together', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'claude-opus-5-5' }, ['tasks.noteExtraction.provider', 'claude']),
     });
@@ -496,7 +500,7 @@ describe('storyboard config set tasks', () => {
   });
 
   it('refuses an unknown task, an unknown provider and a model the provider does not have', async () => {
-    const unknownTask = await runConfigSet({
+    const unknownTask = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['tasks.noteExtractoin.provider', 'claude']),
     });
@@ -504,13 +508,13 @@ describe('storyboard config set tasks', () => {
     expect(unknownTask.message).toContain('알 수 없는 작업: noteExtractoin');
     expect(unknownTask.message).toContain('noteExtraction');
 
-    const unknownProvider = await runConfigSet({
+    const unknownProvider = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['tasks.noteExtraction.provider', 'codex']),
     });
     expect(unknownProvider.ok).toBe(false);
 
-    const wrongModel = await runConfigSet({
+    const wrongModel = await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'gpt-5.5' }, ['tasks.noteExtraction.provider', 'claude']),
     });
@@ -519,7 +523,7 @@ describe('storyboard config set tasks', () => {
   });
 
   it('fills the provider of a lone model from the default provider, or refuses without one', async () => {
-    const withoutDefault = await runConfigSet({
+    const withoutDefault = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['tasks.noteExtraction.model', 'claude-opus-5-5']),
     });
@@ -527,7 +531,7 @@ describe('storyboard config set tasks', () => {
     expect(withoutDefault.message).toContain('tasks.noteExtraction.provider');
 
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'claude' }));
-    const filled = await runConfigSet({
+    const filled = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['tasks.noteExtraction.model', 'claude-opus-5-5']),
     });
@@ -539,7 +543,7 @@ describe('storyboard config set tasks', () => {
       tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } },
     });
 
-    const outsideCatalog = await runConfigSet({
+    const outsideCatalog = await new ConfigSetCommand().execute({
       container: container(),
       args: args({}, ['tasks.noteExtraction.model', 'gpt-5.5']),
     });
@@ -555,7 +559,7 @@ describe('storyboard config set tasks', () => {
     );
     const warnings: string[] = [];
 
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(warnings),
       args: args({}, ['tasks.noteExtraction.provider', 'openai']),
     });
@@ -564,12 +568,12 @@ describe('storyboard config set tasks', () => {
     expect(readHomeConfig()).toEqual({ tasks: { noteExtraction: { provider: 'openai' } } });
     expect(warnings.join('\n')).toContain('tasks.noteExtraction.model 을 비웠습니다');
 
-    await runConfigSet({
+    await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'gpt-5.5' }, ['tasks.noteExtraction.provider', 'openai']),
     });
     const kept: string[] = [];
-    await runConfigSet({
+    await new ConfigSetCommand().execute({
       container: container(kept),
       args: args({}, ['tasks.noteExtraction.provider', 'openai']),
     });
@@ -594,7 +598,7 @@ describe('storyboard config set tasks', () => {
       JSON.stringify({ tasks: { sceneDraft: { provider: 'openai' } } }),
     );
 
-    const shown = await runConfigShow({ container: container(), args: args() });
+    const shown = await new ConfigShowCommand().execute({ container: container(), args: args() });
 
     expect(shown.message).toMatch(/tasks\.noteExtraction\.provider\s+claude\s+공통/);
     expect(shown.message).toMatch(/tasks\.noteExtraction\.model\s+claude-opus-5-5\s+공통/);
@@ -604,7 +608,7 @@ describe('storyboard config set tasks', () => {
   });
 
   it('refuses --model on the model key itself', async () => {
-    const outcome = await runConfigSet({
+    const outcome = await new ConfigSetCommand().execute({
       container: container(),
       args: args({ model: 'claude-opus-5-5' }, ['tasks.noteExtraction.model', 'claude-opus-5-5']),
     });
@@ -624,21 +628,21 @@ describe('storyboard config unset', () => {
       JSON.stringify({ 'ai.provider.default': 'claude', revise: { loop: { maxIterations: 3 } } }),
     );
 
-    const removed = await runConfigUnset({
+    const removed = await new ConfigUnsetCommand().execute({
       container: container(),
       args: args({}, ['revise.loop.maxIterations']),
     });
     expect(removed.ok).toBe(true);
     expect(readJson(join(home, 'config.json'))).toEqual({ 'ai.provider.default': 'claude' });
 
-    const unknown = await runConfigUnset({
+    const unknown = await new ConfigUnsetCommand().execute({
       container: container(),
       args: args({}, ['providers.claude-code.enabled']),
     });
     expect(unknown.ok).toBe(false);
     expect(unknown.message).toContain('알 수 없는 설정 키');
 
-    const unknownTask = await runConfigUnset({
+    const unknownTask = await new ConfigUnsetCommand().execute({
       container: container(),
       args: args({}, ['tasks.nope.provider']),
     });
@@ -657,11 +661,11 @@ describe('storyboard config unset', () => {
       }),
     );
 
-    await runConfigUnset({
+    await new ConfigUnsetCommand().execute({
       container: container(),
       args: args({}, ['tasks.sceneDraft.model']),
     });
-    const routeRemoved = await runConfigUnset({
+    const routeRemoved = await new ConfigUnsetCommand().execute({
       container: container(),
       args: args({}, ['tasks.noteExtraction.provider']),
     });
@@ -681,7 +685,7 @@ describe('storyboard config unset', () => {
       JSON.stringify({ 'ai.provider.default': 'openai' }),
     );
 
-    const outcome = await runConfigUnset({
+    const outcome = await new ConfigUnsetCommand().execute({
       container: createCliContainer({
         workspacePath: workspace,
         logger: {
@@ -739,7 +743,7 @@ describe('storyboard doctor beat cast', () => {
   it('warns about a cast entry no character card answers to', async () => {
     writeWorkspaceWithBeatCast(['hana', '김하나', '하나 씨', 'minsu']);
 
-    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '비트 출연',
     );
 
@@ -750,7 +754,7 @@ describe('storyboard doctor beat cast', () => {
   it('stays quiet when every cast entry is a card id, name or alias', async () => {
     writeWorkspaceWithBeatCast(['hana', '하나 씨']);
 
-    const checks = checksOf(await runDoctor({ container: container(), args: args() }));
+    const checks = checksOf(await new DoctorCommand().execute({ container: container(), args: args() }));
 
     expect(checks.some((entry) => entry.label === '비트 출연')).toBe(false);
   });
@@ -810,7 +814,7 @@ describe('storyboard doctor background conflicts', () => {
   it('warns about a conflict generation found on the card as it is', async () => {
     writeWorkspaceWithCheckedCard([sofa, room]);
 
-    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '배경 사실 상충',
     );
 
@@ -820,7 +824,7 @@ describe('storyboard doctor background conflicts', () => {
   it('stays quiet once the card changed since the check', async () => {
     writeWorkspaceWithCheckedCard([sofa, room, '거실 통창 너머 바다']);
 
-    const checks = checksOf(await runDoctor({ container: container(), args: args() }));
+    const checks = checksOf(await new DoctorCommand().execute({ container: container(), args: args() }));
 
     expect(checks.some((entry) => entry.label === '배경 사실 상충')).toBe(false);
   });

@@ -21,7 +21,7 @@ import {
 import { type PlanNoteAbsorbRequest } from '@storyboard/story-engine';
 
 import type { ParsedArguments } from '../src/cliArguments';
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
 const vault = join(__dirname, 'fixtures', 'notes', 'obsidianVault', '달의 문');
@@ -169,11 +169,11 @@ async function planFor(request: PlanNoteAbsorbRequest) {
 }
 
 async function run(verb: string, parsed: ParsedArguments, target: CliContainer = container()) {
-  const handler = commands[verb];
-  if (!handler) {
+  const command = findCommand(verb);
+  if (!command) {
     throw new Error(`unknown verb: ${verb}`);
   }
-  return await handler({ container: target, args: parsed });
+  return await command.execute({ container: target, args: parsed });
 }
 
 function absorbArgs(flags: Record<string, string | boolean> = {}): ParsedArguments {

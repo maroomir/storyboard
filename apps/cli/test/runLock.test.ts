@@ -14,8 +14,8 @@ import {
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { commandCatalog } from '../src/commands/catalog';
-import { dispatch, type DispatchDependencies } from '../src/commands/dispatch';
+import { commandCatalog } from '../src/commands/index';
+import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
 
 const desktopHolder: WorkspaceRunLockHolder = {
   owner: 'desktop',
@@ -66,7 +66,7 @@ beforeEach(async () => {
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-lock-ws-'));
   vi.stubEnv('STORYBOARD_HOME', home);
 
-  const init = await dispatch(['init', '--title', '잠금 시험'], deps());
+  const init = await new CommandDispatcher(deps()).dispatch(['init', '--title', '잠금 시험']);
   expect(init.exitCode).toBe(0);
 });
 
@@ -128,7 +128,7 @@ describe('CLI verbs and the run lock', () => {
   it('refuses a writing verb while another app holds the workspace', async () => {
     plantLock(new Date());
 
-    const result = await dispatch(['project', 'set', '--genre', '판타지'], deps());
+    const result = await new CommandDispatcher(deps()).dispatch(['project', 'set', '--genre', '판타지']);
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toContain('데스크톱 앱이(가) «장편 생성» 작업 중입니다');
@@ -137,11 +137,11 @@ describe('CLI verbs and the run lock', () => {
   it('still answers read-only verbs while the workspace is held', async () => {
     plantLock(new Date());
 
-    expect((await dispatch(['narrator', 'list'], deps())).exitCode).toBe(0);
+    expect((await new CommandDispatcher(deps()).dispatch(['narrator', 'list'])).exitCode).toBe(0);
   });
 
   it('releases the lock when a writing verb finishes', async () => {
-    const result = await dispatch(['project', 'set', '--genre', '판타지'], deps());
+    const result = await new CommandDispatcher(deps()).dispatch(['project', 'set', '--genre', '판타지']);
 
     expect(result.exitCode).toBe(0);
     expect(existsSync(lockFile())).toBe(false);

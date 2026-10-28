@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { serializeDraft } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { commandCatalog } from '../src/commands/catalog';
-import { dispatch, type DispatchDependencies } from '../src/commands/dispatch';
-import { nextStepCommands } from '../src/commands/status';
+import { commandCatalog } from '../src/commands/index';
+import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
+import { nextStepCommands } from '../src/commands/workspaceNextStep';
 
 const silentLogger = {
   info: () => undefined,
@@ -37,7 +37,7 @@ function writeDraft(stem: string, body: string): void {
 }
 
 async function runJson(...argv: string[]): Promise<{ ok: boolean; message: string; data: any }> {
-  const result = await dispatch([...argv, '--json'], deps());
+  const result = await new CommandDispatcher(deps()).dispatch([...argv, '--json']);
   return JSON.parse(result.stdout);
 }
 
@@ -47,7 +47,7 @@ beforeEach(async () => {
   vi.stubEnv('STORYBOARD_HOME', home);
   writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
 
-  const init = await dispatch(['init', '--title', '보기 시험', '--genre', '미스터리'], deps());
+  const init = await new CommandDispatcher(deps()).dispatch(['init', '--title', '보기 시험', '--genre', '미스터리']);
   expect(init.exitCode).toBe(0);
 });
 
@@ -66,8 +66,8 @@ describe('scene list', () => {
   });
 
   it('lists scene cards in number order with whether each has a draft', async () => {
-    await dispatch(['scene', 'create', '--name', 'opening'], deps());
-    await dispatch(['scene', 'create', '--name', 'storm'], deps());
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
     writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
     const listed = await runJson('scene', 'list');
@@ -79,18 +79,18 @@ describe('scene list', () => {
     expect(listed.data.scenes[0].draft).not.toBe('missing');
     expect(listed.data.scenes[1].draft).toBe('missing');
 
-    const text = await dispatch(['scene', 'list'], deps());
+    const text = await new CommandDispatcher(deps()).dispatch(['scene', 'list']);
     expect(text.stdout).toContain('02-storm\t\t초안 없음');
   });
 });
 
 describe('draft show', () => {
   it('prints the body alone, and the path with --json', async () => {
-    await dispatch(['scene', 'create', '--name', 'opening'], deps());
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
     writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.\n\n하나는 우산을 접었다.');
 
     const shown = await runJson('draft', 'show', '01-opening');
-    const text = await dispatch(['draft', 'show', '01-opening'], deps());
+    const text = await new CommandDispatcher(deps()).dispatch(['draft', 'show', '01-opening']);
 
     expect(shown.ok).toBe(true);
     expect(shown.data.path).toBe(join(workspace, 'draft', '01-opening.md'));
@@ -100,7 +100,7 @@ describe('draft show', () => {
   });
 
   it('fails when the scene has no draft', async () => {
-    const result = await dispatch(['draft', 'show', '01-opening'], deps());
+    const result = await new CommandDispatcher(deps()).dispatch(['draft', 'show', '01-opening']);
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toContain('초안이 없습니다: 01-opening');
@@ -109,14 +109,14 @@ describe('draft show', () => {
 
 describe('card list and card show', () => {
   beforeEach(async () => {
-    await dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana'], deps());
-    await dispatch(['card', 'create', 'background', '--name', 'Night Market'], deps());
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana']);
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'background', '--name', 'Night Market']);
   });
 
   it('lists both kinds, or the one named', async () => {
     const all = await runJson('card', 'list');
     const characters = await runJson('card', 'list', 'character');
-    const unknown = await dispatch(['card', 'list', 'narrator'], deps());
+    const unknown = await new CommandDispatcher(deps()).dispatch(['card', 'list', 'narrator']);
 
     expect(all.data.cards.map((card: { id: string }) => card.id)).toEqual([
       'hana',
@@ -131,7 +131,7 @@ describe('card list and card show', () => {
   it('finds a card by id without being told its kind', async () => {
     const character = await runJson('card', 'show', 'hana');
     const background = await runJson('card', 'show', 'night-market');
-    const missing = await dispatch(['card', 'show', 'nobody'], deps());
+    const missing = await new CommandDispatcher(deps()).dispatch(['card', 'show', 'nobody']);
 
     expect(character.data.category).toBe('character');
     expect(character.data.card.name).toBe('하나');
@@ -157,15 +157,12 @@ describe('status', () => {
     expect(empty.data.project.missingContract).toEqual(['audience', 'pov', 'targetWordCount']);
     expect(empty.data.next).toMatchObject({ step: 'fill-contract', command: 'project set' });
 
-    await dispatch(
-      ['project', 'set', '--audience', '성인', '--pov', 'third-limited', '--target-words', '90000'],
-      deps(),
-    );
+    await new CommandDispatcher(deps()).dispatch(['project', 'set', '--audience', '성인', '--pov', 'third-limited', '--target-words', '90000']);
     expect((await runJson('status')).data.next.command).toBe('outline generate');
 
-    await dispatch(['scene', 'create', '--name', 'opening'], deps());
-    await dispatch(['scene', 'create', '--name', 'storm'], deps());
-    await dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana'], deps());
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana']);
     writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
     const drafting = await runJson('status');
@@ -188,7 +185,7 @@ describe('status', () => {
   });
 
   it('prints the overview with the next command on the last line', async () => {
-    const result = await dispatch(['status'], deps());
+    const result = await new CommandDispatcher(deps()).dispatch(['status']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('계약      독자층·시점·목표 분량 비어 있음');
@@ -211,8 +208,8 @@ describe('manuscript export --out', () => {
     mkdirSync(join(workspace, 'manuscript'), { recursive: true });
     writeFileSync(join(workspace, 'manuscript', 'manuscript.md'), '# 보기 시험\n\n**밤**이 왔다.\n');
 
-    const text = await dispatch(['manuscript', 'export', '--out', join(workspace, 'out.txt')], deps());
-    const markdown = await dispatch(['manuscript', 'export', '--out', join(workspace, 'out.md')], deps());
+    const text = await new CommandDispatcher(deps()).dispatch(['manuscript', 'export', '--out', join(workspace, 'out.txt')]);
+    const markdown = await new CommandDispatcher(deps()).dispatch(['manuscript', 'export', '--out', join(workspace, 'out.md')]);
 
     expect(text.exitCode).toBe(0);
     expect(markdown.exitCode).toBe(0);
@@ -223,7 +220,7 @@ describe('manuscript export --out', () => {
 
 describe('draft check', () => {
   it('runs slop locally and skips continuity when no canon fact applies', async () => {
-    await dispatch(['scene', 'create', '--name', 'opening'], deps());
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
     writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
     const slop = await runJson('draft', 'check', 'slop', '01-opening');
@@ -240,10 +237,10 @@ describe('draft expand', () => {
       join(home, 'config.json'),
       JSON.stringify({ 'ai.provider.default': 'mock', 'editor.draft.keepHistory': true }),
     );
-    await dispatch(['scene', 'create', '--name', 'opening'], deps());
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
     writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.\n\n하나는 우산을 접었다.');
 
-    const expanded = await dispatch(['draft', 'expand', '01-opening'], deps());
+    const expanded = await new CommandDispatcher(deps()).dispatch(['draft', 'expand', '01-opening']);
 
     expect(expanded.exitCode, expanded.stdout).toBe(0);
     expect(readdirSync(join(workspace, '.draft', '01-opening'))).toHaveLength(1);

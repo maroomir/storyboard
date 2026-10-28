@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readRuns } from '@storyboard/story-sim';
 
 import type { ParsedArguments } from '../src/cliArguments';
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
 let home: string;
@@ -26,7 +26,7 @@ function args(path: string[], flags: Record<string, string | boolean> = {}): Par
 }
 
 async function run(verb: string, flags: Record<string, string | boolean>) {
-  return await commands[verb]?.({
+  return await findCommand(verb)?.execute({
     container: createCliContainer({
       workspacePath: track,
       logger: silentLogger,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { commandCatalog } from '../src/commands/catalog';
+import { commandCatalog } from '../src/commands/index';
 import { diffSentences, renderSentenceDiff, splitSentences } from '../src/terminal/diff';
 import { createTheme } from '../src/terminal/theme';
 

@@ -18,11 +18,11 @@ import {
   type RunRecord,
   type ScoredPoint,
 } from '@storyboard/story-sim';
-
 import { flagBoolean, flagString } from '@/cliArguments';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
-import { findModelProfilesFile, regressionLines, scoreKey } from './simTrack';
+import { findModelProfilesFile, scoreKey } from './simTrack';
+import { regressionLines } from '@/commands/sim/simTrack';
 
 export class SimReport {
   public constructor(private readonly context: CommandContext) {}

@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { createWorkspaceAgentGuide } from '@storyboard/story-engine';
 import { describe, expect, it } from 'vitest';
 
+import { commandCatalog } from '../src/commands/index';
 import {
-  commandCatalog,
   commandGroupIds,
   commandGroups,
   completionShells,
@@ -30,13 +30,13 @@ import {
 import { createTheme } from '../src/terminal/theme';
 import { measureWidth } from '../src/terminal/width';
 
-const setupSource = readFileSync(new URL('../src/commands/setup.ts', import.meta.url), 'utf8');
+const setupSource = readFileSync(new URL('../src/commands/setupCommand.ts', import.meta.url), 'utf8');
 const commandMentionPattern = /storyboard ([a-z][a-z0-9-]*)(?: ([a-z][a-z0-9-]*))?/g;
 
 describe('command catalog', () => {
   it('describes every verb the CLI implements, and nothing else', () => {
     const catalogVerbs = new Set(commandCatalog.map((spec) => spec.verb));
-    const implemented = new Set([...Object.keys(commands), 'help', 'tui', 'completion']);
+    const implemented = new Set([...commands.map((command) => command.spec.verb), 'help', 'tui', 'completion']);
 
     expect([...implemented].filter((verb) => !catalogVerbs.has(verb))).toEqual([]);
     expect([...catalogVerbs].filter((verb) => !implemented.has(verb))).toEqual([]);

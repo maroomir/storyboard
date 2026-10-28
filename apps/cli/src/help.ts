@@ -1,9 +1,8 @@
+import { commandCatalog, findCommandSpec } from './commands/index';
 import {
-  commandCatalog,
   commandGroupIds,
   commandGroups,
   findCommandGroup,
-  findCommandSpec,
   findFlagSpec,
   flagCatalog,
   globalFlagNames,

@@ -2,7 +2,7 @@ import type { WorkspaceStatus } from '@storyboard/story-app';
 import { Box, Text } from 'ink';
 import React from 'react';
 
-import { describeNextStep, nextStepCommands } from '@/commands/status';
+import { describeNextStep, nextStepCommands } from '@/commands/workspaceNextStep';
 import { useTuiTheme, type TuiTheme } from './tuiTheme';
 
 const progressBarWidth: number = 24;

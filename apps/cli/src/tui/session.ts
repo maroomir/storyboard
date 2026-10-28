@@ -8,7 +8,7 @@ import {
   type StoryboardSettingDefinition,
 } from '@storyboard/story-model';
 
-import { commandCatalog, findCommandSpec } from '@/commands/catalog';
+import { commandCatalog, findCommandSpec } from '@/commands/index';
 import { PauseRequests } from '@/adapters/pauseRequests';
 import {
   runShellCommand,
@@ -18,7 +18,7 @@ import {
 import { isScreenDrawing, keepTextAndColors } from '@/terminal/controlCodes';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 import { computeCompletions, listWorkspaceMentions, type Completion } from '@/commands/completion';
-import { dispatch, type DispatchResult } from '@/commands/dispatch';
+import { CommandDispatcher, type DispatchResult } from '@/commands/commandDispatcher';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
 import { saveTuiThemeName, tuiThemeLabels, tuiThemeNames, type TuiThemeName } from './tuiTheme';
@@ -243,7 +243,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
 
   const runArgv = async (argv: readonly string[]): Promise<DispatchResult> => {
     pauseRequests = new PauseRequests(() => sink.setEscapeHint('Esc 씬 경계에서 멈춤'));
-    return dispatch(argv, {
+    return new CommandDispatcher({
       version: options.version,
       cwd: options.cwd,
       isInteractive: canReadlineShareStdinWithTheScreen,
@@ -255,7 +255,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         askText: sink.askText,
         announce: (line) => sink.append('hint', line),
       }),
-    });
+    }).dispatch(argv);
   };
 
   const spending: SpendingEntry[] = [];

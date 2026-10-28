@@ -1,11 +1,8 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-
 import {
   type AiProviderId,
-  aiTaskCatalog,
   storyboardModelCatalog,
-  storyboardSettingCatalog,
   compositionKindLabels,
   compositionKinds,
   isIgnoredSampleCardFileName,
@@ -19,20 +16,20 @@ import {
   pointOfViews,
   type ProviderModelOptions,
   type BibleSubjectKind,
+  storyboardSettingCatalog,
+  aiTaskCatalog,
 } from '@storyboard/story-model';
-
+import { commandCatalog, findCommandSpec } from './index';
 import {
   cardCategories,
-  commandCatalog,
   completionShells,
   draftCheckKinds,
-  findCommandSpec,
   findFlagSpec,
-  globalFlagNames,
   initLanguages,
   noteSources,
   type CommandSpec,
   type FlagSpec,
+  globalFlagNames,
 } from './catalog';
 import { availableProviderIds } from '@/adapters/availableProviders';
 export { completionShells, type CompletionShell } from './catalog';

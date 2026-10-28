@@ -28,7 +28,7 @@ import {
 import { ConfigFileError, createFileConfiguration } from '@storyboard/story-config';
 
 import { availableProviderIds } from '@/adapters/availableProviders';
-import { commandCatalog } from '@/commands/catalog';
+import { commandCatalog } from '@/commands/index';
 import { computeCompletions } from '@/commands/completion';
 
 const enabledKey = 'providers.claude-code.enabled';

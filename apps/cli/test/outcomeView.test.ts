@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { dispatch, type DispatchDependencies } from '../src/commands/dispatch';
+import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
 import { markOutcome } from '../src/commands/outcomeView';
 import type { TerminalFacts } from '../src/terminal/profile';
 import { createTheme } from '../src/terminal/theme';
@@ -78,7 +78,7 @@ describe('markOutcome', () => {
 
 describe('result after a run', () => {
   it('marks a finished action and names the next command at a terminal', async () => {
-    const result = await dispatch(['init', '--title', '다음 단계'], deps(atTerminal));
+    const result = await new CommandDispatcher(deps(atTerminal)).dispatch(['init', '--title', '다음 단계']);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout.startsWith('✓ ')).toBe(true);
@@ -86,8 +86,8 @@ describe('result after a run', () => {
   });
 
   it('keeps pipes and --json exactly as before', async () => {
-    const piped = await dispatch(['init', '--title', '파이프'], deps());
-    const json = await dispatch(['scene', 'list', '--json'], deps(atTerminal));
+    const piped = await new CommandDispatcher(deps()).dispatch(['init', '--title', '파이프']);
+    const json = await new CommandDispatcher(deps(atTerminal)).dispatch(['scene', 'list', '--json']);
 
     expect(piped.stdout.startsWith('✓')).toBe(false);
     expect(piped.stderr).toBe('');
@@ -96,15 +96,15 @@ describe('result after a run', () => {
   });
 
   it('suggests nothing after a command that only reads', async () => {
-    await dispatch(['init', '--title', '읽기'], deps());
-    const result = await dispatch(['scene', 'list'], deps(atTerminal));
+    await new CommandDispatcher(deps()).dispatch(['init', '--title', '읽기']);
+    const result = await new CommandDispatcher(deps(atTerminal)).dispatch(['scene', 'list']);
 
     expect(result.stderr).toBe('');
     expect(result.stdout.startsWith('✓')).toBe(false);
   });
 
   it('crosses out a failure on stderr at a terminal', async () => {
-    const result = await dispatch(['draft', 'show', 'none'], deps(atTerminal));
+    const result = await new CommandDispatcher(deps(atTerminal)).dispatch(['draft', 'show', 'none']);
 
     expect(result.exitCode).toBe(1);
     expect(`${result.stdout}${result.stderr}`).toContain('✗ ');

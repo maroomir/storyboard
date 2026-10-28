@@ -1,7 +1,10 @@
 import { dirname, join } from 'node:path';
-
-import { storyboardModelCatalog, extractErrorMessage, formatUsd } from '@storyboard/story-model';
-import type { AiProviderId } from '@storyboard/story-model';
+import {
+  storyboardModelCatalog,
+  extractErrorMessage,
+  formatUsd,
+  type AiProviderId,
+} from '@storyboard/story-model';
 import {
   promptVariantIds,
   type AiProviderRegistry,
@@ -57,8 +60,7 @@ import {
   type BaselineSample,
   type SceneDraft,
 } from '@storyboard/story-sim';
-import { type ZodSafeParseResult } from 'zod';
-
+import type { ZodSafeParseResult } from 'zod';
 import { flagBoolean, flagString } from '@/cliArguments';
 import { createSimWorkspaceFactory } from '@/adapters/simWorkspaceFactory';
 import { createCliContainer } from '@/container';

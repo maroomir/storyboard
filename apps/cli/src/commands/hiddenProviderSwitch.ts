@@ -13,11 +13,8 @@ import {
   type AiProviderId,
 } from '@storyboard/story-model';
 import type { ChatGptProvider, FetchLike, OAuthConnection } from '@storyboard/story-ai';
-
 import type { CliContainer } from '@/container';
-
-import { createChatGptProvider } from './login';
-
+import { createChatGptProvider } from '@/commands/loginProviders';
 import type { CommandOutcome } from './outcome';
 import { success } from './outcomes';
 import { failure } from '@/commands/outcomes';

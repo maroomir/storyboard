@@ -26,7 +26,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
 
 import type { ParsedArguments } from '../src/cliArguments';
-import { commands } from '../src/commands/index';
+import { commands, findCommand } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
 
 let home: string;
@@ -58,11 +58,11 @@ function container() {
 }
 
 async function run(verb: string, parsed: ParsedArguments) {
-  const handler = commands[verb];
-  if (!handler) {
+  const command = findCommand(verb);
+  if (!command) {
     throw new Error(`unknown verb: ${verb}`);
   }
-  return await handler({ container: container(), args: parsed });
+  return await command.execute({ container: container(), args: parsed });
 }
 
 beforeEach(async () => {
@@ -115,7 +115,7 @@ describe('project contract', () => {
     workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
     const announced: string[] = [];
 
-    const outcome = await commands['init']!({
+    const outcome = await findCommand('init')!.execute({
       container: askingContainer(['레벨 제로', ''], ['third-limited', 'omnibus'], announced),
       args: args(['init']),
     });
@@ -138,7 +138,7 @@ describe('project contract', () => {
     rmSync(workspace, { recursive: true, force: true });
     workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
 
-    const outcome = await commands['init']!({
+    const outcome = await findCommand('init')!.execute({
       container: askingContainer(['레벨 제로', '판타지'], [undefined], []),
       args: args(['init']),
     });
@@ -414,7 +414,7 @@ describe('card build', () => {
       },
     ]);
 
-    const outcome = await commands['card build']({ container, args: args(['card', 'build']) });
+    const outcome = await findCommand('card build')!.execute({ container, args: args(['card', 'build']) });
 
     expect(outcome.ok).toBe(true);
     expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain(
@@ -434,7 +434,7 @@ describe('card build', () => {
       },
     ]);
 
-    await commands['card build']({
+    await findCommand('card build')!.execute({
       container,
       args: args(['card', 'build'], { 'dry-run': true }),
     });
@@ -454,7 +454,7 @@ describe('card build', () => {
       },
     ]);
 
-    const outcome = await commands['card build']({ container, args: args(['card', 'build']) });
+    const outcome = await findCommand('card build')!.execute({ container, args: args(['card', 'build']) });
 
     expect(outcome.message).toContain('방송실');
     expect(existsSync(join(workspace, 'background', 'new-card-2.card'))).toBe(false);
@@ -503,7 +503,7 @@ describe('scene complete', () => {
     const container = containerProposing('01-first.card');
     const before = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
 
-    const outcome = await commands['scene complete']({
+    const outcome = await findCommand('scene complete')!.execute({
       container,
       args: args(['scene', 'complete']),
     });
@@ -858,7 +858,7 @@ describe('draft generate progress', () => {
       } as never),
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
-    await commands['draft generate']({
+    await findCommand('draft generate')!.execute({
       container: stubbed,
       args: args(['draft', 'generate'], {}, ['01-first']),
     });
@@ -895,7 +895,7 @@ describe('draft generate --all progress', () => {
       } as never),
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
-    await commands['draft generate']({
+    await findCommand('draft generate')!.execute({
       container: stubbed,
       args: args(['draft', 'generate'], { all: true }),
     });
@@ -927,7 +927,7 @@ describe('novel generate progress', () => {
       } as never),
     } as unknown as Parameters<(typeof commands)['novel generate']>[0]['container'];
 
-    await commands['novel generate']({ container: stubbed, args: args(['novel', 'generate']) });
+    await findCommand('novel generate')!.execute({ container: stubbed, args: args(['novel', 'generate']) });
 
     expect(logged).toEqual(['아웃라인: 아웃라인 생성 중…']);
   });
@@ -959,7 +959,7 @@ describe('draft generate --all pause', () => {
       } as never),
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
-    const outcome = await commands['draft generate']({
+    const outcome = await findCommand('draft generate')!.execute({
       container: stubbed,
       args: args(['draft', 'generate'], { all: true }),
     });
@@ -985,7 +985,7 @@ describe('paid run confirmation', () => {
       } as never),
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
-    const outcome = await commands['draft generate']({
+    const outcome = await findCommand('draft generate')!.execute({
       container: stubbed,
       args: args(['draft', 'generate'], { all: true }),
     });
@@ -1025,7 +1025,7 @@ describe('draft generate warnings', () => {
       configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
-    const outcome = await commands['draft generate']({
+    const outcome = await findCommand('draft generate')!.execute({
       container: stubbed,
       args: args(['draft', 'generate'], {}, ['01-first']),
     });
@@ -1064,7 +1064,7 @@ describe('draft generate after a failed review', () => {
       configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
-    const outcome = await commands['draft generate']({
+    const outcome = await findCommand('draft generate')!.execute({
       container: stubbed,
       args: args(['draft', 'generate'], {}, ['01-first']),
     });
@@ -1474,7 +1474,7 @@ describe('spend that belongs to no scene', () => {
       usageSink: { record: async (_root, usage) => void records.push(usage) },
     });
 
-    await commands['novel generate']({ container: recording, args: args(['novel', 'generate']) });
+    await findCommand('novel generate')!.execute({ container: recording, args: args(['novel', 'generate']) });
 
     const outlineRecords = records.filter((record) =>
       ['outlineSynopsis', 'chapterPlan'].includes(record.taskName),
@@ -1538,7 +1538,7 @@ describe('novel generate again', () => {
           }),
     });
 
-    await commands['novel generate']({ container: again, args: args(['novel', 'generate']) });
+    await findCommand('novel generate')!.execute({ container: again, args: args(['novel', 'generate']) });
 
     return { tasks: records.map((record) => record.taskName), questions };
   }
@@ -1646,7 +1646,7 @@ describe('novel generate on an empty work', () => {
       version: '0.0.0',
       usageSink: { record: async (_root, usage) => void records.push(usage) },
     });
-    const outcome = await commands['novel generate']({
+    const outcome = await findCommand('novel generate')!.execute({
       container: recording,
       args: args(['novel', 'generate']),
     });

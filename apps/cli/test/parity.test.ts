@@ -74,7 +74,7 @@ describe('extension/CLI parity', () => {
 
   it('points every mapping at a verb the CLI actually implements', () => {
     for (const verb of Object.values(commandToVerb)) {
-      expect(Object.keys(commands)).toContain(verb);
+      expect(commands.map((command) => command.spec.verb)).toContain(verb);
     }
   });
 

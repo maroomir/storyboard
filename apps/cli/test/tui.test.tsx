@@ -12,7 +12,7 @@ import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
 import { NodeUri, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
-import { dispatch } from '../src/commands/dispatch';
+import { CommandDispatcher } from '../src/commands/commandDispatcher';
 import { canShowWordmark, storyboardWordmark } from '../src/terminal/banner';
 import { measureWidth } from '../src/terminal/width';
 import { Banner } from '../src/tui/banner';
@@ -130,12 +130,12 @@ describe('readWorkspaceView', () => {
   };
 
   it('names the app that holds the run lock of the workspace', async () => {
-    await dispatch(['init', '--title', '잠금'], {
+    await new CommandDispatcher({
       version: '0',
       cwd,
       isInteractive: false,
       createLogger: () => silentLogger,
-    });
+    }).dispatch(['init', '--title', '잠금']);
     expect((await readWorkspaceView(cwd, '0')).lockHolder).toBeUndefined();
 
     const acquired = await acquireWorkspaceRunLock({
@@ -149,12 +149,12 @@ describe('readWorkspaceView', () => {
   });
 
   it('reads the work status a home screen shows', async () => {
-    await dispatch(['init', '--title', '현황'], {
+    await new CommandDispatcher({
       version: '0',
       cwd,
       isInteractive: false,
       createLogger: () => silentLogger,
-    });
+    }).dispatch(['init', '--title', '현황']);
     const view = await readWorkspaceView(cwd, '0');
 
     expect(view.status?.project.name).toBe('현황');
@@ -254,7 +254,7 @@ describe('draft reader', () => {
   });
 
   async function writeReadableDraft(): Promise<void> {
-    await dispatch(['init', '--title', '읽기'], {
+    await new CommandDispatcher({
       version: '0',
       cwd,
       isInteractive: false,
@@ -264,7 +264,7 @@ describe('draft reader', () => {
         error: () => undefined,
         show: () => undefined,
       }),
-    });
+    }).dispatch(['init', '--title', '읽기']);
     mkdirSync(join(cwd, 'draft'), { recursive: true });
     writeFileSync(
       join(cwd, 'draft', '01-a.md'),
