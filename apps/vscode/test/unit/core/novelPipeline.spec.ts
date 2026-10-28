@@ -54,8 +54,6 @@ const generateOutlineCharactersMock = vi.fn(async () => [{ id: "hero", name: "ì£
 vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
 }))
-vi.mock("../../../../../packages/story-engine/src/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
-vi.mock("../../../../../packages/story-engine/src/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
 vi.mock("@storyboard/story-model", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   assembleManuscript: (): unknown => ({

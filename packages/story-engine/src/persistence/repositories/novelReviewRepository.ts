@@ -14,20 +14,15 @@ import type {
   INovelReviewRepository,
   NovelReviewSource,
 } from '#engine/application/novel/novelPipeline';
-import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
+import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
 export class NovelReviewRepository implements INovelReviewRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
   public async loadReviewSource(workspaceRoot: StoryUri): Promise<NovelReviewSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const draftsByOrder: Map<number, ManuscriptDraftEntry> = await collectDraftsByOrder(
+    const draftsByOrder: Map<number, ManuscriptDraftEntry> = await new DraftRepository(
       this.fileSystem,
-      paths,
-      this.fileSystem,
-      {
-        warn: (): void => undefined,
-      },
-    );
+    ).collectByOrder(paths, { warn: (): void => undefined });
     const canonFactLines: string[] = await this.loadCanonFactLines(paths.bibleCanon);
     const chapterSummaries: ChapterSummary[] = await this.loadFreshChapterSummaries(
       paths.chapterSummaries,

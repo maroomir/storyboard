@@ -13,7 +13,7 @@ import type {
   ProjectSetting,
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
-import { loadNarratorCards } from '#engine/persistence/narratorCards';
+import { NarratorCardRepository } from '#engine/persistence/repositories/narratorCardRepository';
 
 export interface ChapterNarrationDefaults {
   readonly narrator?: string;
@@ -63,6 +63,8 @@ export async function resolveSceneNarration(
     ...(scene.frontmatter.povCharacter === undefined
       ? {}
       : { focalFallback: scene.frontmatter.povCharacter }),
-    ...(referencesNarratorCard ? { narrators: await loadNarratorCards(paths, fileSystem) } : {}),
+    ...(referencesNarratorCard
+      ? { narrators: await new NarratorCardRepository(fileSystem).list(paths.workspaceRoot) }
+      : {}),
   });
 }

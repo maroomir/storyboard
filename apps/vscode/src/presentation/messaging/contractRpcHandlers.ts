@@ -20,7 +20,7 @@ import {
 } from '@storyboard/story-model';
 import {
   buildCompositionPreset,
-  loadNarratorCards,
+  NarratorCardRepository,
   type CompositionPreset,
   ProjectRepository,
 } from '@storyboard/story-engine';
@@ -54,10 +54,9 @@ async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
 async function readNarratorSummaries(
   root: StoryUri,
 ): Promise<{ id: string; name: string; summary: string }[]> {
-  const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
-    getStoryboardProjectPaths(root),
+  const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
     vscodeFileSystem,
-  );
+  ).list(root);
 
   return [...narrators.values()].map((card) => ({
     id: card.id,

@@ -2,7 +2,7 @@ import type { DisposableHandle, RelationGraphInitialData } from '@storyboard/sto
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { loadRelationListCharacters } from '@storyboard/story-engine';
+import { CardCollectRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
@@ -133,7 +133,7 @@ async function createRelationGraphInitialData(): Promise<RelationGraphInitialDat
   return {
     title: 'Character Relations',
     characters: storyboardRoot
-      ? await loadRelationListCharacters(vscodeFileSystem, storyboardRoot)
+      ? await new CardCollectRepository(vscodeFileSystem).listRelationCharacters(storyboardRoot)
       : [],
     isStoryboardProject: storyboardRoot !== undefined,
   };
@@ -146,5 +146,5 @@ async function loadRelationListCharactersForRpc(): Promise<RelationListCharacter
     return [];
   }
 
-  return loadRelationListCharacters(vscodeFileSystem, storyboardRoot);
+  return new CardCollectRepository(vscodeFileSystem).listRelationCharacters(storyboardRoot);
 }

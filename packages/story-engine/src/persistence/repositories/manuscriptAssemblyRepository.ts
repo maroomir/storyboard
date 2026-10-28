@@ -15,7 +15,7 @@ import type {
   StoryBible,
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
-import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
+import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
 import type {
   IChapterSummaryRepository,
   IManuscriptAssemblyRepository,
@@ -67,10 +67,8 @@ export class ManuscriptAssemblyRepository
     const [project, plan, draftsByOrder] = await Promise.all([
       new ProjectRepository(this.fileSystem).read(paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
-      collectDraftsByOrder(
-        this.fileSystem,
+      new DraftRepository(this.fileSystem).collectByOrder(
         paths,
-        this.fileSystem,
         logger ?? { warn: (): void => undefined },
       ),
     ]);
@@ -86,7 +84,7 @@ export class ManuscriptAssemblyRepository
     const [project, plan, draftsByOrder, canonFactLines, chapterSummaries] = await Promise.all([
       new ProjectRepository(this.fileSystem).read(paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
-      collectDraftsByOrder(this.fileSystem, paths, this.fileSystem, logger),
+      new DraftRepository(this.fileSystem).collectByOrder(paths, logger),
       this.loadCanonFactLines(paths.bibleCanon),
       this.loadFreshChapterSummaries(workspaceRoot),
     ]);

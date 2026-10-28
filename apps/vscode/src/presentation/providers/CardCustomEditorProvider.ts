@@ -17,7 +17,6 @@ import {
   serializeWorkspaceCard,
   describeNarration,
   applyCardCollectProposals,
-  getStoryboardProjectPaths,
   sceneStructureTextFields,
   sceneStructureListFields,
 } from '@storyboard/story-model';
@@ -35,7 +34,7 @@ import type {
   SceneStructureProposal,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { loadCharacterRoster, loadNarratorCards } from '@storyboard/story-engine';
+import { CardCollectRepository, NarratorCardRepository } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import {
   createWebviewBridge,
@@ -74,7 +73,7 @@ interface CardEditorInitialData {
   readonly rawText: string;
   readonly card?: WorkspaceCard;
   readonly imageUri?: string;
-  readonly characterRoster?: Awaited<ReturnType<typeof loadCharacterRoster>>;
+  readonly characterRoster?: readonly CharacterRosterEntry[];
   readonly narratorRoster?: readonly { id: string; name: string; summary: string }[];
   readonly error?: string;
 }
@@ -282,10 +281,9 @@ function createCardEditorHandlers(
 }
 
 async function loadNarratorRoster(workspaceRoot: vscode.Uri): Promise<NarratorSummary[]> {
-  const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
-    getStoryboardProjectPaths(workspaceRoot),
+  const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
     vscodeFileSystem,
-  );
+  ).list(workspaceRoot);
 
   return [...narrators.values()].map((card) => ({
     id: card.id,
@@ -308,9 +306,9 @@ async function createInitialData(
 
   try {
     const card: WorkspaceCard = await loadEditorCard(document);
-    const characterRoster: CharacterRosterEntry[] | undefined =
+    const characterRoster: readonly CharacterRosterEntry[] | undefined =
       card.type === 'character'
-        ? await loadCharacterRoster(vscodeFileSystem, workspaceRoot)
+        ? await new CardCollectRepository(vscodeFileSystem).loadCharacterRoster(workspaceRoot)
         : undefined;
     const narratorRoster: NarratorSummary[] | undefined =
       card.type === 'scene' ? await loadNarratorRoster(workspaceRoot) : undefined;

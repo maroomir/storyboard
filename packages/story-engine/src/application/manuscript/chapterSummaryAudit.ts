@@ -9,7 +9,7 @@ import {
   parseChapterSummariesMarkdown,
   type ChapterSummaryAudit,
 } from '@storyboard/story-model';
-import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
+import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
 import type {
   AssembledManuscript,
   ChapterSummary,
@@ -108,7 +108,7 @@ export async function collectCurrentChapterHashes(
   const { fileSystem, paths } = request;
   const [plan, draftsByOrder] = await Promise.all([
     readChapterPlanFile(paths.outlineChapters, fileSystem),
-    collectDraftsByOrder(fileSystem, paths, fileSystem, { warn: (): void => undefined }),
+    new DraftRepository(fileSystem).collectByOrder(paths, { warn: (): void => undefined }),
   ]);
   const manuscript: AssembledManuscript = assembleManuscript({ draftsByOrder, plan, projectName });
 
