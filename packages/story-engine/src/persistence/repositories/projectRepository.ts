@@ -1,7 +1,7 @@
 import type { StoryUri, StoryboardProject } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IProjectRepository } from '#engine/application/drafts/draftRepositories';
-import { parseProjectJson } from '#engine/persistence/projectJson';
+import { parseProjectJson, serializeProjectJson } from '#engine/persistence/projectJson';
 
 export class ProjectRepository implements IProjectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
@@ -9,5 +9,9 @@ export class ProjectRepository implements IProjectRepository {
   public async read(uri: StoryUri): Promise<StoryboardProject> {
     const bytes: Uint8Array = await this.fileSystem.readFile(uri);
     return parseProjectJson(new TextDecoder().decode(bytes));
+  }
+
+  public async write(uri: StoryUri, project: StoryboardProject): Promise<void> {
+    await this.fileSystem.writeFile(uri, new TextEncoder().encode(serializeProjectJson(project)));
   }
 }

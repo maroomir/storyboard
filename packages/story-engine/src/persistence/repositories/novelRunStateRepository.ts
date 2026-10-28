@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { StoryUri, StoryboardProject, StoryboardProjectPaths } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { INovelRunStateRepository } from '#engine/application/novel/novelPipeline';
@@ -7,7 +8,6 @@ import {
   type NovelRunState,
   writeNovelRunState,
 } from '@storyboard/story-model';
-import { readProjectJson } from '#engine/persistence/projectJson';
 
 export class NovelRunStateRepository implements INovelRunStateRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
@@ -26,8 +26,7 @@ export class NovelRunStateRepository implements INovelRunStateRepository {
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
-    return await readProjectJson(
-      this.fileSystem,
+    return await new ProjectRepository(this.fileSystem).read(
       getStoryboardProjectPaths(workspaceRoot).projectJson,
     );
   }

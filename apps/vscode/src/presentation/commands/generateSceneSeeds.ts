@@ -1,3 +1,4 @@
+import { ProjectRepository } from '@storyboard/story-engine';
 import type {
   StoryUri,
   ReadWriteFileSystem,
@@ -18,7 +19,6 @@ import {
   resolveScenePrefixDigitCount,
 } from '@storyboard/story-model';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import { readProjectJson } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
@@ -58,7 +58,9 @@ async function runGenerateSceneSeeds(configBridge: ConfigBridge): Promise<void> 
     return;
   }
 
-  const project: StoryboardProject = await readProjectJson(vscodeFileSystem, paths.projectJson);
+  const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
+    paths.projectJson,
+  );
   const digitCount: number = resolveScenePrefixDigitCount(
     project.editor.scenePrefixDigits,
     configBridge.inspectScenePrefixDigits(),

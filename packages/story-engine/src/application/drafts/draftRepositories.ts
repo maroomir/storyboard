@@ -10,6 +10,7 @@ import type {
 } from '@storyboard/story-model';
 export interface IProjectRepository {
   read(uri: StoryUri): Promise<StoryboardProject>;
+  write(uri: StoryUri, project: StoryboardProject): Promise<void>;
 }
 
 export interface ISceneRepository {

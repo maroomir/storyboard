@@ -6,7 +6,7 @@ import type {
   IStoryboardLogger,
   StoryStateAuditRequest,
 } from '@storyboard/story-engine';
-import { auditStoryMemory, readProjectJson, resealStoryMemory } from '@storyboard/story-engine';
+import { auditStoryMemory, resealStoryMemory, ProjectRepository } from '@storyboard/story-engine';
 import {
   getStoryboardProjectPaths,
   formatSceneOrderRanges,
@@ -46,7 +46,9 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
 
   try {
-    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+      paths.projectJson,
+    );
     const request: StoryStateAuditRequest = {
       fileSystem,
       paths,

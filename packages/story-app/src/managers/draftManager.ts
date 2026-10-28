@@ -45,7 +45,7 @@ import type {
   SaveDraftEditResult,
   SaveDraftEditUseCase,
 } from '@storyboard/story-engine';
-import { readProjectJson, resealStoryMemory } from '@storyboard/story-engine';
+import { resealStoryMemory, ProjectRepository } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import {
   draftPath,
@@ -202,8 +202,7 @@ export class DraftManager {
     sceneOrders?: readonly number[],
   ): Promise<readonly number[]> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const project: StoryboardProject = await readProjectJson(
-      this.deps.fileSystem,
+    const project: StoryboardProject = await new ProjectRepository(this.deps.fileSystem).read(
       paths.projectJson,
     );
 

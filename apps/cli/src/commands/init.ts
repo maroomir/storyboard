@@ -11,9 +11,9 @@ import {
   createWorkspace,
   ensureWorkspaceGitignore,
   mergeProjectSetting,
-  readProjectJson,
   sealStoryMemory,
   writeWorkspaceAgentGuidesIfMissing,
+  ProjectRepository,
 } from '@storyboard/story-engine';
 import {
   compositionCatalog,
@@ -33,10 +33,9 @@ async function sealWorkspaceStoryState(
   container: CliContainer,
   paths: ReturnType<typeof getStoryboardProjectPaths>,
 ): Promise<readonly number[]> {
-  const project: StoryboardProject | undefined = await readProjectJson(
-    container.fileSystem,
-    paths.projectJson,
-  ).catch(() => undefined);
+  const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
+    .read(paths.projectJson)
+    .catch(() => undefined);
 
   if (project === undefined) {
     return [];

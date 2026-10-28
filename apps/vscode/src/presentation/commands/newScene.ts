@@ -1,3 +1,4 @@
+import { ProjectRepository } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
@@ -18,7 +19,6 @@ import {
   hasStoryboardProject,
   uriExists,
 } from '@/infrastructure/vscode/workspace';
-import { readProjectJson } from '@storyboard/story-engine';
 import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
@@ -108,7 +108,9 @@ async function createNewScene(configBridge: ConfigBridge): Promise<void> {
     return;
   }
 
-  const project: StoryboardProject = await readProjectJson(vscodeFileSystem, paths.projectJson);
+  const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
+    paths.projectJson,
+  );
   const digitCount: number = resolveScenePrefixDigitCount(
     project.editor.scenePrefixDigits,
     configBridge.inspectScenePrefixDigits(),

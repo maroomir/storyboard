@@ -22,9 +22,9 @@ import {
   buildCompositionPreset,
   loadNarratorCards,
   type CompositionPreset,
+  ProjectRepository,
 } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { readProjectJson, writeProjectJson } from '@storyboard/story-engine';
 
 type ProjectContractSnapshot = StoryboardResponsePayload<'project.readContract'>;
 
@@ -45,8 +45,7 @@ async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
     return notAProjectSnapshot();
   }
 
-  const project: StoryboardProject = await readProjectJson(
-    vscodeFileSystem,
+  const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
     getStoryboardProjectPaths(root).projectJson,
   );
   return buildSnapshot(project, await readNarratorSummaries(root));
@@ -81,7 +80,9 @@ async function updateContract(
   }
 
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
-  const project: StoryboardProject = await readProjectJson(vscodeFileSystem, paths.projectJson);
+  const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
+    paths.projectJson,
+  );
   const preset: CompositionPreset | undefined =
     payload.composition == null
       ? undefined
@@ -98,7 +99,7 @@ async function updateContract(
     setting: mergeContractSetting(project.setting, payload, preset),
   };
 
-  await writeProjectJson(vscodeFileSystem, paths.projectJson, nextProject);
+  await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, nextProject);
   await writePresetNarrators(paths.narratorDirectory, preset?.narratorCards ?? []);
 
   return buildSnapshot(nextProject, await readNarratorSummaries(root));

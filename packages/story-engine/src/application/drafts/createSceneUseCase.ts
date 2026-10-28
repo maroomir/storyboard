@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
@@ -11,7 +12,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { readProjectJson } from '#engine/persistence/projectJson';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface CreateSceneRequest {
@@ -36,7 +36,9 @@ export class CreateSceneUseCase implements IUseCase<CreateSceneRequest, CreateSc
   private async create(request: CreateSceneRequest): Promise<CreateSceneResult> {
     const { fileSystem } = this.host;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+      paths.projectJson,
+    );
     const existing: readonly string[] = await new WorkspaceFiles(fileSystem).listNames(
       paths.sceneDirectory,
     );

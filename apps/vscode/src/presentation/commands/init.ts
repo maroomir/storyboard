@@ -3,6 +3,7 @@ import {
   createStoryboardDirectories,
   ensureWorkspaceGitignore,
   writeWorkspaceAgentGuidesIfMissing,
+  ProjectRepository,
 } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
@@ -19,7 +20,7 @@ import {
   getTargetWorkspaceFolder,
   uriExists,
 } from '@/infrastructure/vscode/workspace';
-import { createDefaultProjectJson, writeProjectJson } from '@storyboard/story-engine';
+import { createDefaultProjectJson } from '@storyboard/story-engine';
 
 const initCommand: string = 'storyboard.init';
 
@@ -54,7 +55,7 @@ async function initializeStoryboardProject(
     const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
 
     await createStoryboardDirectories(vscodeFileSystem, paths);
-    await writeProjectJson(vscodeFileSystem, paths.projectJson, project);
+    await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, project);
     await writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
     await writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
     await writeFileIfMissing(paths.sampleScene, createSampleScene());

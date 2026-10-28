@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
   assembleManuscript,
   computeDraftBodyHash,
@@ -9,7 +10,6 @@ import {
   type ChapterSummaryAudit,
 } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
-import { readProjectJson } from '#engine/persistence/projectJson';
 import type {
   AssembledManuscript,
   ChapterSummary,
@@ -64,7 +64,9 @@ export async function auditChapterMemory(
       return idle;
     }
 
-    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+      paths.projectJson,
+    );
     const audit: ChapterSummaryAudit = auditChapterSummaries(
       summaries,
       await collectCurrentChapterHashes(request, project.name),

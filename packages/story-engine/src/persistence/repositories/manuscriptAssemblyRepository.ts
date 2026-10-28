@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
   joinStoryPath,
   type StoryUri,
@@ -15,7 +16,6 @@ import type {
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
-import { readProjectJson } from '#engine/persistence/projectJson';
 import type {
   IChapterSummaryRepository,
   IManuscriptAssemblyRepository,
@@ -48,7 +48,7 @@ export class ManuscriptAssemblyRepository
   public async loadVolume(workspaceRoot: StoryUri): Promise<ManuscriptExportSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, volumeBytes] = await Promise.all([
-      readProjectJson(this.fileSystem, paths.projectJson),
+      new ProjectRepository(this.fileSystem).read(paths.projectJson),
       this.fileSystem.readFile(paths.manuscriptVolume),
     ]);
 
@@ -65,7 +65,7 @@ export class ManuscriptAssemblyRepository
   ): Promise<ManuscriptAssemblySource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder] = await Promise.all([
-      readProjectJson(this.fileSystem, paths.projectJson),
+      new ProjectRepository(this.fileSystem).read(paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
       collectDraftsByOrder(
         this.fileSystem,
@@ -84,7 +84,7 @@ export class ManuscriptAssemblyRepository
   ): Promise<ManuscriptReviewSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder, canonFactLines, chapterSummaries] = await Promise.all([
-      readProjectJson(this.fileSystem, paths.projectJson),
+      new ProjectRepository(this.fileSystem).read(paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
       collectDraftsByOrder(this.fileSystem, paths, this.fileSystem, logger),
       this.loadCanonFactLines(paths.bibleCanon),

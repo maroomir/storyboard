@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
@@ -12,7 +13,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { readProjectJson } from '#engine/persistence/projectJson';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface SeedScenesRequest {
@@ -48,7 +48,9 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
       return { ok: false, kind: 'missing_outline' };
     }
 
-    const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+      paths.projectJson,
+    );
     const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
     const seeds: GeneratedSceneSeed[] = buildSceneSeeds(
       plan,

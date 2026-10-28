@@ -1,3 +1,4 @@
+import { ProjectRepository } from '@storyboard/story-engine';
 import type {
   StoryUri,
   ReadWriteFileSystem,
@@ -21,7 +22,6 @@ import {
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import { readProjectJson } from '@storyboard/story-engine';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 const canonDiffCommand: string = 'storyboard.bible.canonDiff';
 
@@ -56,8 +56,7 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
     const { pending, reportUri } = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: 'Canon diff 정리 중…' },
       async () => {
-        const project: StoryboardProject = await readProjectJson(
-          vscodeFileSystem,
+        const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
           paths.projectJson,
         );
         const canon: StoryBible = (await uriExists(paths.bibleCanon))

@@ -1,3 +1,4 @@
+import { ProjectRepository } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type * as vscode from 'vscode';
 
@@ -28,7 +29,6 @@ import {
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { readProjectJson } from '@storyboard/story-engine';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,
@@ -242,7 +242,9 @@ async function loadSceneContext(
       sceneContext,
       sceneContextFileSystem,
     );
-    const project: StoryboardProject = await readProjectJson(vscodeFileSystem, paths.projectJson);
+    const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
+      paths.projectJson,
+    );
 
     return { sceneContext, bibleFacts: narrative.bibleFacts, format: project.format };
   } catch {

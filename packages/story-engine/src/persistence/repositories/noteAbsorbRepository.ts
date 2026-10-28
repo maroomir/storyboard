@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
   extractInlineSceneSummary,
   joinStoryPath,
@@ -36,7 +37,6 @@ import type {
   StoryboardProjectPaths,
   VoiceSeeds,
 } from '@storyboard/story-model';
-import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ZodSafeParseResult } from 'zod';
 
@@ -205,15 +205,13 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
-    return await readProjectJson(
-      this.fileSystem,
+    return await new ProjectRepository(this.fileSystem).read(
       getStoryboardProjectPaths(workspaceRoot).projectJson,
     );
   }
 
   public async saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void> {
-    await writeProjectJson(
-      this.fileSystem,
+    await new ProjectRepository(this.fileSystem).write(
       getStoryboardProjectPaths(workspaceRoot).projectJson,
       project,
     );

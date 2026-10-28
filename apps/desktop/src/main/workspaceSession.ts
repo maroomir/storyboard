@@ -5,12 +5,12 @@ import { join } from 'node:path';
 import {
   buildCompositionPreset,
   createWorkspace,
-  readProjectJson,
   readWorkspaceRunLock,
   type AugmentDraftResult,
   type CompositionPreset,
   type RenameSceneResult,
   type SaveDraftEditResult,
+  ProjectRepository,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
@@ -27,12 +27,7 @@ import {
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
 import { NodeFileSystem } from '@storyboard/story-node';
 
-import type {
-  DraftDocument,
-  RunSnapshot,
-  SceneNotes,
-  WorkspaceOverview,
-} from '@/shared/dto';
+import type { DraftDocument, RunSnapshot, SceneNotes, WorkspaceOverview } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 import type { DesktopErrorCode, WorkspaceCreateRequest } from '@/shared/ipcContract';
 
@@ -60,7 +55,9 @@ export interface WorkspaceSessionOptions {
 
 export function workspaceFolderName(title: string): string {
   const cleaned: string = [...title]
-    .map((character) => (character.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(character) ? ' ' : character))
+    .map((character) =>
+      character.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(character) ? ' ' : character,
+    )
     .join('')
     .replace(/\s+/g, ' ')
     .trim()
@@ -73,7 +70,10 @@ export function contractSettingFrom(request: WorkspaceCreateRequest): {
   readonly setting: ProjectSetting;
   readonly preset: ReturnType<typeof buildCompositionPreset>;
 } {
-  const preset: CompositionPreset = buildCompositionPreset({ composition: request.composition, pov: request.pov });
+  const preset: CompositionPreset = buildCompositionPreset({
+    composition: request.composition,
+    pov: request.pov,
+  });
 
   return {
     preset,
@@ -121,9 +121,14 @@ export class WorkspaceSession {
     return existsSync(join(path, STORYBOARD_RELATIVE_PATHS.projectJson));
   }
 
-  public static async open(options: WorkspaceSessionOptions): Promise<ServiceResult<WorkspaceSession>> {
+  public static async open(
+    options: WorkspaceSessionOptions,
+  ): Promise<ServiceResult<WorkspaceSession>> {
     if (!WorkspaceSession.isWorkspace(options.workspacePath)) {
-      return fail('not-a-workspace', options.translate('error.notAWorkspace', { path: options.workspacePath }));
+      return fail(
+        'not-a-workspace',
+        options.translate('error.notAWorkspace', { path: options.workspacePath }),
+      );
     }
 
     const container: DesktopContainer = createDesktopContainer({
@@ -137,7 +142,9 @@ export class WorkspaceSession {
     for (const problem of resources.problems) {
       options.logger.warn(problem.message);
     }
-    const snapshots: SnapshotService = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
+    const snapshots: SnapshotService = new SnapshotService(
+      await locateSnapshotRepository(options.workspacePath),
+    );
     const takeSnapshot = async (message: string): Promise<void> => {
       try {
         await snapshots.snapshot(message);
@@ -151,8 +158,10 @@ export class WorkspaceSession {
       snapshot: takeSnapshot,
       onChange: options.onRunChanged,
     });
-    const bible: BibleService = new BibleService(container.fileSystem, container.workspaceRoot, (message) =>
-      options.translate('error.invalidCard', { message }),
+    const bible: BibleService = new BibleService(
+      container.fileSystem,
+      container.workspaceRoot,
+      (message) => options.translate('error.invalidCard', { message }),
     );
     const session: WorkspaceSession = new WorkspaceSession(
       options,
@@ -173,7 +182,10 @@ export class WorkspaceSession {
     options: WorkspaceSessionOptions & { readonly request: WorkspaceCreateRequest },
   ): Promise<ServiceResult<WorkspaceSession>> {
     if (existsSync(options.workspacePath)) {
-      return fail('already-exists', options.translate('error.alreadyExists', { path: options.workspacePath }));
+      return fail(
+        'already-exists',
+        options.translate('error.alreadyExists', { path: options.workspacePath }),
+      );
     }
 
     await mkdir(options.workspacePath, { recursive: true });
@@ -187,8 +199,12 @@ export class WorkspaceSession {
       narratorCards: preset.narratorCards,
     });
 
-    const snapshots: SnapshotService = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
-    await snapshots.snapshot(options.translate('snapshot.workspaceCreated', { title: options.request.title }));
+    const snapshots: SnapshotService = new SnapshotService(
+      await locateSnapshotRepository(options.workspacePath),
+    );
+    await snapshots.snapshot(
+      options.translate('snapshot.workspaceCreated', { title: options.request.title }),
+    );
 
     return await WorkspaceSession.open(options);
   }
@@ -199,7 +215,7 @@ export class WorkspaceSession {
 
   public async title(): Promise<string> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    return (await readProjectJson(this.container.fileSystem, paths.projectJson)).name;
+    return (await new ProjectRepository(this.container.fileSystem).read(paths.projectJson)).name;
   }
 
   public async overview(): Promise<WorkspaceOverview> {
@@ -272,7 +288,10 @@ export class WorkspaceSession {
     }
   }
 
-  public async renameScene(from: string, to: string): Promise<ServiceResult<{ readonly stem: string }>> {
+  public async renameScene(
+    from: string,
+    to: string,
+  ): Promise<ServiceResult<{ readonly stem: string }>> {
     await this.endDraftSession(from);
 
     const title: string = await this.sceneTitle(from);
@@ -286,7 +305,11 @@ export class WorkspaceSession {
       return fail(sceneRenameErrorCodes[sceneRename.kind], sceneRename.message);
     }
 
-    await this.snapshot('snapshot.sceneRenamed', { title, from: sceneRename.fromStem, to: sceneRename.toStem });
+    await this.snapshot('snapshot.sceneRenamed', {
+      title,
+      from: sceneRename.fromStem,
+      to: sceneRename.toStem,
+    });
     return succeed({ stem: sceneRename.toStem });
   }
 
