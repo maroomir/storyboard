@@ -28,7 +28,6 @@ export * from './application/project/bibleRepositories';
 export * from './application/manuscript/manuscriptRepositories';
 export * from './application/cards/cardRepositories';
 export * from './application/drafts/generateDraftUseCase';
-export * from './application/drafts/postGenerationScheduling';
 export * from './application/drafts/generateSceneBeatsUseCase';
 export * from './application/drafts/generateStoryStateUseCase';
 export * from './application/drafts/resolveSceneBeats';

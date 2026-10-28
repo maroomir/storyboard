@@ -8,11 +8,14 @@ import type {
   BackgroundCard,
   AiProviderId,
   AiTaskName,
+  CharacterCard,
   StoryState,
   Draft,
 } from '@storyboard/story-model';
 import {
   AiProviderError,
+  backgroundCardPath,
+  characterCardPath,
   draftHistorySceneDirectory,
   joinUri,
   computeDraftBodyHash,
@@ -33,6 +36,8 @@ import {
   SceneDialogueStore,
 } from '#engine/persistence/cardMemoryStores';
 import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
+import { bibleCandidateFilePath } from '#engine/persistence/bibleCacheWorkspace';
+import { cardCandidateFilePath } from '#engine/persistence/cardCacheWorkspace';
 import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/scene/sceneGenerationPipeline';
 import {
@@ -53,7 +58,6 @@ import {
   type SceneGenerationInputsResult,
 } from './sceneGenerationInputs';
 import type { IUseCase } from '#engine/application/useCase';
-import { schedulePostGenerationUpdates } from './postGenerationScheduling';
 import { updateStoryStateAfterGeneration } from './updateStoryState';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 
@@ -262,7 +266,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     await updateStoryStateAfterGeneration(inputs, options, aiService, pipelineResult.draftBody);
 
     if (this.host.configBridge.isUpdateCardsAfterGenerateEnabled()) {
-      schedulePostGenerationUpdates(inputs, options, aiService, pipelineResult);
+      this.schedulePostGenerationUpdates(inputs, options, aiService, pipelineResult);
     }
 
     return {
@@ -271,6 +275,76 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       draftUri,
       warnings: [...inputs.warnings, ...pipelineResult.warnings],
     };
+  }
+
+  private schedulePostGenerationUpdates(
+    inputs: SceneGenerationInputs,
+    options: GenerateDraftWorkflowOptions,
+    aiService: StoryboardAiService,
+    pipelineResult: RunSceneGenerationPipelineResult,
+  ): void {
+    const { workspaceFolder, paths, scene, context } = inputs;
+    const updates: PostGenerationUpdateManager | undefined =
+      this.collaborators.postGenerationUpdates;
+
+    if (!updates) {
+      return;
+    }
+
+    const { fileSystem, logger } = this.host;
+    const detectedCharacterCards: CharacterCard[] = context.characters.filter((card) =>
+      pipelineResult.detectedCharacters.includes(card.name),
+    );
+
+    updates.scheduleCharacterTraits({
+      queueKey: workspaceFolder.uri.toString(),
+      sceneStem: scene.stem,
+      draftBody: pipelineResult.draftBody,
+      detectedCharacterCards,
+      aiService,
+      fileSystem,
+      resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
+      logger,
+      onComplete: options.onTraitsUpdateComplete,
+    });
+
+    updates.scheduleBibleCandidates({
+      queueKey: `${workspaceFolder.uri.toString()}#bible`,
+      sceneStem: scene.stem,
+      draftBody: pipelineResult.draftBody,
+      detectedCharacterCards,
+      aiService,
+      fileSystem,
+      ensureDirectory: () => fileSystem.createDirectory(paths.bibleCacheDirectory),
+      resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
+      logger,
+    });
+
+    updates.scheduleCardCandidates({
+      queueKey: `${workspaceFolder.uri.toString()}#cards`,
+      sceneStem: scene.stem,
+      draftBody: pipelineResult.draftBody,
+      detectedCharacterCards,
+      characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
+      aiService,
+      verify: this.host.configBridge.isVerifyCardCandidatesEnabled(),
+      fileSystem,
+      ensureDirectory: () => fileSystem.createDirectory(paths.cardCacheDirectory),
+      resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),
+      logger,
+    });
+
+    if (context.background) {
+      updates.scheduleBackgroundCharacters({
+        queueKey: `${workspaceFolder.uri.toString()}#background`,
+        backgroundId: context.background.id,
+        detectedCharacterCards,
+        fileSystem,
+        resolveBackgroundCardUri: (backgroundId) =>
+          backgroundCardPath(workspaceFolder.uri, backgroundId),
+        logger,
+      });
+    }
   }
 
   private async runAndPersistDraft(
