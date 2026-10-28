@@ -18,7 +18,8 @@ import {
 import { characterSpeechToOthers } from '#engine/pipeline/scene/characterVoices';
 import { castNameOf, type SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
-import { adoptSkeleton, buildSkeletonContext } from '#engine/pipeline/scene/skeletonDrafting';
+import { buildSkeletonContext } from '#engine/pipeline/scene/skeletonChecks';
+import { SkeletonDrafter } from '#engine/pipeline/scene/skeletonDrafter';
 import { DraftSkeletonStage } from '#engine/pipeline/scene/stages/draftSkeleton';
 import {
   assertNotCancelled,
@@ -222,6 +223,6 @@ export class ActBeatsStage implements ISceneStage {
       assertNotCancelled(run.shouldCancel);
     }
 
-    adoptSkeleton(run, assembleActedSkeleton(beats, passages));
+    new SkeletonDrafter(run).adopt(assembleActedSkeleton(beats, passages));
   }
 }
