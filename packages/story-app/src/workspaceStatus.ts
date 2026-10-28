@@ -1,5 +1,5 @@
 import {
-  loadNarratorCards,
+  NarratorCardRepository,
   manuscriptReviewFileName,
   type IFileSystem,
 } from '@storyboard/story-engine';
@@ -128,7 +128,7 @@ export async function describeWorkspaceStatus(
     cards: {
       characters: (await cards.list(workspaceRoot, 'character')).length,
       backgrounds: (await cards.list(workspaceRoot, 'background')).length,
-      narrators: (await loadNarratorCards(paths, fileSystem)).size,
+      narrators: (await new NarratorCardRepository(fileSystem).list(workspaceRoot)).size,
     },
     scenes: { total: scenes.length },
     drafts: draftCounts,

@@ -33,7 +33,7 @@ import {
 } from '@storyboard/story-model';
 import {
   groupChapterStems,
-  loadNarratorCards,
+  NarratorCardRepository,
   readChapterNarrationDefaults,
   resolveSceneNarration,
   resolveSceneThread,
@@ -362,7 +362,9 @@ async function summarizeNarration(
     const narratorName: string | undefined =
       directive.narratorId === undefined
         ? undefined
-        : (await loadNarratorCards(paths, container.fileSystem)).get(directive.narratorId)?.name;
+        : (await new NarratorCardRepository(container.fileSystem).list(paths.workspaceRoot)).get(
+            directive.narratorId,
+          )?.name;
 
     return {
       ...(directive.person === undefined ? {} : { person: directive.person }),

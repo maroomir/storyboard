@@ -7,7 +7,7 @@ import type { CardReading, ResourceOverrideReport } from '@storyboard/story-app'
 import {
   auditChapterMemory,
   auditStoryMemory,
-  loadNarratorCards,
+  NarratorCardRepository,
   ProjectRepository,
 } from '@storyboard/story-engine';
 import {
@@ -175,10 +175,9 @@ export async function collectNarrationChecks(
   sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
 ): Promise<DoctorCheck[]> {
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
-  const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
-    paths,
+  const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
     container.fileSystem,
-  );
+  ).list(container.workspaceRoot);
   const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
     .read(paths.projectJson)
     .catch(() => undefined);

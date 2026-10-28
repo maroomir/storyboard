@@ -17,7 +17,7 @@ import {
   writeChapterPlanFile,
   writeSynopsisFile,
 } from '@storyboard/story-model';
-import { loadNarratorCards } from '#engine/persistence/narratorCards';
+import { NarratorCardRepository } from '#engine/persistence/repositories/narratorCardRepository';
 import type { IOutlineRepository } from '#engine/application/novel/novelPipelinePorts';
 export class OutlineRepository implements IOutlineRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
@@ -43,10 +43,9 @@ export class OutlineRepository implements IOutlineRepository {
   }
 
   public async loadNarratorIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
-    const narrators: ReadonlyMap<string, NarratorCard> = await loadNarratorCards(
-      getStoryboardProjectPaths(workspaceRoot),
+    const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
       this.fileSystem,
-    );
+    ).list(workspaceRoot);
 
     return [...narrators.keys()];
   }

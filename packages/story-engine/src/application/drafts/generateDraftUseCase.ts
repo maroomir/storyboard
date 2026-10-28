@@ -32,7 +32,7 @@ import {
   createPersonaMemoryStore,
   createSceneDialogueStore,
 } from '#engine/persistence/cardMemoryWorkspace';
-import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
+import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
 import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/scene/sceneGenerationPipeline';
 import {
@@ -298,7 +298,11 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
     const backgroundId: string | undefined = context.background?.id;
     const backgroundRecentExcerpt: string | undefined = backgroundId
-      ? await findRecentBackgroundExcerpt(this.host.fileSystem, paths, scene.stem, backgroundId)
+      ? await new DraftRepository(this.host.fileSystem).findRecentBackgroundExcerpt(
+          paths,
+          scene.stem,
+          backgroundId,
+        )
       : undefined;
 
     try {
