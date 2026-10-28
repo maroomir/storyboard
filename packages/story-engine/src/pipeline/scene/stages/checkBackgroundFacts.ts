@@ -1,11 +1,14 @@
 import type { SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
-import {
-  assertNotCancelled,
-  findBackgroundFactConflictsForScene,
-} from '#engine/pipeline/sceneGenerationStages';
+import { assertNotCancelled } from '#engine/pipeline/sceneGenerationStages';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
-import { formatBackgroundFactConflict, type BackgroundCard } from '@storyboard/story-model';
+import type { BackgroundFactConflictStore } from '#engine/pipeline/sceneGenerationTypes';
+import {
+  formatBackgroundFactConflict,
+  listBackgroundFactLines,
+  type BackgroundCard,
+  type BackgroundFactConflict,
+} from '@storyboard/story-model';
 
 export class CheckBackgroundFactsStage implements ISceneStage {
   public readonly id: SceneStageId = 'checkBackgroundFacts';
@@ -14,11 +17,7 @@ export class CheckBackgroundFactsStage implements ISceneStage {
     const card: BackgroundCard | undefined = run.context.background;
 
     if (card) {
-      run.backgroundFactConflicts = await findBackgroundFactConflictsForScene(
-        card,
-        run.aiService,
-        run.input.backgroundFactConflictStore,
-      );
+      run.backgroundFactConflicts = await this.findConflicts(run, card);
       run.warnings.push(
         ...run.backgroundFactConflicts.map(
           (conflict) =>
@@ -27,5 +26,28 @@ export class CheckBackgroundFactsStage implements ISceneStage {
       );
     }
     assertNotCancelled(run.shouldCancel);
+  }
+
+  private async findConflicts(
+    run: SceneGenerationRun,
+    card: BackgroundCard,
+  ): Promise<readonly BackgroundFactConflict[]> {
+    if (listBackgroundFactLines(card).length < 2) {
+      return [];
+    }
+
+    const store: BackgroundFactConflictStore | undefined = run.input.backgroundFactConflictStore;
+    const cached: readonly BackgroundFactConflict[] | undefined = await store?.load(card);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const conflicts: BackgroundFactConflict[] = await run.aiService.findBackgroundFactConflicts(
+      card,
+      { attribution: { primary: { kind: 'background', id: card.id } } },
+    );
+    await store?.save(card, conflicts);
+
+    return conflicts;
   }
 }
