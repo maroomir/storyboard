@@ -1,4 +1,4 @@
-import { listCardFileUris } from '#engine/persistence/cardFiles';
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   joinStoryPath,
   type StoryUri,
@@ -114,7 +114,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const directory: StoryUri =
       category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const uris: StoryUri[] = await listCardFileUris(this.fileSystem, directory);
+    const uris: StoryUri[] = await new WorkspaceFiles(this.fileSystem).listCardUris(directory);
     const names: string[] = [];
 
     for (const uri of uris) {

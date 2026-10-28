@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
@@ -5,7 +6,6 @@ import {
   joinCardText,
   parseCard,
 } from '@storyboard/story-model';
-import { listCardFileUris } from '#engine/persistence/cardFiles';
 import type {
   StoryUri,
   CardType,
@@ -28,7 +28,7 @@ export class CardSidebarRepository implements ICardSidebarRepository {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const directory: StoryUri =
       category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const uris: StoryUri[] = await listCardFileUris(this.fileSystem, directory);
+    const uris: StoryUri[] = await new WorkspaceFiles(this.fileSystem).listCardUris(directory);
     const summaries: SidebarCardSummary[] = await Promise.all(
       uris
         .filter((uri) => !isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? ''))

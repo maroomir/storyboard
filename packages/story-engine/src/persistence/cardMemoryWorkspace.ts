@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   joinStoryPath,
   type StoryUri,
@@ -21,7 +22,6 @@ import {
 } from '@storyboard/story-model';
 import { promptResourceFingerprint } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type {
   StoryboardProjectPaths,
   BackgroundCard,
@@ -211,8 +211,7 @@ export function createSceneDialogueStore(
       await writeSceneDialogueFile(sceneDialogueFilePath(paths, record.sceneStem), fs, record);
     },
     async loadCorpus(): Promise<readonly SceneDialogueRecord[]> {
-      const records: SceneDialogueRecord[] = await readDirectoryFiles(
-        fs,
+      const records: SceneDialogueRecord[] = await new WorkspaceFiles(fs).readAll(
         paths.sceneDialogueDirectory,
         {
           isEligible: (name) => name.endsWith('.json'),

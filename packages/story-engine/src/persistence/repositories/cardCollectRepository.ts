@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   type StoryUri,
   parseDraft,
@@ -7,7 +8,6 @@ import {
   type CharacterRef,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import { loadCharacterRoster } from '#engine/persistence/relationGraphData';
 import type { CollectDraft } from '#engine/ai/cardCollectBuilder';
 import type { ICardCollectRepository } from '#engine/application/cards/cardRepositories';
@@ -22,7 +22,7 @@ export class CardCollectRepository implements ICardCollectRepository {
   public async loadDrafts(workspaceRoot: StoryUri): Promise<readonly CollectDraft[]> {
     const { draftDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
-    return await readDirectoryFiles(this.fileSystem, draftDirectory, {
+    return await new WorkspaceFiles(this.fileSystem).readAll(draftDirectory, {
       isEligible: (name) => name.endsWith('.md'),
       read: async (uri): Promise<CollectDraft> => {
         const draft: Draft = parseDraft(await readDraftFile(uri, this.fileSystem));

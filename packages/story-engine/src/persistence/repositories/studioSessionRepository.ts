@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   joinStoryPath,
   type StoryUri,
@@ -10,7 +11,6 @@ import {
   studioSessionEntityDirectory,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type {
   StudioEntity,
   StudioSessionSaveRequestPayload,
@@ -135,8 +135,7 @@ export class StudioSessionRepository implements IStudioSessionRepository {
       return [];
     }
 
-    const names: readonly string[] = await listDirectoryFileNames(
-      this.fileSystem,
+    const names: readonly string[] = await new WorkspaceFiles(this.fileSystem).listNames(
       directory,
       (name) => name.endsWith('.json'),
     );

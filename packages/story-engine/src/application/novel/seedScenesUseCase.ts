@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
   buildSceneSeeds,
@@ -11,7 +12,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
@@ -59,8 +59,7 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
       return { ok: true, kind: 'empty_plan' };
     }
 
-    const existing: readonly string[] = await listDirectoryFileNames(
-      fileSystem,
+    const existing: readonly string[] = await new WorkspaceFiles(fileSystem).listNames(
       paths.sceneDirectory,
     );
 

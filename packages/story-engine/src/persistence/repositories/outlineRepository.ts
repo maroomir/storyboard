@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type {
   StoryUri,
   ChapterPlan,
@@ -8,7 +9,6 @@ import type {
   NarratorCard,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listCharacterBriefs } from '#engine/persistence/characterBriefs';
 import {
   getStoryboardProjectPaths,
   parseSynopsisMarkdown,
@@ -37,8 +37,7 @@ export class OutlineRepository implements IOutlineRepository {
   public async loadCharacterBriefs(
     workspaceRoot: StoryUri,
   ): Promise<readonly OutlineCharacterBrief[]> {
-    return await listCharacterBriefs(
-      this.fileSystem,
+    return await new WorkspaceFiles(this.fileSystem).listCharacterBriefs(
       getStoryboardProjectPaths(workspaceRoot).characterDirectory,
     );
   }
