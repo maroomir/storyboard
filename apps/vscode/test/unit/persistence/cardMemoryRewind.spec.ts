@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
-import { createBackgroundMemoryStore, createPersonaMemoryStore } from '@storyboard/story-engine';
+import { BackgroundMemoryStore, PersonaMemoryStore } from '@storyboard/story-engine';
 import { promptResourceFingerprint, promptResources } from '@storyboard/story-ai';
 import {
   getStoryboardProjectPaths,
@@ -110,7 +110,7 @@ describe('card memory rewind', () => {
   it('reuses a persona that stopped before the scene being written', async () => {
     writePersona('04-fourth');
 
-    const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
 
     expect(await store.load(character)).toBe('저장된 페르소나');
   });
@@ -118,7 +118,7 @@ describe('card memory rewind', () => {
   it('drops a persona that already ran past the scene being rewritten', async () => {
     writePersona('30-final');
 
-    const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
 
     expect(await store.load(character)).toBeUndefined();
   });
@@ -126,7 +126,7 @@ describe('card memory rewind', () => {
   it('drops a persona saved by the very scene being generated again', async () => {
     writePersona('05-fifth');
 
-    const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
 
     expect(await store.load(character)).toBeUndefined();
   });
@@ -134,7 +134,7 @@ describe('card memory rewind', () => {
   it('keeps a persona whose scene name carries no order to compare', async () => {
     writePersona('legacy-memory');
 
-    const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
 
     expect(await store.load(character)).toBe('저장된 페르소나');
   });
@@ -147,7 +147,7 @@ describe('card memory rewind', () => {
     );
 
     try {
-      const store = createPersonaMemoryStore(fileSystem, paths, '05-fifth');
+      const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
 
       expect(await store.load(character)).toBeUndefined();
     } finally {
@@ -158,11 +158,11 @@ describe('card memory rewind', () => {
   it('rewinds background atmosphere on the same rule', async () => {
     writeBackground('30-final');
 
-    const ahead = createBackgroundMemoryStore(fileSystem, paths, '05-fifth');
+    const ahead = new BackgroundMemoryStore(fileSystem, paths, '05-fifth');
     expect(await ahead.load(background)).toBeUndefined();
 
     writeBackground('02-second');
-    const behind = createBackgroundMemoryStore(fileSystem, paths, '05-fifth');
+    const behind = new BackgroundMemoryStore(fileSystem, paths, '05-fifth');
     expect(await behind.load(background)).toBe('저장된 분위기');
   });
 });

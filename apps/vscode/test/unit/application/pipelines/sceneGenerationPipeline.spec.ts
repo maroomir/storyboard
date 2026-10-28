@@ -23,7 +23,7 @@ import {
   validateSceneSkeleton,
   findCatchphraseOveruse,
   findRepeatedDialogueRun,
-  type SceneDialogueCorpus,
+  type ISceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage,
 } from '@storyboard/story-engine';
@@ -1728,7 +1728,7 @@ describe("대사 화자 귀속 단계", () => {
   it("fills the first scene's samples from the notes' quoted lines", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
-    const corpus: SceneDialogueCorpus = {
+    const corpus: ISceneDialogueCorpus = {
       loadCorpus: async () => [],
       loadVoiceSeeds: async () => ({ characters: { elia: ["값보다 내력이 먼저입니다.", "응."] } })
     }

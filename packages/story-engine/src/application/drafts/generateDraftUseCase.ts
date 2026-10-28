@@ -27,11 +27,11 @@ import {
   extractErrorMessage,
 } from '@storyboard/story-model';
 import {
-  createBackgroundFactConflictStore,
-  createBackgroundMemoryStore,
-  createPersonaMemoryStore,
-  createSceneDialogueStore,
-} from '#engine/persistence/cardMemoryWorkspace';
+  BackgroundFactConflictStore,
+  BackgroundMemoryStore,
+  PersonaMemoryStore,
+  SceneDialogueStore,
+} from '#engine/persistence/cardMemoryStores';
 import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
 import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/scene/sceneGenerationPipeline';
@@ -252,7 +252,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     await this.repositories.drafts.write(draftUri, draft);
 
     if (pipelineResult.dialogueRecord) {
-      await createSceneDialogueStore(this.host.fileSystem, threadPaths).save(
+      await new SceneDialogueStore(this.host.fileSystem, threadPaths).save(
         pipelineResult.dialogueRecord,
       );
     }
@@ -334,10 +334,10 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
         useContextCondense: this.host.configBridge.isAiContextCondenseEnabled(),
         sectionOutputLimit: this.host.configBridge.getSectionOutputLimit(),
         tuning: this.host.configBridge.getSceneGenerationTuning(),
-        personaStore: createPersonaMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
-        backgroundStore: createBackgroundMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
-        backgroundFactConflictStore: createBackgroundFactConflictStore(this.host.fileSystem, paths),
-        dialogueCorpus: createSceneDialogueStore(this.host.fileSystem, threadPaths),
+        personaStore: new PersonaMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
+        backgroundStore: new BackgroundMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
+        backgroundFactConflictStore: new BackgroundFactConflictStore(this.host.fileSystem, paths),
+        dialogueCorpus: new SceneDialogueStore(this.host.fileSystem, threadPaths),
         backgroundRecentExcerpt,
       }).run();
 

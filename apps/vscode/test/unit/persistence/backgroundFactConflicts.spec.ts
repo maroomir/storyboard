@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
-import { createBackgroundFactConflictStore } from '@storyboard/story-engine';
+import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
   getStoryboardProjectPaths,
   readBackgroundFactConflictResponse,
@@ -99,19 +99,21 @@ describe('background fact conflict store', () => {
   });
 
   it('has no answer for a card it never checked', async () => {
-    expect(await createBackgroundFactConflictStore(fileSystem, paths).load(condo)).toBeUndefined();
+    expect(await new BackgroundFactConflictStore(fileSystem, paths).load(condo)).toBeUndefined();
   });
 
   it('returns the saved answer while the card lines stay the same', async () => {
-    const store = createBackgroundFactConflictStore(fileSystem, paths);
+    const store = new BackgroundFactConflictStore(fileSystem, paths);
     await store.save(condo, [{ items: [sofa, room] }]);
 
     expect(await store.load({ ...condo, tags: ['새 태그'] })).toEqual([{ items: [sofa, room] }]);
-    expect(await store.load({ ...condo, description: [sofa, '거실 통창 너머 바다'] })).toBeUndefined();
+    expect(
+      await store.load({ ...condo, description: [sofa, '거실 통창 너머 바다'] }),
+    ).toBeUndefined();
   });
 
   it('keeps one record per card in the shared cache file', async () => {
-    const store = createBackgroundFactConflictStore(fileSystem, paths);
+    const store = new BackgroundFactConflictStore(fileSystem, paths);
     const office: BackgroundCard = { ...condo, id: 'office', name: '사무실' };
     await store.save(condo, [{ items: [sofa, room] }]);
     await store.save(office, []);
