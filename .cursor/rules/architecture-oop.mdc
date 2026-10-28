@@ -26,7 +26,7 @@ pure computation.
 ## Patterns
 
 - Strategy and Factory only for implementations that already vary behind one `I`-port; a self-registering registry when adding a variant must not edit the factory (`registerProviderFactory`).
-- Command-style handlers for CLI verbs and contributed commands, each with its own validation, execution and tests.
+- Command-style handlers for CLI verbs and contributed commands, each with its own validation, execution and tests: one class per command in its own file, `ICommandHandler` (CLI, carries its `spec`) or `IExtensionCommand` (extension, carries its `id`), registered by one registrar per app.
 - `StoryboardApplication` is the one composition root and a manager fronts each domain; a further facade only when multi-service orchestration is no longer readable as a direct flow.
 - Adapters keep external APIs and runtime details out of domain code.
 - An `I`-port, Strategy or Factory needs at least two real implementations or a defined extension point; single-use behaviour is a plain class (holds deps or state) or a function (does not), never an interface with one implementation.

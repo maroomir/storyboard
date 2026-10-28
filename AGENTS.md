@@ -147,7 +147,7 @@ Do not create a new abstraction solely to move a file. Use ports for genuine run
 ## VSCode Extension Guidelines
 
 - Command IDs should use the `storyboard.*` namespace.
-- Contributions should be declared in `apps/vscode/package.json` and registered in extension activation code where required.
+- Contributions should be declared in `apps/vscode/package.json` and registered in extension activation code where required: a command is an `IExtensionCommand` class registered by the bootstrap `CommandRegistrar`, a provider a class with `register(): Disposable`. A CLI verb is an `ICommandHandler` class in `apps/cli/src/commands/<noun>/<noun><Verb>Command.ts` that carries its own `spec`.
 - Keep contributed commands, views, menus, configuration, and activation events aligned with runtime registration code.
 - Always dispose VSCode resources through `context.subscriptions` or explicit disposables.
 - Webviews must use CSP, nonces, and `webview.asWebviewUri(...)` for local assets.

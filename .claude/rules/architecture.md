@@ -43,7 +43,9 @@ of a class builds an instance).
   with self-registration when adding a variant must not edit the factory
   (`registerProviderFactory` is the model).
 - Command-style handlers for CLI verbs and contributed commands, so each has its own validation,
-  execution and tests.
+  execution and tests: one class per command in a file of its own, `ICommandHandler` in the CLI
+  (the class carries its `spec`) and `IExtensionCommand` in the extension (the class carries its
+  `id`), registered by one registrar per app rather than by a function per command.
 - Facade: `StoryboardApplication` is the one composition root and a manager fronts each domain; a
   further facade only when orchestration spans several services and the direct flow is no longer
   readable.
