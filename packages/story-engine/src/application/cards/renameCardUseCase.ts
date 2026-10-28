@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
   cardIdPattern,
@@ -14,7 +15,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { listCardFileUris } from '#engine/persistence/cardFiles';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface RenameCardRequest {
@@ -112,7 +112,7 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
     let rewrittenCount: number = 0;
 
     for (const directory of directories) {
-      for (const uri of await listCardFileUris(fileSystem, directory)) {
+      for (const uri of await new WorkspaceFiles(fileSystem).listCardUris(directory)) {
         const fileName: string = uri.path.split('/').at(-1) ?? '';
 
         if (uri.path === renamedUri.path || isIgnoredSampleCardFileName(fileName)) {

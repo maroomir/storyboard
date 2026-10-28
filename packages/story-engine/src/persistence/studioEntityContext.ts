@@ -1,6 +1,7 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type {
-BibleSubjectKind,
-SceneFile,
+  BibleSubjectKind,
+  SceneFile,
   StoryboardCard,
   StoryUri,
   StudioAgentEntityKind,
@@ -11,9 +12,19 @@ SceneFile,
   StudioPatchTarget,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
-import { extractDraftBody, parseSceneFileName, readSceneFile, serializeCard, backgroundCardPath, characterCardPath, draftPath, getStoryboardProjectPaths, isIgnoredSampleCardFileName, isSafeStudioEntityKey, scenePath } from '@storyboard/story-model';
-import { readCardOrUndefined, readSceneOrUndefined } from '#engine/persistence/optionalStoryFiles';
+import {
+  extractDraftBody,
+  parseSceneFileName,
+  readSceneFile,
+  serializeCard,
+  backgroundCardPath,
+  characterCardPath,
+  draftPath,
+  getStoryboardProjectPaths,
+  isIgnoredSampleCardFileName,
+  isSafeStudioEntityKey,
+  scenePath,
+} from '@storyboard/story-model';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: StudioAgentEntityKind;
@@ -54,7 +65,9 @@ export async function resolveStudioLookups(
   workspaceRoot: StoryUri,
   requests: readonly StudioAgentLookupRequest[],
 ): Promise<string> {
-  const safeRequests: StudioAgentLookupRequest[] = requests.filter((request) => isSafeStudioEntityKey(request.key));
+  const safeRequests: StudioAgentLookupRequest[] = requests.filter((request) =>
+    isSafeStudioEntityKey(request.key),
+  );
 
   const sections: string[] = await Promise.all(
     safeRequests.map(async (request) => {
@@ -110,7 +123,12 @@ async function readCardContext(
     return undefined;
   }
 
-  const relatedScenes: string[] = await readScenesFeaturingCard(fs, workspaceRoot, cardId, cardKind);
+  const relatedScenes: string[] = await readScenesFeaturingCard(
+    fs,
+    workspaceRoot,
+    cardId,
+    cardKind,
+  );
 
   return {
     agentEntityKind: cardKind,
@@ -144,7 +162,8 @@ async function readSceneContext(
 
   const draftUri: StoryUri = draftPath(workspaceRoot, sceneStem);
   const draftText: string | undefined = await readTextOrUndefined(fs, draftUri);
-  const draftBody: string | undefined = draftText === undefined ? undefined : extractDraftBody(draftText);
+  const draftBody: string | undefined =
+    draftText === undefined ? undefined : extractDraftBody(draftText);
 
   const context: string = [
     `[씬 시드: scene/${sceneStem}.card]`,
@@ -185,8 +204,7 @@ async function readScenesFeaturingCard(
 ): Promise<string[]> {
   const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
-  const names: readonly string[] = await listDirectoryFileNames(
-    fs,
+  const names: readonly string[] = await new WorkspaceFiles(fs).listNames(
     sceneDirectory,
     (name) => !isIgnoredSampleCardFileName(name),
   );
@@ -197,7 +215,10 @@ async function readScenesFeaturingCard(
 
   const sections: (string | undefined)[] = await Promise.all(
     stems.map(async (stem) => {
-      const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, stem);
+      const scene: SceneFile | undefined = await new WorkspaceFiles(fs).readSceneOrUndefined(
+        workspaceRoot,
+        stem,
+      );
 
       if (!scene || !sceneDeclaresCard(scene, cardId, cardKind)) {
         return undefined;
@@ -233,18 +254,23 @@ async function readLookupText(
   switch (request.kind) {
     case 'character':
     case 'background': {
-      const card: StoryboardCard | undefined = await readCardOrUndefined(
-        fs,
+      const card: StoryboardCard | undefined = await new WorkspaceFiles(fs).readCardOrUndefined(
         cardPathFor(workspaceRoot, request.kind, request.key),
       );
       return card ? serializeCard(card).trim() : undefined;
     }
     case 'scene': {
-      const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, request.key);
+      const scene: SceneFile | undefined = await new WorkspaceFiles(fs).readSceneOrUndefined(
+        workspaceRoot,
+        request.key,
+      );
       return scene ? scene.body.trim() : undefined;
     }
     case 'draft': {
-      const draft: string | undefined = await readTextOrUndefined(fs, draftPath(workspaceRoot, request.key));
+      const draft: string | undefined = await readTextOrUndefined(
+        fs,
+        draftPath(workspaceRoot, request.key),
+      );
       return draft === undefined ? undefined : extractDraftBody(draft);
     }
   }

@@ -1,10 +1,10 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
   isCharacterRole,
   parseCard,
 } from '@storyboard/story-model';
-import { listCardFileUris } from './cardFiles';
 import type {
   StoryUri,
   RelationListCharacter,
@@ -32,8 +32,7 @@ export async function loadRelationListCharacters(
   fs: IFileSystem,
   workspaceRoot: StoryUri,
 ): Promise<RelationListCharacter[]> {
-  const uris: StoryUri[] = await listCardFileUris(
-    fs,
+  const uris: StoryUri[] = await new WorkspaceFiles(fs).listCardUris(
     getStoryboardProjectPaths(workspaceRoot).characterDirectory,
   );
   const listCharacters: RelationListCharacter[] = [];

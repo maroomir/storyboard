@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   joinStoryPath,
   parseSceneFileName,
@@ -5,7 +6,6 @@ import {
   getStoryboardProjectPaths,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { ISceneSeedRepository } from '#engine/application/novel/novelPipeline';
 import type {
   GeneratedSceneSeed,
@@ -34,8 +34,7 @@ export class SceneSeedRepository implements ISceneSeedRepository {
   public async listSceneStemsByOrder(
     workspaceRoot: StoryUri,
   ): Promise<ReadonlyMap<number, string>> {
-    const fileNames: readonly string[] = await listDirectoryFileNames(
-      this.fileSystem,
+    const fileNames: readonly string[] = await new WorkspaceFiles(this.fileSystem).listNames(
       getStoryboardProjectPaths(workspaceRoot).sceneDirectory,
     );
     const stemsByOrder: Map<number, string> = new Map<number, string>();

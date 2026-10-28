@@ -1,10 +1,10 @@
 import {
-  listDirectoryFileNames,
   overrideNovelPipelinePlan,
   overrideScenePipelinePlan,
   resetNovelPipelinePlan,
   resetScenePipelinePlan,
   type IFileSystem,
+  WorkspaceFiles,
 } from '@storyboard/story-engine';
 import {
   PromptResourceError,
@@ -168,8 +168,9 @@ async function loadPromptFiles(
   report: MutableReport,
 ): Promise<void> {
   const known: Set<string> = new Set(promptResourceKeys());
-  const names: readonly string[] = await listDirectoryFileNames(fileSystem, directory, (name) =>
-    name.endsWith('.md'),
+  const names: readonly string[] = await new WorkspaceFiles(fileSystem).listNames(
+    directory,
+    (name) => name.endsWith('.md'),
   );
 
   for (const name of names) {

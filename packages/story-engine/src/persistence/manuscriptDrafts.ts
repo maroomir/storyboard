@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   extractErrorMessage,
   joinStoryPath,
@@ -6,7 +7,6 @@ import {
   readDraftFile,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
   ManuscriptDraftEntry,
@@ -24,8 +24,9 @@ export async function collectDraftsByOrder(
 ): Promise<Map<number, ManuscriptDraftEntry>> {
   const draftsByOrder: Map<number, ManuscriptDraftEntry> = new Map<number, ManuscriptDraftEntry>();
 
-  const names: readonly string[] = await listDirectoryFileNames(fs, paths.draftDirectory, (name) =>
-    name.endsWith('.md'),
+  const names: readonly string[] = await new WorkspaceFiles(fs).listNames(
+    paths.draftDirectory,
+    (name) => name.endsWith('.md'),
   );
 
   for (const name of names) {

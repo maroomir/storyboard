@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   joinStoryPath,
   isHiddenSceneFileName,
@@ -7,7 +8,6 @@ import {
   readSceneFile,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type {
   Draft,
   SceneFile,
@@ -63,8 +63,7 @@ async function listEarlierScenes(
   paths: StoryboardProjectPaths,
   currentOrder: number,
 ): Promise<EarlierScene[]> {
-  const names: readonly string[] = await listDirectoryFileNames(
-    fs,
+  const names: readonly string[] = await new WorkspaceFiles(fs).listNames(
     paths.sceneDirectory,
     (name) => !isHiddenSceneFileName(name),
   );

@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   STORYBOARD_RELATIVE_PATHS,
   joinStoryPath,
@@ -6,13 +7,17 @@ import {
   parseScene,
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
-extractErrorMessage,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { createHash } from 'node:crypto';
 
-import type { SceneFile, StoryboardCard, StoryboardProject, StoryboardProjectPaths } from '@storyboard/story-model';
+import type {
+  SceneFile,
+  StoryboardCard,
+  StoryboardProject,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
@@ -140,7 +145,10 @@ async function readTextFiles(
   try {
     entries = await fs.readDirectory(directory);
   } catch {
-    throw new StoryFeatureSourceError('source-read-failed', `씬 디렉터리를 읽을 수 없습니다: ${directory.fsPath}`);
+    throw new StoryFeatureSourceError(
+      'source-read-failed',
+      `씬 디렉터리를 읽을 수 없습니다: ${directory.fsPath}`,
+    );
   }
 
   return await Promise.all(
@@ -157,8 +165,7 @@ async function readCardFiles(
 ): Promise<TextFile[]> {
   const files: TextFile[][] = await Promise.all(
     directories.map(async (directory) => {
-      const names: readonly string[] = await listDirectoryFileNames(
-        fs,
+      const names: readonly string[] = await new WorkspaceFiles(fs).listNames(
         directory,
         (name) => name.endsWith('.card') && !isIgnoredSampleCardFileName(name),
       );

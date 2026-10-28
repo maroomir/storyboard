@@ -1,3 +1,4 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   type StoryUri,
   createEmptyBible,
@@ -8,7 +9,6 @@ import {
   type BibleCandidateRecord,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { StoryBible } from '@storyboard/story-model';
 import type { IBibleCandidateRepository } from '#engine/application/project/bibleRepositories';
 export class BibleCandidateRepository implements IBibleCandidateRepository {
@@ -27,7 +27,7 @@ export class BibleCandidateRepository implements IBibleCandidateRepository {
   public async loadRecords(workspaceRoot: StoryUri): Promise<readonly BibleCandidateRecord[]> {
     const { bibleCacheDirectory } = getStoryboardProjectPaths(workspaceRoot);
 
-    return await readDirectoryFiles(this.fileSystem, bibleCacheDirectory, {
+    return await new WorkspaceFiles(this.fileSystem).readAll(bibleCacheDirectory, {
       isEligible: (name) => name.endsWith('.json'),
       read: (uri) => readBibleCandidateFile(uri, this.fileSystem),
     });

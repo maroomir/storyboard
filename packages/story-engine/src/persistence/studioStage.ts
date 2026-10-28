@@ -1,8 +1,9 @@
+import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type {
-BibleSubjectKind,
-RevisionPlan,
-RevisionPlanEntry,
-SceneContext,
+  BibleSubjectKind,
+  RevisionPlan,
+  RevisionPlanEntry,
+  SceneContext,
   StoryUri,
   StudioCardStage,
   StudioEntity,
@@ -12,9 +13,25 @@ SceneContext,
   StudioTarget,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
-import { buildSceneContext, characterMatchTokens, detectCharactersInText, isIgnoredSampleCardFileName, parseDraft, parseSceneFileName, type SceneFile, type StoryboardCard, nextDraftHistoryRevision, sceneContextPaths, readRevisionPlanFile, backgroundCardPath, characterCardPath, draftHistorySceneDirectory, draftPath, getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-model';
-import { readCardOrUndefined, readSceneOrUndefined } from '#engine/persistence/optionalStoryFiles';
+import {
+  buildSceneContext,
+  characterMatchTokens,
+  detectCharactersInText,
+  isIgnoredSampleCardFileName,
+  parseDraft,
+  parseSceneFileName,
+  type SceneFile,
+  type StoryboardCard,
+  nextDraftHistoryRevision,
+  sceneContextPaths,
+  readRevisionPlanFile,
+  backgroundCardPath,
+  characterCardPath,
+  draftHistorySceneDirectory,
+  draftPath,
+  getStoryboardProjectPaths,
+  type StoryboardProjectPaths,
+} from '@storyboard/story-model';
 
 type DraftFacts = Pick<StudioSceneStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
 
@@ -29,7 +46,8 @@ export async function readStudioStage(
     return readCardStage(fs, workspaceRoot, entity.kind, entity.key);
   }
 
-  const sceneStem: string | undefined = entity?.kind === 'scene' ? entity.key : resolveSceneStem(target);
+  const sceneStem: string | undefined =
+    entity?.kind === 'scene' ? entity.key : resolveSceneStem(target);
 
   return sceneStem ? readSceneStage(fs, workspaceRoot, sceneStem) : undefined;
 }
@@ -40,7 +58,10 @@ async function readSceneStage(
   sceneStem: string,
 ): Promise<StudioSceneStage> {
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-  const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, sceneStem);
+  const scene: SceneFile | undefined = await new WorkspaceFiles(fs).readSceneOrUndefined(
+    workspaceRoot,
+    sceneStem,
+  );
 
   const [cards, draft, review] = await Promise.all([
     scene ? readStageCards(fs, paths, scene) : Promise.resolve([]),
@@ -63,7 +84,9 @@ async function readCardStage(
       ? characterCardPath(workspaceRoot, cardId)
       : backgroundCardPath(workspaceRoot, cardId);
 
-  const card: StoryboardCard | undefined = await readCardOrUndefined(fs, cardUri);
+  const card: StoryboardCard | undefined = await new WorkspaceFiles(fs).readCardOrUndefined(
+    cardUri,
+  );
 
   if (!card) {
     return undefined;
@@ -93,8 +116,7 @@ async function findScenesFeaturingCard(
   sceneDirectory: StoryUri,
   card: StoryboardCard,
 ): Promise<string[]> {
-  const names: readonly string[] = await listDirectoryFileNames(
-    fs,
+  const names: readonly string[] = await new WorkspaceFiles(fs).listNames(
     sceneDirectory,
     (name) => !isIgnoredSampleCardFileName(name),
   );
@@ -105,7 +127,10 @@ async function findScenesFeaturingCard(
 
   const matches: (string | undefined)[] = await Promise.all(
     stems.map(async (stem) => {
-      const scene: SceneFile | undefined = await readSceneOrUndefined(fs, workspaceRoot, stem);
+      const scene: SceneFile | undefined = await new WorkspaceFiles(fs).readSceneOrUndefined(
+        workspaceRoot,
+        stem,
+      );
       return scene && sceneFeaturesCard(scene, card) ? stem : undefined;
     }),
   );
@@ -191,7 +216,9 @@ async function readDraftRevision(
   sceneStem: string,
 ): Promise<number | undefined> {
   try {
-    const fileNames: readonly string[] = await fs.listFileNames(draftHistorySceneDirectory(workspaceRoot, sceneStem));
+    const fileNames: readonly string[] = await fs.listFileNames(
+      draftHistorySceneDirectory(workspaceRoot, sceneStem),
+    );
 
     const currentRevision: number = nextDraftHistoryRevision(fileNames);
 
@@ -208,7 +235,9 @@ async function readReviewState(
 ): Promise<StudioSceneStage['review']> {
   try {
     const plan: RevisionPlan = await readRevisionPlanFile(revisionPlanUri, fs);
-    const entry: RevisionPlanEntry | undefined = plan.entries.find((candidate) => candidate.sceneStem === sceneStem);
+    const entry: RevisionPlanEntry | undefined = plan.entries.find(
+      (candidate) => candidate.sceneStem === sceneStem,
+    );
 
     if (!entry) {
       return 'unreviewed';
