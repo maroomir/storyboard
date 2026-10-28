@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { DesktopApp } from '@/main/desktopApp';
 import { createInvokeHandlers } from '@/main/invokeHandlers';
-import { createIpcRouter } from '@/main/ipcRouter';
+import { IpcRouter } from '@/main/ipcRouter';
 import type { RunSnapshot } from '@/shared/dto';
 import type {
   InvokeChannel,
@@ -116,10 +116,10 @@ beforeEach(() => {
     },
     installUpdate: () => undefined,
   });
-  router = createIpcRouter(createInvokeHandlers(app), app.logger, {
+  router = new IpcRouter(createInvokeHandlers(app), app.logger, {
     invalidRequest: () => 'invalid',
     internal: (message) => `internal: ${message}`,
-  });
+  }).route;
 });
 
 afterEach(async () => {
