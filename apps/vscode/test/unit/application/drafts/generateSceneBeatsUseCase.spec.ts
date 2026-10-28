@@ -5,8 +5,14 @@ import * as vscode from "vscode"
 const buildSceneContextMock = vi.fn()
 
 vi.mock("@storyboard/story-model", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
-  buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args)
+  ...(await importOriginal<typeof import("@storyboard/story-model")>())
+}))
+vi.mock("../../../../../../packages/story-engine/src/persistence/sceneContextReader", () => ({
+  SceneContextReader: class {
+    public build(...args: unknown[]): unknown {
+      return ((...args: unknown[]): unknown => buildSceneContextMock(...args))(...args)
+    }
+  }
 }))
 import { GenerateSceneBeatsUseCase } from "@storyboard/story-engine"
 import { planSceneBeatCount, SceneParseError } from "@storyboard/story-model"

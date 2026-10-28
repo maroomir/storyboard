@@ -1,9 +1,8 @@
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type { ContinuityIssue, GrammarIssue } from '@storyboard/story-ai';
 import {
   analyzeSlop,
-  buildNarrativeContext,
-  buildSceneContext,
   formatBibleFactLines,
   getStoryboardProjectPaths,
   readSceneFile,
@@ -112,11 +111,13 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
       `${sceneStem}.card`,
     );
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-    const context: SceneContext = await buildSceneContext(contextPaths, scene, fileSystem);
-    const narrative: NarrativeContext = await buildNarrativeContext(
+    const context: SceneContext = await new SceneContextReader(fileSystem).build(
+      contextPaths,
+      scene,
+    );
+    const narrative: NarrativeContext = await new SceneContextReader(fileSystem).buildNarrative(
       contextPaths,
       context,
-      fileSystem,
     );
 
     return formatBibleFactLines(context, narrative.bibleFacts);

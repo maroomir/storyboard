@@ -1,6 +1,6 @@
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
   auditStoryState,
-  buildSceneContext,
   computeSceneInputHash,
   formatStoryStateStaleWarning,
   joinStoryPath,
@@ -8,7 +8,6 @@ import {
   readSceneFile,
   readStoryState,
   resealStoryState,
-  resolveSceneBibleFacts,
   sceneContextPaths,
   sceneNarrationHashInput,
   sealStoryState,
@@ -214,12 +213,10 @@ export class StoryMemoryAuditor {
       const sceneUri: StoryUri = joinStoryPath(paths.sceneDirectory, fileName);
       const scene: SceneFile = await readSceneFile(sceneUri, reads, fileName);
       const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-      const context: SceneContext = await buildSceneContext(ctxPaths, scene, reads);
-      const bibleFacts: readonly BibleFact[] = await resolveSceneBibleFacts(
-        ctxPaths,
-        context,
+      const context: SceneContext = await new SceneContextReader(reads).build(ctxPaths, scene);
+      const bibleFacts: readonly BibleFact[] = await new SceneContextReader(
         reads,
-      );
+      ).resolveBibleFacts(ctxPaths, context);
 
       return computeSceneInputHash({
         sceneBody: context.scene.body,

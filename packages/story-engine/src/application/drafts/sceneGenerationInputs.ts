@@ -1,8 +1,7 @@
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
   hasStoryboardProjectAt,
   sceneContextPaths,
-  buildNarrativeContext,
-  buildSceneContext,
   formatBibleFactLines,
   parseSceneFileName,
   SceneParseError,
@@ -52,7 +51,7 @@ export interface SceneGenerationInputs {
   readonly narration: NarrationDirective | undefined;
   readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
   readonly project: Awaited<ReturnType<IProjectRepository['read']>>;
-  readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
+  readonly context: SceneContext;
   readonly previousContext: string | undefined;
   readonly canonFactLines: readonly string[];
   readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
@@ -258,7 +257,7 @@ type SceneContextBundleResult =
   | {
       readonly ok: true;
       readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
-      readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
+      readonly context: SceneContext;
       readonly previousContext: string | undefined;
       readonly canonFactLines: readonly string[];
       readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
@@ -281,7 +280,7 @@ async function loadSceneContextBundle(
   const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
   let builtContext: SceneContext;
   try {
-    builtContext = await buildSceneContext(ctxPaths, rawScene, options.host.fileSystem);
+    builtContext = await new SceneContextReader(options.host.fileSystem).build(ctxPaths, rawScene);
   } catch (error) {
     return {
       ok: false,
@@ -351,22 +350,19 @@ async function loadSceneContextBundle(
   const chapterAudit: ChapterMemoryAudit = await chapterAuditor.audit();
   await chapterAuditor.markStale(chapterAudit);
 
-  const narrativeContext: NarrativeContext = await buildNarrativeContext(
-    sceneContextPaths(thread.threadPaths),
-    context,
+  const narrativeContext: NarrativeContext = await new SceneContextReader(
     options.host.fileSystem,
-    {
-      previousSceneOrder: thread.previousSceneOrder,
-      focalFilter: {
-        ...(narration?.knowledge === 'witnessed' && narration.focal
-          ? { focal: narration.focal }
-          : {}),
-        ...(narration?.knowledge === 'omniscient'
-          ? {}
-          : { witnessedByAll: context.characters.map((character) => character.id) }),
-      },
+  ).buildNarrative(sceneContextPaths(thread.threadPaths), context, {
+    previousSceneOrder: thread.previousSceneOrder,
+    focalFilter: {
+      ...(narration?.knowledge === 'witnessed' && narration.focal
+        ? { focal: narration.focal }
+        : {}),
+      ...(narration?.knowledge === 'omniscient'
+        ? {}
+        : { witnessedByAll: context.characters.map((character) => character.id) }),
     },
-  );
+  });
   const inputHash: string = computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,

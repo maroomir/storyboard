@@ -1,6 +1,6 @@
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
   backgroundCardPath,
-  buildSceneContext,
   characterCardPath,
   characterMatchTokens,
   detectCharactersInText,
@@ -430,10 +430,9 @@ export class StudioContextRepository {
     scene: SceneFile,
   ): Promise<StudioStageCard[]> {
     try {
-      const context: SceneContext = await buildSceneContext(
+      const context: SceneContext = await new SceneContextReader(this.fileSystem).build(
         sceneContextPaths(paths),
         scene,
-        this.fileSystem,
       );
       const characters: StudioStageCard[] = context.characters.map(
         (character): StudioStageCard => ({ kind: 'character', name: character.name }),

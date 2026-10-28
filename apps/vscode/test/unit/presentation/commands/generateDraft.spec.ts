@@ -11,9 +11,17 @@ const buildSceneContextMock = vi.fn()
 
 vi.mock("@storyboard/story-model", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-model")>()),
-  readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
-  buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })
+  readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)
+}))
+vi.mock("../../../../../../packages/story-engine/src/persistence/sceneContextReader", () => ({
+  SceneContextReader: class {
+    public build(...args: unknown[]): unknown {
+      return ((...args: unknown[]): unknown => buildSceneContextMock(...args))(...args)
+    }
+    public buildNarrative(...args: unknown[]): unknown {
+      return (async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] }))(...args)
+    }
+  }
 }))
 vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,

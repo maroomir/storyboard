@@ -109,6 +109,7 @@ export * from './persistence/repositories/storyFeatureRepository';
 export * from './persistence/repositories/studioFollowUpRepository';
 export * from './persistence/repositories/studioSessionRepository';
 export * from './persistence/revisionPlanRecorder';
+export * from './persistence/sceneContextReader';
 export * from './persistence/usageLedgerRecorder';
 export * from './persistence/workspaceRunLock';
 export * from './persistence/sceneCacheWorkspace';

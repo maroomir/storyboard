@@ -1,14 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  resolveSceneBibleFacts,
-  serializeBible,
-  serializeCard
-} from '@storyboard/story-model';
-import type { BackgroundCard, CharacterCard, SceneContext, SceneContextWorkspaceFileSystem, SceneFile, StoryBible } from '@storyboard/story-model';
+import { formatBibleFactLines, serializeBible, serializeCard } from '@storyboard/story-model';
+import { SceneContextReader, type IFileSystem } from '@storyboard/story-engine';
+import type { BackgroundCard, CharacterCard, SceneContext, SceneFile, StoryBible } from '@storyboard/story-model';
 const eliaCard: CharacterCard = {
   type: "character",
   id: "elia",
@@ -33,7 +27,7 @@ const schoolBg: BackgroundCard = {
   tags: []
 }
 
-class MockFileSystem implements SceneContextWorkspaceFileSystem {
+class MockFileSystem {
   private readonly files = new Map<string, Uint8Array>()
   private readonly directories = new Map<string, [string, { type: "file" | "directory" }][]>()
 
@@ -103,7 +97,7 @@ describe("sceneContext", () => {
     fileSystem.setFile("/mock/workspace/character/elia.card", serializeCard(eliaCard))
     fileSystem.setFile("/mock/workspace/character/jihoon.card", serializeCard(jihoonCard))
 
-    const context = await buildSceneContext(mockPaths, mockScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, mockScene)
 
     expect(context.scene).toEqual(mockScene)
     expect(context.characters).toHaveLength(2)
@@ -128,7 +122,7 @@ describe("sceneContext", () => {
 
     const aliasScene: SceneFile = { ...mockScene, body: "만재가 문을 박차고 들어왔다." }
 
-    const context = await buildSceneContext(mockPaths, aliasScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, aliasScene)
 
     expect(context.characters).toEqual([manjaeCard])
   })
@@ -149,7 +143,7 @@ describe("sceneContext", () => {
 
     const gamenameScene: SceneFile = { ...mockScene, body: "발키리 일행이 경매홀에 들어섰다." }
 
-    const context = await buildSceneContext(mockPaths, gamenameScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, gamenameScene)
 
     expect(context.characters).toEqual([doyunCard])
   })
@@ -170,7 +164,7 @@ describe("sceneContext", () => {
 
     const absentScene: SceneFile = { ...mockScene, body: "엘리아가 혼자 걷는다." }
 
-    const context = await buildSceneContext(mockPaths, absentScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, absentScene)
 
     expect(context.characters).toEqual([])
   })
@@ -184,7 +178,7 @@ describe("sceneContext", () => {
 
     const nameScene: SceneFile = { ...mockScene, body: "엘리아가 창밖을 본다." }
 
-    const context = await buildSceneContext(mockPaths, nameScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, nameScene)
 
     expect(context.characters).toEqual([eliaCard])
   })
@@ -213,7 +207,7 @@ describe("sceneContext", () => {
       body: "만재가 문을 박차고 들어왔다."
     }
 
-    const context = await buildSceneContext(mockPaths, frontmatterScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, frontmatterScene)
 
     expect(context.characters).toEqual([eliaCard])
   })
@@ -235,7 +229,7 @@ describe("sceneContext", () => {
       frontmatter: { characters: ["elia"] }
     }
 
-    const context = await buildSceneContext(mockPaths, sceneWithFrontmatter, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneWithFrontmatter)
 
     expect(context.characters).toHaveLength(1)
     expect(context.characters).toContainEqual(eliaCard)
@@ -254,7 +248,7 @@ describe("sceneContext", () => {
       frontmatter: { location: "school" }
     }
 
-    const context = await buildSceneContext(mockPaths, sceneWithLocation, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneWithLocation)
 
     expect(context.background).toEqual(schoolBg)
   })
@@ -269,7 +263,7 @@ describe("sceneContext", () => {
 
     const sceneInSchool: SceneFile = { ...mockScene, body: "교문 앞에서 엘리아가 기다린다." }
 
-    const context = await buildSceneContext(mockPaths, sceneInSchool, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneInSchool)
 
     expect(context.background).toEqual(aliasedSchoolBg)
   })
@@ -297,7 +291,7 @@ describe("sceneContext", () => {
 
     const sceneInSchool: SceneFile = { ...mockScene, body: "도시의 학교 정문 앞에서 만났다." }
 
-    const context = await buildSceneContext(mockPaths, sceneInSchool, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneInSchool)
 
     expect(context.background).toEqual(aliasedSchoolBg)
   })
@@ -312,7 +306,7 @@ describe("sceneContext", () => {
 
     const sceneElsewhere: SceneFile = { ...mockScene, body: "엘리아가 바닷가를 걷는다." }
 
-    const context = await buildSceneContext(mockPaths, sceneElsewhere, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneElsewhere)
 
     expect(context.background).toBeUndefined()
   })
@@ -344,7 +338,7 @@ describe("sceneContext", () => {
       body: "교문 앞에서 엘리아가 기다린다."
     }
 
-    const context = await buildSceneContext(mockPaths, sceneWithLocation, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneWithLocation)
 
     expect(context.background).toEqual(harborBg)
   })
@@ -389,7 +383,7 @@ describe("sceneContext", () => {
       body: "샘플 캐릭터와 엘리아가 학교 정문에 있다."
     }
 
-    const context = await buildSceneContext(mockPaths, sceneWithSampleReferences, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, sceneWithSampleReferences)
 
     expect(context.characters).toEqual([eliaCard])
     expect(context.background).toBeUndefined()
@@ -398,7 +392,7 @@ describe("sceneContext", () => {
   it("handles missing directories gracefully", async () => {
     const fileSystem = new MockFileSystem()
 
-    const context = await buildSceneContext(mockPaths, mockScene, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(mockPaths, mockScene)
 
     expect(context.characters).toEqual([])
     expect(context.background).toBeUndefined()
@@ -416,8 +410,8 @@ describe("readPreviousSceneContext", () => {
 
   it("returns undefined for the first scene (order 1)", async () => {
     const fileSystem = new MockFileSystem()
-    const context = await import("@storyboard/story-model").then((m) =>
-      m.readPreviousSceneContext(mockPaths, 1, fileSystem)
+    const context = await Promise.resolve().then(() =>
+      new SceneContextReader(fileSystem as unknown as IFileSystem).readPrevious(mockPaths, 1)
     )
     expect(context).toBeUndefined()
   })
@@ -432,8 +426,8 @@ describe("readPreviousSceneContext", () => {
     const longText = "A".repeat(2000) + "이전 씬의 마지막 문장입니다."
     fileSystem.setFile("/mock/workspace/draft/01-prologue.md", longText)
 
-    const context = await import("@storyboard/story-model").then((m) =>
-      m.readPreviousSceneContext(mockPaths, 2, fileSystem)
+    const context = await Promise.resolve().then(() =>
+      new SceneContextReader(fileSystem as unknown as IFileSystem).readPrevious(mockPaths, 2)
     )
 
     expect(context).toBeDefined()
@@ -449,8 +443,8 @@ describe("readPreviousSceneContext", () => {
       "---\nsceneStem: 01-prologue\nformat: novel\ngeneratedAt: '2026-10-07T21:38:09.796Z'\ngenerator: storyboard@0.12.4\nproviderId: mock\n---\n짧은 앞 씬 본문.\n"
     )
 
-    const context = await import("@storyboard/story-model").then((m) =>
-      m.readPreviousSceneContext(mockPaths, 2, fileSystem)
+    const context = await Promise.resolve().then(() =>
+      new SceneContextReader(fileSystem as unknown as IFileSystem).readPrevious(mockPaths, 2)
     )
 
     expect(context).toBe("짧은 앞 씬 본문.")
@@ -462,8 +456,8 @@ describe("readPreviousSceneContext", () => {
       ["02-chapter-1.md", { type: "file" }]
     ])
 
-    const context = await import("@storyboard/story-model").then((m) =>
-      m.readPreviousSceneContext(mockPaths, 3, fileSystem)
+    const context = await Promise.resolve().then(() =>
+      new SceneContextReader(fileSystem as unknown as IFileSystem).readPrevious(mockPaths, 3)
     )
 
     expect(context).toBeUndefined()
@@ -493,7 +487,7 @@ describe("readPreviousSceneContext rolling summary", () => {
     order: number,
     fileSystem: MockFileSystem
   ): Promise<string | undefined> =>
-    import("@storyboard/story-model").then((m) => m.readPreviousSceneContext(paths, order, fileSystem))
+    Promise.resolve().then(() => new SceneContextReader(fileSystem as unknown as IFileSystem).readPrevious(paths, order))
 
   it("QAS-C6-01: prefers the rolling summary over the previous draft tail", async () => {
     const fileSystem = new MockFileSystem()
@@ -705,7 +699,7 @@ describe("buildNarrativeContext", () => {
     const fileSystem = new MockFileSystem()
     fileSystem.setFile(biblePath, serializeBible(bible))
 
-    const result = await buildNarrativeContext({ ...basePaths, bibleCanon: biblePath }, context, fileSystem)
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, bibleCanon: biblePath }, context)
 
     expect(result.bibleFacts.map((fact) => fact.id)).toEqual(["f1"])
     expect(result.prompt).toContain("[설정 메모]")
@@ -726,11 +720,7 @@ describe("buildNarrativeContext", () => {
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
     const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
 
-    const result = await buildNarrativeContext(
-      { ...basePaths, bibleCanon: biblePath, storyState: statePath },
-      secondContext,
-      fileSystem
-    )
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, bibleCanon: biblePath, storyState: statePath }, secondContext)
 
     expect(result.prompt).toContain("[이야기 상태]")
     expect(result.prompt).toContain("손님이 오실 줄 알았습니다")
@@ -746,11 +736,7 @@ describe("buildNarrativeContext", () => {
     )
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
 
-    const result = await buildNarrativeContext(
-      { ...basePaths, storyState: statePath },
-      { scene: secondScene, characters: [eliaCard, jihoonCard] },
-      fileSystem
-    )
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, storyState: statePath }, { scene: secondScene, characters: [eliaCard, jihoonCard] })
 
     expect(result.characterKnowledge?.get(eliaCard.name)).toEqual(["엘리아가 편지를 숨겼다"])
     expect(result.characterKnowledge?.get(jihoonCard.name)).toEqual(["지훈이 열쇠를 주웠다"])
@@ -765,11 +751,7 @@ describe("buildNarrativeContext", () => {
     )
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
 
-    const result = await buildNarrativeContext(
-      { ...basePaths, storyState: statePath },
-      { scene: secondScene, characters: [eliaCard, jihoonCard] },
-      fileSystem
-    )
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, storyState: statePath }, { scene: secondScene, characters: [eliaCard, jihoonCard] })
 
     expect(result.characterRelations?.get(eliaCard.name)).toEqual([
       `${eliaCard.name}는 ${jihoonCard.name}에게 이제 반말을 쓴다`
@@ -782,11 +764,7 @@ describe("buildNarrativeContext", () => {
     const fileSystem = new MockFileSystem()
     fileSystem.setFile(statePath, "# 이야기 상태\n## 확정 사실\n- 나중 씬의 상태\n")
 
-    const result = await buildNarrativeContext(
-      { ...basePaths, storyState: statePath },
-      context,
-      fileSystem
-    )
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, storyState: statePath }, context)
 
     expect(result.prompt ?? "").not.toContain("[이야기 상태]")
   })
@@ -799,11 +777,7 @@ describe("buildNarrativeContext", () => {
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
     const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
 
-    const result = await buildNarrativeContext(
-      { ...basePaths, chapterSummaries: undefined },
-      secondContext,
-      fileSystem
-    )
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, chapterSummaries: undefined }, secondContext)
 
     expect(result.prompt).toContain("정하지 못한 채")
     expect(result.prompt).not.toContain("ضرب")
@@ -812,7 +786,7 @@ describe("buildNarrativeContext", () => {
   it("returns no facts or prompt when bible and previous context are absent", async () => {
     const fileSystem = new MockFileSystem()
 
-    const result = await buildNarrativeContext(basePaths, context, fileSystem)
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative(basePaths, context)
 
     expect(result.bibleFacts).toEqual([])
     expect(result.prompt).toBeUndefined()
@@ -825,7 +799,7 @@ describe("buildNarrativeContext", () => {
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
     const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
 
-    const result = await buildNarrativeContext(basePaths, secondContext, fileSystem)
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative(basePaths, secondContext)
 
     expect(result.prompt).toContain("[이전 장면]")
     expect(result.prompt).toContain("SUMMARY-MARKER")
@@ -852,14 +826,14 @@ describe("buildNarrativeContext", () => {
     fileSystem.setFile(biblePath, serializeBible(armBible))
 
     const beforeContext: SceneContext = { scene: sceneAt(2), characters: [eliaCard] }
-    const before = await buildNarrativeContext({ ...basePaths, bibleCanon: biblePath }, beforeContext, fileSystem)
+    const before = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, bibleCanon: biblePath }, beforeContext)
 
     expect(before.bibleFacts.map((fact) => fact.id)).toEqual(["arm-a"])
     expect(before.prompt).toContain("멀쩡함")
     expect(before.prompt).not.toContain("의수")
 
     const afterContext: SceneContext = { scene: sceneAt(6), characters: [eliaCard] }
-    const after = await buildNarrativeContext({ ...basePaths, bibleCanon: biblePath }, afterContext, fileSystem)
+    const after = await new SceneContextReader(fileSystem as unknown as IFileSystem).buildNarrative({ ...basePaths, bibleCanon: biblePath }, afterContext)
 
     expect(after.bibleFacts.map((fact) => fact.id)).toEqual(["arm-b"])
     expect(after.prompt).toContain("의수")
@@ -926,8 +900,8 @@ describe("scene bible facts with a story time axis", () => {
   }
 
   async function resolveIds(fileSystem: MockFileSystem): Promise<string[]> {
-    const context = await buildSceneContext(scenePaths, flashbackScene, fileSystem)
-    const facts = await resolveSceneBibleFacts(scenePaths, context, fileSystem)
+    const context = await new SceneContextReader(fileSystem as unknown as IFileSystem).build(scenePaths, flashbackScene)
+    const facts = await new SceneContextReader(fileSystem as unknown as IFileSystem).resolveBibleFacts(scenePaths, context)
 
     return facts.map((fact) => fact.id)
   }

@@ -1,3 +1,5 @@
+import { SceneContextReader } from '@storyboard/story-engine';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
@@ -7,7 +9,6 @@ import {
   sceneFilePath,
   sceneContextPaths,
   STORYBOARD_GLOBS,
-  buildSceneContext,
   parseDraft,
   readSceneFile,
 } from '@storyboard/story-model';
@@ -20,10 +21,7 @@ import type {
   SceneFileNameParts,
   StoryUri,
 } from '@storyboard/story-model';
-import {
-  sceneContextFileSystem,
-  vscodeFsAdapter,
-} from '@/infrastructure/vscode/workspaceFsAdapters';
+import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
@@ -203,10 +201,9 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
       const paths: SceneContextWorkspacePaths = sceneContextPaths(
         getStoryboardProjectPaths(workspaceFolder.uri),
       );
-      const sceneContext: SceneContext = await buildSceneContext(
+      const sceneContext: SceneContext = await new SceneContextReader(vscodeFileSystem).build(
         paths,
         scene,
-        sceneContextFileSystem,
       );
 
       return formatInlineSceneContext(sceneContext.characters, sceneContext.background, scene.body);

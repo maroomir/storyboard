@@ -44,7 +44,12 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
   createDraft: (input: unknown): unknown => input,
   readDraftFile: async (): Promise<string> => "raw",
   writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args),
-  buildSceneContext: async (): Promise<unknown> => ({
+  formatBibleFactLines: (): unknown[] => []
+}))
+vi.mock("../../../../../../packages/story-engine/src/persistence/sceneContextReader", () => ({
+  SceneContextReader: class {
+    public build(...args: unknown[]): unknown {
+      return (async (): Promise<unknown> => ({
     scene: { body: "씬 의도" },
     characters: [
       {
@@ -55,9 +60,12 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
         voice: ["짧은 존댓말"]
       }
     ]
-  }),
-  buildNarrativeContext: async (): Promise<unknown> => ({ bibleFacts: [] }),
-  formatBibleFactLines: (): unknown[] => []
+  }))(...args)
+    }
+    public buildNarrative(...args: unknown[]): unknown {
+      return (async (): Promise<unknown> => ({ bibleFacts: [] }))(...args)
+    }
+  }
 }))
 import {
   describeReviseOutcome,

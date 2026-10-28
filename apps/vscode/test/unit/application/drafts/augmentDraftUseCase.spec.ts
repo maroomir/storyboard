@@ -11,9 +11,17 @@ vi.mock('@storyboard/story-model', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@storyboard/story-model')>()),
   SceneParseError: class SceneParseError extends Error {},
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
-  buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args),
-  buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  formatBibleFactLines: (): string[] => [],
+  formatBibleFactLines: (): string[] => []
+}))
+vi.mock('../../../../../../packages/story-engine/src/persistence/sceneContextReader', () => ({
+  SceneContextReader: class {
+    public build(...args: unknown[]): unknown {
+      return ((...args: unknown[]): unknown => buildSceneContextMock(...args))(...args)
+    }
+    public buildNarrative(...args: unknown[]): unknown {
+      return ((...args: unknown[]): unknown => buildNarrativeContextMock(...args))(...args)
+    }
+  }
 }));
 vi.mock(
   '../../../../../../packages/story-engine/src/persistence/repositories/projectRepository',
