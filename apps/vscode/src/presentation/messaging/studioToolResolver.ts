@@ -46,168 +46,6 @@ export interface StudioInvokeResolverInput {
 const maxReportedIssues: number = 10;
 const condenseTargetRatio: number = 0.7;
 
-export function createStudioInvokeResolver(
-  deps: StudioInvokeResolverDependencies,
-  input: StudioInvokeResolverInput,
-): (request: StudioAgentInvokeRequest) => Promise<string> {
-  return async (request) => {
-    try {
-      switch (request.tool) {
-        case 'continuityCheck':
-          return await runContinuityCheck(deps, input);
-        case 'grammarCheck':
-          return await runGrammarCheck(deps, input);
-        default:
-          return await runTransform(deps, input, request);
-      }
-    } catch (error) {
-      deps.logger.warn(`Studio 도구 실행 실패(${request.tool}): ${String(error)}`);
-      return `[도구 실패: ${request.tool}] 실행 중 오류가 나서 결과를 얻지 못했다. 도구 없이 판단하라.`;
-    }
-  };
-}
-
-async function runContinuityCheck(
-  deps: StudioInvokeResolverDependencies,
-  input: StudioInvokeResolverInput,
-): Promise<string> {
-  const scene: LoadedSceneContext | undefined = await loadSceneContext(input);
-
-  if (!scene) {
-    return '[도구 결과: continuityCheck] 씬 자료를 읽지 못해 검사를 건너뛰었다.';
-  }
-
-  const factLines: string[] = formatBibleFactLines(scene.sceneContext, scene.bibleFacts);
-
-  if (factLines.length === 0) {
-    return '[도구 결과: continuityCheck] 대조할 설정 자료(canon)가 없어 검사할 수 없었다.';
-  }
-
-  const issues: ContinuityIssue[] = await deps.aiGateway
-    .createService(input.workspaceRoot)
-    .checkContinuity(input.baseline, factLines, {
-      providerId: deps.aiGateway.getTaskProvider('continuityCheck'),
-      attribution: { primary: { kind: 'scene', id: input.sceneStem } },
-    });
-
-  await deps.diagnostics.publishContinuity(input.draftUri, issues);
-
-  if (issues.length === 0) {
-    return '[도구 결과: continuityCheck] 설정과 어긋나는 구간이 없다.';
-  }
-
-  return [
-    `[도구 결과: continuityCheck] 불일치 ${issues.length}건 (에디터에도 표시됨)`,
-    ...issues.slice(0, maxReportedIssues).map(describeContinuityIssue),
-    ...overflowLine(issues.length),
-  ].join('\n');
-}
-
-async function runGrammarCheck(
-  deps: StudioInvokeResolverDependencies,
-  input: StudioInvokeResolverInput,
-): Promise<string> {
-  const issues: GrammarIssue[] = await deps.aiGateway
-    .createService(input.workspaceRoot)
-    .checkGrammar(input.baseline, {
-      providerId: deps.aiGateway.getTaskProvider('grammarCheck'),
-      attribution: { primary: { kind: 'scene', id: input.sceneStem } },
-    });
-
-  await deps.diagnostics.publishGrammar(input.draftUri, issues);
-
-  if (issues.length === 0) {
-    return '[도구 결과: grammarCheck] 문법·맞춤법 문제가 없다.';
-  }
-
-  return [
-    `[도구 결과: grammarCheck] 문제 ${issues.length}건 (에디터에도 표시됨)`,
-    ...issues.slice(0, maxReportedIssues).map(describeGrammarIssue),
-    ...overflowLine(issues.length),
-  ].join('\n');
-}
-
-async function runTransform(
-  deps: StudioInvokeResolverDependencies,
-  input: StudioInvokeResolverInput,
-  request: StudioAgentInvokeRequest,
-): Promise<string> {
-  const span: StudioAgentToolSpan | undefined = request.span;
-
-  if (!span) {
-    return `[도구 실패: ${request.tool}] span 없이 부를 수 없는 도구다.`;
-  }
-
-  const body: string = extractDraftBody(input.baseline);
-
-  if (body.slice(span.startOffset, span.endOffset) !== span.oldText) {
-    return `[도구 실패: ${request.tool}] span이 본문과 일치하지 않아 실행하지 못했다. 오프셋과 oldText를 본문 그대로 다시 맞춰라.`;
-  }
-
-  const text: string = await transformSpan(deps, input, request, span);
-
-  if (text.trim().length === 0) {
-    return `[도구 실패: ${request.tool}] 빈 결과가 돌아왔다. 도구 없이 직접 고쳐 propose하라.`;
-  }
-
-  return [
-    `[도구 결과: ${request.tool}] 아래는 초벌이다. 문맥에 맞게 다듬어 propose의 newText로 써라.`,
-    text.trim(),
-  ].join('\n');
-}
-
-async function transformSpan(
-  deps: StudioInvokeResolverDependencies,
-  input: StudioInvokeResolverInput,
-  request: StudioAgentInvokeRequest,
-  span: StudioAgentToolSpan,
-): Promise<string> {
-  const service: StoryboardAiService = deps.aiGateway.createService(input.workspaceRoot);
-  const attribution: UsageAttribution = { primary: { kind: 'scene', id: input.sceneStem } };
-
-  if (request.tool === 'expand') {
-    return service.expandDraft(
-      span.oldText,
-      {},
-      {
-        providerId: deps.aiGateway.getTaskProvider('draftExpansion'),
-        attribution,
-      },
-    );
-  }
-
-  const scene: LoadedSceneContext | undefined = await loadSceneContext(input);
-
-  if (request.tool === 'condense') {
-    return service.condenseDraft(
-      {
-        body: span.oldText,
-        format: scene?.format ?? 'novel',
-        targetLength: Math.round(span.oldText.length * condenseTargetRatio),
-        ...(scene === undefined ? {} : { intent: scene.sceneContext.scene.body }),
-      },
-      { providerId: deps.aiGateway.getTaskProvider('draftRevision'), attribution },
-    );
-  }
-
-  if (!scene) {
-    throw new Error('씬 자료를 읽지 못해 보충할 수 없습니다.');
-  }
-
-  return service.augmentDraft(
-    {
-      target: span.oldText,
-      scope: 'selection',
-      format: scene.format,
-      cards: formatAugmentCards(scene.sceneContext.characters, scene.sceneContext.background),
-      facts: formatBibleFactLines(scene.sceneContext, scene.bibleFacts),
-      intent: scene.sceneContext.scene.body,
-      ...(request.instruction === undefined ? {} : { instruction: request.instruction }),
-    },
-    { providerId: deps.aiGateway.getTaskProvider('draftAugment'), attribution },
-  );
-}
-
 interface LoadedSceneContext {
   readonly sceneContext: SceneContext;
   readonly bibleFacts: NarrativeContext['bibleFacts'];
@@ -261,4 +99,158 @@ function overflowLine(total: number): string[] {
 function excerpt(text: string): string {
   const trimmed: string = text.trim().replace(/\s+/g, ' ');
   return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
+}
+
+export class StudioInvokeResolver {
+  public constructor(
+    private readonly deps: StudioInvokeResolverDependencies,
+    private readonly input: StudioInvokeResolverInput,
+  ) {}
+
+  public readonly resolve = async (request: StudioAgentInvokeRequest): Promise<string> => {
+    try {
+      switch (request.tool) {
+        case 'continuityCheck':
+          return await this.runContinuityCheck();
+        case 'grammarCheck':
+          return await this.runGrammarCheck();
+        default:
+          return await this.runTransform(request);
+      }
+    } catch (error) {
+      this.deps.logger.warn(`Studio 도구 실행 실패(${request.tool}): ${String(error)}`);
+      return `[도구 실패: ${request.tool}] 실행 중 오류가 나서 결과를 얻지 못했다. 도구 없이 판단하라.`;
+    }
+  };
+
+  private async runContinuityCheck(): Promise<string> {
+    const scene: LoadedSceneContext | undefined = await loadSceneContext(this.input);
+
+    if (!scene) {
+      return '[도구 결과: continuityCheck] 씬 자료를 읽지 못해 검사를 건너뛰었다.';
+    }
+
+    const factLines: string[] = formatBibleFactLines(scene.sceneContext, scene.bibleFacts);
+
+    if (factLines.length === 0) {
+      return '[도구 결과: continuityCheck] 대조할 설정 자료(canon)가 없어 검사할 수 없었다.';
+    }
+
+    const issues: ContinuityIssue[] = await this.deps.aiGateway
+      .createService(this.input.workspaceRoot)
+      .checkContinuity(this.input.baseline, factLines, {
+        providerId: this.deps.aiGateway.getTaskProvider('continuityCheck'),
+        attribution: { primary: { kind: 'scene', id: this.input.sceneStem } },
+      });
+
+    await this.deps.diagnostics.publishContinuity(this.input.draftUri, issues);
+
+    if (issues.length === 0) {
+      return '[도구 결과: continuityCheck] 설정과 어긋나는 구간이 없다.';
+    }
+
+    return [
+      `[도구 결과: continuityCheck] 불일치 ${issues.length}건 (에디터에도 표시됨)`,
+      ...issues.slice(0, maxReportedIssues).map(describeContinuityIssue),
+      ...overflowLine(issues.length),
+    ].join('\n');
+  }
+
+  private async runGrammarCheck(): Promise<string> {
+    const issues: GrammarIssue[] = await this.deps.aiGateway
+      .createService(this.input.workspaceRoot)
+      .checkGrammar(this.input.baseline, {
+        providerId: this.deps.aiGateway.getTaskProvider('grammarCheck'),
+        attribution: { primary: { kind: 'scene', id: this.input.sceneStem } },
+      });
+
+    await this.deps.diagnostics.publishGrammar(this.input.draftUri, issues);
+
+    if (issues.length === 0) {
+      return '[도구 결과: grammarCheck] 문법·맞춤법 문제가 없다.';
+    }
+
+    return [
+      `[도구 결과: grammarCheck] 문제 ${issues.length}건 (에디터에도 표시됨)`,
+      ...issues.slice(0, maxReportedIssues).map(describeGrammarIssue),
+      ...overflowLine(issues.length),
+    ].join('\n');
+  }
+
+  private async runTransform(request: StudioAgentInvokeRequest): Promise<string> {
+    const span: StudioAgentToolSpan | undefined = request.span;
+
+    if (!span) {
+      return `[도구 실패: ${request.tool}] span 없이 부를 수 없는 도구다.`;
+    }
+
+    const body: string = extractDraftBody(this.input.baseline);
+
+    if (body.slice(span.startOffset, span.endOffset) !== span.oldText) {
+      return `[도구 실패: ${request.tool}] span이 본문과 일치하지 않아 실행하지 못했다. 오프셋과 oldText를 본문 그대로 다시 맞춰라.`;
+    }
+
+    const text: string = await this.transformSpan(request, span);
+
+    if (text.trim().length === 0) {
+      return `[도구 실패: ${request.tool}] 빈 결과가 돌아왔다. 도구 없이 직접 고쳐 propose하라.`;
+    }
+
+    return [
+      `[도구 결과: ${request.tool}] 아래는 초벌이다. 문맥에 맞게 다듬어 propose의 newText로 써라.`,
+      text.trim(),
+    ].join('\n');
+  }
+
+  private async transformSpan(
+    request: StudioAgentInvokeRequest,
+    span: StudioAgentToolSpan,
+  ): Promise<string> {
+    const service: StoryboardAiService = this.deps.aiGateway.createService(
+      this.input.workspaceRoot,
+    );
+    const attribution: UsageAttribution = { primary: { kind: 'scene', id: this.input.sceneStem } };
+
+    if (request.tool === 'expand') {
+      return service.expandDraft(
+        span.oldText,
+        {},
+        {
+          providerId: this.deps.aiGateway.getTaskProvider('draftExpansion'),
+          attribution,
+        },
+      );
+    }
+
+    const scene: LoadedSceneContext | undefined = await loadSceneContext(this.input);
+
+    if (request.tool === 'condense') {
+      return service.condenseDraft(
+        {
+          body: span.oldText,
+          format: scene?.format ?? 'novel',
+          targetLength: Math.round(span.oldText.length * condenseTargetRatio),
+          ...(scene === undefined ? {} : { intent: scene.sceneContext.scene.body }),
+        },
+        { providerId: this.deps.aiGateway.getTaskProvider('draftRevision'), attribution },
+      );
+    }
+
+    if (!scene) {
+      throw new Error('씬 자료를 읽지 못해 보충할 수 없습니다.');
+    }
+
+    return service.augmentDraft(
+      {
+        target: span.oldText,
+        scope: 'selection',
+        format: scene.format,
+        cards: formatAugmentCards(scene.sceneContext.characters, scene.sceneContext.background),
+        facts: formatBibleFactLines(scene.sceneContext, scene.bibleFacts),
+        intent: scene.sceneContext.scene.body,
+        ...(request.instruction === undefined ? {} : { instruction: request.instruction }),
+      },
+      { providerId: this.deps.aiGateway.getTaskProvider('draftAugment'), attribution },
+    );
+  }
 }

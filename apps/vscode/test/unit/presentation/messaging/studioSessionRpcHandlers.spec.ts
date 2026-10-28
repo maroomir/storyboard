@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
-import { createStudioSessionRpcHandlers } from "@/presentation/messaging/studioSessionRpcHandlers"
+import { StudioSessionRpc } from "@/presentation/messaging/studioSessionRpcHandlers"
 import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
 import type { IStudioSessionRepository } from "@storyboard/story-engine"
 import type {
@@ -91,7 +91,7 @@ describe("studio session rpc handlers", () => {
     const webview = new FakeWebview()
     createWebviewBridge(
       webview,
-      createStudioSessionRpcHandlers({ repository, getProjectRoot: async () => fakeRoot })
+      new StudioSessionRpc({ repository, getProjectRoot: async (): Promise<typeof fakeRoot> => fakeRoot }).handlers()
     )
 
     await webview.receive(
@@ -129,7 +129,7 @@ describe("studio session rpc handlers", () => {
     const webview = new FakeWebview()
     createWebviewBridge(
       webview,
-      createStudioSessionRpcHandlers({ repository, getProjectRoot: async () => fakeRoot })
+      new StudioSessionRpc({ repository, getProjectRoot: async (): Promise<typeof fakeRoot> => fakeRoot }).handlers()
     )
 
     await webview.receive(request("studio.session.list", { entity: sceneEntity }, "list-1"))
@@ -143,7 +143,7 @@ describe("studio session rpc handlers", () => {
     const webview = new FakeWebview()
     createWebviewBridge(
       webview,
-      createStudioSessionRpcHandlers({ repository, getProjectRoot: async () => fakeRoot })
+      new StudioSessionRpc({ repository, getProjectRoot: async (): Promise<typeof fakeRoot> => fakeRoot }).handlers()
     )
 
     await webview.receive(
@@ -168,7 +168,7 @@ describe("studio session rpc handlers", () => {
     const webview = new FakeWebview()
     createWebviewBridge(
       webview,
-      createStudioSessionRpcHandlers({ repository, getProjectRoot: async () => fakeRoot })
+      new StudioSessionRpc({ repository, getProjectRoot: async (): Promise<typeof fakeRoot> => fakeRoot }).handlers()
     )
 
     await webview.receive(request("studio.session.latest", { entity: sceneEntity }, "latest-1"))
@@ -182,7 +182,7 @@ describe("studio session rpc handlers", () => {
     const webview = new FakeWebview()
     createWebviewBridge(
       webview,
-      createStudioSessionRpcHandlers({ repository, getProjectRoot: async () => undefined })
+      new StudioSessionRpc({ repository, getProjectRoot: async (): Promise<undefined> => undefined }).handlers()
     )
 
     await webview.receive(

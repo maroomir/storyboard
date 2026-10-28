@@ -25,11 +25,11 @@ import type { StudioChatStage } from '@storyboard/story-engine';
 import type { CardManager, StudioManager } from '@storyboard/story-app';
 import type { AiGateway } from '@storyboard/story-engine';
 import { StudioToolDiagnostics } from './studioToolDiagnostics';
-import { createStudioCardUpdateRpcHandlers } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
-import { createStudioChatRpcHandlers } from '@/presentation/messaging/studioChatRpcHandlers';
-import { createStudioFollowUpRpcHandlers } from '@/presentation/messaging/studioFollowUpRpcHandlers';
-import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studioProposalRpcHandlers';
-import { createStudioSessionRpcHandlers } from '@/presentation/messaging/studioSessionRpcHandlers';
+import { StudioCardUpdateRpc } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
+import { StudioChatRpc } from '@/presentation/messaging/studioChatRpcHandlers';
+import { StudioFollowUpRpc } from '@/presentation/messaging/studioFollowUpRpcHandlers';
+import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
+import { StudioSessionRpc } from '@/presentation/messaging/studioSessionRpcHandlers';
 import { computeStudioTarget, resolveActiveStudioFocus } from './studioTarget';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
@@ -134,7 +134,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
           stage: await new StudioContextRepository(vscodeFileSystem).readStage(root, target),
         };
       },
-      ...createStudioChatRpcHandlers({
+      ...new StudioChatRpc({
         studio: this.studio,
         aiGateway: this.aiGateway,
         cards: this.cards,
@@ -144,29 +144,29 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         getTarget: () => computeStudioTarget(resolveActiveStudioFocus()),
         postProgress: (stage) => this.postChatProgress(stage),
-      }),
-      ...createStudioCardUpdateRpcHandlers({
+      }).handlers(),
+      ...new StudioCardUpdateRpc({
         aiGateway: this.aiGateway,
         cards: this.cards,
         logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
-      }),
-      ...createStudioProposalRpcHandlers({
+      }).handlers(),
+      ...new StudioProposalRpc({
         reviewService: this.reviewService,
         followUpRepository: this.followUpRepository,
         configBridge: this.configBridge,
         logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         createFollowUpId: () => crypto.randomUUID(),
-      }),
-      ...createStudioFollowUpRpcHandlers({
+      }).handlers(),
+      ...new StudioFollowUpRpc({
         repository: this.followUpRepository,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
-      }),
-      ...createStudioSessionRpcHandlers({
+      }).handlers(),
+      ...new StudioSessionRpc({
         repository: this.sessionRepository,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
-      }),
+      }).handlers(),
     };
   }
 

@@ -14,7 +14,7 @@ import {
 } from "@storyboard/story-model"
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderRegistry, ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
-import { createSettingsRpcHandlers } from "@/presentation/messaging/settingsRpcHandlers"
+import { SettingsRpc } from "@/presentation/messaging/settingsRpcHandlers"
 
 const configFiles = (): { user: string; workspace?: string } => ({
   user: "/home/me/.storyboard/config.json",
@@ -153,7 +153,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
+    const handlers = new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers()
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
@@ -185,7 +185,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
+    const handlers = new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers()
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
@@ -207,7 +207,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
+    const handlers = new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers()
 
     await handlers["settings.updateDefaultProvider"]!({ providerId: "openai" }, {} as never)
     expect(configuration.get("ai.provider.default")).toBe("openai")
@@ -250,7 +250,7 @@ describe("createSettingsRpcHandlers", () => {
         }
       })
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
+    const handlers = new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers()
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
@@ -289,7 +289,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
+    const handlers = new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers()
 
     const writeResult = await handlers["secrets.writeApiKey"]!({ providerId: "openai", apiKey: "new-secret" }, {} as never)
     expect(writeResult).toEqual({ hasApiKey: true })
@@ -388,7 +388,7 @@ describe("settings RPC via webview bridge", () => {
     })
     const webview = new FakeWebview()
 
-    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles }))
+    createWebviewBridge(webview, new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers())
 
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,
@@ -417,7 +417,7 @@ describe("settings RPC via webview bridge", () => {
     })
     const webview = new FakeWebview()
 
-    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles }))
+    createWebviewBridge(webview, new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers())
 
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,
@@ -446,7 +446,7 @@ describe("settings RPC via webview bridge", () => {
     })
     const webview = new FakeWebview()
 
-    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles }))
+    createWebviewBridge(webview, new SettingsRpc({ configBridge, secretStore, registry, configFiles }).handlers())
 
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,

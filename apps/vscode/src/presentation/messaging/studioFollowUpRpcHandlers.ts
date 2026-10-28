@@ -30,65 +30,70 @@ function entityTargetFile(entity: StudioEntity): string | undefined {
   }
 }
 
-export function createStudioFollowUpRpcHandlers(
-  deps: StudioFollowUpRpcHandlersDependencies,
-): StoryboardRpcHandlers {
-  return {
-    'studio.followUp.list': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'studio.followUp.list'>> => {
-      const root: vscode.Uri | undefined = await deps.getProjectRoot();
+export class StudioFollowUpRpc {
+  public constructor(private readonly deps: StudioFollowUpRpcHandlersDependencies) {}
 
-      if (!root) {
-        return { followUps: [] };
-      }
+  public handlers(): StoryboardRpcHandlers {
+    return {
+      'studio.followUp.list': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.followUp.list'>> => {
+        const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
 
-      const followUps: readonly StudioFollowUp[] = await deps.repository.list(root, payload.entity);
+        if (!root) {
+          return { followUps: [] };
+        }
 
-      return {
-        followUps: followUps.map((followUp) => ({
-          id: followUp.id,
-          origin: followUp.origin,
-          reason: followUp.reason,
-          instruction: followUp.instruction,
-        })),
-      };
-    },
+        const followUps: readonly StudioFollowUp[] = await this.deps.repository.list(
+          root,
+          payload.entity,
+        );
 
-    'studio.followUp.dismiss': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'studio.followUp.dismiss'>> => {
-      const root: vscode.Uri | undefined = await deps.getProjectRoot();
+        return {
+          followUps: followUps.map((followUp) => ({
+            id: followUp.id,
+            origin: followUp.origin,
+            reason: followUp.reason,
+            instruction: followUp.instruction,
+          })),
+        };
+      },
 
-      if (root) {
-        await deps.repository.dismiss(root, payload.id);
-      }
+      'studio.followUp.dismiss': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.followUp.dismiss'>> => {
+        const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
 
-      return {};
-    },
+        if (root) {
+          await this.deps.repository.dismiss(root, payload.id);
+        }
 
-    'studio.followUp.open': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'studio.followUp.open'>> => {
-      const root: vscode.Uri | undefined = await deps.getProjectRoot();
+        return {};
+      },
 
-      if (!root) {
-        return { opened: false };
-      }
+      'studio.followUp.open': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.followUp.open'>> => {
+        const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
 
-      const targetFile: string | undefined = entityTargetFile(payload.entity);
+        if (!root) {
+          return { opened: false };
+        }
 
-      if (!targetFile || targetFile !== payload.targetFile) {
-        return { opened: false };
-      }
+        const targetFile: string | undefined = entityTargetFile(payload.entity);
 
-      try {
-        const uri: vscode.Uri = vscode.Uri.joinPath(root, targetFile);
-        await vscode.window.showTextDocument(uri, { preview: true });
-        return { opened: true };
-      } catch {
-        return { opened: false };
-      }
-    },
-  };
+        if (!targetFile || targetFile !== payload.targetFile) {
+          return { opened: false };
+        }
+
+        try {
+          const uri: vscode.Uri = vscode.Uri.joinPath(root, targetFile);
+          await vscode.window.showTextDocument(uri, { preview: true });
+          return { opened: true };
+        } catch {
+          return { opened: false };
+        }
+      },
+    };
+  }
 }

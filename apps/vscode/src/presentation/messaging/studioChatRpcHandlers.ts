@@ -14,8 +14,8 @@ import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import { createStudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
-import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
+import { StudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
+import { StudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import type {
   StoryboardResponsePayload,
@@ -36,66 +36,70 @@ export interface StudioChatRpcHandlersDependencies {
   readonly postProgress: (stage: StudioChatStage | 'idle') => void;
 }
 
-export function createStudioChatRpcHandlers(
-  deps: StudioChatRpcHandlersDependencies,
-): StoryboardRpcHandlers {
-  let generation: number = 0;
+export class StudioChatRpc {
+  public constructor(private readonly deps: StudioChatRpcHandlersDependencies) {}
 
-  return {
-    'studio.chat.send': async (payload): Promise<StoryboardResponsePayload<'studio.chat.send'>> => {
-      const root: vscode.Uri | undefined = await deps.getProjectRoot();
+  public handlers(): StoryboardRpcHandlers {
+    let generation: number = 0;
 
-      if (!root) {
-        return { turns: [sayTurn('Storyboard 프로젝트를 먼저 열어 주세요.')] };
-      }
+    return {
+      'studio.chat.send': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.chat.send'>> => {
+        const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
 
-      const target: StudioTarget = await deps.getTarget();
-      const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
-        vscodeFileSystem,
-      ).readEntityContext(root, payload.entity, sceneFocusOf(target));
+        if (!root) {
+          return { turns: [sayTurn('Storyboard 프로젝트를 먼저 열어 주세요.')] };
+        }
 
-      if (!entityContext) {
-        return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
-      }
+        const target: StudioTarget = await this.deps.getTarget();
+        const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
+          vscodeFileSystem,
+        ).readEntityContext(root, payload.entity, sceneFocusOf(target));
 
-      const selection: string | undefined = readSelectedDraftText(entityContext);
-      const contextWithSelection: string = selection
-        ? `${entityContext.context}\n\n[작가가 선택한 구간]\n${selection}`
-        : entityContext.context;
+        if (!entityContext) {
+          return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
+        }
 
-      const startedGeneration: number = generation;
+        const selection: string | undefined = readSelectedDraftText(entityContext);
+        const contextWithSelection: string = selection
+          ? `${entityContext.context}\n\n[작가가 선택한 구간]\n${selection}`
+          : entityContext.context;
 
-      try {
-        const turns: readonly StudioChatTurn[] = await deps.studio.chat({
-          workspaceRoot: root,
-          entityContext: { ...entityContext, context: contextWithSelection },
-          history: payload.history,
-          instruction: payload.instruction,
-          hasSelection: selection !== undefined,
-          ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
-          ...usageAttributionFor(payload.entity),
-          isValidationEnabled: deps.configBridge.isStudioValidationEnabled(),
-          resolveLookup: (requests) =>
-            new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
-          ...toolResolverFor(deps, root, payload.entity, entityContext),
-          resolveFollowUps: (followUps) =>
-            new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
-          createTurnId: () => crypto.randomUUID(),
-          onStage: deps.postProgress,
-        });
+        const startedGeneration: number = generation;
 
-        return { turns: generation === startedGeneration ? [...turns] : [] };
-      } finally {
-        deps.postProgress('idle');
-      }
-    },
+        try {
+          const turns: readonly StudioChatTurn[] = await this.deps.studio.chat({
+            workspaceRoot: root,
+            entityContext: { ...entityContext, context: contextWithSelection },
+            history: payload.history,
+            instruction: payload.instruction,
+            hasSelection: selection !== undefined,
+            ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
+            ...usageAttributionFor(payload.entity),
+            isValidationEnabled: this.deps.configBridge.isStudioValidationEnabled(),
+            resolveLookup: (requests) =>
+              new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
+            ...toolResolverFor(this.deps, root, payload.entity, entityContext),
+            resolveFollowUps: (followUps) =>
+              new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
+            createTurnId: () => crypto.randomUUID(),
+            onStage: this.deps.postProgress,
+          });
 
-    'studio.chat.cancel': async (): Promise<StoryboardResponsePayload<'studio.chat.cancel'>> => {
-      generation += 1;
-      deps.postProgress('idle');
-      return {};
-    },
-  };
+          return { turns: generation === startedGeneration ? [...turns] : [] };
+        } finally {
+          this.deps.postProgress('idle');
+        }
+      },
+
+      'studio.chat.cancel': async (): Promise<StoryboardResponsePayload<'studio.chat.cancel'>> => {
+        generation += 1;
+        this.deps.postProgress('idle');
+        return {};
+      },
+    };
+  }
 }
 
 function usageAttributionFor(entity: StudioEntity): Pick<StudioChatRequest, 'attribution'> {
@@ -118,7 +122,7 @@ function toolResolverFor(
 
   if (entityContext.patchTarget === 'draft') {
     return {
-      resolveInvoke: createStudioInvokeResolver(
+      resolveInvoke: new StudioInvokeResolver(
         {
           aiGateway: deps.aiGateway,
           logger: deps.logger,
@@ -130,12 +134,12 @@ function toolResolverFor(
           draftUri: entityContext.targetUri,
           baseline: entityContext.baseline,
         },
-      ),
+      ).resolve,
     };
   }
 
   return {
-    resolveInvoke: createStudioCardInvokeResolver(
+    resolveInvoke: new StudioCardInvokeResolver(
       {
         aiGateway: deps.aiGateway,
         cards: deps.cards,
@@ -148,7 +152,7 @@ function toolResolverFor(
         context: entityContext.context,
         baseline: entityContext.baseline,
       },
-    ),
+    ).resolve,
   };
 }
 

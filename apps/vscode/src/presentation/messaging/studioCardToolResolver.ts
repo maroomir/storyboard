@@ -37,94 +37,6 @@ export interface StudioCardToolResolverInput {
 
 const maxReportedItems: number = 15;
 
-export function createStudioCardInvokeResolver(
-  deps: StudioCardToolResolverDependencies,
-  input: StudioCardToolResolverInput,
-): (request: StudioAgentInvokeRequest) => Promise<string> {
-  return async (request) => {
-    try {
-      switch (request.tool) {
-        case 'collectFromDrafts':
-          return await runCollect(deps, input);
-        case 'cardAudit':
-          return await runAudit(deps, input);
-        case 'relationCheck':
-          return await runRelationCheck(input);
-        default:
-          return `[도구 실패: ${request.tool}] 이 대화에서는 쓸 수 없는 도구다.`;
-      }
-    } catch (error) {
-      deps.logger.warn(`Studio 카드 도구 실행 실패(${request.tool}): ${String(error)}`);
-      return `[도구 실패: ${request.tool}] 실행 중 오류가 나서 결과를 얻지 못했다. 도구 없이 판단하라.`;
-    }
-  };
-}
-
-async function runCollect(
-  deps: StudioCardToolResolverDependencies,
-  input: StudioCardToolResolverInput,
-): Promise<string> {
-  if (input.entity.kind === 'scene') {
-    return '[도구 실패: collectFromDrafts] 씬 대화에서는 쓸 수 없는 도구다.';
-  }
-
-  let card: StoryboardCard;
-
-  try {
-    card = parseCard(input.baseline);
-  } catch {
-    return '[도구 실패: collectFromDrafts] 카드를 읽지 못해 수집할 수 없었다.';
-  }
-
-  const proposals: CardCollectProposal[] = await deps.cards.collectProposals({
-    workspaceRoot: input.workspaceRoot,
-    card,
-  });
-
-  if (proposals.length === 0) {
-    return '[도구 결과: collectFromDrafts] 초안에서 카드에 더할 새 정보를 찾지 못했다.';
-  }
-
-  return [
-    `[도구 결과: collectFromDrafts] 후보 ${proposals.length}건. 대화 맥락에 맞는 것만 골라 다듬어 propose하라.`,
-    ...proposals.slice(0, maxReportedItems).map(describeCollectProposal),
-    ...(proposals.length > maxReportedItems
-      ? [`- 외 ${proposals.length - maxReportedItems}건은 카드 에디터의 수집 탭에서 확인.`]
-      : []),
-  ].join('\n');
-}
-
-async function runAudit(
-  deps: StudioCardToolResolverDependencies,
-  input: StudioCardToolResolverInput,
-): Promise<string> {
-  const verdict: StudioValidationVerdict = await deps.aiGateway
-    .createService(input.workspaceRoot)
-    .auditStudioEntity(
-      {
-        entityLabel: input.entityLabel,
-        cardText: input.baseline,
-        context: input.context,
-      },
-      { providerId: deps.aiGateway.getTaskProvider('studioValidation') },
-    );
-
-  if (verdict.state === 'skipped') {
-    return '[도구 결과: cardAudit] 판정을 읽지 못해 검사를 건너뛰었다.';
-  }
-
-  if (verdict.warnings.length === 0) {
-    return '[도구 결과: cardAudit] 자료와 어긋나는 점이 없다.';
-  }
-
-  return [
-    `[도구 결과: cardAudit] 어긋남 ${verdict.warnings.length}건`,
-    ...verdict.warnings.map(
-      (warning) => `- ${warning.message}${warning.source ? ` (근거: ${warning.source})` : ''}`,
-    ),
-  ].join('\n');
-}
-
 async function runRelationCheck(input: StudioCardToolResolverInput): Promise<string> {
   const lines: string[] =
     input.entity.kind === 'scene'
@@ -248,5 +160,89 @@ function describeCollectProposal(proposal: CardCollectProposal): string {
       return `- ${proposal.field}: ${proposal.after}${sources}`;
     default:
       return `- ${proposal.kind}: ${proposal.value}${sources}`;
+  }
+}
+
+export class StudioCardInvokeResolver {
+  public constructor(
+    private readonly deps: StudioCardToolResolverDependencies,
+    private readonly input: StudioCardToolResolverInput,
+  ) {}
+
+  public readonly resolve = async (request: StudioAgentInvokeRequest): Promise<string> => {
+    try {
+      switch (request.tool) {
+        case 'collectFromDrafts':
+          return await this.runCollect();
+        case 'cardAudit':
+          return await this.runAudit();
+        case 'relationCheck':
+          return await runRelationCheck(this.input);
+        default:
+          return `[도구 실패: ${request.tool}] 이 대화에서는 쓸 수 없는 도구다.`;
+      }
+    } catch (error) {
+      this.deps.logger.warn(`Studio 카드 도구 실행 실패(${request.tool}): ${String(error)}`);
+      return `[도구 실패: ${request.tool}] 실행 중 오류가 나서 결과를 얻지 못했다. 도구 없이 판단하라.`;
+    }
+  };
+
+  private async runCollect(): Promise<string> {
+    if (this.input.entity.kind === 'scene') {
+      return '[도구 실패: collectFromDrafts] 씬 대화에서는 쓸 수 없는 도구다.';
+    }
+
+    let card: StoryboardCard;
+
+    try {
+      card = parseCard(this.input.baseline);
+    } catch {
+      return '[도구 실패: collectFromDrafts] 카드를 읽지 못해 수집할 수 없었다.';
+    }
+
+    const proposals: CardCollectProposal[] = await this.deps.cards.collectProposals({
+      workspaceRoot: this.input.workspaceRoot,
+      card,
+    });
+
+    if (proposals.length === 0) {
+      return '[도구 결과: collectFromDrafts] 초안에서 카드에 더할 새 정보를 찾지 못했다.';
+    }
+
+    return [
+      `[도구 결과: collectFromDrafts] 후보 ${proposals.length}건. 대화 맥락에 맞는 것만 골라 다듬어 propose하라.`,
+      ...proposals.slice(0, maxReportedItems).map(describeCollectProposal),
+      ...(proposals.length > maxReportedItems
+        ? [`- 외 ${proposals.length - maxReportedItems}건은 카드 에디터의 수집 탭에서 확인.`]
+        : []),
+    ].join('\n');
+  }
+
+  private async runAudit(): Promise<string> {
+    const verdict: StudioValidationVerdict = await this.deps.aiGateway
+      .createService(this.input.workspaceRoot)
+      .auditStudioEntity(
+        {
+          entityLabel: this.input.entityLabel,
+          cardText: this.input.baseline,
+          context: this.input.context,
+        },
+        { providerId: this.deps.aiGateway.getTaskProvider('studioValidation') },
+      );
+
+    if (verdict.state === 'skipped') {
+      return '[도구 결과: cardAudit] 판정을 읽지 못해 검사를 건너뛰었다.';
+    }
+
+    if (verdict.warnings.length === 0) {
+      return '[도구 결과: cardAudit] 자료와 어긋나는 점이 없다.';
+    }
+
+    return [
+      `[도구 결과: cardAudit] 어긋남 ${verdict.warnings.length}건`,
+      ...verdict.warnings.map(
+        (warning) => `- ${warning.message}${warning.source ? ` (근거: ${warning.source})` : ''}`,
+      ),
+    ].join('\n');
   }
 }

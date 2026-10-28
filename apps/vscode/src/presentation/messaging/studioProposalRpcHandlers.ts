@@ -44,56 +44,58 @@ export interface StudioProposalRpcHandlersDependencies {
 const staleBaselineMessage: string =
   '제안을 만든 뒤 파일이 바뀌어서 적용하지 않았어요. 다시 요청해 주세요.';
 
-export function createStudioProposalRpcHandlers(
-  deps: StudioProposalRpcHandlersDependencies,
-): StoryboardRpcHandlers {
-  return {
-    'studio.proposal.preview': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'studio.proposal.preview'>> => {
-      const prepared: PreparedApply = await prepareApply(deps, payload.entity, payload.turn);
+export class StudioProposalRpc {
+  public constructor(private readonly deps: StudioProposalRpcHandlersDependencies) {}
 
-      if (!prepared.ok) {
-        return { shown: false, message: prepared.message };
-      }
+  public handlers(): StoryboardRpcHandlers {
+    return {
+      'studio.proposal.preview': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.proposal.preview'>> => {
+        const prepared: PreparedApply = await prepareApply(this.deps, payload.entity, payload.turn);
 
-      await deps.reviewService.showDiffs([
-        {
-          original: prepared.targetUri,
-          proposedText: prepared.text,
-          label: `Studio 제안 · ${prepared.targetFile}`,
-          key: `studio:${payload.entity.kind}:${payload.entity.key}`,
-        },
-      ]);
+        if (!prepared.ok) {
+          return { shown: false, message: prepared.message };
+        }
 
-      return { shown: true };
-    },
+        await this.deps.reviewService.showDiffs([
+          {
+            original: prepared.targetUri,
+            proposedText: prepared.text,
+            label: `Studio 제안 · ${prepared.targetFile}`,
+            key: `studio:${payload.entity.kind}:${payload.entity.key}`,
+          },
+        ]);
 
-    'studio.proposal.apply': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'studio.proposal.apply'>> => {
-      const prepared: PreparedApply = await prepareApply(deps, payload.entity, payload.turn);
+        return { shown: true };
+      },
 
-      if (!prepared.ok) {
-        return { status: 'failed', message: prepared.message };
-      }
+      'studio.proposal.apply': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.proposal.apply'>> => {
+        const prepared: PreparedApply = await prepareApply(this.deps, payload.entity, payload.turn);
 
-      await archiveDraftBeforeApply(deps, payload.entity, prepared);
+        if (!prepared.ok) {
+          return { status: 'failed', message: prepared.message };
+        }
 
-      try {
-        await vscode.workspace.fs.writeFile(
-          prepared.targetUri,
-          new TextEncoder().encode(prepared.text),
-        );
-      } catch (error) {
-        return { status: 'failed', message: `저장하지 못했습니다: ${String(error)}` };
-      }
+        await archiveDraftBeforeApply(this.deps, payload.entity, prepared);
 
-      await recordFollowUps(deps, payload.entity, payload.turn);
+        try {
+          await vscode.workspace.fs.writeFile(
+            prepared.targetUri,
+            new TextEncoder().encode(prepared.text),
+          );
+        } catch (error) {
+          return { status: 'failed', message: `저장하지 못했습니다: ${String(error)}` };
+        }
 
-      return { status: 'applied', message: appliedMessage(prepared) };
-    },
-  };
+        await recordFollowUps(this.deps, payload.entity, payload.turn);
+
+        return { status: 'applied', message: appliedMessage(prepared) };
+      },
+    };
+  }
 }
 
 type PreparedApply =

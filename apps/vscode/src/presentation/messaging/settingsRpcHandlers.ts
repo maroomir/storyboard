@@ -41,69 +41,71 @@ export async function getSettingsReadSnapshot(
   return buildSettingsReadSnapshot(deps);
 }
 
-export function createSettingsRpcHandlers(
-  deps: SettingsRpcHandlersDependencies,
-): StoryboardRpcHandlers {
-  const { configBridge, secretStore } = deps;
-  const savedTo = (key: string): StoryboardResponsePayload<'settings.updateDefaultProvider'> =>
-    describeSaveTarget(deps, key);
+export class SettingsRpc {
+  public constructor(private readonly deps: SettingsRpcHandlersDependencies) {}
 
-  return {
-    'settings.read': async (): Promise<StoryboardResponsePayload<'settings.read'>> =>
-      buildSettingsReadSnapshot(deps),
+  public handlers(): StoryboardRpcHandlers {
+    const { configBridge, secretStore } = this.deps;
+    const savedTo = (key: string): StoryboardResponsePayload<'settings.updateDefaultProvider'> =>
+      describeSaveTarget(this.deps, key);
 
-    'settings.updateDefaultProvider': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'settings.updateDefaultProvider'>> => {
-      await configBridge.setDefaultProvider(payload.providerId);
-      return savedTo('ai.provider.default');
-    },
+    return {
+      'settings.read': async (): Promise<StoryboardResponsePayload<'settings.read'>> =>
+        buildSettingsReadSnapshot(this.deps),
 
-    'settings.updateProviderModel': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'settings.updateProviderModel'>> => {
-      await configBridge.setProviderModel(payload.providerId, payload.model);
-      return savedTo(`providers.${payload.providerId}.model`);
-    },
+      'settings.updateDefaultProvider': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'settings.updateDefaultProvider'>> => {
+        await configBridge.setDefaultProvider(payload.providerId);
+        return savedTo('ai.provider.default');
+      },
 
-    'settings.updateProviderBaseUrl': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'settings.updateProviderBaseUrl'>> => {
-      await configBridge.setProviderBaseUrl(payload.baseUrl);
-      return savedTo('providers.ollama.baseUrl');
-    },
+      'settings.updateProviderModel': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'settings.updateProviderModel'>> => {
+        await configBridge.setProviderModel(payload.providerId, payload.model);
+        return savedTo(`providers.${payload.providerId}.model`);
+      },
 
-    'settings.updateTaskAiConfig': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'settings.updateTaskAiConfig'>> => {
-      await configBridge.setTaskAiConfig(payload.taskName, {
-        providerId: payload.providerId,
-        model: payload.model,
-      });
-      return savedTo('tasks');
-    },
+      'settings.updateProviderBaseUrl': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'settings.updateProviderBaseUrl'>> => {
+        await configBridge.setProviderBaseUrl(payload.baseUrl);
+        return savedTo('providers.ollama.baseUrl');
+      },
 
-    'settings.updateSettingValue': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'settings.updateSettingValue'>> => {
-      await configBridge.setSettingValue(payload.key, payload.value);
-      return savedTo(payload.key);
-    },
+      'settings.updateTaskAiConfig': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'settings.updateTaskAiConfig'>> => {
+        await configBridge.setTaskAiConfig(payload.taskName, {
+          providerId: payload.providerId,
+          model: payload.model,
+        });
+        return savedTo('tasks');
+      },
 
-    'secrets.writeApiKey': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'secrets.writeApiKey'>> => {
-      await secretStore.setApiKey(payload.providerId, payload.apiKey);
-      return { hasApiKey: true };
-    },
+      'settings.updateSettingValue': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'settings.updateSettingValue'>> => {
+        await configBridge.setSettingValue(payload.key, payload.value);
+        return savedTo(payload.key);
+      },
 
-    'secrets.deleteApiKey': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'secrets.deleteApiKey'>> => {
-      await secretStore.deleteApiKey(payload.providerId);
-      return { hasApiKey: false };
-    },
-  };
+      'secrets.writeApiKey': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'secrets.writeApiKey'>> => {
+        await secretStore.setApiKey(payload.providerId, payload.apiKey);
+        return { hasApiKey: true };
+      },
+
+      'secrets.deleteApiKey': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'secrets.deleteApiKey'>> => {
+        await secretStore.deleteApiKey(payload.providerId);
+        return { hasApiKey: false };
+      },
+    };
+  }
 }
 
 function describeSaveTarget(

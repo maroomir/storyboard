@@ -28,15 +28,18 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 
 type ProjectContractSnapshot = StoryboardResponsePayload<'project.readContract'>;
 
-export function createContractRpcHandlers(): StoryboardRpcHandlers {
-  return {
-    'project.readContract': async (): Promise<StoryboardResponsePayload<'project.readContract'>> =>
-      readContractSnapshot(),
+export class ContractRpc {
+  public handlers(): StoryboardRpcHandlers {
+    return {
+      'project.readContract': async (): Promise<
+        StoryboardResponsePayload<'project.readContract'>
+      > => readContractSnapshot(),
 
-    'project.updateContract': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'project.updateContract'>> => updateContract(payload),
-  };
+      'project.updateContract': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'project.updateContract'>> => updateContract(payload),
+    };
+  }
 }
 
 async function readContractSnapshot(): Promise<ProjectContractSnapshot> {

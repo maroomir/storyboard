@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { hashBaseline } from "@storyboard/story-engine"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
-import { createStudioProposalRpcHandlers } from "@/presentation/messaging/studioProposalRpcHandlers"
+import { StudioProposalRpc } from "@/presentation/messaging/studioProposalRpcHandlers"
 import type { ProposalReviewService } from "@/presentation/providers/proposalReviewService"
 import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
 import type { StudioChatTurn, StudioEntity } from "@storyboard/story-model"
@@ -98,14 +98,14 @@ function bridgeWith(): FakeWebview {
   const webview = new FakeWebview()
   createWebviewBridge(
     webview,
-    createStudioProposalRpcHandlers({
+    new StudioProposalRpc({
       reviewService,
       followUpRepository,
       configBridge,
       logger: harnessLogger,
-      getProjectRoot: async () => workspaceRoot,
-      createFollowUpId: () => "follow-1"
-    })
+      getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot,
+      createFollowUpId: (): string => "follow-1"
+    }).handlers()
   )
   return webview
 }

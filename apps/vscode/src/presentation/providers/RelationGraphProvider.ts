@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { CardCollectRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
+import { AiRpc } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
@@ -103,7 +103,7 @@ export class RelationGraphProvider implements IRelationGraphPanel {
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
-      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
+      ...new AiRpc(this.dependencies.aiProviderRegistry).handlers(),
       'relations.list': async (): Promise<StoryboardResponsePayload<'relations.list'>> => ({
         characters: await loadRelationListCharactersForRpc(),
       }),
