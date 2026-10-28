@@ -60,7 +60,7 @@ export * from './ai/prompts/types';
 export * from './ai/prompts/promptVariants';
 export * from './ai/providerFactory';
 export * from './ai/providerRegistry';
-export * from './ai/providers/chatGptLogin';
+export * from './ai/providers/chatGptLoginFlow';
 export * from './ai/providers/chatGptOAuth';
 export * from './ai/providers/chatGptProvider';
 export * from './ai/providers/claudeCodeProvider';

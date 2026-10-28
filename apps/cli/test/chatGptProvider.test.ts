@@ -15,6 +15,7 @@ import {
   type AiStreamChunk,
 } from '@storyboard/story-model';
 import {
+  ChatGptLoginFlow,
   ChatGptOAuthClient,
   ChatGptOAuthError,
   ChatGptProvider,
@@ -24,8 +25,6 @@ import {
   computeCostUsd,
   createAiProviderRegistry,
   createAuthorizationAttempt,
-  loginChatGpt,
-  logoutChatGpt,
   readAuthorizationCallback,
   shouldRefreshTokens,
   toResponsesInput,
@@ -696,10 +695,11 @@ describe('the ChatGPT plan provider: the login', () => {
     const secretStore = new SecretStore(secretStorage);
     const shownUrls: { url: string; wasOpened: boolean }[] = [];
 
-    const result = await loginChatGpt({
+    const result = await new ChatGptLoginFlow({
       secretStore,
       fetch: fetchImpl,
       preferredPort: 0,
+    }).login({
       openBrowser: async (url) => {
         void browser(url);
         return true;
@@ -750,10 +750,11 @@ describe('the ChatGPT plan provider: the login', () => {
     );
     let authorizationUrl = '';
 
-    const result = await loginChatGpt({
+    const result = await new ChatGptLoginFlow({
       secretStore,
       fetch: fetchImpl,
       preferredPort: 0,
+    }).login({
       openBrowser: async (url) => {
         authorizationUrl = url;
         void browser(url);
@@ -772,16 +773,19 @@ describe('the ChatGPT plan provider: the login', () => {
     const { fetchImpl, browser } = createAuthorizationServer();
     const secretStore = new SecretStore(memorySecretStorage());
 
-    const error = await loginChatGpt({
+    const error = await new ChatGptLoginFlow({
       secretStore,
       fetch: fetchImpl,
       preferredPort: 0,
-      openBrowser: async (url) => {
-        void browser(url, 'deny');
-        return true;
-      },
-      onAuthorizationUrl: () => undefined,
-    }).catch((caught: unknown) => caught);
+    })
+      .login({
+        openBrowser: async (url) => {
+          void browser(url, 'deny');
+          return true;
+        },
+        onAuthorizationUrl: () => undefined,
+      })
+      .catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ChatGptOAuthError);
     expect((error as ChatGptOAuthError).code).toBe('access-denied');
@@ -793,16 +797,19 @@ describe('the ChatGPT plan provider: the login', () => {
     const { fetchImpl, browser } = createAuthorizationServer({ scope: 'openid profile email' });
     const secretStore = new SecretStore(memorySecretStorage());
 
-    const error = await loginChatGpt({
+    const error = await new ChatGptLoginFlow({
       secretStore,
       fetch: fetchImpl,
       preferredPort: 0,
-      openBrowser: async (url) => {
-        void browser(url);
-        return true;
-      },
-      onAuthorizationUrl: () => undefined,
-    }).catch((caught: unknown) => caught);
+    })
+      .login({
+        openBrowser: async (url) => {
+          void browser(url);
+          return true;
+        },
+        onAuthorizationUrl: () => undefined,
+      })
+      .catch((caught: unknown) => caught);
 
     expect((error as ChatGptOAuthError).code).toBe('plan-usage-not-granted');
     expect(await secretStore.getOAuthConnection('chatgpt')).toBeUndefined();
@@ -819,16 +826,19 @@ describe('the ChatGPT plan provider: the login', () => {
       }),
     );
 
-    const error = await loginChatGpt({
+    const error = await new ChatGptLoginFlow({
       secretStore,
       fetch: fetchImpl,
       preferredPort: 0,
-      openBrowser: async (url) => {
-        void browser(url);
-        return true;
-      },
-      onAuthorizationUrl: () => undefined,
-    }).catch((caught: unknown) => caught);
+    })
+      .login({
+        openBrowser: async (url) => {
+          void browser(url);
+          return true;
+        },
+        onAuthorizationUrl: () => undefined,
+      })
+      .catch((caught: unknown) => caught);
 
     expect((error as ChatGptOAuthError).code).toBe('client-mismatch');
   });
@@ -836,14 +846,17 @@ describe('the ChatGPT plan provider: the login', () => {
   it('gives up after the time limit when the browser never comes back', async () => {
     const { fetchImpl } = createAuthorizationServer();
 
-    const error = await loginChatGpt({
+    const error = await new ChatGptLoginFlow({
       secretStore: new SecretStore(memorySecretStorage()),
       fetch: fetchImpl,
       preferredPort: 0,
       timeoutMs: 20,
-      openBrowser: async () => false,
-      onAuthorizationUrl: () => undefined,
-    }).catch((caught: unknown) => caught);
+    })
+      .login({
+        openBrowser: async () => false,
+        onAuthorizationUrl: () => undefined,
+      })
+      .catch((caught: unknown) => caught);
 
     expect((error as ChatGptOAuthError).code).toBe('access-denied');
     expect((error as ChatGptOAuthError).message).toContain('제한 시간');
@@ -855,7 +868,7 @@ describe('the ChatGPT plan provider: the login', () => {
       memorySecretStorage({ 'storyboard.oauth.chatgpt': JSON.stringify(connection()) }),
     );
 
-    const result = await logoutChatGpt({ secretStore, fetch: fetchImpl });
+    const result = await new ChatGptLoginFlow({ secretStore, fetch: fetchImpl }).logout();
 
     expect(result).toEqual({ wasConnected: true, isRevoked: true });
     const revocation = fetchImpl.requests.find((request) => request.url.endsWith('/revoke'));
@@ -868,7 +881,7 @@ describe('the ChatGPT plan provider: the login', () => {
       hostId: 'urn:uuid:host-1',
       registration: { clientId: 'oaiapp_1', subject: 'user-1', email: 'writer@example.com' },
     });
-    expect(await logoutChatGpt({ secretStore, fetch: fetchImpl })).toEqual({
+    expect(await new ChatGptLoginFlow({ secretStore, fetch: fetchImpl }).logout()).toEqual({
       wasConnected: false,
       isRevoked: false,
     });

@@ -1,11 +1,10 @@
 import {
+  ChatGptLoginFlow,
   ChatGptOAuthError,
   ChatGptProvider,
-  loginChatGpt,
-  logoutChatGpt,
+  type ChatGptLoginFlowDependencies,
   type ChatGptLogoutResult,
   type FetchLike,
-  type SecretStore,
 } from '@storyboard/story-ai';
 import {
   extractErrorMessage,
@@ -21,18 +20,10 @@ import type { CliContainer } from '@/container';
 import type { CommandContext, CommandOutcome } from './outcome';
 import { failure, success } from '@/commands/outcomes';
 
-interface LoginFlow {
-  readonly login: (
-    deps: Parameters<typeof loginChatGpt>[0],
-  ) => Promise<{ readonly accountLabel: string | undefined }>;
-  readonly logout: (deps: {
-    readonly secretStore: SecretStore;
-    readonly fetch?: FetchLike;
-  }) => Promise<{ readonly wasConnected: boolean; readonly isRevoked: boolean }>;
-}
+type LoginFlowFactory = (deps: ChatGptLoginFlowDependencies) => ChatGptLoginFlow;
 
-const loginFlows: Partial<Record<AiProviderId, LoginFlow>> = {
-  chatgpt: { login: loginChatGpt, logout: logoutChatGpt },
+const loginFlows: Partial<Record<AiProviderId, LoginFlowFactory>> = {
+  chatgpt: (deps: ChatGptLoginFlowDependencies): ChatGptLoginFlow => new ChatGptLoginFlow(deps),
 };
 
 export interface LoginDependencies {
@@ -107,22 +98,24 @@ export async function signIn(
   providerId: AiProviderId,
   deps: LoginDependencies = defaultLoginDependencies,
 ): Promise<CommandOutcome> {
-  const flow: LoginFlow | undefined = loginFlows[providerId];
+  const createFlow: LoginFlowFactory | undefined = loginFlows[providerId];
 
-  if (flow === undefined) {
+  if (createFlow === undefined) {
     return failure(`${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.`);
   }
 
   const displayName: string = getProviderDisplayName(providerId);
+  const flow: ChatGptLoginFlow = createFlow({
+    secretStore: container.secretStore,
+    ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+    ...(deps.timeoutMs === undefined ? {} : { timeoutMs: deps.timeoutMs }),
+    ...(deps.preferredPort === undefined ? {} : { preferredPort: deps.preferredPort }),
+  });
   let signedIn: { readonly accountLabel: string | undefined };
 
   try {
     signedIn = await flow.login({
-      secretStore: container.secretStore,
       openBrowser: deps.openBrowser,
-      ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
-      ...(deps.timeoutMs === undefined ? {} : { timeoutMs: deps.timeoutMs }),
-      ...(deps.preferredPort === undefined ? {} : { preferredPort: deps.preferredPort }),
       onAuthorizationUrl: (url, wasOpened) => {
         process.stderr.write(
           [
@@ -177,16 +170,16 @@ export async function signOut(
   providerId: AiProviderId,
   deps: Pick<LoginDependencies, 'fetch'> = {},
 ): Promise<CommandOutcome> {
-  const flow: LoginFlow | undefined = loginFlows[providerId];
+  const createFlow: LoginFlowFactory | undefined = loginFlows[providerId];
 
-  if (flow === undefined) {
+  if (createFlow === undefined) {
     return failure(`${providerId} 는 로그인으로 연결하는 프로바이더가 아닙니다.`);
   }
 
-  const logout: ChatGptLogoutResult = await flow.logout({
+  const logout: ChatGptLogoutResult = await createFlow({
     secretStore: container.secretStore,
     ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
-  });
+  }).logout();
 
   if (!logout.wasConnected) {
     return success(`${providerId} 에 로그인돼 있지 않았습니다.`, logout);
