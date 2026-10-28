@@ -1,12 +1,4 @@
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
-
-interface AgentGuideFile {
-  readonly uri: StoryUri;
-  readonly name: string;
-  readonly content: string;
-}
 
 export function createWorkspaceAgentGuide(): string {
   return `# Storyboard 작품 저장소 — 에이전트 지침
@@ -77,33 +69,3 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 }
 
 export const workspaceClaudeGuide: string = `@${STORYBOARD_RELATIVE_PATHS.agentGuide}\n`;
-
-export async function writeWorkspaceAgentGuidesIfMissing(
-  fileSystem: IFileSystem,
-  paths: StoryboardProjectPaths,
-): Promise<string[]> {
-  const guides: AgentGuideFile[] = [
-    {
-      uri: paths.agentGuide,
-      name: STORYBOARD_RELATIVE_PATHS.agentGuide,
-      content: createWorkspaceAgentGuide(),
-    },
-    {
-      uri: paths.claudeGuide,
-      name: STORYBOARD_RELATIVE_PATHS.claudeGuide,
-      content: workspaceClaudeGuide,
-    },
-  ];
-  const written: string[] = [];
-
-  for (const guide of guides) {
-    if (await fileSystem.exists(guide.uri)) {
-      continue;
-    }
-
-    await fileSystem.writeFile(guide.uri, new TextEncoder().encode(guide.content));
-    written.push(guide.name);
-  }
-
-  return written;
-}

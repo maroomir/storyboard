@@ -1,9 +1,7 @@
 import {
   createWorkspaceReadme,
-  createStoryboardDirectories,
-  ensureWorkspaceGitignore,
-  writeWorkspaceAgentGuidesIfMissing,
   ProjectRepository,
+  WorkspaceInitializer,
 } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
@@ -54,14 +52,14 @@ async function initializeStoryboardProject(
 
     const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
 
-    await createStoryboardDirectories(vscodeFileSystem, paths);
+    await new WorkspaceInitializer(vscodeFileSystem).createDirectories(paths);
     await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, project);
     await writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
     await writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
     await writeFileIfMissing(paths.sampleScene, createSampleScene());
-    await ensureWorkspaceGitignore(vscodeFileSystem, paths.gitignore);
+    await new WorkspaceInitializer(vscodeFileSystem).ensureGitignore(paths.gitignore);
     await writeFileIfMissing(paths.readme, createWorkspaceReadme(project.name));
-    await writeWorkspaceAgentGuidesIfMissing(vscodeFileSystem, paths);
+    await new WorkspaceInitializer(vscodeFileSystem).writeAgentGuidesIfMissing(paths);
 
     dependencies.logger.info(`Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`);
     await refreshStoryboardWorkspaceContext();

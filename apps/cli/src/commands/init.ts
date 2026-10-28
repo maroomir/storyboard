@@ -7,13 +7,10 @@ import type { CommandHandler, CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
 import {
-  createStoryboardDirectories,
-  createWorkspace,
-  ensureWorkspaceGitignore,
   mergeProjectSetting,
   sealStoryMemory,
-  writeWorkspaceAgentGuidesIfMissing,
   ProjectRepository,
+  WorkspaceInitializer,
 } from '@storyboard/story-engine';
 import {
   compositionCatalog,
@@ -59,12 +56,11 @@ export const initProject: CommandHandler = async ({ container, args }) => {
       return failure('Storyboard 워크스페이스가 아닙니다: storyboard init --title "작품 이름"');
     }
 
-    await createStoryboardDirectories(container.fileSystem, paths);
-    await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
-    const addedAgentGuides: string[] = await writeWorkspaceAgentGuidesIfMissing(
+    await new WorkspaceInitializer(container.fileSystem).createDirectories(paths);
+    await new WorkspaceInitializer(container.fileSystem).ensureGitignore(paths.gitignore);
+    const addedAgentGuides: string[] = await new WorkspaceInitializer(
       container.fileSystem,
-      paths,
-    );
+    ).writeAgentGuidesIfMissing(paths);
     const gitRepository: GitRepositoryOutcome = ensureGitRepository(container.workspaceRoot.fsPath);
     const sealedSceneOrders: readonly number[] = await sealWorkspaceStoryState(container, paths);
 
@@ -113,8 +109,9 @@ export const initProject: CommandHandler = async ({ container, args }) => {
   const language: string | undefined = flagString(args.flags, 'language');
   const setting: ProjectSetting | undefined =
     contract.setting === undefined ? undefined : mergeProjectSetting(undefined, contract.setting);
-  const { project, createdNarrators } = await createWorkspace({
-    fileSystem: container.fileSystem,
+  const { project, createdNarrators } = await new WorkspaceInitializer(
+    container.fileSystem,
+  ).createWorkspace({
     workspaceRoot: container.workspaceRoot,
     name,
     ...(language === undefined ? {} : { language }),

@@ -9,7 +9,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { writeNarratorCardsIfMissing } from '#engine/persistence/projectInitializer';
+import { WorkspaceInitializer } from '#engine/persistence/workspaceInitializer';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface UpdateProjectContractRequest {
@@ -62,11 +62,9 @@ export class UpdateProjectContractUseCase implements IUseCase<
         const setting: ProjectSetting = mergeProjectSetting(project.setting, request.setting);
 
         await new ProjectRepository(fileSystem).write(paths.projectJson, { ...project, setting });
-        const createdNarrators: string[] = await writeNarratorCardsIfMissing(
+        const createdNarrators: string[] = await new WorkspaceInitializer(
           fileSystem,
-          paths,
-          request.narratorCards ?? [],
-        );
+        ).writeNarratorCardsIfMissing(paths, request.narratorCards ?? []);
 
         return { ok: true, kind: 'updated', setting, createdNarrators };
       },

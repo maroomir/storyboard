@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
 import type { StoryUri } from '@storyboard/story-model';
 import { getStoryboardProjectPaths, NodeUri } from '@storyboard/story-model';
-import { migrateLegacyMemory } from '@storyboard/story-engine';
+import { WorkspaceInitializer, type MemoryMigrationResult } from '@storyboard/story-engine';
 
 const workspaceRoot = NodeUri.file('/workspace');
 
@@ -72,8 +72,10 @@ class InMemoryFileSystem implements IFileSystem {
   }
 }
 
-function migrate(fileSystem: InMemoryFileSystem): ReturnType<typeof migrateLegacyMemory> {
-  return migrateLegacyMemory(fileSystem, getStoryboardProjectPaths(workspaceRoot));
+function migrate(fileSystem: InMemoryFileSystem): Promise<MemoryMigrationResult> {
+  return new WorkspaceInitializer(fileSystem).migrateLegacyMemory(
+    getStoryboardProjectPaths(workspaceRoot),
+  );
 }
 
 describe('migrateLegacyMemory', () => {
