@@ -34,9 +34,7 @@ import {
 import {
   groupChapterStems,
   NarratorCardRepository,
-  readChapterNarrationDefaults,
-  resolveSceneNarration,
-  resolveSceneThread,
+  SceneNarrationResolver,
   type ChapterNarrationDefaults,
   type IFileSystem,
   type SceneThreadContext,
@@ -266,10 +264,10 @@ export async function readSceneNotes(
     fileSystem,
     `${stem}.card`,
   );
-  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
+  const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(fileSystem);
+  const chapterDefaults: ChapterNarrationDefaults = await narrationResolver.readChapterDefaults(
     paths,
     scene.order,
-    fileSystem,
   );
   const warnings: string[] = [];
 
@@ -281,11 +279,10 @@ export async function readSceneNotes(
     chapterDefaults,
     warnings,
   );
-  const thread: SceneThreadContext = await resolveSceneThread(
+  const thread: SceneThreadContext = await narrationResolver.resolveThread(
     paths,
     scene,
     project,
-    fileSystem,
     chapterDefaults.thread,
   );
   const draft: DraftState = await readDraftState(fileSystem, draftPath(workspaceRoot, stem));
@@ -343,17 +340,13 @@ async function summarizeNarration(
   paths: StoryboardProjectPaths,
   scene: SceneFile,
   project: StoryboardProject,
-  chapterDefaults: Awaited<ReturnType<typeof readChapterNarrationDefaults>>,
+  chapterDefaults: ChapterNarrationDefaults,
   warnings: string[],
 ): Promise<NarrationSummary | undefined> {
   try {
-    const directive: NarrationDirective | undefined = await resolveSceneNarration(
-      paths,
-      scene,
-      project,
-      chapterDefaults,
+    const directive: NarrationDirective | undefined = await new SceneNarrationResolver(
       container.fileSystem,
-    );
+    ).resolveNarration(paths, scene, project, chapterDefaults);
 
     if (directive === undefined) {
       return undefined;

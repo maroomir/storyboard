@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { configurationTargets } from '@storyboard/story-config';
-import { collectCurrentChapterHashes } from '@storyboard/story-engine';
+import { ChapterMemoryAuditor } from '@storyboard/story-engine';
 import { promptResourceFingerprint } from '@storyboard/story-ai';
 import {
   computeBackgroundFactConflictKey,
@@ -331,10 +331,10 @@ describe('storyboard doctor chapter summaries', () => {
   it('says nothing is wrong once the recorded hash matches the assembled chapter', async () => {
     writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
     const cli = container();
-    const current = await collectCurrentChapterHashes(
-      { fileSystem: cli.fileSystem, paths: getStoryboardProjectPaths(cli.workspaceRoot) },
-      '테스트',
-    );
+    const current = await new ChapterMemoryAuditor({
+      fileSystem: cli.fileSystem,
+      paths: getStoryboardProjectPaths(cli.workspaceRoot),
+    }).collectCurrentChapterHashes('테스트');
     writeWorkspaceWithSummary('첫 장 본문', current.get('1장') as string);
 
     const check = checksOf(await runDoctor({ container: container(), args: args() })).find(

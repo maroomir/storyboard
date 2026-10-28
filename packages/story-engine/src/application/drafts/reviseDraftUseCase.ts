@@ -42,11 +42,10 @@ import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import {
-  readChapterNarrationDefaults,
-  resolveSceneNarration,
+  SceneNarrationResolver,
   type ChapterNarrationDefaults,
-} from './resolveSceneNarration';
-import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
+  type SceneThreadContext,
+} from './sceneNarrationResolver';
 import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
@@ -93,24 +92,22 @@ async function resolveReviseNarration(
     };
   }
 
-  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
+  const resolver: SceneNarrationResolver = new SceneNarrationResolver(fs);
+  const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
     paths,
     scene.order,
-    fs,
   );
-  const thread: SceneThreadContext = await resolveSceneThread(
+  const thread: SceneThreadContext = await resolver.resolveThread(
     paths,
     scene,
     project,
-    fs,
     chapterDefaults.thread,
   );
-  const narration: NarrationDirective | undefined = await resolveSceneNarration(
+  const narration: NarrationDirective | undefined = await resolver.resolveNarration(
     paths,
     scene,
     project,
     chapterDefaults,
-    fs,
   );
 
   return {

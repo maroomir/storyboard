@@ -29,27 +29,20 @@ import type {
 } from '#engine/application/drafts/draftRepositories';
 
 import {
-  readChapterNarrationDefaults,
-  resolveSceneNarration,
+  SceneNarrationResolver,
   type ChapterNarrationDefaults,
-} from './resolveSceneNarration';
-import { resolveSceneThread, type SceneThreadContext } from './resolveSceneThread';
+  type SceneThreadContext,
+} from './sceneNarrationResolver';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '#engine/pipeline/sceneGenerationPolicies';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './draftGenerationContract';
 import { resolveSceneBeats } from './resolveSceneBeats';
 import { resolveSceneGrounding, type SceneGroundingOutcome } from './resolveSceneGrounding';
+import { StoryMemoryAuditor, type StoryMemoryAudit } from './storyMemoryAuditor';
 import {
-  auditStoryMemory,
-  markStoryStateStaleEntries,
-  type StoryMemoryAudit,
-} from './storyStateAudit';
-import {
-  auditChapterMemory,
-  markStaleChapterSummaries,
+  ChapterMemoryAuditor,
   type ChapterMemoryAudit,
-  type ChapterSummaryAuditRequest,
-} from '#engine/application/manuscript/chapterSummaryAudit';
+} from '#engine/application/manuscript/chapterMemoryAuditor';
 
 export interface SceneGenerationInputs {
   readonly workspaceFolder: StoryWorkspaceFolder;
@@ -318,44 +311,45 @@ async function loadSceneContextBundle(
     : await resolveSceneBeats(sceneUri, grounded.scene, builtContext.characters, options);
   const context: SceneContext = { ...builtContext, scene };
 
-  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
-    paths,
-    scene.order,
+  const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(
     options.host.fileSystem,
   );
-  const thread: SceneThreadContext = await resolveSceneThread(
+  const chapterDefaults: ChapterNarrationDefaults = await narrationResolver.readChapterDefaults(
+    paths,
+    scene.order,
+  );
+  const thread: SceneThreadContext = await narrationResolver.resolveThread(
     paths,
     scene,
     project,
-    options.host.fileSystem,
     chapterDefaults.thread,
   );
-  const narration: NarrationDirective | undefined = await resolveSceneNarration(
+  const narration: NarrationDirective | undefined = await narrationResolver.resolveNarration(
     paths,
     scene,
     project,
     chapterDefaults,
-    options.host.fileSystem,
   );
   const sceneBreakJoiner: string | undefined = resolveSceneBreakJoiner(
     options.host.configBridge.getDraftSceneBreakSeparator(),
   );
 
-  const memoryAudit: StoryMemoryAudit = await auditStoryMemory({
+  const memoryAuditor: StoryMemoryAuditor = new StoryMemoryAuditor({
     fileSystem: options.host.fileSystem,
     paths: thread.threadPaths,
     format: project.format,
     sceneBreakJoiner,
     beforeSceneOrder: scene.order,
   });
-  await markStoryStateStaleEntries(thread.threadPaths, options.host.fileSystem, memoryAudit);
+  const memoryAudit: StoryMemoryAudit = await memoryAuditor.audit();
+  await memoryAuditor.markStale(memoryAudit);
 
-  const chapterAuditRequest: ChapterSummaryAuditRequest = {
+  const chapterAuditor: ChapterMemoryAuditor = new ChapterMemoryAuditor({
     fileSystem: options.host.fileSystem,
     paths: thread.threadPaths,
-  };
-  const chapterAudit: ChapterMemoryAudit = await auditChapterMemory(chapterAuditRequest);
-  await markStaleChapterSummaries(chapterAuditRequest, chapterAudit);
+  });
+  const chapterAudit: ChapterMemoryAudit = await chapterAuditor.audit();
+  await chapterAuditor.markStale(chapterAudit);
 
   const narrativeContext: NarrativeContext = await buildNarrativeContext(
     sceneContextPaths(thread.threadPaths),

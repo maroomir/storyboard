@@ -6,7 +6,7 @@ import type {
   IStoryboardLogger,
   StoryStateAuditRequest,
 } from '@storyboard/story-engine';
-import { auditStoryMemory, resealStoryMemory, ProjectRepository } from '@storyboard/story-engine';
+import { StoryMemoryAuditor, ProjectRepository } from '@storyboard/story-engine';
 import {
   getStoryboardProjectPaths,
   formatSceneOrderRanges,
@@ -55,7 +55,8 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
       format: project.format,
       sceneBreakJoiner: configBridge.getDraftSceneBreakSeparator(),
     };
-    const { audit } = await auditStoryMemory(request);
+    const auditor: StoryMemoryAuditor = new StoryMemoryAuditor(request);
+    const { audit } = await auditor.audit();
 
     if (audit.staleSceneOrders.length === 0) {
       await vscode.window.showInformationMessage('다시 봉인할 낡은 항목이 없습니다.');
@@ -72,7 +73,7 @@ async function runReseal(dependencies: RegisterResealStoryStateCommandDependenci
       return;
     }
 
-    const resealed: readonly number[] = await resealStoryMemory(request);
+    const resealed: readonly number[] = await auditor.reseal();
 
     await vscode.window.showInformationMessage(
       `씬 ${formatSceneOrderRanges(resealed)}의 원장 항목을 다시 봉인했습니다.`,

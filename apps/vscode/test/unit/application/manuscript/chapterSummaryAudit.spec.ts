@@ -2,10 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
 import {
-  auditChapterMemory,
-  collectCurrentChapterHashes,
+  ChapterMemoryAuditor,
   createDefaultProjectJson,
-  markStaleChapterSummaries,
   serializeProjectJson,
 } from '@storyboard/story-engine';
 import {
@@ -130,7 +128,7 @@ describe('chapter summary audit over a workspace', () => {
   });
 
   async function sealSummaries(): Promise<void> {
-    const current = await collectCurrentChapterHashes(request(), '작품');
+    const current = await new ChapterMemoryAuditor(request()).collectCurrentChapterHashes('작품');
 
     fileSystem.write(
       paths.chapterSummaries.path,
@@ -142,7 +140,7 @@ describe('chapter summary audit over a workspace', () => {
   }
 
   it('leaves a summary alone while its chapter drafts are unchanged', async () => {
-    const audit = await auditChapterMemory(request());
+    const audit = await new ChapterMemoryAuditor(request()).audit();
 
     expect(audit.audit.staleChapterTitles).toEqual([]);
     expect(audit.staleWarning).toBeUndefined();
@@ -152,7 +150,7 @@ describe('chapter summary audit over a workspace', () => {
   it('marks the summary of a chapter whose draft was rewritten', async () => {
     writeDraft('01-first', '고쳐 쓴 첫 장 본문');
 
-    const audit = await auditChapterMemory(request());
+    const audit = await new ChapterMemoryAuditor(request()).audit();
 
     expect(audit.audit.staleChapterTitles).toEqual(['1장']);
     expect(audit.staleWarning).toContain('1장');
@@ -162,7 +160,7 @@ describe('chapter summary audit over a workspace', () => {
   it('writes the mark into the file so the next scene prompt drops that chapter', async () => {
     writeDraft('01-first', '고쳐 쓴 첫 장 본문');
 
-    await markStaleChapterSummaries(request(), await auditChapterMemory(request()));
+    await new ChapterMemoryAuditor(request()).markStale(await new ChapterMemoryAuditor(request()).audit());
 
     expect(readSummaries()[0]?.isStale).toBe(true);
     expect(readSummaries()[1]?.isStale).toBe(false);
@@ -171,7 +169,7 @@ describe('chapter summary audit over a workspace', () => {
   it('does not rewrite the file when nothing became stale', async () => {
     const before = fileSystem.read(paths.chapterSummaries.path);
 
-    await markStaleChapterSummaries(request(), await auditChapterMemory(request()));
+    await new ChapterMemoryAuditor(request()).markStale(await new ChapterMemoryAuditor(request()).audit());
 
     expect(fileSystem.read(paths.chapterSummaries.path)).toBe(before);
   });
@@ -179,7 +177,7 @@ describe('chapter summary audit over a workspace', () => {
   it('treats a chapter as stale when its draft is deleted', async () => {
     await fileSystem.delete({ path: `${paths.draftDirectory.path}/02-second.md` });
 
-    const audit = await auditChapterMemory(request());
+    const audit = await new ChapterMemoryAuditor(request()).audit();
 
     expect(audit.audit.staleChapterTitles).toEqual(['2장']);
   });
@@ -187,7 +185,7 @@ describe('chapter summary audit over a workspace', () => {
   it('skips the audit when the workspace keeps no chapter plan', async () => {
     await fileSystem.delete({ path: paths.outlineChapters.path });
 
-    const audit = await auditChapterMemory(request());
+    const audit = await new ChapterMemoryAuditor(request()).audit();
 
     expect(audit.audit.summaries).toEqual([]);
     expect(audit.needsMarking).toBe(false);
