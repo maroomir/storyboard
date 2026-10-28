@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ParsedArguments } from '@/cliArguments';
 import { commands } from '@/commands';
-import { collectHiddenProviderChecks } from '@/commands/hiddenProvider';
+import { HiddenProviderSwitch } from '@/commands/hiddenProviderSwitch';
 import { signIn, signOut } from '@/commands/login';
 import { runConfigSet } from '@/commands/config';
 import { runDoctor } from '@/commands/doctor';
@@ -297,14 +297,14 @@ describe('setup and doctor with the login provider', () => {
         models: slugs.map((slug) => ({ slug, display_name: slug, visibility: 'list' })),
       });
 
-    const offered = await collectHiddenProviderChecks(current, 'chatgpt', listing(['gpt-6-sol']));
+    const offered = await new HiddenProviderSwitch(current).checks('chatgpt', listing(['gpt-6-sol']));
     expect(offered.map((check) => [check.status, check.label])).toEqual([
       ['info', '미리보기'],
       ['ok', '로그인'],
     ]);
     expect(offered[1]?.detail).toContain('writer@example.com');
 
-    const missing = await collectHiddenProviderChecks(current, 'chatgpt', listing(['gpt-6.1-sol']));
+    const missing = await new HiddenProviderSwitch(current).checks('chatgpt', listing(['gpt-6.1-sol']));
     expect(missing.map((check) => [check.status, check.label])).toEqual([
       ['info', '미리보기'],
       ['ok', '로그인'],
@@ -314,7 +314,7 @@ describe('setup and doctor with the login provider', () => {
       'gpt-6-sol 이 이 계정의 모델 목록에 없습니다 (gpt-6.1-sol)',
     );
 
-    const rejected = await collectHiddenProviderChecks(current, 'chatgpt', async () =>
+    const rejected = await new HiddenProviderSwitch(current).checks('chatgpt', async () =>
       jsonResponse({ detail: 'not admitted' }, 401),
     );
     expect(rejected[1]).toMatchObject({

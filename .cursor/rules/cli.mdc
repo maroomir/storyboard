@@ -82,8 +82,8 @@ vocabulary it needs from `catalog.ts`. `commands/commandDispatcher.ts` is the on
 (`CommandDispatcher`, built with the container factory and the terminal facts): completion, the
 argument parser, the resource overrides, the run lock and the call to `execute` are its `private`
 steps. What two nouns share has a module named for what it is — `sceneArguments.ts` (the `<stem>`
-argument), `paidRunConfirmation.ts` (the estimate prompt before a paid run), `contractInput.ts` (the
-project contract read from flags or a file) — never a `shared.ts`. A command builds its
+argument) and `workspaceInput.ts` (`WorkspaceInput`: the scene cards, the project contract read from
+flags or a file, the estimate prompt before a paid run) — never a `shared.ts`. A command builds its
 `CommandOutcome` with `failure(message, data?)` and `success(message, data?)` from
 `commands/outcomes.ts`; only an outcome that carries `stop` or `isDrawn` is written as a literal.
 

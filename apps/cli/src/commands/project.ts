@@ -1,4 +1,4 @@
-import { readContractInput, type ContractInput } from '@/commands/contractInput';
+import { WorkspaceInput, type ContractInput } from '@/commands/workspaceInput';
 import type { CommandHandler } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
 import type { UpdateProjectContractResult } from '@storyboard/story-engine';
@@ -12,7 +12,7 @@ import {
 } from '@storyboard/story-model';
 
 export const setProjectContract: CommandHandler = async ({ container, args }) => {
-  const contract: ContractInput = await readContractInput(container, args);
+  const contract: ContractInput = await new WorkspaceInput(container).readContract(args);
 
   if ('message' in contract) {
     return failure(contract.message);

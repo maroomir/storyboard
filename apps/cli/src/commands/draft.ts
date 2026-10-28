@@ -1,7 +1,7 @@
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 import type { CommandHandler, CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
-import { cancelledBeforeRun, confirmPaidRun } from '@/commands/paidRunConfirmation';
+import { WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
 import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import type { CliContainer } from '@/container';
 import type { DraftAugmentScope } from '@storyboard/story-ai';
@@ -51,7 +51,7 @@ function describeBatchStep(progress: GenerateAllDraftsProgress): string {
 
 export const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
-    const isConfirmed: boolean = await confirmPaidRun(container, (status) => {
+    const isConfirmed: boolean = await new WorkspaceInput(container).confirmPaidRun((status) => {
       const pending: number = status.drafts.missing + status.drafts.stale;
       return {
         title: `초안 ${pending}개 생성`,

@@ -1,8 +1,8 @@
 import { ensureGitRepository, type GitRepositoryOutcome } from '@/adapters/gitRepository';
 import type { IPrompter } from '@/adapters/prompter';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
-import { readContractInput, type ContractInput } from '@/commands/contractInput';
-import { runNoteAbsorb } from '@/commands/notes';
+import { WorkspaceInput, type ContractInput } from '@/commands/workspaceInput';
+import { NoteAbsorber } from '@/commands/noteAbsorber';
 import type { CommandHandler, CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
@@ -100,7 +100,7 @@ export const initProject: CommandHandler = async ({ container, args }) => {
     return failure('작품 이름이 필요합니다: storyboard init --title "작품 이름"');
   }
 
-  const contract: ContractInput = await readContractInput(container, args);
+  const contract: ContractInput = await new WorkspaceInput(container).readContract(args);
 
   if ('message' in contract) {
     return failure(contract.message);
@@ -122,7 +122,7 @@ export const initProject: CommandHandler = async ({ container, args }) => {
   const fromNotes: string | undefined = flagString(args.flags, 'from-notes');
 
   if (fromNotes !== undefined) {
-    const absorbed: CommandOutcome = await runNoteAbsorb(container, args, fromNotes, {
+    const absorbed: CommandOutcome = await new NoteAbsorber(container).absorb(args, fromNotes, {
       shouldFillContract: true,
       retryCommand: `storyboard notes absorb '${fromNotes.replace(/'/g, `'\\''`)}' --yes`,
     });
