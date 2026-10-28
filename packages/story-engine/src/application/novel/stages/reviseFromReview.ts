@@ -5,7 +5,11 @@ import type { INovelStage } from '#engine/application/novel/novelStage';
 import type { NovelPipelineResult } from '#engine/application/novel/novelPipelineContract';
 import type { NovelRun } from '#engine/application/novel/novelRun';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
-import { VolumeReviewer, type ReviewStageResult, type ReviewTarget } from './volumeReviewer';
+import type {
+  ReviewStageResult,
+  ReviewTarget,
+} from '#engine/application/novel/novelPipelineContract';
+import { VolumeReviewer } from './volumeReviewer';
 
 export class ReviseFromReviewStage implements INovelStage {
   public readonly id: NovelStageName = 'revise-from-review';

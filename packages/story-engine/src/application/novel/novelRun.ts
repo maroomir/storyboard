@@ -12,8 +12,8 @@ import type {
   NovelPipelineOptions,
   NovelPipelineResult,
   NovelPipelineServices,
+  ReviewStageResult,
 } from './novelPipelineContract';
-import type { ReviewStageResult } from './stages/volumeReviewer';
 
 export interface ApprovalRequest {
   readonly kind: NovelApprovalKind;

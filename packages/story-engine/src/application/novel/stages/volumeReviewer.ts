@@ -12,17 +12,10 @@ import type {
 import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
 import type { INovelReviewRepository } from '#engine/application/novel/novelPipelinePorts';
 import type { NovelRun } from '#engine/application/novel/novelRun';
-import type { ReviseSeedIssues } from '#engine/pipeline/reviseLoop';
-
-export interface ReviewStageResult {
-  readonly targets: readonly ReviewTarget[];
-  readonly highCount: number;
-}
-
-export interface ReviewTarget {
-  readonly sceneStem: string;
-  readonly seedIssues: ReviseSeedIssues;
-}
+import type {
+  ReviewStageResult,
+  ReviewTarget,
+} from '#engine/application/novel/novelPipelineContract';
 
 interface SceneReviewIssues {
   continuity: ContinuityIssueLike[];

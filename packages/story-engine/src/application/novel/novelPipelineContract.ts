@@ -15,6 +15,7 @@ import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/a
 import type { GenerateDraftUseCase } from '#engine/application/drafts/generateDraftUseCase';
 import type { ReviseDraftUseCase } from '#engine/application/drafts/reviseDraftUseCase';
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
+import type { ReviseSeedIssues } from '#engine/pipeline/reviseLoop';
 
 export type NovelAiService = ReturnType<AiGateway['createService']>;
 
@@ -49,6 +50,16 @@ export type NovelPipelineOutcome = 'completed' | 'paused' | 'cancelled' | 'faile
 export interface NovelPipelineResult {
   readonly outcome: NovelPipelineOutcome;
   readonly message: string;
+}
+
+export interface ReviewTarget {
+  readonly sceneStem: string;
+  readonly seedIssues: ReviseSeedIssues;
+}
+
+export interface ReviewStageResult {
+  readonly targets: readonly ReviewTarget[];
+  readonly highCount: number;
 }
 
 export interface NovelPipelineCollaborators {
