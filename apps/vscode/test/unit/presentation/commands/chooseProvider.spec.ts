@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { ConfigBridge, SecretStore } from "@storyboard/story-ai"
 import type { AiProviderRegistry, StoryboardConfigurationLike, StoryboardSecretStorageLike } from "@storyboard/story-ai"
 
-import { chooseDefaultProvider, nudgeToChooseProvider } from "@/presentation/commands/chooseProvider"
+import { chooseDefaultProvider, nudgeToChooseProvider } from "@/presentation/commands/chooseProviderCommand"
 
 function createConfigBridge(values: Map<string, unknown>): ConfigBridge {
   const configuration: StoryboardConfigurationLike = {

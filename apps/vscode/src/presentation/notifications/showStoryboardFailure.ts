@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import { missingApiKeyMarker } from '@storyboard/story-model';
 import { missingProviderMessage } from '@storyboard/story-ai';
 
-import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
-import { openSettingsCommand } from '@/presentation/commands/openSettings';
+import { chooseProviderCommand } from '@/presentation/commands/chooseProviderCommand';
+import { openSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 
 interface FailureAction {
   readonly label: string;

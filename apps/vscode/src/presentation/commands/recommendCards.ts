@@ -9,27 +9,14 @@ import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const recommendCharacterCommand: string = 'storyboard.character.recommend';
-const recommendBackgroundCommand: string = 'storyboard.background.recommend';
+export const recommendCharacterCommand: string = 'storyboard.character.recommend';
+export const recommendBackgroundCommand: string = 'storyboard.background.recommend';
 
 export interface RecommendCardDependencies {
   readonly cards: Pick<CardManager, 'recommend' | 'deriveUniqueId' | 'write'>;
 }
 
-export function registerRecommendCardCommands(
-  dependencies: RecommendCardDependencies,
-): vscode.Disposable {
-  return vscode.Disposable.from(
-    vscode.commands.registerCommand(recommendCharacterCommand, () =>
-      recommendCards('character', dependencies),
-    ),
-    vscode.commands.registerCommand(recommendBackgroundCommand, () =>
-      recommendCards('background', dependencies),
-    ),
-  );
-}
-
-async function recommendCards(
+export async function recommendCards(
   category: BibleSubjectKind,
   dependencies: RecommendCardDependencies,
 ): Promise<void> {

@@ -1,3 +1,5 @@
+import { DiagnosticsCheckCommand } from '@/presentation/providers/diagnosticsCheckCommand';
+import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
@@ -6,7 +8,6 @@ import type { CheckDraftResult } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, parseDraft } from '@storyboard/story-model';
 import {
   createDiagnostic,
-  runDiagnosticsCheckCommand,
   toRange,
   type DiagnosticsProviderDependencies,
 } from './diagnosticsShared';
@@ -118,20 +119,21 @@ function resolveSceneStem(document: vscode.TextDocument): string {
   }
 }
 
-export function registerContinuityDiagnosticsProvider(
-  dependencies: DiagnosticsProviderDependencies,
-): vscode.Disposable {
-  const controller: ContinuityDiagnosticsController = new ContinuityDiagnosticsController(
-    dependencies,
-  );
+export class ContinuityDiagnosticsProvider {
+  private readonly controller: ContinuityDiagnosticsController;
+  public readonly commands: readonly IExtensionCommand[];
 
-  const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
-    continuityCheckCommand,
-    (uri?: vscode.Uri) => runDiagnosticsCheckCommand(controller, uri),
-  );
-  const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
-    controller.getDiagnosticsCollection().delete(document.uri);
-  });
+  public constructor(dependencies: DiagnosticsProviderDependencies) {
+    this.controller = new ContinuityDiagnosticsController(dependencies);
+    this.commands = [new DiagnosticsCheckCommand(continuityCheckCommand, this.controller)];
+  }
 
-  return vscode.Disposable.from(controller, commandRegistration, closeListener);
+  public register(): vscode.Disposable {
+    const { controller } = this;
+    const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
+      controller.getDiagnosticsCollection().delete(document.uri);
+    });
+
+    return vscode.Disposable.from(controller, closeListener);
+  }
 }

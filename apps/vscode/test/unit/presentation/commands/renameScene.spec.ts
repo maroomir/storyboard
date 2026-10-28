@@ -1,7 +1,8 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { registerRenameSceneCommand } from "@/presentation/commands/renameScene"
+import { CommandRegistrar } from "@/bootstrap/commandRegistrar"
+import { RenameSceneCommand } from "@/presentation/commands/renameSceneCommand"
 import { commands, FileType, window, workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 describe("renameScene command", () => {
@@ -56,7 +57,7 @@ describe("renameScene command", () => {
       rewrittenFiles: [],
     })
 
-    registerRenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })
+    new CommandRegistrar().register([new RenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })])
     await renameHandler!(sceneUri)
 
     expect(hold).toHaveBeenCalledOnce()
@@ -71,14 +72,14 @@ describe("renameScene command", () => {
   it("shows the engine's refusal", async () => {
     renameScene.mockResolvedValue({ ok: false, kind: "order-taken", message: "4번은 이미 04-dawn 가 쓰고 있습니다." })
 
-    registerRenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })
+    new CommandRegistrar().register([new RenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })])
     await renameHandler!(sceneUri)
 
     expect(window.showWarningMessage).toHaveBeenCalledWith("4번은 이미 04-dawn 가 쓰고 있습니다.")
   })
 
   it("refuses a card outside the scene folder without asking for a name", async () => {
-    registerRenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })
+    new CommandRegistrar().register([new RenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })])
     await renameHandler!(vscode.Uri.file("/ws/project/character/03-night-market.card"))
 
     expect(window.showInputBox).not.toHaveBeenCalled()

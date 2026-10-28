@@ -34,10 +34,10 @@ import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const CONDENSE_DRAFT_COMMAND: string = 'storyboard.draft.condense';
-const CONDENSE_PREVIEW_SCHEME: string = 'storyboard-condense';
+export const CONDENSE_DRAFT_COMMAND: string = 'storyboard.draft.condense';
+export const CONDENSE_PREVIEW_SCHEME: string = 'storyboard-condense';
 
-export interface RegisterCondenseDraftCommandDependencies {
+export interface CondenseDraftCommandDependencies {
   readonly drafts: Pick<DraftManager, 'condense'>;
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
@@ -228,8 +228,8 @@ async function reportFailure(
   await showStoryboardFailure(`원본 축소에 실패했습니다: ${failure.message}`);
 }
 
-async function runCondenseDraft(
-  dependencies: RegisterCondenseDraftCommandDependencies,
+export async function runCondenseDraft(
+  dependencies: CondenseDraftCommandDependencies,
   previewProvider: VirtualDocumentStore,
   invokedUri?: vscode.Uri,
 ): Promise<void> {
@@ -305,17 +305,4 @@ async function runCondenseDraft(
 
   await target.editor.document.save();
   await vscode.window.showInformationMessage('원본 축소를 적용했습니다.');
-}
-
-export function registerCondenseDraftCommand(
-  dependencies: RegisterCondenseDraftCommandDependencies,
-): vscode.Disposable {
-  const previewProvider: VirtualDocumentStore = new VirtualDocumentStore();
-  return vscode.Disposable.from(
-    previewProvider,
-    vscode.workspace.registerTextDocumentContentProvider(CONDENSE_PREVIEW_SCHEME, previewProvider),
-    vscode.commands.registerCommand(CONDENSE_DRAFT_COMMAND, (uri?: vscode.Uri) =>
-      runCondenseDraft(dependencies, previewProvider, uri),
-    ),
-  );
 }

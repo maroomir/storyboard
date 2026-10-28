@@ -1,10 +1,11 @@
+import { DiagnosticsCheckCommand } from '@/presentation/providers/diagnosticsCheckCommand';
+import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import type { CheckDraftResult } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, STORYBOARD_GLOBS, parseDraft } from '@storyboard/story-model';
 import {
   createWarningDiagnostic,
-  runDiagnosticsCheckCommand,
   toRange,
   type DiagnosticsProviderDependencies,
 } from './diagnosticsShared';
@@ -186,53 +187,60 @@ async function runApplyGrammarFix(
   });
 }
 
-export function registerGrammarDiagnosticsProvider(
-  dependencies: DiagnosticsProviderDependencies,
-): vscode.Disposable {
-  const controller: GrammarDiagnosticsController = new GrammarDiagnosticsController(dependencies);
-  const selector: vscode.DocumentSelector = {
-    scheme: 'file',
-    pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
-  };
+class ApplyGrammarFixCommand implements IExtensionCommand {
+  public readonly id: string = applyGrammarFixCommand;
 
-  const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
-    grammarCheckCommand,
-    (uri?: vscode.Uri) => runDiagnosticsCheckCommand(controller, uri),
-  );
-  const applyFixCommandRegistration: vscode.Disposable = vscode.commands.registerCommand(
-    applyGrammarFixCommand,
-    (uri: vscode.Uri, range: vscode.Range, suggestion: string) =>
-      runApplyGrammarFix(uri, range, suggestion),
-  );
+  public run(uri: vscode.Uri, range: vscode.Range, suggestion: string): Promise<void> {
+    return runApplyGrammarFix(uri, range, suggestion);
+  }
+}
 
-  const codeActionRegistration: vscode.Disposable = vscode.languages.registerCodeActionsProvider(
-    selector,
-    new GrammarCodeActionProvider(),
-    { providedCodeActionKinds: GrammarCodeActionProvider.providedCodeActionKinds },
-  );
+export class GrammarDiagnosticsProvider {
+  private readonly controller: GrammarDiagnosticsController;
+  public readonly commands: readonly IExtensionCommand[];
 
-  const saveListener: vscode.Disposable = vscode.workspace.onDidSaveTextDocument((document) => {
-    void controller.runForDocument(document);
-  });
-  const changeListener: vscode.Disposable = vscode.workspace.onDidChangeTextDocument((event) => {
-    if (!dependencies.configBridge.isGrammarRealtimeEnabled()) {
-      return;
-    }
+  public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {
+    this.controller = new GrammarDiagnosticsController(dependencies);
+    this.commands = [
+      new DiagnosticsCheckCommand(grammarCheckCommand, this.controller),
+      new ApplyGrammarFixCommand(),
+    ];
+  }
 
-    controller.scheduleRealtimeCheck(event.document);
-  });
-  const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
-    controller.cancelRealtimeCheck(document);
-    controller.getDiagnosticsCollection().delete(document.uri);
-  });
+  public register(): vscode.Disposable {
+    const { controller, dependencies } = this;
+    const selector: vscode.DocumentSelector = {
+      scheme: 'file',
+      pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
+    };
 
-  return vscode.Disposable.from(
-    controller,
-    commandRegistration,
-    applyFixCommandRegistration,
-    codeActionRegistration,
-    saveListener,
-    changeListener,
-    closeListener,
-  );
+    const codeActionRegistration: vscode.Disposable = vscode.languages.registerCodeActionsProvider(
+      selector,
+      new GrammarCodeActionProvider(),
+      { providedCodeActionKinds: GrammarCodeActionProvider.providedCodeActionKinds },
+    );
+
+    const saveListener: vscode.Disposable = vscode.workspace.onDidSaveTextDocument((document) => {
+      void controller.runForDocument(document);
+    });
+    const changeListener: vscode.Disposable = vscode.workspace.onDidChangeTextDocument((event) => {
+      if (!dependencies.configBridge.isGrammarRealtimeEnabled()) {
+        return;
+      }
+
+      controller.scheduleRealtimeCheck(event.document);
+    });
+    const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
+      controller.cancelRealtimeCheck(document);
+      controller.getDiagnosticsCollection().delete(document.uri);
+    });
+
+    return vscode.Disposable.from(
+      controller,
+      codeActionRegistration,
+      saveListener,
+      changeListener,
+      closeListener,
+    );
+  }
 }

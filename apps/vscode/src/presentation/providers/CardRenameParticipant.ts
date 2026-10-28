@@ -12,28 +12,28 @@ interface CardFileRename {
   readonly newUri: vscode.Uri;
 }
 
-export function registerCardRenameParticipant({
-  logger,
-}: {
-  readonly logger: IStoryboardLogger;
-}): vscode.Disposable {
-  return vscode.workspace.onWillRenameFiles((event) => {
-    const cardRenames: CardFileRename[] = event.files.filter(
-      (file) => parseCardRenameCandidate(file.oldUri, file.newUri) !== undefined,
-    );
+export class CardRenameParticipant {
+  public constructor(private readonly logger: IStoryboardLogger) {}
 
-    if (cardRenames.length === 0) {
-      return;
-    }
-
-    for (const file of cardRenames) {
-      logger.info(
-        `card rename participant: ${file.oldUri.fsPath} -> ${file.newUri.fsPath} (n=${cardRenames.length})`,
+  public register(): vscode.Disposable {
+    return vscode.workspace.onWillRenameFiles((event) => {
+      const cardRenames: CardFileRename[] = event.files.filter(
+        (file) => parseCardRenameCandidate(file.oldUri, file.newUri) !== undefined,
       );
-    }
 
-    event.waitUntil(applyCardRenames(cardRenames, logger));
-  });
+      if (cardRenames.length === 0) {
+        return;
+      }
+
+      for (const file of cardRenames) {
+        this.logger.info(
+          `card rename participant: ${file.oldUri.fsPath} -> ${file.newUri.fsPath} (n=${cardRenames.length})`,
+        );
+      }
+
+      event.waitUntil(applyCardRenames(cardRenames, this.logger));
+    });
+  }
 }
 
 async function applyCardRenames(

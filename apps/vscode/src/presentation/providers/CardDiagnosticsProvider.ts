@@ -26,7 +26,7 @@ export interface CardDiagnosticSpan {
   readonly message: string;
 }
 
-export interface RegisterCardDiagnosticsProviderDependencies {
+export interface CardDiagnosticsProviderDependencies {
   readonly logger: IStoryboardLogger;
 }
 
@@ -171,37 +171,41 @@ class CardDiagnosticsController {
   }
 }
 
-export function registerCardDiagnosticsProvider(
-  dependencies: RegisterCardDiagnosticsProviderDependencies,
-): vscode.Disposable {
-  const controller: CardDiagnosticsController = new CardDiagnosticsController(dependencies.logger);
-  const watchers: vscode.Disposable[] = [];
+export class CardDiagnosticsProvider {
+  public constructor(private readonly dependencies: CardDiagnosticsProviderDependencies) {}
 
-  void (async (): Promise<void> => {
-    await controller.scanWorkspace();
+  public register(): vscode.Disposable {
+    const controller: CardDiagnosticsController = new CardDiagnosticsController(
+      this.dependencies.logger,
+    );
+    const watchers: vscode.Disposable[] = [];
 
-    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
-    if (!root) {
-      return;
-    }
+    void (async (): Promise<void> => {
+      await controller.scanWorkspace();
 
-    for (const glob of cardGlobs) {
-      const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(root, glob),
-      );
-      watchers.push(
-        watcher,
-        watcher.onDidCreate((uri) => void controller.validateUri(uri)),
-        watcher.onDidChange((uri) => void controller.validateUri(uri)),
-        watcher.onDidDelete((uri) => controller.clear(uri)),
-      );
-    }
-  })();
+      const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+      if (!root) {
+        return;
+      }
 
-  return {
-    dispose: (): void => {
-      controller.dispose();
-      watchers.forEach((watcher) => watcher.dispose());
-    },
-  };
+      for (const glob of cardGlobs) {
+        const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
+          new vscode.RelativePattern(root, glob),
+        );
+        watchers.push(
+          watcher,
+          watcher.onDidCreate((uri) => void controller.validateUri(uri)),
+          watcher.onDidChange((uri) => void controller.validateUri(uri)),
+          watcher.onDidDelete((uri) => controller.clear(uri)),
+        );
+      }
+    })();
+
+    return {
+      dispose: (): void => {
+        controller.dispose();
+        watchers.forEach((watcher) => watcher.dispose());
+      },
+    };
+  }
 }

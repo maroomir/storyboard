@@ -3,11 +3,12 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import { WorkspaceInitializer } from '@storyboard/story-engine';
 
-import { registerAbsorbNotesCommand } from '@/presentation/commands/absorbNotes';
-import { registerInitCommand } from '@/presentation/commands/init';
-import { registerSetApiKeyCommand } from '@/presentation/commands/setApiKey';
-import { registerStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
+import { AbsorbNotesCommand } from '@/presentation/commands/absorbNotesCommand';
+import { InitCommand } from '@/presentation/commands/initCommand';
+import { SetApiKeyCommand } from '@/presentation/commands/setApiKeyCommand';
+import { StoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
 
+import { CommandRegistrar } from '@/bootstrap/commandRegistrar';
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
@@ -19,14 +20,16 @@ export class ProjectModule implements IApplicationModule {
 
   public initialize(context: vscode.ExtensionContext): void {
     this.disposables.add(
-      registerStoryboardWorkspaceContext(context),
-      registerInitCommand({ logger: this.platform.logger }),
-      registerAbsorbNotesCommand({
-        logger: this.platform.logger,
-        notes: this.platform.notes,
-        runGate: this.platform.runGate,
-      }),
-      registerSetApiKeyCommand({ secretStore: this.platform.secretStore }),
+      new StoryboardWorkspaceContext(context).register(),
+      new CommandRegistrar().register([
+        new InitCommand({ logger: this.platform.logger }),
+        new AbsorbNotesCommand({
+          logger: this.platform.logger,
+          notes: this.platform.notes,
+          runGate: this.platform.runGate,
+        }),
+        new SetApiKeyCommand({ secretStore: this.platform.secretStore }),
+      ]),
     );
 
     void this.migrateOpenWorkspaces();

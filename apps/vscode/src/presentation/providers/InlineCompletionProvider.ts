@@ -35,7 +35,7 @@ const inlineSceneContextTtlMs: number = 60_000;
 const inlineSceneIntentChars: number = 300;
 const inlineMaxActiveCharacters: number = 3;
 
-export interface RegisterInlineCompletionProviderDependencies {
+export interface DraftInlineCompletionProviderDependencies {
   readonly aiGateway: AiGateway;
   readonly configBridge: ConfigBridge;
 }
@@ -147,7 +147,7 @@ export function pruneInlineCompletionCache(cache: Map<string, InlineCompletionCa
   }
 }
 
-class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
+export class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
   private readonly cache: Map<string, InlineCompletionCacheValue> = new Map<
     string,
     InlineCompletionCacheValue
@@ -157,7 +157,15 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     CachedSceneContext
   >();
 
-  public constructor(private readonly dependencies: RegisterInlineCompletionProviderDependencies) {}
+  public constructor(private readonly dependencies: DraftInlineCompletionProviderDependencies) {}
+
+  public register(): vscode.Disposable {
+    const selector: vscode.DocumentSelector = {
+      scheme: 'file',
+      pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
+    };
+    return vscode.languages.registerInlineCompletionItemProvider(selector, this);
+  }
 
   private canCompleteDraft(
     documentUri: vscode.Uri,
@@ -279,17 +287,4 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
 
     return [new vscode.InlineCompletionItem(completion, new vscode.Range(position, position))];
   }
-}
-
-export function registerInlineCompletionProvider(
-  dependencies: RegisterInlineCompletionProviderDependencies,
-): vscode.Disposable {
-  const selector: vscode.DocumentSelector = {
-    scheme: 'file',
-    pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
-  };
-  return vscode.languages.registerInlineCompletionItemProvider(
-    selector,
-    new DraftInlineCompletionProvider(dependencies),
-  );
 }

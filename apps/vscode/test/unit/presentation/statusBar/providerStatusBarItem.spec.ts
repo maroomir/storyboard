@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { ConfigBridge } from "@storyboard/story-ai"
 import type { StoryboardConfigurationLike } from "@storyboard/story-ai"
 
-import { describeProviderStatus, registerProviderStatusBarItem } from "@/presentation/statusBar/providerStatusBarItem"
+import { ProviderStatusBarItem, describeProviderStatus } from "@/presentation/statusBar/providerStatusBarItem"
 import { createdStatusBarItems } from "../../../stubs/vscode"
 
 function createConfiguration(values: Map<string, unknown>, workspaceKeys: readonly string[] = []): StoryboardConfigurationLike {
@@ -56,7 +56,7 @@ describe("providerStatusBarItem", () => {
       }
     })
 
-    const disposable = registerProviderStatusBarItem({ configBridge, configFiles })
+    const disposable = new ProviderStatusBarItem({ configBridge, configFiles }).register()
     const item = createdStatusBarItems.at(-1)
 
     expect(item?.isVisible).toBe(true)

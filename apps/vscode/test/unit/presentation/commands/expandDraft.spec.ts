@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import * as vscode from "vscode"
 
-import { resolveExpandRange } from "@/presentation/commands/expandDraft"
+import { resolveExpandRange } from "@/presentation/commands/expandDraftCommand"
 
 describe("expandDraft command helpers", () => {
   it("prefers range argument when it is not empty", () => {

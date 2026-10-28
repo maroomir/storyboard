@@ -1,0 +1,138 @@
+import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
+import {
+  createWorkspaceReadme,
+  ProjectRepository,
+  WorkspaceInitializer,
+} from '@storyboard/story-engine';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import * as vscode from 'vscode';
+
+import type { IStoryboardLogger } from '@storyboard/story-engine';
+import { refreshStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
+import {
+  getStoryboardProjectPaths,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
+} from '@storyboard/story-model';
+import {
+  ensureUriDoesNotExist,
+  getTargetWorkspaceFolder,
+  uriExists,
+} from '@/infrastructure/vscode/workspace';
+import { createDefaultProjectJson } from '@storyboard/story-engine';
+
+const initCommand: string = 'storyboard.init';
+
+export interface InitCommandDependencies {
+  readonly logger: IStoryboardLogger;
+}
+
+export class InitCommand implements IExtensionCommand {
+  public readonly id: string = initCommand;
+
+  public constructor(private readonly dependencies: InitCommandDependencies) {}
+
+  public run(): unknown {
+    return initializeStoryboardProject(this.dependencies);
+  }
+}
+
+async function initializeStoryboardProject(dependencies: InitCommandDependencies): Promise<void> {
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
+
+  if (!workspaceFolder) {
+    return;
+  }
+
+  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
+
+  try {
+    if (!(await validateCanInitialize(paths))) {
+      return;
+    }
+
+    const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
+
+    await new WorkspaceInitializer(vscodeFileSystem).createDirectories(paths);
+    await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, project);
+    await writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
+    await writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
+    await writeFileIfMissing(paths.sampleScene, createSampleScene());
+    await new WorkspaceInitializer(vscodeFileSystem).ensureGitignore(paths.gitignore);
+    await writeFileIfMissing(paths.readme, createWorkspaceReadme(project.name));
+    await new WorkspaceInitializer(vscodeFileSystem).writeAgentGuidesIfMissing(paths);
+
+    dependencies.logger.info(`Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`);
+    await refreshStoryboardWorkspaceContext();
+    await vscode.window.showInformationMessage(
+      `Storyboard 프로젝트를 초기화했습니다: ${project.name}`,
+    );
+  } catch (error) {
+    dependencies.logger.error('Failed to initialize Storyboard project', error);
+    dependencies.logger.show();
+    await vscode.window.showErrorMessage(
+      'Storyboard 프로젝트 초기화에 실패했습니다. Output 패널을 확인해 주세요.',
+    );
+  }
+}
+
+async function validateCanInitialize(paths: StoryboardProjectPaths): Promise<boolean> {
+  if (await uriExists(paths.projectJson)) {
+    await vscode.window.showInformationMessage('이미 Storyboard 프로젝트로 초기화된 폴더입니다.');
+    return false;
+  }
+
+  return ensureUriDoesNotExist(
+    paths.metadataDirectory,
+    '`.storyboard` 폴더가 이미 있지만 `project.json`은 없습니다. 안전을 위해 초기화를 중단합니다.',
+  );
+}
+
+async function writeFileIfMissing(uri: vscode.Uri, content: string): Promise<void> {
+  if (await uriExists(uri)) {
+    return;
+  }
+
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
+}
+
+function createSampleCharacterCard(): string {
+  return `type: character
+id: sample
+name: 샘플 캐릭터
+profile: profile/sample.png
+role: main
+attributes: {}
+tags:
+  - 샘플
+traits: []
+description:
+  - Storyboard 프로젝트를 시작하기 위한 샘플 캐릭터입니다.
+relations: []
+arc: []
+recentDialogues: []
+`;
+}
+
+function createSampleBackgroundCard(): string {
+  return `type: location
+id: sample
+name: 샘플 배경
+locationKind: place
+characterIds: []
+tags:
+  - 샘플
+description:
+  - Storyboard 프로젝트를 시작하기 위한 샘플 배경입니다.
+`;
+}
+
+function createSampleScene(): string {
+  return `type: scene
+id: 00-sample
+title: 샘플 씬
+summary: |-
+  Storyboard 프로젝트를 시작하기 위한 샘플 씬 카드입니다.
+  실제 작업에 반영할 씬은 \`storyboard.scene.create\` 명령으로 생성해 주세요.
+`;
+}

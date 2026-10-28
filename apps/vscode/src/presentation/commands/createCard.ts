@@ -10,22 +10,13 @@ import {
 import type { StoryboardCard, StoryUri } from '@storyboard/story-model';
 import { cardEditorViewType } from '@/contributionIds';
 
-const createCharacterCommand: string = 'storyboard.character.create';
-const createBackgroundCommand: string = 'storyboard.background.create';
-export function registerCreateCardCommands(dependencies: {
+export const createCharacterCommand: string = 'storyboard.character.create';
+export const createBackgroundCommand: string = 'storyboard.background.create';
+export interface CreateCardCommandDependencies {
   readonly cards: Pick<CardManager, 'exists' | 'write'>;
-}): vscode.Disposable {
-  return vscode.Disposable.from(
-    vscode.commands.registerCommand(createCharacterCommand, () =>
-      createCard('character', dependencies.cards),
-    ),
-    vscode.commands.registerCommand(createBackgroundCommand, () =>
-      createCard('location', dependencies.cards),
-    ),
-  );
 }
 
-async function createCard(
+export async function createCard(
   cardType: StoryboardCard['type'],
   cards: Pick<CardManager, 'exists' | 'write'>,
 ): Promise<void> {

@@ -14,21 +14,10 @@ import {
 } from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 
-const renameCharacterCommand: string = 'storyboard.character.rename';
-const renameBackgroundCommand: string = 'storyboard.background.rename';
+export const renameCharacterCommand: string = 'storyboard.character.rename';
+export const renameBackgroundCommand: string = 'storyboard.background.rename';
 
-export function registerRenameCardCommands(): vscode.Disposable {
-  return vscode.Disposable.from(
-    vscode.commands.registerCommand(renameCharacterCommand, (uri?: vscode.Uri) =>
-      renameCard('character', uri),
-    ),
-    vscode.commands.registerCommand(renameBackgroundCommand, (uri?: vscode.Uri) =>
-      renameCard('background', uri),
-    ),
-  );
-}
-
-async function renameCard(kind: BibleSubjectKind, invokedUri?: vscode.Uri): Promise<void> {
+export async function renameCard(kind: BibleSubjectKind, invokedUri?: vscode.Uri): Promise<void> {
   const cardUri: vscode.Uri | undefined = resolveCardUri(kind, invokedUri);
 
   if (!cardUri) {

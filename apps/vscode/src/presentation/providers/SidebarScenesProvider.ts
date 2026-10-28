@@ -46,6 +46,13 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
     private readonly dependencies: SidebarScenesProviderDependencies,
   ) {}
 
+  public register(): vscode.Disposable {
+    return vscode.Disposable.from(
+      vscode.window.registerWebviewViewProvider(sidebarViewIds.scenes, this),
+      this,
+    );
+  }
+
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.webviewView = webviewView;
 
@@ -211,19 +218,4 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
 
     return await this.dependencies.sceneSidebarRepository.list(root);
   }
-}
-
-export function registerSidebarScenesProvider(
-  context: vscode.ExtensionContext,
-  dependencies: SidebarScenesProviderDependencies,
-): vscode.Disposable {
-  const provider: SidebarScenesProvider = new SidebarScenesProvider(
-    context.extensionUri,
-    dependencies,
-  );
-
-  return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider(sidebarViewIds.scenes, provider),
-    provider,
-  );
 }

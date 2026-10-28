@@ -6,7 +6,7 @@ import {
   parseCardRenameCandidate,
   validateCardRenameId
 } from "@/infrastructure/vscode/cardRenameEdit"
-import { registerCardRenameParticipant } from "@/presentation/providers/CardRenameParticipant"
+import { CardRenameParticipant } from "@/presentation/providers/CardRenameParticipant"
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
   fireWillRenameFiles,
@@ -115,7 +115,7 @@ describe("buildCardRenameWorkspaceEdit", () => {
   })
 })
 
-describe("registerCardRenameParticipant", () => {
+describe("CardRenameParticipant.register", () => {
   const workspaceRoot = vscode.Uri.file("/ws/project")
   const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
 
@@ -141,7 +141,7 @@ describe("registerCardRenameParticipant", () => {
       throw new Error(`unexpected read: ${uri.fsPath}`)
     }
 
-    registerCardRenameParticipant({ logger: logger as unknown as IStoryboardLogger })
+    new CardRenameParticipant(logger as unknown as IStoryboardLogger).register()
 
     let waitUntilPromise: Promise<StubWorkspaceEdit | undefined> | undefined
 
