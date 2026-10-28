@@ -2,7 +2,7 @@ import type { SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationR
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
 import { buildGenerateOptions, withAttribution } from '#engine/pipeline/sceneGenerationStages';
 import type { ResolvedSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
-import { quotedDialoguePatternFor } from '#engine/pipeline/sceneSectionPlan';
+import { quotedDialoguePatternFor } from '#engine/pipeline/sectionValidation';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
 import type { GenerateTextOptions } from '@storyboard/story-ai';
 import {

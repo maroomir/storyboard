@@ -1,5 +1,5 @@
 import type { SceneDialogueRewrite } from '@storyboard/story-ai';
-import { quotedDialoguePatternFor } from './sceneSectionPlan';
+import { quotedDialoguePatternFor } from './sectionValidation';
 import type { ResolvedSceneGenerationTuning } from './sceneGenerationTuning';
 
 export interface NumberedDialogue {

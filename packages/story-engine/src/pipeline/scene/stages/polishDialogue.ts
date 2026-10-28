@@ -18,7 +18,7 @@ import {
   findPolishedLineViolations,
   validatePolishedSkeleton,
   type SectionViolation,
-} from '#engine/pipeline/sceneSectionPlan';
+} from '#engine/pipeline/sectionValidation';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
 import {
   characterCatchphrases,

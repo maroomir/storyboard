@@ -10,19 +10,21 @@ import {
 } from '#engine/pipeline/sceneGenerationStages';
 import type { ResolvedSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import {
+  planSectionCount,
+  planSectionTargetLengths,
+  SECTION_OUTPUT_LIMIT,
+  splitSkeletonIntoSections,
+} from '#engine/pipeline/sectionPlanning';
+import {
   countRecapPhrases,
   describeThinExpansionSpots,
   findCatchphraseOveruse,
   findRunAheadDialogue,
   findThinExpansionSpots,
-  planSectionCount,
-  planSectionTargetLengths,
-  SECTION_OUTPUT_LIMIT,
-  splitSkeletonIntoSections,
   trimRunAheadDialogue,
   validateExpandedSection,
   type SectionViolation,
-} from '#engine/pipeline/sceneSectionPlan';
+} from '#engine/pipeline/sectionValidation';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
 import { scopeBackgroundFacts } from '#engine/pipeline/sectionBackgroundFacts';
 import type { GenerateTextOptions } from '@storyboard/story-ai';
