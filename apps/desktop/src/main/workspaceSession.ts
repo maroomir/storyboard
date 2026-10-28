@@ -4,13 +4,13 @@ import { join } from 'node:path';
 
 import {
   buildCompositionPreset,
-  createWorkspace,
   readWorkspaceRunLock,
   type AugmentDraftResult,
   type CompositionPreset,
   type RenameSceneResult,
   type SaveDraftEditResult,
   ProjectRepository,
+  WorkspaceInitializer,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
@@ -191,8 +191,7 @@ export class WorkspaceSession {
     await mkdir(options.workspacePath, { recursive: true });
 
     const { setting, preset } = contractSettingFrom(options.request);
-    await createWorkspace({
-      fileSystem: new NodeFileSystem(),
+    await new WorkspaceInitializer(new NodeFileSystem()).createWorkspace({
       workspaceRoot: NodeUri.file(options.workspacePath),
       name: options.request.title,
       setting,

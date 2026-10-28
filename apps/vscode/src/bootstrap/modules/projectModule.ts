@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
-import { migrateLegacyMemory } from '@storyboard/story-engine';
+import { WorkspaceInitializer } from '@storyboard/story-engine';
 
 import { registerAbsorbNotesCommand } from '@/presentation/commands/absorbNotes';
 import { registerInitCommand } from '@/presentation/commands/init';
@@ -35,7 +35,9 @@ export class ProjectModule implements IApplicationModule {
   private async migrateOpenWorkspaces(): Promise<void> {
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
       try {
-        await migrateLegacyMemory(this.platform.fileSystem, getStoryboardProjectPaths(folder.uri));
+        await new WorkspaceInitializer(this.platform.fileSystem).migrateLegacyMemory(
+          getStoryboardProjectPaths(folder.uri),
+        );
       } catch (error) {
         this.platform.logger.warn(`AI 기억 이관에 실패했습니다: ${String(error)}`);
       }

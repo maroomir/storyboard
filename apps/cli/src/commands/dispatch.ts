@@ -11,9 +11,9 @@ import {
 } from '@storyboard/story-model';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
 import {
-  migrateLegacyMemory,
   type IStoryboardLogger,
   type UsageMeterSession,
+  WorkspaceInitializer,
 } from '@storyboard/story-engine';
 
 import {
@@ -366,8 +366,7 @@ export async function dispatch(
   });
 
   if (needsWorkspace) {
-    await migrateLegacyMemory(
-      container.fileSystem,
+    await new WorkspaceInitializer(container.fileSystem).migrateLegacyMemory(
       getStoryboardProjectPaths(container.workspaceRoot),
     );
 
