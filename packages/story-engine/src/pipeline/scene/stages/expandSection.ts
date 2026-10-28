@@ -1,6 +1,6 @@
 import { castNameOf, type SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
-import { weighViolations } from '#engine/pipeline/scene/skeletonDrafting';
+import { weighViolations } from '#engine/pipeline/scene/skeletonChecks';
 import { countSceneBreakLines, restoreSceneBreaks } from '#engine/pipeline/sceneBreakPlan';
 import { sectionPlaces, sectionSceneCoordinates } from '#engine/pipeline/sceneCoordinates';
 import {
