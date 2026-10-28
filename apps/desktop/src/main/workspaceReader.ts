@@ -29,18 +29,18 @@ import {
   type NarrationDirective,
   type RevisionPlan,
   type RevisionPlanEntry,
-extractErrorMessage,
+  extractErrorMessage,
 } from '@storyboard/story-model';
 import {
   groupChapterStems,
   loadNarratorCards,
   readChapterNarrationDefaults,
-  readProjectJson,
   resolveSceneNarration,
   resolveSceneThread,
   type ChapterNarrationDefaults,
   type IFileSystem,
   type SceneThreadContext,
+  ProjectRepository,
 } from '@storyboard/story-engine';
 
 import type {
@@ -65,7 +65,10 @@ interface DraftState {
   readonly warnings: readonly string[];
 }
 
-async function readDraftState(fileSystem: IFileSystem, uri: ReturnType<typeof draftPath>): Promise<DraftState> {
+async function readDraftState(
+  fileSystem: IFileSystem,
+  uri: ReturnType<typeof draftPath>,
+): Promise<DraftState> {
   if (!(await fileSystem.exists(uri))) {
     return { exists: false, body: '', warnings: [] };
   }
@@ -85,14 +88,20 @@ async function readChapterPlanIfAny(
   return await readChapterPlanFile(paths.outlineChapters, fileSystem);
 }
 
-async function listSceneFiles(paths: StoryboardProjectPaths, fileSystem: IFileSystem): Promise<string[]> {
+async function listSceneFiles(
+  paths: StoryboardProjectPaths,
+  fileSystem: IFileSystem,
+): Promise<string[]> {
   if (!(await fileSystem.exists(paths.sceneDirectory))) {
     return [];
   }
 
   return (await fileSystem.listFileNames(paths.sceneDirectory))
     .filter((name) => !isHiddenSceneFileName(name) && parseSceneFileName(name) !== undefined)
-    .sort((left, right) => (parseSceneFileName(left)?.order ?? 0) - (parseSceneFileName(right)?.order ?? 0));
+    .sort(
+      (left, right) =>
+        (parseSceneFileName(left)?.order ?? 0) - (parseSceneFileName(right)?.order ?? 0),
+    );
 }
 
 function sceneTargetLength(scene: SceneFile, project: StoryboardProject): number | undefined {
@@ -122,13 +131,22 @@ export async function readWorkspaceOverview(
 ): Promise<WorkspaceOverview> {
   const { fileSystem, workspaceRoot } = container;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-  const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+  const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+    paths.projectJson,
+  );
   const sceneFileNames: string[] = await listSceneFiles(paths, fileSystem);
 
   const scenesByStem: Map<string, TocScene> = new Map<string, TocScene>();
   for (const fileName of sceneFileNames) {
-    const scene: SceneFile = await readSceneFile(joinScenePath(paths, fileName), fileSystem, fileName);
-    const draft: DraftState = await readDraftState(fileSystem, draftPath(workspaceRoot, scene.stem));
+    const scene: SceneFile = await readSceneFile(
+      joinScenePath(paths, fileName),
+      fileSystem,
+      fileName,
+    );
+    const draft: DraftState = await readDraftState(
+      fileSystem,
+      draftPath(workspaceRoot, scene.stem),
+    );
     const targetLength: number | undefined = sceneTargetLength(scene, project);
 
     scenesByStem.set(scene.stem, {
@@ -154,7 +172,9 @@ export async function readWorkspaceOverview(
     title: project.name,
     ...(project.setting?.genre === undefined ? {} : { genre: project.setting.genre }),
     ...(project.setting?.pov === undefined ? {} : { pov: project.setting.pov }),
-    ...(project.setting?.composition === undefined ? {} : { composition: project.setting.composition }),
+    ...(project.setting?.composition === undefined
+      ? {}
+      : { composition: project.setting.composition }),
     ...(project.setting?.targetWordCount === undefined
       ? {}
       : { targetWordCount: project.setting.targetWordCount }),
@@ -191,17 +211,28 @@ function groupScenesIntoChapters(
       return [scene];
     }),
   }));
-  const unplaced: TocScene[] = [...scenesByStem.values()].filter((scene) => !placed.has(scene.stem));
+  const unplaced: TocScene[] = [...scenesByStem.values()].filter(
+    (scene) => !placed.has(scene.stem),
+  );
 
   return unplaced.length === 0 ? chapters : [...chapters, { title: '', scenes: unplaced }];
 }
 
-function joinScenePath(paths: StoryboardProjectPaths, fileName: string): ReturnType<typeof scenePath> {
+function joinScenePath(
+  paths: StoryboardProjectPaths,
+  fileName: string,
+): ReturnType<typeof scenePath> {
   return scenePath(paths.workspaceRoot, fileName.replace(/\.card$/, ''));
 }
 
-export async function readDraftDocument(container: DesktopContainer, stem: string): Promise<DraftDocument> {
-  const draft: DraftState = await readDraftState(container.fileSystem, draftPath(container.workspaceRoot, stem));
+export async function readDraftDocument(
+  container: DesktopContainer,
+  stem: string,
+): Promise<DraftDocument> {
+  const draft: DraftState = await readDraftState(
+    container.fileSystem,
+    draftPath(container.workspaceRoot, stem),
+  );
   return { stem, ...draft };
 }
 
@@ -211,7 +242,9 @@ async function readNoteCard(
   fallbackId: string,
 ): Promise<NoteCard> {
   try {
-    const card: StoryboardCard = parseCard(new TextDecoder().decode(await fileSystem.readFile(uri)));
+    const card: StoryboardCard = parseCard(
+      new TextDecoder().decode(await fileSystem.readFile(uri)),
+    );
     const summary: string | undefined = joinCardText(card.description).split('\n')[0]?.trim();
     return { id: card.id, name: card.name, ...(summary ? { summary } : {}) };
   } catch {
@@ -219,24 +252,56 @@ async function readNoteCard(
   }
 }
 
-export async function readSceneNotes(container: DesktopContainer, stem: string): Promise<SceneNotes> {
+export async function readSceneNotes(
+  container: DesktopContainer,
+  stem: string,
+): Promise<SceneNotes> {
   const { fileSystem, workspaceRoot } = container;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-  const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
-  const scene: SceneFile = await readSceneFile(scenePath(workspaceRoot, stem), fileSystem, `${stem}.card`);
-  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(paths, scene.order, fileSystem);
+  const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+    paths.projectJson,
+  );
+  const scene: SceneFile = await readSceneFile(
+    scenePath(workspaceRoot, stem),
+    fileSystem,
+    `${stem}.card`,
+  );
+  const chapterDefaults: ChapterNarrationDefaults = await readChapterNarrationDefaults(
+    paths,
+    scene.order,
+    fileSystem,
+  );
   const warnings: string[] = [];
 
-  const narration: NarrationSummary | undefined = await summarizeNarration(container, paths, scene, project, chapterDefaults, warnings);
-  const thread: SceneThreadContext = await resolveSceneThread(paths, scene, project, fileSystem, chapterDefaults.thread);
+  const narration: NarrationSummary | undefined = await summarizeNarration(
+    container,
+    paths,
+    scene,
+    project,
+    chapterDefaults,
+    warnings,
+  );
+  const thread: SceneThreadContext = await resolveSceneThread(
+    paths,
+    scene,
+    project,
+    fileSystem,
+    chapterDefaults.thread,
+  );
   const draft: DraftState = await readDraftState(fileSystem, draftPath(workspaceRoot, stem));
   const characters: NoteCard[] = await Promise.all(
-    (scene.card.characters ?? []).map((id) => readNoteCard(fileSystem, characterCardPath(workspaceRoot, id), id)),
+    (scene.card.characters ?? []).map((id) =>
+      readNoteCard(fileSystem, characterCardPath(workspaceRoot, id), id),
+    ),
   );
   const background: NoteCard | undefined =
     scene.card.location === undefined
       ? undefined
-      : await readNoteCard(fileSystem, backgroundCardPath(workspaceRoot, scene.card.location), scene.card.location);
+      : await readNoteCard(
+          fileSystem,
+          backgroundCardPath(workspaceRoot, scene.card.location),
+          scene.card.location,
+        );
   const storyState: StoryState = await readStoryState(thread.threadPaths.storyState, fileSystem);
   const facts: StoryFactNote[] = storyState.entries
     .filter((entry) => entry.section === 'facts' && !entry.isStale)
@@ -249,7 +314,8 @@ export async function readSceneNotes(container: DesktopContainer, stem: string):
     }));
   const review: SceneNotes['review'] = await readReviewNote(fileSystem, paths, stem);
   const plan: ChapterPlan | undefined = await readChapterPlanIfAny(paths, fileSystem);
-  const chapterTitle: string | undefined = plan === undefined ? undefined : findChapterTitle(plan, project, container, stem);
+  const chapterTitle: string | undefined =
+    plan === undefined ? undefined : findChapterTitle(plan, project, container, stem);
   const targetLength: number | undefined = sceneTargetLength(scene, project);
   const summary: string | undefined = scene.summaryText?.trim() || undefined;
 
@@ -281,7 +347,13 @@ async function summarizeNarration(
   warnings: string[],
 ): Promise<NarrationSummary | undefined> {
   try {
-    const directive: NarrationDirective | undefined = await resolveSceneNarration(paths, scene, project, chapterDefaults, container.fileSystem);
+    const directive: NarrationDirective | undefined = await resolveSceneNarration(
+      paths,
+      scene,
+      project,
+      chapterDefaults,
+      container.fileSystem,
+    );
 
     if (directive === undefined) {
       return undefined;
@@ -315,7 +387,9 @@ async function readReviewNote(
   }
 
   const plan: RevisionPlan = await readRevisionPlanFile(paths.outlineRevisionPlan, fileSystem);
-  const entry: RevisionPlanEntry | undefined = plan.entries.find((candidate) => candidate.sceneStem === stem);
+  const entry: RevisionPlanEntry | undefined = plan.entries.find(
+    (candidate) => candidate.sceneStem === stem,
+  );
 
   return entry === undefined
     ? undefined

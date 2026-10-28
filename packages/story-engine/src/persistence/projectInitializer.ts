@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
   joinStoryPath,
   mergeStoryboardGitignore,
@@ -10,7 +11,7 @@ import {
   type StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { createDefaultProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
+import { createDefaultProjectJson } from '#engine/persistence/projectJson';
 import { writeWorkspaceAgentGuidesIfMissing } from '#engine/persistence/workspaceAgentGuide';
 
 export async function createStoryboardDirectories(
@@ -71,20 +72,26 @@ export interface CreateWorkspaceResult {
   readonly createdNarrators: readonly string[];
 }
 
-export async function createWorkspace(request: CreateWorkspaceRequest): Promise<CreateWorkspaceResult> {
+export async function createWorkspace(
+  request: CreateWorkspaceRequest,
+): Promise<CreateWorkspaceResult> {
   const { fileSystem } = request;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
   const base: StoryboardProject = createDefaultProjectJson({
     name: request.name,
     ...(request.language === undefined ? {} : { language: request.language }),
   });
-  const project: StoryboardProject = request.setting === undefined ? base : { ...base, setting: request.setting };
+  const project: StoryboardProject =
+    request.setting === undefined ? base : { ...base, setting: request.setting };
 
   await fileSystem.createDirectory(paths.metadataDirectory);
   await createStoryboardDirectories(fileSystem, paths);
-  await writeProjectJson(fileSystem, paths.projectJson, project);
+  await new ProjectRepository(fileSystem).write(paths.projectJson, project);
   await ensureWorkspaceGitignore(fileSystem, paths.gitignore);
-  await fileSystem.writeFile(paths.readme, new TextEncoder().encode(createWorkspaceReadme(project.name)));
+  await fileSystem.writeFile(
+    paths.readme,
+    new TextEncoder().encode(createWorkspaceReadme(project.name)),
+  );
   await writeWorkspaceAgentGuidesIfMissing(fileSystem, paths);
   const createdNarrators: string[] = await writeNarratorCardsIfMissing(
     fileSystem,

@@ -8,7 +8,7 @@ import {
   auditChapterMemory,
   auditStoryMemory,
   loadNarratorCards,
-  readProjectJson,
+  ProjectRepository,
 } from '@storyboard/story-engine';
 import {
   backgroundCardRelativePath,
@@ -179,10 +179,9 @@ export async function collectNarrationChecks(
     paths,
     container.fileSystem,
   );
-  const project: StoryboardProject | undefined = await readProjectJson(
-    container.fileSystem,
-    paths.projectJson,
-  ).catch(() => undefined);
+  const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
+    .read(paths.projectJson)
+    .catch(() => undefined);
   const declaredThreads: Set<string> = new Set([
     ...Object.keys(project?.setting?.threads ?? {}),
     mainThreadId,
@@ -336,10 +335,9 @@ export async function collectStoryStateChecks(
     return [];
   }
 
-  const project: StoryboardProject | undefined = await readProjectJson(
-    container.fileSystem,
-    paths.projectJson,
-  ).catch(() => undefined);
+  const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
+    .read(paths.projectJson)
+    .catch(() => undefined);
 
   if (project === undefined) {
     return [];

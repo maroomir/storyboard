@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type {
   StoryUri,
@@ -25,7 +26,6 @@ import {
 } from '@storyboard/story-model';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { DraftAugmentScope } from '@storyboard/story-ai';
-import { readProjectJson } from '#engine/persistence/projectJson';
 type AugmentContextResult =
   | {
       readonly bibleFacts: readonly BibleFact[];
@@ -140,7 +140,7 @@ export class AugmentDraftUseCase {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     let project: StoryboardProject;
     try {
-      project = await readProjectJson(this.host.fileSystem, paths.projectJson);
+      project = await new ProjectRepository(this.host.fileSystem).read(paths.projectJson);
     } catch {
       return { message: 'project.json을 읽을 수 없습니다.', ok: false };
     }

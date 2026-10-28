@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
   getStoryboardProjectPaths,
@@ -8,7 +9,6 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 import { writeNarratorCardsIfMissing } from '#engine/persistence/projectInitializer';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
@@ -56,10 +56,12 @@ export class UpdateProjectContractUseCase implements IUseCase<
       async () => {
         const { fileSystem } = this.host;
         const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-        const project: StoryboardProject = await readProjectJson(fileSystem, paths.projectJson);
+        const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
+          paths.projectJson,
+        );
         const setting: ProjectSetting = mergeProjectSetting(project.setting, request.setting);
 
-        await writeProjectJson(fileSystem, paths.projectJson, { ...project, setting });
+        await new ProjectRepository(fileSystem).write(paths.projectJson, { ...project, setting });
         const createdNarrators: string[] = await writeNarratorCardsIfMissing(
           fileSystem,
           paths,

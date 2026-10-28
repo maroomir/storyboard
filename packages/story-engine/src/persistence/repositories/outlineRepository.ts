@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type {
   StoryUri,
@@ -16,7 +17,6 @@ import {
   writeChapterPlanFile,
   writeSynopsisFile,
 } from '@storyboard/story-model';
-import { readProjectJson } from '#engine/persistence/projectJson';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';
 import type { IOutlineRepository } from '#engine/application/novel/novelPipelinePorts';
 export class OutlineRepository implements IOutlineRepository {
@@ -52,8 +52,7 @@ export class OutlineRepository implements IOutlineRepository {
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
-    return await readProjectJson(
-      this.fileSystem,
+    return await new ProjectRepository(this.fileSystem).read(
       getStoryboardProjectPaths(workspaceRoot).projectJson,
     );
   }

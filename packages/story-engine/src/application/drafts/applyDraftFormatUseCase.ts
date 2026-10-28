@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type {
   Draft,
@@ -14,7 +15,6 @@ import {
   readDraftFile,
   writeDraftFile,
 } from '@storyboard/story-model';
-import { readProjectJson } from '#engine/persistence/projectJson';
 import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 
 export type ApplyDraftFormatRequest = {
@@ -47,7 +47,7 @@ export class ApplyDraftFormatUseCase implements IUseCase<
 
     let project: StoryboardProject;
     try {
-      project = await readProjectJson(this.host.fileSystem, paths.projectJson);
+      project = await new ProjectRepository(this.host.fileSystem).read(paths.projectJson);
     } catch (error) {
       this.host.logger.error('Failed to read project.json', error);
       return { kind: 'project_unreadable', ok: false };

@@ -1,3 +1,4 @@
+import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type {
   AiServices,
   HostAdapters,
@@ -40,7 +41,6 @@ import {
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
-import { readProjectJson } from '#engine/persistence/projectJson';
 import {
   readChapterNarrationDefaults,
   resolveSceneNarration,
@@ -67,7 +67,7 @@ async function readProjectIfPresent(
   projectJsonUri: StoryUri,
 ): Promise<StoryboardProject | undefined> {
   try {
-    return await readProjectJson(fs, projectJsonUri);
+    return await new ProjectRepository(fs).read(projectJsonUri);
   } catch {
     return undefined;
   }

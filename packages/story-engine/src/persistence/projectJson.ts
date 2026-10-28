@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { StoryUri, ProjectFormat, StoryboardProject } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ProjectFormat, StoryboardProject } from '@storyboard/story-model';
 import { storyboardProjectSchema, storyboardProjectVersion } from '@storyboard/story-model';
 
 export interface CreateProjectJsonInput {
@@ -31,17 +30,4 @@ export function parseProjectJson(rawProjectJson: string): StoryboardProject {
 export function serializeProjectJson(project: StoryboardProject): string {
   const parsedProject: StoryboardProject = storyboardProjectSchema.parse(project);
   return `${JSON.stringify(parsedProject, null, 2)}\n`;
-}
-
-export async function readProjectJson(fs: IFileSystem, uri: StoryUri): Promise<StoryboardProject> {
-  const bytes: Uint8Array = await fs.readFile(uri);
-  return parseProjectJson(new TextDecoder().decode(bytes));
-}
-
-export async function writeProjectJson(
-  fs: IFileSystem,
-  uri: StoryUri,
-  project: StoryboardProject,
-): Promise<void> {
-  await fs.writeFile(uri, new TextEncoder().encode(serializeProjectJson(project)));
 }
