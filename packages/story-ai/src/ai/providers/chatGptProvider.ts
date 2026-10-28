@@ -23,8 +23,8 @@ import {
   type JsonRecord,
 } from '@storyboard/story-model';
 import {
+  ChatGptOAuthClient,
   ChatGptOAuthError,
-  refreshAccessToken,
   shouldRefreshTokens,
   tokensFromResponse,
   type FetchLike,
@@ -177,6 +177,7 @@ export class ChatGptProvider implements AiProvider {
   };
   private readonly saveConnection: (connection: OAuthConnection) => Promise<void>;
   private readonly fetch: FetchLike;
+  private readonly oauth: ChatGptOAuthClient;
   private readonly now: () => Date;
 
   public constructor(options: ChatGptProviderOptions) {
@@ -199,6 +200,7 @@ export class ChatGptProvider implements AiProvider {
     };
     this.saveConnection = options.saveConnection;
     this.fetch = options.fetch ?? globalThis.fetch;
+    this.oauth = new ChatGptOAuthClient(this.fetch);
     this.now = options.now ?? ((): Date => new Date());
   }
 
@@ -419,7 +421,7 @@ export class ChatGptProvider implements AiProvider {
     const { registration, tokens } = this.connection;
 
     try {
-      const response: TokenResponse = await refreshAccessToken(this.fetch, {
+      const response: TokenResponse = await this.oauth.refreshAccessToken({
         clientId: registration.clientId,
         refreshToken: tokens.refreshToken,
       });

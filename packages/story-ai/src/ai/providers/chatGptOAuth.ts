@@ -223,47 +223,6 @@ function describeTokenFailure(status: number, body: unknown): string {
   return [`HTTP ${status}`, code, description].filter(Boolean).join(' · ');
 }
 
-async function postForm(
-  fetchImpl: FetchLike,
-  url: string,
-  form: Readonly<Record<string, string>>,
-): Promise<Response> {
-  return await fetchImpl(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(form).toString(),
-  });
-}
-
-export async function exchangeAuthorizationCode(
-  fetchImpl: FetchLike,
-  input: {
-    readonly clientId: string;
-    readonly code: string;
-    readonly codeVerifier: string;
-    readonly redirectUri: string;
-  },
-): Promise<TokenResponse> {
-  const response: Response = await postForm(fetchImpl, chatGptTokenUrl, {
-    grant_type: 'authorization_code',
-    client_id: input.clientId,
-    code: input.code,
-    code_verifier: input.codeVerifier,
-    redirect_uri: input.redirectUri,
-    resource: chatGptResource,
-  });
-  const body: unknown = await readJsonBody(response);
-
-  if (!response.ok) {
-    throw new ChatGptOAuthError(
-      'exchange-failed',
-      `인가 코드를 토큰으로 바꾸지 못했습니다 (${describeTokenFailure(response.status, body)}).`,
-    );
-  }
-
-  return readTokenResponse(body, 'exchange-failed');
-}
-
 const unusableRefreshTokenCodes: Set<string> = new Set([
   'invalid_grant',
   'invalid_refresh_token',
@@ -273,52 +232,27 @@ const unusableRefreshTokenCodes: Set<string> = new Set([
   'refresh_token_reused',
 ]);
 
-export async function refreshAccessToken(
-  fetchImpl: FetchLike,
-  input: { readonly clientId: string; readonly refreshToken: string },
-): Promise<TokenResponse> {
-  const response: Response = await postForm(fetchImpl, chatGptTokenUrl, {
-    grant_type: 'refresh_token',
-    client_id: input.clientId,
-    refresh_token: input.refreshToken,
-    resource: chatGptResource,
-  });
-  const body: unknown = await readJsonBody(response);
+export interface AuthorizationCodeExchange {
+  readonly clientId: string;
+  readonly code: string;
+  readonly codeVerifier: string;
+  readonly redirectUri: string;
+}
 
-  if (!response.ok) {
-    const code: string = isJsonRecord(body) && typeof body.error === 'string' ? body.error : '';
-    const isUnusable: boolean = unusableRefreshTokenCodes.has(code) || response.status === 400;
+export interface RefreshTokenGrant {
+  readonly clientId: string;
+  readonly refreshToken: string;
+}
 
-    throw new ChatGptOAuthError(
-      isUnusable ? 'refresh-rejected' : 'exchange-failed',
-      `로그인 세션을 갱신하지 못했습니다 (${describeTokenFailure(response.status, body)}).`,
-    );
-  }
-
-  return readTokenResponse(body, 'refresh-rejected');
+export interface RefreshTokenRevocation {
+  readonly revocationEndpoint: string;
+  readonly clientId: string;
+  readonly refreshToken: string;
 }
 
 export interface DiscoveryDocument {
   readonly jwksUri: string;
   readonly revocationEndpoint: string | undefined;
-}
-
-export async function fetchDiscoveryDocument(fetchImpl: FetchLike): Promise<DiscoveryDocument> {
-  const response: Response = await fetchImpl(chatGptDiscoveryUrl);
-  const body: unknown = await readJsonBody(response);
-
-  if (!response.ok || !isJsonRecord(body) || typeof body.jwks_uri !== 'string') {
-    throw new ChatGptOAuthError(
-      'discovery-failed',
-      `OpenAI 인증 서버의 설정 문서를 읽지 못했습니다 (HTTP ${response.status}).`,
-    );
-  }
-
-  return {
-    jwksUri: body.jwks_uri,
-    revocationEndpoint:
-      typeof body.revocation_endpoint === 'string' ? body.revocation_endpoint : undefined,
-  };
 }
 
 export interface SigningKey {
@@ -328,42 +262,105 @@ export interface SigningKey {
   readonly [field: string]: unknown;
 }
 
-export async function fetchJsonWebKeys(
-  fetchImpl: FetchLike,
-  jwksUri: string,
-): Promise<readonly SigningKey[]> {
-  const response: Response = await fetchImpl(jwksUri);
-  const body: unknown = await readJsonBody(response);
+export class ChatGptOAuthClient {
+  public constructor(private readonly fetch: FetchLike) {}
 
-  if (!response.ok || !isJsonRecord(body) || !Array.isArray(body.keys)) {
-    throw new ChatGptOAuthError(
-      'discovery-failed',
-      `OpenAI 의 서명 키 목록을 읽지 못했습니다 (HTTP ${response.status}).`,
-    );
+  public async exchangeAuthorizationCode(input: AuthorizationCodeExchange): Promise<TokenResponse> {
+    const response: Response = await this.postForm(chatGptTokenUrl, {
+      grant_type: 'authorization_code',
+      client_id: input.clientId,
+      code: input.code,
+      code_verifier: input.codeVerifier,
+      redirect_uri: input.redirectUri,
+      resource: chatGptResource,
+    });
+    const body: unknown = await readJsonBody(response);
+
+    if (!response.ok) {
+      throw new ChatGptOAuthError(
+        'exchange-failed',
+        `인가 코드를 토큰으로 바꾸지 못했습니다 (${describeTokenFailure(response.status, body)}).`,
+      );
+    }
+
+    return readTokenResponse(body, 'exchange-failed');
   }
 
-  return body.keys.filter(isJsonRecord) as unknown as SigningKey[];
-}
+  public async refreshAccessToken(input: RefreshTokenGrant): Promise<TokenResponse> {
+    const response: Response = await this.postForm(chatGptTokenUrl, {
+      grant_type: 'refresh_token',
+      client_id: input.clientId,
+      refresh_token: input.refreshToken,
+      resource: chatGptResource,
+    });
+    const body: unknown = await readJsonBody(response);
 
-export async function revokeRefreshToken(
-  fetchImpl: FetchLike,
-  input: {
-    readonly revocationEndpoint: string;
-    readonly clientId: string;
-    readonly refreshToken: string;
-  },
-): Promise<void> {
-  const response: Response = await postForm(fetchImpl, input.revocationEndpoint, {
-    token: input.refreshToken,
-    token_type_hint: 'refresh_token',
-    client_id: input.clientId,
-  });
+    if (!response.ok) {
+      const code: string = isJsonRecord(body) && typeof body.error === 'string' ? body.error : '';
+      const isUnusable: boolean = unusableRefreshTokenCodes.has(code) || response.status === 400;
 
-  if (!response.ok) {
-    throw new ChatGptOAuthError(
-      'revocation-failed',
-      `로그인 세션을 서버에서 끝내지 못했습니다 (HTTP ${response.status}).`,
-    );
+      throw new ChatGptOAuthError(
+        isUnusable ? 'refresh-rejected' : 'exchange-failed',
+        `로그인 세션을 갱신하지 못했습니다 (${describeTokenFailure(response.status, body)}).`,
+      );
+    }
+
+    return readTokenResponse(body, 'refresh-rejected');
+  }
+
+  public async fetchDiscoveryDocument(): Promise<DiscoveryDocument> {
+    const response: Response = await this.fetch(chatGptDiscoveryUrl);
+    const body: unknown = await readJsonBody(response);
+
+    if (!response.ok || !isJsonRecord(body) || typeof body.jwks_uri !== 'string') {
+      throw new ChatGptOAuthError(
+        'discovery-failed',
+        `OpenAI 인증 서버의 설정 문서를 읽지 못했습니다 (HTTP ${response.status}).`,
+      );
+    }
+
+    return {
+      jwksUri: body.jwks_uri,
+      revocationEndpoint:
+        typeof body.revocation_endpoint === 'string' ? body.revocation_endpoint : undefined,
+    };
+  }
+
+  public async fetchJsonWebKeys(jwksUri: string): Promise<readonly SigningKey[]> {
+    const response: Response = await this.fetch(jwksUri);
+    const body: unknown = await readJsonBody(response);
+
+    if (!response.ok || !isJsonRecord(body) || !Array.isArray(body.keys)) {
+      throw new ChatGptOAuthError(
+        'discovery-failed',
+        `OpenAI 의 서명 키 목록을 읽지 못했습니다 (HTTP ${response.status}).`,
+      );
+    }
+
+    return body.keys.filter(isJsonRecord) as unknown as SigningKey[];
+  }
+
+  public async revokeRefreshToken(input: RefreshTokenRevocation): Promise<void> {
+    const response: Response = await this.postForm(input.revocationEndpoint, {
+      token: input.refreshToken,
+      token_type_hint: 'refresh_token',
+      client_id: input.clientId,
+    });
+
+    if (!response.ok) {
+      throw new ChatGptOAuthError(
+        'revocation-failed',
+        `로그인 세션을 서버에서 끝내지 못했습니다 (HTTP ${response.status}).`,
+      );
+    }
+  }
+
+  private async postForm(url: string, form: Readonly<Record<string, string>>): Promise<Response> {
+    return await this.fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(form).toString(),
+    });
   }
 }
 
