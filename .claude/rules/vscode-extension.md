@@ -12,6 +12,13 @@ Follow these rules when implementing VSCode extension behavior in `storyboard`.
 ## Activation and Lifecycle
 
 - Keep `apps/vscode/src/extension.ts` focused on activation/deactivation and high-level wiring.
+- A contributed command is a class implementing `IExtensionCommand` (`readonly id` from
+  `contributionIds.ts`, `run(...)`, its dependencies through the constructor) in
+  `presentation/commands/<name>Command.ts`; a bootstrap module lists its command instances and the
+  bootstrap `CommandRegistrar` is the one place `vscode.commands.registerCommand` is called for them.
+- A provider (diagnostics, hover, sidebar, custom editor, inline completion, rename participant) is
+  a class with `register(): vscode.Disposable`; the bootstrap module builds it and pushes what it
+  returns. No `registerXCommand`/`registerXProvider` functions.
 - Push disposables into `context.subscriptions`.
 - Dispose watchers, webview panels, event listeners, terminals, and long-running resources explicitly.
 - Avoid doing expensive work on activation unless required for the activation event.

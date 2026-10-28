@@ -66,14 +66,26 @@ stays in the CLI's `gitRepository` adapter.
 
 ## Command files
 
-A command's first word is its file: `storyboard draft generate` lives in `commands/draft.ts`, `card list`
-in `commands/card.ts`, and the one-word verbs in files of their own (`init.ts`, `setup.ts`, `doctor.ts`,
-`status.ts`). `commands/index.ts` is only the handler table that maps each verb string to its handler.
-What two nouns share has a module named for what it is — `sceneArguments.ts` (the `<stem>` argument),
-`paidRunConfirmation.ts` (the estimate prompt before a paid run), `contractInput.ts` (the project
-contract read from flags or a file) — never a `shared.ts`. A handler builds its `CommandOutcome`
-with `failure(message, data?)` and `success(message, data?)` from `commands/outcomes.ts`; only an
-outcome that carries `stop` or `isDrawn` is written as a literal.
+A command is a class: `storyboard draft generate` is `DraftGenerateCommand implements ICommandHandler`
+in `commands/draft/draftGenerateCommand.ts`, `card list` is `commands/card/cardListCommand.ts`, and
+a one-word verb is `commands/initCommand.ts`, `setupCommand.ts`, `doctorCommand.ts`, `statusCommand.ts`.
+The noun is the folder, the verb is the file, one class per file. The class carries its own
+`spec: CommandSpec` (verb, group, usage, flags, `needsWorkspace`, `writesWorkspace`, …) and
+`execute(context): Promise<CommandOutcome>`; a step it takes is a `private` method, and a collaborator
+that holds the container (`DoctorChecks`, `ConfigEditor`, `WorkspaceInput`) is a class in the same
+folder. `commands/catalog.ts` holds only the vocabulary — groups, the flag table, the kind lists —
+and `commands/index.ts` is the list of command instances in help order, from which the catalog of
+specs is assembled; `--help`, completion, the run lock and the parser read that list, and
+`apps/cli/test/help.test.ts` fails when two commands claim one verb or a spec names a flag or group
+the vocabulary lacks. A command never imports `index.ts` (that would be a cycle); it imports the
+vocabulary it needs from `catalog.ts`. `commands/commandDispatcher.ts` is the one entry
+(`CommandDispatcher`, built with the container factory and the terminal facts): completion, the
+argument parser, the resource overrides, the run lock and the call to `execute` are its `private`
+steps. What two nouns share has a module named for what it is — `sceneArguments.ts` (the `<stem>`
+argument), `paidRunConfirmation.ts` (the estimate prompt before a paid run), `contractInput.ts` (the
+project contract read from flags or a file) — never a `shared.ts`. A command builds its
+`CommandOutcome` with `failure(message, data?)` and `success(message, data?)` from
+`commands/outcomes.ts`; only an outcome that carries `stop` or `isDrawn` is written as a literal.
 
 ## Layering
 
@@ -86,8 +98,8 @@ Everything drawn — widths, colors, boxes, two-column tables, OSC signals — i
 `terminal/`, measured in terminal columns (`string-width`), never `String.length`. Decoration is for
 a person: color only where `shouldUseColor` allows (a TTY, no `--json`, `--no-color`, `NO_COLOR` or
 `TERM=dumb`), and marks (`✓`/`✗`), panels, the next-step hint, links and the window title only when
-that stream is a TTY. A pipe and `--json` get the bytes they got before any of it, and `dispatch`
-called without `terminal` facts (tests, the TUI) is plain. Use single-width marks: `string-width`
+that stream is a TTY. A pipe and `--json` get the bytes they got before any of it, and a `CommandDispatcher`
+built without `terminal` facts (tests, the TUI) is plain. Use single-width marks: `string-width`
 counts emoji-capable characters such as `✔` as two columns while terminals draw one.
 
 Long runs report through `container.progress` (`adapters/runProgress.ts`): at a terminal a rail
@@ -119,7 +131,7 @@ value the schema rejects fails the run with `ConfigFileError('invalid-value')`, 
 logged as a warning and kept; the pre-0.8 `cli.json`/`cli-secrets.json` are no longer
 read at all. **Writes follow git's rule**: `setup`, `config set` and `config unset` write the
 workspace file when run inside a workspace, `--global` writes the home file, and outside a workspace
-they refuse rather than guess. `dispatch.ts` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
+they refuse rather than guess. `CommandDispatcher` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
 command picks a file on its own. Secrets are exempt — always the one 0600 home file.
 **Author resources are data too**: the home `~/.storyboard` and the workspace's `.storyboard` are
 two resource roots (workspace wins), and `packages/story-app/src/resourceOverrides.ts` owns what a
@@ -131,12 +143,12 @@ variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params
 `pipelines/novel.yaml` over the stage order of the two pipelines (checked against
 `sceneStageCatalog` and `novelStageCatalog`; a required stage cannot be dropped, except that a
 `novel.yaml` written before `characters` existed runs it right after `outline`). `doctor` lists the
-files in force and fails on one it cannot use. `dispatch.ts` loads them before a
+files in force and fails on one it cannot use. `CommandDispatcher` loads them before a
 workspace verb runs, warning about files it cannot use.
 `setup` / `doctor` / `config show|set|unset` / `params show` are the onboarding
-verbs (`apps/cli/src/commands/{setup,doctor,config,params}.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
-is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and
-`apps/cli/test/help.test.ts` fails when a verb is implemented without a catalog entry.
+verbs (`apps/cli/src/commands/{setup,doctor}Command.ts`, `commands/config/`, `commands/params/`); each
+command's `spec` is the single source for its flags, `--help` line, per-verb help and `needsWorkspace`,
+and the instance list in `apps/cli/src/commands/index.ts` is where those specs are assembled.
 
 ## Narration verbs
 
@@ -199,7 +211,7 @@ entry to the parity test's editor-only list without that argument holding.
 ## Interactive screen (`apps/cli/src/tui`)
 
 `storyboard` at a terminal with no arguments, or `storyboard tui`, renders an Ink app. It is a
-top layer (`terminal → adapters → commands → tui`) that only calls `commands/dispatch.ts` — the same entry
+top layer (`terminal → adapters → commands → tui`) that only calls `commands/commandDispatcher.ts` — the same entry
 `index.ts` uses for one-shot runs — so a verb behaves identically typed at the prompt or on the
 shell line. Because Ink and yoga-layout use top-level await the bundle is ESM (`dist/index.mjs`);
 `esbuild.config.mjs` adds a `createRequire` banner for CJS dependencies and aliases
@@ -214,7 +226,7 @@ TUI change.
 ## Shell completion (`apps/cli/src/commands/completion.ts`)
 
 `storyboard completion <zsh|bash|fish>` prints a script that delegates every Tab to the hidden
-`storyboard __complete <words…>` verb, which `dispatch.ts` answers before the argument parser runs
+`storyboard __complete <words…>` verb, which `CommandDispatcher` answers before the argument parser runs
 (a half-typed flag must not be rejected). Candidates come from the catalog (verbs, per-verb flags,
 `<stem>`/`<id>`/`<provider>`/`<key>` positional slots) plus the workspace's `scene/` and card
 directories; output is `text<TAB>description` per line. `scripts/install.sh` appends the

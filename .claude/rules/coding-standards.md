@@ -43,8 +43,10 @@ for schema-first types and the error-class template. Generic readability and ver
   `interface` with every field `readonly`**. A structural stand-in for a host type takes the
   `...Like` suffix (`StoryboardConfigurationLike`) — the shape without the import.
 - Injection names: dependency bags are `XDependencies`, request/result pairs `XRequest`/`XResult`,
-  zod schemas camelCase `xSchema`. Handler factories are `createXHandler`; vscode command
-  registration is `registerXCommand`.
+  zod schemas camelCase `xSchema`. A CLI verb is `XCommand implements ICommandHandler`
+  (`sceneCreateCommand.ts`), a contributed extension command `XCommand implements IExtensionCommand`
+  (`renameSceneCommand.ts`), an extension provider a class with `register(): Disposable`, and an RPC
+  handler group an `XRpc` class (`StudioSceneRpc`).
 - Command surfaces: vscode `storyboard.<noun>.<verb>`, CLI `<noun> <verb>`, RPC methods dotted
   `noun.verb` (`cards.list`).
 
