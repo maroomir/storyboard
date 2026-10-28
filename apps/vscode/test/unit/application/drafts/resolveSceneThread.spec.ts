@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getStoryboardProjectPaths, NodeUri, parseScene } from '@storyboard/story-model';
-import { resolveSceneThread } from '@storyboard/story-engine';
+import { SceneNarrationResolver, type IFileSystem } from '@storyboard/story-engine';
 import type { SceneFile, StoryboardProject, StoryUri } from '@storyboard/story-model';
 
 const paths = getStoryboardProjectPaths(NodeUri.file('/w'));
@@ -26,7 +26,7 @@ const fileSystem = {
 
     return new TextEncoder().encode(content);
   },
-} as unknown as Parameters<typeof resolveSceneThread>[3];
+} as unknown as IFileSystem;
 
 function projectWith(threads: StoryboardProject['setting'] extends undefined ? never : object): StoryboardProject {
   return {
@@ -49,12 +49,7 @@ const threadedProject = projectWith({ threads: { ep1: { title: '나룻배' }, ep
 
 describe('resolveSceneThread', () => {
   it('leaves a project without declared threads on the default paths', async () => {
-    const resolved = await resolveSceneThread(
-      paths,
-      sceneOf('04-lantern.card'),
-      projectWith({}),
-      fileSystem,
-    );
+    const resolved = await new SceneNarrationResolver(fileSystem).resolveThread(paths, sceneOf('04-lantern.card'), projectWith({}));
 
     expect(resolved.threadId).toBe('main');
     expect(resolved.threadPaths.storyState).toBe(paths.storyState);
@@ -62,12 +57,7 @@ describe('resolveSceneThread', () => {
   });
 
   it('scopes the continuity paths to the scene thread', async () => {
-    const resolved = await resolveSceneThread(
-      paths,
-      sceneOf('04-lantern.card'),
-      threadedProject,
-      fileSystem,
-    );
+    const resolved = await new SceneNarrationResolver(fileSystem).resolveThread(paths, sceneOf('04-lantern.card'), threadedProject);
 
     expect(resolved.threadId).toBe('ep2');
     expect(resolved.threadPaths.storyState.path).toContain('memory/threads/ep2/storyState.md');
@@ -76,34 +66,19 @@ describe('resolveSceneThread', () => {
   });
 
   it('skips over scenes belonging to another thread when finding the previous scene', async () => {
-    const resolved = await resolveSceneThread(
-      paths,
-      sceneOf('04-lantern.card'),
-      threadedProject,
-      fileSystem,
-    );
+    const resolved = await new SceneNarrationResolver(fileSystem).resolveThread(paths, sceneOf('04-lantern.card'), threadedProject);
 
     expect(resolved.previousSceneOrder).toBe(2);
   });
 
   it('reports no previous scene for the first scene of a thread', async () => {
-    const resolved = await resolveSceneThread(
-      paths,
-      sceneOf('02-alley.card'),
-      threadedProject,
-      fileSystem,
-    );
+    const resolved = await new SceneNarrationResolver(fileSystem).resolveThread(paths, sceneOf('02-alley.card'), threadedProject);
 
     expect(resolved.previousSceneOrder).toBeUndefined();
   });
 
   it('keeps the shared canon path outside the thread scope', async () => {
-    const resolved = await resolveSceneThread(
-      paths,
-      sceneOf('04-lantern.card'),
-      threadedProject,
-      fileSystem,
-    );
+    const resolved = await new SceneNarrationResolver(fileSystem).resolveThread(paths, sceneOf('04-lantern.card'), threadedProject);
 
     expect(resolved.threadPaths.bibleCanon).toBe(paths.bibleCanon);
     expect(resolved.threadPaths.draftDirectory).toBe(paths.draftDirectory);
@@ -131,10 +106,10 @@ describe('chapter defaults', () => {
 
         return new TextEncoder().encode(body);
       },
-    } as unknown as Parameters<typeof resolveSceneThread>[3];
+    } as unknown as IFileSystem;
 
     const scene = parseScene('type: scene\nid: 02-alley\nsummary: 골목.\n', '02-alley.card');
-    const resolved = await resolveSceneThread(paths, scene, threadedProject, planFileSystem, 'ep1');
+    const resolved = await new SceneNarrationResolver(planFileSystem).resolveThread(paths, scene, threadedProject, 'ep1');
 
     expect(resolved.threadId).toBe('ep1');
     expect(resolved.previousSceneOrder).toBe(1);

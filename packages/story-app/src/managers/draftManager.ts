@@ -45,7 +45,7 @@ import type {
   SaveDraftEditResult,
   SaveDraftEditUseCase,
 } from '@storyboard/story-engine';
-import { resealStoryMemory, ProjectRepository } from '@storyboard/story-engine';
+import { StoryMemoryAuditor, ProjectRepository } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import {
   draftPath,
@@ -206,13 +206,12 @@ export class DraftManager {
       paths.projectJson,
     );
 
-    return await resealStoryMemory({
+    return await new StoryMemoryAuditor({
       fileSystem: this.deps.fileSystem,
       paths,
       format: project.format,
       sceneBreakJoiner: this.deps.configBridge.getDraftSceneBreakSeparator(),
-      ...(sceneOrders === undefined ? {} : { sceneOrders }),
-    });
+    }).reseal(sceneOrders);
   }
 
   public renameScene(request: RenameSceneRequest): Promise<RenameSceneResult> {

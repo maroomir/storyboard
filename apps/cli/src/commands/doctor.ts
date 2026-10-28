@@ -5,8 +5,8 @@ import type { CliContainer } from '@/container';
 import type { ProviderModelConfig } from '@storyboard/story-ai';
 import type { CardReading, ResourceOverrideReport } from '@storyboard/story-app';
 import {
-  auditChapterMemory,
-  auditStoryMemory,
+  ChapterMemoryAuditor,
+  StoryMemoryAuditor,
   NarratorCardRepository,
   ProjectRepository,
 } from '@storyboard/story-engine';
@@ -342,12 +342,12 @@ export async function collectStoryStateChecks(
     return [];
   }
 
-  const { audit } = await auditStoryMemory({
+  const { audit } = await new StoryMemoryAuditor({
     fileSystem: container.fileSystem,
     paths,
     format: project.format,
     sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
-  });
+  }).audit();
 
   if (audit.staleSceneOrders.length > 0) {
     return [
@@ -382,7 +382,10 @@ export async function collectChapterSummaryChecks(
     return [];
   }
 
-  const { audit } = await auditChapterMemory({ fileSystem: container.fileSystem, paths });
+  const { audit } = await new ChapterMemoryAuditor({
+    fileSystem: container.fileSystem,
+    paths,
+  }).audit();
 
   if (audit.summaries.length === 0) {
     return [];

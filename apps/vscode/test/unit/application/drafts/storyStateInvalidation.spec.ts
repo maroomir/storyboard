@@ -10,10 +10,8 @@ import {
 } from "@storyboard/story-model"
 import type { FileSystemDirectoryEntry, IFileSystem } from "@storyboard/story-engine"
 import {
-  auditStoryMemory,
-  markStoryStateStaleEntries,
-  sealStoryMemory
-} from "../../../../../../packages/story-engine/src/application/drafts/storyStateAudit"
+  StoryMemoryAuditor,
+} from "../../../../../../packages/story-engine/src/application/drafts/storyMemoryAuditor"
 import { toStoryStateEntries, updateStoryStateAfterGeneration } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
 
 class MemoryWorkspace implements IFileSystem {
@@ -122,7 +120,7 @@ function auditRequest(fileSystem: IFileSystem, beforeSceneOrder?: number): never
   } as never
 }
 
-describe("auditStoryMemory", () => {
+describe("StoryMemoryAuditor.audit", () => {
   let fileSystem: MemoryWorkspace
 
   beforeEach(() => {
@@ -139,7 +137,7 @@ describe("auditStoryMemory", () => {
       "# 이야기 상태\n<!-- through-scene: 2 -->\n## 확정 사실\n- [1] 1화 사실\n- [2] 2화 사실\n"
     )
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([])
     expect(result.audit.unsealedSceneOrders).toEqual([1, 2])
@@ -151,7 +149,7 @@ describe("auditStoryMemory", () => {
     const hashes = await sealedLedger(fileSystem, [1, 2, 3])
     fileSystem.write(paths.storyState.path, ledger(hashes))
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([])
     expect(result.needsMarking).toBe(false)
@@ -162,7 +160,7 @@ describe("auditStoryMemory", () => {
     fileSystem.write(paths.storyState.path, ledger(hashes))
     fileSystem.write("/ws/scene/02-second.card", sceneCard("02", "second", "고쳐 쓴 요약."))
 
-    const result = await auditStoryMemory(auditRequest(fileSystem, 3))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem, 3)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([2])
     expect(result.staleWarning).toContain("씬 2")
@@ -174,7 +172,7 @@ describe("auditStoryMemory", () => {
     fileSystem.write(paths.storyState.path, ledger(hashes))
     fileSystem.write("/ws/character/jina.card", characterCard("방송부 3학년, 익명 DJ"))
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([1, 2, 3])
   })
@@ -184,7 +182,7 @@ describe("auditStoryMemory", () => {
     fileSystem.write(paths.storyState.path, ledger(hashes))
     fileSystem.remove("/ws/scene/02-second.card")
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([2])
   })
@@ -194,7 +192,7 @@ describe("auditStoryMemory", () => {
     fileSystem.write(paths.storyState.path, ledger(hashes))
     fileSystem.write("/ws/scene/03-third.card", sceneCard("03", "third", "고쳐 쓴 3화."))
 
-    const result = await auditStoryMemory(auditRequest(fileSystem, 2))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem, 2)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([])
     expect(result.staleWarning).toBeUndefined()
@@ -205,8 +203,8 @@ describe("auditStoryMemory", () => {
     const original = ledger(hashes)
     fileSystem.write(paths.storyState.path, original)
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
-    await markStoryStateStaleEntries(paths, fileSystem, result)
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
+    await new StoryMemoryAuditor(auditRequest(fileSystem)).markStale(result)
 
     expect(fileSystem.read(paths.storyState.path)).toBe(original)
   })
@@ -216,8 +214,8 @@ describe("auditStoryMemory", () => {
     fileSystem.write(paths.storyState.path, ledger(hashes))
     fileSystem.write("/ws/scene/02-second.card", sceneCard("02", "second", "고쳐 쓴 요약."))
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
-    await markStoryStateStaleEntries(paths, fileSystem, result)
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
+    await new StoryMemoryAuditor(auditRequest(fileSystem)).markStale(result)
 
     const marked = fileSystem.read(paths.storyState.path) ?? ""
     expect(marked).toContain("- [2!] 2화 사실")
@@ -232,7 +230,7 @@ describe("auditStoryMemory", () => {
       `${sceneCard("02", "second", "익명 사연이 도착한다.").trimEnd()}\nnarrator: hana-first\n`
     )
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([2])
   })
@@ -245,7 +243,7 @@ describe("auditStoryMemory", () => {
       `${sceneCard("02", "second", "익명 사연이 도착한다.").trimEnd()}\nthread: ep2\n`
     )
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([2])
   })
@@ -258,7 +256,7 @@ describe("auditStoryMemory", () => {
       `${sceneCard("02", "second", "익명 사연이 도착한다.").trimEnd()}\npovCharacter: jina\n`
     )
 
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([2])
   })
@@ -271,11 +269,12 @@ describe("auditStoryMemory", () => {
     fileSystem.write(threadPaths.storyState.path, mainLedger)
     fileSystem.write("/ws/scene/02-second.card", sceneCard("02", "second", "고쳐 쓴 요약."))
 
-    const result = await auditStoryMemory({
+    const threadAuditor = new StoryMemoryAuditor({
       ...(auditRequest(fileSystem) as object),
       paths: threadPaths
     } as never)
-    await markStoryStateStaleEntries(threadPaths, fileSystem, result)
+    const result = await threadAuditor.audit()
+    await threadAuditor.markStale(result)
 
     expect(fileSystem.read(threadPaths.storyState.path)).toContain("- [2!] 2화 사실")
     expect(fileSystem.read(paths.storyState.path)).toBe(mainLedger)
@@ -292,8 +291,8 @@ describe("auditStoryMemory", () => {
     )
     expect(beforeMarking).toContain("2화 사실")
 
-    const result = await auditStoryMemory(auditRequest(fileSystem, 3))
-    await markStoryStateStaleEntries(paths, fileSystem, result)
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem, 3)).audit()
+    await new StoryMemoryAuditor(auditRequest(fileSystem)).markStale(result)
 
     const afterMarking = formatStoryStateForPrompt(
       await readStoryState(paths.storyState, fileSystem),
@@ -304,7 +303,7 @@ describe("auditStoryMemory", () => {
   })
 
   it("returns an empty audit when the ledger does not exist", async () => {
-    const result = await auditStoryMemory(auditRequest(fileSystem))
+    const result = await new StoryMemoryAuditor(auditRequest(fileSystem)).audit()
 
     expect(result.audit.staleSceneOrders).toEqual([])
     expect(result.audit.unsealedSceneOrders).toEqual([])
@@ -498,7 +497,7 @@ async function sealedLedger(
     ].join("\n")
   )
 
-  await sealStoryMemory(auditRequest(fileSystem))
+  await new StoryMemoryAuditor(auditRequest(fileSystem)).seal()
 
   const sealed = parseStoryState(fileSystem.read(paths.storyState.path) ?? "")
   fileSystem.remove(paths.storyState.path)

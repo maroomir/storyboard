@@ -8,7 +8,7 @@ import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
 import {
   mergeProjectSetting,
-  sealStoryMemory,
+  StoryMemoryAuditor,
   ProjectRepository,
   WorkspaceInitializer,
 } from '@storyboard/story-engine';
@@ -38,12 +38,12 @@ async function sealWorkspaceStoryState(
     return [];
   }
 
-  return await sealStoryMemory({
+  return await new StoryMemoryAuditor({
     fileSystem: container.fileSystem,
     paths,
     format: project.format,
     sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
-  });
+  }).seal();
 }
 
 export const initProject: CommandHandler = async ({ container, args }) => {
