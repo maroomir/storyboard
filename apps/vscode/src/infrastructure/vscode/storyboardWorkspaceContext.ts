@@ -9,48 +9,50 @@ export async function refreshStoryboardWorkspaceContext(): Promise<void> {
   await vscode.commands.executeCommand('setContext', workspaceReadyContextKey, ready);
 }
 
-export function registerStoryboardWorkspaceContext(
-  context: vscode.ExtensionContext,
-): vscode.Disposable {
-  let watcherBucket: vscode.Disposable = vscode.Disposable.from();
+export class StoryboardWorkspaceContext {
+  public constructor(private readonly context: vscode.ExtensionContext) {}
 
-  const bindWatchers = (): void => {
-    watcherBucket.dispose();
-    const inner: vscode.Disposable[] = [];
+  public register(): vscode.Disposable {
+    let watcherBucket: vscode.Disposable = vscode.Disposable.from();
 
-    for (const folder of vscode.workspace.workspaceFolders ?? []) {
-      const pattern: vscode.RelativePattern = new vscode.RelativePattern(
-        folder,
-        STORYBOARD_RELATIVE_PATHS.projectJson,
-      );
-      const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(pattern);
-      inner.push(watcher);
+    const bindWatchers = (): void => {
+      watcherBucket.dispose();
+      const inner: vscode.Disposable[] = [];
 
-      const scheduleRefresh = (): void => {
-        void refreshStoryboardWorkspaceContext();
-      };
+      for (const folder of vscode.workspace.workspaceFolders ?? []) {
+        const pattern: vscode.RelativePattern = new vscode.RelativePattern(
+          folder,
+          STORYBOARD_RELATIVE_PATHS.projectJson,
+        );
+        const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(pattern);
+        inner.push(watcher);
 
-      inner.push(watcher.onDidCreate(scheduleRefresh));
-      inner.push(watcher.onDidDelete(scheduleRefresh));
-      inner.push(watcher.onDidChange(scheduleRefresh));
-    }
+        const scheduleRefresh = (): void => {
+          void refreshStoryboardWorkspaceContext();
+        };
 
-    watcherBucket = vscode.Disposable.from(...inner);
-  };
+        inner.push(watcher.onDidCreate(scheduleRefresh));
+        inner.push(watcher.onDidDelete(scheduleRefresh));
+        inner.push(watcher.onDidChange(scheduleRefresh));
+      }
 
-  void refreshStoryboardWorkspaceContext();
-  bindWatchers();
+      watcherBucket = vscode.Disposable.from(...inner);
+    };
 
-  const folderChange: vscode.Disposable = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-    bindWatchers();
     void refreshStoryboardWorkspaceContext();
-  });
+    bindWatchers();
 
-  const composite: vscode.Disposable = vscode.Disposable.from(
-    folderChange,
-    new vscode.Disposable(() => watcherBucket.dispose()),
-  );
+    const folderChange: vscode.Disposable = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      bindWatchers();
+      void refreshStoryboardWorkspaceContext();
+    });
 
-  context.subscriptions.push(composite);
-  return composite;
+    const composite: vscode.Disposable = vscode.Disposable.from(
+      folderChange,
+      new vscode.Disposable(() => watcherBucket.dispose()),
+    );
+
+    this.context.subscriptions.push(composite);
+    return composite;
+  }
 }

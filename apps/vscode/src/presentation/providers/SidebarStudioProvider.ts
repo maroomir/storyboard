@@ -6,8 +6,8 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { StudioSessionRepository, type IStudioSessionRepository } from '@storyboard/story-engine';
-import { StudioFollowUpRepository, type IStudioFollowUpRepository } from '@storyboard/story-engine';
+import type { IStudioSessionRepository } from '@storyboard/story-engine';
+import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import { StudioContextRepository } from '@storyboard/story-engine';
 import type { ProposalReviewService } from './proposalReviewService';
 import {
@@ -51,6 +51,14 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly configBridge: ConfigBridge,
     private readonly logger: IStoryboardLogger,
   ) {}
+
+  public register(): vscode.Disposable {
+    return vscode.Disposable.from(
+      vscode.window.registerWebviewViewProvider(sidebarViewIds.studio, this),
+      this,
+      this.toolDiagnostics,
+    );
+  }
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.webviewView = webviewView;
@@ -186,34 +194,4 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       payload: target,
     });
   }
-}
-
-export function registerSidebarStudioProvider(
-  context: vscode.ExtensionContext,
-  studio: Pick<StudioManager, 'chat'>,
-  aiGateway: AiGateway,
-  cards: Pick<CardManager, 'collectProposals' | 'exists' | 'write'>,
-  reviewService: ProposalReviewService,
-  configBridge: ConfigBridge,
-  logger: IStoryboardLogger,
-): vscode.Disposable {
-  const toolDiagnostics: StudioToolDiagnostics = new StudioToolDiagnostics();
-  const provider: SidebarStudioProvider = new SidebarStudioProvider(
-    context.extensionUri,
-    new StudioSessionRepository(vscodeFileSystem),
-    studio,
-    aiGateway,
-    cards,
-    toolDiagnostics,
-    reviewService,
-    new StudioFollowUpRepository(vscodeFileSystem),
-    configBridge,
-    logger,
-  );
-
-  return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider(sidebarViewIds.studio, provider),
-    provider,
-    toolDiagnostics,
-  );
 }

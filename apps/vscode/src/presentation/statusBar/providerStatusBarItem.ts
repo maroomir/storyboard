@@ -7,8 +7,8 @@ import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
-import { openSettingsCommand } from '@/presentation/commands/openSettings';
+import { chooseProviderCommand } from '@/presentation/commands/chooseProviderCommand';
+import { openSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 import type { AiProviderId } from '@storyboard/story-model';
 
 export interface ProviderStatusBarDependencies {
@@ -50,25 +50,27 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): Pro
   };
 }
 
-export function registerProviderStatusBarItem(
-  deps: ProviderStatusBarDependencies,
-): vscode.Disposable {
-  const item: vscode.StatusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Left,
-    50,
-  );
+export class ProviderStatusBarItem {
+  public constructor(private readonly deps: ProviderStatusBarDependencies) {}
 
-  const refresh = (): void => {
-    const status: ProviderStatusText = describeProviderStatus(deps);
-    item.text = status.text;
-    item.tooltip = status.tooltip;
-    item.command = status.command;
-  };
+  public register(): vscode.Disposable {
+    const item: vscode.StatusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      50,
+    );
 
-  refresh();
-  item.show();
+    const refresh = (): void => {
+      const status: ProviderStatusText = describeProviderStatus(this.deps);
+      item.text = status.text;
+      item.tooltip = status.tooltip;
+      item.command = status.command;
+    };
 
-  const subscription: DisposableHandle = deps.configBridge.onDidChange(refresh);
+    refresh();
+    item.show();
 
-  return vscode.Disposable.from(item, subscription);
+    const subscription: DisposableHandle = this.deps.configBridge.onDidChange(refresh);
+
+    return vscode.Disposable.from(item, subscription);
+  }
 }

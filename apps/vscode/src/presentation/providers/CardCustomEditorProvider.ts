@@ -54,7 +54,7 @@ export interface CardCustomEditorDependencies {
   readonly logger: IStoryboardLogger;
 }
 
-const collectPreviewScheme: string = 'storyboard-collect';
+export const collectPreviewScheme: string = 'storyboard-collect';
 
 function collectPreviewUri(documentUri: vscode.Uri): vscode.Uri {
   const baseName: string = (documentUri.path.split('/').at(-1) ?? 'card.card').replace(
@@ -84,6 +84,15 @@ export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider
     private readonly dependencies: CardCustomEditorDependencies,
     private readonly previewProvider: VirtualDocumentStore,
   ) {}
+
+  public register(): vscode.Disposable {
+    return vscode.window.registerCustomEditorProvider(cardEditorViewType, this, {
+      webviewOptions: {
+        retainContextWhenHidden: true,
+      },
+      supportsMultipleEditorsPerDocument: false,
+    });
+  }
 
   public resolveCustomTextEditor(
     document: vscode.TextDocument,
@@ -156,28 +165,6 @@ async function postCardChanged(
     method: 'cards.changed',
     payload,
   });
-}
-
-export function registerCardCustomEditorProvider(
-  context: vscode.ExtensionContext,
-  dependencies: CardCustomEditorDependencies,
-): vscode.Disposable {
-  const previewProvider: VirtualDocumentStore = new VirtualDocumentStore();
-
-  return vscode.Disposable.from(
-    previewProvider,
-    vscode.workspace.registerTextDocumentContentProvider(collectPreviewScheme, previewProvider),
-    vscode.window.registerCustomEditorProvider(
-      cardEditorViewType,
-      new CardCustomEditorProvider(context.extensionUri, dependencies, previewProvider),
-      {
-        webviewOptions: {
-          retainContextWhenHidden: true,
-        },
-        supportsMultipleEditorsPerDocument: false,
-      },
-    ),
-  );
 }
 
 function createCardEditorHandlers(

@@ -1,7 +1,8 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { registerAbsorbNotesCommand } from "@/presentation/commands/absorbNotes"
+import { CommandRegistrar } from "@/bootstrap/commandRegistrar"
+import { AbsorbNotesCommand } from "@/presentation/commands/absorbNotesCommand"
 import { commands, FileType, window, workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 describe("absorbNotes command", () => {
@@ -75,7 +76,7 @@ describe("absorbNotes command", () => {
 
   it("reads, shows the estimate and the plan, then applies under the workspace lock", async () => {
     answers.push("정리", "반영")
-    registerAbsorbNotesCommand({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() }, notes, runGate: { hold } })
+    new CommandRegistrar().register([new AbsorbNotesCommand({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() }, notes, runGate: { hold } })])
 
     await handler!()
 
@@ -94,7 +95,7 @@ describe("absorbNotes command", () => {
   })
 
   it("spends nothing when the estimate is declined and writes nothing when the plan is declined", async () => {
-    registerAbsorbNotesCommand({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() }, notes, runGate: { hold } })
+    new CommandRegistrar().register([new AbsorbNotesCommand({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() }, notes, runGate: { hold } })])
 
     await handler!()
     expect(notes.plan).not.toHaveBeenCalled()
@@ -108,7 +109,7 @@ describe("absorbNotes command", () => {
   it("asks for a Notion address when that source is picked", async () => {
     window.showQuickPick = vi.fn(async (items: unknown) => (items as { kind: string }[])[2])
     window.showInputBox = vi.fn(async () => "https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54")
-    registerAbsorbNotesCommand({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() }, notes, runGate: { hold } })
+    new CommandRegistrar().register([new AbsorbNotesCommand({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() }, notes, runGate: { hold } })])
 
     await handler!()
 

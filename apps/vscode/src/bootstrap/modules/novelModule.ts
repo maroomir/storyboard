@@ -1,14 +1,15 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
-import { registerAssembleManuscriptCommand } from '@/presentation/commands/assembleManuscript';
-import { registerCompleteStoryScenesCommand } from '@/presentation/commands/completeStoryScenes';
-import { registerExportManuscriptCommand } from '@/presentation/commands/exportManuscript';
-import { registerGenerateNovelCommand } from '@/presentation/commands/generateNovel';
-import { registerGenerateOutlineCommand } from '@/presentation/commands/generateOutline';
-import { registerGenerateSceneSeedsCommand } from '@/presentation/commands/generateSceneSeeds';
-import { registerReviewManuscriptCommand } from '@/presentation/commands/reviewManuscript';
-import { registerSummarizeChaptersCommand } from '@/presentation/commands/summarizeChapters';
+import { AssembleManuscriptCommand } from '@/presentation/commands/assembleManuscriptCommand';
+import { CompleteStoryScenesCommand } from '@/presentation/commands/completeStoryScenesCommand';
+import { ExportManuscriptCommand } from '@/presentation/commands/exportManuscriptCommand';
+import { GenerateNovelCommand } from '@/presentation/commands/generateNovelCommand';
+import { GenerateOutlineCommand } from '@/presentation/commands/generateOutlineCommand';
+import { GenerateSceneSeedsCommand } from '@/presentation/commands/generateSceneSeedsCommand';
+import { ReviewManuscriptCommand } from '@/presentation/commands/reviewManuscriptCommand';
+import { SummarizeChaptersCommand } from '@/presentation/commands/summarizeChaptersCommand';
 
+import { CommandRegistrar } from '@/bootstrap/commandRegistrar';
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
@@ -18,19 +19,21 @@ export class NovelModule implements IApplicationModule {
 
   public constructor(private readonly platform: IPlatformServices) {}
 
-  public initialize(context: vscode.ExtensionContext): void {
+  public initialize(_context: vscode.ExtensionContext): void {
     const { configBridge, runGate, logger, manuscript, novel, proposalReviewService } =
       this.platform;
 
     this.disposables.add(
-      registerGenerateOutlineCommand({ novel, logger }),
-      registerGenerateSceneSeedsCommand({ configBridge }),
-      registerCompleteStoryScenesCommand(context, novel, proposalReviewService),
-      registerAssembleManuscriptCommand({ manuscript, logger }),
-      registerReviewManuscriptCommand({ logger, manuscript }),
-      registerSummarizeChaptersCommand({ logger, manuscript }),
-      registerGenerateNovelCommand({ novel, runGate }),
-      registerExportManuscriptCommand({ manuscript, logger }),
+      new CommandRegistrar().register([
+        new GenerateOutlineCommand({ novel, logger }),
+        new GenerateSceneSeedsCommand({ configBridge }),
+        new CompleteStoryScenesCommand(novel, proposalReviewService),
+        new AssembleManuscriptCommand({ manuscript, logger }),
+        new ReviewManuscriptCommand({ logger, manuscript }),
+        new SummarizeChaptersCommand({ logger, manuscript }),
+        new GenerateNovelCommand({ novel, runGate }),
+        new ExportManuscriptCommand({ manuscript, logger }),
+      ]),
     );
   }
 

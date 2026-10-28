@@ -13,13 +13,13 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 import { resolveSceneUriFromInvocation } from '@/presentation/commands/sceneInvocation';
 
-const GENERATE_DRAFT_COMMAND: string = 'storyboard.draft.generate';
-const REGENERATE_DRAFT_COMMAND: string = 'storyboard.draft.regenerate';
+export const GENERATE_DRAFT_COMMAND: string = 'storyboard.draft.generate';
+export const REGENERATE_DRAFT_COMMAND: string = 'storyboard.draft.regenerate';
 const CACHE_HIT_MESSAGE: string = '입력이 동일하여 캐시된 초안을 엽니다.';
 const REGENERATE_SUCCESS_MESSAGE: string = '초안을 다시 생성해 저장했습니다.';
 const GENERATE_SUCCESS_MESSAGE: string = '초안을 생성해 저장했습니다.';
 
-export interface RegisterGenerateDraftCommandDependencies {
+export interface GenerateDraftCommandDependencies {
   readonly runGate: Pick<RunGate, 'hold'>;
   readonly drafts: Pick<DraftManager, 'generate' | 'reviseAfterGenerate'>;
 }
@@ -53,7 +53,7 @@ async function openDraftResult(
 async function runGenerateDraftForWorkspaceScene(
   sceneUri: vscode.Uri,
   force: boolean,
-  dependencies: RegisterGenerateDraftCommandDependencies,
+  dependencies: GenerateDraftCommandDependencies,
 ): Promise<void> {
   await vscode.window.withProgress(
     {
@@ -131,10 +131,10 @@ async function runGenerateDraftForWorkspaceScene(
   );
 }
 
-async function runCommand(
+export async function runCommand(
   invokedUri: vscode.Uri | undefined,
   force: boolean,
-  dependencies: RegisterGenerateDraftCommandDependencies,
+  dependencies: GenerateDraftCommandDependencies,
 ): Promise<void> {
   const sceneUri: vscode.Uri | undefined = resolveSceneUriFromInvocation(invokedUri);
 
@@ -156,18 +156,5 @@ async function runCommand(
     workspaceFolder.uri,
     force ? '초안 다시 생성' : '초안 생성',
     () => runGenerateDraftForWorkspaceScene(sceneUri, force, dependencies),
-  );
-}
-
-export function registerGenerateDraftCommands(
-  dependencies: RegisterGenerateDraftCommandDependencies,
-): vscode.Disposable {
-  return vscode.Disposable.from(
-    vscode.commands.registerCommand(GENERATE_DRAFT_COMMAND, (uri?: vscode.Uri) =>
-      runCommand(uri, false, dependencies),
-    ),
-    vscode.commands.registerCommand(REGENERATE_DRAFT_COMMAND, (uri?: vscode.Uri) =>
-      runCommand(uri, true, dependencies),
-    ),
   );
 }

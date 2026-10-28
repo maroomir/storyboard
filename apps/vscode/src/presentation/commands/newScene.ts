@@ -26,25 +26,14 @@ import {
 } from './newSceneHelpers';
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-const createSceneCommand: string = 'storyboard.scene.create';
-const openSceneDraftCommand: string = 'storyboard.scene.openDraft';
+export const createSceneCommand: string = 'storyboard.scene.create';
+export const openSceneDraftCommand: string = 'storyboard.scene.openDraft';
 
-export interface RegisterNewSceneCommandsDependencies {
+export interface CreateSceneCommandDependencies {
   readonly configBridge: ConfigBridge;
 }
 
-export function registerNewSceneCommands({
-  configBridge,
-}: RegisterNewSceneCommandsDependencies): vscode.Disposable {
-  return vscode.Disposable.from(
-    vscode.commands.registerCommand(createSceneCommand, () => createNewScene(configBridge)),
-    vscode.commands.registerCommand(openSceneDraftCommand, (uri?: vscode.Uri) =>
-      openDraftForScene(uri),
-    ),
-  );
-}
-
-async function openDraftForScene(invokedUri?: vscode.Uri): Promise<void> {
+export async function openDraftForScene(invokedUri?: vscode.Uri): Promise<void> {
   const sceneUri: vscode.Uri | undefined = resolveSceneUri(invokedUri);
 
   if (!sceneUri || sceneUri.scheme !== 'file') {
@@ -92,7 +81,7 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   return activeUri ?? undefined;
 }
 
-async function createNewScene(configBridge: ConfigBridge): Promise<void> {
+export async function createNewScene(configBridge: ConfigBridge): Promise<void> {
   const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {

@@ -49,6 +49,13 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
     private readonly options: SidebarCardsProviderOptions,
   ) {}
 
+  public register(): vscode.Disposable {
+    return vscode.Disposable.from(
+      vscode.window.registerWebviewViewProvider(this.options.viewType, this),
+      this,
+    );
+  }
+
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.webviewView = webviewView;
 
@@ -196,38 +203,16 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 }
 
-export function registerSidebarCardsProviders(
-  context: vscode.ExtensionContext,
-  dependencies: SidebarCardsProvidersDependencies,
-): vscode.Disposable {
-  const charactersOptions: SidebarCardsProviderOptions = {
-    viewType: sidebarViewIds.characters,
-    cardType: 'character',
-    title: 'Characters',
-    cardGlob: STORYBOARD_GLOBS.characterCards,
-  };
-  const backgroundsOptions: SidebarCardsProviderOptions = {
-    viewType: sidebarViewIds.backgrounds,
-    cardType: 'background',
-    title: 'Backgrounds',
-    cardGlob: STORYBOARD_GLOBS.backgroundCards,
-  };
+export const charactersSidebarOptions: SidebarCardsProviderOptions = {
+  viewType: sidebarViewIds.characters,
+  cardType: 'character',
+  title: 'Characters',
+  cardGlob: STORYBOARD_GLOBS.characterCards,
+};
 
-  const charactersProvider: SidebarCardsProvider = new SidebarCardsProvider(
-    context.extensionUri,
-    dependencies,
-    charactersOptions,
-  );
-  const backgroundsProvider: SidebarCardsProvider = new SidebarCardsProvider(
-    context.extensionUri,
-    dependencies,
-    backgroundsOptions,
-  );
-
-  return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider(charactersOptions.viewType, charactersProvider),
-    vscode.window.registerWebviewViewProvider(backgroundsOptions.viewType, backgroundsProvider),
-    charactersProvider,
-    backgroundsProvider,
-  );
-}
+export const backgroundsSidebarOptions: SidebarCardsProviderOptions = {
+  viewType: sidebarViewIds.backgrounds,
+  cardType: 'background',
+  title: 'Backgrounds',
+  cardGlob: STORYBOARD_GLOBS.backgroundCards,
+};

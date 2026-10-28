@@ -1,17 +1,21 @@
 import * as vscode from 'vscode';
 
-import { registerOpenRelationGraphCommand } from '@/presentation/commands/openRelationGraph';
-import { registerOpenSettingsCommand } from '@/presentation/commands/openSettings';
+import { OpenRelationGraphCommand } from '@/presentation/commands/openRelationGraphCommand';
+import { OpenSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 import {
+  ChooseProviderCommand,
   nudgeToChooseProvider,
-  registerChooseProviderCommand,
-} from '@/presentation/commands/chooseProvider';
+} from '@/presentation/commands/chooseProviderCommand';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { RelationGraphProvider } from '@/presentation/providers/RelationGraphProvider';
 import { SettingsPanelProvider } from '@/presentation/providers/SettingsPanelProvider';
-import { registerSidebarStudioProvider } from '@/presentation/providers/SidebarStudioProvider';
-import { registerProviderStatusBarItem } from '@/presentation/statusBar/providerStatusBarItem';
+import { SidebarStudioProvider } from '@/presentation/providers/SidebarStudioProvider';
+import { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
+import { ProviderStatusBarItem } from '@/presentation/statusBar/providerStatusBarItem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import { StudioFollowUpRepository, StudioSessionRepository } from '@storyboard/story-engine';
 
+import { CommandRegistrar } from '@/bootstrap/commandRegistrar';
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
@@ -50,19 +54,24 @@ export class WorkbenchModule implements IApplicationModule {
     });
 
     this.disposables.add(
-      registerSidebarStudioProvider(
-        context,
+      new SidebarStudioProvider(
+        context.extensionUri,
+        new StudioSessionRepository(vscodeFileSystem),
         studio,
         aiGateway,
         cards,
+        new StudioToolDiagnostics(),
         proposalReviewService,
+        new StudioFollowUpRepository(vscodeFileSystem),
         configBridge,
         logger,
-      ),
-      registerOpenRelationGraphCommand(context, relationGraphPanel),
-      registerOpenSettingsCommand(context, settingsPanel),
-      registerProviderStatusBarItem({ configBridge, configFiles }),
-      registerChooseProviderCommand({ configBridge, registry: aiProviderRegistry, secretStore }),
+      ).register(),
+      new CommandRegistrar().register([
+        new OpenRelationGraphCommand(context, relationGraphPanel),
+        new OpenSettingsCommand(context, settingsPanel),
+        new ChooseProviderCommand({ configBridge, registry: aiProviderRegistry, secretStore }),
+      ]),
+      new ProviderStatusBarItem({ configBridge, configFiles }).register(),
       relationGraphPanel,
       settingsPanel,
     );

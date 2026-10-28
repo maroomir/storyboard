@@ -97,6 +97,14 @@ async function listCharacterCardsInWorkspace(
 }
 
 export class CharacterHoverProvider implements vscode.HoverProvider {
+  public register(): vscode.Disposable {
+    const selector: vscode.DocumentSelector = {
+      scheme: 'file',
+      pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
+    };
+    return vscode.languages.registerHoverProvider(selector, this);
+  }
+
   public async provideHover(
     document: vscode.TextDocument,
     position: vscode.Position,
@@ -158,12 +166,4 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       wordRange,
     );
   }
-}
-
-export function registerCharacterHoverProvider(): vscode.Disposable {
-  const selector: vscode.DocumentSelector = {
-    scheme: 'file',
-    pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
-  };
-  return vscode.languages.registerHoverProvider(selector, new CharacterHoverProvider());
 }

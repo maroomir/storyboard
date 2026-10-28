@@ -1,3 +1,5 @@
+import { DiagnosticsCheckCommand } from '@/presentation/providers/diagnosticsCheckCommand';
+import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import type { CheckDraftResult } from '@storyboard/story-engine';
@@ -5,7 +7,6 @@ import { isDraftMarkdownFile, parseDraft, type SlopFinding } from '@storyboard/s
 import {
   createDiagnostic,
   createWarningDiagnostic,
-  runDiagnosticsCheckCommand,
   toRange,
   type DiagnosticsProviderDependencies,
 } from './diagnosticsShared';
@@ -145,26 +146,29 @@ class SlopDiagnosticsController {
   }
 }
 
-export function registerSlopDiagnosticsProvider(
-  dependencies: DiagnosticsProviderDependencies,
-): vscode.Disposable {
-  const controller: SlopDiagnosticsController = new SlopDiagnosticsController(dependencies);
+export class SlopDiagnosticsProvider {
+  private readonly controller: SlopDiagnosticsController;
+  public readonly commands: readonly IExtensionCommand[];
 
-  const commandRegistration: vscode.Disposable = vscode.commands.registerCommand(
-    slopCheckCommand,
-    (uri?: vscode.Uri) => runDiagnosticsCheckCommand(controller, uri),
-  );
-  const saveListener: vscode.Disposable = vscode.workspace.onDidSaveTextDocument((document) => {
-    if (!dependencies.configBridge.isSlopRealtimeEnabled()) {
-      return;
-    }
+  public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {
+    this.controller = new SlopDiagnosticsController(dependencies);
+    this.commands = [new DiagnosticsCheckCommand(slopCheckCommand, this.controller)];
+  }
 
-    controller.scheduleRealtimeCheck(document);
-  });
-  const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
-    controller.cancelRealtimeCheck(document);
-    controller.getDiagnosticsCollection().delete(document.uri);
-  });
+  public register(): vscode.Disposable {
+    const { controller, dependencies } = this;
+    const saveListener: vscode.Disposable = vscode.workspace.onDidSaveTextDocument((document) => {
+      if (!dependencies.configBridge.isSlopRealtimeEnabled()) {
+        return;
+      }
 
-  return vscode.Disposable.from(controller, commandRegistration, saveListener, closeListener);
+      controller.scheduleRealtimeCheck(document);
+    });
+    const closeListener: vscode.Disposable = vscode.workspace.onDidCloseTextDocument((document) => {
+      controller.cancelRealtimeCheck(document);
+      controller.getDiagnosticsCollection().delete(document.uri);
+    });
+
+    return vscode.Disposable.from(controller, saveListener, closeListener);
+  }
 }
