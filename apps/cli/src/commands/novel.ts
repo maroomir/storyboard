@@ -1,7 +1,7 @@
 import type { IPrompter } from '@/adapters/prompter';
 import { flagString } from '@/cliArguments';
 import type { CommandHandler } from '@/commands/outcome';
-import { cancelledBeforeRun, confirmPaidRun } from '@/commands/paidRunConfirmation';
+import { WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
 import type { NovelRunResult } from '@storyboard/story-app';
 import { novelStageLabel, resolveNovelPipelinePlan } from '@storyboard/story-engine';
 import {
@@ -30,7 +30,7 @@ export const generateNovel: CommandHandler = async ({ container, args }) => {
     return cancelledBeforeRun;
   }
 
-  const isConfirmed: boolean = await confirmPaidRun(container, (status) => ({
+  const isConfirmed: boolean = await new WorkspaceInput(container).confirmPaidRun((status) => ({
     title: '장편 생성',
     details: [
       `작품  ${status.project.name}`,
