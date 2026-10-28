@@ -6,7 +6,7 @@ import {
   locateQuoteSection,
   planSectionRevisions,
   replaceSectionText,
-  runReviseLoop,
+  ReviseLoop,
   splitDraftSections
 } from "@storyboard/story-engine"
 
@@ -82,7 +82,7 @@ describe("planSectionRevisions", () => {
   })
 })
 
-describe("runReviseLoop by section", () => {
+describe("ReviseLoop by section", () => {
   const registry = { getTaskProvider: () => "mock" } as never
   const loopContext = {
     format: "novel",
@@ -115,7 +115,7 @@ describe("runReviseLoop by section", () => {
   it("rewrites only the quoted sections and leaves the rest untouched", async () => {
     const aiService = serviceWith(async ({ body: section }) => `${section} 고쳤다.`)
 
-    const result = await runReviseLoop({
+    const result = await new ReviseLoop({
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
@@ -124,7 +124,7 @@ describe("runReviseLoop by section", () => {
       maxIterations: 2,
       reviseScoreThreshold: 0,
       maxCompressionPercent: 50
-    })
+    }).run()
 
     const sections = splitDraftSections(result.body).sections
     expect(result.revisionCount).toBe(1)
@@ -138,7 +138,7 @@ describe("runReviseLoop by section", () => {
       section.startsWith("아침") ? "짧" : `${section} 고쳤다.`
     )
 
-    const result = await runReviseLoop({
+    const result = await new ReviseLoop({
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
@@ -147,7 +147,7 @@ describe("runReviseLoop by section", () => {
       maxIterations: 1,
       reviseScoreThreshold: 0,
       maxCompressionPercent: 50
-    })
+    }).run()
 
     const sections = splitDraftSections(result.body).sections
     expect(result.preservedOriginal).toBe(false)
@@ -163,7 +163,7 @@ describe("runReviseLoop by section", () => {
       return `${section} 고쳤다.`
     })
 
-    const result = await runReviseLoop({
+    const result = await new ReviseLoop({
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
@@ -172,7 +172,7 @@ describe("runReviseLoop by section", () => {
       maxIterations: 2,
       reviseScoreThreshold: 0,
       maxCompressionPercent: 50
-    })
+    }).run()
 
     expect(result.failure).toMatchObject({ stage: "revise", kind: "timeout" })
     expect(result.revisionCount).toBe(1)
@@ -182,7 +182,7 @@ describe("runReviseLoop by section", () => {
   it("rejects a section rewrite that adds a scene break", async () => {
     const aiService = serviceWith(async ({ body: section }) => `${section}\n---\n덧붙임`)
 
-    const result = await runReviseLoop({
+    const result = await new ReviseLoop({
       aiService,
       registry,
       attribution: { primary: { kind: "scene", id: "01" } },
@@ -191,7 +191,7 @@ describe("runReviseLoop by section", () => {
       maxIterations: 1,
       reviseScoreThreshold: 0,
       maxCompressionPercent: 50
-    })
+    }).run()
 
     expect(result.body).toBe(body)
     expect(result.rejection?.reason).toBe("scene-breaks-changed")
