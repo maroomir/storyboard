@@ -165,8 +165,6 @@ function parseEventLine(line: string): JsonRecord | undefined {
   }
 }
 
-let refreshTail: Promise<unknown> = Promise.resolve();
-
 export class ChatGptProvider implements AiProvider {
   public readonly id: AiProviderId = providerId;
   public readonly displayName: string = getProviderDisplayName(providerId);
@@ -179,6 +177,7 @@ export class ChatGptProvider implements AiProvider {
   private readonly fetch: FetchLike;
   private readonly oauth: ChatGptOAuthClient;
   private readonly now: () => Date;
+  private refreshTail: Promise<unknown> = Promise.resolve();
 
   public constructor(options: ChatGptProviderOptions) {
     const model: string | undefined = options.model?.trim();
@@ -408,8 +407,8 @@ export class ChatGptProvider implements AiProvider {
       return this.connection.tokens;
     }
 
-    const refreshed: Promise<OAuthTokens> = refreshTail.then(() => this.refresh());
-    refreshTail = refreshed.catch(() => undefined);
+    const refreshed: Promise<OAuthTokens> = this.refreshTail.then(() => this.refresh());
+    this.refreshTail = refreshed.catch(() => undefined);
     return await refreshed;
   }
 
