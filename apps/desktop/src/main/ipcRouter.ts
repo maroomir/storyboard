@@ -28,32 +28,39 @@ function isInvokeChannel(channel: string): channel is InvokeChannel {
   return Object.prototype.hasOwnProperty.call(invokeRequestSchemas, channel);
 }
 
-export function createIpcRouter(
-  handlers: InvokeHandlers,
-  logger: IStoryboardLogger,
-  describe: { readonly invalidRequest: () => string; readonly internal: (message: string) => string },
-): (message: unknown) => Promise<InvokeResult<InvokeChannel>> {
-  return async (message) => {
+export interface IpcRouterMessages {
+  readonly invalidRequest: () => string;
+  readonly internal: (message: string) => string;
+}
+
+export class IpcRouter {
+  public constructor(
+    private readonly handlers: InvokeHandlers,
+    private readonly logger: IStoryboardLogger,
+    private readonly describe: IpcRouterMessages,
+  ) {}
+
+  public readonly route = async (message: unknown): Promise<InvokeResult<InvokeChannel>> => {
     const envelope: z.ZodSafeParseResult<InvokeEnvelope> = envelopeSchema.safeParse(message);
 
     if (!envelope.success || !isInvokeChannel(envelope.data.channel)) {
-      return fail('invalid-request', describe.invalidRequest());
+      return fail('invalid-request', this.describe.invalidRequest());
     }
 
     const channel: InvokeChannel = envelope.data.channel;
     const request: z.ZodSafeParseResult<InvokeRequest<InvokeChannel>> = invokeRequestSchemas[channel].safeParse(envelope.data.request);
 
     if (!request.success) {
-      logger.warn(`Rejected ${channel}: ${request.error.issues.map((issue) => issue.message).join('; ')}`);
-      return fail('invalid-request', describe.invalidRequest());
+      this.logger.warn(`Rejected ${channel}: ${request.error.issues.map((issue) => issue.message).join('; ')}`);
+      return fail('invalid-request', this.describe.invalidRequest());
     }
 
     try {
-      const handler: (request: unknown) => Promise<InvokeResult<InvokeChannel>> = handlers[channel] as (request: unknown) => Promise<InvokeResult<InvokeChannel>>;
+      const handler: (request: unknown) => Promise<InvokeResult<InvokeChannel>> = this.handlers[channel] as (request: unknown) => Promise<InvokeResult<InvokeChannel>>;
       return await handler(request.data);
     } catch (error) {
-      logger.error(`${channel} failed`, error);
-      return fail('internal', describe.internal(extractErrorMessage(error)));
+      this.logger.error(`${channel} failed`, error);
+      return fail('internal', this.describe.internal(extractErrorMessage(error)));
     }
   };
 }

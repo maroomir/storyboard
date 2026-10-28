@@ -10,7 +10,7 @@ import { ipcEventChannelName, ipcInvokeChannelName } from '@/shared/ipcChannelNa
 
 import { DesktopApp, type ConfirmQuestion } from './desktopApp';
 import { createInvokeHandlers } from './invokeHandlers';
-import { createIpcRouter } from './ipcRouter';
+import { IpcRouter } from './ipcRouter';
 import { createMainWindow, defaultMainWindowFiles } from './mainWindow';
 import type { InvokeChannel, InvokeResult } from '@/shared/ipcContract';
 
@@ -70,10 +70,10 @@ function startDesktopApp(): DesktopApp {
     },
   });
 
-  const route: (message: unknown) => Promise<InvokeResult<InvokeChannel>> = createIpcRouter(createInvokeHandlers(desktop), desktop.logger, {
+  const route: (message: unknown) => Promise<InvokeResult<InvokeChannel>> = new IpcRouter(createInvokeHandlers(desktop), desktop.logger, {
     invalidRequest: () => desktop.translate('error.invalidRequest'),
     internal: (message) => desktop.translate('error.internal', { message }),
-  });
+  }).route;
 
   ipcMain.handle(ipcInvokeChannelName, async (event, message: unknown) =>
     event.sender === mainWindow?.webContents ? await route(message) : undefined,

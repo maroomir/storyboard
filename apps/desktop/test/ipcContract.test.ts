@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DesktopApp } from '@/main/desktopApp';
 import { createInvokeHandlers } from '@/main/invokeHandlers';
-import { createIpcRouter } from '@/main/ipcRouter';
+import { IpcRouter } from '@/main/ipcRouter';
 import { desktopEventNames } from '@/shared/ipcChannelNames';
 import { invokeChannels, type DesktopEvents } from '@/shared/ipcContract';
 
@@ -25,10 +25,10 @@ const app = new DesktopApp({
   confirm: async () => false,
   installUpdate: () => undefined,
 });
-const router = createIpcRouter(createInvokeHandlers(app), app.logger, {
+const router = new IpcRouter(createInvokeHandlers(app), app.logger, {
   invalidRequest: () => 'invalid',
   internal: (message) => message,
-});
+}).route;
 
 
 describe('IPC contract', () => {
