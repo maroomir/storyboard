@@ -6,9 +6,7 @@ import type { CardManager, StudioManager } from '@storyboard/story-app';
 import { extractDraftBody } from '@storyboard/story-model';
 
 import {
-  readStudioEntityContext,
-  resolveStudioFollowUps,
-  resolveStudioLookups,
+  StudioContextRepository,
   type StudioEntityContext,
   type StudioSceneFocus,
 } from '@storyboard/story-engine';
@@ -52,12 +50,9 @@ export function createStudioChatRpcHandlers(
       }
 
       const target: StudioTarget = await deps.getTarget();
-      const entityContext: StudioEntityContext | undefined = await readStudioEntityContext(
+      const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
         vscodeFileSystem,
-        root,
-        payload.entity,
-        sceneFocusOf(target),
-      );
+      ).readEntityContext(root, payload.entity, sceneFocusOf(target));
 
       if (!entityContext) {
         return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
@@ -80,10 +75,11 @@ export function createStudioChatRpcHandlers(
           ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
           ...usageAttributionFor(payload.entity),
           isValidationEnabled: deps.configBridge.isStudioValidationEnabled(),
-          resolveLookup: (requests) => resolveStudioLookups(vscodeFileSystem, root, requests),
+          resolveLookup: (requests) =>
+            new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
           ...toolResolverFor(deps, root, payload.entity, entityContext),
           resolveFollowUps: (followUps) =>
-            resolveStudioFollowUps(vscodeFileSystem, root, followUps),
+            new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
           createTurnId: () => crypto.randomUUID(),
           onStage: deps.postProgress,
         });

@@ -8,7 +8,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { StudioSessionRepository, type IStudioSessionRepository } from '@storyboard/story-engine';
 import { StudioFollowUpRepository, type IStudioFollowUpRepository } from '@storyboard/story-engine';
-import { readStudioStage } from '@storyboard/story-engine';
+import { StudioContextRepository } from '@storyboard/story-engine';
 import type { ProposalReviewService } from './proposalReviewService';
 import {
   createWebviewBridge,
@@ -122,7 +122,9 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         }
 
         const target: StudioTarget = await computeStudioTarget(resolveActiveStudioFocus());
-        return { stage: await readStudioStage(vscodeFileSystem, root, target) };
+        return {
+          stage: await new StudioContextRepository(vscodeFileSystem).readStage(root, target),
+        };
       },
       ...createStudioChatRpcHandlers({
         studio: this.studio,
