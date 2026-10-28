@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommandRpcHandlers';
+import { RunCommandRpc } from '@/presentation/messaging/runCommandRpcHandlers';
 
 import type { ISceneSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
@@ -14,10 +14,7 @@ import {
   type StoryboardRpcHandlers,
   type StoryboardWebviewBridge,
 } from '@/presentation/messaging/bridge';
-import {
-  createAiRpcHandlers,
-  createUsageRpcHandlers,
-} from '@/presentation/messaging/aiRpcHandlers';
+import { AiRpc, UsageRpc } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type {
   UsageSummaryByEntity,
@@ -102,16 +99,16 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
-      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry, {
-        onStreamChunk: async (requestId, delta) => {
+      ...new AiRpc(this.dependencies.aiProviderRegistry, {
+        onStreamChunk: async (requestId: string, delta: string): Promise<void> => {
           await this.webviewView?.webview.postMessage({
             type: 'event',
             method: 'ai.generateStream.chunk',
             payload: { requestId, delta },
           });
         },
-      }),
-      ...createUsageRpcHandlers(this.dependencies.usageRecorder),
+      }).handlers(),
+      ...new UsageRpc(this.dependencies.usageRecorder).handlers(),
       'scenes.list': async (): Promise<StoryboardResponsePayload<'scenes.list'>> => ({
         scenes: await this.loadSceneList(),
       }),
@@ -124,7 +121,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
         await vscode.window.showTextDocument(document);
         return {};
       },
-      ...createRunCommandRpcHandlers(),
+      ...new RunCommandRpc().handlers(),
       'scenes.openDraft': async (
         payload,
       ): Promise<StoryboardResponsePayload<'scenes.openDraft'>> => {

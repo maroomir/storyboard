@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommandRpcHandlers';
+import { RunCommandRpc } from '@/presentation/messaging/runCommandRpcHandlers';
 
 import type { ICardSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
@@ -10,10 +10,7 @@ import {
   type StoryboardRpcHandlers,
   type StoryboardWebviewBridge,
 } from '@/presentation/messaging/bridge';
-import {
-  createAiRpcHandlers,
-  createUsageRpcHandlers,
-} from '@/presentation/messaging/aiRpcHandlers';
+import { AiRpc, UsageRpc } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type {
   UsageSummaryByEntity,
@@ -105,9 +102,9 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
-      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
-      ...createUsageRpcHandlers(this.dependencies.usageRecorder),
-      ...createRunCommandRpcHandlers(),
+      ...new AiRpc(this.dependencies.aiProviderRegistry).handlers(),
+      ...new UsageRpc(this.dependencies.usageRecorder).handlers(),
+      ...new RunCommandRpc().handlers(),
       'cards.list': async (): Promise<StoryboardResponsePayload<'cards.list'>> => ({
         cards: await this.loadCardSummaries(),
       }),

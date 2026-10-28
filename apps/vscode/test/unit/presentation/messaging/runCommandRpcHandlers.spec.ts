@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { workspaceRunCommandRequestPayloadSchema } from "@storyboard/story-model"
 
-import { createRunCommandRpcHandlers } from "@/presentation/messaging/runCommandRpcHandlers"
+import { RunCommandRpc } from "@/presentation/messaging/runCommandRpcHandlers"
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -12,7 +12,7 @@ afterEach(() => {
 describe("workspace.runCommand", () => {
   it("runs an allowlisted command", async () => {
     const execute = vi.spyOn(vscode.commands, "executeCommand").mockResolvedValue(undefined)
-    const handlers = createRunCommandRpcHandlers()
+    const handlers = new RunCommandRpc().handlers()
 
     await handlers["workspace.runCommand"]!({ command: "storyboard.init" }, {} as never)
 

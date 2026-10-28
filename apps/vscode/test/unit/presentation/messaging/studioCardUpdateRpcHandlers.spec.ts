@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createStudioCardUpdateRpcHandlers } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
+import { StudioCardUpdateRpc } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
 import type { StudioCardUpdateRpcHandlersDependencies } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
 
 const description = '정난정 조선 중기의 인물. 윤원형의 첩으로 막대한 부와 영향력을 누렸다.';
@@ -52,7 +52,7 @@ function harness(): Harness {
     getProjectRoot: async () => vscode.Uri.file('/workspace'),
   } as unknown as StudioCardUpdateRpcHandlersDependencies;
 
-  return { handlers: createStudioCardUpdateRpcHandlers(deps), seed, written, exists };
+  return { handlers: new StudioCardUpdateRpc(deps).handlers(), seed, written, exists };
 }
 
 async function create(h: Harness, text = description): Promise<Record<string, unknown>> {

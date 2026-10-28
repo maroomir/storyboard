@@ -2,14 +2,11 @@ import type { DisposableHandle, SettingsConfigFiles } from '@storyboard/story-mo
 import * as vscode from 'vscode';
 
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
+import { AiRpc } from '@/presentation/messaging/aiRpcHandlers';
 import { aiProviderIds } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
-import { createContractRpcHandlers } from '@/presentation/messaging/contractRpcHandlers';
-import {
-  createSettingsRpcHandlers,
-  getSettingsReadSnapshot,
-} from '@/presentation/messaging/settingsRpcHandlers';
+import { ContractRpc } from '@/presentation/messaging/contractRpcHandlers';
+import { SettingsRpc, getSettingsReadSnapshot } from '@/presentation/messaging/settingsRpcHandlers';
 import type { StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
@@ -114,14 +111,14 @@ export class SettingsPanelProvider implements ISettingsPanel {
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
-      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
-      ...createSettingsRpcHandlers({
+      ...new AiRpc(this.dependencies.aiProviderRegistry).handlers(),
+      ...new SettingsRpc({
         configBridge: this.dependencies.configBridge,
         secretStore: this.dependencies.secretStore,
         registry: this.dependencies.aiProviderRegistry,
         configFiles: this.dependencies.configFiles,
-      }),
-      ...createContractRpcHandlers(),
+      }).handlers(),
+      ...new ContractRpc().handlers(),
     };
   }
 

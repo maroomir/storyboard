@@ -20,8 +20,8 @@ import {
 } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
 import { StudioFollowUpRepository } from '@storyboard/story-engine';
-import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studioProposalRpcHandlers';
-import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
+import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
+import { StudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import type { StudioSceneFocus } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -272,12 +272,12 @@ function describeFollowUps(
 
 const followUpRepository = new StudioFollowUpRepository();
 
-const proposalHandlers = createStudioProposalRpcHandlers({
+const proposalHandlers = new StudioProposalRpc({
   reviewService: { showDiffs: async (): Promise<void> => undefined } as never,
   followUpRepository,
-  getProjectRoot: async () => vscode.Uri.file(workspace) as never,
-  createFollowUpId: () => `harness-${Math.random().toString(36).slice(2, 10)}`,
-});
+  getProjectRoot: async (): Promise<never> => vscode.Uri.file(workspace) as never,
+  createFollowUpId: (): string => `harness-${Math.random().toString(36).slice(2, 10)}`,
+}).handlers();
 
 async function applyProposal(entity: StudioEntity, turn: StudioChatTurn): Promise<string> {
   if (turn.role !== 'assistant' || turn.kind !== 'proposal') {
@@ -356,7 +356,7 @@ test('studio chat against a real workspace', async () => {
         context.baseline !== undefined &&
         context.targetUri !== undefined
           ? {
-              resolveInvoke: createStudioInvokeResolver(
+              resolveInvoke: new StudioInvokeResolver(
                 { aiGateway: gateway, logger: harnessLogger, diagnostics: harnessDiagnostics },
                 {
                   workspaceRoot: root,
@@ -364,7 +364,7 @@ test('studio chat against a real workspace', async () => {
                   draftUri: context.targetUri as never,
                   baseline: context.baseline,
                 },
-              ),
+              ).resolve,
             }
           : {}),
         resolveFollowUps: (followUps) =>

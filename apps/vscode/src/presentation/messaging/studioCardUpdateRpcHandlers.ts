@@ -25,63 +25,67 @@ export interface StudioCardUpdateRpcHandlersDependencies {
 const unreadableSeedMessage: string =
   '설명에서 카드 이름을 읽지 못했어요. 이름을 앞세워 다시 적어 주시겠어요?';
 
-export function createStudioCardUpdateRpcHandlers(
-  deps: StudioCardUpdateRpcHandlersDependencies,
-): StoryboardRpcHandlers {
-  return {
-    'studio.card.update': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'studio.card.update'>> => {
-      const root: vscode.Uri | undefined = await deps.getProjectRoot();
+export class StudioCardUpdateRpc {
+  public constructor(private readonly deps: StudioCardUpdateRpcHandlersDependencies) {}
 
-      if (!root) {
-        return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
-      }
+  public handlers(): StoryboardRpcHandlers {
+    return {
+      'studio.card.update': async (
+        payload,
+      ): Promise<StoryboardResponsePayload<'studio.card.update'>> => {
+        const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
 
-      let seed: StudioCardSeed | undefined;
+        if (!root) {
+          return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
+        }
 
-      try {
-        seed = await deps.aiGateway.createService(root).extractStudioCardSeed(payload.description, {
-          providerId: deps.aiGateway.getTaskProvider('studioAgent'),
-        });
-      } catch (error) {
-        deps.logger.warn(`Studio 카드 생성 준비 실패: ${String(error)}`);
-        return { ok: false, message: '카드 정보를 뽑지 못했어요. 잠시 뒤 다시 시도해 주세요.' };
-      }
+        let seed: StudioCardSeed | undefined;
 
-      if (!seed) {
-        return { ok: false, message: unreadableSeedMessage };
-      }
+        try {
+          seed = await this.deps.aiGateway
+            .createService(root)
+            .extractStudioCardSeed(payload.description, {
+              providerId: this.deps.aiGateway.getTaskProvider('studioAgent'),
+            });
+        } catch (error) {
+          this.deps.logger.warn(`Studio 카드 생성 준비 실패: ${String(error)}`);
+          return { ok: false, message: '카드 정보를 뽑지 못했어요. 잠시 뒤 다시 시도해 주세요.' };
+        }
 
-      const cardType: 'character' | 'location' =
-        seed.kind === 'character' ? 'character' : 'location';
-      const instruction: string = fillInstruction(payload.description);
+        if (!seed) {
+          return { ok: false, message: unreadableSeedMessage };
+        }
 
-      if (await deps.cards.exists(root, cardType, seed.id)) {
-        await openCardLeavingInstructionStagedOnFailure(root, seed);
-        return {
-          ok: true,
-          message: `${cardFile(seed)} 는 이미 있어 그 카드를 열었어요.`,
-          instruction,
-        };
-      }
+        const cardType: 'character' | 'location' =
+          seed.kind === 'character' ? 'character' : 'location';
+        const instruction: string = fillInstruction(payload.description);
 
-      const card: Character | LocationBackgroundCard =
-        seed.kind === 'character'
-          ? createEmptyCharacter(seed.id, seed.name)
-          : createEmptyBackground(seed.id, seed.name);
+        if (await this.deps.cards.exists(root, cardType, seed.id)) {
+          await openCardLeavingInstructionStagedOnFailure(root, seed);
+          return {
+            ok: true,
+            message: `${cardFile(seed)} 는 이미 있어 그 카드를 열었어요.`,
+            instruction,
+          };
+        }
 
-      try {
-        const uri: StoryUri = await deps.cards.write(root, card);
-        await vscode.window.showTextDocument(uri, { preview: true });
-      } catch (error) {
-        deps.logger.warn(`Studio 카드 생성 실패: ${String(error)}`);
-        return { ok: false, message: '카드 파일을 만들지 못했어요.' };
-      }
+        const card: Character | LocationBackgroundCard =
+          seed.kind === 'character'
+            ? createEmptyCharacter(seed.id, seed.name)
+            : createEmptyBackground(seed.id, seed.name);
 
-      return { ok: true, message: `${cardFile(seed)} 를 만들었어요.`, instruction };
-    },
-  };
+        try {
+          const uri: StoryUri = await this.deps.cards.write(root, card);
+          await vscode.window.showTextDocument(uri, { preview: true });
+        } catch (error) {
+          this.deps.logger.warn(`Studio 카드 생성 실패: ${String(error)}`);
+          return { ok: false, message: '카드 파일을 만들지 못했어요.' };
+        }
+
+        return { ok: true, message: `${cardFile(seed)} 를 만들었어요.`, instruction };
+      },
+    };
+  }
 }
 
 function fillInstruction(description: string): string {

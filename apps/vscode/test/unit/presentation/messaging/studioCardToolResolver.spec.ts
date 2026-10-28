@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createStudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
+import { StudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
 import type {
   StudioCardToolResolverDependencies,
   StudioCardToolResolverInput,
@@ -100,7 +100,7 @@ function characterInput(baseline = seorinCard): StudioCardToolResolverInput {
 describe('createStudioCardInvokeResolver relationCheck', () => {
   it('reports a relation whose target card is missing', async () => {
     files.set('/workspace/character/jiho.card', jihoWithBackRelation);
-    const resolve = createStudioCardInvokeResolver(fakeDeps().deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(fakeDeps().deps, characterInput()).resolve;
 
     const report = await resolve({ tool: 'relationCheck' });
 
@@ -111,7 +111,7 @@ describe('createStudioCardInvokeResolver relationCheck', () => {
 
   it('reports a one-way relation', async () => {
     files.set('/workspace/character/jiho.card', jihoWithoutBackRelation);
-    const resolve = createStudioCardInvokeResolver(fakeDeps().deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(fakeDeps().deps, characterInput()).resolve;
 
     const report = await resolve({ tool: 'relationCheck' });
 
@@ -119,10 +119,10 @@ describe('createStudioCardInvokeResolver relationCheck', () => {
   });
 
   it('checks scene cast and location references', async () => {
-    const resolve = createStudioCardInvokeResolver(fakeDeps().deps, {
+    const resolve = new StudioCardInvokeResolver(fakeDeps().deps, {
       ...characterInput(sceneCard),
       entity: { kind: 'scene', key: '01-intro' },
-    });
+    }).resolve;
 
     const report = await resolve({ tool: 'relationCheck' });
 
@@ -139,7 +139,7 @@ describe('createStudioCardInvokeResolver collectFromDrafts', () => {
       { kind: 'trait', id: 't1', value: '비 오는 날 손이 떨린다', sourceScenes: ['01-intro'] },
       { kind: 'relation', id: 'r1', target: 'jiho', type: '친구', sourceScenes: [] },
     ]);
-    const resolve = createStudioCardInvokeResolver(deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(deps, characterInput()).resolve;
 
     const report = await resolve({ tool: 'collectFromDrafts' });
 
@@ -150,10 +150,10 @@ describe('createStudioCardInvokeResolver collectFromDrafts', () => {
 
   it('refuses collect on a scene conversation', async () => {
     const { deps, collect } = fakeDeps();
-    const resolve = createStudioCardInvokeResolver(deps, {
+    const resolve = new StudioCardInvokeResolver(deps, {
       ...characterInput(sceneCard),
       entity: { kind: 'scene', key: '01-intro' },
-    });
+    }).resolve;
 
     await expect(resolve({ tool: 'collectFromDrafts' })).resolves.toContain('[도구 실패');
     expect(collect).not.toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe('createStudioCardInvokeResolver cardAudit', () => {
       state: 'warn',
       warnings: [{ message: '유리병 색이 씬1과 다르다', source: 'scene/01-intro' }],
     });
-    const resolve = createStudioCardInvokeResolver(deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(deps, characterInput()).resolve;
 
     const report = await resolve({ tool: 'cardAudit' });
 
@@ -177,7 +177,7 @@ describe('createStudioCardInvokeResolver cardAudit', () => {
   });
 
   it('says the card is clean on a pass', async () => {
-    const resolve = createStudioCardInvokeResolver(fakeDeps().deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(fakeDeps().deps, characterInput()).resolve;
 
     await expect(resolve({ tool: 'cardAudit' })).resolves.toContain('어긋나는 점이 없다');
   });
@@ -185,7 +185,7 @@ describe('createStudioCardInvokeResolver cardAudit', () => {
 
 describe('createStudioCardInvokeResolver failures', () => {
   it('refuses a draft tool in a card conversation', async () => {
-    const resolve = createStudioCardInvokeResolver(fakeDeps().deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(fakeDeps().deps, characterInput()).resolve;
 
     await expect(resolve({ tool: 'expand' })).resolves.toContain('쓸 수 없는 도구다');
   });
@@ -193,7 +193,7 @@ describe('createStudioCardInvokeResolver failures', () => {
   it('degrades to a failure remark when a tool throws', async () => {
     const { deps, audit } = fakeDeps();
     audit.mockRejectedValue(new Error('provider down'));
-    const resolve = createStudioCardInvokeResolver(deps, characterInput());
+    const resolve = new StudioCardInvokeResolver(deps, characterInput()).resolve;
 
     await expect(resolve({ tool: 'cardAudit' })).resolves.toContain('[도구 실패: cardAudit]');
   });

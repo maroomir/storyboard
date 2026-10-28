@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
+import { StudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type {
   StudioInvokeResolverDependencies,
   StudioInvokeResolverInput,
@@ -64,7 +64,7 @@ function resolverWith(service: FakeService): {
   };
 
   return {
-    resolve: createStudioInvokeResolver(deps, input) as (request: unknown) => Promise<string>,
+    resolve: new StudioInvokeResolver(deps, input).resolve as (request: unknown) => Promise<string>,
     diagnostics,
   };
 }
