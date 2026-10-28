@@ -4,7 +4,7 @@ import type { ReviseDraftWorkflowResult } from '#engine/application/drafts/revis
 import type { INovelStage } from '#engine/application/novel/novelStage';
 import type { NovelPipelineResult } from '#engine/application/novel/novelPipelineContract';
 import type { NovelRun } from '#engine/application/novel/novelRun';
-import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
+import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type {
   ReviewStageResult,
   ReviewTarget,
@@ -88,7 +88,7 @@ export class ReviseFromReviewStage implements INovelStage {
         revisedStems.push(target.sceneStem);
       }
 
-      await recordRevisionEntry(run.services.host.fileSystem, paths, {
+      await new RevisionPlanRecorder(run.services.host.fileSystem).recordEntry(paths, {
         sceneStem: target.sceneStem,
         checkedAt: new Date().toISOString(),
         revisionCount: reviseResult.revisionCount,

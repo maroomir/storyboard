@@ -10,7 +10,7 @@ import {
   getStoryboardProjectPaths,
   parseSceneFileName,
 } from '@storyboard/story-model';
-import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
+import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
 
 export type ReviseGateHooks = {
@@ -79,7 +79,7 @@ export class ReviseAfterGenerateGate {
       });
 
     try {
-      await recordRevisionEntry(this.host.fileSystem, paths, {
+      await new RevisionPlanRecorder(this.host.fileSystem).recordEntry(paths, {
         sceneStem,
         checkedAt: new Date().toISOString(),
         revisionCount: reviseResult.revisionCount,
