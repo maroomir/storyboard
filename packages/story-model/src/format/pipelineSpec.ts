@@ -94,13 +94,10 @@ export function defaultPipelineSpec(catalog: readonly PipelineStageDefinition[])
   };
 }
 
-export function resolvePipelinePlan(
+function collectEnabledStageIds(
   spec: PipelineSpec,
-  catalog: readonly PipelineStageDefinition[],
-): readonly string[] {
-  const known: Map<string, PipelineStageDefinition> = new Map(
-    catalog.map((definition) => [definition.id, definition]),
-  );
+  known: ReadonlyMap<string, PipelineStageDefinition>,
+): string[] {
   const seen: Set<string> = new Set<string>();
   const plan: string[] = [];
 
@@ -120,6 +117,13 @@ export function resolvePipelinePlan(
     }
   }
 
+  return plan;
+}
+
+function resolveStandIns(
+  plan: readonly string[],
+  known: ReadonlyMap<string, PipelineStageDefinition>,
+): Map<string, string> {
   const standIns: Map<string, string> = new Map<string, string>();
 
   for (const id of plan) {
@@ -139,6 +143,14 @@ export function resolvePipelinePlan(
     standIns.set(replaces, id);
   }
 
+  return standIns;
+}
+
+function validateRequiredStages(
+  catalog: readonly PipelineStageDefinition[],
+  plan: readonly string[],
+  standIns: ReadonlyMap<string, string>,
+): void {
   for (const definition of catalog) {
     if (definition.required && !plan.includes(definition.id) && !standIns.has(definition.id)) {
       throw new PipelineSpecError(
@@ -147,7 +159,13 @@ export function resolvePipelinePlan(
       );
     }
   }
+}
 
+function validateStageOrder(
+  plan: readonly string[],
+  known: ReadonlyMap<string, PipelineStageDefinition>,
+  standIns: ReadonlyMap<string, string>,
+): void {
   for (const [index, id] of plan.entries()) {
     for (const dependency of known.get(id)?.requires ?? []) {
       const position: number = plan.indexOf(standIns.get(dependency) ?? dependency);
@@ -160,6 +178,20 @@ export function resolvePipelinePlan(
       }
     }
   }
+}
+
+export function resolvePipelinePlan(
+  spec: PipelineSpec,
+  catalog: readonly PipelineStageDefinition[],
+): readonly string[] {
+  const known: Map<string, PipelineStageDefinition> = new Map(
+    catalog.map((definition) => [definition.id, definition]),
+  );
+  const plan: string[] = collectEnabledStageIds(spec, known);
+  const standIns: Map<string, string> = resolveStandIns(plan, known);
+
+  validateRequiredStages(catalog, plan, standIns);
+  validateStageOrder(plan, known, standIns);
 
   return plan;
 }

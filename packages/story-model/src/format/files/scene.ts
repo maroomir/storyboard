@@ -165,21 +165,29 @@ export function canonicalizeSceneCardText(rawScene: string): {
   return { text, changed: text !== rawScene };
 }
 
-function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
+function pickSceneSettingFields(card: SceneCard): Partial<SceneCard> {
   return {
-    type: card.type,
-    id: card.id,
     ...(card.title === undefined ? {} : { title: card.title }),
     ...(card.characters === undefined ? {} : { characters: card.characters }),
     ...(card.location === undefined ? {} : { location: card.location }),
     ...(card.mood === undefined ? {} : { mood: card.mood }),
     ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
+  };
+}
+
+function pickSceneNarrationFields(card: SceneCard): Partial<SceneCard> {
+  return {
     ...(card.povCharacter === undefined ? {} : { povCharacter: card.povCharacter }),
     ...(card.narrator === undefined ? {} : { narrator: card.narrator }),
     ...(card.thread === undefined ? {} : { thread: card.thread }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
     ...(card.storyTime === undefined ? {} : { storyTime: card.storyTime }),
     ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
+  };
+}
+
+function pickSceneDramaFields(card: SceneCard): Partial<SceneCard> {
+  return {
     ...(card.purpose === undefined ? {} : { purpose: card.purpose }),
     ...(card.conflict === undefined ? {} : { conflict: card.conflict }),
     ...(card.twist === undefined ? {} : { twist: card.twist }),
@@ -188,6 +196,16 @@ function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
     ...(card.foreshadowing === undefined ? {} : { foreshadowing: card.foreshadowing }),
     ...(card.neededCanon === undefined ? {} : { neededCanon: card.neededCanon }),
     ...(card.summary === undefined ? {} : { summary: card.summary }),
+  };
+}
+
+function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
+  return {
+    type: card.type,
+    id: card.id,
+    ...pickSceneSettingFields(card),
+    ...pickSceneNarrationFields(card),
+    ...pickSceneDramaFields(card),
     ...(card.beats === undefined ? {} : { beats: card.beats.map(normalizeSceneBeat) }),
   };
 }

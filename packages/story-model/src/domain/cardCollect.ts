@@ -36,95 +36,154 @@ function attributeValueAsString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : String(value);
 }
 
-function applyToCharacter(
-  card: CharacterCard,
-  accepted: readonly CardCollectProposal[],
-): CharacterCard {
-  const attributes: Record<string, string | number | boolean | null> = {
-    ...(card.attributes ?? {}),
-  };
-  const relations: CharacterRelation[] = [...(card.relations ?? [])];
-  const arc: CharacterArc[] = [...(card.arc ?? [])];
-  let traits: string[] = [...(card.traits ?? [])];
-  let recentDialogues: string[] = [...(card.recentDialogues ?? [])];
-  let description: string[] = [...(card.description ?? [])];
-  let voice: string[] = [...(card.voice ?? [])];
-  let desire: string[] = [...(card.desire ?? [])];
-  let aliases: string[] = [...(card.aliases ?? [])];
-  let tags: string[] = [...(card.tags ?? [])];
+type CharacterListField =
+  | 'traits'
+  | 'recentDialogues'
+  | 'description'
+  | 'voice'
+  | 'desire'
+  | 'aliases'
+  | 'tags';
 
-  for (const proposal of accepted) {
+type CharacterListProposalKind =
+  | 'trait'
+  | 'alias'
+  | 'tag'
+  | 'recentDialogue'
+  | 'descriptionLine'
+  | 'voiceLine'
+  | 'desireLine';
+
+type CharacterListProposal = Extract<CardCollectProposal, { kind: CharacterListProposalKind }>;
+type RelationProposal = Extract<CardCollectProposal, { kind: 'relation' }>;
+type ArcProposal = Extract<CardCollectProposal, { kind: 'arc' }>;
+
+const characterListFieldByKind: Readonly<Record<CharacterListProposalKind, CharacterListField>> = {
+  trait: 'traits',
+  alias: 'aliases',
+  tag: 'tags',
+  recentDialogue: 'recentDialogues',
+  descriptionLine: 'description',
+  voiceLine: 'voice',
+  desireLine: 'desire',
+};
+
+const characterListFieldsInCardOrder: readonly CharacterListField[] = [
+  'traits',
+  'recentDialogues',
+  'description',
+  'voice',
+  'desire',
+  'aliases',
+  'tags',
+];
+
+function isCharacterListProposal(proposal: CardCollectProposal): proposal is CharacterListProposal {
+  return proposal.kind in characterListFieldByKind;
+}
+
+class CharacterCardEdit {
+  private readonly attributes: Record<string, string | number | boolean | null>;
+  private readonly relations: CharacterRelation[];
+  private readonly arc: CharacterArc[];
+  private readonly lists: Record<CharacterListField, string[]>;
+
+  public constructor(private readonly card: CharacterCard) {
+    this.attributes = { ...(card.attributes ?? {}) };
+    this.relations = [...(card.relations ?? [])];
+    this.arc = [...(card.arc ?? [])];
+    this.lists = {
+      traits: [...(card.traits ?? [])],
+      recentDialogues: [...(card.recentDialogues ?? [])],
+      description: [...(card.description ?? [])],
+      voice: [...(card.voice ?? [])],
+      desire: [...(card.desire ?? [])],
+      aliases: [...(card.aliases ?? [])],
+      tags: [...(card.tags ?? [])],
+    };
+  }
+
+  public applyProposal(proposal: CardCollectProposal): void {
+    if (isCharacterListProposal(proposal)) {
+      const field: CharacterListField = characterListFieldByKind[proposal.kind];
+      this.lists[field] = addUniqueCardListText(this.lists[field], proposal.value);
+      return;
+    }
+
     switch (proposal.kind) {
       case 'attribute':
-        attributes[proposal.key] = proposal.value;
+        this.attributes[proposal.key] = proposal.value;
         break;
-      case 'relation': {
-        const index: number = relations.findIndex(
-          (relation) => relation.target === proposal.target,
-        );
-        if (index >= 0) {
-          relations[index] = { target: proposal.target, type: proposal.type };
-        } else {
-          relations.push({ target: proposal.target, type: proposal.type });
-        }
+      case 'relation':
+        this.upsertRelation(proposal);
         break;
-      }
-      case 'arc': {
-        const index: number = arc.findIndex((entry) => entry.sceneRef === proposal.sceneRef);
-        if (index >= 0) {
-          arc[index] = {
-            stage: arc[index]?.stage ?? proposal.sceneRef,
-            summary: proposal.summary,
-            sceneRef: proposal.sceneRef,
-          };
-        } else {
-          arc.push({
-            stage: proposal.stage ?? proposal.sceneRef,
-            summary: proposal.summary,
-            sceneRef: proposal.sceneRef,
-          });
-        }
-        break;
-      }
-      case 'trait':
-        traits = addUniqueCardListText(traits, proposal.value);
-        break;
-      case 'alias':
-        aliases = addUniqueCardListText(aliases, proposal.value);
-        break;
-      case 'tag':
-        tags = addUniqueCardListText(tags, proposal.value);
-        break;
-      case 'recentDialogue':
-        recentDialogues = addUniqueCardListText(recentDialogues, proposal.value);
-        break;
-      case 'descriptionLine':
-        description = addUniqueCardListText(description, proposal.value);
-        break;
-      case 'voiceLine':
-        voice = addUniqueCardListText(voice, proposal.value);
-        break;
-      case 'desireLine':
-        desire = addUniqueCardListText(desire, proposal.value);
+      case 'arc':
+        this.upsertArc(proposal);
         break;
       default:
         break;
     }
   }
 
-  return {
-    ...card,
-    ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
-    ...(relations.length > 0 ? { relations } : {}),
-    ...(arc.length > 0 ? { arc } : {}),
-    ...(traits.length > 0 ? { traits } : {}),
-    ...(recentDialogues.length > 0 ? { recentDialogues } : {}),
-    ...(description.length > 0 ? { description } : {}),
-    ...(voice.length > 0 ? { voice } : {}),
-    ...(desire.length > 0 ? { desire } : {}),
-    ...(aliases.length > 0 ? { aliases } : {}),
-    ...(tags.length > 0 ? { tags } : {}),
-  };
+  public toCard(): CharacterCard {
+    const filledLists: Partial<Pick<CharacterCard, CharacterListField>> = Object.fromEntries(
+      characterListFieldsInCardOrder
+        .filter((field: CharacterListField): boolean => this.lists[field].length > 0)
+        .map((field: CharacterListField): [CharacterListField, string[]] => [
+          field,
+          this.lists[field],
+        ]),
+    );
+
+    return {
+      ...this.card,
+      ...(Object.keys(this.attributes).length > 0 ? { attributes: this.attributes } : {}),
+      ...(this.relations.length > 0 ? { relations: this.relations } : {}),
+      ...(this.arc.length > 0 ? { arc: this.arc } : {}),
+      ...filledLists,
+    };
+  }
+
+  private upsertRelation(proposal: RelationProposal): void {
+    const relation: CharacterRelation = { target: proposal.target, type: proposal.type };
+    const index: number = this.relations.findIndex(
+      (existing) => existing.target === proposal.target,
+    );
+    if (index >= 0) {
+      this.relations[index] = relation;
+    } else {
+      this.relations.push(relation);
+    }
+  }
+
+  private upsertArc(proposal: ArcProposal): void {
+    const index: number = this.arc.findIndex((entry) => entry.sceneRef === proposal.sceneRef);
+    if (index >= 0) {
+      this.arc[index] = {
+        stage: this.arc[index]?.stage ?? proposal.sceneRef,
+        summary: proposal.summary,
+        sceneRef: proposal.sceneRef,
+      };
+    } else {
+      this.arc.push({
+        stage: proposal.stage ?? proposal.sceneRef,
+        summary: proposal.summary,
+        sceneRef: proposal.sceneRef,
+      });
+    }
+  }
+}
+
+function applyToCharacter(
+  card: CharacterCard,
+  accepted: readonly CardCollectProposal[],
+): CharacterCard {
+  const edit: CharacterCardEdit = new CharacterCardEdit(card);
+  for (const proposal of accepted) {
+    edit.applyProposal(proposal);
+  }
+
+  return edit.toCard();
 }
 
 function applyToBackground(
@@ -188,47 +247,37 @@ function isNewListText(list: readonly string[] | undefined, value: string): bool
   return !hasCardListText(list ?? [], value);
 }
 
-export function shouldProposeCardCollect(
-  card: StoryboardCard,
-  proposal: CardCollectProposal,
-): boolean {
-  if (card.type === 'character') {
-    switch (proposal.kind) {
-      case 'attribute': {
-        const current: string | undefined = attributeValueAsString(card.attributes?.[proposal.key]);
-        return current !== proposal.value;
-      }
-      case 'relation': {
-        const current: CharacterRelation | undefined = (card.relations ?? []).find(
-          (relation) => relation.target === proposal.target,
-        );
-        return current?.type !== proposal.type;
-      }
-      case 'arc': {
-        const current: CharacterArc | undefined = (card.arc ?? []).find(
-          (entry) => entry.sceneRef === proposal.sceneRef,
-        );
-        return current?.summary !== proposal.summary;
-      }
-      case 'trait':
-        return isNewListText(card.traits, proposal.value);
-      case 'alias':
-        return isNewListText(card.aliases, proposal.value);
-      case 'tag':
-        return isNewListText(card.tags, proposal.value);
-      case 'recentDialogue':
-        return isNewListText(card.recentDialogues, proposal.value);
-      case 'descriptionLine':
-        return isNewListText(card.description, proposal.value);
-      case 'voiceLine':
-        return isNewListText(card.voice, proposal.value);
-      case 'desireLine':
-        return isNewListText(card.desire, proposal.value);
-      default:
-        return false;
-    }
+function shouldProposeCharacterChange(card: CharacterCard, proposal: CardCollectProposal): boolean {
+  if (isCharacterListProposal(proposal)) {
+    return isNewListText(card[characterListFieldByKind[proposal.kind]], proposal.value);
   }
 
+  switch (proposal.kind) {
+    case 'attribute': {
+      const current: string | undefined = attributeValueAsString(card.attributes?.[proposal.key]);
+      return current !== proposal.value;
+    }
+    case 'relation': {
+      const current: CharacterRelation | undefined = (card.relations ?? []).find(
+        (relation) => relation.target === proposal.target,
+      );
+      return current?.type !== proposal.type;
+    }
+    case 'arc': {
+      const current: CharacterArc | undefined = (card.arc ?? []).find(
+        (entry) => entry.sceneRef === proposal.sceneRef,
+      );
+      return current?.summary !== proposal.summary;
+    }
+    default:
+      return false;
+  }
+}
+
+function shouldProposeBackgroundChange(
+  card: BackgroundCard,
+  proposal: CardCollectProposal,
+): boolean {
   switch (proposal.kind) {
     case 'alias':
       return isNewListText(card.aliases, proposal.value);
@@ -245,4 +294,13 @@ export function shouldProposeCardCollect(
     default:
       return false;
   }
+}
+
+export function shouldProposeCardCollect(
+  card: StoryboardCard,
+  proposal: CardCollectProposal,
+): boolean {
+  return card.type === 'character'
+    ? shouldProposeCharacterChange(card, proposal)
+    : shouldProposeBackgroundChange(card, proposal);
 }
