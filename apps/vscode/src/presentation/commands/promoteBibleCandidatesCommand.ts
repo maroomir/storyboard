@@ -25,7 +25,6 @@ export class PromoteBibleCandidatesCommand implements IExtensionCommand {
   ) {}
 
   public async run(): Promise<void> {
-    const { logger, cards } = this.dependencies;
     const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
     if (!folder) {
@@ -38,9 +37,8 @@ export class PromoteBibleCandidatesCommand implements IExtensionCommand {
       return;
     }
 
-    const preparation: PrepareBibleCandidatePromotionResult = await cards.prepareBiblePromotion(
-      folder.uri,
-    );
+    const preparation: PrepareBibleCandidatePromotionResult =
+      await this.dependencies.cards.prepareBiblePromotion(folder.uri);
 
     if (preparation.kind === 'no_candidates') {
       await vscode.window.showInformationMessage(
@@ -56,40 +54,51 @@ export class PromoteBibleCandidatesCommand implements IExtensionCommand {
       return;
     }
 
-    const items: CandidateQuickPickItem[] = preparation.facts.map((fact) => ({
-      label: `${fact.subject.id} — ${fact.key}: ${fact.value}`,
-      description: fact.sourceScene ? `후보 · ${fact.sourceScene}` : '후보',
-      fact,
-    }));
+    const pickedFacts: BibleFact[] = await pickBibleFacts(preparation.facts);
 
-    const picked: CandidateQuickPickItem[] | undefined = await vscode.window.showQuickPick(items, {
-      canPickMany: true,
-      title: '스토리 바이블 canon으로 승격할 설정 선택',
-      placeHolder: 'canon에 추가할 설정 사실을 선택하세요.',
-    });
-
-    if (!picked || picked.length === 0) {
+    if (pickedFacts.length === 0 || !(await this.promoteFacts(folder, pickedFacts))) {
       return;
     }
 
+    await vscode.window.showInformationMessage(
+      `설정 ${pickedFacts.length}개를 canon으로 승격했습니다.`,
+    );
+  }
+
+  private async promoteFacts(
+    folder: vscode.WorkspaceFolder,
+    facts: readonly BibleFact[],
+  ): Promise<boolean> {
+    const { logger, cards } = this.dependencies;
     try {
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'canon 승격 중…' },
-        () =>
-          cards.promoteBibleFacts(
-            folder.uri,
-            picked.map((item) => item.fact),
-          ),
+        () => cards.promoteBibleFacts(folder.uri, facts),
       );
+      return true;
     } catch (error) {
       logger.error('Failed to write bible canon', error);
       logger.show();
       await vscode.window.showErrorMessage(
         'canon.yaml 저장에 실패했습니다. Output 패널을 확인해 주세요.',
       );
-      return;
+      return false;
     }
-
-    await vscode.window.showInformationMessage(`설정 ${picked.length}개를 canon으로 승격했습니다.`);
   }
+}
+
+async function pickBibleFacts(facts: readonly BibleFact[]): Promise<BibleFact[]> {
+  const items: CandidateQuickPickItem[] = facts.map((fact) => ({
+    label: `${fact.subject.id} — ${fact.key}: ${fact.value}`,
+    description: fact.sourceScene ? `후보 · ${fact.sourceScene}` : '후보',
+    fact,
+  }));
+
+  const picked: CandidateQuickPickItem[] | undefined = await vscode.window.showQuickPick(items, {
+    canPickMany: true,
+    title: '스토리 바이블 canon으로 승격할 설정 선택',
+    placeHolder: 'canon에 추가할 설정 사실을 선택하세요.',
+  });
+
+  return picked?.map((item) => item.fact) ?? [];
 }

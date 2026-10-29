@@ -52,21 +52,10 @@ export class GenerateNovelCommand implements IExtensionCommand {
       return;
     }
 
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const project: StoryboardProject =
       await this.dependencies.novel.runState.loadProject(workspaceRoot);
 
-    const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
-    if (readiness.missing.length > 0) {
-      const openSettings: string = '설정 열기';
-      const labels: string = readiness.missing.map((key) => contractFieldLabels[key]).join(', ');
-      const choice: string | undefined = await vscode.window.showWarningMessage(
-        `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
-        openSettings,
-      );
-      if (choice === openSettings) {
-        await vscode.commands.executeCommand(storyboardCommandIds.settingsOpen);
-      }
+    if (!(await this.confirmContractReady(project))) {
       return;
     }
 
@@ -82,28 +71,53 @@ export class GenerateNovelCommand implements IExtensionCommand {
           title: 'Storyboard 장편 생성',
           cancellable: true,
         },
-        async (progress, token) => {
-          const novelRun: NovelRunResult = await this.dependencies.novel.run({
-            workspaceUri: workspaceRoot,
-            project,
-            runMode: decision.runMode,
-            resumeState: decision.resumeState,
-            onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
-            requestApproval: this.requestApproval,
-            shouldCancel: () => token.isCancellationRequested,
-          });
-
-          await this.reportResult(
-            novelRun.spending.isOverBudget && novelRun.outcome === 'paused'
-              ? {
-                  ...novelRun,
-                  message: `이번 실행 예산 $${novelRun.spending.budgetUsd}에 닿아 멈췄습니다.`,
-                }
-              : novelRun,
-            paths.manuscriptVolume,
-          );
-        },
+        (progress, token) =>
+          this.runNovel({ workspaceRoot, project, decision }, { progress, token }),
       ),
+    );
+  }
+
+  private async confirmContractReady(project: StoryboardProject): Promise<boolean> {
+    const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
+    if (readiness.missing.length === 0) {
+      return true;
+    }
+
+    const openSettings: string = '설정 열기';
+    const labels: string = readiness.missing.map((key) => contractFieldLabels[key]).join(', ');
+    const choice: string | undefined = await vscode.window.showWarningMessage(
+      `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
+      openSettings,
+    );
+    if (choice === openSettings) {
+      await vscode.commands.executeCommand(storyboardCommandIds.settingsOpen);
+    }
+    return false;
+  }
+
+  private async runNovel(
+    { workspaceRoot, project, decision }: NovelRunRequest,
+    { progress, token }: NovelRunProgress,
+  ): Promise<void> {
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const novelRun: NovelRunResult = await this.dependencies.novel.run({
+      workspaceUri: workspaceRoot,
+      project,
+      runMode: decision.runMode,
+      resumeState: decision.resumeState,
+      onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
+      requestApproval: this.requestApproval,
+      shouldCancel: () => token.isCancellationRequested,
+    });
+
+    await this.reportResult(
+      novelRun.spending.isOverBudget && novelRun.outcome === 'paused'
+        ? {
+            ...novelRun,
+            message: `이번 실행 예산 $${novelRun.spending.budgetUsd}에 닿아 멈췄습니다.`,
+          }
+        : novelRun,
+      paths.manuscriptVolume,
     );
   }
 
@@ -203,6 +217,17 @@ export class GenerateNovelCommand implements IExtensionCommand {
 interface RunDecision {
   readonly runMode: NovelRunMode;
   readonly resumeState?: NovelRunState;
+}
+
+interface NovelRunRequest {
+  readonly workspaceRoot: vscode.Uri;
+  readonly project: StoryboardProject;
+  readonly decision: RunDecision;
+}
+
+interface NovelRunProgress {
+  readonly progress: vscode.Progress<{ readonly message?: string }>;
+  readonly token: vscode.CancellationToken;
 }
 
 interface RunModePick extends vscode.QuickPickItem {

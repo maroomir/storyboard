@@ -49,24 +49,16 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
   ) {}
 
   public async run(): Promise<void> {
-    const { logger, cards, notes } = this.dependencies;
-    const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
+    const folder: vscode.WorkspaceFolder | undefined = await resolveProjectFolder();
 
     if (!folder) {
-      await vscode.window.showErrorMessage('Storyboard 워크스페이스 폴더를 찾을 수 없습니다.');
       return;
     }
 
-    if (!(await hasStoryboardProject(folder))) {
-      await vscode.window.showErrorMessage('Storyboard 프로젝트가 없습니다. 먼저 초기화해 주세요.');
-      return;
-    }
-
-    const preparation: PrepareCardCandidatePromotionResult = await cards.prepareCandidatePromotion(
-      folder.uri,
-    );
+    const preparation: PrepareCardCandidatePromotionResult =
+      await this.dependencies.cards.prepareCandidatePromotion(folder.uri);
     const notePreparation: PrepareNoteCandidatePromotionResult =
-      await notes.prepareCandidatePromotion(folder.uri);
+      await this.dependencies.notes.prepareCandidatePromotion(folder.uri);
 
     if (preparation.kind !== 'ready' && notePreparation.kind !== 'ready') {
       await vscode.window.showInformationMessage(
@@ -77,32 +69,8 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
       return;
     }
 
-    const draftItems: CandidateQuickPickItem[] =
-      preparation.kind === 'ready'
-        ? preparation.items.map((item) => ({
-            origin: 'draft',
-            label: describeItem(item),
-            description: `후보 · ${item.sceneStem}`,
-            item,
-          }))
-        : [];
-    const noteItems: CandidateQuickPickItem[] =
-      notePreparation.kind === 'ready'
-        ? notePreparation.candidates.map((candidate) => ({
-            origin: 'note',
-            label: `${candidate.cardId} (${candidate.name}) — 노트의 변경 ${candidate.changes.length}건`,
-            description: `노트 · ${candidate.locations.join(', ')}${
-              candidate.conflicts.length > 0
-                ? ` · 값이 갈리는 칸 ${candidate.conflicts.length}개는 남습니다`
-                : ''
-            }`,
-            candidate,
-          }))
-        : [];
-    const quickPickItems: CandidateQuickPickItem[] = [...draftItems, ...noteItems];
-
     const picked: CandidateQuickPickItem[] | undefined = await vscode.window.showQuickPick(
-      quickPickItems,
+      createCandidatePicks(preparation, notePreparation),
       {
         canPickMany: true,
         title: '카드에 반영할 후보 선택',
@@ -114,13 +82,22 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
       return;
     }
 
+    const outcome: PromotionOutcome = await this.promotePicked(folder, picked);
+    await this.reportOutcome(outcome, picked.length);
+  }
+
+  private async promotePicked(
+    folder: vscode.WorkspaceFolder,
+    picked: readonly CandidateQuickPickItem[],
+  ): Promise<PromotionOutcome> {
+    const { cards, notes } = this.dependencies;
     const pickedDrafts: CardCandidateItem[] = picked.flatMap((entry) =>
       entry.origin === 'draft' ? [entry.item] : [],
     );
     const pickedNotes: MergedNoteCardCandidate[] = picked.flatMap((entry) =>
       entry.origin === 'note' ? [entry.candidate] : [],
     );
-    const outcome: PromotionOutcome = await vscode.window.withProgress(
+    return await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: '카드에 반영 중…' },
       async () => {
         const drafts: PromoteCardCandidatesResult | undefined =
@@ -134,9 +111,11 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
         return { drafts, noteResult };
       },
     );
+  }
 
+  private async reportOutcome(outcome: PromotionOutcome, pickedCount: number): Promise<void> {
     if (outcome.drafts !== undefined && outcome.drafts.kind === 'save_failed') {
-      logger.show();
+      this.dependencies.logger.show();
       await vscode.window.showErrorMessage(
         '카드 저장에 실패했습니다. Output 패널을 확인해 주세요.',
       );
@@ -147,7 +126,52 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
       (outcome.drafts?.kind === 'promoted' ? outcome.drafts.updatedCardCount : 0) +
       (outcome.noteResult?.updatedCardIds.length ?? 0);
     await vscode.window.showInformationMessage(
-      `후보 ${picked.length}개를 카드 ${updatedCardCount}개에 반영했습니다.`,
+      `후보 ${pickedCount}개를 카드 ${updatedCardCount}개에 반영했습니다.`,
     );
   }
+}
+
+async function resolveProjectFolder(): Promise<vscode.WorkspaceFolder | undefined> {
+  const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
+
+  if (!folder) {
+    await vscode.window.showErrorMessage('Storyboard 워크스페이스 폴더를 찾을 수 없습니다.');
+    return undefined;
+  }
+
+  if (!(await hasStoryboardProject(folder))) {
+    await vscode.window.showErrorMessage('Storyboard 프로젝트가 없습니다. 먼저 초기화해 주세요.');
+    return undefined;
+  }
+
+  return folder;
+}
+
+function createCandidatePicks(
+  preparation: PrepareCardCandidatePromotionResult,
+  notePreparation: PrepareNoteCandidatePromotionResult,
+): CandidateQuickPickItem[] {
+  const draftItems: CandidateQuickPickItem[] =
+    preparation.kind === 'ready'
+      ? preparation.items.map((item) => ({
+          origin: 'draft',
+          label: describeItem(item),
+          description: `후보 · ${item.sceneStem}`,
+          item,
+        }))
+      : [];
+  const noteItems: CandidateQuickPickItem[] =
+    notePreparation.kind === 'ready'
+      ? notePreparation.candidates.map((candidate) => ({
+          origin: 'note',
+          label: `${candidate.cardId} (${candidate.name}) — 노트의 변경 ${candidate.changes.length}건`,
+          description: `노트 · ${candidate.locations.join(', ')}${
+            candidate.conflicts.length > 0
+              ? ` · 값이 갈리는 칸 ${candidate.conflicts.length}개는 남습니다`
+              : ''
+          }`,
+          candidate,
+        }))
+      : [];
+  return [...draftItems, ...noteItems];
 }

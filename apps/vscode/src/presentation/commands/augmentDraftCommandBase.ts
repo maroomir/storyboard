@@ -240,6 +240,21 @@ async function resolveAugmentTarget(
   };
 }
 
+function createAugmentRequest(
+  scope: DraftAugmentScope,
+  target: AugmentTarget,
+  instruction: string | undefined,
+): AugmentDraftRequest {
+  return {
+    draftSceneStem: target.draft.sceneStem,
+    instruction,
+    sceneUri: target.sceneUri,
+    scope,
+    target: target.target,
+    workspaceRoot: target.workspaceFolder.uri,
+  };
+}
+
 export abstract class AugmentDraftCommandBase implements IExtensionCommand {
   public abstract readonly id: string;
 
@@ -269,17 +284,12 @@ export abstract class AugmentDraftCommandBase implements IExtensionCommand {
       return;
     }
 
-    const { editor, workspaceFolder, documentText, draft, selectionRange } = target;
     const labels: AugmentLabels = buildAugmentLabels(scope, instruction);
 
-    const augmentation: AugmentDraftResult = await this.runAugmentation(labels.progressTitle, {
-      draftSceneStem: draft.sceneStem,
-      instruction,
-      sceneUri: target.sceneUri,
-      scope,
-      target: target.target,
-      workspaceRoot: workspaceFolder.uri,
-    });
+    const augmentation: AugmentDraftResult = await this.runAugmentation(
+      labels.progressTitle,
+      createAugmentRequest(scope, target, instruction),
+    );
 
     if (!augmentation.ok) {
       await this.reportAugmentFailure(augmentation);
@@ -288,11 +298,24 @@ export abstract class AugmentDraftCommandBase implements IExtensionCommand {
 
     const replacement: AugmentReplacement = buildReplacement(
       scope,
-      editor.document,
-      selectionRange,
-      draft,
+      target.editor.document,
+      target.selectionRange,
+      target.draft,
       augmentation.text,
     );
+
+    if (!(await this.confirmAugmentation(target, replacement, labels))) {
+      return;
+    }
+
+    await this.applyAugmentation(target, replacement, labels.successMessage);
+  }
+
+  private async confirmAugmentation(
+    { editor, documentText }: AugmentTarget,
+    replacement: AugmentReplacement,
+    labels: AugmentLabels,
+  ): Promise<boolean> {
     const proposedFullText: string = applyReplacementToText(
       documentText,
       editor.document,
@@ -312,11 +335,7 @@ export abstract class AugmentDraftCommandBase implements IExtensionCommand {
       '취소',
     );
 
-    if (decision !== '적용') {
-      return;
-    }
-
-    await this.applyAugmentation(target, replacement, labels.successMessage);
+    return decision === '적용';
   }
 
   private async runAugmentation(

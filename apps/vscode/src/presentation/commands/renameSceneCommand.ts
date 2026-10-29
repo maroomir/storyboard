@@ -35,57 +35,52 @@ export class RenameSceneCommand implements IExtensionCommand {
       return;
     }
 
-    const { workspaceRoot, fromStem } = target;
-    const toStem: string | undefined = await vscode.window.showInputBox({
-      title: '씬 이름 변경',
-      prompt:
-        '새 이름을 NN-slug 형식으로 입력하세요. 초안·요약·기억·캐시가 함께 옮겨지고 원장과 정전의 참조도 고쳐집니다.',
-      value: fromStem,
-      ignoreFocusOut: true,
-      validateInput: (value) =>
-        parseSceneStem(value.trim()) === undefined
-          ? '`03-night-market` 처럼 번호-영문 소문자 형식이어야 합니다.'
-          : undefined,
-    });
+    const toStem: string | undefined = await askForNewSceneStem(target.fromStem);
 
-    if (!toStem || toStem.trim() === fromStem) {
+    if (!toStem || toStem.trim() === target.fromStem) {
       return;
     }
 
     await runHoldingWorkspaceLock(
       this.dependencies.runGate,
-      workspaceRoot,
+      target.workspaceRoot,
       '씬 이름 변경',
-      async () => {
-        const sceneRename: RenameSceneResult = await this.dependencies.drafts.renameScene({
-          workspaceRoot,
-          fromStem,
-          toStem: toStem.trim(),
-        });
+      () => this.renameScene(target, toStem.trim()),
+    );
+  }
 
-        if (!sceneRename.ok) {
-          await vscode.window.showWarningMessage(sceneRename.message);
-          return;
-        }
+  private async renameScene(
+    { workspaceRoot, fromStem }: TargetScene,
+    toStem: string,
+  ): Promise<void> {
+    const sceneRename: RenameSceneResult = await this.dependencies.drafts.renameScene({
+      workspaceRoot,
+      fromStem,
+      toStem,
+    });
 
-        const wasOpen: boolean | undefined =
-          vscode.window.activeTextEditor?.document.uri.path.endsWith(`/${fromStem}.card`);
+    if (!sceneRename.ok) {
+      await vscode.window.showWarningMessage(sceneRename.message);
+      return;
+    }
 
-        if (wasOpen) {
-          await vscode.commands.executeCommand(
-            'vscode.open',
-            scenePath(workspaceRoot, sceneRename.toStem) as vscode.Uri,
-          );
-        }
+    const wasOpen: boolean | undefined = vscode.window.activeTextEditor?.document.uri.path.endsWith(
+      `/${fromStem}.card`,
+    );
 
-        void vscode.window.showInformationMessage(
-          `${sceneRename.fromStem} → ${sceneRename.toStem}: 파일 ${sceneRename.movedFiles.length}개를 옮기고 ${sceneRename.rewrittenFiles.length}개를 고쳤습니다.${
-            sceneRename.hasOrderChanged
-              ? ' 번호가 바뀌어 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
-              : ''
-          }`,
-        );
-      },
+    if (wasOpen) {
+      await vscode.commands.executeCommand(
+        'vscode.open',
+        scenePath(workspaceRoot, sceneRename.toStem) as vscode.Uri,
+      );
+    }
+
+    void vscode.window.showInformationMessage(
+      `${sceneRename.fromStem} → ${sceneRename.toStem}: 파일 ${sceneRename.movedFiles.length}개를 옮기고 ${sceneRename.rewrittenFiles.length}개를 고쳤습니다.${
+        sceneRename.hasOrderChanged
+          ? ' 번호가 바뀌어 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
+          : ''
+      }`,
     );
   }
 
@@ -150,4 +145,18 @@ export class RenameSceneCommand implements IExtensionCommand {
 interface TargetScene {
   readonly workspaceRoot: vscode.Uri;
   readonly fromStem: string;
+}
+
+async function askForNewSceneStem(fromStem: string): Promise<string | undefined> {
+  return await vscode.window.showInputBox({
+    title: '씬 이름 변경',
+    prompt:
+      '새 이름을 NN-slug 형식으로 입력하세요. 초안·요약·기억·캐시가 함께 옮겨지고 원장과 정전의 참조도 고쳐집니다.',
+    value: fromStem,
+    ignoreFocusOut: true,
+    validateInput: (value) =>
+      parseSceneStem(value.trim()) === undefined
+        ? '`03-night-market` 처럼 번호-영문 소문자 형식이어야 합니다.'
+        : undefined,
+  });
 }

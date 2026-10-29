@@ -74,8 +74,34 @@ export class CondenseDraftCommand implements IExtensionCommand {
       return;
     }
 
+    const condensation: CondenseDraftResult = await this.condenseDraft(target);
+
+    if (!condensation.ok) {
+      await this.reportFailure(condensation);
+      return;
+    }
+
+    const labels: CondenseReviewLabels = buildCondenseReviewLabels(condensation);
+    const proposed: string = serializeDraft(
+      createDraft({
+        sceneStem: target.draft.sceneStem,
+        format: target.draft.format,
+        body: condensation.text,
+        generator: target.draft.generator,
+        providerId: target.draft.providerId,
+        model: target.draft.model,
+      }),
+    );
+    if (!(await this.confirmCondensation(target, proposed, labels))) {
+      return;
+    }
+
+    await this.applyCondensation(target, proposed);
+  }
+
+  private async condenseDraft(target: CondenseTarget): Promise<CondenseDraftResult> {
     const context: CondenseContext = await this.loadCondenseContext(target);
-    const condensation: CondenseDraftResult = await vscode.window.withProgress(
+    return await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
         title: 'Storyboard 원본 축소',
@@ -91,24 +117,13 @@ export class CondenseDraftCommand implements IExtensionCommand {
           ...context,
         }),
     );
+  }
 
-    if (!condensation.ok) {
-      await this.reportFailure(condensation);
-      return;
-    }
-
-    const labels: CondenseReviewLabels = buildCondenseReviewLabels(condensation);
-
-    const proposed: string = serializeDraft(
-      createDraft({
-        sceneStem: target.draft.sceneStem,
-        format: target.draft.format,
-        body: condensation.text,
-        generator: target.draft.generator,
-        providerId: target.draft.providerId,
-        model: target.draft.model,
-      }),
-    );
+  private async confirmCondensation(
+    target: CondenseTarget,
+    proposed: string,
+    labels: CondenseReviewLabels,
+  ): Promise<boolean> {
     await this.showCondenseDiff(
       target.editor.document.uri,
       target.documentText,
@@ -121,10 +136,10 @@ export class CondenseDraftCommand implements IExtensionCommand {
       '적용',
       labels.cancelLabel,
     );
-    if (decision !== '적용') {
-      return;
-    }
+    return decision === '적용';
+  }
 
+  private async applyCondensation(target: CondenseTarget, proposed: string): Promise<void> {
     await this.archiveDraftBeforeApply(target);
     const fullRange: vscode.Range = new vscode.Range(
       target.editor.document.positionAt(0),

@@ -55,82 +55,7 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
     }
 
     try {
-      const proposal: BuildStoryCardsProposal = await vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: '씬에서 카드 제안을 구성 중...',
-          cancellable: true,
-        },
-        async (_progress, token) => {
-          const storyCardsProposal: BuildStoryCardsProposal = await this.cards.buildFromScenes({
-            workspaceRoot,
-          });
-          if (token.isCancellationRequested) {
-            throw new StoryCardBuildCancelledError();
-          }
-          return storyCardsProposal;
-        },
-      );
-      const selected: SelectedChange[] = await selectChanges(proposal.targets);
-      if (selected.length === 0) {
-        return;
-      }
-      const prepared: PreparedCardChange[] | undefined = await prepareChanges(
-        workspaceRoot,
-        selected,
-      );
-      if (!prepared) {
-        return;
-      }
-      await this.reviewService.showDiffs(
-        prepared.map((change) => ({
-          original: change.target.isNew ? undefined : change.uri,
-          proposedText: serializeCard(change.card),
-          key: `cards-${change.card.type}-${change.card.id}`,
-          label: `${change.card.name} ↔ 카드 제안`,
-        })),
-      );
-      const confirmation: '적용' | undefined = await vscode.window.showWarningMessage(
-        `${prepared.length}개 카드에 선택한 필드만 적용합니다. 기존 사실은 삭제하지 않습니다.`,
-        { modal: true },
-        '적용',
-      );
-      if (confirmation !== '적용') {
-        return;
-      }
-      if (!(await this.cards.hasCurrentBuildSources(proposal.snapshots))) {
-        await vscode.window.showWarningMessage(
-          '검토 중 소스 또는 카드 구성이 변경되었습니다. Regenerate로 다시 제안해주세요.',
-        );
-        return;
-      }
-      const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
-      for (const change of prepared) {
-        const text: string = serializeCard(change.card);
-        if (change.target.isNew) {
-          edit.createFile(change.uri, { overwrite: false, ignoreIfExists: false });
-          edit.insert(change.uri, new vscode.Position(0, 0), text);
-          continue;
-        }
-        const document: vscode.TextDocument = await vscode.workspace.openTextDocument(change.uri);
-        edit.replace(
-          change.uri,
-          new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)),
-          text,
-        );
-      }
-      if (!(await vscode.workspace.applyEdit(edit))) {
-        await vscode.window.showErrorMessage(
-          '카드 변경을 적용하지 못했습니다. 파일은 변경되지 않았을 수 있습니다.',
-        );
-        return;
-      }
-      for (const change of prepared) {
-        parseCard(new TextDecoder().decode(await vscode.workspace.fs.readFile(change.uri)));
-      }
-      await vscode.window.showInformationMessage(
-        `씬 기반 카드 변경 ${prepared.length}개를 적용했습니다.`,
-      );
+      await this.buildCardsFromScenes(workspaceRoot);
     } catch (error) {
       if (error instanceof StoryCardBuildCancelledError) {
         return;
@@ -140,6 +65,104 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
       );
     }
   }
+
+  private async buildCardsFromScenes(workspaceRoot: vscode.Uri): Promise<void> {
+    const proposal: BuildStoryCardsProposal = await this.loadProposal(workspaceRoot);
+    const selected: SelectedChange[] = await selectChanges(proposal.targets);
+    if (selected.length === 0) {
+      return;
+    }
+    const prepared: PreparedCardChange[] | undefined = await prepareChanges(
+      workspaceRoot,
+      selected,
+    );
+    if (!prepared) {
+      return;
+    }
+    if (!(await this.confirmChanges(prepared))) {
+      return;
+    }
+    if (!(await this.cards.hasCurrentBuildSources(proposal.snapshots))) {
+      await vscode.window.showWarningMessage(
+        '검토 중 소스 또는 카드 구성이 변경되었습니다. Regenerate로 다시 제안해주세요.',
+      );
+      return;
+    }
+    await applyChanges(prepared);
+  }
+
+  private async loadProposal(workspaceRoot: vscode.Uri): Promise<BuildStoryCardsProposal> {
+    return await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: '씬에서 카드 제안을 구성 중...',
+        cancellable: true,
+      },
+      async (_progress, token) => {
+        const storyCardsProposal: BuildStoryCardsProposal = await this.cards.buildFromScenes({
+          workspaceRoot,
+        });
+        if (token.isCancellationRequested) {
+          throw new StoryCardBuildCancelledError();
+        }
+        return storyCardsProposal;
+      },
+    );
+  }
+
+  private async confirmChanges(prepared: readonly PreparedCardChange[]): Promise<boolean> {
+    await this.reviewService.showDiffs(
+      prepared.map((change) => ({
+        original: change.target.isNew ? undefined : change.uri,
+        proposedText: serializeCard(change.card),
+        key: `cards-${change.card.type}-${change.card.id}`,
+        label: `${change.card.name} ↔ 카드 제안`,
+      })),
+    );
+    const confirmation: '적용' | undefined = await vscode.window.showWarningMessage(
+      `${prepared.length}개 카드에 선택한 필드만 적용합니다. 기존 사실은 삭제하지 않습니다.`,
+      { modal: true },
+      '적용',
+    );
+    return confirmation === '적용';
+  }
+}
+
+async function applyChanges(prepared: readonly PreparedCardChange[]): Promise<void> {
+  const edit: vscode.WorkspaceEdit = await createCardWorkspaceEdit(prepared);
+  if (!(await vscode.workspace.applyEdit(edit))) {
+    await vscode.window.showErrorMessage(
+      '카드 변경을 적용하지 못했습니다. 파일은 변경되지 않았을 수 있습니다.',
+    );
+    return;
+  }
+  for (const change of prepared) {
+    parseCard(new TextDecoder().decode(await vscode.workspace.fs.readFile(change.uri)));
+  }
+  await vscode.window.showInformationMessage(
+    `씬 기반 카드 변경 ${prepared.length}개를 적용했습니다.`,
+  );
+}
+
+async function createCardWorkspaceEdit(
+  prepared: readonly PreparedCardChange[],
+): Promise<vscode.WorkspaceEdit> {
+  const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
+  for (const change of prepared) {
+    const text: string = serializeCard(change.card);
+    if (change.target.isNew) {
+      edit.createFile(change.uri, { overwrite: false, ignoreIfExists: false });
+      edit.insert(change.uri, new vscode.Position(0, 0), text);
+      continue;
+    }
+    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(change.uri);
+    edit.replace(
+      change.uri,
+      new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)),
+      text,
+    );
+  }
+  return edit;
 }
 
 async function selectChanges(targets: readonly StoryCardTarget[]): Promise<SelectedChange[]> {
