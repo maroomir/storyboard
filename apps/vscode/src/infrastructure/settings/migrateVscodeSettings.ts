@@ -1,4 +1,4 @@
-import { aiProviderIds } from '@storyboard/story-model';
+import { aiProviderIds, type AiProviderId } from '@storyboard/story-model';
 import { createApiKeySecretKey } from '@storyboard/story-ai';
 import type {
   ConfigurationInspection,
@@ -69,61 +69,76 @@ export async function migrateVscodeSettingsToHome(
 ): Promise<MigrateVscodeSettingsResult> {
   const movedSettings: string[] = [];
 
-  for (const { legacy: legacyKey, home: homeKey } of legacySettingMigrations) {
-    const legacy: LegacySettingInspection<unknown> | undefined =
-      deps.vscodeConfiguration.inspect<unknown>(legacyKey);
-
-    if (!legacy) {
-      continue;
-    }
-
-    const home: ConfigurationInspection<unknown> | undefined =
-      deps.homeConfiguration.inspect?.<unknown>(homeKey);
-
-    if (legacy.globalValue !== undefined) {
-      if (home?.globalValue === undefined) {
-        await deps.homeConfiguration.update?.(
-          homeKey,
-          legacy.globalValue,
-          configurationTargets.user,
-        );
-      }
-
-      await deps.vscodeConfiguration.update(legacyKey, undefined, configurationTargets.user);
-      movedSettings.push(homeKey);
-    }
-
-    if (legacy.workspaceValue !== undefined && deps.hasWorkspaceConfigFile) {
-      if (home?.workspaceValue === undefined) {
-        await deps.homeConfiguration.update?.(
-          homeKey,
-          legacy.workspaceValue,
-          configurationTargets.workspace,
-        );
-      }
-
-      await deps.vscodeConfiguration.update(legacyKey, undefined, configurationTargets.workspace);
-      movedSettings.push(homeKey);
-    }
+  for (const migration of legacySettingMigrations) {
+    movedSettings.push(...(await migrateLegacySetting(deps, migration)));
   }
 
   const movedApiKeys: string[] = [];
 
   for (const providerId of aiProviderIds) {
-    const secretKey: string = createApiKeySecretKey(providerId);
-    const legacyApiKey: string | undefined = await deps.vscodeSecrets.get(secretKey);
-
-    if (legacyApiKey === undefined) {
-      continue;
+    if (await migrateLegacyApiKey(deps, providerId)) {
+      movedApiKeys.push(providerId);
     }
-
-    if ((await deps.homeSecrets.get(secretKey)) === undefined) {
-      await deps.homeSecrets.store(secretKey, legacyApiKey);
-    }
-
-    await deps.vscodeSecrets.delete(secretKey);
-    movedApiKeys.push(providerId);
   }
 
   return { movedSettings, movedApiKeys };
+}
+
+async function migrateLegacySetting(
+  deps: MigrateVscodeSettingsDependencies,
+  { legacy: legacyKey, home: homeKey }: LegacySettingMigration,
+): Promise<string[]> {
+  const legacy: LegacySettingInspection<unknown> | undefined =
+    deps.vscodeConfiguration.inspect<unknown>(legacyKey);
+
+  if (!legacy) {
+    return [];
+  }
+
+  const home: ConfigurationInspection<unknown> | undefined =
+    deps.homeConfiguration.inspect?.<unknown>(homeKey);
+  const movedSettings: string[] = [];
+
+  if (legacy.globalValue !== undefined) {
+    if (home?.globalValue === undefined) {
+      await deps.homeConfiguration.update?.(homeKey, legacy.globalValue, configurationTargets.user);
+    }
+
+    await deps.vscodeConfiguration.update(legacyKey, undefined, configurationTargets.user);
+    movedSettings.push(homeKey);
+  }
+
+  if (legacy.workspaceValue !== undefined && deps.hasWorkspaceConfigFile) {
+    if (home?.workspaceValue === undefined) {
+      await deps.homeConfiguration.update?.(
+        homeKey,
+        legacy.workspaceValue,
+        configurationTargets.workspace,
+      );
+    }
+
+    await deps.vscodeConfiguration.update(legacyKey, undefined, configurationTargets.workspace);
+    movedSettings.push(homeKey);
+  }
+
+  return movedSettings;
+}
+
+async function migrateLegacyApiKey(
+  deps: MigrateVscodeSettingsDependencies,
+  providerId: AiProviderId,
+): Promise<boolean> {
+  const secretKey: string = createApiKeySecretKey(providerId);
+  const legacyApiKey: string | undefined = await deps.vscodeSecrets.get(secretKey);
+
+  if (legacyApiKey === undefined) {
+    return false;
+  }
+
+  if ((await deps.homeSecrets.get(secretKey)) === undefined) {
+    await deps.homeSecrets.store(secretKey, legacyApiKey);
+  }
+
+  await deps.vscodeSecrets.delete(secretKey);
+  return true;
 }
