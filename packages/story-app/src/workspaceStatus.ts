@@ -83,6 +83,73 @@ export interface DescribeWorkspaceStatusInput {
   readonly novel: NovelManager;
 }
 
+async function describeOutline(
+  fileSystem: IFileSystem,
+  paths: StoryboardProjectPaths,
+): Promise<WorkspaceOutlineStatus> {
+  return {
+    hasSynopsis: await fileSystem.exists(paths.outlineSynopsis),
+    hasChapterPlan: await fileSystem.exists(paths.outlineChapters),
+  };
+}
+
+async function countDrafts(
+  drafts: DraftManager,
+  workspaceRoot: StoryUri,
+  scenes: readonly SceneListItem[],
+): Promise<WorkspaceDraftCounts> {
+  return {
+    ready: countByStatus(scenes, 'ready'),
+    stale: countByStatus(scenes, 'stale'),
+    missing: countByStatus(scenes, 'missing'),
+    withWarnings: await countDraftsWithWarnings(drafts, workspaceRoot, scenes),
+  };
+}
+
+async function describeManuscript(
+  fileSystem: IFileSystem,
+  paths: StoryboardProjectPaths,
+  scenes: readonly SceneListItem[],
+): Promise<WorkspaceManuscriptStatus> {
+  const manuscriptModifiedAt: number = await fileSystem.modifiedTime(paths.manuscriptVolume);
+  const newestDraftModifiedAt: number = Math.max(
+    0,
+    ...scenes.map((scene) => scene.draftMtime ?? 0),
+  );
+
+  return {
+    isAssembled: manuscriptModifiedAt > 0,
+    isStale: manuscriptModifiedAt > 0 && manuscriptModifiedAt < newestDraftModifiedAt,
+    isReviewed: await fileSystem.exists(
+      joinStoryPath(paths.manuscriptDirectory, manuscriptReviewFileName),
+    ),
+  };
+}
+
+async function countPendingCanonFacts(
+  cards: CardManager,
+  workspaceRoot: StoryUri,
+): Promise<number> {
+  const canonDiff: CanonDiffResult = diffCandidatesAgainstCanon(
+    await cards.bibleCandidates.loadCanon(workspaceRoot),
+    await cards.bibleCandidates.loadRecords(workspaceRoot),
+  );
+
+  return canonDiff.pending.length;
+}
+
+async function countCards(
+  cards: CardManager,
+  fileSystem: IFileSystem,
+  workspaceRoot: StoryUri,
+): Promise<WorkspaceStatus['cards']> {
+  return {
+    characters: (await cards.list(workspaceRoot, 'character')).length,
+    backgrounds: (await cards.list(workspaceRoot, 'background')).length,
+    narrators: (await new NarratorCardRepository(fileSystem).list(workspaceRoot)).size,
+  };
+}
+
 export async function describeWorkspaceStatus(
   input: DescribeWorkspaceStatusInput,
 ): Promise<WorkspaceStatus> {
@@ -91,48 +158,20 @@ export async function describeWorkspaceStatus(
 
   const project: StoryboardProject = await novel.readProject(workspaceRoot);
   const missingContract: ContractFieldKey[] = validateGenerationContract(project.setting).missing;
-  const outline: WorkspaceOutlineStatus = {
-    hasSynopsis: await fileSystem.exists(paths.outlineSynopsis),
-    hasChapterPlan: await fileSystem.exists(paths.outlineChapters),
-  };
+  const outline: WorkspaceOutlineStatus = await describeOutline(fileSystem, paths);
 
   const scenes: SceneListItem[] = await drafts.listScenes(workspaceRoot);
-  const draftCounts: WorkspaceDraftCounts = {
-    ready: countByStatus(scenes, 'ready'),
-    stale: countByStatus(scenes, 'stale'),
-    missing: countByStatus(scenes, 'missing'),
-    withWarnings: await countDraftsWithWarnings(drafts, workspaceRoot, scenes),
-  };
-
-  const manuscriptModifiedAt: number = await fileSystem.modifiedTime(paths.manuscriptVolume);
-  const newestDraftModifiedAt: number = Math.max(
-    0,
-    ...scenes.map((scene) => scene.draftMtime ?? 0),
-  );
-  const manuscript: WorkspaceManuscriptStatus = {
-    isAssembled: manuscriptModifiedAt > 0,
-    isStale: manuscriptModifiedAt > 0 && manuscriptModifiedAt < newestDraftModifiedAt,
-    isReviewed: await fileSystem.exists(
-      joinStoryPath(paths.manuscriptDirectory, manuscriptReviewFileName),
-    ),
-  };
-
-  const canonDiff: CanonDiffResult = diffCandidatesAgainstCanon(
-    await cards.bibleCandidates.loadCanon(workspaceRoot),
-    await cards.bibleCandidates.loadRecords(workspaceRoot),
-  );
+  const draftCounts: WorkspaceDraftCounts = await countDrafts(drafts, workspaceRoot, scenes);
+  const manuscript: WorkspaceManuscriptStatus = await describeManuscript(fileSystem, paths, scenes);
+  const pendingFacts: number = await countPendingCanonFacts(cards, workspaceRoot);
 
   return {
     project: { name: project.name, missingContract },
     outline,
-    cards: {
-      characters: (await cards.list(workspaceRoot, 'character')).length,
-      backgrounds: (await cards.list(workspaceRoot, 'background')).length,
-      narrators: (await new NarratorCardRepository(fileSystem).list(workspaceRoot)).size,
-    },
+    cards: await countCards(cards, fileSystem, workspaceRoot),
     scenes: { total: scenes.length },
     drafts: draftCounts,
-    canon: { pendingFacts: canonDiff.pending.length },
+    canon: { pendingFacts },
     manuscript,
     nextStep: chooseNextStep({
       hasMissingContract: missingContract.length > 0,
