@@ -87,7 +87,9 @@ export class LoginCommand implements ICommandHandler {
     const saved: string = `${providerId} 에 로그인했습니다${account}: ${container.homePaths.secretsFile}`;
 
     try {
-      await (await createChatGptProvider(container, deps.fetch)).checkConnection();
+      await (
+        await createChatGptProvider(container.configBridge, container.secretStore, deps.fetch)
+      ).checkConnection();
       return success(`${saved}\n연결을 확인했습니다.`, {
         providerId,
         accountLabel: signedIn.accountLabel ?? null,

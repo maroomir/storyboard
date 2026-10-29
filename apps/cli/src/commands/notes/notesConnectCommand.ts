@@ -5,10 +5,6 @@ import type { CliContainer } from '@/container';
 import { askSecret, readStdin } from '@/commands/prompt';
 import { failure, success } from '@/commands/outcomes';
 
-function canAsk(container: CliContainer): boolean {
-  return container.canPrompt && process.stdin.isTTY === true;
-}
-
 export class NotesConnectCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'notes connect',
@@ -29,7 +25,7 @@ export class NotesConnectCommand implements ICommandHandler {
     }
 
     const token: string = (
-      canAsk(container)
+      this.canAsk(container)
         ? await askSecret(
             'Notion 통합 토큰을 붙여 넣고 Enter (입력은 화면에 보이지 않습니다. 비워 두면 삭제): ',
           )
@@ -46,5 +42,9 @@ export class NotesConnectCommand implements ICommandHandler {
             '읽을 페이지마다 Notion 에서 「연결」에 이 통합을 추가해야 합니다.',
           ].join('\n'),
         );
+  }
+
+  private canAsk(container: CliContainer): boolean {
+    return container.canPrompt && process.stdin.isTTY === true;
   }
 }

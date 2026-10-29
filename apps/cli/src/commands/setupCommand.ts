@@ -28,54 +28,6 @@ function describeProvider(providerId: AiProviderId): string {
   return 'API 키 필요';
 }
 
-async function chooseProviderInteractively(
-  current: AiProviderId | undefined,
-): Promise<AiProviderId | undefined> {
-  const selectableProviderIds: AiProviderId[] = listSelectableProviderIds(
-    current,
-    enabledHiddenProviderIds(),
-  );
-
-  process.stderr.write('Storyboard 가 기본으로 쓸 AI 프로바이더를 고르세요.\n');
-  selectableProviderIds.forEach((providerId, index) => {
-    const marker: '' | ' (현재)' = providerId === current ? ' (현재)' : '';
-    process.stderr.write(
-      `  ${index + 1}. ${providerId.padEnd(12)} ${describeProvider(providerId)}${marker}\n`,
-    );
-  });
-
-  const answer: string = await askLine('번호 또는 이름 (엔터로 취소): ');
-
-  if (answer.length === 0) {
-    return undefined;
-  }
-
-  const byIndex: AiProviderId | undefined = selectableProviderIds[Number(answer) - 1];
-
-  if (byIndex !== undefined) {
-    return byIndex;
-  }
-
-  return selectableProviderIds.find((providerId) => providerId === answer);
-}
-
-async function signInIfNeeded(
-  container: CliContainer,
-  providerId: AiProviderId,
-): Promise<CommandOutcome | undefined> {
-  if (getProviderTransport(providerId) !== 'oauth') {
-    return undefined;
-  }
-
-  if ((await container.secretStore.getOAuthConnection(providerId))?.tokens !== undefined) {
-    return undefined;
-  }
-
-  return container.canPrompt
-    ? new LoginCommand().signIn(container, providerId)
-    : success(`${providerId} 는 로그인이 필요합니다: storyboard login ${providerId}`);
-}
-
 export class SetupCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'setup',
@@ -100,7 +52,7 @@ export class SetupCommand implements ICommandHandler {
     if (flagProvider !== undefined) {
       providerId = flagProvider as AiProviderId;
     } else if (container.canPrompt) {
-      providerId = await chooseProviderInteractively(current);
+      providerId = await this.chooseProviderInteractively(current);
     } else {
       return failure(
         '터미널이 아니어서 질문할 수 없습니다. `storyboard setup --provider <id>` 로 지정해 주세요.',
@@ -139,7 +91,7 @@ export class SetupCommand implements ICommandHandler {
     }
 
     const home: StoryboardHomePaths = container.homePaths;
-    const loginNote: CommandOutcome | undefined = await signInIfNeeded(container, providerId);
+    const loginNote: CommandOutcome | undefined = await this.signInIfNeeded(container, providerId);
 
     if (loginNote !== undefined && !loginNote.ok) {
       return loginNote;
@@ -156,5 +108,53 @@ export class SetupCommand implements ICommandHandler {
         file: container.configWriteFile,
       },
     );
+  }
+
+  private async chooseProviderInteractively(
+    current: AiProviderId | undefined,
+  ): Promise<AiProviderId | undefined> {
+    const selectableProviderIds: AiProviderId[] = listSelectableProviderIds(
+      current,
+      enabledHiddenProviderIds(),
+    );
+
+    process.stderr.write('Storyboard 가 기본으로 쓸 AI 프로바이더를 고르세요.\n');
+    selectableProviderIds.forEach((providerId, index) => {
+      const marker: '' | ' (현재)' = providerId === current ? ' (현재)' : '';
+      process.stderr.write(
+        `  ${index + 1}. ${providerId.padEnd(12)} ${describeProvider(providerId)}${marker}\n`,
+      );
+    });
+
+    const answer: string = await askLine('번호 또는 이름 (엔터로 취소): ');
+
+    if (answer.length === 0) {
+      return undefined;
+    }
+
+    const byIndex: AiProviderId | undefined = selectableProviderIds[Number(answer) - 1];
+
+    if (byIndex !== undefined) {
+      return byIndex;
+    }
+
+    return selectableProviderIds.find((providerId) => providerId === answer);
+  }
+
+  private async signInIfNeeded(
+    container: CliContainer,
+    providerId: AiProviderId,
+  ): Promise<CommandOutcome | undefined> {
+    if (getProviderTransport(providerId) !== 'oauth') {
+      return undefined;
+    }
+
+    if ((await container.secretStore.getOAuthConnection(providerId))?.tokens !== undefined) {
+      return undefined;
+    }
+
+    return container.canPrompt
+      ? new LoginCommand().signIn(container, providerId)
+      : success(`${providerId} 는 로그인이 필요합니다: storyboard login ${providerId}`);
   }
 }

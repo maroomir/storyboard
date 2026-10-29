@@ -3,12 +3,13 @@ import {
   ChatGptOAuthError,
   ChatGptProvider,
   type ChatGptLoginFlowDependencies,
+  type ConfigBridge,
   type FetchLike,
+  type SecretStore,
 } from '@storyboard/story-ai';
 import { extractErrorMessage, requiresApiKey, type AiProviderId } from '@storyboard/story-model';
 import { availableProviderIds } from '@/adapters/availableProviders';
 import { openBrowser } from '@/adapters/openBrowser';
-import type { CliContainer } from '@/container';
 
 export type LoginFlowFactory = (deps: ChatGptLoginFlowDependencies) => ChatGptLoginFlow;
 
@@ -26,11 +27,10 @@ export interface LoginDependencies {
 export const defaultLoginDependencies: LoginDependencies = { openBrowser };
 
 export async function createChatGptProvider(
-  container: CliContainer,
+  configBridge: ConfigBridge,
+  secretStore: SecretStore,
   fetchImpl?: FetchLike,
 ): Promise<ChatGptProvider> {
-  const { configBridge, secretStore } = container;
-
   return new ChatGptProvider({
     model: configBridge.getProviderConfig('chatgpt').model,
     connection: await secretStore.getOAuthConnection('chatgpt'),

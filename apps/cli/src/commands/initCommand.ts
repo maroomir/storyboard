@@ -28,26 +28,6 @@ import {
   pointOfViews,
 } from '@storyboard/story-model';
 
-async function sealWorkspaceStoryState(
-  container: CliContainer,
-  paths: ReturnType<typeof getStoryboardProjectPaths>,
-): Promise<readonly number[]> {
-  const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
-    .read(paths.projectJson)
-    .catch(() => undefined);
-
-  if (project === undefined) {
-    return [];
-  }
-
-  return await new StoryMemoryAuditor({
-    fileSystem: container.fileSystem,
-    paths,
-    format: project.format,
-    sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
-  }).seal();
-}
-
 function describeGitRepository(outcome: GitRepositoryOutcome): string {
   switch (outcome) {
     case 'initialized':
@@ -57,74 +37,6 @@ function describeGitRepository(outcome: GitRepositoryOutcome): string {
     case 'exists':
       return '';
   }
-}
-
-async function askInitContract(
-  prompter: IPrompter,
-  args: ParsedArguments,
-): Promise<Record<string, string> | undefined> {
-  const later: string = '';
-  prompter.announce('┌  새 작품 만들기');
-
-  const title: string | undefined = await prompter.askText({ title: '작품 이름' });
-  if (title === undefined || title.length === 0) {
-    return undefined;
-  }
-  prompter.announce(`◇  작품 이름  › ${title}`);
-  const answers: Record<string, string> = { title };
-
-  if (flagString(args.flags, 'genre') === undefined) {
-    const genre: string | undefined = await prompter.askText({
-      title: '장르',
-      hint: '비우면 나중에',
-    });
-    if (genre === undefined) {
-      return undefined;
-    }
-    prompter.announce(`◇  장르  › ${genre.length > 0 ? genre : '나중에'}`);
-    if (genre.length > 0) {
-      answers.genre = genre;
-    }
-  }
-
-  if (flagString(args.flags, 'pov') === undefined) {
-    const pov: string | undefined = await prompter.choose<string>({
-      title: '시점',
-      details: [],
-      options: [
-        ...pointOfViews.map((value) => ({ label: pointOfViewCatalog[value].optionLabel, value })),
-        { label: '나중에 정하기', value: later },
-      ],
-    });
-    if (pov === undefined) {
-      return undefined;
-    }
-    prompter.announce(
-      `◇  시점  › ${pov === later ? '나중에' : pointOfViewCatalog[pov as PointOfView].label}`,
-    );
-    if (pov !== later) {
-      answers.pov = pov;
-    }
-  }
-
-  if (flagString(args.flags, 'composition') === undefined) {
-    const composition: CompositionKind | undefined = await prompter.choose<CompositionKind>({
-      title: '구성',
-      details: [],
-      options: compositionKinds.map((value) => ({
-        label: compositionCatalog[value].optionLabel,
-        value,
-      })),
-    });
-    if (composition === undefined) {
-      return undefined;
-    }
-    prompter.announce(`◇  구성  › ${compositionCatalog[composition].label}`);
-    answers.composition = composition;
-  }
-
-  prompter.announce('└  만드는 중…');
-  return answers;
 }
 
 export class InitCommand implements ICommandHandler {
@@ -182,7 +94,7 @@ export class InitCommand implements ICommandHandler {
       const gitRepository: GitRepositoryOutcome = ensureGitRepository(
         container.workspaceRoot.fsPath,
       );
-      const sealedSceneOrders: readonly number[] = await sealWorkspaceStoryState(container, paths);
+      const sealedSceneOrders: readonly number[] = await this.sealStoryState(container, paths);
 
       return success(
         (sealedSceneOrders.length === 0
@@ -206,7 +118,7 @@ export class InitCommand implements ICommandHandler {
     const hasName: boolean = name !== undefined && name.trim().length > 0;
 
     if (!hasName && container.prompter !== undefined) {
-      const answers: Record<string, string> | undefined = await askInitContract(
+      const answers: Record<string, string> | undefined = await this.askContract(
         container.prompter,
         args,
       );
@@ -275,5 +187,93 @@ export class InitCommand implements ICommandHandler {
         gitRepository,
       },
     );
+  }
+
+  private async sealStoryState(
+    container: CliContainer,
+    paths: ReturnType<typeof getStoryboardProjectPaths>,
+  ): Promise<readonly number[]> {
+    const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
+      .read(paths.projectJson)
+      .catch(() => undefined);
+
+    if (project === undefined) {
+      return [];
+    }
+
+    return await new StoryMemoryAuditor({
+      fileSystem: container.fileSystem,
+      paths,
+      format: project.format,
+      sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
+    }).seal();
+  }
+
+  private async askContract(
+    prompter: IPrompter,
+    args: ParsedArguments,
+  ): Promise<Record<string, string> | undefined> {
+    const later: string = '';
+    prompter.announce('┌  새 작품 만들기');
+
+    const title: string | undefined = await prompter.askText({ title: '작품 이름' });
+    if (title === undefined || title.length === 0) {
+      return undefined;
+    }
+    prompter.announce(`◇  작품 이름  › ${title}`);
+    const answers: Record<string, string> = { title };
+
+    if (flagString(args.flags, 'genre') === undefined) {
+      const genre: string | undefined = await prompter.askText({
+        title: '장르',
+        hint: '비우면 나중에',
+      });
+      if (genre === undefined) {
+        return undefined;
+      }
+      prompter.announce(`◇  장르  › ${genre.length > 0 ? genre : '나중에'}`);
+      if (genre.length > 0) {
+        answers.genre = genre;
+      }
+    }
+
+    if (flagString(args.flags, 'pov') === undefined) {
+      const pov: string | undefined = await prompter.choose<string>({
+        title: '시점',
+        details: [],
+        options: [
+          ...pointOfViews.map((value) => ({ label: pointOfViewCatalog[value].optionLabel, value })),
+          { label: '나중에 정하기', value: later },
+        ],
+      });
+      if (pov === undefined) {
+        return undefined;
+      }
+      prompter.announce(
+        `◇  시점  › ${pov === later ? '나중에' : pointOfViewCatalog[pov as PointOfView].label}`,
+      );
+      if (pov !== later) {
+        answers.pov = pov;
+      }
+    }
+
+    if (flagString(args.flags, 'composition') === undefined) {
+      const composition: CompositionKind | undefined = await prompter.choose<CompositionKind>({
+        title: '구성',
+        details: [],
+        options: compositionKinds.map((value) => ({
+          label: compositionCatalog[value].optionLabel,
+          value,
+        })),
+      });
+      if (composition === undefined) {
+        return undefined;
+      }
+      prompter.announce(`◇  구성  › ${compositionCatalog[composition].label}`);
+      answers.composition = composition;
+    }
+
+    prompter.announce('└  만드는 중…');
+    return answers;
   }
 }
