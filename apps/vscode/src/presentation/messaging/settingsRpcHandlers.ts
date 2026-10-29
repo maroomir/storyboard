@@ -30,28 +30,21 @@ export interface SettingsRpcHandlersDependencies {
   readonly configFiles: () => SettingsConfigFiles;
 }
 
-type SettingsReadDependencies = Pick<
-  SettingsRpcHandlersDependencies,
-  'configBridge' | 'registry' | 'configFiles'
->;
-
-export async function getSettingsReadSnapshot(
-  deps: SettingsReadDependencies,
-): Promise<StoryboardResponsePayload<'settings.read'>> {
-  return buildSettingsReadSnapshot(deps);
-}
-
 export class SettingsRpc {
   public constructor(private readonly deps: SettingsRpcHandlersDependencies) {}
+
+  public readSnapshot(): Promise<StoryboardResponsePayload<'settings.read'>> {
+    return this.buildSettingsReadSnapshot();
+  }
 
   public handlers(): StoryboardRpcHandlers {
     const { configBridge, secretStore } = this.deps;
     const savedTo = (key: string): StoryboardResponsePayload<'settings.updateDefaultProvider'> =>
-      describeSaveTarget(this.deps, key);
+      this.describeSaveTarget(key);
 
     return {
       'settings.read': async (): Promise<StoryboardResponsePayload<'settings.read'>> =>
-        buildSettingsReadSnapshot(this.deps),
+        this.buildSettingsReadSnapshot(),
 
       'settings.updateDefaultProvider': async (
         payload,
@@ -106,17 +99,92 @@ export class SettingsRpc {
       },
     };
   }
-}
 
-function describeSaveTarget(
-  deps: SettingsReadDependencies,
-  key: string,
-): StoryboardResponsePayload<'settings.updateDefaultProvider'> {
-  const origin: ConfigValueOrigin = deps.configBridge.getValueOrigin(key);
-  const files: SettingsConfigFiles = deps.configFiles();
-  const file: string | undefined = origin === 'workspace' ? files.workspace : files.user;
+  private describeSaveTarget(
+    key: string,
+  ): StoryboardResponsePayload<'settings.updateDefaultProvider'> {
+    const origin: ConfigValueOrigin = this.deps.configBridge.getValueOrigin(key);
+    const files: SettingsConfigFiles = this.deps.configFiles();
+    const file: string | undefined = origin === 'workspace' ? files.workspace : files.user;
 
-  return { origin, ...(file === undefined ? {} : { file }) };
+    return { origin, ...(file === undefined ? {} : { file }) };
+  }
+
+  private async buildSettingsReadSnapshot(): Promise<StoryboardResponsePayload<'settings.read'>> {
+    const { configBridge, registry } = this.deps;
+    const providers: AiProviderStatus[] = await registry.listProviders();
+    const defaultProvider: AiProviderId = configBridge.getDefaultProvider();
+
+    const providerConfigs: StoryboardResponsePayload<'settings.read'>['providerConfigs'] =
+      this.buildProviderConfigsPayload();
+    const taskAssignments: StoryboardResponsePayload<'settings.read'>['taskAssignments'] =
+      this.buildTaskAssignmentsPayload();
+
+    const modelCatalog: StoryboardResponsePayload<'settings.read'>['modelCatalog'] =
+      Object.fromEntries(
+        aiProviderIds.map((id) => [id, [...storyboardModelCatalog[id]]]),
+      ) as StoryboardResponsePayload<'settings.read'>['modelCatalog'];
+
+    return {
+      defaultProvider,
+      isDefaultProviderConfigured: configBridge.isDefaultProviderConfigured(),
+      providers,
+      providerConfigs,
+      taskAssignments,
+      modelCatalog,
+      taskCatalog: aiTaskCatalog.map((task) => ({
+        name: task.name,
+        label: task.label,
+      })),
+      origins: Object.fromEntries(
+        originTrackedKeys.map((key) => [key, configBridge.getValueOrigin(key)]),
+      ),
+      configFiles: this.deps.configFiles(),
+      settingCatalog: storyboardSettingCatalog.map((entry) => ({ ...entry })),
+      settingValues: Object.fromEntries(
+        storyboardSettingCatalog.map((entry) => [
+          entry.key,
+          configBridge.getSettingValue(entry.key),
+        ]),
+      ),
+    };
+  }
+
+  private buildProviderConfigsPayload(): StoryboardResponsePayload<'settings.read'>['providerConfigs'] {
+    const providerConfigs: StoryboardResponsePayload<'settings.read'>['providerConfigs'] =
+      {} as StoryboardResponsePayload<'settings.read'>['providerConfigs'];
+
+    for (const id of aiProviderIds) {
+      const runtime: ProviderModelConfig = this.deps.configBridge.getProviderConfig(id);
+      const catalog: ProviderModelOptions = storyboardModelCatalog[id];
+      const model: string = resolveConfiguredModel(runtime.model, catalog[0].id);
+
+      if (id === 'ollama') {
+        const baseUrl: string | undefined = runtime.baseUrl?.trim();
+        providerConfigs[id] =
+          baseUrl !== undefined && baseUrl.length > 0 ? { model, baseUrl } : { model };
+      } else {
+        providerConfigs[id] = { model };
+      }
+    }
+
+    return providerConfigs;
+  }
+
+  private buildTaskAssignmentsPayload(): StoryboardResponsePayload<'settings.read'>['taskAssignments'] {
+    return Object.fromEntries(
+      aiTaskNames.map((taskName: AiTaskName) => {
+        const override: TaskAiConfigOverride | null =
+          this.deps.configBridge.getTaskAiConfigOverride(taskName);
+        const entry: StoryboardResponsePayload<'settings.read'>['taskAssignments'][AiTaskName] =
+          override === null
+            ? { providerId: null, model: null }
+            : { providerId: override.providerId, model: override.model };
+
+        return [taskName, entry];
+      }),
+    ) as StoryboardResponsePayload<'settings.read'>['taskAssignments'];
+  }
 }
 
 const originTrackedKeys: string[] = [
@@ -127,68 +195,6 @@ const originTrackedKeys: string[] = [
   ...storyboardSettingCatalog.map((entry) => entry.key),
 ];
 
-async function buildSettingsReadSnapshot(
-  deps: SettingsReadDependencies,
-): Promise<StoryboardResponsePayload<'settings.read'>> {
-  const { configBridge, registry } = deps;
-  const providers: AiProviderStatus[] = await registry.listProviders();
-  const defaultProvider: AiProviderId = configBridge.getDefaultProvider();
-
-  const providerConfigs: StoryboardResponsePayload<'settings.read'>['providerConfigs'] =
-    buildProviderConfigsPayload(configBridge);
-  const taskAssignments: StoryboardResponsePayload<'settings.read'>['taskAssignments'] =
-    buildTaskAssignmentsPayload(configBridge);
-
-  const modelCatalog: StoryboardResponsePayload<'settings.read'>['modelCatalog'] =
-    Object.fromEntries(
-      aiProviderIds.map((id) => [id, [...storyboardModelCatalog[id]]]),
-    ) as StoryboardResponsePayload<'settings.read'>['modelCatalog'];
-
-  return {
-    defaultProvider,
-    isDefaultProviderConfigured: configBridge.isDefaultProviderConfigured(),
-    providers,
-    providerConfigs,
-    taskAssignments,
-    modelCatalog,
-    taskCatalog: aiTaskCatalog.map((task) => ({
-      name: task.name,
-      label: task.label,
-    })),
-    origins: Object.fromEntries(
-      originTrackedKeys.map((key) => [key, configBridge.getValueOrigin(key)]),
-    ),
-    configFiles: deps.configFiles(),
-    settingCatalog: storyboardSettingCatalog.map((entry) => ({ ...entry })),
-    settingValues: Object.fromEntries(
-      storyboardSettingCatalog.map((entry) => [entry.key, configBridge.getSettingValue(entry.key)]),
-    ),
-  };
-}
-
-function buildProviderConfigsPayload(
-  configBridge: ConfigBridge,
-): StoryboardResponsePayload<'settings.read'>['providerConfigs'] {
-  const providerConfigs: StoryboardResponsePayload<'settings.read'>['providerConfigs'] =
-    {} as StoryboardResponsePayload<'settings.read'>['providerConfigs'];
-
-  for (const id of aiProviderIds) {
-    const runtime: ProviderModelConfig = configBridge.getProviderConfig(id);
-    const catalog: ProviderModelOptions = storyboardModelCatalog[id];
-    const model: string = resolveConfiguredModel(runtime.model, catalog[0].id);
-
-    if (id === 'ollama') {
-      const baseUrl: string | undefined = runtime.baseUrl?.trim();
-      providerConfigs[id] =
-        baseUrl !== undefined && baseUrl.length > 0 ? { model, baseUrl } : { model };
-    } else {
-      providerConfigs[id] = { model };
-    }
-  }
-
-  return providerConfigs;
-}
-
 function resolveConfiguredModel(configured: string | undefined, fallbackId: string): string {
   const trimmed: string | undefined = configured?.trim();
 
@@ -197,20 +203,4 @@ function resolveConfiguredModel(configured: string | undefined, fallbackId: stri
   }
 
   return fallbackId;
-}
-
-function buildTaskAssignmentsPayload(
-  configBridge: ConfigBridge,
-): StoryboardResponsePayload<'settings.read'>['taskAssignments'] {
-  return Object.fromEntries(
-    aiTaskNames.map((taskName: AiTaskName) => {
-      const override: TaskAiConfigOverride | null = configBridge.getTaskAiConfigOverride(taskName);
-      const entry: StoryboardResponsePayload<'settings.read'>['taskAssignments'][AiTaskName] =
-        override === null
-          ? { providerId: null, model: null }
-          : { providerId: override.providerId, model: override.model };
-
-      return [taskName, entry];
-    }),
-  ) as StoryboardResponsePayload<'settings.read'>['taskAssignments'];
 }
