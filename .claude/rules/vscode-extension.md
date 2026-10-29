@@ -16,6 +16,9 @@ Follow these rules when implementing VSCode extension behavior in `storyboard`.
   `contributionIds.ts`, `run(...)`, its dependencies through the constructor) in
   `presentation/commands/<name>Command.ts`; a bootstrap module lists its command instances and the
   bootstrap `CommandRegistrar` is the one place `vscode.commands.registerCommand` is called for them.
+  Its steps are `private` methods; a flow two or three commands share is a `protected` verb of one
+  abstract `<Flow>CommandBase` they extend (`GenerateDraftCommandBase`), never a module function
+  that takes the dependencies.
 - A provider (diagnostics, hover, sidebar, custom editor, inline completion, rename participant) is
   a class with `register(): vscode.Disposable`; the bootstrap module builds it and pushes what it
   returns. No `registerXCommand`/`registerXProvider` functions.

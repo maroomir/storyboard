@@ -15,7 +15,7 @@ alwaysApply: false
 ## Activation and lifecycle
 
 - Keep **`apps/vscode/src/extension.ts`** focused on activate/deactivate and wiring.
-- A contributed command is a class implementing **`IExtensionCommand`** (`readonly id`, `run(...)`, deps via constructor) in `presentation/commands/<name>Command.ts`; a bootstrap module lists the instances and the bootstrap **`CommandRegistrar`** is the one caller of `vscode.commands.registerCommand`. A provider is a class with **`register(): Disposable`**; no `registerXCommand`/`registerXProvider` functions.
+- A contributed command is a class implementing **`IExtensionCommand`** (`readonly id`, `run(...)`, deps via constructor) in `presentation/commands/<name>Command.ts`; a bootstrap module lists the instances and the bootstrap **`CommandRegistrar`** is the one caller of `vscode.commands.registerCommand`. A provider is a class with **`register(): Disposable`**; no `registerXCommand`/`registerXProvider` functions. A command's steps are `private` methods; a flow two or three commands share is a `protected` verb of one abstract `<Flow>CommandBase` they extend (`GenerateDraftCommandBase`), never a module function that takes the dependencies.
 - Push disposables into **`context.subscriptions`**; dispose panels, watchers, listeners, terminals explicitly.
 - Avoid heavy work at activation unless the activation event requires it.
 
