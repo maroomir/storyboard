@@ -4,6 +4,7 @@ import type { CommandSpec } from '@/commands/catalog';
 import { cardIdPattern } from '@/commands/card/cardArguments';
 import { flagString } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
+import type { CliContainer } from '@/container';
 import type { DiscardNoteCandidatesResult } from '@storyboard/story-engine';
 
 export class CardDiscardCommand implements ICommandHandler {
@@ -31,31 +32,44 @@ export class CardDiscardCommand implements ICommandHandler {
 
     const changeRef: string | undefined = flagString(args.flags, 'change');
 
-    if (changeRef !== undefined) {
-      const [cardId] = args.positionals;
+    return changeRef === undefined
+      ? this.discardCards(container, args.positionals)
+      : this.discardChange(container, args.positionals, changeRef);
+  }
 
-      if (cardId === undefined || args.positionals.length > 1) {
-        return failure('--change 는 카드 id 하나와 함께 씁니다: card discard <id> --change <ref>');
-      }
+  private async discardChange(
+    container: CliContainer,
+    positionals: readonly string[],
+    changeRef: string,
+  ): Promise<CommandOutcome> {
+    const [cardId] = positionals;
 
-      const discard: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
-        container.workspaceRoot,
-        {
-          kind: 'change',
-          cardId,
-          ref: changeRef,
-        },
-      );
-
-      return discard.kind === 'change_not_found'
-        ? failure(
-            `${cardId} 의 노트 후보에 ${changeRef} 가 없습니다. card promote --dry-run 으로 확인하세요.`,
-          )
-        : success(`${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, discard);
+    if (cardId === undefined || positionals.length > 1) {
+      return failure('--change 는 카드 id 하나와 함께 씁니다: card discard <id> --change <ref>');
     }
 
+    const discard: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
+      container.workspaceRoot,
+      {
+        kind: 'change',
+        cardId,
+        ref: changeRef,
+      },
+    );
+
+    return discard.kind === 'change_not_found'
+      ? failure(
+          `${cardId} 의 노트 후보에 ${changeRef} 가 없습니다. card promote --dry-run 으로 확인하세요.`,
+        )
+      : success(`${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, discard);
+  }
+
+  private async discardCards(
+    container: CliContainer,
+    positionals: readonly string[],
+  ): Promise<CommandOutcome> {
     const cardIds: Set<string> | undefined =
-      args.positionals.length > 0 ? new Set(args.positionals) : undefined;
+      positionals.length > 0 ? new Set(positionals) : undefined;
     const notes: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
       container.workspaceRoot,
       {

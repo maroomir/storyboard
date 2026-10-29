@@ -64,26 +64,23 @@ export class LoginCommand implements ICommandHandler {
       signedIn = await flow.login({
         openBrowser: deps.openBrowser,
         onAuthorizationUrl: (url, wasOpened) => {
-          process.stderr.write(
-            [
-              wasOpened
-                ? `브라우저에서 ${displayName} 로그인을 마치세요. 창이 열리지 않았으면 아래 주소를 직접 여세요.`
-                : `브라우저를 열 수 없습니다. 아래 주소를 브라우저에서 열어 ${displayName} 로그인을 마치세요.`,
-              '다른 기계의 브라우저라면 이 주소의 포트를 이 기계로 포워딩해야 돌아올 수 있습니다.',
-              '',
-              `  ${url}`,
-              '',
-              '',
-            ].join('\n'),
-          );
+          process.stderr.write(describeAuthorizationUrl(displayName, url, wasOpened));
         },
       });
     } catch (error) {
       return failure(describeLoginFailure(error));
     }
 
-    const account: string =
-      signedIn.accountLabel === undefined ? '' : ` (${signedIn.accountLabel})`;
+    return this.verifySignedIn(container, providerId, signedIn.accountLabel, deps);
+  }
+
+  private async verifySignedIn(
+    container: CliContainer,
+    providerId: AiProviderId,
+    accountLabel: string | undefined,
+    deps: LoginDependencies,
+  ): Promise<CommandOutcome> {
+    const account: string = accountLabel === undefined ? '' : ` (${accountLabel})`;
     const saved: string = `${providerId} 에 로그인했습니다${account}: ${container.homePaths.secretsFile}`;
 
     try {
@@ -92,16 +89,29 @@ export class LoginCommand implements ICommandHandler {
       ).checkConnection();
       return success(`${saved}\n연결을 확인했습니다.`, {
         providerId,
-        accountLabel: signedIn.accountLabel ?? null,
+        accountLabel: accountLabel ?? null,
         verified: true,
       });
     } catch (error) {
       const reason: string = extractErrorMessage(error);
       return success(`${saved}\n다만 연결 확인에 실패했습니다: ${reason}`, {
         providerId,
-        accountLabel: signedIn.accountLabel ?? null,
+        accountLabel: accountLabel ?? null,
         verified: false,
       });
     }
   }
+}
+
+function describeAuthorizationUrl(displayName: string, url: string, wasOpened: boolean): string {
+  return [
+    wasOpened
+      ? `브라우저에서 ${displayName} 로그인을 마치세요. 창이 열리지 않았으면 아래 주소를 직접 여세요.`
+      : `브라우저를 열 수 없습니다. 아래 주소를 브라우저에서 열어 ${displayName} 로그인을 마치세요.`,
+    '다른 기계의 브라우저라면 이 주소의 포트를 이 기계로 포워딩해야 돌아올 수 있습니다.',
+    '',
+    `  ${url}`,
+    '',
+    '',
+  ].join('\n');
 }

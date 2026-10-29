@@ -4,6 +4,7 @@ import type { CommandSpec } from '@/commands/catalog';
 import { describeNoteConflicts } from '@/commands/card/cardViews';
 import { flagBoolean } from '@/cliArguments';
 import { describeNothingToPromote, success } from '@/commands/outcomes';
+import type { CliContainer } from '@/container';
 import type {
   PrepareCardCandidatePromotionResult,
   PrepareNoteCandidatePromotionResult,
@@ -11,6 +12,13 @@ import type {
   PromoteNoteCandidatesResult,
 } from '@storyboard/story-engine';
 import type { CardCandidateItem, MergedNoteCardCandidate } from '@storyboard/story-model';
+
+interface PromotionCandidates {
+  readonly draftItems: readonly CardCandidateItem[];
+  readonly noteCandidates: readonly MergedNoteCardCandidate[];
+  readonly conflictedCards: readonly MergedNoteCardCandidate[];
+  readonly conflictLines: readonly string[];
+}
 
 export class CardPromoteCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -36,31 +44,17 @@ export class CardPromoteCommand implements ICommandHandler {
       return success(describeNothingToPromote(kind), { kind });
     }
 
-    const draftItems: readonly CardCandidateItem[] =
-      prepared.kind === 'ready' ? prepared.items : [];
-    const noteCandidates: readonly MergedNoteCardCandidate[] =
-      preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
-    const conflictedCards: MergedNoteCardCandidate[] = [
-      ...noteCandidates,
-      ...(preparedNotes.kind === 'ready' ? preparedNotes.heldCards : []),
-    ].filter((candidate) => candidate.conflicts.length > 0);
-    const conflictLines: string[] = describeNoteConflicts(conflictedCards);
+    const candidates: PromotionCandidates = collectPromotionCandidates(prepared, preparedNotes);
 
-    if (flagBoolean(args.flags, 'dry-run')) {
-      return success(
-        [
-          `승격 후보 ${draftItems.length + noteCandidates.length}건`,
-          ...(draftItems.length > 0 ? [`  초안에서  ${draftItems.length}건`] : []),
-          ...noteCandidates.map(
-            (candidate) =>
-              `  노트에서  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건 ← ${candidate.locations.join(', ')}`,
-          ),
-          ...conflictLines,
-        ].join('\n'),
-        { drafts: draftItems, notes: noteCandidates, conflicts: conflictedCards },
-      );
-    }
+    return flagBoolean(args.flags, 'dry-run')
+      ? describePromotionPreview(candidates)
+      : this.promoteCandidates(container, candidates);
+  }
 
+  private async promoteCandidates(
+    container: CliContainer,
+    { draftItems, noteCandidates, conflictedCards, conflictLines }: PromotionCandidates,
+  ): Promise<CommandOutcome> {
     const promotion: PromoteCardCandidatesResult | undefined =
       draftItems.length > 0
         ? await container.cards.promoteCandidates(container.workspaceRoot, draftItems)
@@ -82,4 +76,43 @@ export class CardPromoteCommand implements ICommandHandler {
       data: { drafts: promotion ?? null, notes: noteResult ?? null, conflicts: conflictedCards },
     };
   }
+}
+
+function collectPromotionCandidates(
+  prepared: PrepareCardCandidatePromotionResult,
+  preparedNotes: PrepareNoteCandidatePromotionResult,
+): PromotionCandidates {
+  const noteCandidates: readonly MergedNoteCardCandidate[] =
+    preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
+  const conflictedCards: MergedNoteCardCandidate[] = [
+    ...noteCandidates,
+    ...(preparedNotes.kind === 'ready' ? preparedNotes.heldCards : []),
+  ].filter((candidate) => candidate.conflicts.length > 0);
+
+  return {
+    draftItems: prepared.kind === 'ready' ? prepared.items : [],
+    noteCandidates,
+    conflictedCards,
+    conflictLines: describeNoteConflicts(conflictedCards),
+  };
+}
+
+function describePromotionPreview({
+  draftItems,
+  noteCandidates,
+  conflictedCards,
+  conflictLines,
+}: PromotionCandidates): CommandOutcome {
+  return success(
+    [
+      `승격 후보 ${draftItems.length + noteCandidates.length}건`,
+      ...(draftItems.length > 0 ? [`  초안에서  ${draftItems.length}건`] : []),
+      ...noteCandidates.map(
+        (candidate) =>
+          `  노트에서  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건 ← ${candidate.locations.join(', ')}`,
+      ),
+      ...conflictLines,
+    ].join('\n'),
+    { drafts: draftItems, notes: noteCandidates, conflicts: conflictedCards },
+  );
 }

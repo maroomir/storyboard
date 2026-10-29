@@ -36,6 +36,35 @@ const previewCheck: DoctorCheck = {
     '제공자가 미리보기로 연 경로입니다. 받는 파라미터와 한도 정책이 바뀔 수 있고, 금액이 계산되지 않아 실행 예산(budget.run.limitUsd)이 적용되지 않습니다.',
 };
 
+type AccountModelListing =
+  | { readonly ok: true; readonly slugs: readonly string[] }
+  | { readonly ok: false; readonly detail: string };
+
+function describeLoginError(error: unknown): string {
+  if (error instanceof AiProviderError && error.code === 'login-required') {
+    return '로그인돼 있지 않습니다. 생성 명령이 거부됩니다.';
+  }
+
+  return error instanceof Error ? error.message : String(error);
+}
+
+function checkAccountModel(
+  providerId: AiProviderId,
+  model: string | undefined,
+  slugs: readonly string[],
+): DoctorCheck[] {
+  return model !== undefined && slugs.length > 0 && !slugs.includes(model)
+    ? [
+        {
+          status: 'warn',
+          label: '모델',
+          detail: `${model} 이 이 계정의 모델 목록에 없습니다 (${slugs.slice(0, 6).join(', ')}${slugs.length > 6 ? ', …' : ''}). 호출이 거부될 수 있습니다.`,
+          fix: `storyboard config set providers.${providerId}.model <model> --global`,
+        },
+      ]
+    : [];
+}
+
 export class HiddenProviderSwitch {
   public constructor(private readonly container: CliContainer) {}
 
@@ -94,41 +123,60 @@ export class HiddenProviderSwitch {
       return undefined;
     }
 
-    const { configBridge } = this.container;
     const field: string = key.slice(`providers.${providerId}.`.length);
 
     if (field === 'enabled') {
-      const isEnabled: boolean | undefined = booleanWords[raw];
-
-      if (isEnabled === undefined) {
-        return failure(`${key} 는 true 또는 false 여야 합니다.`);
-      }
-
-      if (isEnabled) {
-        return this.switchOn(providerId);
-      }
-
-      const clearedKeys: readonly string[] = await configBridge.disableHiddenProvider(providerId);
-      return success(
-        [
-          `${key} = false 저장했습니다: ${this.container.homePaths.configFile}`,
-          ...(clearedKeys.length === 0
-            ? []
-            : [
-                `이 프로바이더를 가리키던 설정도 지웠습니다(${clearedKeys.join(', ')}). 다시 고르세요: storyboard setup`,
-              ]),
-        ].join('\n'),
-        { key, value: false, clearedKeys },
-      );
+      return this.setEnabled(key, providerId, raw);
     }
 
-    if (!configBridge.isHiddenProviderEnabled(providerId)) {
+    if (!this.container.configBridge.isHiddenProviderEnabled(providerId)) {
       return failure(unknownProviderMessage(providerId));
     }
 
     if (getProviderTransport(providerId) !== 'cli') {
       return undefined;
     }
+
+    return this.setCliField(key, providerId, field, raw);
+  }
+
+  private async setEnabled(
+    key: string,
+    providerId: AiProviderId,
+    raw: string,
+  ): Promise<CommandOutcome> {
+    const isEnabled: boolean | undefined = booleanWords[raw];
+
+    if (isEnabled === undefined) {
+      return failure(`${key} 는 true 또는 false 여야 합니다.`);
+    }
+
+    if (isEnabled) {
+      return this.switchOn(providerId);
+    }
+
+    const clearedKeys: readonly string[] =
+      await this.container.configBridge.disableHiddenProvider(providerId);
+    return success(
+      [
+        `${key} = false 저장했습니다: ${this.container.homePaths.configFile}`,
+        ...(clearedKeys.length === 0
+          ? []
+          : [
+              `이 프로바이더를 가리키던 설정도 지웠습니다(${clearedKeys.join(', ')}). 다시 고르세요: storyboard setup`,
+            ]),
+      ].join('\n'),
+      { key, value: false, clearedKeys },
+    );
+  }
+
+  private async setCliField(
+    key: string,
+    providerId: AiProviderId,
+    field: string,
+    raw: string,
+  ): Promise<CommandOutcome | undefined> {
+    const { configBridge } = this.container;
 
     if (field === 'command') {
       const command: string = raw.trim();
@@ -194,45 +242,21 @@ export class HiddenProviderSwitch {
     const connection: OAuthConnection | undefined =
       await secretStore.getOAuthConnection(providerId);
     const model: string | undefined = configBridge.getProviderConfig(providerId).model;
-    const loginFix: string = `storyboard login ${providerId}`;
+    const listing: AccountModelListing = await this.listAccountModels(fetchImpl);
 
-    let provider: ChatGptProvider;
-    try {
-      provider = await createChatGptProvider(configBridge, secretStore, fetchImpl);
-    } catch (error) {
+    if (!listing.ok) {
       return [
         previewCheck,
         {
           status: 'fail',
           label: '로그인',
-          detail:
-            error instanceof AiProviderError && error.code === 'login-required'
-              ? '로그인돼 있지 않습니다. 생성 명령이 거부됩니다.'
-              : error instanceof Error
-                ? error.message
-                : String(error),
-          fix: loginFix,
-        },
-      ];
-    }
-
-    let models: readonly { readonly slug: string }[];
-    try {
-      models = await provider.listModels();
-    } catch (error) {
-      return [
-        previewCheck,
-        {
-          status: 'fail',
-          label: '로그인',
-          detail: extractErrorMessage(error),
-          fix: loginFix,
+          detail: listing.detail,
+          fix: `storyboard login ${providerId}`,
         },
       ];
     }
 
     const account: string | undefined = connection?.registration?.email;
-    const slugs: string[] = models.map((entry) => entry.slug);
 
     return [
       previewCheck,
@@ -241,16 +265,25 @@ export class HiddenProviderSwitch {
         label: '로그인',
         detail: `${account === undefined ? '계정' : account} 으로 로그인돼 있습니다.`,
       },
-      ...(model !== undefined && slugs.length > 0 && !slugs.includes(model)
-        ? [
-            {
-              status: 'warn' as const,
-              label: '모델',
-              detail: `${model} 이 이 계정의 모델 목록에 없습니다 (${slugs.slice(0, 6).join(', ')}${slugs.length > 6 ? ', …' : ''}). 호출이 거부될 수 있습니다.`,
-              fix: `storyboard config set providers.${providerId}.model <model> --global`,
-            },
-          ]
-        : []),
+      ...checkAccountModel(providerId, model, listing.slugs),
     ];
+  }
+
+  private async listAccountModels(fetchImpl: FetchLike | undefined): Promise<AccountModelListing> {
+    const { configBridge, secretStore } = this.container;
+    let provider: ChatGptProvider;
+
+    try {
+      provider = await createChatGptProvider(configBridge, secretStore, fetchImpl);
+    } catch (error) {
+      return { ok: false, detail: describeLoginError(error) };
+    }
+
+    try {
+      const models: readonly { readonly slug: string }[] = await provider.listModels();
+      return { ok: true, slugs: models.map((entry) => entry.slug) };
+    } catch (error) {
+      return { ok: false, detail: extractErrorMessage(error) };
+    }
   }
 }
