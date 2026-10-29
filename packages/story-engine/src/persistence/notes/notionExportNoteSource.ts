@@ -35,22 +35,7 @@ export class NotionExportNoteSource implements INoteSource {
   public constructor(private readonly options: NotionExportNoteSourceOptions) {}
 
   public async collect(): Promise<CollectedNotes> {
-    const { fileSystem, archive } = this.options;
-
-    if (!(await fileSystem.exists(archive))) {
-      throw new NoteSourceError('not-found', `노트를 찾을 수 없습니다: ${archive.fsPath}`);
-    }
-
-    let entries: ZipEntry[];
-    try {
-      entries = readZipEntries(await fileSystem.readFile(archive));
-    } catch (error) {
-      if (error instanceof ZipArchiveError) {
-        throw new NoteSourceError('invalid-location', error.message, error);
-      }
-      throw error;
-    }
-
+    const entries: ZipEntry[] = await this.readArchiveEntries();
     const files: ZipNoteFile[] = entries
       .filter((entry) => !entry.name.startsWith(macResourceForkDirectory))
       .map((entry): ZipNoteFile => ({ entry, segments: entry.name.normalize('NFC').split('/') }))
@@ -58,42 +43,85 @@ export class NotionExportNoteSource implements INoteSource {
     const folderStems: Set<string> = new Set(
       files.flatMap(({ segments }) => segments.slice(0, -1).map(stripNotionIdSuffix)),
     );
-    const notes: NoteDocument[] = [];
-    const skipped: SkippedNote[] = [];
+    const tally: ZipNoteTally = new ZipNoteTally();
     const decoder: InstanceType<typeof TextDecoder> = new TextDecoder();
 
-    for (const { entry, segments } of files) {
-      const fileName: string = segments.at(-1) ?? entry.name;
-      const path: string[] = segments.slice(0, -1).map(stripNotionIdSuffix);
-      const id: string = [...path, fileName.replace(/\s[0-9a-f]{32}(?=\.[a-z]+$)/i, '')].join('/');
-
-      if (/\.md$/i.test(fileName)) {
-        const body: string = decoder.decode(entry.data);
-        const fallback: string = stripNotionIdSuffix(stripMarkdownExtension(fileName));
-        notes.push({ id, title: extractNoteTitle(body, fallback), path, body, origin: 'tree' });
-        continue;
-      }
-
-      if (/\.csv$/i.test(fileName)) {
-        const stem: string = fileName.replace(/\.csv$/i, '');
-        if (/_all$/i.test(stem) || folderStems.has(stripNotionIdSuffix(stem))) {
-          continue;
-        }
-        const title: string = stripNotionIdSuffix(stem);
-        notes.push({
-          id,
-          title,
-          path,
-          body: renderCsvAsNote(title, decoder.decode(entry.data)),
-          origin: 'tree',
-        });
-        continue;
-      }
-
-      skipped.push({ label: id, reason: '노트가 아닌 파일이라 읽지 않았습니다' });
+    for (const file of files) {
+      this.addZipNoteFile(file, folderStems, decoder, tally);
     }
 
-    return { notes, skipped };
+    return tally.toCollectedNotes();
+  }
+
+  private async readArchiveEntries(): Promise<ZipEntry[]> {
+    const { fileSystem, archive } = this.options;
+
+    if (!(await fileSystem.exists(archive))) {
+      throw new NoteSourceError('not-found', `노트를 찾을 수 없습니다: ${archive.fsPath}`);
+    }
+
+    try {
+      return readZipEntries(await fileSystem.readFile(archive));
+    } catch (error) {
+      if (error instanceof ZipArchiveError) {
+        throw new NoteSourceError('invalid-location', error.message, error);
+      }
+      throw error;
+    }
+  }
+
+  private addZipNoteFile(
+    file: ZipNoteFile,
+    folderStems: ReadonlySet<string>,
+    decoder: InstanceType<typeof TextDecoder>,
+    tally: ZipNoteTally,
+  ): void {
+    const { entry, segments } = file;
+    const fileName: string = segments.at(-1) ?? entry.name;
+    const path: string[] = segments.slice(0, -1).map(stripNotionIdSuffix);
+    const id: string = [...path, fileName.replace(/\s[0-9a-f]{32}(?=\.[a-z]+$)/i, '')].join('/');
+
+    if (/\.md$/i.test(fileName)) {
+      const body: string = decoder.decode(entry.data);
+      const fallback: string = stripNotionIdSuffix(stripMarkdownExtension(fileName));
+      tally.addNote({ id, title: extractNoteTitle(body, fallback), path, body, origin: 'tree' });
+      return;
+    }
+
+    if (/\.csv$/i.test(fileName)) {
+      const stem: string = fileName.replace(/\.csv$/i, '');
+      if (/_all$/i.test(stem) || folderStems.has(stripNotionIdSuffix(stem))) {
+        return;
+      }
+      const title: string = stripNotionIdSuffix(stem);
+      tally.addNote({
+        id,
+        title,
+        path,
+        body: renderCsvAsNote(title, decoder.decode(entry.data)),
+        origin: 'tree',
+      });
+      return;
+    }
+
+    tally.addSkipped({ label: id, reason: '노트가 아닌 파일이라 읽지 않았습니다' });
+  }
+}
+
+class ZipNoteTally {
+  private readonly notes: NoteDocument[] = [];
+  private readonly skipped: SkippedNote[] = [];
+
+  public addNote(note: NoteDocument): void {
+    this.notes.push(note);
+  }
+
+  public addSkipped(skippedNote: SkippedNote): void {
+    this.skipped.push(skippedNote);
+  }
+
+  public toCollectedNotes(): CollectedNotes {
+    return { notes: this.notes, skipped: this.skipped };
   }
 }
 

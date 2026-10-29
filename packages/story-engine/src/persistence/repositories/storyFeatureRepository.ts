@@ -30,57 +30,12 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
 
   public async load(workspaceRoot: StoryUri): Promise<StoryFeatureSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
-      readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
-      readTextFiles(
-        this.fileSystem,
-        paths.sceneDirectory,
-        (name) => name.endsWith('.card') && !name.startsWith('.'),
-      ),
-      readCardFiles(this.fileSystem, paths.characterDirectory, paths.backgroundDirectory),
-      readOptionalText(this.fileSystem, paths.bibleCanon),
-    ]);
-    const invalidScenes: string[] = [];
-    const scenes: SceneFile[] = [];
+    const sourceFiles: StorySourceFiles = await this.readSourceFiles(paths);
+    const scenes: SceneFile[] = this.parseScenes(sourceFiles.sceneFiles);
+    const cards: StoryboardCard[] = this.parseCards(sourceFiles.cardFiles);
 
-    for (const file of sceneFiles) {
-      try {
-        scenes.push(parseScene(file.text, file.name));
-      } catch (error) {
-        invalidScenes.push(`${file.name}: ${formatParseError(error)}`);
-      }
-    }
-
-    if (invalidScenes.length > 0) {
-      throw new StoryFeatureSourceError(
-        'invalid-scene',
-        `유효하지 않은 씬이 있습니다.\n${invalidScenes.join('\n')}`,
-      );
-    }
-
-    const cards: StoryboardCard[] = [];
-    for (const file of cardFiles) {
-      try {
-        cards.push(parseCard(file.text));
-      } catch (error) {
-        throw new StoryFeatureSourceError(
-          'invalid-card',
-          `유효하지 않은 카드: ${file.name}: ${formatParseError(error)}`,
-          error,
-        );
-      }
-    }
-
-    const project: StoryboardProject = parseProjectJson(projectText.text);
-    const snapshots: StoryFileSnapshot[] = [
-      snapshotFile(projectText.uri, projectText.bytes),
-      ...sceneFiles.map((file) => snapshotFile(file.uri, file.bytes)),
-      ...cardFiles.map((file) => snapshotFile(file.uri, file.bytes)),
-      ...(canonText ? [snapshotFile(canonText.uri, canonText.bytes)] : []),
-      await snapshotDirectory(this.fileSystem, paths.sceneDirectory),
-      await snapshotDirectory(this.fileSystem, paths.characterDirectory),
-      await snapshotDirectory(this.fileSystem, paths.backgroundDirectory),
-    ];
+    const project: StoryboardProject = parseProjectJson(sourceFiles.projectText.text);
+    const snapshots: StoryFileSnapshot[] = await this.snapshotSources(paths, sourceFiles);
 
     return {
       workspaceRoot,
@@ -89,7 +44,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
         (left, right) => left.order - right.order || left.slug.localeCompare(right.slug),
       ),
       cards,
-      canonText: canonText?.text ?? '',
+      canonText: sourceFiles.canonText?.text ?? '',
       snapshots,
     };
   }
@@ -111,6 +66,76 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     }
     return true;
   }
+
+  private async readSourceFiles(paths: StoryboardProjectPaths): Promise<StorySourceFiles> {
+    const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
+      readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
+      readTextFiles(
+        this.fileSystem,
+        paths.sceneDirectory,
+        (name) => name.endsWith('.card') && !name.startsWith('.'),
+      ),
+      readCardFiles(this.fileSystem, paths.characterDirectory, paths.backgroundDirectory),
+      readOptionalText(this.fileSystem, paths.bibleCanon),
+    ]);
+
+    return { projectText, sceneFiles, cardFiles, canonText };
+  }
+
+  private parseScenes(sceneFiles: readonly TextFile[]): SceneFile[] {
+    const invalidScenes: string[] = [];
+    const scenes: SceneFile[] = [];
+
+    for (const file of sceneFiles) {
+      try {
+        scenes.push(parseScene(file.text, file.name));
+      } catch (error) {
+        invalidScenes.push(`${file.name}: ${formatParseError(error)}`);
+      }
+    }
+
+    if (invalidScenes.length > 0) {
+      throw new StoryFeatureSourceError(
+        'invalid-scene',
+        `유효하지 않은 씬이 있습니다.\n${invalidScenes.join('\n')}`,
+      );
+    }
+
+    return scenes;
+  }
+
+  private parseCards(cardFiles: readonly TextFile[]): StoryboardCard[] {
+    const cards: StoryboardCard[] = [];
+    for (const file of cardFiles) {
+      try {
+        cards.push(parseCard(file.text));
+      } catch (error) {
+        throw new StoryFeatureSourceError(
+          'invalid-card',
+          `유효하지 않은 카드: ${file.name}: ${formatParseError(error)}`,
+          error,
+        );
+      }
+    }
+    return cards;
+  }
+
+  private async snapshotSources(
+    paths: StoryboardProjectPaths,
+    sourceFiles: StorySourceFiles,
+  ): Promise<StoryFileSnapshot[]> {
+    const { projectText, sceneFiles, cardFiles, canonText } = sourceFiles;
+
+    return [
+      snapshotFile(projectText.uri, projectText.bytes),
+      ...sceneFiles.map((file) => snapshotFile(file.uri, file.bytes)),
+      ...cardFiles.map((file) => snapshotFile(file.uri, file.bytes)),
+      ...(canonText ? [snapshotFile(canonText.uri, canonText.bytes)] : []),
+      await snapshotDirectory(this.fileSystem, paths.sceneDirectory),
+      await snapshotDirectory(this.fileSystem, paths.characterDirectory),
+      await snapshotDirectory(this.fileSystem, paths.backgroundDirectory),
+    ];
+  }
 }
 
 interface TextFile {
@@ -118,6 +143,13 @@ interface TextFile {
   readonly name: string;
   readonly bytes: Uint8Array;
   readonly text: string;
+}
+
+interface StorySourceFiles {
+  readonly projectText: TextFile;
+  readonly sceneFiles: TextFile[];
+  readonly cardFiles: TextFile[];
+  readonly canonText: TextFile | undefined;
 }
 
 async function readRequiredText(fs: IFileSystem, uri: StoryUri, label: string): Promise<TextFile> {
