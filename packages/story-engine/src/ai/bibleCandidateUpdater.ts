@@ -34,23 +34,19 @@ function dedupeFactsById(facts: readonly BibleFact[]): BibleFact[] {
   return [...byId.values()];
 }
 
-export async function updateBibleCandidatesFromDraft(
+type ExtractedFactsByName = Record<string, { key: string; value: string }[]>;
+
+async function extractFactsByCharacter(
   input: UpdateBibleCandidatesFromDraftInput,
-): Promise<BibleCandidateUpdateSummary> {
-  const { sceneStem, draftBody, detectedCharacterCards, aiService, fileSystem, logger } = input;
-
-  if (detectedCharacterCards.length === 0) {
-    return { candidateCount: 0 };
-  }
-
-  let extracted: Record<string, { key: string; value: string }[]>;
+): Promise<ExtractedFactsByName | undefined> {
+  const { sceneStem, draftBody, detectedCharacterCards, aiService, logger } = input;
 
   try {
     const characterIdByName: Map<string, string> = new Map(
       detectedCharacterCards.map((card) => [card.name, card.id]),
     );
 
-    extracted = await aiService.extractFactsByCharacter(
+    return await aiService.extractFactsByCharacter(
       draftBody,
       detectedCharacterCards.map((card) => card.name),
       {
@@ -71,9 +67,15 @@ export async function updateBibleCandidatesFromDraft(
   } catch (error) {
     logger?.error('Fact extraction failed', error);
 
-    return { candidateCount: 0 };
+    return undefined;
   }
+}
 
+function buildCandidateFacts(
+  detectedCharacterCards: readonly CharacterCard[],
+  extracted: ExtractedFactsByName,
+  sceneStem: string,
+): BibleFact[] {
   const facts: BibleFact[] = detectedCharacterCards.flatMap((card) =>
     (extracted[card.name] ?? []).map((candidate) =>
       buildCandidateFact(
@@ -84,18 +86,21 @@ export async function updateBibleCandidatesFromDraft(
       ),
     ),
   );
-  const deduped: BibleFact[] = dedupeFactsById(facts);
+  return dedupeFactsById(facts);
+}
 
-  if (deduped.length === 0) {
-    return { candidateCount: 0 };
-  }
+async function writeCandidateFacts(
+  input: UpdateBibleCandidatesFromDraftInput,
+  facts: BibleFact[],
+): Promise<BibleCandidateUpdateSummary> {
+  const { sceneStem, fileSystem, logger } = input;
 
   try {
     await input.ensureDirectory?.();
     await writeBibleCandidateFile(input.resolveCandidateUri(sceneStem), fileSystem, {
       sceneStem,
       generatedAt: new Date().toISOString(),
-      facts: deduped,
+      facts,
     });
   } catch (error) {
     logger?.error('Failed to write bible candidates', error);
@@ -103,7 +108,32 @@ export async function updateBibleCandidatesFromDraft(
     return { candidateCount: 0 };
   }
 
-  return { candidateCount: deduped.length };
+  return { candidateCount: facts.length };
+}
+
+export async function updateBibleCandidatesFromDraft(
+  input: UpdateBibleCandidatesFromDraftInput,
+): Promise<BibleCandidateUpdateSummary> {
+  if (input.detectedCharacterCards.length === 0) {
+    return { candidateCount: 0 };
+  }
+
+  const extracted: ExtractedFactsByName | undefined = await extractFactsByCharacter(input);
+  if (extracted === undefined) {
+    return { candidateCount: 0 };
+  }
+
+  const deduped: BibleFact[] = buildCandidateFacts(
+    input.detectedCharacterCards,
+    extracted,
+    input.sceneStem,
+  );
+
+  if (deduped.length === 0) {
+    return { candidateCount: 0 };
+  }
+
+  return await writeCandidateFacts(input, deduped);
 }
 
 export interface ScheduleBibleCandidateUpdateInput extends UpdateBibleCandidatesFromDraftInput {
