@@ -73,96 +73,15 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
     }
 
     const sceneContext: unknown = await this.buildSceneContext(workspaceRoot, source.scenes);
-    const response: AiGenerateResponse = await this.ai.gateway.createService(workspaceRoot).generateText(
-      'storyCompletion',
-      [
-        {
-          role: 'system',
-          content:
-            'You are a story architect. Return JSON only. Never return file paths or file names. Preserve established facts and propose only append-only ending scenes.',
-        },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            task: 'Complete the unfinished story with 1 to 20 causally earned scenes.',
-            project: source.project,
-            canon: source.canonText,
-            cards: source.cards.map(cardSummary),
-            scenes: sceneContext,
-            responseShape: {
-              scenes: [
-                {
-                  slug: 'lowercase-kebab-case',
-                  title: 'string',
-                  characterIds: ['existing-character-id'],
-                  locationId: 'existing-background-id optional',
-                  mood: 'optional',
-                  relationStage: 'optional',
-                  body: 'scene source body',
-                  resolvedThreads: ['string'],
-                  openThreads: ['string'],
-                },
-              ],
-              centralQuestion: 'optional',
-              climaxChoice: 'optional',
-            },
-          }),
-        },
-      ],
-      {},
+    const parsed: CompletionResponse = await this.requestCompletion(
+      workspaceRoot,
+      source,
+      sceneContext,
     );
-    const parsed: CompletionResponse = completionResponseSchema.parse(parseJsonObject(response.text));
-    const existingCharacterIds: Set<string> = new Set(
-      source.cards.filter((card) => card.type === 'character').map((card) => card.id),
+    const sceneBuilder: CompletedSceneBuilder = new CompletedSceneBuilder(source);
+    const scenes: CompletedStoryScene[] = parsed.scenes.map(
+      (candidate, index): CompletedStoryScene => sceneBuilder.build(candidate, index),
     );
-    const existingBackgroundIds: Set<string> = new Set(
-      source.cards.filter((card) => card.type !== 'character').map((card) => card.id),
-    );
-    const existingSlugs: Set<string> = new Set(source.scenes.map((scene) => scene.slug));
-    const proposedSlugs: Set<string> = new Set<string>();
-    const maximumOrder: number = Math.max(...source.scenes.map((scene) => scene.order));
-
-    const scenes: CompletedStoryScene[] = parsed.scenes.map((candidate, index): CompletedStoryScene => {
-      if (existingSlugs.has(candidate.slug) || proposedSlugs.has(candidate.slug)) {
-        throw new StoryFeatureSourceError('duplicate-scene-slug', `중복된 씬 slug: ${candidate.slug}`);
-      }
-      proposedSlugs.add(candidate.slug);
-      for (const id of candidate.characterIds) {
-        if (!existingCharacterIds.has(id)) {
-          throw new StoryFeatureSourceError('unknown-card-reference', `존재하지 않는 캐릭터 ID: ${id}`);
-        }
-      }
-      if (candidate.locationId && !existingBackgroundIds.has(candidate.locationId)) {
-        throw new StoryFeatureSourceError('unknown-card-reference', `존재하지 않는 배경 ID: ${candidate.locationId}`);
-      }
-
-      const prefix: string = String(maximumOrder + index + 1).padStart(
-        source.project.editor.scenePrefixDigits,
-        '0',
-      );
-      const fileName: string = `${prefix}-${candidate.slug}.card`;
-      if (!sceneFileNamePattern.test(fileName)) {
-        throw new StoryFeatureSourceError('invalid-scene-filename', `생성할 수 없는 씬 파일명: ${fileName}`);
-      }
-      const sceneCard: SceneCard = {
-        type: 'scene',
-        id: `${prefix}-${candidate.slug}`,
-        title: candidate.title,
-        ...(candidate.characterIds.length > 0 ? { characters: candidate.characterIds } : {}),
-        ...(candidate.locationId ? { location: candidate.locationId } : {}),
-        ...(candidate.mood ? { mood: candidate.mood } : {}),
-        ...(candidate.relationStage ? { relationStage: candidate.relationStage } : {}),
-        summary: candidate.body.trim(),
-      };
-
-      return {
-        fileName,
-        content: serializeSceneCard(sceneCard),
-        title: candidate.title,
-        resolvedThreads: candidate.resolvedThreads,
-        openThreads: candidate.openThreads,
-      };
-    });
 
     return {
       scenes,
@@ -174,6 +93,38 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
 
   public async hasCurrentSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
     return await this.repositories.storyFeatures.hasCurrentSnapshots(snapshots);
+  }
+
+  private async requestCompletion(
+    workspaceRoot: StoryUri,
+    source: StoryFeatureSource,
+    sceneContext: unknown,
+  ): Promise<CompletionResponse> {
+    const response: AiGenerateResponse = await this.ai.gateway
+      .createService(workspaceRoot)
+      .generateText(
+        'storyCompletion',
+        [
+          {
+            role: 'system',
+            content:
+              'You are a story architect. Return JSON only. Never return file paths or file names. Preserve established facts and propose only append-only ending scenes.',
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              task: 'Complete the unfinished story with 1 to 20 causally earned scenes.',
+              project: source.project,
+              canon: source.canonText,
+              cards: source.cards.map(cardSummary),
+              scenes: sceneContext,
+              responseShape: completionResponseShape(),
+            }),
+          },
+        ],
+        {},
+      );
+    return completionResponseSchema.parse(parseJsonObject(response.text));
   }
 
   private async buildSceneContext(
@@ -211,6 +162,108 @@ export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesR
 
     return { previousSceneSummaries: summaries, finalScenes: tail };
   }
+}
+
+type CompletionScene = CompletionResponse['scenes'][number];
+
+class CompletedSceneBuilder {
+  private readonly existingCharacterIds: Set<string>;
+  private readonly existingBackgroundIds: Set<string>;
+  private readonly existingSlugs: Set<string>;
+  private readonly proposedSlugs: Set<string> = new Set<string>();
+  private readonly maximumOrder: number;
+
+  public constructor(private readonly source: StoryFeatureSource) {
+    this.existingCharacterIds = new Set(
+      source.cards.filter((card) => card.type === 'character').map((card) => card.id),
+    );
+    this.existingBackgroundIds = new Set(
+      source.cards.filter((card) => card.type !== 'character').map((card) => card.id),
+    );
+    this.existingSlugs = new Set(source.scenes.map((scene) => scene.slug));
+    this.maximumOrder = Math.max(...source.scenes.map((scene) => scene.order));
+  }
+
+  public build(candidate: CompletionScene, index: number): CompletedStoryScene {
+    this.validateCandidate(candidate);
+
+    const prefix: string = String(this.maximumOrder + index + 1).padStart(
+      this.source.project.editor.scenePrefixDigits,
+      '0',
+    );
+    const fileName: string = `${prefix}-${candidate.slug}.card`;
+    if (!sceneFileNamePattern.test(fileName)) {
+      throw new StoryFeatureSourceError(
+        'invalid-scene-filename',
+        `생성할 수 없는 씬 파일명: ${fileName}`,
+      );
+    }
+
+    return {
+      fileName,
+      content: serializeSceneCard(createSceneCard(prefix, candidate)),
+      title: candidate.title,
+      resolvedThreads: candidate.resolvedThreads,
+      openThreads: candidate.openThreads,
+    };
+  }
+
+  private validateCandidate(candidate: CompletionScene): void {
+    if (this.existingSlugs.has(candidate.slug) || this.proposedSlugs.has(candidate.slug)) {
+      throw new StoryFeatureSourceError(
+        'duplicate-scene-slug',
+        `중복된 씬 slug: ${candidate.slug}`,
+      );
+    }
+    this.proposedSlugs.add(candidate.slug);
+    for (const id of candidate.characterIds) {
+      if (!this.existingCharacterIds.has(id)) {
+        throw new StoryFeatureSourceError(
+          'unknown-card-reference',
+          `존재하지 않는 캐릭터 ID: ${id}`,
+        );
+      }
+    }
+    if (candidate.locationId && !this.existingBackgroundIds.has(candidate.locationId)) {
+      throw new StoryFeatureSourceError(
+        'unknown-card-reference',
+        `존재하지 않는 배경 ID: ${candidate.locationId}`,
+      );
+    }
+  }
+}
+
+function createSceneCard(prefix: string, candidate: CompletionScene): SceneCard {
+  return {
+    type: 'scene',
+    id: `${prefix}-${candidate.slug}`,
+    title: candidate.title,
+    ...(candidate.characterIds.length > 0 ? { characters: candidate.characterIds } : {}),
+    ...(candidate.locationId ? { location: candidate.locationId } : {}),
+    ...(candidate.mood ? { mood: candidate.mood } : {}),
+    ...(candidate.relationStage ? { relationStage: candidate.relationStage } : {}),
+    summary: candidate.body.trim(),
+  };
+}
+
+function completionResponseShape(): Record<string, unknown> {
+  return {
+    scenes: [
+      {
+        slug: 'lowercase-kebab-case',
+        title: 'string',
+        characterIds: ['existing-character-id'],
+        locationId: 'existing-background-id optional',
+        mood: 'optional',
+        relationStage: 'optional',
+        body: 'scene source body',
+        resolvedThreads: ['string'],
+        openThreads: ['string'],
+      },
+    ],
+    centralQuestion: 'optional',
+    climaxChoice: 'optional',
+  };
 }
 
 function sceneSummary(scene: SceneFile): Record<string, unknown> {

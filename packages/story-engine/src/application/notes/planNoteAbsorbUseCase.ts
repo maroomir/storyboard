@@ -99,6 +99,61 @@ function describeExtractionFailure(
   return `노트 묶음 ${position} (${titles})은 ${failureDescriptions[failure]} 아무것도 옮기지 못했습니다.`;
 }
 
+function addLeadingWarnings(
+  consolidation: NoteConsolidationOutcome,
+  failureWarnings: readonly string[],
+  responsesHint: string,
+): NoteAbsorbPlan {
+  const plan: NoteAbsorbPlan = consolidation.plan;
+  const leadingWarnings: string[] = [
+    ...(failureWarnings.length === 0 ? [] : [...failureWarnings, responsesHint]),
+    ...consolidation.warnings,
+  ];
+
+  return leadingWarnings.length === 0
+    ? plan
+    : { ...plan, warnings: [...leadingWarnings, ...plan.warnings] };
+}
+
+class NoteExtractionTally {
+  private readonly extractions: NoteExtraction[] = [];
+  private readonly responses: NoteExtractionResponse[] = [];
+  private readonly failureWarnings: string[] = [];
+
+  public addExtraction(
+    chunkNumber: number,
+    chunk: readonly NoteDocument[],
+    extraction: NoteExtractionResult,
+  ): void {
+    this.extractions.push(extraction.extraction);
+    this.responses.push({
+      chunk: chunkNumber,
+      noteIds: chunk.map((note) => note.id),
+      ...(extraction.failure === undefined ? {} : { failure: extraction.failure }),
+      text: extraction.responseText,
+    });
+  }
+
+  public addFailureWarning(warning: string): void {
+    this.failureWarnings.push(warning);
+  }
+
+  public hasFailedEveryChunk(chunkCount: number): boolean {
+    return this.failureWarnings.length > 0 && this.failureWarnings.length === chunkCount;
+  }
+
+  public getExtractions(): readonly NoteExtraction[] {
+    return this.extractions;
+  }
+
+  public getResponses(): readonly NoteExtractionResponse[] {
+    return this.responses;
+  }
+
+  public getFailureWarnings(): readonly string[] {
+    return this.failureWarnings;
+  }
+}
 export class PlanNoteAbsorbUseCase implements IUseCase<
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult
@@ -133,90 +188,108 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
   public async execute(request: PlanNoteAbsorbRequest): Promise<PlanNoteAbsorbResult> {
     const { workspaceRoot, bundle } = request;
 
-    return await runUseCase(this.host.logger, '노트를 정리하지 못했습니다.', async () => {
-      await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
+    return await runUseCase(
+      this.host.logger,
+      '노트를 정리하지 못했습니다.',
+      async () => await this.planNoteAbsorb(workspaceRoot, bundle),
+    );
+  }
 
-      const source: StoryFeatureSource = await this.repositories.storyFeatures.load(workspaceRoot);
-      const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
-      const knownCards: NoteExtractionKnownCard[] = source.cards.map(toKnownCard);
-      const chunks: NoteDocument[][] = groupNotesIntoChunks(bundle.notes);
-      const extractions: NoteExtraction[] = [];
-      const responses: NoteExtractionResponse[] = [];
-      const failureWarnings: string[] = [];
+  private async planNoteAbsorb(
+    workspaceRoot: StoryUri,
+    bundle: NoteBundle,
+  ): Promise<PlanNoteAbsorbResult> {
+    await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
 
-      for (const [index, chunk] of chunks.entries()) {
-        const position: string = `${index + 1}/${chunks.length}`;
-        this.host.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
+    const source: StoryFeatureSource = await this.repositories.storyFeatures.load(workspaceRoot);
+    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
+    const chunks: NoteDocument[][] = groupNotesIntoChunks(bundle.notes);
+    const tally: NoteExtractionTally = await this.extractChunks(aiService, chunks, source.cards);
 
-        const extraction: NoteExtractionResult = await aiService.extractNotes(
-          chunk,
-          listKnownNoteEntities(extractions, knownCards),
-        );
-        extractions.push(extraction.extraction);
-        responses.push({
-          chunk: index + 1,
-          noteIds: chunk.map((note) => note.id),
-          ...(extraction.failure === undefined ? {} : { failure: extraction.failure }),
-          text: extraction.responseText,
-        });
+    await this.repositories.noteAbsorb.saveExtractionResponses(workspaceRoot, tally.getResponses());
 
-        if (extraction.failure !== undefined) {
-          const warning: string = describeExtractionFailure(extraction.failure, chunk, position);
-          this.host.logger.warn(warning);
-          failureWarnings.push(warning);
-        }
-      }
+    const responsesHint: string = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
 
-      await this.repositories.noteAbsorb.saveExtractionResponses(workspaceRoot, responses);
-
-      const responsesHint: string = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
-
-      if (failureWarnings.length > 0 && failureWarnings.length === chunks.length) {
-        return failedResult(
-          new Error(`노트 묶음 ${chunks.length}개를 모두 읽지 못했습니다. ${responsesHint}`),
-        );
-      }
-
-      const premise: string[] = [
-        ...new Set(extractions.flatMap((extraction) => extraction.premise)),
-      ];
-      const castNames: string[] = extractions
-        .flatMap((extraction) => extraction.entities)
-        .filter((entity) => entity.type === 'character')
-        .map((entity) => entity.name);
-      const synthesis: NoteSynthesis =
-        premise.length === 0
-          ? emptyNoteSynthesis
-          : await aiService.synthesizeNotePremise(premise, [...new Set(castNames)]);
-
-      const mergedPlan: NoteAbsorbPlan = buildNoteAbsorbPlan({
-        notes: bundle.notes,
-        extractions,
-        synthesis,
-        cards: source.cards,
-        scenes: source.scenes,
-        scenePrefixDigits: source.project.editor.scenePrefixDigits,
-      });
-      const consolidation: NoteConsolidationOutcome = await this.consolidateCards(
-        aiService,
-        mergedPlan,
-        chunks,
-        source.cards,
+    if (tally.hasFailedEveryChunk(chunks.length)) {
+      return failedResult(
+        new Error(`노트 묶음 ${chunks.length}개를 모두 읽지 못했습니다. ${responsesHint}`),
       );
-      const plan: NoteAbsorbPlan = consolidation.plan;
+    }
 
-      const leadingWarnings: string[] = [
-        ...(failureWarnings.length === 0 ? [] : [...failureWarnings, responsesHint]),
-        ...consolidation.warnings,
-      ];
-      const checkedPlan: NoteAbsorbPlan =
-        leadingWarnings.length === 0
-          ? plan
-          : { ...plan, warnings: [...leadingWarnings, ...plan.warnings] };
+    const mergedPlan: NoteAbsorbPlan = await this.buildMergedPlan(
+      aiService,
+      bundle,
+      source,
+      tally.getExtractions(),
+    );
+    const consolidation: NoteConsolidationOutcome = await this.consolidateCards(
+      aiService,
+      mergedPlan,
+      chunks,
+      source.cards,
+    );
+    const checkedPlan: NoteAbsorbPlan = addLeadingWarnings(
+      consolidation,
+      tally.getFailureWarnings(),
+      responsesHint,
+    );
 
-      await this.repositories.noteAbsorb.savePlan(workspaceRoot, checkedPlan);
+    await this.repositories.noteAbsorb.savePlan(workspaceRoot, checkedPlan);
 
-      return { ok: true as const, plan: checkedPlan };
+    return { ok: true as const, plan: checkedPlan };
+  }
+
+  private async extractChunks(
+    aiService: StoryboardAiService,
+    chunks: readonly NoteDocument[][],
+    cards: readonly StoryboardCard[],
+  ): Promise<NoteExtractionTally> {
+    const knownCards: NoteExtractionKnownCard[] = cards.map(toKnownCard);
+    const tally: NoteExtractionTally = new NoteExtractionTally();
+
+    for (const [index, chunk] of chunks.entries()) {
+      const position: string = `${index + 1}/${chunks.length}`;
+      this.host.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
+
+      const extraction: NoteExtractionResult = await aiService.extractNotes(
+        chunk,
+        listKnownNoteEntities(tally.getExtractions(), knownCards),
+      );
+      tally.addExtraction(index + 1, chunk, extraction);
+
+      if (extraction.failure !== undefined) {
+        const warning: string = describeExtractionFailure(extraction.failure, chunk, position);
+        this.host.logger.warn(warning);
+        tally.addFailureWarning(warning);
+      }
+    }
+
+    return tally;
+  }
+
+  private async buildMergedPlan(
+    aiService: StoryboardAiService,
+    bundle: NoteBundle,
+    source: StoryFeatureSource,
+    extractions: readonly NoteExtraction[],
+  ): Promise<NoteAbsorbPlan> {
+    const premise: string[] = [...new Set(extractions.flatMap((extraction) => extraction.premise))];
+    const castNames: string[] = extractions
+      .flatMap((extraction) => extraction.entities)
+      .filter((entity) => entity.type === 'character')
+      .map((entity) => entity.name);
+    const synthesis: NoteSynthesis =
+      premise.length === 0
+        ? emptyNoteSynthesis
+        : await aiService.synthesizeNotePremise(premise, [...new Set(castNames)]);
+
+    return buildNoteAbsorbPlan({
+      notes: bundle.notes,
+      extractions,
+      synthesis,
+      cards: source.cards,
+      scenes: source.scenes,
+      scenePrefixDigits: source.project.editor.scenePrefixDigits,
     });
   }
 

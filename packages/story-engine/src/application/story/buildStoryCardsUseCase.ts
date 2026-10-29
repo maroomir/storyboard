@@ -131,84 +131,135 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
     }
 
     const sceneStems: Set<string> = new Set(source.scenes.map((scene) => scene.stem));
-    const chunks: SceneFile[][] = groupScenes(source.scenes);
-    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
-    const responses: StoryCardEntity[][] = await mapWithConcurrency(chunks, MAX_PARALLEL_REQUESTS, async (chunk) => {
-      const response: AiGenerateResponse = await aiService.generateText(
-        'storyCardBuild',
-        [
-          {
-            role: 'system',
-            content:
-              'Extract only facts explicitly supported by the supplied scenes. Return JSON only. Do not return paths. Existing cards are for identity matching and fact preservation, not evidence.',
-          },
-          {
-            role: 'user',
-            content: JSON.stringify({
-              task: 'Propose character and place/location cards or additive field enrichments.',
-              existingCards: source.cards.map(cardIdentity),
-              scenes: chunk.map(sceneForPrompt),
-              constraints: {
-                newCharacterRoles: ['main', 'supporting', 'extra'],
-                uncertainRole: 'extra',
-                newBackgroundType: 'location',
-                newBackgroundLocationKind: 'place',
-                noFactDeletion: true,
-                sourceScenesMustBeFromThisChunk: true,
-              },
-              responseShape: { entities: [entityResponseShape()] },
-            }),
-          },
-        ],
-        {},
-      );
-      return responseSchema.parse(parseJsonObject(response.text)).entities;
-    });
-    const entities: StoryCardEntity[] = responses.flat();
-    const cardsById: Map<string, StoryboardCard> = new Map(source.cards.map((card) => [card.id, card]));
-    const cardsByName: Map<string, StoryboardCard> = buildCardNameIndex(source.cards);
-    const targets: Map<string, StoryCardTarget> = new Map<string, StoryCardTarget>();
+    const entities: StoryCardEntity[] = await this.extractEntities(workspaceRoot, source);
+    const collector: StoryCardTargetCollector = new StoryCardTargetCollector(source.cards);
 
     for (const entity of entities) {
       validateSourceScenes(entity, sceneStems);
-      const existing: StoryboardCard | undefined = findExistingCard(entity, cardsById, cardsByName);
-      if (existing) {
-        const changes: StoryCardChange[] = changesForExistingCard(existing, entity, cardsByName);
-        if (changes.length > 0) {
-          const current: StoryCardTarget | undefined = targets.get(existing.id);
-          targets.set(
-            existing.id,
-            mergeTarget(current, existing, false, changes, entity.sourceScenes),
-          );
-        }
-        continue;
-      }
-
-      const newCard: StoryboardCard = buildNewCard(entity, cardsById, cardsByName, targets.size + 1);
-      const current: StoryCardTarget | undefined = targets.get(newCard.id);
-      targets.set(
-        newCard.id,
-        mergeTarget(
-          current,
-          newCard,
-          true,
-          changesForNewCard(newCard, entity, cardsByName),
-          entity.sourceScenes,
-          newCard.id.startsWith('new-card-') || slugify(entity.name) === undefined,
-        ),
-      );
+      collector.addEntity(entity);
     }
 
     return {
-      targets: [...targets.values()].sort((left, right) =>
-        left.card.name.localeCompare(right.card.name, 'ko'),
-      ),
+      targets: collector.listTargetsByName(),
       snapshots: source.snapshots,
     };
   }
 
   public async hasCurrentSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
     return await this.repositories.storyFeatures.hasCurrentSnapshots(snapshots);
+  }
+
+  private async extractEntities(
+    workspaceRoot: StoryUri,
+    source: StoryFeatureSource,
+  ): Promise<StoryCardEntity[]> {
+    const chunks: SceneFile[][] = groupScenes(source.scenes);
+    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
+    const responses: StoryCardEntity[][] = await mapWithConcurrency(
+      chunks,
+      MAX_PARALLEL_REQUESTS,
+      async (chunk) => await this.requestChunkEntities(aiService, source.cards, chunk),
+    );
+    return responses.flat();
+  }
+
+  private async requestChunkEntities(
+    aiService: StoryboardAiService,
+    cards: readonly StoryboardCard[],
+    chunk: readonly SceneFile[],
+  ): Promise<StoryCardEntity[]> {
+    const response: AiGenerateResponse = await aiService.generateText(
+      'storyCardBuild',
+      [
+        {
+          role: 'system',
+          content:
+            'Extract only facts explicitly supported by the supplied scenes. Return JSON only. Do not return paths. Existing cards are for identity matching and fact preservation, not evidence.',
+        },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            task: 'Propose character and place/location cards or additive field enrichments.',
+            existingCards: cards.map(cardIdentity),
+            scenes: chunk.map(sceneForPrompt),
+            constraints: {
+              newCharacterRoles: ['main', 'supporting', 'extra'],
+              uncertainRole: 'extra',
+              newBackgroundType: 'location',
+              newBackgroundLocationKind: 'place',
+              noFactDeletion: true,
+              sourceScenesMustBeFromThisChunk: true,
+            },
+            responseShape: { entities: [entityResponseShape()] },
+          }),
+        },
+      ],
+      {},
+    );
+    return responseSchema.parse(parseJsonObject(response.text)).entities;
+  }
+}
+
+class StoryCardTargetCollector {
+  private readonly cardsById: Map<string, StoryboardCard>;
+  private readonly cardsByName: Map<string, StoryboardCard>;
+  private readonly targets: Map<string, StoryCardTarget> = new Map<string, StoryCardTarget>();
+
+  public constructor(cards: readonly StoryboardCard[]) {
+    this.cardsById = new Map(cards.map((card) => [card.id, card]));
+    this.cardsByName = buildCardNameIndex(cards);
+  }
+
+  public addEntity(entity: StoryCardEntity): void {
+    const existing: StoryboardCard | undefined = findExistingCard(
+      entity,
+      this.cardsById,
+      this.cardsByName,
+    );
+    if (existing) {
+      this.addExistingCardChanges(existing, entity);
+      return;
+    }
+
+    this.addNewCard(entity);
+  }
+
+  public listTargetsByName(): StoryCardTarget[] {
+    return [...this.targets.values()].sort((left, right) =>
+      left.card.name.localeCompare(right.card.name, 'ko'),
+    );
+  }
+
+  private addExistingCardChanges(existing: StoryboardCard, entity: StoryCardEntity): void {
+    const changes: StoryCardChange[] = changesForExistingCard(existing, entity, this.cardsByName);
+    if (changes.length > 0) {
+      const current: StoryCardTarget | undefined = this.targets.get(existing.id);
+      this.targets.set(
+        existing.id,
+        mergeTarget(current, existing, false, changes, entity.sourceScenes),
+      );
+    }
+  }
+
+  private addNewCard(entity: StoryCardEntity): void {
+    const newCard: StoryboardCard = buildNewCard(
+      entity,
+      this.cardsById,
+      this.cardsByName,
+      this.targets.size + 1,
+    );
+    const current: StoryCardTarget | undefined = this.targets.get(newCard.id);
+    this.targets.set(
+      newCard.id,
+      mergeTarget(
+        current,
+        newCard,
+        true,
+        changesForNewCard(newCard, entity, this.cardsByName),
+        entity.sourceScenes,
+        newCard.id.startsWith('new-card-') || slugify(entity.name) === undefined,
+      ),
+    );
   }
 }
 

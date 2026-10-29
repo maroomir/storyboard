@@ -24,7 +24,7 @@ export class ChaptersStage implements INovelStage {
   }
 
   private async draftChapters(run: NovelRun): Promise<NovelPipelineResult | undefined> {
-    const { options, state, completed } = run;
+    const { state, completed } = run;
     if (completed.has('chapters')) {
       return undefined;
     }
@@ -40,47 +40,73 @@ export class ChaptersStage implements INovelStage {
       if (!group) {
         continue;
       }
-      options.onProgress(
-        'chapters',
-        `${chapterIndex + 1}/${groups.length}장 «${group.title}» 초안·검수 중…`,
+
+      const stopped: NovelPipelineResult | undefined = await this.draftChapter(
+        run,
+        group,
+        chapterIndex,
+        groups.length,
       );
-
-      const draftsOutcome: ChapterDraftsOutcome = await this.draftAndRevise(run, group);
-      if (draftsOutcome === 'paused') {
-        return await run.pause();
-      }
-      if (draftsOutcome !== 'finished') {
-        return await run.pause(draftsOutcome.limitReached);
-      }
-
-      await this.refreshChapterSummary(run, chapterIndex);
-
-      await run.persist({ nextChapterIndex: chapterIndex + 1 });
-
-      if (options.shouldCancel()) {
-        return await run.cancel();
-      }
-
-      const pausedAfterChapter: NovelPipelineResult | undefined = await run.pauseIfRequested();
-      if (pausedAfterChapter) {
-        return pausedAfterChapter;
-      }
-
-      const isLastChapter: boolean = chapterIndex === groups.length - 1;
-      if (options.runMode === 'chapter-approval' && !isLastChapter) {
-        const paused: NovelPipelineResult | undefined = await run.pauseForApproval({
-          kind: 'chapter',
-          info: `${chapterIndex + 1}장을 마쳤습니다. 다음 장으로 진행할까요?`,
-          pausedMessage: `${chapterIndex + 1}장까지 진행하고 멈췄습니다.`,
-        });
-        if (paused) {
-          return paused;
-        }
+      if (stopped) {
+        return stopped;
       }
     }
 
     completed.add('chapters');
     await run.persist({});
+    return undefined;
+  }
+
+  private async draftChapter(
+    run: NovelRun,
+    group: ChapterGroup,
+    chapterIndex: number,
+    chapterCount: number,
+  ): Promise<NovelPipelineResult | undefined> {
+    const { options } = run;
+    options.onProgress(
+      'chapters',
+      `${chapterIndex + 1}/${chapterCount}장 «${group.title}» 초안·검수 중…`,
+    );
+
+    const draftsOutcome: ChapterDraftsOutcome = await this.draftAndRevise(run, group);
+    if (draftsOutcome === 'paused') {
+      return await run.pause();
+    }
+    if (draftsOutcome !== 'finished') {
+      return await run.pause(draftsOutcome.limitReached);
+    }
+
+    await this.refreshChapterSummary(run, chapterIndex);
+
+    await run.persist({ nextChapterIndex: chapterIndex + 1 });
+
+    if (options.shouldCancel()) {
+      return await run.cancel();
+    }
+
+    return await this.pauseAfterChapter(run, chapterIndex, chapterCount);
+  }
+
+  private async pauseAfterChapter(
+    run: NovelRun,
+    chapterIndex: number,
+    chapterCount: number,
+  ): Promise<NovelPipelineResult | undefined> {
+    const pausedAfterChapter: NovelPipelineResult | undefined = await run.pauseIfRequested();
+    if (pausedAfterChapter) {
+      return pausedAfterChapter;
+    }
+
+    const isLastChapter: boolean = chapterIndex === chapterCount - 1;
+    if (run.options.runMode === 'chapter-approval' && !isLastChapter) {
+      return await run.pauseForApproval({
+        kind: 'chapter',
+        info: `${chapterIndex + 1}장을 마쳤습니다. 다음 장으로 진행할까요?`,
+        pausedMessage: `${chapterIndex + 1}장까지 진행하고 멈췄습니다.`,
+      });
+    }
+
     return undefined;
   }
 
