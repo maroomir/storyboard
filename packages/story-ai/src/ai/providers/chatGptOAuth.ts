@@ -386,15 +386,30 @@ function invalidIdToken(reason: string): ChatGptOAuthError {
   return new ChatGptOAuthError('invalid-id-token', `ID 토큰을 검증하지 못했습니다: ${reason}`);
 }
 
-export function validateIdToken(
-  idToken: string,
-  expectation: {
-    readonly clientId: string;
-    readonly nonce: string;
-    readonly keys: readonly SigningKey[];
-    readonly now?: Date;
-  },
-): IdTokenIdentity {
+interface IdTokenExpectation {
+  readonly clientId: string;
+  readonly nonce: string;
+  readonly keys: readonly SigningKey[];
+  readonly now?: Date;
+}
+
+interface IdTokenSegments {
+  readonly header: string;
+  readonly payload: string;
+  readonly signature: string;
+}
+
+interface DecodedIdToken {
+  readonly header: JsonRecord;
+  readonly payload: JsonRecord;
+}
+
+type IdTokenClaimCheck = (
+  payload: JsonRecord,
+  expectation: IdTokenExpectation,
+) => string | undefined;
+
+function splitIdToken(idToken: string): IdTokenSegments {
   const [headerSegment, payloadSegment, signatureSegment, ...rest] = idToken.split('.');
 
   if (
@@ -406,31 +421,49 @@ export function validateIdToken(
     throw invalidIdToken('형식이 JWS 가 아닙니다');
   }
 
-  const header: JsonRecord | undefined = decodeBase64UrlJson(headerSegment);
-  const payload: JsonRecord | undefined = decodeBase64UrlJson(payloadSegment);
+  return { header: headerSegment, payload: payloadSegment, signature: signatureSegment };
+}
+
+function decodeIdToken(segments: IdTokenSegments): DecodedIdToken {
+  const header: JsonRecord | undefined = decodeBase64UrlJson(segments.header);
+  const payload: JsonRecord | undefined = decodeBase64UrlJson(segments.payload);
 
   if (header === undefined || payload === undefined) {
     throw invalidIdToken('머리말이나 본문을 읽을 수 없습니다');
   }
 
+  return { header, payload };
+}
+
+function resolveSignatureAlgorithm(header: JsonRecord): SignatureAlgorithm {
   const algorithm: SignatureAlgorithm | undefined =
     typeof header.alg === 'string' ? signatureAlgorithms[header.alg] : undefined;
   if (algorithm === undefined) {
     throw invalidIdToken(`지원하지 않는 서명 알고리즘 ${String(header.alg)}`);
   }
 
-  const key: SigningKey | undefined = expectation.keys.find(
-    (candidate) => candidate.kid === header.kid,
-  );
+  return algorithm;
+}
+
+function findSigningKey(header: JsonRecord, keys: readonly SigningKey[]): SigningKey {
+  const key: SigningKey | undefined = keys.find((candidate) => candidate.kid === header.kid);
   if (key === undefined) {
     throw invalidIdToken(`서명 키 ${String(header.kid)} 를 찾을 수 없습니다`);
   }
 
+  return key;
+}
+
+function verifyIdTokenSignature(
+  segments: IdTokenSegments,
+  algorithm: SignatureAlgorithm,
+  key: SigningKey,
+): void {
   let isSignatureValid: boolean;
   try {
     isSignatureValid = verify(
       algorithm.hash,
-      Buffer.from(`${headerSegment}.${payloadSegment}`),
+      Buffer.from(`${segments.header}.${segments.payload}`),
       {
         key: createPublicKey({
           key: key as unknown as import('node:crypto').JsonWebKey,
@@ -438,7 +471,7 @@ export function validateIdToken(
         }),
         ...(algorithm.dsaEncoding === undefined ? {} : { dsaEncoding: algorithm.dsaEncoding }),
       },
-      Buffer.from(signatureSegment, 'base64url'),
+      Buffer.from(segments.signature, 'base64url'),
     );
   } catch (error) {
     throw new ChatGptOAuthError(
@@ -451,31 +484,63 @@ export function validateIdToken(
   if (!isSignatureValid) {
     throw invalidIdToken('서명이 맞지 않습니다');
   }
+}
 
-  if (payload.iss !== chatGptIssuer) {
-    throw invalidIdToken(`발급자가 ${String(payload.iss)} 입니다`);
-  }
+function checkIssuer(payload: JsonRecord): string | undefined {
+  return payload.iss !== chatGptIssuer ? `발급자가 ${String(payload.iss)} 입니다` : undefined;
+}
 
+function checkAudience(payload: JsonRecord, expectation: IdTokenExpectation): string | undefined {
   const audiences: unknown[] = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (!audiences.includes(expectation.clientId)) {
-    throw invalidIdToken('대상(aud)이 이 등록의 client id 가 아닙니다');
-  }
+  return audiences.includes(expectation.clientId)
+    ? undefined
+    : '대상(aud)이 이 등록의 client id 가 아닙니다';
+}
 
+function checkExpiry(payload: JsonRecord, expectation: IdTokenExpectation): string | undefined {
   const nowSeconds: number = Math.floor((expectation.now ?? new Date()).getTime() / 1000);
-  if (typeof payload.exp !== 'number' || payload.exp <= nowSeconds) {
-    throw invalidIdToken('만료됐습니다');
-  }
+  return typeof payload.exp !== 'number' || payload.exp <= nowSeconds ? '만료됐습니다' : undefined;
+}
 
-  if (payload.nonce !== expectation.nonce) {
-    throw invalidIdToken('nonce 가 이번 시도의 것이 아닙니다');
-  }
+function checkNonce(payload: JsonRecord, expectation: IdTokenExpectation): string | undefined {
+  return payload.nonce !== expectation.nonce ? 'nonce 가 이번 시도의 것이 아닙니다' : undefined;
+}
 
+const idTokenClaimChecks: readonly IdTokenClaimCheck[] = [
+  checkIssuer,
+  checkAudience,
+  checkExpiry,
+  checkNonce,
+];
+
+function validateIdTokenClaims(payload: JsonRecord, expectation: IdTokenExpectation): void {
+  for (const check of idTokenClaimChecks) {
+    const failureReason: string | undefined = check(payload, expectation);
+    if (failureReason !== undefined) {
+      throw invalidIdToken(failureReason);
+    }
+  }
+}
+
+function readIdTokenSubject(payload: JsonRecord): string {
   if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
     throw invalidIdToken('계정 식별자(sub)가 없습니다');
   }
 
+  return payload.sub;
+}
+
+export function validateIdToken(idToken: string, expectation: IdTokenExpectation): IdTokenIdentity {
+  const segments: IdTokenSegments = splitIdToken(idToken);
+  const { header, payload }: DecodedIdToken = decodeIdToken(segments);
+  const algorithm: SignatureAlgorithm = resolveSignatureAlgorithm(header);
+  const key: SigningKey = findSigningKey(header, expectation.keys);
+
+  verifyIdTokenSignature(segments, algorithm, key);
+  validateIdTokenClaims(payload, expectation);
+
   return {
-    subject: payload.sub,
+    subject: readIdTokenSubject(payload),
     email: typeof payload.email === 'string' ? payload.email : undefined,
   };
 }

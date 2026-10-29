@@ -245,39 +245,10 @@ export class ChatGptProvider implements AiProvider {
   }
 
   public async *generateStream(request: AiGenerateRequest): AsyncIterable<AiStreamChunk> {
-    const { instructions, input } = toResponsesInput(request.messages);
-    const body: ResponsesRequestBody = {
-      model: this.model,
-      ...(instructions === undefined ? {} : { instructions }),
-      input,
-      store: false,
-      stream: true,
-      ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
-        ? { reasoning: { effort: request.reasoningEffort } }
-        : {}),
-    };
-
-    const response: Response = await this.send(
-      '/responses',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-        body: JSON.stringify(body),
-      },
-      'generation-failed',
-    );
-
-    if (response.body === null) {
-      throw new AiProviderError(
-        'generation-failed',
-        this.id,
-        generationFailedMessage(this.id, '응답 본문이 없습니다'),
-      );
-    }
-
+    const eventStream: ReadableStream<Uint8Array> = await this.openResponseStream(request);
     let text: string = '';
 
-    for await (const event of readServerSentEvents(response.body)) {
+    for await (const event of readServerSentEvents(eventStream)) {
       switch (event.type) {
         case 'response.output_text.delta': {
           if (typeof event.delta === 'string') {
@@ -288,29 +259,11 @@ export class ChatGptProvider implements AiProvider {
         }
         case 'response.completed':
         case 'response.incomplete': {
-          const completed: JsonRecord = isJsonRecord(event.response) ? event.response : {};
-          const usage: AiUsage | undefined = readUsage(completed.usage);
-
-          yield {
-            type: 'done',
-            response: aiGenerateResponseWithUsage({
-              providerId: this.id,
-              model: this.model,
-              text,
-              ...(usage === undefined ? {} : { usage }),
-              ...(event.type === 'response.incomplete' ? { isTruncated: true } : {}),
-            }),
-          };
+          yield this.createDoneChunk(event, text);
           return;
         }
         case 'response.failed': {
-          const failed: JsonRecord = isJsonRecord(event.response) ? event.response : {};
-          throw this.errorFromCode(
-            readErrorField(failed.error, 'code'),
-            readErrorField(failed.error, 'message') ?? 'response.failed',
-            undefined,
-            'generation-failed',
-          );
+          throw this.errorFromFailedEvent(event);
         }
         case 'error': {
           throw this.errorFromCode(
@@ -329,6 +282,73 @@ export class ChatGptProvider implements AiProvider {
       'generation-failed',
       this.id,
       generationFailedMessage(this.id, 'response.completed 없이 스트림이 끝났습니다'),
+    );
+  }
+
+  private buildResponsesRequestBody(request: AiGenerateRequest): ResponsesRequestBody {
+    const { instructions, input } = toResponsesInput(request.messages);
+
+    return {
+      model: this.model,
+      ...(instructions === undefined ? {} : { instructions }),
+      input,
+      store: false,
+      stream: true,
+      ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
+        ? { reasoning: { effort: request.reasoningEffort } }
+        : {}),
+    };
+  }
+
+  private async openResponseStream(
+    request: AiGenerateRequest,
+  ): Promise<ReadableStream<Uint8Array>> {
+    const body: ResponsesRequestBody = this.buildResponsesRequestBody(request);
+    const response: Response = await this.send(
+      '/responses',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify(body),
+      },
+      'generation-failed',
+    );
+
+    if (response.body === null) {
+      throw new AiProviderError(
+        'generation-failed',
+        this.id,
+        generationFailedMessage(this.id, '응답 본문이 없습니다'),
+      );
+    }
+
+    return response.body;
+  }
+
+  private createDoneChunk(event: JsonRecord, text: string): AiStreamChunk {
+    const completed: JsonRecord = isJsonRecord(event.response) ? event.response : {};
+    const usage: AiUsage | undefined = readUsage(completed.usage);
+
+    return {
+      type: 'done',
+      response: aiGenerateResponseWithUsage({
+        providerId: this.id,
+        model: this.model,
+        text,
+        ...(usage === undefined ? {} : { usage }),
+        ...(event.type === 'response.incomplete' ? { isTruncated: true } : {}),
+      }),
+    };
+  }
+
+  private errorFromFailedEvent(event: JsonRecord): AiProviderError {
+    const failed: JsonRecord = isJsonRecord(event.response) ? event.response : {};
+
+    return this.errorFromCode(
+      readErrorField(failed.error, 'code'),
+      readErrorField(failed.error, 'message') ?? 'response.failed',
+      undefined,
+      'generation-failed',
     );
   }
 

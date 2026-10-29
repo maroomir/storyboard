@@ -146,6 +146,27 @@ function recordEvent(cliOutput: CliOutput, event: JsonRecord): void {
   };
 }
 
+function recordStdoutLine(
+  line: string,
+  cliOutput: CliOutput,
+  onTextDelta: ((delta: string) => void) | undefined,
+): void {
+  const event: JsonRecord | undefined = parseJsonLine(line);
+
+  if (event === undefined) {
+    return;
+  }
+
+  const delta: string | undefined = readTextDelta(event);
+
+  if (delta !== undefined) {
+    onTextDelta?.(delta);
+    return;
+  }
+
+  recordEvent(cliOutput, event);
+}
+
 export function splitCliPrompt(messages: readonly AiMessage[]): {
   readonly systemPrompt: string;
   readonly prompt: string;
@@ -290,40 +311,34 @@ export class ClaudeCodeProvider implements AiProvider {
 
     const run: CliRunResult = await this.runner.run({
       command: this.command,
-      args: [
-        ...fixedArguments,
-        '--model',
-        this.model,
-        '--system-prompt',
-        systemPrompt,
-        ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
-          ? ['--effort', request.reasoningEffort]
-          : []),
-      ],
+      args: this.buildGenerationArguments(request, systemPrompt),
       stdin: prompt,
       timeoutMs: this.timeoutMs,
       withoutEnvironment: withheldEnvironment,
-      onStdoutLine: (line) => {
-        const event: JsonRecord | undefined = parseJsonLine(line);
-
-        if (event === undefined) {
-          return;
-        }
-
-        const delta: string | undefined = readTextDelta(event);
-
-        if (delta !== undefined) {
-          onTextDelta?.(delta);
-          return;
-        }
-
-        recordEvent(cliOutput, event);
-      },
+      onStdoutLine: (line: string): void => recordStdoutLine(line, cliOutput, onTextDelta),
       ...(signal === undefined ? {} : { signal }),
     });
 
     this.assertStarted(run);
+    this.assertRunCompleted(run, prompt);
 
+    return this.createGenerateResponse(run, cliOutput);
+  }
+
+  private buildGenerationArguments(request: AiGenerateRequest, systemPrompt: string): string[] {
+    return [
+      ...fixedArguments,
+      '--model',
+      this.model,
+      '--system-prompt',
+      systemPrompt,
+      ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
+        ? ['--effort', request.reasoningEffort]
+        : []),
+    ];
+  }
+
+  private assertRunCompleted(run: CliRunResult, prompt: string): void {
     if (run.failure === 'timeout') {
       throw new AiProviderError(
         'cli-timeout',
@@ -339,7 +354,9 @@ export class ClaudeCodeProvider implements AiProvider {
         generationFailedMessage(this.id, '중단됨'),
       );
     }
+  }
 
+  private createGenerateResponse(run: CliRunResult, cliOutput: CliOutput): AiGenerateResponse {
     const { result } = cliOutput;
 
     if (result === undefined || result.isError || run.exitCode !== 0) {
