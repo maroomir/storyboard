@@ -119,77 +119,108 @@ function attributionFor(primary: EntityRef, sceneStem: string): UsageAttribution
   return { primary, participants: [{ kind: 'scene', id: sceneStem }] };
 }
 
+interface CharacterProposalContext {
+  readonly card: CharacterCard;
+  readonly aiService: CardCollectAiService;
+  readonly aliases: string[];
+  readonly primary: EntityRef;
+  readonly resolveTarget: (rawTarget: string) => string | undefined;
+  readonly accumulator: ProposalAccumulator;
+}
+
+function addCandidateProposals(
+  context: CharacterProposalContext,
+  sceneStem: string,
+  candidate: CardCandidateExtraction,
+): void {
+  const { card, resolveTarget, accumulator } = context;
+
+  for (const attribute of candidate.attributes) {
+    accumulator.add(sceneStem, {
+      kind: 'attribute',
+      key: attribute.key,
+      value: attribute.value,
+    });
+  }
+  for (const relation of candidate.relations) {
+    const target: string | undefined = resolveTarget(relation.target);
+    if (target && target !== card.id) {
+      accumulator.add(sceneStem, { kind: 'relation', target, type: relation.type });
+    }
+  }
+  for (const line of candidate.description) {
+    accumulator.add(sceneStem, { kind: 'descriptionLine', value: line });
+  }
+  for (const line of candidate.voice) {
+    accumulator.add(sceneStem, { kind: 'voiceLine', value: line });
+  }
+  for (const line of candidate.desire) {
+    accumulator.add(sceneStem, { kind: 'desireLine', value: line });
+  }
+  if (candidate.arc?.summary) {
+    accumulator.add(sceneStem, {
+      kind: 'arc',
+      summary: candidate.arc.summary,
+      sceneRef: sceneStem,
+    });
+  }
+}
+
+async function addDraftCharacterProposals(
+  context: CharacterProposalContext,
+  draft: CollectDraft,
+): Promise<void> {
+  const { card, aiService, aliases, primary, accumulator } = context;
+  const attribution: UsageAttribution = attributionFor(primary, draft.sceneStem);
+
+  const extracted: Record<string, CardCandidateExtraction> =
+    await aiService.extractCardCandidatesByCharacter(draft.body, [card.name], {
+      attribution,
+      aliases,
+    });
+  const candidate: CardCandidateExtraction | undefined = extracted[card.name];
+
+  if (candidate) {
+    addCandidateProposals(context, draft.sceneStem, candidate);
+  }
+
+  const traits: Record<string, string[]> = await aiService.extractTraitsByCharacter(
+    draft.body,
+    [card.name],
+    {
+      attribution,
+      aliases,
+    },
+  );
+  for (const trait of traits[card.name] ?? []) {
+    accumulator.add(draft.sceneStem, { kind: 'trait', value: trait });
+  }
+
+  for (const utterance of extractQuotedUtterancesForCharacter(draft.body, card.name, aliases)) {
+    accumulator.add(draft.sceneStem, { kind: 'recentDialogue', value: utterance });
+  }
+}
+
 async function buildCharacterProposals(
   card: CharacterCard,
   drafts: readonly CollectDraft[],
   aiService: CardCollectAiService,
   roster: readonly CharacterRef[],
 ): Promise<CardCollectProposal[]> {
-  const resolveTarget: (rawTarget: string) => string | undefined = buildTargetResolver(roster);
-  const accumulator: ProposalAccumulator = new ProposalAccumulator();
-  const primary: EntityRef = { kind: 'character', id: card.id };
-  const aliases: string[] = card.aliases ?? [];
+  const context: CharacterProposalContext = {
+    card,
+    aiService,
+    aliases: card.aliases ?? [],
+    primary: { kind: 'character', id: card.id },
+    resolveTarget: buildTargetResolver(roster),
+    accumulator: new ProposalAccumulator(),
+  };
 
   for (const draft of drafts) {
-    const attribution: UsageAttribution = attributionFor(primary, draft.sceneStem);
-
-    const extracted: Record<string, CardCandidateExtraction> =
-      await aiService.extractCardCandidatesByCharacter(draft.body, [card.name], {
-        attribution,
-        aliases,
-      });
-    const candidate: CardCandidateExtraction | undefined = extracted[card.name];
-
-    if (candidate) {
-      for (const attribute of candidate.attributes) {
-        accumulator.add(draft.sceneStem, {
-          kind: 'attribute',
-          key: attribute.key,
-          value: attribute.value,
-        });
-      }
-      for (const relation of candidate.relations) {
-        const target: string | undefined = resolveTarget(relation.target);
-        if (target && target !== card.id) {
-          accumulator.add(draft.sceneStem, { kind: 'relation', target, type: relation.type });
-        }
-      }
-      for (const line of candidate.description) {
-        accumulator.add(draft.sceneStem, { kind: 'descriptionLine', value: line });
-      }
-      for (const line of candidate.voice) {
-        accumulator.add(draft.sceneStem, { kind: 'voiceLine', value: line });
-      }
-      for (const line of candidate.desire) {
-        accumulator.add(draft.sceneStem, { kind: 'desireLine', value: line });
-      }
-      if (candidate.arc?.summary) {
-        accumulator.add(draft.sceneStem, {
-          kind: 'arc',
-          summary: candidate.arc.summary,
-          sceneRef: draft.sceneStem,
-        });
-      }
-    }
-
-    const traits: Record<string, string[]> = await aiService.extractTraitsByCharacter(
-      draft.body,
-      [card.name],
-      {
-        attribution,
-        aliases,
-      },
-    );
-    for (const trait of traits[card.name] ?? []) {
-      accumulator.add(draft.sceneStem, { kind: 'trait', value: trait });
-    }
-
-    for (const utterance of extractQuotedUtterancesForCharacter(draft.body, card.name, aliases)) {
-      accumulator.add(draft.sceneStem, { kind: 'recentDialogue', value: utterance });
-    }
+    await addDraftCharacterProposals(context, draft);
   }
 
-  return accumulator.finalize(card);
+  return context.accumulator.finalize(card);
 }
 
 async function buildBackgroundProposals(

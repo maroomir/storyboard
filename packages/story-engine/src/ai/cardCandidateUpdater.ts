@@ -133,29 +133,21 @@ async function verifyCandidates(
   };
 }
 
-export async function updateCardCandidatesFromDraft(
+type CardCandidateExtractionsByName = Awaited<
+  ReturnType<StoryboardAiService['extractCardCandidatesByCharacter']>
+>;
+
+async function extractCandidatesByCharacter(
   input: UpdateCardCandidatesFromDraftInput,
-): Promise<CardCandidateUpdateSummary> {
-  const {
-    sceneStem,
-    draftBody,
-    detectedCharacterCards,
-    characterRoster,
-    aiService,
-    fileSystem,
-    logger,
-  } = input;
-
-  if (detectedCharacterCards.length === 0) {
-    return { characterCount: 0, candidateCount: 0 };
-  }
-
-  let extracted: Awaited<ReturnType<StoryboardAiService['extractCardCandidatesByCharacter']>>;
+): Promise<CardCandidateExtractionsByName | undefined> {
+  const { sceneStem, draftBody, detectedCharacterCards, aiService, logger } = input;
 
   try {
-    const characterIdByName: Map<string, string> = new Map(detectedCharacterCards.map((card) => [card.name, card.id]));
+    const characterIdByName: Map<string, string> = new Map(
+      detectedCharacterCards.map((card) => [card.name, card.id]),
+    );
 
-    extracted = await aiService.extractCardCandidatesByCharacter(
+    return await aiService.extractCardCandidatesByCharacter(
       draftBody,
       detectedCharacterCards.map((card) => card.name),
       {
@@ -176,60 +168,93 @@ export async function updateCardCandidatesFromDraft(
   } catch (error) {
     logger?.error('Card candidate extraction failed', error);
 
-    return { characterCount: 0, candidateCount: 0 };
+    return undefined;
   }
+}
 
-  const resolveTarget: (rawTarget: string) => string | undefined = buildTargetResolver(characterRoster);
+function resolveCandidateRelations(
+  candidate: CardCandidateExtraction,
+  card: CharacterCard,
+  resolveTarget: (rawTarget: string) => string | undefined,
+): RelationLink[] {
+  return dedupeRelations(
+    candidate.relations
+      .map((relation) => {
+        const target: string | undefined = resolveTarget(relation.target);
+        return target && target !== card.id ? { target, type: relation.type } : undefined;
+      })
+      .filter((relation): relation is RelationLink => relation !== undefined),
+  );
+}
+
+async function buildCandidateCharacter(
+  input: UpdateCardCandidatesFromDraftInput,
+  card: CharacterCard,
+  candidate: CardCandidateExtraction,
+  resolveTarget: (rawTarget: string) => string | undefined,
+): Promise<CardCandidateCharacter> {
+  const relations: RelationLink[] = resolveCandidateRelations(candidate, card, resolveTarget);
+
+  const attributes: AttributeCandidate[] = dedupeAttributes(
+    candidate.attributes.map((attribute) => ({ ...attribute })),
+  );
+
+  const arc: CardArcCandidate[] = candidate.arc?.summary
+    ? [{ summary: candidate.arc.summary, sceneRef: input.sceneStem }]
+    : [];
+
+  const verified: VerifiableCandidates = input.verify
+    ? await verifyCandidates(input, card, { attributes, relations, arc })
+    : { attributes, relations, arc };
+
+  return {
+    cardId: card.id,
+    attributes: [...verified.attributes],
+    relations: [...verified.relations],
+    arc: [...verified.arc],
+  };
+}
+
+async function collectCandidateCharacters(
+  input: UpdateCardCandidatesFromDraftInput,
+  extracted: CardCandidateExtractionsByName,
+): Promise<CardCandidateCharacter[]> {
+  const resolveTarget: (rawTarget: string) => string | undefined = buildTargetResolver(
+    input.characterRoster,
+  );
 
   const characters: CardCandidateCharacter[] = [];
 
-  for (const card of detectedCharacterCards) {
+  for (const card of input.detectedCharacterCards) {
     const candidate: CardCandidateExtraction | undefined = extracted[card.name];
     if (!candidate) {
       continue;
     }
 
-    const relations: RelationLink[] = dedupeRelations(
-      candidate.relations
-        .map((relation) => {
-          const target: string | undefined = resolveTarget(relation.target);
-          return target && target !== card.id ? { target, type: relation.type } : undefined;
-        })
-        .filter((relation): relation is RelationLink => relation !== undefined),
+    const character: CardCandidateCharacter = await buildCandidateCharacter(
+      input,
+      card,
+      candidate,
+      resolveTarget,
     );
-
-    const attributes: AttributeCandidate[] = dedupeAttributes(
-      candidate.attributes.map((attribute) => ({ ...attribute })),
-    );
-
-    const arc: CardArcCandidate[] = candidate.arc?.summary
-      ? [{ summary: candidate.arc.summary, sceneRef: sceneStem }]
-      : [];
-
-    const verified: VerifiableCandidates = input.verify
-      ? await verifyCandidates(input, card, { attributes, relations, arc })
-      : { attributes, relations, arc };
-
-    const character: CardCandidateCharacter = {
-      cardId: card.id,
-      attributes: [...verified.attributes],
-      relations: [...verified.relations],
-      arc: [...verified.arc],
-    };
 
     if (countCandidates(character) > 0) {
       characters.push(character);
     }
   }
 
+  return characters;
+}
+
+async function writeCandidateCharacters(
+  input: UpdateCardCandidatesFromDraftInput,
+  characters: CardCandidateCharacter[],
+): Promise<CardCandidateUpdateSummary> {
+  const { sceneStem, fileSystem, logger } = input;
   const candidateCount: number = characters.reduce(
     (total, character) => total + countCandidates(character),
     0,
   );
-
-  if (characters.length === 0) {
-    return { characterCount: 0, candidateCount: 0 };
-  }
 
   try {
     await input.ensureDirectory?.();
@@ -245,6 +270,28 @@ export async function updateCardCandidatesFromDraft(
   }
 
   return { characterCount: characters.length, candidateCount };
+}
+
+export async function updateCardCandidatesFromDraft(
+  input: UpdateCardCandidatesFromDraftInput,
+): Promise<CardCandidateUpdateSummary> {
+  if (input.detectedCharacterCards.length === 0) {
+    return { characterCount: 0, candidateCount: 0 };
+  }
+
+  const extracted: CardCandidateExtractionsByName | undefined =
+    await extractCandidatesByCharacter(input);
+  if (extracted === undefined) {
+    return { characterCount: 0, candidateCount: 0 };
+  }
+
+  const characters: CardCandidateCharacter[] = await collectCandidateCharacters(input, extracted);
+
+  if (characters.length === 0) {
+    return { characterCount: 0, candidateCount: 0 };
+  }
+
+  return await writeCandidateCharacters(input, characters);
 }
 
 export interface ScheduleCardCandidateUpdateInput extends UpdateCardCandidatesFromDraftInput {
