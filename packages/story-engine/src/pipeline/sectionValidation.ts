@@ -276,7 +276,7 @@ function countBreakLines(text: string): number {
   return text.split('\n').filter((line) => line.trim() === SCENE_BREAK_LINE).length;
 }
 
-export function validateExpandedSection(input: {
+interface ExpandedSectionInput {
   readonly skeleton: string;
   readonly section: string;
   readonly expanded: string;
@@ -288,46 +288,86 @@ export function validateExpandedSection(input: {
   readonly dialoguePreservedRatio?: number;
   readonly paddingParagraphRatio?: number;
   readonly tuning?: SceneGenerationTuningInput;
-}): SectionViolation[] {
-  const resolved: ResolvedSceneGenerationTuning = resolveSceneGenerationTuning(input.tuning);
-  const preservedRatio: number = input.dialoguePreservedRatio ?? resolved.dialoguePreservedRatio;
-  const paddingRatio: number = input.paddingParagraphRatio ?? resolved.paddingParagraphRatio;
-  const violations: SectionViolation[] = [];
+}
 
+interface SectionCheckContext {
+  readonly tuning: ResolvedSceneGenerationTuning;
+  readonly preservedRatio: number;
+  readonly paddingRatio: number;
+}
+
+type SectionCheck = (
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+) => SectionViolation[];
+
+function resolveSectionCheckContext(input: ExpandedSectionInput): SectionCheckContext {
+  const tuning: ResolvedSceneGenerationTuning = resolveSceneGenerationTuning(input.tuning);
+
+  return {
+    tuning,
+    preservedRatio: input.dialoguePreservedRatio ?? tuning.dialoguePreservedRatio,
+    paddingRatio: input.paddingParagraphRatio ?? tuning.paddingParagraphRatio,
+  };
+}
+
+function checkAddedCast(input: ExpandedSectionInput): SectionViolation[] {
   const inSkeleton: Set<string> = detectCanonicalCast(input.skeleton, input.characters);
   const added: string[] = [...detectCanonicalCast(input.expanded, input.characters)].filter(
     (name) => !inSkeleton.has(name),
   );
 
-  if (added.length > 0) {
-    violations.push({
-      kind: 'cast',
-      detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})`,
-    });
+  if (added.length === 0) {
+    return [];
   }
 
+  return [
+    {
+      kind: 'cast',
+      detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})`,
+    },
+  ];
+}
+
+function checkOffCoordinatePlaces(input: ExpandedSectionInput): SectionViolation[] {
   const offPlaces: string[] = findPlacesOffCoordinates({
     expanded: input.expanded,
     section: input.section,
     sectionPlaces: input.sectionPlaces ?? [],
     ...(input.backgroundFacts === undefined ? {} : { backgroundFacts: input.backgroundFacts }),
   });
-  if (offPlaces.length > 0) {
-    violations.push({
+  if (offPlaces.length === 0) {
+    return [];
+  }
+
+  return [
+    {
       kind: 'place',
       detail: `좌표와 공간 사실에 없는 공간을 세웠습니다 (${offPlaces.join(', ')}). 이번 구간의 비트 좌표가 가리키는 자리 안에서 쓰세요`,
-    });
+    },
+  ];
+}
+
+function checkForeignScript(input: ExpandedSectionInput): SectionViolation[] {
+  const foreign: ForeignScriptSpan[] = findForeignScriptSpans(input.expanded);
+  if (foreign.length === 0) {
+    return [];
   }
 
-  const foreign: ForeignScriptSpan[] = findForeignScriptSpans(input.expanded);
-  if (foreign.length > 0) {
-    violations.push({
+  return [
+    {
       kind: 'foreign-script',
       detail: `외국 문자가 섞였습니다 (${foreign.map((span) => `"${span.text}"`).join(', ')})`,
-    });
-  }
+    },
+  ];
+}
 
-  const quoted: RegExp = quotedDialoguePatternFor(resolved.dialogueMinimumQuotedLength);
+function checkLostDialogue(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
+  const { tuning, preservedRatio }: SectionCheckContext = context;
+  const quoted: RegExp = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
   const expandedLines: string[] = [...input.expanded.matchAll(quoted)].map((match) =>
     (match[1] ?? '').trim(),
   );
@@ -335,82 +375,153 @@ export function validateExpandedSection(input: {
     .map((match) => (match[1] ?? '').trim())
     .filter(
       (line) =>
-        line.length >= resolved.dialogueMinimumLineLength &&
-        !isDialoguePreserved(line, expandedLines, preservedRatio, resolved.dialogueSplitLimit),
+        line.length >= tuning.dialogueMinimumLineLength &&
+        !isDialoguePreserved(line, expandedLines, preservedRatio, tuning.dialogueSplitLimit),
     );
 
-  if (lost.length > 0) {
-    violations.push({
+  if (lost.length === 0) {
+    return [];
+  }
+
+  return [
+    {
       kind: 'lost-dialogue',
       detail: `뼈대의 대사가 사라졌습니다 ("${lost[0] as string}"${lost.length > 1 ? ` 외 ${lost.length - 1}건` : ''})`,
-    });
-  }
+    },
+  ];
+}
 
+function checkSceneBreakCount(input: ExpandedSectionInput): SectionViolation[] {
   const skeletonBreaks: number = countBreakLines(input.section);
   const expandedBreaks: number = countBreakLines(input.expanded);
-  if (skeletonBreaks !== expandedBreaks) {
-    violations.push({
+  if (skeletonBreaks === expandedBreaks) {
+    return [];
+  }
+
+  return [
+    {
       kind: 'scene-breaks',
       detail: `뼈대 조각의 장면 전환(---) ${skeletonBreaks}개가 ${expandedBreaks}개가 됐습니다. 단독 줄 --- 를 뼈대와 같은 자리에 같은 수만큼 두세요`,
-    });
+    },
+  ];
+}
+
+function checkSectionLength(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
+  const isTooShort: boolean =
+    input.expanded.length < input.targetLength * context.tuning.sectionMinimumLengthRatio;
+  if (!isTooShort) {
+    return [];
   }
 
-  if (input.expanded.length < input.targetLength * resolved.sectionMinimumLengthRatio) {
-    violations.push({
+  return [
+    {
       kind: 'too-short',
       detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자). 사건 사이에 시점 인물의 반응·해석과 행동을 서술자의 목소리로 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요`,
-    });
-  }
+    },
+  ];
+}
 
+function checkRunAheadDialogue(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
   const ranAhead: string[] = findRunAheadDialogue(
     input.skeleton,
     input.section,
     input.expanded,
-    resolved,
+    context.tuning,
   );
-  if (ranAhead.length > 0) {
-    violations.push({
-      kind: 'runs-ahead',
-      detail: `다음 구간의 대사를 미리 썼습니다 ("${ranAhead[0] as string}"${ranAhead.length > 1 ? ` 외 ${ranAhead.length - 1}건` : ''}). [이번 구간]의 마지막 문장에서 멈추세요`,
-    });
+  if (ranAhead.length === 0) {
+    return [];
   }
 
+  return [
+    {
+      kind: 'runs-ahead',
+      detail: `다음 구간의 대사를 미리 썼습니다 ("${ranAhead[0] as string}"${ranAhead.length > 1 ? ` 외 ${ranAhead.length - 1}건` : ''}). [이번 구간]의 마지막 문장에서 멈추세요`,
+    },
+  ];
+}
+
+function checkRepeatedPreviousText(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
   const repeated: number = repeatedFromPrevious(
     input.previousSection,
     input.expanded,
-    resolved.sectionRepeatedRunWindow,
+    context.tuning.sectionRepeatedRunWindow,
   );
-  if (repeated >= resolved.sectionRepeatedRunLimit) {
-    violations.push({
-      kind: 'repeats-previous',
-      detail: `직전 구간을 약 ${repeated.toLocaleString()}자 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
-    });
+  const isRepeated: boolean = repeated >= context.tuning.sectionRepeatedRunLimit;
+  if (!isRepeated) {
+    return [];
   }
 
+  return [
+    {
+      kind: 'repeats-previous',
+      detail: `직전 구간을 약 ${repeated.toLocaleString()}자 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
+    },
+  ];
+}
+
+function checkRepeatedPreviousDialogue(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
   const repeatedDialogue: number =
     input.previousSection === undefined
       ? 0
       : findRepeatedDialogueRunBetween(input.previousSection, input.expanded, input.tuning);
 
-  if (repeatedDialogue >= resolved.dialogueRepeatedRunLimit) {
-    violations.push({
-      kind: 'repeats-previous',
-      detail: `직전 구간의 대사 ${repeatedDialogue}개를 순서까지 같게 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
-    });
+  const isRepeated: boolean = repeatedDialogue >= context.tuning.dialogueRepeatedRunLimit;
+  if (!isRepeated) {
+    return [];
   }
 
+  return [
+    {
+      kind: 'repeats-previous',
+      detail: `직전 구간의 대사 ${repeatedDialogue}개를 순서까지 같게 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
+    },
+  ];
+}
+
+function checkPaddingRepetition(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
   const padding: string | undefined = findPaddingRepetition(
     input.section,
     input.expanded,
     input.previousSection,
-    paddingRatio,
-    resolved,
+    context.paddingRatio,
+    context.tuning,
   );
-  if (padding !== undefined) {
-    violations.push({ kind: 'repetition', detail: padding });
-  }
 
-  return violations;
+  return padding === undefined ? [] : [{ kind: 'repetition', detail: padding }];
+}
+
+const sectionChecks: readonly SectionCheck[] = [
+  checkAddedCast,
+  checkOffCoordinatePlaces,
+  checkForeignScript,
+  checkLostDialogue,
+  checkSceneBreakCount,
+  checkSectionLength,
+  checkRunAheadDialogue,
+  checkRepeatedPreviousText,
+  checkRepeatedPreviousDialogue,
+  checkPaddingRepetition,
+];
+
+export function validateExpandedSection(input: ExpandedSectionInput): SectionViolation[] {
+  const context: SectionCheckContext = resolveSectionCheckContext(input);
+
+  return sectionChecks.flatMap((check: SectionCheck): SectionViolation[] => check(input, context));
 }
 
 export const PADDING_PARAGRAPH_RATIO: number = pipelineDefaults.padding.paragraphRatio;
