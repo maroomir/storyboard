@@ -44,71 +44,160 @@ export class GenerateNovelCommand implements IExtensionCommand {
 
   public constructor(private readonly dependencies: GenerateNovelCommandDependencies) {}
 
-  public run(): unknown {
-    return runGenerateNovel(this.dependencies);
-  }
-}
+  public async run(): Promise<void> {
+    const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
-async function runGenerateNovel(dependencies: GenerateNovelCommandDependencies): Promise<void> {
-  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
-
-  if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
-    return;
-  }
-
-  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-  const project: StoryboardProject = await dependencies.novel.runState.loadProject(workspaceRoot);
-
-  const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
-  if (readiness.missing.length > 0) {
-    const openSettings: string = '설정 열기';
-    const labels: string = readiness.missing.map((key) => contractFieldLabels[key]).join(', ');
-    const choice: string | undefined = await vscode.window.showWarningMessage(
-      `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
-      openSettings,
-    );
-    if (choice === openSettings) {
-      await vscode.commands.executeCommand(storyboardCommandIds.settingsOpen);
+    if (!workspaceRoot) {
+      await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
+      return;
     }
-    return;
+
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const project: StoryboardProject =
+      await this.dependencies.novel.runState.loadProject(workspaceRoot);
+
+    const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
+    if (readiness.missing.length > 0) {
+      const openSettings: string = '설정 열기';
+      const labels: string = readiness.missing.map((key) => contractFieldLabels[key]).join(', ');
+      const choice: string | undefined = await vscode.window.showWarningMessage(
+        `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
+        openSettings,
+      );
+      if (choice === openSettings) {
+        await vscode.commands.executeCommand(storyboardCommandIds.settingsOpen);
+      }
+      return;
+    }
+
+    const decision: RunDecision | undefined = await this.decideRun(workspaceRoot);
+    if (!decision) {
+      return;
+    }
+
+    await runHoldingWorkspaceLock(this.dependencies.runGate, workspaceRoot, '장편 생성', () =>
+      vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Storyboard 장편 생성',
+          cancellable: true,
+        },
+        async (progress, token) => {
+          const novelRun: NovelRunResult = await this.dependencies.novel.run({
+            workspaceUri: workspaceRoot,
+            project,
+            runMode: decision.runMode,
+            resumeState: decision.resumeState,
+            onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
+            requestApproval: this.requestApproval,
+            shouldCancel: () => token.isCancellationRequested,
+          });
+
+          await this.reportResult(
+            novelRun.spending.isOverBudget && novelRun.outcome === 'paused'
+              ? {
+                  ...novelRun,
+                  message: `이번 실행 예산 $${novelRun.spending.budgetUsd}에 닿아 멈췄습니다.`,
+                }
+              : novelRun,
+            paths.manuscriptVolume,
+          );
+        },
+      ),
+    );
   }
 
-  const decision: RunDecision | undefined = await decideRun(dependencies.novel, workspaceRoot);
-  if (!decision) {
-    return;
-  }
-
-  await runHoldingWorkspaceLock(dependencies.runGate, workspaceRoot, '장편 생성', () =>
-    vscode.window.withProgress(
+  private async decideRun(workspaceRoot: vscode.Uri): Promise<RunDecision | undefined> {
+    const existing: NovelRunState | undefined = await this.dependencies.novel.findResumableRun(
+      workspaceRoot,
       {
-        location: vscode.ProgressLocation.Notification,
-        title: 'Storyboard 장편 생성',
-        cancellable: true,
+        holdsRunLock: false,
       },
-      async (progress, token) => {
-        const novelRun: NovelRunResult = await dependencies.novel.run({
-          workspaceUri: workspaceRoot,
-          project,
-          runMode: decision.runMode,
-          resumeState: decision.resumeState,
-          onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
-          requestApproval: (kind, info) => requestApproval(kind, info),
-          shouldCancel: () => token.isCancellationRequested,
-        });
+    );
 
-        await reportResult(
-          novelRun.spending.isOverBudget && novelRun.outcome === 'paused'
-            ? {
-                ...novelRun,
-                message: `이번 실행 예산 $${novelRun.spending.budgetUsd}에 닿아 멈췄습니다.`,
-              }
-            : novelRun,
-          paths.manuscriptVolume,
-        );
+    if (existing !== undefined) {
+      const resume: string = `이어서 진행 (${runModeLabels[existing.runMode]})`;
+      const restart: string = '처음부터 다시';
+      const choice: string | undefined = await vscode.window.showQuickPick([resume, restart], {
+        placeHolder: '이전 실행이 중단되었습니다. 어떻게 할까요?',
+      });
+
+      if (choice === undefined) {
+        return undefined;
+      }
+      if (choice === resume) {
+        return { runMode: existing.runMode, resumeState: existing };
+      }
+    }
+
+    const runMode: NovelRunMode | undefined = await this.pickRunMode();
+    return runMode ? { runMode } : undefined;
+  }
+
+  private async pickRunMode(): Promise<NovelRunMode | undefined> {
+    const items: RunModePick[] = [
+      { label: runModeLabels.auto, description: 'A~E를 끊김 없이 자동 실행', mode: 'auto' },
+      {
+        label: runModeLabels['outline-approval'],
+        description: '아웃라인 생성 후 한 번 멈춰 승인',
+        mode: 'outline-approval',
       },
-    ),
-  );
+      {
+        label: runModeLabels['chapter-approval'],
+        description: '각 장 초안·검수 후 멈춰 승인',
+        mode: 'chapter-approval',
+      },
+      {
+        label: runModeLabels['review-approval'],
+        description: '최종 검사가 찾은 high 이슈를 재작성하기 전에 멈춰 승인',
+        mode: 'review-approval',
+      },
+    ];
+
+    const picked: RunModePick | undefined = await vscode.window.showQuickPick(items, {
+      placeHolder: '실행 모드를 선택하세요.',
+    });
+    return picked?.mode;
+  }
+
+  private readonly requestApproval = async (
+    _kind: NovelApprovalKind,
+    info: string,
+  ): Promise<boolean> => {
+    const proceed: string = '계속';
+    const choice: string | undefined = await vscode.window.showInformationMessage(
+      info,
+      { modal: true },
+      proceed,
+    );
+    return choice === proceed;
+  };
+
+  private async reportResult(
+    pipelineResult: NovelPipelineResult,
+    manuscriptVolumeUri: vscode.Uri,
+  ): Promise<void> {
+    if (pipelineResult.outcome === 'completed') {
+      if (await uriExists(manuscriptVolumeUri)) {
+        const document: vscode.TextDocument =
+          await vscode.workspace.openTextDocument(manuscriptVolumeUri);
+        await vscode.window.showTextDocument(document);
+      }
+      await vscode.window.showInformationMessage('장편 생성을 완료했습니다 (manuscript/).');
+      return;
+    }
+
+    if (pipelineResult.outcome === 'failed') {
+      await vscode.window.showErrorMessage(
+        `장편 생성에 실패했습니다: ${pipelineResult.message} 다시 실행하면 중단 지점부터 재개합니다.`,
+      );
+      return;
+    }
+
+    await vscode.window.showWarningMessage(
+      `${pipelineResult.message} (다시 실행하면 이어서 진행합니다.)`,
+    );
+  }
 }
 
 interface RunDecision {
@@ -116,95 +205,6 @@ interface RunDecision {
   readonly resumeState?: NovelRunState;
 }
 
-async function decideRun(
-  novel: Pick<NovelManager, 'findResumableRun'>,
-  workspaceRoot: vscode.Uri,
-): Promise<RunDecision | undefined> {
-  const existing: NovelRunState | undefined = await novel.findResumableRun(workspaceRoot, {
-    holdsRunLock: false,
-  });
-
-  if (existing !== undefined) {
-    const resume: string = `이어서 진행 (${runModeLabels[existing.runMode]})`;
-    const restart: string = '처음부터 다시';
-    const choice: string | undefined = await vscode.window.showQuickPick([resume, restart], {
-      placeHolder: '이전 실행이 중단되었습니다. 어떻게 할까요?',
-    });
-
-    if (choice === undefined) {
-      return undefined;
-    }
-    if (choice === resume) {
-      return { runMode: existing.runMode, resumeState: existing };
-    }
-  }
-
-  const runMode: NovelRunMode | undefined = await pickRunMode();
-  return runMode ? { runMode } : undefined;
-}
-
 interface RunModePick extends vscode.QuickPickItem {
   readonly mode: NovelRunMode;
-}
-
-async function pickRunMode(): Promise<NovelRunMode | undefined> {
-  const items: RunModePick[] = [
-    { label: runModeLabels.auto, description: 'A~E를 끊김 없이 자동 실행', mode: 'auto' },
-    {
-      label: runModeLabels['outline-approval'],
-      description: '아웃라인 생성 후 한 번 멈춰 승인',
-      mode: 'outline-approval',
-    },
-    {
-      label: runModeLabels['chapter-approval'],
-      description: '각 장 초안·검수 후 멈춰 승인',
-      mode: 'chapter-approval',
-    },
-    {
-      label: runModeLabels['review-approval'],
-      description: '최종 검사가 찾은 high 이슈를 재작성하기 전에 멈춰 승인',
-      mode: 'review-approval',
-    },
-  ];
-
-  const picked: RunModePick | undefined = await vscode.window.showQuickPick(items, {
-    placeHolder: '실행 모드를 선택하세요.',
-  });
-  return picked?.mode;
-}
-
-async function requestApproval(_kind: NovelApprovalKind, info: string): Promise<boolean> {
-  const proceed: string = '계속';
-  const choice: string | undefined = await vscode.window.showInformationMessage(
-    info,
-    { modal: true },
-    proceed,
-  );
-  return choice === proceed;
-}
-
-async function reportResult(
-  pipelineResult: NovelPipelineResult,
-  manuscriptVolumeUri: vscode.Uri,
-): Promise<void> {
-  if (pipelineResult.outcome === 'completed') {
-    if (await uriExists(manuscriptVolumeUri)) {
-      const document: vscode.TextDocument =
-        await vscode.workspace.openTextDocument(manuscriptVolumeUri);
-      await vscode.window.showTextDocument(document);
-    }
-    await vscode.window.showInformationMessage('장편 생성을 완료했습니다 (manuscript/).');
-    return;
-  }
-
-  if (pipelineResult.outcome === 'failed') {
-    await vscode.window.showErrorMessage(
-      `장편 생성에 실패했습니다: ${pipelineResult.message} 다시 실행하면 중단 지점부터 재개합니다.`,
-    );
-    return;
-  }
-
-  await vscode.window.showWarningMessage(
-    `${pipelineResult.message} (다시 실행하면 이어서 진행합니다.)`,
-  );
 }

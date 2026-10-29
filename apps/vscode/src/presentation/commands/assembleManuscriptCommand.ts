@@ -19,54 +19,47 @@ export class AssembleManuscriptCommand implements IExtensionCommand {
 
   public constructor(private readonly dependencies: AssembleManuscriptCommandDependencies) {}
 
-  public run(): unknown {
-    return runAssembleManuscript(this.dependencies);
-  }
-}
+  public async run(): Promise<void> {
+    const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    if (!workspaceRoot) {
+      await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
+      return;
+    }
 
-async function runAssembleManuscript(
-  dependencies: AssembleManuscriptCommandDependencies,
-): Promise<void> {
-  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
-  if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
-    return;
-  }
-
-  const assembly: AssembleManuscriptResult = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: '원고 조립 중…' },
-    () => dependencies.manuscript.assemble({ workspaceRoot }),
-  );
-  if (!assembly.ok) {
-    await reportFailure(assembly, dependencies.logger);
-    return;
-  }
-
-  const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
-    assembly.result.volumeUri,
-  );
-  await vscode.window.showTextDocument(document);
-  await vscode.window.showInformationMessage(
-    `원고를 조립했습니다. 챕터 ${assembly.result.chapterCount}개, 포함 ${assembly.result.includedCount}개, 누락 ${assembly.result.missingCount}개, 기타 ${assembly.result.extraCount}개, 복선 ${assembly.result.foreshadowingCount}건.`,
-  );
-}
-
-async function reportFailure(
-  failure: Exclude<AssembleManuscriptResult, { readonly ok: true }>,
-  logger: IStoryboardLogger,
-): Promise<void> {
-  if (failure.kind === 'missing_outline') {
-    await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
-    return;
-  }
-  if (failure.kind === 'missing_drafts') {
-    await vscode.window.showInformationMessage(
-      '조립할 초안이 없습니다. 먼저 Generate (All) Drafts를 실행해 주세요.',
+    const assembly: AssembleManuscriptResult = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: '원고 조립 중…' },
+      () => this.dependencies.manuscript.assemble({ workspaceRoot }),
     );
-    return;
+    if (!assembly.ok) {
+      await this.reportFailure(assembly);
+      return;
+    }
+
+    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+      assembly.result.volumeUri,
+    );
+    await vscode.window.showTextDocument(document);
+    await vscode.window.showInformationMessage(
+      `원고를 조립했습니다. 챕터 ${assembly.result.chapterCount}개, 포함 ${assembly.result.includedCount}개, 누락 ${assembly.result.missingCount}개, 기타 ${assembly.result.extraCount}개, 복선 ${assembly.result.foreshadowingCount}건.`,
+    );
   }
 
-  logger.error('Manuscript assembly failed', new Error(failure.message));
-  logger.show();
-  await showStoryboardFailure(`원고 조립에 실패했습니다: ${failure.message}`);
+  private async reportFailure(
+    failure: Exclude<AssembleManuscriptResult, { readonly ok: true }>,
+  ): Promise<void> {
+    if (failure.kind === 'missing_outline') {
+      await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
+      return;
+    }
+    if (failure.kind === 'missing_drafts') {
+      await vscode.window.showInformationMessage(
+        '조립할 초안이 없습니다. 먼저 Generate (All) Drafts를 실행해 주세요.',
+      );
+      return;
+    }
+
+    this.dependencies.logger.error('Manuscript assembly failed', new Error(failure.message));
+    this.dependencies.logger.show();
+    await showStoryboardFailure(`원고 조립에 실패했습니다: ${failure.message}`);
+  }
 }

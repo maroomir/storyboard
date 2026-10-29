@@ -56,130 +56,126 @@ export class AbsorbNotesCommand implements IExtensionCommand {
 
   public constructor(private readonly dependencies: AbsorbNotesCommandDependencies) {}
 
-  public run(): unknown {
-    return absorbNotes(this.dependencies);
-  }
-}
+  public async run(): Promise<void> {
+    const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
-async function absorbNotes(dependencies: AbsorbNotesCommandDependencies): Promise<void> {
-  const folder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
-
-  if (!folder || !(await hasStoryboardProject(folder))) {
-    await vscode.window.showErrorMessage('Storyboard 프로젝트가 없습니다. 먼저 초기화해 주세요.');
-    return;
-  }
-
-  const location: NoteLocation | undefined = await pickNoteLocation();
-
-  if (location === undefined) {
-    return;
-  }
-
-  const collected: CollectNotesResult = await dependencies.notes.collect({
-    workspaceRoot: folder.uri,
-    location,
-  });
-
-  if (!collected.ok) {
-    await vscode.window.showErrorMessage(collected.message);
-    return;
-  }
-
-  const { bundle } = collected;
-  const estimate: NoteAbsorbEstimate = dependencies.notes.estimate(bundle);
-  const isEstimateAccepted: '정리' | undefined = await vscode.window.showInformationMessage(
-    '노트를 AI 로 정리할까요?',
-    { modal: true, detail: describeEstimate(bundle, estimate).join('\n') },
-    '정리',
-  );
-
-  if (isEstimateAccepted !== '정리') {
-    return;
-  }
-
-  const planned: PlanNoteAbsorbResult = await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: '노트를 정리하는 중…' },
-    () => dependencies.notes.plan({ workspaceRoot: folder.uri, bundle }),
-  );
-
-  if (!planned.ok) {
-    await vscode.window.showErrorMessage(planned.message);
-    return;
-  }
-
-  const isPlanAccepted: '반영' | undefined = await vscode.window.showInformationMessage(
-    '이대로 워크스페이스에 반영할까요?',
-    { modal: true, detail: describePlan(planned.plan).join('\n') },
-    '반영',
-  );
-
-  if (isPlanAccepted !== '반영') {
-    await vscode.window.showInformationMessage(
-      '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
-    );
-    return;
-  }
-
-  await runHoldingWorkspaceLock(dependencies.runGate, folder.uri, '노트 흡수', async () => {
-    const applied: ApplyNoteAbsorbResult = await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: '노트를 반영하는 중…' },
-      () =>
-        dependencies.notes.apply({
-          workspaceRoot: folder.uri,
-          plan: planned.plan,
-          location: bundle.location,
-          shouldFillContract: false,
-          shouldReplaceCandidates: false,
-        }),
-    );
-
-    if (!applied.ok) {
-      dependencies.logger.show();
-      await vscode.window.showErrorMessage(applied.message);
+    if (!folder || !(await hasStoryboardProject(folder))) {
+      await vscode.window.showErrorMessage('Storyboard 프로젝트가 없습니다. 먼저 초기화해 주세요.');
       return;
     }
 
-    await vscode.window.showInformationMessage(describeOutcome(applied).join(' '));
-  });
-}
+    const location: NoteLocation | undefined = await this.pickNoteLocation();
 
-async function pickNoteLocation(): Promise<NoteLocation | undefined> {
-  const picked: LocationPickItem | undefined = await vscode.window.showQuickPick(locationPicks, {
-    title: '노트 흡수',
-    placeHolder: '어디에 적어 둔 노트인가요?',
-  });
+    if (location === undefined) {
+      return;
+    }
 
-  if (picked === undefined) {
-    return undefined;
-  }
-
-  if (picked.source === 'notion') {
-    const pageUrl: string | undefined = await vscode.window.showInputBox({
-      title: 'Notion 페이지 주소',
-      prompt: '통합과 공유된 페이지의 주소를 붙여 넣으세요.',
-      ignoreFocusOut: true,
-      validateInput: (value) =>
-        isNotionUrl(value.trim()) ? undefined : 'Notion 페이지 주소가 아닙니다.',
+    const collected: CollectNotesResult = await this.dependencies.notes.collect({
+      workspaceRoot: folder.uri,
+      location,
     });
 
-    return pageUrl === undefined ? undefined : { kind: 'notion', pageUrl: pageUrl.trim() };
+    if (!collected.ok) {
+      await vscode.window.showErrorMessage(collected.message);
+      return;
+    }
+
+    const { bundle } = collected;
+    const estimate: NoteAbsorbEstimate = this.dependencies.notes.estimate(bundle);
+    const isEstimateAccepted: '정리' | undefined = await vscode.window.showInformationMessage(
+      '노트를 AI 로 정리할까요?',
+      { modal: true, detail: describeEstimate(bundle, estimate).join('\n') },
+      '정리',
+    );
+
+    if (isEstimateAccepted !== '정리') {
+      return;
+    }
+
+    const planned: PlanNoteAbsorbResult = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: '노트를 정리하는 중…' },
+      () => this.dependencies.notes.plan({ workspaceRoot: folder.uri, bundle }),
+    );
+
+    if (!planned.ok) {
+      await vscode.window.showErrorMessage(planned.message);
+      return;
+    }
+
+    const isPlanAccepted: '반영' | undefined = await vscode.window.showInformationMessage(
+      '이대로 워크스페이스에 반영할까요?',
+      { modal: true, detail: describePlan(planned.plan).join('\n') },
+      '반영',
+    );
+
+    if (isPlanAccepted !== '반영') {
+      await vscode.window.showInformationMessage(
+        '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
+      );
+      return;
+    }
+
+    await runHoldingWorkspaceLock(this.dependencies.runGate, folder.uri, '노트 흡수', async () => {
+      const applied: ApplyNoteAbsorbResult = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: '노트를 반영하는 중…' },
+        () =>
+          this.dependencies.notes.apply({
+            workspaceRoot: folder.uri,
+            plan: planned.plan,
+            location: bundle.location,
+            shouldFillContract: false,
+            shouldReplaceCandidates: false,
+          }),
+      );
+
+      if (!applied.ok) {
+        this.dependencies.logger.show();
+        await vscode.window.showErrorMessage(applied.message);
+        return;
+      }
+
+      await vscode.window.showInformationMessage(describeOutcome(applied).join(' '));
+    });
   }
 
-  const isArchive: boolean = picked.source === 'notion-export';
-  const [uri] =
-    (await vscode.window.showOpenDialog({
-      title: isArchive ? 'Notion 내보내기 zip 고르기' : 'Obsidian 폴더나 노트 고르기',
-      canSelectFiles: true,
-      canSelectFolders: !isArchive,
-      canSelectMany: false,
-      filters: isArchive ? { 'Notion export': ['zip'] } : { Markdown: ['md'] },
-    })) ?? [];
+  private async pickNoteLocation(): Promise<NoteLocation | undefined> {
+    const picked: LocationPickItem | undefined = await vscode.window.showQuickPick(locationPicks, {
+      title: '노트 흡수',
+      placeHolder: '어디에 적어 둔 노트인가요?',
+    });
 
-  if (uri === undefined) {
-    return undefined;
+    if (picked === undefined) {
+      return undefined;
+    }
+
+    if (picked.source === 'notion') {
+      const pageUrl: string | undefined = await vscode.window.showInputBox({
+        title: 'Notion 페이지 주소',
+        prompt: '통합과 공유된 페이지의 주소를 붙여 넣으세요.',
+        ignoreFocusOut: true,
+        validateInput: (value) =>
+          isNotionUrl(value.trim()) ? undefined : 'Notion 페이지 주소가 아닙니다.',
+      });
+
+      return pageUrl === undefined ? undefined : { kind: 'notion', pageUrl: pageUrl.trim() };
+    }
+
+    const isArchive: boolean = picked.source === 'notion-export';
+    const [uri] =
+      (await vscode.window.showOpenDialog({
+        title: isArchive ? 'Notion 내보내기 zip 고르기' : 'Obsidian 폴더나 노트 고르기',
+        canSelectFiles: true,
+        canSelectFolders: !isArchive,
+        canSelectMany: false,
+        filters: isArchive ? { 'Notion export': ['zip'] } : { Markdown: ['md'] },
+      })) ?? [];
+
+    if (uri === undefined) {
+      return undefined;
+    }
+
+    return isArchive ? { kind: 'notion-export', archive: uri } : { kind: 'obsidian', root: uri };
   }
-
-  return isArchive ? { kind: 'notion-export', archive: uri } : { kind: 'obsidian', root: uri };
 }
 
 function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): string[] {
