@@ -102,6 +102,263 @@ export function collectInterruptedRenameChecks(
   ];
 }
 
+interface NarrationSurvey {
+  readonly narrators: ReadonlyMap<string, NarratorCard>;
+  readonly missingNarrators: readonly string[];
+  readonly unknownThreads: readonly string[];
+  readonly focallessNarrators: readonly NarratorCard[];
+  readonly narrationlessScenes: readonly string[];
+  readonly unreadableLedgerLines: readonly string[];
+}
+
+type NarrationCheck = (survey: NarrationSurvey) => DoctorCheck[];
+
+interface WorkspaceSurvey {
+  readonly rootPath: string;
+  readonly paths: StoryboardProjectPaths;
+  readonly sceneFileNames: readonly string[];
+  readonly scenes: readonly string[];
+  readonly drafts: readonly string[];
+  readonly missingDirectories: readonly string[];
+  readonly hasOutline: boolean;
+  readonly census: SceneCardCensus;
+  readonly missingIgnoreEntries: readonly string[];
+}
+
+type WorkspaceCheck = (survey: WorkspaceSurvey) => DoctorCheck[];
+
+function findMissingNarrators(
+  sceneCards: SceneCardCensus['cards'],
+  project: StoryboardProject | undefined,
+  narrators: ReadonlyMap<string, NarratorCard>,
+): string[] {
+  const referencedNarrators: Set<string> = new Set(
+    [
+      ...sceneCards.map(({ card }) => card.narrator),
+      project?.setting?.narration?.defaultNarrator,
+    ].filter((id): id is string => id !== undefined),
+  );
+
+  return [...referencedNarrators].filter((id) => !narrators.has(id));
+}
+
+function findUnknownThreads(
+  sceneCards: SceneCardCensus['cards'],
+  project: StoryboardProject | undefined,
+): string[] {
+  const declaredThreads: Set<string> = new Set([
+    ...Object.keys(project?.setting?.threads ?? {}),
+    mainThreadId,
+  ]);
+
+  return [
+    ...new Set(
+      sceneCards
+        .map(({ card }) => card.thread)
+        .filter((thread): thread is string => thread !== undefined)
+        .filter((thread) => !declaredThreads.has(thread)),
+    ),
+  ];
+}
+
+function findFocallessNarrators(narrators: ReadonlyMap<string, NarratorCard>): NarratorCard[] {
+  return [...narrators.values()].filter(
+    (narrator) =>
+      narrator.focal === undefined && (narrator.person === 'first' || narrator.person === 'second'),
+  );
+}
+
+function checkNarrators({ narrators }: NarrationSurvey): DoctorCheck[] {
+  return narrators.size > 0
+    ? [
+        {
+          status: 'ok',
+          label: '서술자',
+          detail: `${narrators.size}개 (${[...narrators.keys()].join(', ')})`,
+        },
+      ]
+    : [];
+}
+
+function checkMissingNarrators({ missingNarrators }: NarrationSurvey): DoctorCheck[] {
+  return missingNarrators.length > 0
+    ? [
+        {
+          status: 'fail',
+          label: '서술자 참조',
+          detail: `카드가 없는 서술자를 참조합니다 (${missingNarrators.join(', ')}). 그 씬은 생성되지 않습니다.`,
+          fix: `storyboard narrator create ${missingNarrators[0]}`,
+        },
+      ]
+    : [];
+}
+
+function checkUnknownThreads({ unknownThreads }: NarrationSurvey): DoctorCheck[] {
+  return unknownThreads.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '줄기',
+          detail: `작품 계약에 없는 줄기를 씬이 참조합니다 (${unknownThreads.join(', ')}).`,
+          fix: 'storyboard project set --composition omnibus --episodes <n>',
+        },
+      ]
+    : [];
+}
+
+function checkFocallessNarrators({ focallessNarrators }: NarrationSurvey): DoctorCheck[] {
+  return focallessNarrators.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '서술자 초점',
+          detail: `초점 인물이 없는 1·2인칭 서술자가 있습니다 (${focallessNarrators.map((narrator) => narrator.id).join(', ')}). 씬의 povCharacter 가 없으면 화자가 정해지지 않습니다.`,
+        },
+      ]
+    : [];
+}
+
+function checkNarrationlessScenes({ narrationlessScenes }: NarrationSurvey): DoctorCheck[] {
+  return narrationlessScenes.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '시점',
+          detail: `povCharacter 가 있는 씬 ${narrationlessScenes.length}개에 시점이 없습니다 (예: ${narrationlessScenes[0]}). 작품 계약의 pov 도 서술자도 없으면 시점 지시 없이 생성돼 3인칭으로 흐릅니다.`,
+          fix: 'storyboard project set --pov first',
+        },
+      ]
+    : [];
+}
+
+function checkUnreadableLedgerLines({ unreadableLedgerLines }: NarrationSurvey): DoctorCheck[] {
+  return unreadableLedgerLines.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '이야기 상태',
+          detail: `태그를 읽지 못한 원장 줄이 ${unreadableLedgerLines.length}개 있습니다 (예: ${unreadableLedgerLines[0]}). 그 항목은 시점 필터와 낡음 판정을 받지 못합니다.`,
+          fix: '해당 줄을 `- [<씬 번호>] <내용>` 형태로 고쳐 주세요.',
+        },
+      ]
+    : [];
+}
+
+const narrationChecks: readonly NarrationCheck[] = [
+  checkNarrators,
+  checkMissingNarrators,
+  checkUnknownThreads,
+  checkFocallessNarrators,
+  checkNarrationlessScenes,
+  checkUnreadableLedgerLines,
+];
+
+function checkMissingDirectories({ missingDirectories }: WorkspaceSurvey): DoctorCheck[] {
+  return missingDirectories.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '디렉터리',
+          detail: `${missingDirectories.join(', ')} 이(가) 없습니다.`,
+          fix: 'storyboard init --repair',
+        },
+      ]
+    : [];
+}
+
+function checkInterruptedRenames(survey: WorkspaceSurvey): DoctorCheck[] {
+  return collectInterruptedRenameChecks(survey.paths, survey.sceneFileNames, survey.drafts);
+}
+
+function checkUnreadableSceneCards({ census }: WorkspaceSurvey): DoctorCheck[] {
+  return census.unreadable.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '씬 카드',
+          detail: `읽지 못한 카드가 있습니다 (${census.unreadable.join(', ')}).`,
+        },
+      ]
+    : [];
+}
+
+function checkScenesWithoutBeats({ census }: WorkspaceSurvey): DoctorCheck[] {
+  return census.withoutBeats > 0
+    ? [
+        {
+          status: 'warn',
+          label: '씬 비트',
+          detail: `비트 없는 씬이 ${census.withoutBeats}개 있습니다. 생성 시 자동으로 채우지만 미리 검수하려면 뽑아 두세요.`,
+          fix: 'storyboard scene plot --all',
+        },
+      ]
+    : [];
+}
+
+function checkGitignore({ missingIgnoreEntries }: WorkspaceSurvey): DoctorCheck[] {
+  return missingIgnoreEntries.length > 0
+    ? [
+        {
+          status: 'warn',
+          label: '.gitignore',
+          detail: `생성물 항목이 빠졌습니다 (${missingIgnoreEntries.join(', ')}).`,
+          fix: 'storyboard init --repair',
+        },
+      ]
+    : [];
+}
+
+function checkGitRepository({ rootPath }: WorkspaceSurvey): DoctorCheck[] {
+  return [
+    isGitRepository(rootPath)
+      ? { status: 'ok', label: 'git', detail: '저장소 있음' }
+      : {
+          status: 'warn',
+          label: 'git',
+          detail: '워크스페이스가 git 저장소가 아닙니다.',
+          fix: 'storyboard init --repair',
+        },
+  ];
+}
+
+function checkOutline({ hasOutline }: WorkspaceSurvey): DoctorCheck[] {
+  return [
+    {
+      status: hasOutline ? 'ok' : 'info',
+      label: '아웃라인',
+      detail: hasOutline ? 'chapters.yaml 있음' : '아직 없음',
+      ...(hasOutline ? {} : { fix: 'storyboard outline generate' }),
+    },
+  ];
+}
+
+function checkSceneCount({ scenes, drafts }: WorkspaceSurvey): DoctorCheck[] {
+  return [
+    {
+      status: scenes.length > 0 ? 'ok' : 'info',
+      label: '씬',
+      detail: `${scenes.length}개 (초안 ${drafts.length}개)`,
+      ...(scenes.length > 0
+        ? {}
+        : { fix: 'storyboard scene seed  또는  storyboard scene create --name <이름>' }),
+    },
+  ];
+}
+
+const workspaceLayoutChecks: readonly WorkspaceCheck[] = [
+  checkMissingDirectories,
+  checkInterruptedRenames,
+  checkUnreadableSceneCards,
+  checkScenesWithoutBeats,
+];
+
+const workspaceRepositoryChecks: readonly WorkspaceCheck[] = [
+  checkGitignore,
+  checkGitRepository,
+  checkOutline,
+  checkSceneCount,
+];
+
 export class DoctorChecks {
   public constructor(private readonly container: CliContainer) {}
 
@@ -197,9 +454,13 @@ export class DoctorChecks {
     return { withoutBeats, unreadable, cards, largestSceneTarget };
   }
 
-  private async narration(
-    sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
-  ): Promise<DoctorCheck[]> {
+  private async narration(sceneCards: SceneCardCensus['cards']): Promise<DoctorCheck[]> {
+    const survey: NarrationSurvey = await this.surveyNarration(sceneCards);
+
+    return narrationChecks.flatMap((check: NarrationCheck): DoctorCheck[] => check(survey));
+  }
+
+  private async surveyNarration(sceneCards: SceneCardCensus['cards']): Promise<NarrationSurvey> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
     const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
       this.container.fileSystem,
@@ -209,94 +470,17 @@ export class DoctorChecks {
     )
       .read(paths.projectJson)
       .catch(() => undefined);
-    const declaredThreads: Set<string> = new Set([
-      ...Object.keys(project?.setting?.threads ?? {}),
-      mainThreadId,
-    ]);
-
-    const referencedNarrators: Set<string> = new Set(
-      [
-        ...sceneCards.map(({ card }) => card.narrator),
-        project?.setting?.narration?.defaultNarrator,
-      ].filter((id): id is string => id !== undefined),
-    );
-    const missingNarrators: string[] = [...referencedNarrators].filter((id) => !narrators.has(id));
-    const unknownThreads: string[] = [
-      ...new Set(
-        sceneCards
-          .map(({ card }) => card.thread)
-          .filter((thread): thread is string => thread !== undefined)
-          .filter((thread) => !declaredThreads.has(thread)),
-      ),
-    ];
-    const focallessNarrators: NarratorCard[] = [...narrators.values()].filter(
-      (narrator) =>
-        narrator.focal === undefined &&
-        (narrator.person === 'first' || narrator.person === 'second'),
-    );
     const unreadableLedgerLines: string[] = await this.findUnreadableLedgerLines(project);
     const narrationlessScenes: string[] = await this.findNarrationlessScenes(sceneCards, project);
 
-    return [
-      ...(narrators.size > 0
-        ? [
-            {
-              status: 'ok' as const,
-              label: '서술자',
-              detail: `${narrators.size}개 (${[...narrators.keys()].join(', ')})`,
-            },
-          ]
-        : []),
-      ...(missingNarrators.length > 0
-        ? [
-            {
-              status: 'fail' as const,
-              label: '서술자 참조',
-              detail: `카드가 없는 서술자를 참조합니다 (${missingNarrators.join(', ')}). 그 씬은 생성되지 않습니다.`,
-              fix: `storyboard narrator create ${missingNarrators[0]}`,
-            },
-          ]
-        : []),
-      ...(unknownThreads.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '줄기',
-              detail: `작품 계약에 없는 줄기를 씬이 참조합니다 (${unknownThreads.join(', ')}).`,
-              fix: 'storyboard project set --composition omnibus --episodes <n>',
-            },
-          ]
-        : []),
-      ...(focallessNarrators.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '서술자 초점',
-              detail: `초점 인물이 없는 1·2인칭 서술자가 있습니다 (${focallessNarrators.map((narrator) => narrator.id).join(', ')}). 씬의 povCharacter 가 없으면 화자가 정해지지 않습니다.`,
-            },
-          ]
-        : []),
-      ...(narrationlessScenes.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '시점',
-              detail: `povCharacter 가 있는 씬 ${narrationlessScenes.length}개에 시점이 없습니다 (예: ${narrationlessScenes[0]}). 작품 계약의 pov 도 서술자도 없으면 시점 지시 없이 생성돼 3인칭으로 흐릅니다.`,
-              fix: 'storyboard project set --pov first',
-            },
-          ]
-        : []),
-      ...(unreadableLedgerLines.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '이야기 상태',
-              detail: `태그를 읽지 못한 원장 줄이 ${unreadableLedgerLines.length}개 있습니다 (예: ${unreadableLedgerLines[0]}). 그 항목은 시점 필터와 낡음 판정을 받지 못합니다.`,
-              fix: '해당 줄을 `- [<씬 번호>] <내용>` 형태로 고쳐 주세요.',
-            },
-          ]
-        : []),
-    ];
+    return {
+      narrators,
+      missingNarrators: findMissingNarrators(sceneCards, project, narrators),
+      unknownThreads: findUnknownThreads(sceneCards, project),
+      focallessNarrators: findFocallessNarrators(narrators),
+      narrationlessScenes,
+      unreadableLedgerLines,
+    };
   }
 
   private async findNarrationlessScenes(
@@ -454,6 +638,27 @@ export class DoctorChecks {
       ];
     }
 
+    const survey: WorkspaceSurvey = await this.surveyWorkspace(root.fsPath, paths);
+    const runChecks = (checks: readonly WorkspaceCheck[]): DoctorCheck[] =>
+      checks.flatMap((check: WorkspaceCheck): DoctorCheck[] => check(survey));
+
+    return [
+      { status: 'ok', label: '워크스페이스', detail: root.fsPath },
+      ...runChecks(workspaceLayoutChecks),
+      ...this.sceneLengthReach(survey.census.largestSceneTarget),
+      ...(await this.storyState(paths)),
+      ...(await this.chapterSummaries(paths)),
+      ...runChecks(workspaceRepositoryChecks),
+      ...(await this.narration(survey.census.cards)),
+      ...(await this.beatCast(survey.census.cards)),
+      ...(await this.cachedBackgroundConflicts()),
+    ];
+  }
+
+  private async surveyWorkspace(
+    rootPath: string,
+    paths: StoryboardProjectPaths,
+  ): Promise<WorkspaceSurvey> {
     const sceneFileNames: readonly string[] = await this.container.fileSystem
       .listFileNames(paths.sceneDirectory)
       .catch(() => []);
@@ -465,87 +670,22 @@ export class DoctorChecks {
       .filter((uri) => !existsSync(uri.fsPath))
       .map((uri) => `${basename(uri.fsPath)}/`);
     const hasOutline: boolean = existsSync(paths.outlineChapters.fsPath);
-    const {
-      withoutBeats,
-      unreadable,
-      cards: sceneCards,
-      largestSceneTarget,
-    } = await this.surveySceneCards(scenes);
+    const census: SceneCardCensus = await this.surveySceneCards(scenes);
     const missingIgnoreEntries: readonly string[] = readMissingGitignoreEntries(
       existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
     );
 
-    return [
-      { status: 'ok', label: '워크스페이스', detail: root.fsPath },
-      ...(missingDirectories.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '디렉터리',
-              detail: `${missingDirectories.join(', ')} 이(가) 없습니다.`,
-              fix: 'storyboard init --repair',
-            },
-          ]
-        : []),
-      ...collectInterruptedRenameChecks(paths, sceneFileNames, drafts),
-      ...(unreadable.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '씬 카드',
-              detail: `읽지 못한 카드가 있습니다 (${unreadable.join(', ')}).`,
-            },
-          ]
-        : []),
-      ...(withoutBeats > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '씬 비트',
-              detail: `비트 없는 씬이 ${withoutBeats}개 있습니다. 생성 시 자동으로 채우지만 미리 검수하려면 뽑아 두세요.`,
-              fix: 'storyboard scene plot --all',
-            },
-          ]
-        : []),
-      ...this.sceneLengthReach(largestSceneTarget),
-      ...(await this.storyState(paths)),
-      ...(await this.chapterSummaries(paths)),
-      ...(missingIgnoreEntries.length > 0
-        ? [
-            {
-              status: 'warn' as const,
-              label: '.gitignore',
-              detail: `생성물 항목이 빠졌습니다 (${missingIgnoreEntries.join(', ')}).`,
-              fix: 'storyboard init --repair',
-            },
-          ]
-        : []),
-      isGitRepository(root.fsPath)
-        ? { status: 'ok' as const, label: 'git', detail: '저장소 있음' }
-        : {
-            status: 'warn' as const,
-            label: 'git',
-            detail: '워크스페이스가 git 저장소가 아닙니다.',
-            fix: 'storyboard init --repair',
-          },
-      {
-        status: hasOutline ? 'ok' : 'info',
-        label: '아웃라인',
-        detail: hasOutline ? 'chapters.yaml 있음' : '아직 없음',
-        ...(hasOutline ? {} : { fix: 'storyboard outline generate' }),
-      },
-      {
-        status: scenes.length > 0 ? 'ok' : 'info',
-        label: '씬',
-        detail: `${scenes.length}개 (초안 ${drafts.length}개)`,
-        ...(scenes.length > 0
-          ? {}
-          : { fix: 'storyboard scene seed  또는  storyboard scene create --name <이름>' }),
-      },
-      ...(await this.narration(sceneCards)),
-      ...(await this.beatCast(sceneCards)),
-      ...(await this.cachedBackgroundConflicts()),
-    ];
+    return {
+      rootPath,
+      paths,
+      sceneFileNames,
+      scenes,
+      drafts,
+      missingDirectories,
+      hasOutline,
+      census,
+      missingIgnoreEntries,
+    };
   }
 
   private async beatCast(

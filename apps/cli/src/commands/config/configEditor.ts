@@ -11,6 +11,7 @@ import type { CliContainer } from '@/container';
 import type { TaskAiConfigOverride } from '@storyboard/story-ai';
 import {
   aiTaskNames,
+  type AiTaskName,
   isModelInCatalogForProvider,
   type AiProviderId,
   type ConfigValueOrigin,
@@ -89,47 +90,63 @@ export class ConfigEditor {
     raw: string,
     modelFlag: string | undefined,
   ): Promise<CommandOutcome> {
-    const { configBridge } = this.container;
-    const key: string = `tasks.${taskName}.${field}`;
-
     if (!isTaskName(taskName)) {
       return failure(`알 수 없는 작업: ${taskName}\n쓸 수 있는 값: ${aiTaskNames.join(', ')}`);
     }
 
-    const current: TaskAiConfigOverride | null = configBridge.getTaskAiConfigOverride(taskName);
+    const current: TaskAiConfigOverride | null =
+      this.container.configBridge.getTaskAiConfigOverride(taskName);
 
-    if (field === 'model') {
-      if (modelFlag !== undefined) {
-        return failure(
-          `--model 은 tasks.${taskName}.provider 와 함께 씁니다. 모델만 바꾸려면 값으로 주세요.`,
-        );
-      }
+    return field === 'model'
+      ? this.setTaskModel(taskName, raw, modelFlag, current)
+      : this.setTaskProvider(taskName, raw, modelFlag, current);
+  }
 
-      const isFilledFromDefault: boolean = current === null;
+  private async setTaskModel(
+    taskName: AiTaskName,
+    raw: string,
+    modelFlag: string | undefined,
+    current: TaskAiConfigOverride | null,
+  ): Promise<CommandOutcome> {
+    const { configBridge } = this.container;
 
-      if (isFilledFromDefault && !configBridge.isDefaultProviderConfigured()) {
-        return failure(
-          `기본 프로바이더가 없어 ${raw} 가 어느 프로바이더의 모델인지 알 수 없습니다.\n` +
-            `  storyboard config set tasks.${taskName}.provider <프로바이더> --model ${raw}`,
-        );
-      }
-
-      const providerId: AiProviderId = current?.providerId ?? configBridge.getDefaultProvider();
-
-      if (!isModelInCatalogForProvider(providerId, raw)) {
-        return failure(describeModelOutsideCatalog(providerId, raw));
-      }
-
-      await configBridge.setTaskAiConfig(taskName, { providerId, model: raw });
-      return this.describeSaved(
-        key,
-        raw,
-        isFilledFromDefault
-          ? [`프로바이더는 기본값 ${providerId} 로 함께 저장했습니다 (tasks.${taskName}.provider).`]
-          : [],
+    if (modelFlag !== undefined) {
+      return failure(
+        `--model 은 tasks.${taskName}.provider 와 함께 씁니다. 모델만 바꾸려면 값으로 주세요.`,
       );
     }
 
+    const isFilledFromDefault: boolean = current === null;
+
+    if (isFilledFromDefault && !configBridge.isDefaultProviderConfigured()) {
+      return failure(
+        `기본 프로바이더가 없어 ${raw} 가 어느 프로바이더의 모델인지 알 수 없습니다.\n` +
+          `  storyboard config set tasks.${taskName}.provider <프로바이더> --model ${raw}`,
+      );
+    }
+
+    const providerId: AiProviderId = current?.providerId ?? configBridge.getDefaultProvider();
+
+    if (!isModelInCatalogForProvider(providerId, raw)) {
+      return failure(describeModelOutsideCatalog(providerId, raw));
+    }
+
+    await configBridge.setTaskAiConfig(taskName, { providerId, model: raw });
+    return this.describeSaved(
+      `tasks.${taskName}.model`,
+      raw,
+      isFilledFromDefault
+        ? [`프로바이더는 기본값 ${providerId} 로 함께 저장했습니다 (tasks.${taskName}.provider).`]
+        : [],
+    );
+  }
+
+  private async setTaskProvider(
+    taskName: AiTaskName,
+    raw: string,
+    modelFlag: string | undefined,
+    current: TaskAiConfigOverride | null,
+  ): Promise<CommandOutcome> {
     if (!isAvailableProviderId(raw)) {
       return failure(
         `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
@@ -140,23 +157,32 @@ export class ConfigEditor {
       return failure(describeModelOutsideCatalog(raw, modelFlag));
     }
 
-    const keptModel: string | null = current?.model ?? null;
-    const isKeptModelUsable: boolean =
-      keptModel !== null && isModelInCatalogForProvider(raw, keptModel);
-    const model: string | null = modelFlag ?? (isKeptModelUsable ? keptModel : null);
+    const model: string | null = modelFlag ?? this.keepTaskModelFor(taskName, raw, current);
 
-    if (modelFlag === undefined && keptModel !== null && !isKeptModelUsable) {
-      this.container.logger.warn(
-        `tasks.${taskName}.model 을 비웠습니다: ${keptModel} 는 ${raw} 의 모델이 아닙니다. ` +
-          `${raw} 에 정한 모델로 실행합니다.`,
-      );
-    }
-
-    await configBridge.setTaskAiConfig(taskName, { providerId: raw, model });
+    await this.container.configBridge.setTaskAiConfig(taskName, { providerId: raw, model });
     return this.describeSaved(
-      key,
+      `tasks.${taskName}.provider`,
       raw,
       modelFlag === undefined ? [] : [`tasks.${taskName}.model = ${modelFlag}`],
     );
+  }
+
+  private keepTaskModelFor(
+    taskName: AiTaskName,
+    providerId: AiProviderId,
+    current: TaskAiConfigOverride | null,
+  ): string | null {
+    const keptModel: string | null = current?.model ?? null;
+    const isKeptModelUsable: boolean =
+      keptModel !== null && isModelInCatalogForProvider(providerId, keptModel);
+
+    if (keptModel !== null && !isKeptModelUsable) {
+      this.container.logger.warn(
+        `tasks.${taskName}.model 을 비웠습니다: ${keptModel} 는 ${providerId} 의 모델이 아닙니다. ` +
+          `${providerId} 에 정한 모델로 실행합니다.`,
+      );
+    }
+
+    return isKeptModelUsable ? keptModel : null;
   }
 }

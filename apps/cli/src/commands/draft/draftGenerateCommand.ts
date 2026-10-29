@@ -13,6 +13,7 @@ import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import {
   describeReviseOutcome,
   type GenerateAllDraftsResult,
+  type GenerateAllDraftsSummary,
   type GenerateDraftResult,
   type ReviseDraftWorkflowResult,
   type ReviseOutcome,
@@ -30,62 +31,48 @@ export class DraftGenerateCommand implements ICommandHandler {
     examples: ['storyboard draft generate 01-scene-1-1', 'storyboard draft generate --all'],
   };
 
-  public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    if (flagBoolean(args.flags, 'all')) {
-      const isConfirmed: boolean = await new WorkspaceInput(container).confirmPaidRun((status) => {
-        const pending: number = status.drafts.missing + status.drafts.stale;
-        return {
-          title: `초안 ${pending}개 생성`,
-          details: [
-            `대상  초안이 없거나 카드보다 오래된 씬 ${pending}개 (전체 ${status.scenes.total}개)`,
-          ],
-        };
-      });
+  public async execute(context: CommandContext): Promise<CommandOutcome> {
+    return flagBoolean(context.args.flags, 'all')
+      ? this.generateAll(context)
+      : this.generateScene(context);
+  }
 
-      if (!isConfirmed) {
-        return cancelledBeforeRun;
-      }
-
-      const batchGeneration: GenerateAllDraftsResult = await container.drafts.generateAll({
-        shouldPause: container.pauseRequests.watch(),
-        onProgress: (progress) => {
-          const step: string = describeBatchStep(progress);
-          container.progress.update({
-            line: `${progress.current}/${progress.total} ${progress.label} · ${step}`,
-            unit: { current: progress.current, total: progress.total, label: progress.label },
-            step,
-          });
-        },
-      });
-
-      if (!batchGeneration.ok) {
-        return failure(describeBatchFailure(batchGeneration.kind), batchGeneration);
-      }
-
-      const { cacheHits, failureLabels, failures, generated, pausedWithRemaining } =
-        batchGeneration.summary;
-
-      if (pausedWithRemaining !== undefined) {
-        return {
-          ok: false,
-          message:
-            `멈췄습니다: 생성 ${generated}건, 남은 씬 ${pausedWithRemaining}개. ` +
-            '다시 실행하면 남은 씬부터 이어 갑니다.',
-          data: batchGeneration.summary,
-          stop: 'paused',
-        };
-      }
-
+  private async generateAll({ container }: CommandContext): Promise<CommandOutcome> {
+    const isConfirmed: boolean = await new WorkspaceInput(container).confirmPaidRun((status) => {
+      const pending: number = status.drafts.missing + status.drafts.stale;
       return {
-        ok: failures === 0,
-        message:
-          failures === 0
-            ? `초안 ${generated}건 생성, ${cacheHits}건은 입력이 같아 그대로 둡니다.`
-            : `${failures}건 실패 (생성 ${generated}건, 캐시 ${cacheHits}건): ${failureLabels.join(', ')}`,
-        data: batchGeneration.summary,
+        title: `초안 ${pending}개 생성`,
+        details: [
+          `대상  초안이 없거나 카드보다 오래된 씬 ${pending}개 (전체 ${status.scenes.total}개)`,
+        ],
       };
+    });
+
+    if (!isConfirmed) {
+      return cancelledBeforeRun;
     }
 
+    const batchGeneration: GenerateAllDraftsResult = await container.drafts.generateAll({
+      shouldPause: container.pauseRequests.watch(),
+      onProgress: (progress) => {
+        const step: string = describeBatchStep(progress);
+        container.progress.update({
+          line: `${progress.current}/${progress.total} ${progress.label} · ${step}`,
+          unit: { current: progress.current, total: progress.total, label: progress.label },
+          step,
+        });
+      },
+    });
+
+    if (!batchGeneration.ok) {
+      return failure(describeBatchFailure(batchGeneration.kind), batchGeneration);
+    }
+
+    return describeBatchSummary(batchGeneration.summary);
+  }
+
+  private async generateScene(context: CommandContext): Promise<CommandOutcome> {
+    const { container, args } = context;
     const stem: string | undefined = sceneStemFrom(args);
     if (stem === undefined) {
       return failure('씬 stem을 지정해 주세요. 예: storyboard draft generate 01-scene-1-1');
@@ -110,25 +97,10 @@ export class DraftGenerateCommand implements ICommandHandler {
       container.logger.warn(warning);
     }
 
-    const reviseRequested: boolean =
-      !flagBoolean(args.flags, 'no-revise') &&
-      container.configBridge.isReviseAfterGenerateEnabled();
-
-    let revise: ReviseOutcome | undefined;
-    if (draftGeneration.kind === 'generated' && reviseRequested) {
-      const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
-        container.workspaceRoot,
-        stem,
-        {
-          onProgress: (message) => container.progress.update({ line: message, step: message }),
-        },
-      );
-      revise = revised && describeReviseOutcome(revised);
-
-      if (revise?.warning) {
-        container.logger.warn(revise.warning);
-      }
-    }
+    const revise: ReviseOutcome | undefined =
+      draftGeneration.kind === 'generated'
+        ? await this.reviseGeneratedDraft(context, stem)
+        : undefined;
 
     return success(
       draftGeneration.kind === 'cache_hit'
@@ -141,4 +113,56 @@ export class DraftGenerateCommand implements ICommandHandler {
       },
     );
   }
+
+  private async reviseGeneratedDraft(
+    { container, args }: CommandContext,
+    stem: string,
+  ): Promise<ReviseOutcome | undefined> {
+    const reviseRequested: boolean =
+      !flagBoolean(args.flags, 'no-revise') &&
+      container.configBridge.isReviseAfterGenerateEnabled();
+
+    if (!reviseRequested) {
+      return undefined;
+    }
+
+    const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
+      container.workspaceRoot,
+      stem,
+      {
+        onProgress: (message) => container.progress.update({ line: message, step: message }),
+      },
+    );
+    const revise: ReviseOutcome | undefined = revised && describeReviseOutcome(revised);
+
+    if (revise?.warning) {
+      container.logger.warn(revise.warning);
+    }
+
+    return revise;
+  }
+}
+
+function describeBatchSummary(summary: GenerateAllDraftsSummary): CommandOutcome {
+  const { cacheHits, failureLabels, failures, generated, pausedWithRemaining } = summary;
+
+  if (pausedWithRemaining !== undefined) {
+    return {
+      ok: false,
+      message:
+        `멈췄습니다: 생성 ${generated}건, 남은 씬 ${pausedWithRemaining}개. ` +
+        '다시 실행하면 남은 씬부터 이어 갑니다.',
+      data: summary,
+      stop: 'paused',
+    };
+  }
+
+  return {
+    ok: failures === 0,
+    message:
+      failures === 0
+        ? `초안 ${generated}건 생성, ${cacheHits}건은 입력이 같아 그대로 둡니다.`
+        : `${failures}건 실패 (생성 ${generated}건, 캐시 ${cacheHits}건): ${failureLabels.join(', ')}`,
+    data: summary,
+  };
 }
