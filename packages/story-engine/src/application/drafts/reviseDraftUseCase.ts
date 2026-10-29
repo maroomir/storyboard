@@ -232,6 +232,13 @@ async function loadSceneCoordinateLines(
   return coordinates.map((line) => `장면 좌표 ${line}`);
 }
 
+interface ReviseSceneSources {
+  readonly scene: SceneFile;
+  readonly context: SceneContext;
+  readonly setting: ProjectSetting | undefined;
+  readonly reviseNarration: ReviseNarration;
+}
+
 async function prepareReviseDraftContext(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
@@ -239,6 +246,22 @@ async function prepareReviseDraftContext(
   sceneStem: string,
   sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<ReviseDraftContext> {
+  const sources: ReviseSceneSources = await loadReviseSceneSources(fs, paths, sceneStem);
+  const factLines: string[] = await loadReviseFactLines(fs, paths, sources, sceneCacheRepository);
+
+  const draft: Draft = parseDraft(await readDraftFile(draftUri, fs));
+
+  return {
+    draft,
+    loop: buildReviseLoopContext(draft, factLines, sources),
+  };
+}
+
+async function loadReviseSceneSources(
+  fs: IFileSystem,
+  paths: StoryboardProjectPaths,
+  sceneStem: string,
+): Promise<ReviseSceneSources> {
   const sceneFileName: string = `${sceneStem}.card`;
   const scene: SceneFile = await readSceneFile(
     joinUri(paths.sceneDirectory, sceneFileName),
@@ -250,13 +273,19 @@ async function prepareReviseDraftContext(
     scene,
   );
   const project: StoryboardProject | undefined = await readProjectIfPresent(fs, paths.projectJson);
-  const setting: ProjectSetting | undefined = project?.setting;
-  const { threadPaths, previousSceneOrder, narration } = await resolveReviseNarration(
-    fs,
-    paths,
-    scene,
-    project,
-  );
+  const reviseNarration: ReviseNarration = await resolveReviseNarration(fs, paths, scene, project);
+
+  return { scene, context, setting: project?.setting, reviseNarration };
+}
+
+async function loadReviseFactLines(
+  fs: IFileSystem,
+  paths: StoryboardProjectPaths,
+  sources: ReviseSceneSources,
+  sceneCacheRepository: ISceneCacheRepository | undefined,
+): Promise<string[]> {
+  const { scene, context } = sources;
+  const { threadPaths, previousSceneOrder, narration } = sources.reviseNarration;
   const narrative: NarrativeContext = await new SceneContextReader(fs).buildNarrative(
     sceneContextPaths(threadPaths),
     context,
@@ -269,34 +298,38 @@ async function prepareReviseDraftContext(
   );
   const canonFactLines: string[] = formatBibleFactLines(context, narrative.bibleFacts);
   const priorState: StoryState = await readStoryState(threadPaths.storyState, fs);
-  const factLines: string[] = [
+
+  return [
     ...canonFactLines,
     ...storyStateFactLines(priorState, scene.order, scene.body),
     ...(await loadSceneCoordinateLines(fs, sceneCacheRepository, paths, scene, context.characters)),
   ];
+}
 
-  const draft: Draft = parseDraft(await readDraftFile(draftUri, fs));
+function buildReviseLoopContext(
+  draft: Draft,
+  factLines: string[],
+  sources: ReviseSceneSources,
+): ReviseLoopContext {
+  const { scene, context, setting } = sources;
 
   return {
-    draft,
-    loop: {
-      format: draft.format,
-      intent: scene.body,
-      factLines,
-      characterNames: context.characters.map((character) => character.name),
-      characterCards: formatAugmentCards(context.characters, undefined),
-      styleConstraints: setting?.styleConstraints ?? [],
-      qualityCriteria: setting?.qualityCriteria ?? [],
-      styleDirective: buildStyleDirective(
-        setting,
-        scene.frontmatter.relationStage,
-        scene.frontmatter.targetWordCount,
-        scene.body,
-        narration,
-      ),
-      characters: context.characters,
-      targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),
-    },
+    format: draft.format,
+    intent: scene.body,
+    factLines,
+    characterNames: context.characters.map((character) => character.name),
+    characterCards: formatAugmentCards(context.characters, undefined),
+    styleConstraints: setting?.styleConstraints ?? [],
+    qualityCriteria: setting?.qualityCriteria ?? [],
+    styleDirective: buildStyleDirective(
+      setting,
+      scene.frontmatter.relationStage,
+      scene.frontmatter.targetWordCount,
+      scene.body,
+      sources.reviseNarration.narration,
+    ),
+    characters: context.characters,
+    targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),
   };
 }
 export class ReviseDraftUseCase {
@@ -313,23 +346,9 @@ export class ReviseDraftUseCase {
   private async runReviseDraftWorkflow(
     request: ReviseDraftRequest,
   ): Promise<ReviseDraftWorkflowResult> {
-    const {
-      paths,
-      draftUri,
-      sceneStem,
-      maxIterations,
-      reviseScoreThreshold,
-      maxCompressionPercent,
-    } = request;
+    const { paths, draftUri, sceneStem } = request;
 
-    const aiService: StoryboardAiService = new StoryboardAiService(this.ai.providerRegistry, {
-      onUsage: (record): void => {
-        void this.ai.usageSink
-          .record(request.workspaceUri, record)
-          .catch((error: unknown) => this.host.logger.error('사용량 기록에 실패했습니다.', error));
-      },
-    });
-    const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
+    const aiService: StoryboardAiService = this.createUsageRecordingAiService(request.workspaceUri);
     const reviseContext: ReviseDraftContext = await prepareReviseDraftContext(
       this.host.fileSystem,
       paths,
@@ -338,7 +357,40 @@ export class ReviseDraftUseCase {
       this.repositories.sceneCache,
     );
 
-    const loopResult: ReviseLoopResult = await new ReviseLoop({
+    const loopResult: ReviseLoopResult = await this.runReviseLoop(
+      request,
+      aiService,
+      reviseContext,
+    );
+
+    await this.recordRevisionRounds(paths, sceneStem, loopResult.rounds);
+
+    if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
+      await this.writeRevisedDraft(request, reviseContext, loopResult.body);
+    }
+
+    return this.toWorkflowResult(loopResult);
+  }
+
+  private createUsageRecordingAiService(workspaceUri: StoryUri): StoryboardAiService {
+    return new StoryboardAiService(this.ai.providerRegistry, {
+      onUsage: (record): void => {
+        void this.ai.usageSink
+          .record(workspaceUri, record)
+          .catch((error: unknown) => this.host.logger.error('사용량 기록에 실패했습니다.', error));
+      },
+    });
+  }
+
+  private async runReviseLoop(
+    request: ReviseDraftRequest,
+    aiService: StoryboardAiService,
+    reviseContext: ReviseDraftContext,
+  ): Promise<ReviseLoopResult> {
+    const { sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } = request;
+    const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
+
+    return await new ReviseLoop({
       aiService,
       registry: this.ai.providerRegistry,
       attribution,
@@ -352,34 +404,43 @@ export class ReviseDraftUseCase {
       ...(request.seedIssues === undefined ? {} : { seedIssues: request.seedIssues }),
       onRound: (round) => this.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
     }).run();
+  }
 
+  private async recordRevisionRounds(
+    paths: StoryboardProjectPaths,
+    sceneStem: string,
+    rounds: readonly ReviseRound[],
+  ): Promise<void> {
     try {
-      await new RevisionPlanRecorder(this.host.fileSystem).recordRounds(
-        paths,
-        sceneStem,
-        loopResult.rounds,
-      );
+      await new RevisionPlanRecorder(this.host.fileSystem).recordRounds(paths, sceneStem, rounds);
     } catch (error) {
       this.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
     }
+  }
 
-    if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
-      const revisionConfig: TaskAiConfigResolved =
-        this.ai.providerRegistry.getTaskAiConfig('draftRevision');
-      const revised: Draft = createDraft({
-        sceneStem,
-        format: reviseContext.draft.format,
-        body: loopResult.body,
-        warnings: reviseContext.draft.warnings,
-        generator: this.host.generator,
-        providerId: revisionConfig.providerId,
-        model: revisionConfig.model,
-      });
+  private async writeRevisedDraft(
+    request: ReviseDraftRequest,
+    reviseContext: ReviseDraftContext,
+    revisedBody: string,
+  ): Promise<void> {
+    const { paths, draftUri, sceneStem } = request;
+    const revisionConfig: TaskAiConfigResolved =
+      this.ai.providerRegistry.getTaskAiConfig('draftRevision');
+    const revised: Draft = createDraft({
+      sceneStem,
+      format: reviseContext.draft.format,
+      body: revisedBody,
+      warnings: reviseContext.draft.warnings,
+      generator: this.host.generator,
+      providerId: revisionConfig.providerId,
+      model: revisionConfig.model,
+    });
 
-      await writeDraftFile(draftUri, this.host.fileSystem, revised);
-      await this.refreshSceneCacheBodyHash(paths, sceneStem, revised);
-    }
+    await writeDraftFile(draftUri, this.host.fileSystem, revised);
+    await this.refreshSceneCacheBodyHash(paths, sceneStem, revised);
+  }
 
+  private toWorkflowResult(loopResult: ReviseLoopResult): ReviseDraftWorkflowResult {
     return {
       passed: loopResult.passed,
       revisionCount: loopResult.revisionCount,

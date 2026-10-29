@@ -270,17 +270,99 @@ type SceneContextBundleResult =
       readonly narration: NarrationDirective | undefined;
     };
 
+type ProjectPaths = ReturnType<typeof getStoryboardProjectPaths>;
+type GenerationProject = Awaited<ReturnType<IProjectRepository['read']>>;
+
+type BaseSceneContextResult = InputsFailure | { readonly ok: true; readonly context: SceneContext };
+
+interface SceneThreadSetup {
+  readonly thread: SceneThreadContext;
+  readonly narration: NarrationDirective | undefined;
+  readonly sceneBreakJoiner: string | undefined;
+  readonly staleWarnings: readonly (string | undefined)[];
+}
+
 async function loadSceneContextBundle(
-  paths: ReturnType<typeof getStoryboardProjectPaths>,
+  paths: ProjectPaths,
   sceneUri: StoryUri,
   rawScene: Awaited<ReturnType<ISceneRepository['read']>>,
-  project: Awaited<ReturnType<IProjectRepository['read']>>,
+  project: GenerationProject,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneContextBundleResult> {
+  const built: BaseSceneContextResult = await buildBaseSceneContext(paths, rawScene, options);
+  if (!built.ok) {
+    return built;
+  }
+
+  const scene: SceneFile | undefined = await resolveGeneratedScene(
+    paths,
+    sceneUri,
+    rawScene,
+    built.context,
+    options,
+  );
+  if (scene === undefined) {
+    return { ok: false, result: { ok: false, kind: 'cancelled' } };
+  }
+  const context: SceneContext = { ...built.context, scene };
+
+  const setup: SceneThreadSetup = await resolveSceneThreadSetup(paths, scene, project, options);
+  const narrativeContext: NarrativeContext = await loadSceneNarrative(
+    setup.thread,
+    setup.narration,
+    context,
+    options,
+  );
+
+  return assembleSceneContextBundle(scene, context, project, setup, narrativeContext);
+}
+
+function assembleSceneContextBundle(
+  scene: SceneFile,
+  context: SceneContext,
+  project: GenerationProject,
+  setup: SceneThreadSetup,
+  narrativeContext: NarrativeContext,
+): SceneContextBundleResult {
+  const { thread, narration, sceneBreakJoiner, staleWarnings } = setup;
+  const inputHash: string = computeBundleInputHash(
+    scene,
+    context,
+    project,
+    narrativeContext,
+    sceneBreakJoiner,
+  );
+
+  return {
+    ok: true,
+    scene,
+    context,
+    previousContext: narrativeContext.prompt,
+    canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
+    characterKnowledge: narrativeContext.characterKnowledge,
+    characterRelations: narrativeContext.characterRelations,
+    sceneBreakJoiner,
+    inputHash,
+    warnings: collectBundleWarnings(staleWarnings, scene, context),
+    threadPaths: thread.threadPaths,
+    threadId: thread.threadId,
+    narration,
+  };
+}
+
+async function buildBaseSceneContext(
+  paths: ProjectPaths,
+  rawScene: Awaited<ReturnType<ISceneRepository['read']>>,
+  options: GenerateDraftWorkflowOptions,
+): Promise<BaseSceneContextResult> {
   const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-  let builtContext: SceneContext;
+
   try {
-    builtContext = await new SceneContextReader(options.host.fileSystem).build(ctxPaths, rawScene);
+    const context: SceneContext = await new SceneContextReader(options.host.fileSystem).build(
+      ctxPaths,
+      rawScene,
+    );
+    return { ok: true, context };
   } catch (error) {
     return {
       ok: false,
@@ -292,7 +374,15 @@ async function loadSceneContextBundle(
       ),
     };
   }
+}
 
+async function resolveGeneratedScene(
+  paths: ProjectPaths,
+  sceneUri: StoryUri,
+  rawScene: Awaited<ReturnType<ISceneRepository['read']>>,
+  builtContext: SceneContext,
+  options: GenerateDraftWorkflowOptions,
+): Promise<SceneFile | undefined> {
   const characterNames: string[] = builtContext.characters.map((character) => character.name);
   const grounded: SceneGroundingOutcome = await resolveSceneGrounding(
     paths.workspaceRoot,
@@ -302,14 +392,20 @@ async function loadSceneContextBundle(
     options,
   );
   if (grounded.kind === 'cancelled') {
-    return { ok: false, result: { ok: false, kind: 'cancelled' } };
+    return undefined;
   }
 
-  const scene: SceneFile = options.skipSceneBeats
+  return options.skipSceneBeats
     ? grounded.scene
     : await resolveSceneBeats(sceneUri, grounded.scene, builtContext.characters, options);
-  const context: SceneContext = { ...builtContext, scene };
+}
 
+async function resolveSceneThreadSetup(
+  paths: ProjectPaths,
+  scene: SceneFile,
+  project: GenerationProject,
+  options: GenerateDraftWorkflowOptions,
+): Promise<SceneThreadSetup> {
   const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(
     options.host.fileSystem,
   );
@@ -332,38 +428,75 @@ async function loadSceneContextBundle(
   const sceneBreakJoiner: string | undefined = resolveSceneBreakJoiner(
     options.host.configBridge.getDraftSceneBreakSeparator(),
   );
+  const staleWarnings: readonly (string | undefined)[] = await auditThreadMemory(
+    thread.threadPaths,
+    project,
+    sceneBreakJoiner,
+    scene.order,
+    options,
+  );
 
+  return { thread, narration, sceneBreakJoiner, staleWarnings };
+}
+
+async function auditThreadMemory(
+  threadPaths: ProjectPaths,
+  project: GenerationProject,
+  sceneBreakJoiner: string | undefined,
+  beforeSceneOrder: number,
+  options: GenerateDraftWorkflowOptions,
+): Promise<readonly (string | undefined)[]> {
   const memoryAuditor: StoryMemoryAuditor = new StoryMemoryAuditor({
     fileSystem: options.host.fileSystem,
-    paths: thread.threadPaths,
+    paths: threadPaths,
     format: project.format,
     sceneBreakJoiner,
-    beforeSceneOrder: scene.order,
+    beforeSceneOrder,
   });
   const memoryAudit: StoryMemoryAudit = await memoryAuditor.audit();
   await memoryAuditor.markStale(memoryAudit);
 
   const chapterAuditor: ChapterMemoryAuditor = new ChapterMemoryAuditor({
     fileSystem: options.host.fileSystem,
-    paths: thread.threadPaths,
+    paths: threadPaths,
   });
   const chapterAudit: ChapterMemoryAudit = await chapterAuditor.audit();
   await chapterAuditor.markStale(chapterAudit);
 
-  const narrativeContext: NarrativeContext = await new SceneContextReader(
-    options.host.fileSystem,
-  ).buildNarrative(sceneContextPaths(thread.threadPaths), context, {
-    previousSceneOrder: thread.previousSceneOrder,
-    focalFilter: {
-      ...(narration?.knowledge === 'witnessed' && narration.focal
-        ? { focal: narration.focal }
-        : {}),
-      ...(narration?.knowledge === 'omniscient'
-        ? {}
-        : { witnessedByAll: context.characters.map((character) => character.id) }),
+  return [memoryAudit.staleWarning, chapterAudit.staleWarning];
+}
+
+async function loadSceneNarrative(
+  thread: SceneThreadContext,
+  narration: NarrationDirective | undefined,
+  context: SceneContext,
+  options: GenerateDraftWorkflowOptions,
+): Promise<NarrativeContext> {
+  return await new SceneContextReader(options.host.fileSystem).buildNarrative(
+    sceneContextPaths(thread.threadPaths),
+    context,
+    {
+      previousSceneOrder: thread.previousSceneOrder,
+      focalFilter: {
+        ...(narration?.knowledge === 'witnessed' && narration.focal
+          ? { focal: narration.focal }
+          : {}),
+        ...(narration?.knowledge === 'omniscient'
+          ? {}
+          : { witnessedByAll: context.characters.map((character) => character.id) }),
+      },
     },
-  });
-  const inputHash: string = computeSceneInputHash({
+  );
+}
+
+function computeBundleInputHash(
+  scene: SceneFile,
+  context: SceneContext,
+  project: GenerationProject,
+  narrativeContext: NarrativeContext,
+  sceneBreakJoiner: string | undefined,
+): string {
+  return computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,
     background: context.background,
@@ -373,27 +506,18 @@ async function loadSceneContextBundle(
     grounding: scene.frontmatter.grounding,
     narration: sceneNarrationHashInput(scene),
   });
+}
 
-  return {
-    ok: true,
-    scene,
-    context,
-    previousContext: narrativeContext.prompt,
-    canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
-    characterKnowledge: narrativeContext.characterKnowledge,
-    characterRelations: narrativeContext.characterRelations,
-    sceneBreakJoiner,
-    inputHash,
-    warnings: [
-      memoryAudit.staleWarning,
-      chapterAudit.staleWarning,
-      ...findUnknownBeatCast(scene.card?.beats, context.characters).map(
-        ({ beat, ref }) =>
-          `비트 ${beat}의 출연 «${ref}»이(가) 이 씬의 인물 카드와 맞지 않아 그대로 프롬프트에 실렸습니다`,
-      ),
-    ].filter((warning): warning is string => warning !== undefined),
-    threadPaths: thread.threadPaths,
-    threadId: thread.threadId,
-    narration,
-  };
+function collectBundleWarnings(
+  staleWarnings: readonly (string | undefined)[],
+  scene: SceneFile,
+  context: SceneContext,
+): string[] {
+  return [
+    ...staleWarnings,
+    ...findUnknownBeatCast(scene.card?.beats, context.characters).map(
+      ({ beat, ref }) =>
+        `비트 ${beat}의 출연 «${ref}»이(가) 이 씬의 인물 카드와 맞지 않아 그대로 프롬프트에 실렸습니다`,
+    ),
+  ].filter((warning): warning is string => warning !== undefined);
 }

@@ -13,6 +13,11 @@ export type SceneGroundingOutcome =
   | { readonly kind: 'resolved'; readonly scene: SceneFile }
   | { readonly kind: 'cancelled' };
 
+type GroundingDecision =
+  | { readonly kind: 'unchanged' }
+  | { readonly kind: 'cancelled' }
+  | { readonly kind: 'approved'; readonly grounding: SceneGrounding };
+
 export async function resolveSceneGrounding(
   workspaceRoot: StoryUri,
   sceneUri: StoryUri,
@@ -27,15 +32,46 @@ export async function resolveSceneGrounding(
     return { kind: 'resolved', scene };
   }
 
-  const gaps: ISceneGroundingGapRepository = options.repositories.sceneGroundingGaps;
-  const gap: SceneGroundingGap | undefined = await gaps.read(workspaceRoot, scene.stem);
-  if (
-    gap?.inputKey === computeSceneGroundingInputKey(scene, characterNames) &&
-    missingFields.every((field) => gap.fields.includes(field))
-  ) {
+  if (await hasRecordedGroundingGap(workspaceRoot, scene, characterNames, missingFields, options)) {
     return { kind: 'resolved', scene };
   }
 
+  const decision: GroundingDecision = await decideGrounding(
+    sceneUri,
+    scene,
+    characterNames,
+    missingFields,
+    options,
+  );
+
+  if (decision.kind === 'unchanged') {
+    return { kind: 'resolved', scene };
+  }
+
+  if (decision.kind === 'cancelled') {
+    return { kind: 'cancelled' };
+  }
+
+  return {
+    kind: 'resolved',
+    scene: await applyApprovedGrounding(
+      workspaceRoot,
+      sceneUri,
+      scene,
+      decision.grounding,
+      characterNames,
+      options,
+    ),
+  };
+}
+
+async function decideGrounding(
+  sceneUri: StoryUri,
+  scene: SceneFile,
+  characterNames: readonly string[],
+  missingFields: SceneGroundingFieldKey[],
+  options: GenerateDraftWorkflowOptions,
+): Promise<GroundingDecision> {
   const proposed: SceneGrounding | undefined = await proposeGrounding(
     sceneUri,
     scene,
@@ -45,20 +81,43 @@ export async function resolveSceneGrounding(
   );
 
   if (proposed === undefined) {
-    return { kind: 'resolved', scene };
+    return { kind: 'unchanged' };
   }
 
-  const merged: SceneGrounding = mergeSceneGrounding(existing, proposed);
+  const merged: SceneGrounding = mergeSceneGrounding(scene.frontmatter.grounding, proposed);
 
   const approved: SceneGrounding | undefined =
     options.host.configBridge.isSceneGroundingAutoApproveEnabled()
       ? merged
       : await requestApproval(scene, merged, missingFields, options);
 
-  if (!approved) {
-    return { kind: 'cancelled' };
-  }
+  return approved ? { kind: 'approved', grounding: approved } : { kind: 'cancelled' };
+}
 
+async function hasRecordedGroundingGap(
+  workspaceRoot: StoryUri,
+  scene: SceneFile,
+  characterNames: readonly string[],
+  missingFields: readonly SceneGroundingFieldKey[],
+  options: GenerateDraftWorkflowOptions,
+): Promise<boolean> {
+  const gaps: ISceneGroundingGapRepository = options.repositories.sceneGroundingGaps;
+  const gap: SceneGroundingGap | undefined = await gaps.read(workspaceRoot, scene.stem);
+
+  return (
+    gap?.inputKey === computeSceneGroundingInputKey(scene, characterNames) &&
+    missingFields.every((field) => gap.fields.includes(field))
+  );
+}
+
+async function applyApprovedGrounding(
+  workspaceRoot: StoryUri,
+  sceneUri: StoryUri,
+  scene: SceneFile,
+  approved: SceneGrounding,
+  characterNames: readonly string[],
+  options: GenerateDraftWorkflowOptions,
+): Promise<SceneFile> {
   try {
     await options.repositories.scenes.writeGrounding(sceneUri, approved);
   } catch (error) {
@@ -71,7 +130,7 @@ export async function resolveSceneGrounding(
   };
   await recordGroundingGap(workspaceRoot, groundedScene, characterNames, options);
 
-  return { kind: 'resolved', scene: groundedScene };
+  return groundedScene;
 }
 
 async function recordGroundingGap(
