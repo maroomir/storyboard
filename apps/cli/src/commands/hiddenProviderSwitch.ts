@@ -198,7 +198,7 @@ export class HiddenProviderSwitch {
 
     let provider: ChatGptProvider;
     try {
-      provider = await createChatGptProvider(this.container, fetchImpl);
+      provider = await createChatGptProvider(configBridge, secretStore, fetchImpl);
     } catch (error) {
       return [
         previewCheck,

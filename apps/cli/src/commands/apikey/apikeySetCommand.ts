@@ -1,11 +1,11 @@
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
-import { resolveApiKeyProvider } from '@/commands/apikey/apikeyProviders';
 import { availableProviderIds } from '@/adapters/availableProviders';
 import { failure, success } from '@/commands/outcomes';
-import { askSecret, readStdin } from '@/commands/prompt';
-import { extractErrorMessage, type AiProviderId } from '@storyboard/story-model';
+import { askLine, askSecret, readStdin } from '@/commands/prompt';
+import { extractErrorMessage, requiresApiKey, type AiProviderId } from '@storyboard/story-model';
+import type { CliContainer } from '@/container';
 
 export class ApikeySetCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -23,10 +23,7 @@ export class ApikeySetCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const provider: string | undefined = await resolveApiKeyProvider(
-      container,
-      args.positionals[0],
-    );
+    const provider: string | undefined = await this.resolveProvider(container, args.positionals[0]);
 
     if (
       typeof provider === 'string' &&
@@ -70,5 +67,31 @@ export class ApikeySetCommand implements ICommandHandler {
         { providerId, verified: false },
       );
     }
+  }
+
+  private async resolveProvider(
+    container: CliContainer,
+    given: string | undefined,
+  ): Promise<string | undefined> {
+    if (given !== undefined) {
+      return availableProviderIds().includes(given as AiProviderId)
+        ? given
+        : `모르는 프로바이더입니다: ${given}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
+    }
+    if (!process.stdin.isTTY || !container.canPrompt) {
+      return undefined;
+    }
+
+    const candidates: AiProviderId[] = availableProviderIds().filter((providerId) =>
+      requiresApiKey(providerId),
+    );
+    process.stderr.write('어느 프로바이더의 API 키입니까?\n');
+    candidates.forEach((providerId, index) => {
+      process.stderr.write(`  ${index + 1}. ${providerId}\n`);
+    });
+    const answer: string = await askLine('번호 또는 이름: ');
+    const byIndex: AiProviderId | undefined = candidates[Number(answer) - 1];
+
+    return byIndex ?? (candidates.includes(answer as AiProviderId) ? answer : undefined);
   }
 }

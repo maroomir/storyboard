@@ -7,21 +7,6 @@ import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import type { CliContainer } from '@/container';
 import type { GenerateSceneBeatsResult } from '@storyboard/story-engine';
 
-function runSceneBeats(
-  container: CliContainer,
-  stem: string,
-  force: boolean,
-  dryRun: boolean,
-): ReturnType<CliContainer['drafts']['generateBeats']> {
-  return container.drafts.generateBeats({
-    workspaceRoot: container.workspaceRoot,
-    sceneUri: sceneUriFor(container.workspaceRoot, stem),
-    fileName: `${stem}.card`,
-    force,
-    dryRun,
-  });
-}
-
 export class ScenePlotCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'scene plot',
@@ -47,7 +32,7 @@ export class ScenePlotCommand implements ICommandHandler {
       let proposed: number = 0;
 
       for (const stem of stems) {
-        const beatGeneration: GenerateSceneBeatsResult = await runSceneBeats(
+        const beatGeneration: GenerateSceneBeatsResult = await this.generateBeats(
           container,
           stem,
           force,
@@ -77,7 +62,7 @@ export class ScenePlotCommand implements ICommandHandler {
       return failure('씬 stem을 지정해 주세요. 예: storyboard scene plot 01-scene-1-1');
     }
 
-    const beatGeneration: GenerateSceneBeatsResult = await runSceneBeats(
+    const beatGeneration: GenerateSceneBeatsResult = await this.generateBeats(
       container,
       stem,
       force,
@@ -100,5 +85,20 @@ export class ScenePlotCommand implements ICommandHandler {
         : `비트 ${beatGeneration.beats.length}개를 제안했습니다 (적용하지 않음).`,
       { stem, beats: beatGeneration.beats, written: beatGeneration.written },
     );
+  }
+
+  private generateBeats(
+    container: CliContainer,
+    stem: string,
+    force: boolean,
+    dryRun: boolean,
+  ): Promise<GenerateSceneBeatsResult> {
+    return container.drafts.generateBeats({
+      workspaceRoot: container.workspaceRoot,
+      sceneUri: sceneUriFor(container.workspaceRoot, stem),
+      fileName: `${stem}.card`,
+      force,
+      dryRun,
+    });
   }
 }
