@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -13,8 +14,6 @@ import {
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-
-const applyDraftFormatCommand: string = 'storyboard.draft.applyFormat';
 
 function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   if (invokedUri && invokedUri.scheme === 'file') {
@@ -151,7 +150,7 @@ async function runCommand(
 }
 
 export class ApplyDraftFormatCommand implements IExtensionCommand {
-  public readonly id: string = applyDraftFormatCommand;
+  public readonly id: string = storyboardCommandIds.draftApplyFormat;
 
   public constructor(private readonly dependencies: ApplyDraftFormatCommandDependencies) {}
 

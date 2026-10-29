@@ -10,8 +10,6 @@ import {
 import type { StoryboardCard, StoryUri } from '@storyboard/story-model';
 import { cardEditorViewType } from '@/contributionIds';
 
-export const createCharacterCommand: string = 'storyboard.character.create';
-export const createBackgroundCommand: string = 'storyboard.background.create';
 export interface CreateCardCommandDependencies {
   readonly cards: Pick<CardManager, 'exists' | 'write'>;
 }

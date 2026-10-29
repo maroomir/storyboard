@@ -6,11 +6,16 @@ import manifest from "../../../package.json"
 import {
   cardEditorViewType,
   sidebarViewIds,
+  storyboardCommandIds,
   workspaceReadyContextKey
 } from "@/contributionIds"
 
 const contributes = manifest.contributes
 const commandIds = contributes.commands.map((command) => command.command)
+const registeredWithoutContribution = [
+  storyboardCommandIds.providerChoose,
+  storyboardCommandIds.draftApplyGrammarFix
+]
 
 describe("package.json contributions", () => {
   it("gives every contributed command a unique storyboard id", () => {
@@ -19,6 +24,17 @@ describe("package.json contributions", () => {
     for (const id of commandIds) {
       expect(id.startsWith("storyboard."), `${id} is outside the namespace`).toBe(true)
     }
+  })
+
+  it("names every contributed command in contributionIds and nothing stale", () => {
+    const knownIds = Object.values(storyboardCommandIds)
+
+    for (const id of commandIds) {
+      expect(knownIds, `${id} is not in storyboardCommandIds`).toContain(id)
+    }
+
+    const uncontributed = knownIds.filter((id) => !commandIds.includes(id))
+    expect(uncontributed.sort()).toEqual([...registeredWithoutContribution].sort())
   })
 
   it("points every menu entry at a contributed command", () => {

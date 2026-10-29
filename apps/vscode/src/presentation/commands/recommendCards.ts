@@ -9,9 +9,6 @@ import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-export const recommendCharacterCommand: string = 'storyboard.character.recommend';
-export const recommendBackgroundCommand: string = 'storyboard.background.recommend';
-
 export interface RecommendCardDependencies {
   readonly cards: Pick<CardManager, 'recommend' | 'deriveUniqueId' | 'write'>;
 }

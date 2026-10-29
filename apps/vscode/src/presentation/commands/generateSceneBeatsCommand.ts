@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -7,8 +8,6 @@ import { showStoryboardFailure } from '@/presentation/notifications/showStoryboa
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import type { GenerateSceneBeatsRequest, GenerateSceneBeatsResult } from '@storyboard/story-engine';
 import { resolveSceneUriFromInvocation } from '@/presentation/commands/sceneInvocation';
-
-const GENERATE_SCENE_BEATS_COMMAND: string = 'storyboard.scene.beats';
 
 export interface GenerateSceneBeatsCommandDependencies {
   readonly drafts: Pick<DraftManager, 'generateBeats'>;
@@ -66,7 +65,7 @@ async function runCommand(
 }
 
 export class GenerateSceneBeatsCommand implements IExtensionCommand {
-  public readonly id: string = GENERATE_SCENE_BEATS_COMMAND;
+  public readonly id: string = storyboardCommandIds.sceneBeats;
 
   public constructor(private readonly dependencies: GenerateSceneBeatsCommandDependencies) {}
 

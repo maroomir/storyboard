@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -17,8 +18,6 @@ import {
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const resealStoryStateCommand: string = 'storyboard.state.reseal';
-
 export type ResealStoryStateCommandDependencies = {
   readonly configBridge: ConfigBridge;
   readonly fileSystem: IFileSystem;
@@ -26,7 +25,7 @@ export type ResealStoryStateCommandDependencies = {
 };
 
 export class ResealStoryStateCommand implements IExtensionCommand {
-  public readonly id: string = resealStoryStateCommand;
+  public readonly id: string = storyboardCommandIds.stateReseal;
 
   public constructor(private readonly dependencies: ResealStoryStateCommandDependencies) {}
 

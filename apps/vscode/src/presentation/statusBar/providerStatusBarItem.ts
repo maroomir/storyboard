@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type {
   ConfigValueOrigin,
   DisposableHandle,
@@ -7,8 +8,6 @@ import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-import { chooseProviderCommand } from '@/presentation/commands/chooseProviderCommand';
-import { openSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 import type { AiProviderId } from '@storyboard/story-model';
 
 export interface ProviderStatusBarDependencies {
@@ -33,7 +32,7 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): Pro
     return {
       text: '$(warning) AI 제공자 선택',
       tooltip: 'Storyboard 가 쓸 기본 AI 제공자를 아직 고르지 않았습니다. 클릭해서 고르세요.',
-      command: chooseProviderCommand,
+      command: storyboardCommandIds.providerChoose,
     };
   }
 
@@ -46,7 +45,7 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): Pro
   return {
     text: `$(sparkle) ${providerId}${model ? ` · ${model}` : ''}`,
     tooltip: `Storyboard 기본 AI: ${providerId}${model ? ` / ${model}` : ''}\n출처: ${originLabels[origin]}${origin === 'default' ? '' : ` (${file})`}\n클릭하면 설정을 엽니다.`,
-    command: openSettingsCommand,
+    command: storyboardCommandIds.settingsOpen,
   };
 }
 

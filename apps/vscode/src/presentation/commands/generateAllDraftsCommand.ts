@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -13,8 +14,6 @@ import { stageProgressLabel } from './generateDraft';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
-const GENERATE_ALL_DRAFTS_COMMAND: string = 'storyboard.draft.generateAll';
-
 export type GenerateAllDraftsCommandDependencies = {
   readonly runGate: Pick<RunGate, 'hold'>;
   readonly drafts: Pick<DraftManager, 'generateAll'>;
@@ -22,7 +21,7 @@ export type GenerateAllDraftsCommandDependencies = {
 };
 
 export class GenerateAllDraftsCommand implements IExtensionCommand {
-  public readonly id: string = GENERATE_ALL_DRAFTS_COMMAND;
+  public readonly id: string = storyboardCommandIds.draftGenerateAll;
 
   public constructor(private readonly dependencies: GenerateAllDraftsCommandDependencies) {}
 

@@ -24,9 +24,7 @@ import type {
 } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
-import { sidebarViewIds } from '@/contributionIds';
-
-const generateDraftCommand: string = 'storyboard.draft.generate';
+import { sidebarViewIds, storyboardCommandIds } from '@/contributionIds';
 
 export interface SidebarScenesProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
@@ -134,7 +132,10 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       'scenes.generateDraft': async (
         payload,
       ): Promise<StoryboardResponsePayload<'scenes.generateDraft'>> => {
-        await vscode.commands.executeCommand(generateDraftCommand, vscode.Uri.parse(payload.uri));
+        await vscode.commands.executeCommand(
+          storyboardCommandIds.draftGenerate,
+          vscode.Uri.parse(payload.uri),
+        );
         return {};
       },
     };

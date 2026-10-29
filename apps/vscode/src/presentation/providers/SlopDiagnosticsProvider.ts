@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import { DiagnosticsCheckCommand } from '@/presentation/providers/diagnosticsCheckCommand';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
@@ -13,7 +14,6 @@ import {
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { LatestRequestGuard } from './latestRequestGuard';
 
-const slopCheckCommand: string = 'storyboard.draft.slopCheck';
 const slopSource: string = 'storyboard-slop';
 const slopDebounceMs: number = 700;
 
@@ -152,7 +152,9 @@ export class SlopDiagnosticsProvider {
 
   public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {
     this.controller = new SlopDiagnosticsController(dependencies);
-    this.commands = [new DiagnosticsCheckCommand(slopCheckCommand, this.controller)];
+    this.commands = [
+      new DiagnosticsCheckCommand(storyboardCommandIds.draftSlopCheck, this.controller),
+    ];
   }
 
   public register(): vscode.Disposable {

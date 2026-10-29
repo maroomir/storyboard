@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -13,8 +14,6 @@ import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspa
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-const reviseDraftCommand: string = 'storyboard.draft.reviseLoop';
-
 export interface ReviseDraftCommandDependencies {
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
@@ -22,7 +21,7 @@ export interface ReviseDraftCommandDependencies {
 }
 
 export class ReviseDraftCommand implements IExtensionCommand {
-  public readonly id: string = reviseDraftCommand;
+  public readonly id: string = storyboardCommandIds.draftReviseLoop;
 
   public constructor(private readonly dependencies: ReviseDraftCommandDependencies) {}
 

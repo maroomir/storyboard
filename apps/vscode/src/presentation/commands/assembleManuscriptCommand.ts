@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -8,15 +9,13 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const ASSEMBLE_MANUSCRIPT_COMMAND: string = 'storyboard.manuscript.assemble';
-
 export type AssembleManuscriptCommandDependencies = {
   readonly manuscript: Pick<ManuscriptManager, 'assemble'>;
   readonly logger: IStoryboardLogger;
 };
 
 export class AssembleManuscriptCommand implements IExtensionCommand {
-  public readonly id: string = ASSEMBLE_MANUSCRIPT_COMMAND;
+  public readonly id: string = storyboardCommandIds.manuscriptAssemble;
 
   public constructor(private readonly dependencies: AssembleManuscriptCommandDependencies) {}
 

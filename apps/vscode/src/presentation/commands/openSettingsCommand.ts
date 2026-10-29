@@ -1,12 +1,11 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import type { ISettingsPanel } from '@/presentation/providers/SettingsPanelProvider';
 
-export const openSettingsCommand: string = 'storyboard.settings.open';
-
 export class OpenSettingsCommand implements IExtensionCommand {
-  public readonly id: string = openSettingsCommand;
+  public readonly id: string = storyboardCommandIds.settingsOpen;
 
   public constructor(
     private readonly context: vscode.ExtensionContext,

@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -8,15 +9,13 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const reviewManuscriptCommand: string = 'storyboard.manuscript.review';
-
 export interface ReviewManuscriptCommandDependencies {
   readonly logger: IStoryboardLogger;
   readonly manuscript: Pick<ManuscriptManager, 'review'>;
 }
 
 export class ReviewManuscriptCommand implements IExtensionCommand {
-  public readonly id: string = reviewManuscriptCommand;
+  public readonly id: string = storyboardCommandIds.manuscriptReview;
 
   public constructor(private readonly dependencies: ReviewManuscriptCommandDependencies) {}
 

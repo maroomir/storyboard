@@ -1,15 +1,15 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import {
-  editSelectionCommand,
   runAugmentDraft,
   type AugmentDraftCommandDependencies,
 } from '@/presentation/commands/augmentDraft';
 import type { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 
 export class EditSelectionCommand implements IExtensionCommand {
-  public readonly id: string = editSelectionCommand;
+  public readonly id: string = storyboardCommandIds.draftEditSelection;
 
   public constructor(
     private readonly dependencies: AugmentDraftCommandDependencies,

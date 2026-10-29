@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import { DiagnosticsCheckCommand } from '@/presentation/providers/diagnosticsCheckCommand';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
@@ -14,8 +15,6 @@ import { LatestRequestGuard } from './latestRequestGuard';
 import type { GrammarIssue } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
-const grammarCheckCommand: string = 'storyboard.draft.grammarCheck';
-const applyGrammarFixCommand: string = 'storyboard.draft.applyGrammarFix';
 const grammarSource: string = 'storyboard-grammar';
 const grammarDebounceMs: number = 700;
 const quickFixKind: vscode.CodeActionKind = (vscode.CodeActionKind?.QuickFix ??
@@ -67,7 +66,7 @@ class GrammarCodeActionProvider implements vscode.CodeActionProvider {
 
       const action: vscode.CodeAction = new vscode.CodeAction('문법 수정 적용', quickFixKind);
       action.command = {
-        command: applyGrammarFixCommand,
+        command: storyboardCommandIds.draftApplyGrammarFix,
         title: '문법 수정 적용',
         arguments: [_document.uri, diagnostic.range, suggestion],
       };
@@ -188,7 +187,7 @@ async function runApplyGrammarFix(
 }
 
 class ApplyGrammarFixCommand implements IExtensionCommand {
-  public readonly id: string = applyGrammarFixCommand;
+  public readonly id: string = storyboardCommandIds.draftApplyGrammarFix;
 
   public run(uri: vscode.Uri, range: vscode.Range, suggestion: string): Promise<void> {
     return runApplyGrammarFix(uri, range, suggestion);
@@ -202,7 +201,7 @@ export class GrammarDiagnosticsProvider {
   public constructor(private readonly dependencies: DiagnosticsProviderDependencies) {
     this.controller = new GrammarDiagnosticsController(dependencies);
     this.commands = [
-      new DiagnosticsCheckCommand(grammarCheckCommand, this.controller),
+      new DiagnosticsCheckCommand(storyboardCommandIds.draftGrammarCheck, this.controller),
       new ApplyGrammarFixCommand(),
     ];
   }

@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -10,8 +11,6 @@ import type {
 import type { ManuscriptExportFormat } from '@storyboard/story-model';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-
-const exportManuscriptCommand: string = 'storyboard.draft.export';
 
 interface ExportFormatItem extends vscode.QuickPickItem {
   readonly format: ManuscriptExportFormat;
@@ -29,7 +28,7 @@ export interface ExportManuscriptCommandDependencies {
 }
 
 export class ExportManuscriptCommand implements IExtensionCommand {
-  public readonly id: string = exportManuscriptCommand;
+  public readonly id: string = storyboardCommandIds.draftExport;
 
   public constructor(private readonly dependencies: ExportManuscriptCommandDependencies) {}
 

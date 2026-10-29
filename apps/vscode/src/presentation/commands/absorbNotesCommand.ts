@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -21,8 +22,6 @@ import {
 } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
-
-const absorbCommand: string = 'storyboard.notes.absorb';
 
 export interface AbsorbNotesCommandDependencies {
   readonly logger: IStoryboardLogger;
@@ -53,7 +52,7 @@ const locationPicks: readonly LocationPickItem[] = [
 ];
 
 export class AbsorbNotesCommand implements IExtensionCommand {
-  public readonly id: string = absorbCommand;
+  public readonly id: string = storyboardCommandIds.notesAbsorb;
 
   public constructor(private readonly dependencies: AbsorbNotesCommandDependencies) {}
 

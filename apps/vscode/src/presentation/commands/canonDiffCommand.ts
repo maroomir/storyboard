@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import { ProjectRepository } from '@storyboard/story-engine';
 import type {
@@ -24,7 +25,6 @@ import {
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-const canonDiffCommand: string = 'storyboard.bible.canonDiff';
 
 const fileSystem: ReadWriteFileSystem & ReadWriteFileSystem = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
@@ -38,7 +38,7 @@ export interface CanonDiffCommandDependencies {
 }
 
 export class CanonDiffCommand implements IExtensionCommand {
-  public readonly id: string = canonDiffCommand;
+  public readonly id: string = storyboardCommandIds.bibleCanonDiff;
 
   public constructor(private readonly dependencies: CanonDiffCommandDependencies) {}
 

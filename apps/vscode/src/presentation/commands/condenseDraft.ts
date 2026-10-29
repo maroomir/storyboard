@@ -34,7 +34,6 @@ import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
-export const CONDENSE_DRAFT_COMMAND: string = 'storyboard.draft.condense';
 export const CONDENSE_PREVIEW_SCHEME: string = 'storyboard-condense';
 
 export interface CondenseDraftCommandDependencies {

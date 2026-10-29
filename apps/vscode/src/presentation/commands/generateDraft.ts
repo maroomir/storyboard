@@ -13,8 +13,6 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 import { resolveSceneUriFromInvocation } from '@/presentation/commands/sceneInvocation';
 
-export const GENERATE_DRAFT_COMMAND: string = 'storyboard.draft.generate';
-export const REGENERATE_DRAFT_COMMAND: string = 'storyboard.draft.regenerate';
 const CACHE_HIT_MESSAGE: string = '입력이 동일하여 캐시된 초안을 엽니다.';
 const REGENERATE_SUCCESS_MESSAGE: string = '초안을 다시 생성해 저장했습니다.';
 const GENERATE_SUCCESS_MESSAGE: string = '초안을 생성해 저장했습니다.';

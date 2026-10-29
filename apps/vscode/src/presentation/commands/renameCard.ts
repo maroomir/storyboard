@@ -14,9 +14,6 @@ import {
 } from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 
-export const renameCharacterCommand: string = 'storyboard.character.rename';
-export const renameBackgroundCommand: string = 'storyboard.background.rename';
-
 export async function renameCard(kind: BibleSubjectKind, invokedUri?: vscode.Uri): Promise<void> {
   const cardUri: vscode.Uri | undefined = resolveCardUri(kind, invokedUri);
 

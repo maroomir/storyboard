@@ -26,9 +26,6 @@ import {
 } from './newSceneHelpers';
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-export const createSceneCommand: string = 'storyboard.scene.create';
-export const openSceneDraftCommand: string = 'storyboard.scene.openDraft';
-
 export interface CreateSceneCommandDependencies {
   readonly configBridge: ConfigBridge;
 }

@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import { DiagnosticsCheckCommand } from '@/presentation/providers/diagnosticsCheckCommand';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
@@ -14,7 +15,6 @@ import {
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ContinuityIssue } from '@storyboard/story-ai';
 
-const continuityCheckCommand: string = 'storyboard.draft.continuityCheck';
 const continuitySource: string = 'storyboard-continuity';
 
 export function toContinuityRange(
@@ -125,7 +125,9 @@ export class ContinuityDiagnosticsProvider {
 
   public constructor(dependencies: DiagnosticsProviderDependencies) {
     this.controller = new ContinuityDiagnosticsController(dependencies);
-    this.commands = [new DiagnosticsCheckCommand(continuityCheckCommand, this.controller)];
+    this.commands = [
+      new DiagnosticsCheckCommand(storyboardCommandIds.draftContinuityCheck, this.controller),
+    ];
   }
 
   public register(): vscode.Disposable {

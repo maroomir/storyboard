@@ -1,10 +1,8 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import * as vscode from 'vscode';
 
 import { missingApiKeyMarker } from '@storyboard/story-model';
 import { missingProviderMessage } from '@storyboard/story-ai';
-
-import { chooseProviderCommand } from '@/presentation/commands/chooseProviderCommand';
-import { openSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 
 interface FailureAction {
   readonly label: string;
@@ -13,11 +11,11 @@ interface FailureAction {
 
 function resolveFailureAction(message: string): FailureAction | undefined {
   if (message.includes(missingProviderMessage)) {
-    return { label: '제공자 선택', command: chooseProviderCommand };
+    return { label: '제공자 선택', command: storyboardCommandIds.providerChoose };
   }
 
   if (message.includes(missingApiKeyMarker)) {
-    return { label: '설정 열기', command: openSettingsCommand };
+    return { label: '설정 열기', command: storyboardCommandIds.settingsOpen };
   }
 
   return undefined;

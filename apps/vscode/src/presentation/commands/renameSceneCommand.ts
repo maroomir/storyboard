@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -17,15 +18,13 @@ import {
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 import type { RenameSceneResult } from '@storyboard/story-engine';
 
-const renameSceneCommand: string = 'storyboard.scene.rename';
-
 export interface RenameSceneCommandDependencies {
   readonly drafts: Pick<DraftManager, 'renameScene'>;
   readonly runGate: Pick<RunGate, 'hold'>;
 }
 
 export class RenameSceneCommand implements IExtensionCommand {
-  public readonly id: string = renameSceneCommand;
+  public readonly id: string = storyboardCommandIds.sceneRename;
 
   public constructor(private readonly dependencies: RenameSceneCommandDependencies) {}
 

@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -16,7 +17,6 @@ import {
 } from '@storyboard/story-model';
 import type { StoryboardCard, CardCollectProposal, StoryUri } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
-const buildStoryCardsCommand: string = 'storyboard.cards.buildFromScenes';
 
 interface SelectedChange {
   readonly target: StoryCardTarget;
@@ -40,7 +40,7 @@ interface TargetProposals {
 }
 
 export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
-  public readonly id: string = buildStoryCardsCommand;
+  public readonly id: string = storyboardCommandIds.cardsBuildFromScenes;
 
   public constructor(
     private readonly cards: Pick<CardManager, 'buildFromScenes' | 'hasCurrentBuildSources'>,
