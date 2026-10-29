@@ -195,6 +195,82 @@ function choiceCompletions(choices: readonly string[], description: string): Com
   return choices.map((choice) => ({ text: choice, description }));
 }
 
+interface PositionalSlotRequest {
+  readonly spec: CommandSpec;
+  readonly positionals: readonly string[];
+  readonly root: string;
+}
+
+type PositionalSlotCompletion = (request: PositionalSlotRequest) => Completion[];
+
+function completeSceneStems({ root }: PositionalSlotRequest): Completion[] {
+  return listFiles(join(root, 'scene'), '.card').map((stem) => ({
+    text: stem,
+    description: '씬',
+  }));
+}
+
+function completeCardIds({ spec, positionals, root }: PositionalSlotRequest): Completion[] {
+  if (spec.verb.startsWith('narrator ')) {
+    return listFiles(join(root, 'narrator'), '.card').map((id) => ({
+      text: id,
+      description: '서술자',
+    }));
+  }
+
+  const categories: BibleSubjectKind[] = cardCategories.filter(
+    (category) => positionals[0] === undefined || category === positionals[0],
+  );
+  return categories.flatMap((category) =>
+    choiceCompletions(
+      listFiles(join(root, category), '.card'),
+      cardCategoryLabels[category] ?? category,
+    ),
+  );
+}
+
+function completeCardCategories(): Completion[] {
+  return cardCategories.map((category) => ({
+    text: category,
+    description: cardCategoryLabels[category] ?? category,
+  }));
+}
+
+function completeCommandVerbs(): Completion[] {
+  return commandCatalog
+    .filter((entry) => entry.verb !== 'tui')
+    .map((entry) => ({ text: entry.verb, description: entry.summary }));
+}
+
+function completeShells(): Completion[] {
+  return completionShells.map((shell) => ({
+    text: shell,
+    description: `${shell} 완성 스크립트`,
+  }));
+}
+
+const positionalSlotCompletions: ReadonlyMap<string, PositionalSlotCompletion> = new Map<
+  string,
+  PositionalSlotCompletion
+>([
+  ['<stem>', completeSceneStems],
+  ['<id>', completeCardIds],
+  [`<${cardCategories.join('|')}>`, completeCardCategories],
+  [`[${cardCategories.join('|')}]`, completeCardCategories],
+  [
+    `<${draftCheckKinds.join('|')}>`,
+    (): Completion[] => choiceCompletions(draftCheckKinds, '검사'),
+  ],
+  [`[${noteSources.join('|')}]`, (): Completion[] => choiceCompletions(noteSources, '노트 출처')],
+  [
+    '<provider>',
+    (): Completion[] => availableProviderIds().map((id) => ({ text: id, description: '' })),
+  ],
+  ['<key>', configKeyCompletions],
+  ['<command>', completeCommandVerbs],
+  ['<zsh|bash|fish>', completeShells],
+]);
+
 function positionalCompletions(
   spec: CommandSpec,
   positionals: readonly string[],
@@ -207,57 +283,10 @@ function positionalCompletions(
     .filter((token) => token.startsWith('<') || token.startsWith('['));
   const slot: string | undefined = slots[positionals.length];
   const root: string = workspaceRoot(words, context.cwd);
+  const completeSlot: PositionalSlotCompletion | undefined =
+    slot === undefined ? undefined : positionalSlotCompletions.get(slot);
 
-  switch (slot) {
-    case '<stem>':
-      return listFiles(join(root, 'scene'), '.card').map((stem) => ({
-        text: stem,
-        description: '씬',
-      }));
-    case '<id>': {
-      if (spec.verb.startsWith('narrator ')) {
-        return listFiles(join(root, 'narrator'), '.card').map((id) => ({
-          text: id,
-          description: '서술자',
-        }));
-      }
-
-      const categories: BibleSubjectKind[] = cardCategories.filter(
-        (category) => positionals[0] === undefined || category === positionals[0],
-      );
-      return categories.flatMap((category) =>
-        choiceCompletions(
-          listFiles(join(root, category), '.card'),
-          cardCategoryLabels[category] ?? category,
-        ),
-      );
-    }
-    case `<${cardCategories.join('|')}>`:
-    case `[${cardCategories.join('|')}]`:
-      return cardCategories.map((category) => ({
-        text: category,
-        description: cardCategoryLabels[category] ?? category,
-      }));
-    case `<${draftCheckKinds.join('|')}>`:
-      return choiceCompletions(draftCheckKinds, '검사');
-    case `[${noteSources.join('|')}]`:
-      return choiceCompletions(noteSources, '노트 출처');
-    case '<provider>':
-      return availableProviderIds().map((id) => ({ text: id, description: '' }));
-    case '<key>':
-      return configKeyCompletions();
-    case '<command>':
-      return commandCatalog
-        .filter((entry) => entry.verb !== 'tui')
-        .map((entry) => ({ text: entry.verb, description: entry.summary }));
-    case '<zsh|bash|fish>':
-      return completionShells.map((shell) => ({
-        text: shell,
-        description: `${shell} 완성 스크립트`,
-      }));
-    default:
-      return [];
-  }
+  return completeSlot === undefined ? [] : completeSlot({ spec, positionals, root });
 }
 
 export function listWorkspaceMentions(cwd: string): Completion[] {
@@ -273,21 +302,29 @@ export function listWorkspaceMentions(cwd: string): Completion[] {
   ];
 }
 
-export function computeCompletions(
-  words: readonly string[],
-  context: CompletionContext,
-): Completion[] {
-  const current: string = words[words.length - 1] ?? '';
-  const previous: string[] = words.slice(0, -1);
+interface CommandWords {
+  readonly verbWords: readonly string[];
+  readonly positionals: readonly string[];
+}
 
+function completeFlagValue(previous: readonly string[], current: string): Completion[] | undefined {
   const previousWord: string | undefined = previous[previous.length - 1];
-  if (previousWord?.startsWith('--') && !previousWord.includes('=')) {
-    const values: Completion[] | undefined = valueCompletions(previousWord.slice(2), previous);
-    if (values !== undefined) {
-      return filterByPrefix(values, current);
-    }
+
+  if (!previousWord?.startsWith('--') || previousWord.includes('=')) {
+    return undefined;
   }
 
+  const values: Completion[] | undefined = valueCompletions(previousWord.slice(2), previous);
+  return values === undefined ? undefined : filterByPrefix(values, current);
+}
+
+function isVerbPrefix(candidate: string): boolean {
+  return commandCatalog.some(
+    (spec) => spec.verb === candidate || spec.verb.startsWith(`${candidate} `),
+  );
+}
+
+function splitCommandWords(previous: readonly string[]): CommandWords {
   const verbWords: string[] = [];
   const positionals: string[] = [];
   let skipValue: boolean = false;
@@ -302,20 +339,30 @@ export function computeCompletions(
       skipValue = findFlagSpec(name)?.valueLabel !== undefined && !word.includes('=');
       continue;
     }
-    const candidate: string = [...verbWords, word].join(' ');
-    if (
-      commandCatalog.some(
-        (spec) => spec.verb === candidate || spec.verb.startsWith(`${candidate} `),
-      )
-    ) {
+    if (isVerbPrefix([...verbWords, word].join(' '))) {
       verbWords.push(word);
     } else {
       positionals.push(word);
     }
   }
 
-  const verb: string = verbWords.join(' ');
-  const spec: CommandSpec | undefined = findCommandSpec(verb);
+  return { verbWords, positionals };
+}
+
+export function computeCompletions(
+  words: readonly string[],
+  context: CompletionContext,
+): Completion[] {
+  const current: string = words[words.length - 1] ?? '';
+  const previous: string[] = words.slice(0, -1);
+
+  const flagValues: Completion[] | undefined = completeFlagValue(previous, current);
+  if (flagValues !== undefined) {
+    return flagValues;
+  }
+
+  const { verbWords, positionals }: CommandWords = splitCommandWords(previous);
+  const spec: CommandSpec | undefined = findCommandSpec(verbWords.join(' '));
 
   if (current.startsWith('-')) {
     return filterByPrefix(flagCompletions(spec), current);
