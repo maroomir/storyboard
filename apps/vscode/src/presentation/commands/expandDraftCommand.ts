@@ -43,128 +43,119 @@ function resolveSceneStem(editor: vscode.TextEditor): string {
   }
 }
 
-async function resolveExpandTarget(
-  invokedUri?: vscode.Uri,
-  rangeArg?: vscode.Range,
-): Promise<ExpandTarget | undefined> {
-  const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
-
-  if (!editor || editor.document.uri.scheme !== 'file') {
-    await vscode.window.showErrorMessage('활성 드래프트 파일을 열고 다시 시도해 주세요.');
-    return undefined;
-  }
-
-  if (invokedUri && editor.document.uri.toString() !== invokedUri.toString()) {
-    await vscode.window.showErrorMessage(
-      '현재 활성화된 드래프트 파일에서만 확장을 실행할 수 있습니다.',
-    );
-    return undefined;
-  }
-
-  const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
-    editor.document.uri,
-  );
-
-  if (!workspaceFolder) {
-    await vscode.window.showErrorMessage('워크스페이스 폴더를 찾을 수 없습니다.');
-    return undefined;
-  }
-
-  if (!(await hasStoryboardProject(workspaceFolder))) {
-    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
-    return undefined;
-  }
-
-  if (!isDraftMarkdownFile(editor.document.uri, workspaceFolder)) {
-    await vscode.window.showErrorMessage('`draft/*.md` 파일에서만 확장할 수 있습니다.');
-    return undefined;
-  }
-
-  const targetRange: vscode.Selection | vscode.Range = resolveExpandRange(editor, rangeArg);
-
-  if (targetRange.isEmpty) {
-    await vscode.window.showInformationMessage('확장할 텍스트를 먼저 선택해 주세요.');
-    return undefined;
-  }
-
-  const selectedText: string = editor.document.getText(targetRange).trim();
-
-  if (selectedText.length === 0) {
-    await vscode.window.showInformationMessage('빈 선택 영역은 확장할 수 없습니다.');
-    return undefined;
-  }
-
-  return {
-    editor,
-    workspaceFolder,
-    targetRange,
-    selectedText,
-    sceneStem: resolveSceneStem(editor),
-  };
-}
-
-async function reportExpandFailure(
-  failure: Extract<ExpandDraftResult, { ok: false }>,
-  logger: IStoryboardLogger,
-): Promise<void> {
-  if (failure.kind === 'empty') {
-    await vscode.window.showWarningMessage('확장 결과가 비어 있어 적용하지 않았습니다.');
-    return;
-  }
-
-  logger.show();
-  await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${failure.message}`);
-}
-
-async function runExpandDraftCommand(
-  dependencies: ExpandDraftCommandDependencies,
-  invokedUri?: vscode.Uri,
-  rangeArg?: vscode.Range,
-): Promise<void> {
-  const target: ExpandTarget | undefined = await resolveExpandTarget(invokedUri, rangeArg);
-
-  if (!target) {
-    return;
-  }
-
-  try {
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: 'Storyboard 선택 영역 확장',
-        cancellable: false,
-      },
-      async () => {
-        const expansion: ExpandDraftResult = await dependencies.drafts.expand({
-          workspaceRoot: target.workspaceFolder.uri,
-          selectedText: target.selectedText,
-          sceneStem: target.sceneStem,
-        });
-
-        if (!expansion.ok) {
-          await reportExpandFailure(expansion, dependencies.logger);
-          return;
-        }
-
-        await target.editor.edit((editBuilder) => {
-          editBuilder.replace(target.targetRange, expansion.text);
-        });
-      },
-    );
-  } catch (error) {
-    dependencies.logger.error('Expand draft failed', error);
-    dependencies.logger.show();
-    const message: string = extractErrorMessage(error);
-    await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${message}`);
-  }
-}
-
 export class ExpandDraftCommand implements IExtensionCommand {
   public readonly id: string = storyboardCommandIds.draftExpand;
 
   public constructor(private readonly dependencies: ExpandDraftCommandDependencies) {}
 
-  public run(invokedUri?: vscode.Uri, rangeArg?: vscode.Range): unknown {
-    return runExpandDraftCommand(this.dependencies, invokedUri, rangeArg);
+  public async run(invokedUri?: vscode.Uri, rangeArg?: vscode.Range): Promise<void> {
+    const target: ExpandTarget | undefined = await this.resolveExpandTarget(invokedUri, rangeArg);
+
+    if (!target) {
+      return;
+    }
+
+    try {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Storyboard 선택 영역 확장',
+          cancellable: false,
+        },
+        async () => {
+          const expansion: ExpandDraftResult = await this.dependencies.drafts.expand({
+            workspaceRoot: target.workspaceFolder.uri,
+            selectedText: target.selectedText,
+            sceneStem: target.sceneStem,
+          });
+
+          if (!expansion.ok) {
+            await this.reportExpandFailure(expansion);
+            return;
+          }
+
+          await target.editor.edit((editBuilder) => {
+            editBuilder.replace(target.targetRange, expansion.text);
+          });
+        },
+      );
+    } catch (error) {
+      this.dependencies.logger.error('Expand draft failed', error);
+      this.dependencies.logger.show();
+      const message: string = extractErrorMessage(error);
+      await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${message}`);
+    }
+  }
+
+  private async resolveExpandTarget(
+    invokedUri?: vscode.Uri,
+    rangeArg?: vscode.Range,
+  ): Promise<ExpandTarget | undefined> {
+    const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+
+    if (!editor || editor.document.uri.scheme !== 'file') {
+      await vscode.window.showErrorMessage('활성 드래프트 파일을 열고 다시 시도해 주세요.');
+      return undefined;
+    }
+
+    if (invokedUri && editor.document.uri.toString() !== invokedUri.toString()) {
+      await vscode.window.showErrorMessage(
+        '현재 활성화된 드래프트 파일에서만 확장을 실행할 수 있습니다.',
+      );
+      return undefined;
+    }
+
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+      editor.document.uri,
+    );
+
+    if (!workspaceFolder) {
+      await vscode.window.showErrorMessage('워크스페이스 폴더를 찾을 수 없습니다.');
+      return undefined;
+    }
+
+    if (!(await hasStoryboardProject(workspaceFolder))) {
+      await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
+      return undefined;
+    }
+
+    if (!isDraftMarkdownFile(editor.document.uri, workspaceFolder)) {
+      await vscode.window.showErrorMessage('`draft/*.md` 파일에서만 확장할 수 있습니다.');
+      return undefined;
+    }
+
+    const targetRange: vscode.Selection | vscode.Range = resolveExpandRange(editor, rangeArg);
+
+    if (targetRange.isEmpty) {
+      await vscode.window.showInformationMessage('확장할 텍스트를 먼저 선택해 주세요.');
+      return undefined;
+    }
+
+    const selectedText: string = editor.document.getText(targetRange).trim();
+
+    if (selectedText.length === 0) {
+      await vscode.window.showInformationMessage('빈 선택 영역은 확장할 수 없습니다.');
+      return undefined;
+    }
+
+    return {
+      editor,
+      workspaceFolder,
+      targetRange,
+      selectedText,
+      sceneStem: resolveSceneStem(editor),
+    };
+  }
+
+  private async reportExpandFailure(
+    failure: Extract<ExpandDraftResult, { ok: false }>,
+  ): Promise<void> {
+    if (failure.kind === 'empty') {
+      await vscode.window.showWarningMessage('확장 결과가 비어 있어 적용하지 않았습니다.');
+      return;
+    }
+
+    this.dependencies.logger.show();
+    await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${failure.message}`);
   }
 }

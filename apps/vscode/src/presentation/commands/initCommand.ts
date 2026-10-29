@@ -31,68 +31,66 @@ export class InitCommand implements IExtensionCommand {
 
   public constructor(private readonly dependencies: InitCommandDependencies) {}
 
-  public run(): unknown {
-    return initializeStoryboardProject(this.dependencies);
-  }
-}
+  public async run(): Promise<void> {
+    const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
 
-async function initializeStoryboardProject(dependencies: InitCommandDependencies): Promise<void> {
-  const workspaceFolder: vscode.WorkspaceFolder | undefined = await getTargetWorkspaceFolder();
-
-  if (!workspaceFolder) {
-    return;
-  }
-
-  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
-
-  try {
-    if (!(await validateCanInitialize(paths))) {
+    if (!workspaceFolder) {
       return;
     }
 
-    const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
 
-    await new WorkspaceInitializer(vscodeFileSystem).createDirectories(paths);
-    await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, project);
-    await writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
-    await writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
-    await writeFileIfMissing(paths.sampleScene, createSampleScene());
-    await new WorkspaceInitializer(vscodeFileSystem).ensureGitignore(paths.gitignore);
-    await writeFileIfMissing(paths.readme, createWorkspaceReadme(project.name));
-    await new WorkspaceInitializer(vscodeFileSystem).writeAgentGuidesIfMissing(paths);
+    try {
+      if (!(await this.validateCanInitialize(paths))) {
+        return;
+      }
 
-    dependencies.logger.info(`Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`);
-    await refreshStoryboardWorkspaceContext();
-    await vscode.window.showInformationMessage(
-      `Storyboard 프로젝트를 초기화했습니다: ${project.name}`,
+      const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
+
+      await new WorkspaceInitializer(vscodeFileSystem).createDirectories(paths);
+      await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, project);
+      await this.writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
+      await this.writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
+      await this.writeFileIfMissing(paths.sampleScene, createSampleScene());
+      await new WorkspaceInitializer(vscodeFileSystem).ensureGitignore(paths.gitignore);
+      await this.writeFileIfMissing(paths.readme, createWorkspaceReadme(project.name));
+      await new WorkspaceInitializer(vscodeFileSystem).writeAgentGuidesIfMissing(paths);
+
+      this.dependencies.logger.info(
+        `Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`,
+      );
+      await refreshStoryboardWorkspaceContext();
+      await vscode.window.showInformationMessage(
+        `Storyboard 프로젝트를 초기화했습니다: ${project.name}`,
+      );
+    } catch (error) {
+      this.dependencies.logger.error('Failed to initialize Storyboard project', error);
+      this.dependencies.logger.show();
+      await vscode.window.showErrorMessage(
+        'Storyboard 프로젝트 초기화에 실패했습니다. Output 패널을 확인해 주세요.',
+      );
+    }
+  }
+
+  private async validateCanInitialize(paths: StoryboardProjectPaths): Promise<boolean> {
+    if (await uriExists(paths.projectJson)) {
+      await vscode.window.showInformationMessage('이미 Storyboard 프로젝트로 초기화된 폴더입니다.');
+      return false;
+    }
+
+    return ensureUriDoesNotExist(
+      paths.metadataDirectory,
+      '`.storyboard` 폴더가 이미 있지만 `project.json`은 없습니다. 안전을 위해 초기화를 중단합니다.',
     );
-  } catch (error) {
-    dependencies.logger.error('Failed to initialize Storyboard project', error);
-    dependencies.logger.show();
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트 초기화에 실패했습니다. Output 패널을 확인해 주세요.',
-    );
-  }
-}
-
-async function validateCanInitialize(paths: StoryboardProjectPaths): Promise<boolean> {
-  if (await uriExists(paths.projectJson)) {
-    await vscode.window.showInformationMessage('이미 Storyboard 프로젝트로 초기화된 폴더입니다.');
-    return false;
   }
 
-  return ensureUriDoesNotExist(
-    paths.metadataDirectory,
-    '`.storyboard` 폴더가 이미 있지만 `project.json`은 없습니다. 안전을 위해 초기화를 중단합니다.',
-  );
-}
+  private async writeFileIfMissing(uri: vscode.Uri, content: string): Promise<void> {
+    if (await uriExists(uri)) {
+      return;
+    }
 
-async function writeFileIfMissing(uri: vscode.Uri, content: string): Promise<void> {
-  if (await uriExists(uri)) {
-    return;
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
   }
-
-  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
 }
 
 function createSampleCharacterCard(): string {

@@ -25,52 +25,61 @@ export class GenerateAllDraftsCommand implements IExtensionCommand {
 
   public constructor(private readonly dependencies: GenerateAllDraftsCommandDependencies) {}
 
-  public run(): unknown {
-    return runGenerateAllDrafts(this.dependencies);
-  }
-}
+  public async run(): Promise<void> {
+    const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
-async function runGenerateAllDrafts(
-  dependencies: GenerateAllDraftsCommandDependencies,
-): Promise<void> {
-  const workspaceRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
-
-  if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
-    return;
-  }
-
-  await runHoldingWorkspaceLock(dependencies.runGate, workspaceRoot, '전체 초안 생성', () =>
-    generateAllDraftsWithProgress(dependencies),
-  );
-}
-
-async function generateAllDraftsWithProgress(
-  dependencies: GenerateAllDraftsCommandDependencies,
-): Promise<void> {
-  const batchGeneration: GenerateAllDraftsResult = await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: 'Storyboard 전체 초안 생성',
-      cancellable: true,
-    },
-    async (progress, token) =>
-      await dependencies.drafts.generateAll({
-        onProgress: (event) => progress.report({ message: formatProgress(event) }),
-        shouldCancel: () => token.isCancellationRequested,
-      }),
-  );
-
-  if (!batchGeneration.ok) {
-    if (batchGeneration.kind === 'no_projects') {
+    if (!workspaceRoot) {
       await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
-    } else {
-      await vscode.window.showInformationMessage('처리할 `scene/*.card` 파일이 없습니다.');
+      return;
     }
-    return;
+
+    await runHoldingWorkspaceLock(this.dependencies.runGate, workspaceRoot, '전체 초안 생성', () =>
+      this.generateAllDraftsWithProgress(),
+    );
   }
 
-  await reportSummary(batchGeneration.summary, dependencies.logger);
+  private async generateAllDraftsWithProgress(): Promise<void> {
+    const batchGeneration: GenerateAllDraftsResult = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'Storyboard 전체 초안 생성',
+        cancellable: true,
+      },
+      async (progress, token) =>
+        await this.dependencies.drafts.generateAll({
+          onProgress: (event) => progress.report({ message: formatProgress(event) }),
+          shouldCancel: () => token.isCancellationRequested,
+        }),
+    );
+
+    if (!batchGeneration.ok) {
+      if (batchGeneration.kind === 'no_projects') {
+        await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
+      } else {
+        await vscode.window.showInformationMessage('처리할 `scene/*.card` 파일이 없습니다.');
+      }
+      return;
+    }
+
+    await this.reportSummary(batchGeneration.summary);
+  }
+
+  private async reportSummary(summary: GenerateAllDraftsSummary): Promise<void> {
+    const parts: string[] = [
+      `총 ${summary.sceneCount}개 씬 중 생성 ${summary.generated}건, 캐시 재사용 ${summary.cacheHits}건`,
+    ];
+    if (summary.failures > 0) parts.push(`실패 ${summary.failures}건`);
+    const text: string = parts.join(' · ');
+    if (summary.failures > 0) {
+      await vscode.window.showWarningMessage(
+        summary.failureLabels.length > 0 ? `${text}\n\n${summary.failureLabels.join('\n')}` : text,
+        { modal: false },
+      );
+      this.dependencies.logger.show();
+      return;
+    }
+    await vscode.window.showInformationMessage(text);
+  }
 }
 
 function formatProgress(event: GenerateAllDraftsProgress): string {
@@ -82,24 +91,4 @@ function formatProgress(event: GenerateAllDraftsProgress): string {
   const suffix: string =
     event.stageTotal && event.stageTotal > 1 ? ` (${event.stageCurrent}/${event.stageTotal})` : '';
   return `${prefix} — ${label}${suffix}…`;
-}
-
-async function reportSummary(
-  summary: GenerateAllDraftsSummary,
-  logger: IStoryboardLogger,
-): Promise<void> {
-  const parts: string[] = [
-    `총 ${summary.sceneCount}개 씬 중 생성 ${summary.generated}건, 캐시 재사용 ${summary.cacheHits}건`,
-  ];
-  if (summary.failures > 0) parts.push(`실패 ${summary.failures}건`);
-  const text: string = parts.join(' · ');
-  if (summary.failures > 0) {
-    await vscode.window.showWarningMessage(
-      summary.failureLabels.length > 0 ? `${text}\n\n${summary.failureLabels.join('\n')}` : text,
-      { modal: false },
-    );
-    logger.show();
-    return;
-  }
-  await vscode.window.showInformationMessage(text);
 }
