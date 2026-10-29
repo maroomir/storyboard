@@ -415,6 +415,102 @@ function toProposalDrafts(
   return drafts;
 }
 
+interface EntityResolutionContext {
+  readonly characters: CardNameIndex;
+  readonly backgrounds: CardNameIndex;
+  readonly cardsById: ReadonlyMap<string, StoryboardCard>;
+  readonly takenIds: Set<string>;
+}
+
+function findExistingCard(
+  entity: NoteExtractionEntity,
+  kindIndex: CardNameIndex,
+  cardsById: ReadonlyMap<string, StoryboardCard>,
+): StoryboardCard | undefined {
+  const byId: StoryboardCard | undefined =
+    entity.existingId === undefined ? undefined : cardsById.get(entity.existingId);
+
+  return byId !== undefined && entityKind(byId) === entity.type
+    ? byId
+    : cardsById.get(kindIndex.resolve(entity.name) ?? '');
+}
+
+function resolveEntity(
+  { entity, readings }: MergedEntity,
+  index: number,
+  context: EntityResolutionContext,
+): ResolvedEntity {
+  const kindIndex: CardNameIndex =
+    entity.type === 'character' ? context.characters : context.backgrounds;
+  const existing: StoryboardCard | undefined = findExistingCard(
+    entity,
+    kindIndex,
+    context.cardsById,
+  );
+
+  if (existing !== undefined) {
+    return { entity, readings, card: existing, isNew: false };
+  }
+
+  const id: string = takeUniqueId(
+    [validCardId(entity.suggestedId), slugify(entity.name)],
+    `${entity.type}-${index + 1}`,
+    context.takenIds,
+  );
+  const card: StoryboardCard = createNewCard(entity, id);
+  kindIndex.add(card, entity.aliases);
+
+  return { entity, readings, card, isNew: true };
+}
+
+function toCardChanges(entry: ResolvedEntity, characters: CardNameIndex): CardCollectProposal[] {
+  return toProposalDrafts(entry, characters)
+    .map(
+      (draft) =>
+        ({
+          ...draft,
+          id: cardCollectProposalId(draft),
+          sourceScenes: entry.entity.sourceNotes,
+        }) as CardCollectProposal,
+    )
+    .filter((proposal) => entry.isNew || shouldProposeCardCollect(entry.card, proposal));
+}
+
+function planCardChanges(entry: ResolvedEntity, characters: CardNameIndex): NoteCardPlan[] {
+  const changes: CardCollectProposal[] = toCardChanges(entry, characters);
+
+  return entry.isNew || changes.length > 0
+    ? [
+        {
+          card: entry.card,
+          isNew: entry.isNew,
+          changes,
+          sourceNotes: entry.entity.sourceNotes,
+          aliasReadCounts: countAliasReads(entry.readings),
+        },
+      ]
+    : [];
+}
+
+function collectVoiceSeeds(resolved: readonly ResolvedEntity[]): Record<string, string[]> {
+  return Object.fromEntries(
+    resolved
+      .filter((entry) => entry.entity.type === 'character' && entry.entity.sampleLines.length > 0)
+      .map((entry) => [entry.card.id, entry.entity.sampleLines]),
+  );
+}
+
+function collectCanonCandidates(resolved: readonly ResolvedEntity[]): NoteCanonCandidate[] {
+  return resolved.flatMap((entry) =>
+    entry.entity.canonFacts.map((fact) => ({
+      subject: { kind: entry.entity.type, id: entry.card.id },
+      key: fact.key,
+      value: fact.value,
+      sourceNotes: entry.entity.sourceNotes,
+    })),
+  );
+}
+
 function planCards(
   entities: readonly MergedEntity[],
   cards: readonly StoryboardCard[],
@@ -428,76 +524,32 @@ function planCards(
   const characters: CardNameIndex = new CardNameIndex('character');
   const backgrounds: CardNameIndex = new CardNameIndex('background');
   const cardsById: Map<string, StoryboardCard> = new Map(cards.map((card) => [card.id, card]));
-  const takenIds: Set<string> = new Set(cardsById.keys());
+  const context: EntityResolutionContext = {
+    characters,
+    backgrounds,
+    cardsById,
+    takenIds: new Set(cardsById.keys()),
+  };
 
   for (const card of cards) {
     characters.add(card);
     backgrounds.add(card);
   }
 
-  const resolved: ResolvedEntity[] = entities.map(({ entity, readings }, index): ResolvedEntity => {
-    const kindIndex: CardNameIndex = entity.type === 'character' ? characters : backgrounds;
-    const byId: StoryboardCard | undefined = entity.existingId === undefined ? undefined : cardsById.get(entity.existingId);
-    const existing: StoryboardCard | undefined =
-      byId !== undefined && entityKind(byId) === entity.type
-        ? byId
-        : cardsById.get(kindIndex.resolve(entity.name) ?? '');
-
-    if (existing !== undefined) {
-      return { entity, readings, card: existing, isNew: false };
-    }
-
-    const id: string = takeUniqueId(
-      [validCardId(entity.suggestedId), slugify(entity.name)],
-      `${entity.type}-${index + 1}`,
-      takenIds,
-    );
-    const card: StoryboardCard = createNewCard(entity, id);
-    kindIndex.add(card, entity.aliases);
-
-    return { entity, readings, card, isNew: true };
-  });
-
-  const plans: NoteCardPlan[] = resolved.flatMap((entry): NoteCardPlan[] => {
-    const changes: CardCollectProposal[] = toProposalDrafts(entry, characters)
-      .map(
-        (draft) =>
-          ({
-            ...draft,
-            id: cardCollectProposalId(draft),
-            sourceScenes: entry.entity.sourceNotes,
-          }) as CardCollectProposal,
-      )
-      .filter((proposal) => entry.isNew || shouldProposeCardCollect(entry.card, proposal));
-
-    return entry.isNew || changes.length > 0
-      ? [
-          {
-            card: entry.card,
-            isNew: entry.isNew,
-            changes,
-            sourceNotes: entry.entity.sourceNotes,
-            aliasReadCounts: countAliasReads(entry.readings),
-          },
-        ]
-      : [];
-  });
-
-  const voiceSeeds: Record<string, string[]> = Object.fromEntries(
-    resolved
-      .filter((entry) => entry.entity.type === 'character' && entry.entity.sampleLines.length > 0)
-      .map((entry) => [entry.card.id, entry.entity.sampleLines]),
+  const resolved: ResolvedEntity[] = entities.map(
+    (entity, index): ResolvedEntity => resolveEntity(entity, index, context),
   );
-  const canonCandidates: NoteCanonCandidate[] = resolved.flatMap((entry) =>
-    entry.entity.canonFacts.map((fact) => ({
-      subject: { kind: entry.entity.type, id: entry.card.id },
-      key: fact.key,
-      value: fact.value,
-      sourceNotes: entry.entity.sourceNotes,
-    })),
+  const plans: NoteCardPlan[] = resolved.flatMap((entry): NoteCardPlan[] =>
+    planCardChanges(entry, characters),
   );
 
-  return { plans, characters, backgrounds, voiceSeeds, canonCandidates };
+  return {
+    plans,
+    characters,
+    backgrounds,
+    voiceSeeds: collectVoiceSeeds(resolved),
+    canonCandidates: collectCanonCandidates(resolved),
+  };
 }
 
 function findDraftNoteIds(extractions: readonly NoteExtraction[]): Set<string> {
@@ -562,88 +614,134 @@ function orderScenes(
     .map((entry) => entry.scene);
 }
 
-function planScenes(
-  input: NoteAbsorbPlanInput,
-  characters: CardNameIndex,
-  backgrounds: CardNameIndex,
-): {
+interface NoteScenePlanning {
   readonly plans: NoteScenePlan[];
   readonly skipped: SkippedNote[];
   readonly warnings: string[];
-} {
-  const existingTitles: Set<string> = new Set(
-    input.scenes.flatMap((scene) =>
-      scene.card.title === undefined ? [] : [normalizeEntityName(scene.card.title)],
-    ),
-  );
-  const takenSlugs: Set<string> = new Set(input.scenes.map((scene) => scene.slug));
-  const lastOrder: number = Math.max(0, ...input.scenes.map((scene) => scene.order));
-  const plans: NoteScenePlan[] = [];
-  const skipped: SkippedNote[] = [];
-  const warnings: string[] = [];
+}
 
-  for (const scene of orderScenes(input.extractions, input.notes)) {
+class NoteScenePlanner {
+  private readonly existingTitles: Set<string>;
+  private readonly takenSlugs: Set<string>;
+  private readonly lastOrder: number;
+  private readonly plans: NoteScenePlan[] = [];
+  private readonly skipped: SkippedNote[] = [];
+  private readonly warnings: string[] = [];
+
+  public constructor(
+    private readonly input: NoteAbsorbPlanInput,
+    private readonly characters: CardNameIndex,
+    private readonly backgrounds: CardNameIndex,
+  ) {
+    this.existingTitles = new Set(
+      input.scenes.flatMap((scene) =>
+        scene.card.title === undefined ? [] : [normalizeEntityName(scene.card.title)],
+      ),
+    );
+    this.takenSlugs = new Set(input.scenes.map((scene) => scene.slug));
+    this.lastOrder = Math.max(0, ...input.scenes.map((scene) => scene.order));
+  }
+
+  public addScene(scene: NoteExtractionScene): void {
     const titleKey: string = normalizeEntityName(scene.title);
 
-    if (existingTitles.has(titleKey)) {
-      skipped.push({ label: scene.title, reason: '같은 제목의 씬이 이미 있습니다' });
-      continue;
+    if (this.existingTitles.has(titleKey)) {
+      this.skipped.push({ label: scene.title, reason: '같은 제목의 씬이 이미 있습니다' });
+      return;
     }
 
-    existingTitles.add(titleKey);
+    this.existingTitles.add(titleKey);
 
-    const slug: string = takeUniqueId(
-      [scene.slug !== undefined && slugPattern.test(scene.slug) ? scene.slug : undefined],
-      'scene',
-      takenSlugs,
-    );
-    const stem: string = `${String(lastOrder + plans.length + 1).padStart(input.scenePrefixDigits, '0')}-${slug}`;
+    const stem: string = this.takeSceneStem(scene);
     const fileName: string = `${stem}.card`;
 
     if (!sceneFileNamePattern.test(fileName)) {
-      skipped.push({ label: scene.title, reason: `만들 수 없는 씬 파일 이름: ${fileName}` });
-      continue;
+      this.skipped.push({ label: scene.title, reason: `만들 수 없는 씬 파일 이름: ${fileName}` });
+      return;
     }
 
+    this.plans.push({
+      fileName,
+      card: this.createSceneCard(scene, stem),
+      ...(scene.sourceNote === undefined ? {} : { sourceNote: scene.sourceNote }),
+    });
+  }
+
+  public toPlanning(): NoteScenePlanning {
+    return { plans: this.plans, skipped: this.skipped, warnings: this.warnings };
+  }
+
+  private takeSceneStem(scene: NoteExtractionScene): string {
+    const slug: string = takeUniqueId(
+      [scene.slug !== undefined && slugPattern.test(scene.slug) ? scene.slug : undefined],
+      'scene',
+      this.takenSlugs,
+    );
+
+    return `${String(this.lastOrder + this.plans.length + 1).padStart(this.input.scenePrefixDigits, '0')}-${slug}`;
+  }
+
+  private createSceneCard(scene: NoteExtractionScene, stem: string): SceneCard {
+    const characterIds: string[] = this.resolveSceneCharacterIds(scene);
+    const locationId: string | undefined = this.resolveSceneLocationId(scene);
+
+    return {
+      type: 'scene',
+      id: stem,
+      title: scene.title,
+      ...(characterIds.length > 0 ? { characters: characterIds } : {}),
+      ...(locationId === undefined ? {} : { location: locationId }),
+      ...(scene.mood === undefined ? {} : { mood: scene.mood }),
+      ...(scene.purpose === undefined ? {} : { purpose: scene.purpose }),
+      summary: scene.summary,
+      ...(scene.beats.length > 0 ? { beats: scene.beats } : {}),
+    };
+  }
+
+  private resolveSceneCharacterIds(scene: NoteExtractionScene): string[] {
     const characterIds: string[] = [];
 
     for (const name of scene.characterNames) {
-      const id: string | undefined = characters.resolve(name);
+      const id: string | undefined = this.characters.resolve(name);
 
       if (id === undefined) {
-        warnings.push(`씬 「${scene.title}」의 인물 「${name}」은 카드가 없어 연결하지 않았습니다.`);
+        this.warnings.push(
+          `씬 「${scene.title}」의 인물 「${name}」은 카드가 없어 연결하지 않았습니다.`,
+        );
       } else if (!characterIds.includes(id)) {
         characterIds.push(id);
       }
     }
 
+    return characterIds;
+  }
+
+  private resolveSceneLocationId(scene: NoteExtractionScene): string | undefined {
     const locationId: string | undefined =
-      scene.locationName === undefined ? undefined : backgrounds.resolve(scene.locationName);
+      scene.locationName === undefined ? undefined : this.backgrounds.resolve(scene.locationName);
 
     if (scene.locationName !== undefined && locationId === undefined) {
-      warnings.push(
+      this.warnings.push(
         `씬 「${scene.title}」의 장소 「${scene.locationName}」은 카드가 없어 연결하지 않았습니다.`,
       );
     }
 
-    plans.push({
-      fileName,
-      card: {
-        type: 'scene',
-        id: stem,
-        title: scene.title,
-        ...(characterIds.length > 0 ? { characters: characterIds } : {}),
-        ...(locationId === undefined ? {} : { location: locationId }),
-        ...(scene.mood === undefined ? {} : { mood: scene.mood }),
-        ...(scene.purpose === undefined ? {} : { purpose: scene.purpose }),
-        summary: scene.summary,
-        ...(scene.beats.length > 0 ? { beats: scene.beats } : {}),
-      },
-      ...(scene.sourceNote === undefined ? {} : { sourceNote: scene.sourceNote }),
-    });
+    return locationId;
+  }
+}
+
+function planScenes(
+  input: NoteAbsorbPlanInput,
+  characters: CardNameIndex,
+  backgrounds: CardNameIndex,
+): NoteScenePlanning {
+  const planner: NoteScenePlanner = new NoteScenePlanner(input, characters, backgrounds);
+
+  for (const scene of orderScenes(input.extractions, input.notes)) {
+    planner.addScene(scene);
   }
 
-  return { plans, skipped, warnings };
+  return planner.toPlanning();
 }
 
 function findUnclassifiedNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {

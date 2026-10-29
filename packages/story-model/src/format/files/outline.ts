@@ -136,35 +136,54 @@ export class SynopsisParseError extends Error {
   }
 }
 
-export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
+function addSynopsisSection(
+  sections: Map<string, string>,
+  heading: string | undefined,
+  lines: readonly string[],
+): void {
+  if (heading !== undefined) {
+    sections.set(heading, lines.join('\n').trim());
+  }
+}
+
+function splitSynopsisSections(rawSynopsis: string): Map<string, string> {
   const sections: Map<string, string> = new Map<string, string>();
   let currentHeading: string | undefined;
   let currentLines: string[] = [];
 
-  const flush = (): void => {
-    if (currentHeading !== undefined) {
-      sections.set(currentHeading, currentLines.join('\n').trim());
-    }
-    currentLines = [];
-  };
-
   for (const line of rawSynopsis.replace(/\r\n/g, '\n').split('\n')) {
     const heading: RegExpMatchArray | null = line.match(/^## (.+)$/);
-    if (heading?.[1] !== undefined) {
-      flush();
-      currentHeading = heading[1].trim();
+    if (heading?.[1] === undefined) {
+      currentLines.push(line);
       continue;
     }
-    currentLines.push(line);
+    addSynopsisSection(sections, currentHeading, currentLines);
+    currentHeading = heading[1].trim();
+    currentLines = [];
   }
-  flush();
+  addSynopsisSection(sections, currentHeading, currentLines);
 
-  const text = (heading: string): string => {
-    const value: string = sections.get(heading) ?? '';
+  return sections;
+}
+
+class SynopsisSections {
+  private readonly bodies: Map<string, string>;
+
+  public constructor(rawSynopsis: string) {
+    this.bodies = splitSynopsisSections(rawSynopsis);
+  }
+
+  public has(heading: string): boolean {
+    return this.bodies.has(heading);
+  }
+
+  public readText(heading: string): string {
+    const value: string = this.bodies.get(heading) ?? '';
     return value === '_미작성_' ? '' : unescapeSynopsisValue(value);
-  };
-  const list = (heading: string): string[] => {
-    const raw: string = sections.get(heading) ?? '';
+  }
+
+  public readList(heading: string): string[] {
+    const raw: string = this.bodies.get(heading) ?? '';
     if (raw === '_미작성_') {
       return [];
     }
@@ -173,7 +192,17 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
       .map((line) => line.replace(/^- /, '').trim())
       .filter((line) => line.length > 0)
       .map((line) => unescapeSynopsisValue(line));
-  };
+  }
+}
+
+function findPointOfViewByLabel(label: string): PointOfView | undefined {
+  return (Object.entries(pointOfViewLabels) as [PointOfView, string][]).find(
+    ([, povLabel]) => povLabel === label,
+  )?.[0];
+}
+
+export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
+  const sections: SynopsisSections = new SynopsisSections(rawSynopsis);
 
   if (!sections.has('로그라인')) {
     throw new SynopsisParseError(
@@ -182,19 +211,16 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
     );
   }
 
-  const povLabel: string = text('시점');
-  const pov: PointOfView | undefined = (Object.entries(pointOfViewLabels) as [PointOfView, string][]).find(
-    ([, label]) => label === povLabel,
-  )?.[0];
+  const pov: PointOfView | undefined = findPointOfViewByLabel(sections.readText('시점'));
 
   return {
-    logline: text('로그라인'),
-    genrePromise: text('장르 약속'),
-    mainConflicts: list('주요 갈등'),
-    ending: text('결말'),
-    theme: text('주제'),
-    tone: text('톤'),
+    logline: sections.readText('로그라인'),
+    genrePromise: sections.readText('장르 약속'),
+    mainConflicts: sections.readList('주요 갈등'),
+    ending: sections.readText('결말'),
+    theme: sections.readText('주제'),
+    tone: sections.readText('톤'),
     ...(pov !== undefined ? { pov } : {}),
-    styleRules: list('문체 규칙'),
+    styleRules: sections.readList('문체 규칙'),
   };
 }

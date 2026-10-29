@@ -161,30 +161,33 @@ function scaleUsageAmount(amount: UsageAmount, factor: number): UsageAmount {
   };
 }
 
-export function mergeUsageLedgerEntryIntoSummary(
-  summary: UsageSummaryByEntity,
-  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'attribution' | 'providerId' | 'model'>,
-): UsageSummaryByEntity {
-  const nextScenes: Record<string, UsageAmount> = { ...summary.scenes };
-  const nextCharacters: Record<string, UsageAmount> = { ...summary.characters };
-  const nextBackgrounds: Record<string, UsageAmount> = { ...summary.backgrounds };
+class EntityUsageTally {
+  private readonly scenes: Record<string, UsageAmount>;
+  private readonly characters: Record<string, UsageAmount>;
+  private readonly backgrounds: Record<string, UsageAmount>;
 
-  const add = (kind: EntityKind, entityId: string, delta: UsageAmount): void => {
+  public constructor(summary: UsageSummaryByEntity) {
+    this.scenes = { ...summary.scenes };
+    this.characters = { ...summary.characters };
+    this.backgrounds = { ...summary.backgrounds };
+  }
+
+  public add(kind: EntityKind, entityId: string, delta: UsageAmount): void {
     switch (kind) {
       case 'scene': {
-        nextScenes[entityId] = addUsageAmount(nextScenes[entityId] ?? emptyUsageAmount(), delta);
+        this.scenes[entityId] = addUsageAmount(this.scenes[entityId] ?? emptyUsageAmount(), delta);
         return;
       }
       case 'character': {
-        nextCharacters[entityId] = addUsageAmount(
-          nextCharacters[entityId] ?? emptyUsageAmount(),
+        this.characters[entityId] = addUsageAmount(
+          this.characters[entityId] ?? emptyUsageAmount(),
           delta,
         );
         return;
       }
       case 'background': {
-        nextBackgrounds[entityId] = addUsageAmount(
-          nextBackgrounds[entityId] ?? emptyUsageAmount(),
+        this.backgrounds[entityId] = addUsageAmount(
+          this.backgrounds[entityId] ?? emptyUsageAmount(),
           delta,
         );
         return;
@@ -197,31 +200,41 @@ export function mergeUsageLedgerEntryIntoSummary(
         return _exhaustive;
       }
     }
-  };
+  }
 
+  public toSummary(total: UsageAmount): UsageSummaryByEntity {
+    return {
+      scenes: this.scenes,
+      characters: this.characters,
+      backgrounds: this.backgrounds,
+      total,
+    };
+  }
+}
+
+export function mergeUsageLedgerEntryIntoSummary(
+  summary: UsageSummaryByEntity,
+  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'attribution' | 'providerId' | 'model'>,
+): UsageSummaryByEntity {
+  const tally: EntityUsageTally = new EntityUsageTally(summary);
   const amount: UsageAmount = usageAmountOfEntry(entry);
   const total: UsageAmount = addUsageAmount(summary.total, amount);
 
   const { primary, participants = [] } = entry.attribution;
 
   if (primary) {
-    add(primary.kind, primary.id, amount);
+    tally.add(primary.kind, primary.id, amount);
   }
 
   if (participants.length > 0) {
     const share: UsageAmount = scaleUsageAmount(amount, 1 / participants.length);
 
     for (const participant of participants) {
-      add(participant.kind, participant.id, share);
+      tally.add(participant.kind, participant.id, share);
     }
   }
 
-  return {
-    scenes: nextScenes,
-    characters: nextCharacters,
-    backgrounds: nextBackgrounds,
-    total,
-  };
+  return tally.toSummary(total);
 }
 
 export function computeUsageSummaryFromEntries(
