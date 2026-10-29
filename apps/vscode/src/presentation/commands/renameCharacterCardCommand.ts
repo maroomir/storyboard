@@ -1,13 +1,12 @@
 import { storyboardCommandIds } from '@/contributionIds';
-import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
-import { renameCard } from '@/presentation/commands/renameCard';
+import { RenameCardCommandBase } from '@/presentation/commands/renameCardCommandBase';
 
-export class RenameCharacterCardCommand implements IExtensionCommand {
+export class RenameCharacterCardCommand extends RenameCardCommandBase {
   public readonly id: string = storyboardCommandIds.characterRename;
 
   public run(uri?: vscode.Uri): Promise<void> {
-    return renameCard('character', uri);
+    return this.rename('character', uri);
   }
 }

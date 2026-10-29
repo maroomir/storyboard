@@ -1,29 +1,23 @@
 import { storyboardCommandIds } from '@/contributionIds';
-import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import {
-  runAugmentDraft,
+  AugmentDraftCommandBase,
   type AugmentDraftCommandDependencies,
-} from '@/presentation/commands/augmentDraft';
+} from '@/presentation/commands/augmentDraftCommandBase';
 import type { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 
-export class AugmentSelectionCommand implements IExtensionCommand {
+export class AugmentSelectionCommand extends AugmentDraftCommandBase {
   public readonly id: string = storyboardCommandIds.draftAugmentSelection;
 
   public constructor(
-    private readonly dependencies: AugmentDraftCommandDependencies,
-    private readonly previewProvider: VirtualDocumentStore,
-  ) {}
+    dependencies: AugmentDraftCommandDependencies,
+    previewProvider: VirtualDocumentStore,
+  ) {
+    super(dependencies, previewProvider);
+  }
 
   public run(sceneUri?: vscode.Uri, draftUri?: vscode.Uri, rangeArg?: vscode.Range): Promise<void> {
-    return runAugmentDraft(
-      'selection',
-      this.dependencies,
-      this.previewProvider,
-      sceneUri,
-      draftUri,
-      rangeArg,
-    );
+    return this.augment('selection', sceneUri, draftUri, rangeArg);
   }
 }

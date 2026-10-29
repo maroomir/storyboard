@@ -1,16 +1,17 @@
 import { storyboardCommandIds } from '@/contributionIds';
-import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import {
-  recommendCards,
-  type RecommendCardDependencies,
-} from '@/presentation/commands/recommendCards';
+  RecommendCardsCommandBase,
+  type RecommendCardsCommandDependencies,
+} from '@/presentation/commands/recommendCardsCommandBase';
 
-export class RecommendBackgroundCardsCommand implements IExtensionCommand {
+export class RecommendBackgroundCardsCommand extends RecommendCardsCommandBase {
   public readonly id: string = storyboardCommandIds.backgroundRecommend;
 
-  public constructor(private readonly dependencies: RecommendCardDependencies) {}
+  public constructor(dependencies: RecommendCardsCommandDependencies) {
+    super(dependencies);
+  }
 
   public run(): Promise<void> {
-    return recommendCards('background', this.dependencies);
+    return this.recommend('background');
   }
 }
