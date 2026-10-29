@@ -60,6 +60,228 @@ export interface CastProposal {
   readonly proposal: SceneBeatProposal | undefined;
 }
 
+interface BeatTurn {
+  readonly beat: ActedBeat;
+  readonly directive: SceneBeatDirective;
+  readonly nextBeats: readonly SceneBeatDirective[];
+  readonly isLast: boolean;
+}
+
+interface ReviewedBeatPassage {
+  readonly merged: SceneBeatPassage;
+  readonly reviewed: BeatReview;
+}
+
+class BeatActingSession {
+  private readonly castName: (ref: string) => string;
+  private readonly catchphrases: ReadonlyMap<string, readonly string[]>;
+  private readonly speechToOthers: ReadonlyMap<string, readonly string[]>;
+  private readonly notes: Map<string, readonly BeatNote[]> = new Map<string, readonly BeatNote[]>();
+  private readonly passages: Map<number, string> = new Map<number, string>();
+  private readonly focal: string | undefined;
+
+  public constructor(
+    private readonly run: SceneGenerationRun,
+    private readonly sourceBeats: readonly SceneBeat[],
+    private readonly beats: readonly ActedBeat[],
+  ) {
+    this.castName = castNameOf(run.context);
+    this.catchphrases = characterCatchphrases(run.context.characters);
+    this.speechToOthers = characterSpeechToOthers(run.context.characters);
+    this.focal = run.styleDirective?.narration?.focal;
+  }
+
+  public async actAllBeats(): Promise<void> {
+    for (const [index, beat] of this.beats.entries()) {
+      await this.actBeat(index, beat);
+    }
+
+    new SkeletonDrafter(this.run).adopt(assembleActedSkeleton(this.beats, this.passages));
+  }
+
+  private async actBeat(index: number, beat: ActedBeat): Promise<void> {
+    this.run.onProgress?.('actBeats', index + 1, this.beats.length);
+    const turn: BeatTurn = this.createTurn(index, beat);
+
+    const proposals: CastProposal[] = await Promise.all(
+      beat.cast.map(
+        async (name): Promise<CastProposal> => ({
+          name,
+          proposal: await this.propose(name, turn),
+        }),
+      ),
+    );
+    const { merged, reviewed }: ReviewedBeatPassage = await this.arbitrateUntilAccepted(
+      turn,
+      proposals,
+    );
+
+    this.recordReview(beat, reviewed);
+    this.passages.set(beat.number, merged.passage);
+    assertNotCancelled(this.run.shouldCancel);
+  }
+
+  private createTurn(index: number, beat: ActedBeat): BeatTurn {
+    const directive: SceneBeatDirective = toBeatDirective(
+      beat,
+      this.sourceBeats[index],
+      this.castName,
+    );
+    const nextBeats: SceneBeatDirective[] = nextActedBeats(this.beats, index).map((next) =>
+      toBeatDirective(next, this.sourceBeats[next.number - 1], this.castName),
+    );
+    const isLast: boolean = index === this.beats.length - 1;
+
+    return { beat, directive, nextBeats, isLast };
+  }
+
+  private optionsFor(task: keyof SceneGenerationPipelineTaskProviders): GenerateTextOptions {
+    return withAttribution(
+      {
+        ...buildGenerateOptions(this.run.providers, task),
+        styleDirective: this.run.styleDirective,
+      },
+      { primary: this.run.sceneRef },
+    );
+  }
+
+  private characterFor(name: string, beat: ActedBeat): SceneBeatCharacter {
+    const { run } = this;
+
+    return {
+      name,
+      persona: run.personasUsed.get(name) ?? '',
+      catchphrases: this.catchphrases.get(name) ?? [],
+      knowledge: run.input.characterKnowledge?.get(name) ?? [],
+      speechToOthers: this.speechToOthers.get(name) ?? [],
+      relationChanges: run.input.characterRelations?.get(name) ?? [],
+      notes: liveBeatNotes(this.notes.get(name) ?? [], beat.number),
+      witnessed: witnessedPassages(this.beats, this.passages, name),
+    };
+  }
+
+  private async propose(name: string, turn: BeatTurn): Promise<SceneBeatProposal | undefined> {
+    const request: BeatActorRequest = {
+      character: this.characterFor(name, turn.beat),
+      beat: turn.directive,
+      nextBeats: turn.nextBeats,
+    };
+    const caps: ActorLineCaps = {
+      lineMaxChars: this.run.tuning.actorLineMaxChars,
+      lineMaxSentences: this.run.tuning.actorLineMaxSentences,
+    };
+    const first: SceneBeatProposal | undefined = await this.run.aiService.proposeBeatAction(
+      { ...request, ...caps },
+      this.optionsFor('sceneBeatActor'),
+    );
+    const overlongLines: string[] =
+      first === undefined ? [] : findOverlongLines(first, caps.lineMaxChars, caps.lineMaxSentences);
+
+    if (first !== undefined && overlongLines.length === 0) {
+      return first;
+    }
+
+    const second: SceneBeatProposal | undefined = await this.run.aiService.proposeBeatAction(
+      { ...request, ...caps, overlongLines },
+      this.optionsFor('sceneBeatActor'),
+    );
+    return second ?? first;
+  }
+
+  private async arbitrateUntilAccepted(
+    turn: BeatTurn,
+    proposals: readonly CastProposal[],
+  ): Promise<ReviewedBeatPassage> {
+    let merged: SceneBeatPassage = await this.arbitrate(turn, proposals);
+    let reviewed: BeatReview = await this.review(turn, merged.passage);
+
+    for (
+      let attempt: number = 0;
+      attempt < this.run.tuning.actorRetryLimit && reviewed.reasons.length > 0;
+      attempt += 1
+    ) {
+      merged = await this.arbitrate(turn, proposals, reviewed.reasons);
+      reviewed = await this.review(turn, merged.passage);
+    }
+
+    return { merged, reviewed };
+  }
+
+  private arbitrate(
+    turn: BeatTurn,
+    proposals: readonly CastProposal[],
+    retryReasons?: readonly string[],
+  ): Promise<SceneBeatPassage> {
+    const { run, focal } = this;
+    const { beat, isLast } = turn;
+
+    return run.aiService.arbitrateBeat(
+      {
+        beat: turn.directive,
+        nextBeats: turn.nextBeats,
+        proposals,
+        priorPassages: priorPassages(this.beats, this.passages),
+        grounding: run.context.scene.frontmatter.grounding,
+        ...(run.design.length > 0 ? { design: run.design } : {}),
+        previousContext: buildSkeletonContext(
+          run.condensedPreviousContext,
+          run.input.canonFactLines,
+        ),
+        ...(focal !== undefined && beat.cast.includes(focal) ? { innerCharacter: focal } : {}),
+        catchphraseLimit: run.tuning.catchphrasePerBeatLimit,
+        ...(isLast ? { endState: run.context.scene.card?.endState } : {}),
+        ...(retryReasons === undefined ? {} : { retryReasons }),
+      },
+      this.optionsFor('sceneBeatArbiter'),
+    );
+  }
+
+  private judge(turn: BeatTurn, passage: string): Promise<SceneBeatVerdict | undefined> {
+    const { beat } = turn;
+
+    return this.run.aiService.judgeBeat(
+      {
+        characters: beat.cast.map((name) => this.characterFor(name, beat)),
+        beat: turn.directive,
+        nextBeats: turn.nextBeats,
+        previousPassages: previousPassagesForJudge(this.beats, this.passages, beat.number),
+        passage,
+      },
+      this.optionsFor('sceneBeatJudge'),
+    );
+  }
+
+  private async review(turn: BeatTurn, passage: string): Promise<BeatReview> {
+    const verdict: SceneBeatVerdict | undefined = await this.judge(turn, passage);
+    return {
+      verdict,
+      reasons: beatRetryReasons({
+        verdict,
+        catchphraseOveruse: findBeatCatchphraseOveruse({
+          beat: turn.beat,
+          passage,
+          catchphrases: this.catchphrases,
+          limit: this.run.tuning.catchphrasePerBeatLimit,
+        }),
+      }),
+    };
+  }
+
+  private recordReview(beat: ActedBeat, reviewed: BeatReview): void {
+    if (reviewed.reasons.length > 0) {
+      this.run.warnings.push(`배우 뼈대 ${beat.number}번 대목: ${reviewed.reasons.join(' / ')}`);
+    }
+    for (const score of reviewed.verdict?.scores ?? []) {
+      if (shouldNoteScore(score.score) && beat.cast.includes(score.name)) {
+        this.notes.set(
+          score.name,
+          addBeatNote(this.notes.get(score.name) ?? [], beat.number, score.avoid),
+        );
+      }
+    }
+  }
+}
+
 export class ActBeatsStage implements ISceneStage {
   public readonly id: SceneStageId = 'actBeats';
 
@@ -73,156 +295,6 @@ export class ActBeatsStage implements ISceneStage {
       return;
     }
 
-    const optionsFor = (task: keyof SceneGenerationPipelineTaskProviders): GenerateTextOptions =>
-      withAttribution(
-        { ...buildGenerateOptions(run.providers, task), styleDirective: run.styleDirective },
-        { primary: run.sceneRef },
-      );
-    const castName: (ref: string) => string = castNameOf(run.context);
-    const catchphrases: ReadonlyMap<string, readonly string[]> = characterCatchphrases(
-      run.context.characters,
-    );
-    const speechToOthers: ReadonlyMap<string, readonly string[]> = characterSpeechToOthers(
-      run.context.characters,
-    );
-    const notes: Map<string, readonly BeatNote[]> = new Map<string, readonly BeatNote[]>();
-    const passages: Map<number, string> = new Map<number, string>();
-    const focal: string | undefined = run.styleDirective?.narration?.focal;
-
-    const characterFor = (name: string, beat: ActedBeat): SceneBeatCharacter => ({
-      name,
-      persona: run.personasUsed.get(name) ?? '',
-      catchphrases: catchphrases.get(name) ?? [],
-      knowledge: run.input.characterKnowledge?.get(name) ?? [],
-      speechToOthers: speechToOthers.get(name) ?? [],
-      relationChanges: run.input.characterRelations?.get(name) ?? [],
-      notes: liveBeatNotes(notes.get(name) ?? [], beat.number),
-      witnessed: witnessedPassages(beats, passages, name),
-    });
-
-    const propose = async (
-      name: string,
-      beat: ActedBeat,
-      directive: SceneBeatDirective,
-      nextBeats: readonly SceneBeatDirective[],
-    ): Promise<SceneBeatProposal | undefined> => {
-      const request: BeatActorRequest = {
-        character: characterFor(name, beat),
-        beat: directive,
-        nextBeats,
-      };
-      const caps: ActorLineCaps = {
-        lineMaxChars: run.tuning.actorLineMaxChars,
-        lineMaxSentences: run.tuning.actorLineMaxSentences,
-      };
-      const first: SceneBeatProposal | undefined = await run.aiService.proposeBeatAction(
-        { ...request, ...caps },
-        optionsFor('sceneBeatActor'),
-      );
-      const overlongLines: string[] =
-        first === undefined
-          ? []
-          : findOverlongLines(first, caps.lineMaxChars, caps.lineMaxSentences);
-
-      if (first !== undefined && overlongLines.length === 0) {
-        return first;
-      }
-
-      const second: SceneBeatProposal | undefined = await run.aiService.proposeBeatAction(
-        { ...request, ...caps, overlongLines },
-        optionsFor('sceneBeatActor'),
-      );
-      return second ?? first;
-    };
-
-    for (const [index, beat] of beats.entries()) {
-      run.onProgress?.('actBeats', index + 1, beats.length);
-      const directive: SceneBeatDirective = toBeatDirective(beat, sourceBeats[index], castName);
-      const nextBeats: SceneBeatDirective[] = nextActedBeats(beats, index).map((next) =>
-        toBeatDirective(next, sourceBeats[next.number - 1], castName),
-      );
-      const isLast: boolean = index === beats.length - 1;
-
-      const proposals: CastProposal[] = await Promise.all(
-        beat.cast.map(
-          async (name): Promise<CastProposal> => ({
-            name,
-            proposal: await propose(name, beat, directive, nextBeats),
-          }),
-        ),
-      );
-      const arbitrate = (retryReasons?: readonly string[]): Promise<SceneBeatPassage> =>
-        run.aiService.arbitrateBeat(
-          {
-            beat: directive,
-            nextBeats,
-            proposals,
-            priorPassages: priorPassages(beats, passages),
-            grounding: run.context.scene.frontmatter.grounding,
-            ...(run.design.length > 0 ? { design: run.design } : {}),
-            previousContext: buildSkeletonContext(
-              run.condensedPreviousContext,
-              run.input.canonFactLines,
-            ),
-            ...(focal !== undefined && beat.cast.includes(focal) ? { innerCharacter: focal } : {}),
-            catchphraseLimit: run.tuning.catchphrasePerBeatLimit,
-            ...(isLast ? { endState: run.context.scene.card?.endState } : {}),
-            ...(retryReasons === undefined ? {} : { retryReasons }),
-          },
-          optionsFor('sceneBeatArbiter'),
-        );
-      const judge = (passage: string): Promise<SceneBeatVerdict | undefined> =>
-        run.aiService.judgeBeat(
-          {
-            characters: beat.cast.map((name) => characterFor(name, beat)),
-            beat: directive,
-            nextBeats,
-            previousPassages: previousPassagesForJudge(beats, passages, beat.number),
-            passage,
-          },
-          optionsFor('sceneBeatJudge'),
-        );
-      const review = async (passage: string): Promise<BeatReview> => {
-        const verdict: SceneBeatVerdict | undefined = await judge(passage);
-        return {
-          verdict,
-          reasons: beatRetryReasons({
-            verdict,
-            catchphraseOveruse: findBeatCatchphraseOveruse({
-              beat,
-              passage,
-              catchphrases,
-              limit: run.tuning.catchphrasePerBeatLimit,
-            }),
-          }),
-        };
-      };
-
-      let merged: SceneBeatPassage = await arbitrate();
-      let reviewed: BeatReview = await review(merged.passage);
-
-      for (
-        let attempt: number = 0;
-        attempt < run.tuning.actorRetryLimit && reviewed.reasons.length > 0;
-        attempt += 1
-      ) {
-        merged = await arbitrate(reviewed.reasons);
-        reviewed = await review(merged.passage);
-      }
-
-      if (reviewed.reasons.length > 0) {
-        run.warnings.push(`배우 뼈대 ${beat.number}번 대목: ${reviewed.reasons.join(' / ')}`);
-      }
-      for (const score of reviewed.verdict?.scores ?? []) {
-        if (shouldNoteScore(score.score) && beat.cast.includes(score.name)) {
-          notes.set(score.name, addBeatNote(notes.get(score.name) ?? [], beat.number, score.avoid));
-        }
-      }
-
-      passages.set(beat.number, merged.passage);
-      assertNotCancelled(run.shouldCancel);
-    }
-
-    new SkeletonDrafter(run).adopt(assembleActedSkeleton(beats, passages));
+    await new BeatActingSession(run, sourceBeats, beats).actAllBeats();
   }
 }

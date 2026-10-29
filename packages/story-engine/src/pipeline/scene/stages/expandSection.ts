@@ -123,10 +123,109 @@ interface SectionExpansionRequest {
   readonly sectionPlaces: readonly string[];
 }
 
+interface SectionExpansionPlan {
+  readonly sections: string[];
+  readonly targetLengths: number[];
+  readonly coordinatesBySection: string[][];
+  readonly placesBySection: string[][];
+  readonly scenePlaces: string[];
+  readonly backgroundFacts: string[];
+}
+
+interface SectionRetryHint {
+  readonly retryReasons: string[];
+  readonly isUnderLengthRetry: boolean;
+}
+
+interface RejectedSectionAttempt {
+  readonly text: string;
+  readonly violations: readonly SectionViolation[];
+  readonly weight: number;
+  readonly isUnderLength: boolean;
+  readonly thinSpots: string | undefined;
+}
+
+interface RankedSectionText extends CheckedSectionText {
+  readonly weight: number;
+  readonly distance: number;
+}
+
+class SectionExpansionAttempts {
+  private reasons: string[] = [];
+  private isUnderLengthRetry: boolean = false;
+  private best: RankedSectionText;
+
+  public constructor(
+    section: string,
+    private readonly targetLength: number,
+  ) {
+    this.best = {
+      text: section,
+      violations: [],
+      weight: Number.POSITIVE_INFINITY,
+      distance: Number.POSITIVE_INFINITY,
+    };
+  }
+
+  public describeRetry(): SectionRetryHint {
+    return { retryReasons: this.reasons, isUnderLengthRetry: this.isUnderLengthRetry };
+  }
+
+  public recordRejected(attempt: RejectedSectionAttempt): void {
+    const { weight } = attempt;
+    const distance: number = Math.abs(attempt.text.length - this.targetLength);
+    if (
+      weight < this.best.weight ||
+      (weight === this.best.weight && distance < this.best.distance)
+    ) {
+      this.best = { text: attempt.text, violations: attempt.violations, weight, distance };
+    }
+
+    this.isUnderLengthRetry = attempt.isUnderLength;
+    this.reasons = [
+      ...attempt.violations.map((violation) => violation.detail),
+      ...(attempt.thinSpots === undefined ? [] : [attempt.thinSpots]),
+    ];
+  }
+
+  public toBestOutcome(): CheckedSectionText {
+    return { text: this.best.text, violations: this.best.violations };
+  }
+}
+
 export class ExpandSectionStage implements ISceneStage {
   public readonly id: SceneStageId = 'expandSection';
 
   public async run(run: SceneGenerationRun): Promise<void> {
+    const plan: SectionExpansionPlan = this.planSectionExpansion(run);
+    const expandedSections: string[] = [];
+
+    for (let index: number = 0; index < plan.sections.length; index += 1) {
+      run.onProgress?.('expandSection', index + 1, plan.sections.length);
+
+      const repaired: CheckedSectionText = await this.expandAndRepairSection(
+        run,
+        plan,
+        index,
+        expandedSections.at(-1),
+      );
+      expandedSections.push(repaired.text);
+      this.addSectionWarnings(run, index, repaired);
+      assertNotCancelled(run.shouldCancel);
+    }
+
+    run.draftBody = expandedSections.join('\n\n');
+    run.warnings.push(
+      ...findCatchphraseOveruse({
+        text: run.draftBody,
+        characters: run.context.characters,
+        beatCount: run.context.scene.card?.beats?.length ?? 0,
+        tuning: run.tuning,
+      }),
+    );
+  }
+
+  private planSectionExpansion(run: SceneGenerationRun): SectionExpansionPlan {
     const outputLimit: number = run.input.sectionOutputLimit ?? SECTION_OUTPUT_LIMIT;
     const sections: string[] = splitSkeletonIntoSections(
       run.polishedText,
@@ -145,60 +244,75 @@ export class ExpandSectionStage implements ISceneStage {
       typeof beat === 'string' || beat.place === undefined ? [] : [beat.place],
     );
     const backgroundFacts: string[] = backgroundFactLines(run.background);
-    const expandedSections: string[] = [];
 
-    for (let index: number = 0; index < sections.length; index += 1) {
-      run.onProgress?.('expandSection', index + 1, sections.length);
+    return {
+      sections,
+      targetLengths,
+      coordinatesBySection,
+      placesBySection,
+      scenePlaces,
+      backgroundFacts,
+    };
+  }
 
-      const outcome: CheckedSectionText = await this.expandSectionWithRetries(
-        run,
+  private async expandAndRepairSection(
+    run: SceneGenerationRun,
+    plan: SectionExpansionPlan,
+    index: number,
+    previousSection: string | undefined,
+  ): Promise<CheckedSectionText> {
+    const section: string = plan.sections[index] as string;
+    const outcome: CheckedSectionText = await this.expandSectionWithRetries(
+      run,
+      this.buildSectionRequest(plan, index, previousSection),
+      withAttribution(
         {
-          section: sections[index] as string,
-          previousSection: expandedSections.at(-1),
-          targetLength: targetLengths[index] as number,
-          backgroundFacts: scopeBackgroundFacts(
-            backgroundFacts,
-            placesBySection[index] ?? [],
-            scenePlaces,
-          ),
-          sceneCoordinates: coordinatesBySection[index] ?? [],
-          sectionPlaces: placesBySection[index] ?? [],
+          ...buildGenerateOptions(run.providers, 'sceneSectionExpansion'),
+          styleDirective: run.styleDirective,
         },
-        withAttribution(
-          {
-            ...buildGenerateOptions(run.providers, 'sceneSectionExpansion'),
-            styleDirective: run.styleDirective,
-          },
-          { primary: run.sceneRef },
-        ),
-      );
-
-      const repaired: CheckedSectionText = restoreSectionBreaks(
-        sections[index] as string,
-        trimRunAhead(run.polishedText, sections[index] as string, outcome, run.tuning),
-      );
-      expandedSections.push(repaired.text);
-      run.warnings.push(
-        ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
-      );
-      const recaps: number = countRecapPhrases(repaired.text);
-      if (recaps > run.tuning.sectionRecapPhraseLimit) {
-        run.warnings.push(
-          `${index + 1}구간: 앞 장면을 «아까 …»로 되짚는 표현이 ${recaps}회입니다 (허용 ${run.tuning.sectionRecapPhraseLimit}회). 새 반응·논평·대사로 채우는 쪽이 낫습니다`,
-        );
-      }
-      assertNotCancelled(run.shouldCancel);
-    }
-
-    run.draftBody = expandedSections.join('\n\n');
-    run.warnings.push(
-      ...findCatchphraseOveruse({
-        text: run.draftBody,
-        characters: run.context.characters,
-        beatCount: run.context.scene.card?.beats?.length ?? 0,
-        tuning: run.tuning,
-      }),
+        { primary: run.sceneRef },
+      ),
     );
+
+    return restoreSectionBreaks(
+      section,
+      trimRunAhead(run.polishedText, section, outcome, run.tuning),
+    );
+  }
+
+  private buildSectionRequest(
+    plan: SectionExpansionPlan,
+    index: number,
+    previousSection: string | undefined,
+  ): SectionExpansionRequest {
+    return {
+      section: plan.sections[index] as string,
+      previousSection,
+      targetLength: plan.targetLengths[index] as number,
+      backgroundFacts: scopeBackgroundFacts(
+        plan.backgroundFacts,
+        plan.placesBySection[index] ?? [],
+        plan.scenePlaces,
+      ),
+      sceneCoordinates: plan.coordinatesBySection[index] ?? [],
+      sectionPlaces: plan.placesBySection[index] ?? [],
+    };
+  }
+
+  private addSectionWarnings(
+    run: SceneGenerationRun,
+    index: number,
+    repaired: CheckedSectionText,
+  ): void {
+    run.warnings.push(
+      ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
+    );
+    const recaps: number = countRecapPhrases(repaired.text);
+    if (recaps > run.tuning.sectionRecapPhraseLimit) {
+      run.warnings.push(
+        `${index + 1}구간: 앞 장면을 «아까 …»로 되짚는 표현이 ${recaps}회입니다 (허용 ${run.tuning.sectionRecapPhraseLimit}회). 새 반응·논평·대사로 채우는 쪽이 낫습니다`,
+      );
+    }
   }
 
   private async expandSectionWithRetries(
@@ -206,76 +320,86 @@ export class ExpandSectionStage implements ISceneStage {
     request: SectionExpansionRequest,
     options: GenerateTextOptions,
   ): Promise<CheckedSectionText> {
-    let reasons: string[] = [];
-    let isUnderLengthRetry: boolean = false;
-    let best: {
-      text: string;
-      violations: readonly SectionViolation[];
-      weight: number;
-      distance: number;
-    } = {
-      text: request.section,
-      violations: [],
-      weight: Number.POSITIVE_INFINITY,
-      distance: Number.POSITIVE_INFINITY,
-    };
+    const attempts: SectionExpansionAttempts = new SectionExpansionAttempts(
+      request.section,
+      request.targetLength,
+    );
 
     for (let attempt: number = 0; attempt <= run.tuning.sectionRetryLimit; attempt += 1) {
-      const expanded: string = await run.aiService.expandSceneSection(
-        {
-          skeleton: run.polishedText,
-          section: request.section,
-          previousSection: request.previousSection,
-          targetLength: request.targetLength,
-          backgroundFacts: request.backgroundFacts,
-          backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),
-          sceneCoordinates: request.sceneCoordinates,
-          retryReasons: reasons,
-          isUnderLengthRetry,
-        },
+      const expanded: string = await this.requestSectionExpansion(
+        run,
+        request,
         options,
+        attempts.describeRetry(),
       );
-
-      const violations: SectionViolation[] = validateExpandedSection({
-        skeleton: run.polishedText,
-        section: request.section,
-        expanded,
-        characters: run.context.characters,
-        targetLength: request.targetLength,
-        ...(request.previousSection === undefined
-          ? {}
-          : { previousSection: request.previousSection }),
-        sectionPlaces: request.sectionPlaces,
-        backgroundFacts: request.backgroundFacts,
-        tuning: run.tuning,
-      });
+      const violations: SectionViolation[] = this.validateSection(run, request, expanded);
 
       if (violations.length === 0) {
         return { text: expanded, violations: [] };
       }
 
-      const weight: number = weighViolations(violations, run.tuning.violationWeights);
-      const distance: number = Math.abs(expanded.length - request.targetLength);
-      if (weight < best.weight || (weight === best.weight && distance < best.distance)) {
-        best = { text: expanded, violations, weight, distance };
-      }
-
-      isUnderLengthRetry = violations.some((violation) => violation.kind === 'too-short');
-      const thinSpots: string | undefined = isUnderLengthRetry
-        ? describeThinExpansionSpots(
-            findThinExpansionSpots(
-              request.section,
-              expanded,
-              run.tuning.dialogueMinimumQuotedLength,
-            ),
-          )
-        : undefined;
-      reasons = [
-        ...violations.map((violation) => violation.detail),
-        ...(thinSpots === undefined ? [] : [thinSpots]),
-      ];
+      const isUnderLength: boolean = violations.some((violation) => violation.kind === 'too-short');
+      attempts.recordRejected({
+        text: expanded,
+        violations,
+        weight: weighViolations(violations, run.tuning.violationWeights),
+        isUnderLength,
+        thinSpots: isUnderLength ? this.describeThinSpots(run, request, expanded) : undefined,
+      });
     }
 
-    return { text: best.text, violations: best.violations };
+    return attempts.toBestOutcome();
+  }
+
+  private async requestSectionExpansion(
+    run: SceneGenerationRun,
+    request: SectionExpansionRequest,
+    options: GenerateTextOptions,
+    retry: SectionRetryHint,
+  ): Promise<string> {
+    return run.aiService.expandSceneSection(
+      {
+        skeleton: run.polishedText,
+        section: request.section,
+        previousSection: request.previousSection,
+        targetLength: request.targetLength,
+        backgroundFacts: request.backgroundFacts,
+        backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),
+        sceneCoordinates: request.sceneCoordinates,
+        retryReasons: retry.retryReasons,
+        isUnderLengthRetry: retry.isUnderLengthRetry,
+      },
+      options,
+    );
+  }
+
+  private validateSection(
+    run: SceneGenerationRun,
+    request: SectionExpansionRequest,
+    expanded: string,
+  ): SectionViolation[] {
+    return validateExpandedSection({
+      skeleton: run.polishedText,
+      section: request.section,
+      expanded,
+      characters: run.context.characters,
+      targetLength: request.targetLength,
+      ...(request.previousSection === undefined
+        ? {}
+        : { previousSection: request.previousSection }),
+      sectionPlaces: request.sectionPlaces,
+      backgroundFacts: request.backgroundFacts,
+      tuning: run.tuning,
+    });
+  }
+
+  private describeThinSpots(
+    run: SceneGenerationRun,
+    request: SectionExpansionRequest,
+    expanded: string,
+  ): string | undefined {
+    return describeThinExpansionSpots(
+      findThinExpansionSpots(request.section, expanded, run.tuning.dialogueMinimumQuotedLength),
+    );
   }
 }

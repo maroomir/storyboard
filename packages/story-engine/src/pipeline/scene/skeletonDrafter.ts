@@ -73,6 +73,66 @@ interface BestSkeletonAttempt {
   readonly distance: number;
 }
 
+interface CheckedSkeleton {
+  readonly text: string;
+  readonly violations: readonly SectionViolation[];
+  readonly missingBeats: readonly string[];
+}
+
+function keepSegmentMarkers(
+  response: string,
+  segmentNumbers: readonly number[] | undefined,
+): string {
+  if (segmentNumbers === undefined) {
+    return response;
+  }
+
+  const firstSegment: number | undefined = segmentNumbers[0];
+  const withLeadingMarker: string =
+    firstSegment === undefined ? response : ensureLeadingMarker(response, firstSegment);
+  return keepOnlyMarkers(withLeadingMarker, segmentNumbers);
+}
+
+class SkeletonRetryTally {
+  private reasons: string[] = [];
+  private best: BestSkeletonAttempt | undefined;
+  private retries: number = 0;
+
+  public startAttempt(attempt: number): void {
+    this.retries = attempt;
+  }
+
+  public addRetryReasons(input: SkeletonCallInput): SkeletonCallInput {
+    return { ...input, ...(this.reasons.length > 0 ? { retryReasons: this.reasons } : {}) };
+  }
+
+  public recordRejected(candidate: BestSkeletonAttempt, reasons: string[]): void {
+    const { best } = this;
+    if (
+      best === undefined ||
+      candidate.weight < best.weight ||
+      (candidate.weight === best.weight && candidate.distance < best.distance)
+    ) {
+      this.best = candidate;
+    }
+
+    this.reasons = reasons;
+  }
+
+  public toAcceptedDraft(text: string): SkeletonDraft {
+    return { text, violations: [], missingBeats: [], retries: this.retries };
+  }
+
+  public toBestDraft(): SkeletonDraft {
+    return {
+      text: this.best?.text ?? '',
+      violations: this.best?.violations ?? [],
+      missingBeats: this.best?.missingBeats ?? [],
+      retries: this.retries,
+    };
+  }
+}
+
 export class SkeletonDrafter {
   private readonly beats: readonly SceneBeat[];
 
@@ -198,62 +258,67 @@ export class SkeletonDrafter {
     coverageBeats: readonly string[],
     segmentNumbers?: readonly number[],
   ): Promise<SkeletonDraft> {
-    const { run, beats } = this;
-    const { tuning, breakPlan } = run;
-    let reasons: string[] = [];
-    let best: BestSkeletonAttempt | undefined;
-    let retries: number = 0;
+    const tally: SkeletonRetryTally = new SkeletonRetryTally();
 
-    for (let attempt: number = 0; attempt <= tuning.skeletonRetryLimit; attempt += 1) {
-      retries = attempt;
-      const rawResponse: string = await run.aiService.draftSceneSkeleton(
-        { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
+    for (let attempt: number = 0; attempt <= this.run.tuning.skeletonRetryLimit; attempt += 1) {
+      tally.startAttempt(attempt);
+      const checked: CheckedSkeleton = await this.draftCheckedSkeleton(
+        tally.addRetryReasons(input),
         options,
+        coverageBeats,
+        segmentNumbers,
       );
-      const response: string = curlDialogueQuotes(rawResponse);
-      const skeleton: string =
-        segmentNumbers === undefined
-          ? response
-          : keepOnlyMarkers(
-              segmentNumbers[0] === undefined
-                ? response
-                : ensureLeadingMarker(response, segmentNumbers[0]),
-              segmentNumbers,
-            );
-      const missingBeats: string[] = await this.findMissingBeats(coverageBeats, skeleton, options);
-      const violations: SectionViolation[] = [
-        ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
-        ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
-        ...missingBeatsViolation(missingBeats),
-      ];
 
-      if (violations.length === 0) {
-        return { text: skeleton, violations: [], missingBeats: [], retries };
+      if (checked.violations.length === 0) {
+        return tally.toAcceptedDraft(checked.text);
       }
 
-      const weight: number = weighViolations(violations, tuning.violationWeights);
-      const distance: number =
-        input.targetLength === undefined ? 0 : Math.abs(skeleton.length - input.targetLength);
-      if (
-        best === undefined ||
-        weight < best.weight ||
-        (weight === best.weight && distance < best.distance)
-      ) {
-        best = { text: skeleton, violations, missingBeats, weight, distance };
-      }
-
-      reasons = [
-        ...violations.map((violation) => violation.detail),
-        ...thinDialogueReasons(skeleton, violations, breakPlan, beats, tuning),
-      ];
+      tally.recordRejected(
+        this.rankSkeleton(checked, input.targetLength),
+        this.buildRetryReasons(checked),
+      );
     }
 
-    return {
-      text: best?.text ?? '',
-      violations: best?.violations ?? [],
-      missingBeats: best?.missingBeats ?? [],
-      retries,
-    };
+    return tally.toBestDraft();
+  }
+
+  private async draftCheckedSkeleton(
+    input: SkeletonCallInput,
+    options: GenerateTextOptions,
+    coverageBeats: readonly string[],
+    segmentNumbers: readonly number[] | undefined,
+  ): Promise<CheckedSkeleton> {
+    const { tuning, breakPlan } = this.run;
+    const rawResponse: string = await this.run.aiService.draftSceneSkeleton(input, options);
+    const skeleton: string = keepSegmentMarkers(curlDialogueQuotes(rawResponse), segmentNumbers);
+    const missingBeats: string[] = await this.findMissingBeats(coverageBeats, skeleton, options);
+    const violations: SectionViolation[] = [
+      ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
+      ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
+      ...missingBeatsViolation(missingBeats),
+    ];
+
+    return { text: skeleton, violations, missingBeats };
+  }
+
+  private rankSkeleton(
+    checked: CheckedSkeleton,
+    targetLength: number | undefined,
+  ): BestSkeletonAttempt {
+    const weight: number = weighViolations(checked.violations, this.run.tuning.violationWeights);
+    const distance: number =
+      targetLength === undefined ? 0 : Math.abs(checked.text.length - targetLength);
+
+    return { ...checked, weight, distance };
+  }
+
+  private buildRetryReasons(checked: CheckedSkeleton): string[] {
+    const { tuning, breakPlan } = this.run;
+
+    return [
+      ...checked.violations.map((violation) => violation.detail),
+      ...thinDialogueReasons(checked.text, checked.violations, breakPlan, this.beats, tuning),
+    ];
   }
 
   private async findMissingBeats(
