@@ -45,6 +45,12 @@ interface InlineCompletionCacheValue {
   readonly updatedAt: number;
 }
 
+interface InlineCompletionRequest {
+  readonly document: vscode.TextDocument;
+  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly prefix: string;
+}
+
 interface CachedSceneContext {
   readonly context: InlineCompletionContext;
   readonly cachedAt: number;
@@ -235,10 +241,7 @@ export class DraftInlineCompletionProvider implements vscode.InlineCompletionIte
       return undefined;
     }
 
-    const fullPrefix: string = document.getText(
-      new vscode.Range(new vscode.Position(0, 0), position),
-    );
-    const prefix: string = trimInlineCompletionPrefix(fullPrefix).trim();
+    const prefix: string = extractCompletionPrefix(document, position);
     if (prefix.length === 0) {
       return undefined;
     }
@@ -254,14 +257,25 @@ export class DraftInlineCompletionProvider implements vscode.InlineCompletionIte
       return undefined;
     }
 
-    let sceneStem: string = 'unknown-scene';
-    try {
-      sceneStem = parseDraft(document.getText()).sceneStem;
-    } catch {
-      const fileName: string = document.uri.path.split('/').pop() ?? '';
-      sceneStem = fileName.replace(/\.md$/i, '');
+    const completion: string | undefined = await this.requestCompletion(
+      { document, workspaceFolder, prefix },
+      token,
+    );
+    if (completion === undefined) {
+      return undefined;
     }
 
+    this.cache.set(cacheKey, { value: completion, updatedAt: Date.now() });
+    pruneInlineCompletionCache(this.cache);
+
+    return [new vscode.InlineCompletionItem(completion, new vscode.Range(position, position))];
+  }
+
+  private async requestCompletion(
+    { document, workspaceFolder, prefix }: InlineCompletionRequest,
+    token: vscode.CancellationToken,
+  ): Promise<string | undefined> {
+    const sceneStem: string = resolveDraftSceneStem(document);
     const sceneContext: InlineCompletionContext = await this.loadSceneContext(
       document,
       workspaceFolder,
@@ -282,9 +296,22 @@ export class DraftInlineCompletionProvider implements vscode.InlineCompletionIte
       return undefined;
     }
 
-    this.cache.set(cacheKey, { value: completion, updatedAt: Date.now() });
-    pruneInlineCompletionCache(this.cache);
+    return completion;
+  }
+}
 
-    return [new vscode.InlineCompletionItem(completion, new vscode.Range(position, position))];
+function extractCompletionPrefix(document: vscode.TextDocument, position: vscode.Position): string {
+  const fullPrefix: string = document.getText(
+    new vscode.Range(new vscode.Position(0, 0), position),
+  );
+  return trimInlineCompletionPrefix(fullPrefix).trim();
+}
+
+function resolveDraftSceneStem(document: vscode.TextDocument): string {
+  try {
+    return parseDraft(document.getText()).sceneStem;
+  } catch {
+    const fileName: string = document.uri.path.split('/').pop() ?? '';
+    return fileName.replace(/\.md$/i, '');
   }
 }

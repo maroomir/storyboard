@@ -109,18 +109,9 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
     document: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Hover | undefined> {
-    if (document.uri.scheme !== 'file') {
-      return undefined;
-    }
-
-    const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
-      document.uri,
-    );
-    if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
-      return undefined;
-    }
-
-    if (!isDraftMarkdownFile(document.uri, workspaceFolder)) {
+    const workspaceFolder: vscode.WorkspaceFolder | undefined =
+      await resolveDraftWorkspaceFolder(document);
+    if (!workspaceFolder) {
       return undefined;
     }
 
@@ -142,28 +133,59 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       return undefined;
     }
 
-    const matchedNames: string[] = detectCharactersInText(
-      hoveredWord,
-      characters.map((character) => character.name),
-    );
-    const matched: Character | undefined =
-      matchedNames.length > 0
-        ? characters.find((character) => character.name === matchedNames[0])
-        : undefined;
+    const matched: Character | undefined = findHoveredCharacter(hoveredWord, characters);
     if (!matched) {
       return undefined;
     }
 
-    const byId: Map<string, string> = new Map(
-      characters.map((character) => [character.id, character.name] as const),
-    );
-    const relatedNames: string[] = (matched.relations ?? [])
-      .map((relation) => byId.get(relation.target))
-      .filter((name): name is string => typeof name === 'string');
-
     return new vscode.Hover(
-      buildCharacterHoverMarkdown({ character: matched, relatedCharacterNames: relatedNames }),
+      buildCharacterHoverMarkdown({
+        character: matched,
+        relatedCharacterNames: listRelatedCharacterNames(matched, characters),
+      }),
       wordRange,
     );
   }
+}
+
+async function resolveDraftWorkspaceFolder(
+  document: vscode.TextDocument,
+): Promise<vscode.WorkspaceFolder | undefined> {
+  if (document.uri.scheme !== 'file') {
+    return undefined;
+  }
+
+  const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(
+    document.uri,
+  );
+  if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
+    return undefined;
+  }
+
+  return isDraftMarkdownFile(document.uri, workspaceFolder) ? workspaceFolder : undefined;
+}
+
+function findHoveredCharacter(
+  hoveredWord: string,
+  characters: readonly CharacterCard[],
+): Character | undefined {
+  const matchedNames: string[] = detectCharactersInText(
+    hoveredWord,
+    characters.map((character) => character.name),
+  );
+  return matchedNames.length > 0
+    ? characters.find((character) => character.name === matchedNames[0])
+    : undefined;
+}
+
+function listRelatedCharacterNames(
+  matched: Character,
+  characters: readonly CharacterCard[],
+): string[] {
+  const byId: Map<string, string> = new Map(
+    characters.map((character) => [character.id, character.name] as const),
+  );
+  return (matched.relations ?? [])
+    .map((relation) => byId.get(relation.target))
+    .filter((name): name is string => typeof name === 'string');
 }
