@@ -50,62 +50,105 @@ export class ObsidianNoteSource implements INoteSource {
     const treeDirectory: StoryUri = isSingleNote ? parentOf(root) : root;
     const vaultRoot: StoryUri = await findVaultRoot(fileSystem, treeDirectory);
     const treeFiles: StoryUri[] = isSingleNote ? [root] : await listMarkdownFiles(fileSystem, root);
-    const notes: NoteDocument[] = [];
-    const linkTargets: string[] = [];
-    const skipped: SkippedNote[] = [];
+    const tally: VaultNoteTally = new VaultNoteTally();
+
+    await this.collectTreeNotes(vaultRoot, treeFiles, tally);
+    await this.collectLinkedNotes(vaultRoot, tally);
+
+    return tally.toCollectedNotes();
+  }
+
+  private async collectTreeNotes(
+    vaultRoot: StoryUri,
+    treeFiles: readonly StoryUri[],
+    tally: VaultNoteTally,
+  ): Promise<void> {
+    const { fileSystem } = this.options;
 
     for (const file of treeFiles) {
       if (!(await fileSystem.isRealPathInside(file, vaultRoot))) {
-        skipped.push({ label: relativePath(vaultRoot, file), reason: outsideVaultReason });
+        tally.addSkipped({ label: relativePath(vaultRoot, file), reason: outsideVaultReason });
         continue;
       }
 
-      const note: NoteDocument = await readNote(fileSystem, vaultRoot, file, 'tree');
-      notes.push(note);
-      linkTargets.push(...extractNoteLinkTargets(note.body));
+      tally.addTreeNote(await readNote(fileSystem, vaultRoot, file, 'tree'));
+    }
+  }
+
+  private async collectLinkedNotes(vaultRoot: StoryUri, tally: VaultNoteTally): Promise<void> {
+    const { fileSystem } = this.options;
+    const collectedIds: Set<string> = tally.listCollectedIds();
+    const pendingTargets: string[] = tally.listPendingLinkTargets();
+
+    if (pendingTargets.length === 0) {
+      return;
     }
 
-    const collectedIds: Set<string> = new Set([
-      ...notes.map((note) => note.id),
-      ...skipped.map((entry) => entry.label),
-    ]);
-    const pendingTargets: string[] = [...new Set(linkTargets)];
+    const vaultIndex: VaultIndex = buildVaultIndex(
+      vaultRoot,
+      await listMarkdownFiles(fileSystem, vaultRoot),
+    );
 
-    if (pendingTargets.length > 0) {
-      const vaultIndex: VaultIndex = buildVaultIndex(
-        vaultRoot,
-        await listMarkdownFiles(fileSystem, vaultRoot),
-      );
+    for (const target of pendingTargets) {
+      const file: StoryUri | undefined = vaultIndex.resolve(target);
 
-      for (const target of pendingTargets) {
-        const file: StoryUri | undefined = vaultIndex.resolve(target);
-
-        if (file === undefined) {
-          skipped.push({
-            label: target,
-            reason: '링크가 가리키는 노트를 볼트에서 찾지 못했습니다',
-          });
-          continue;
-        }
-
-        const id: string = relativePath(vaultRoot, file);
-
-        if (collectedIds.has(id)) {
-          continue;
-        }
-
-        collectedIds.add(id);
-
-        if (!(await fileSystem.isRealPathInside(file, vaultRoot))) {
-          skipped.push({ label: id, reason: outsideVaultReason });
-          continue;
-        }
-
-        notes.push(await readNote(fileSystem, vaultRoot, file, 'link'));
+      if (file === undefined) {
+        tally.addSkipped({
+          label: target,
+          reason: '링크가 가리키는 노트를 볼트에서 찾지 못했습니다',
+        });
+        continue;
       }
-    }
 
-    return { notes, skipped };
+      const id: string = relativePath(vaultRoot, file);
+
+      if (collectedIds.has(id)) {
+        continue;
+      }
+
+      collectedIds.add(id);
+
+      if (!(await fileSystem.isRealPathInside(file, vaultRoot))) {
+        tally.addSkipped({ label: id, reason: outsideVaultReason });
+        continue;
+      }
+
+      tally.addLinkedNote(await readNote(fileSystem, vaultRoot, file, 'link'));
+    }
+  }
+}
+
+class VaultNoteTally {
+  private readonly notes: NoteDocument[] = [];
+  private readonly linkTargets: string[] = [];
+  private readonly skipped: SkippedNote[] = [];
+
+  public addTreeNote(note: NoteDocument): void {
+    this.notes.push(note);
+    this.linkTargets.push(...extractNoteLinkTargets(note.body));
+  }
+
+  public addLinkedNote(note: NoteDocument): void {
+    this.notes.push(note);
+  }
+
+  public addSkipped(skippedNote: SkippedNote): void {
+    this.skipped.push(skippedNote);
+  }
+
+  public listCollectedIds(): Set<string> {
+    return new Set([
+      ...this.notes.map((note) => note.id),
+      ...this.skipped.map((entry) => entry.label),
+    ]);
+  }
+
+  public listPendingLinkTargets(): string[] {
+    return [...new Set(this.linkTargets)];
+  }
+
+  public toCollectedNotes(): CollectedNotes {
+    return { notes: this.notes, skipped: this.skipped };
   }
 }
 
