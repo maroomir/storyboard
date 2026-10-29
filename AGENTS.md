@@ -44,6 +44,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 - Use TypeScript and explicit types for extension messages, state, and command payloads.
 - Prefer small, focused modules over large catch-all files.
 - Follow the clean code rules in `.claude/rules/clean-code.md`: optimize for readability, maintainability, testability, and consistent naming/structure.
+- A public method or exported function reads as a table of contents: its roles are `private` methods (or small unexported functions outside a class). Aim for 40 lines; eslint fails a function over 60 lines or complexity 20 (`scripts/lint/functionSizeRules.cjs`), except React/Ink, tests and the composition roots.
 - Do not introduce secrets, API keys, or user-private values into source control.
 - If you reference Cline, adapt the idea to `storyboard` rather than importing unrelated complexity.
 

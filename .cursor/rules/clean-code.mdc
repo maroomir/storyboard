@@ -16,6 +16,7 @@ Readable, maintainable, extensible, robust (edge cases and failures handled), te
 - Let the formatter handle layout; use blank lines to separate **semantic steps**.
 - **No comments**: intent, constraints and tradeoffs go into names (see `comments-policy.mdc`).
 - Split when one screen no longer shows the **meaningful unit** (function/class).
+- Keep a function to about 40 lines; a public method that runs longer is a list of private steps (`coding-standards.mdc`, "A function reads as a table of contents").
 
 ## Structure
 

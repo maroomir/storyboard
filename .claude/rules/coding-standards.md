@@ -74,6 +74,14 @@ for schema-first types and the error-class template. Generic readability and ver
   verbs as public methods, and a method handed out as a callback as an arrow field. Helpers that
   take no dependency stay functions in a module named for the subject; a module whose functions
   all take the same `run`/`container`/`deps` first parameter is a class waiting to be written.
+- **A function reads as a table of contents.** A public method or exported function names its
+  steps and calls them; each role (a mode branch, the body of a long loop, a check, the message at
+  the end) is a `private` method or, outside a class, a small unexported function in the same file,
+  and counters carried through a loop are a small private class. Aim for 40 lines; eslint fails a
+  function over 60 lines (blank lines and comments not counted) or over complexity 20
+  (`scripts/lint/functionSizeRules.cjs`). React/Ink components and hooks, tests and the
+  composition roots (`buildServices`, `createCliContainer`, the bootstrap modules,
+  `createInvokeHandlers`) are exempt by file in each `.eslintrc.cjs`.
 - **Use cases implement `IUseCase<Request, Result>`** (`story-engine/src/application/useCase.ts`):
   one `execute(request)` taking a single request object, expected failures returned through
   `runUseCase` / `failedResult`, never positional arguments. Apps do not call a use case: they call

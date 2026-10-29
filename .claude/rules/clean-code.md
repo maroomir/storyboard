@@ -40,6 +40,7 @@ Use three lenses:
 - Arrange similar handlers/functions in a consistent order.
 - Preserve data-flow readability: values should be created, transformed, and used in an order that is easy to trace.
 - Split long functions/classes when one screen no longer shows the meaningful unit.
+- Keep a function to about 40 lines; a public method that runs longer is a list of private steps (`coding-standards.md`, "A function reads as a table of contents").
 - Choose organization by role or by flow based on what makes the current code easiest to read.
 - Keep VSCode extension-host logic, shared types, and webview UI concerns separate.
 
