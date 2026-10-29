@@ -15,12 +15,7 @@ import {
   applyOverlay,
   completedKeys,
   copyToScratch,
-  createFactRecallJudge,
-  createSimJudge,
-  judgeAxis,
-  judgeChain,
   keepDrafts,
-  scoreFactRecall,
   defaultGridLevels,
   describeCost,
   describeEngine,
@@ -47,20 +42,14 @@ import {
   type DesignedPoint,
   type RunRecord,
   type SimConfig,
-  type SimJudge,
   type BudgetEstimate,
   type TrackRef,
   type ISimWorkspaceFactory,
   type TrackRunResult,
-  type AxisScene,
-  type AxisVerdict,
   type OverlayApplication,
-  type PanelVerdict,
-  type FactRecallReport,
   type KnobSpec,
   type RejudgeSource,
   type BaselineSample,
-  type SceneDraft,
 } from '@storyboard/story-sim';
 import type { ZodSafeParseResult } from 'zod';
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -71,7 +60,6 @@ import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
 import {
   generationRecord,
-  judgeUsageTotals,
   loadOverlayPoint,
   readJudgeMaterials,
   readKeptDrafts,
@@ -82,6 +70,7 @@ import {
   type Selection,
   type TrackScene,
 } from './simTrack';
+import { SimRunJudging } from './simRunJudging';
 
 interface PreparedSim {
   readonly trackRoot: string;
@@ -107,17 +96,6 @@ interface PointExecution {
   readonly judge?: Selection;
   readonly materials?: JudgeMaterials;
   readonly genre: string;
-}
-
-interface ChainJudgement {
-  readonly judgeRegistry: AiProviderRegistry;
-  readonly judge: Selection;
-  readonly generation: Selection;
-  readonly materials: JudgeMaterials;
-  readonly scenes: readonly TrackScene[];
-  readonly drafts: ReadonlyMap<string, string>;
-  readonly label: string;
-  readonly draftsDir: string;
 }
 
 interface LocalModelDemand {
@@ -158,7 +136,7 @@ interface PointRun {
   readonly engineCommit: string;
   readonly engineVersion: string;
   readonly factory: ISimWorkspaceFactory;
-  readonly judgeRegistry: AiProviderRegistry;
+  readonly judging: SimRunJudging;
 }
 
 interface RepeatRef {
@@ -267,92 +245,6 @@ function createRepeatRecord(
   };
 }
 
-function createAxisScenes(
-  scenes: readonly TrackScene[],
-  drafts: ReadonlyMap<string, string>,
-  axisFloors: ReadonlyMap<string, string>,
-): AxisScene[] {
-  return scenes.flatMap((scene) => {
-    const draft: string | undefined = drafts.get(scene.sceneStem);
-    const floorDraft: string | undefined = axisFloors.get(scene.sceneStem);
-    return draft === undefined
-      ? []
-      : [
-          {
-            sceneStem: scene.sceneStem,
-            axis: scene.title,
-            question: scene.purpose,
-            draft,
-            ...(floorDraft === undefined ? {} : { floorDraft }),
-          },
-        ];
-  });
-}
-
-function describeAxisVerdict(verdict: AxisVerdict): string {
-  return `${verdict.sceneStem} · ${verdict.axis} · ${verdict.verdict}${verdict.discarded ? ` (폐기: ${verdict.discardReason ?? ''})` : ''}`;
-}
-
-function orderChainDrafts(input: ChainJudgement): SceneDraft[] {
-  return input.scenes
-    .map((scene) => ({ sceneStem: scene.sceneStem, draft: input.drafts.get(scene.sceneStem) }))
-    .filter((scene): scene is SceneDraft => scene.draft !== undefined);
-}
-
-function createCriticFields(verdict: PanelVerdict): Partial<RunRecord> {
-  return verdict.critic === undefined
-    ? {}
-    : {
-        critic: {
-          groundedTotal: verdict.critic.groundedTotal,
-          opinionTotal: verdict.critic.opinionTotal,
-          gatePassed: verdict.critic.gate.passed,
-          scores: verdict.critic.scores,
-          gateReason: verdict.critic.gate.reason,
-          problems: verdict.critic.problems,
-        },
-      };
-}
-
-function createPanelVerdictFields(verdict: PanelVerdict): Partial<RunRecord> {
-  return {
-    auc: verdict.discarded ? undefined : verdict.auc.auc,
-    discarded: verdict.discarded,
-    ...(verdict.discarded ? { discardReasons: verdict.discardReasons } : {}),
-    floorGate: verdict.floor,
-    panel: {
-      byReader: verdict.auc.byReader,
-      curves: verdict.auc.curves,
-      dropOffScene: verdict.auc.dropOffScene,
-      engagement: verdict.auc.engagement,
-      engagementByReader: verdict.auc.engagementByReader,
-    },
-    genreNotes: verdict.genreNotes,
-    ...(verdict.genreProblems.length > 0 ? { genreProblems: verdict.genreProblems } : {}),
-    ...createCriticFields(verdict),
-  };
-}
-
-function describeKeptVerdictProblems(
-  label: string,
-  draftsDir: string,
-  verdict: PanelVerdict,
-): string[] {
-  return [
-    ...(verdict.discarded
-      ? [`${label} · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')} · 원고: ${draftsDir}`]
-      : []),
-    ...(verdict.floor.passed
-      ? []
-      : [
-          `${label} · 하한선 관문 실패 (회차는 유지): ${[...verdict.floor.failures, ...verdict.floor.abstained].join(' / ')}`,
-        ]),
-    ...(verdict.genreProblems.length > 0
-      ? [`${label} · 장르 독자 중단 (회차는 유지): ${verdict.genreProblems.join(' / ')}`]
-      : []),
-  ];
-}
-
 async function loadChainMaterials(prepared: PreparedSim): Promise<string | JudgeMaterials> {
   const materials: string | JudgeMaterials = await readJudgeMaterials(
     prepared.genreRoot,
@@ -366,24 +258,6 @@ async function loadChainMaterials(prepared: PreparedSim): Promise<string | Judge
   return materials.axisFloors === undefined
     ? materials
     : '축 트랙은 다시 채점하지 않습니다. 연쇄 트랙의 장르를 주세요.';
-}
-
-async function scoreRecall(
-  input: ChainJudgement,
-  ledger: NonNullable<JudgeMaterials['ledger']>,
-  judge: SimJudge,
-): Promise<Partial<RunRecord>> {
-  const recall: FactRecallReport = await scoreFactRecall({
-    ledger,
-    draftsByScene: input.drafts,
-    judge: createFactRecallJudge(judge),
-  });
-
-  return {
-    recalled: recall.recalled,
-    recallTotal: recall.total,
-    contradicted: recall.contradicted,
-  };
 }
 
 export class SimRunner {
@@ -627,13 +501,11 @@ export class SimRunner {
   }
 
   private async rejudgeSources(rejudgeRun: RejudgeRun): Promise<number> {
-    const judgeRegistry: AiProviderRegistry = this.judgeRegistryFor(
-      rejudgeRun.prepared.localRuntime,
-    );
+    const judging: SimRunJudging = this.createJudging(rejudgeRun.prepared.localRuntime);
     let done: number = 0;
 
     for (const source of rejudgeRun.sources) {
-      const isRejudged: boolean = await this.rejudgeSource(source, rejudgeRun, judgeRegistry);
+      const isRejudged: boolean = await this.rejudgeSource(source, rejudgeRun, judging);
       if (isRejudged) {
         done += 1;
       }
@@ -645,7 +517,7 @@ export class SimRunner {
   private async rejudgeSource(
     source: RejudgeSource,
     rejudgeRun: RejudgeRun,
-    judgeRegistry: AiProviderRegistry,
+    judging: SimRunJudging,
   ): Promise<boolean> {
     const { prepared } = rejudgeRun;
     const drafts: Map<string, string> = await readKeptDrafts(
@@ -659,12 +531,13 @@ export class SimRunner {
       return false;
     }
 
-    const verdict: Partial<RunRecord> = await this.judgeKeptDrafts(
+    const verdict: Partial<RunRecord> = await judging.judgeKeptDrafts({
       source,
-      rejudgeRun,
-      judgeRegistry,
+      judge: rejudgeRun.selected,
+      materials: rejudgeRun.materials,
+      scenes: prepared.scenes,
       drafts,
-    );
+    });
     const record: RunRecord = rejudgedRecord(source.run, {
       engineCommit: rejudgeRun.engineCommit,
       engineVersion: rejudgeRun.engineVersion,
@@ -675,35 +548,6 @@ export class SimRunner {
     await appendRun(prepared.outPath, record);
     this.context.container.logger.info(describeRejudgedRecord(record));
     return true;
-  }
-
-  private async judgeKeptDrafts(
-    source: RejudgeSource,
-    rejudgeRun: RejudgeRun,
-    judgeRegistry: AiProviderRegistry,
-    drafts: ReadonlyMap<string, string>,
-  ): Promise<Partial<RunRecord>> {
-    const generation: Selection = {
-      providerId: source.run.generation.providerId as AiProviderId,
-      model: source.run.generation.model,
-    };
-
-    try {
-      return await this.judgeChainDrafts({
-        judgeRegistry,
-        judge: rejudgeRun.selected,
-        generation,
-        materials: rejudgeRun.materials,
-        scenes: rejudgeRun.prepared.scenes,
-        drafts,
-        label: `${source.run.runId} 재채점`,
-        draftsDir: source.draftsDir,
-      });
-    } catch (error) {
-      const message: string = extractErrorMessage(error);
-      this.context.container.logger.warn(`${source.run.runId} · 심판 실패: ${message}`);
-      return { discarded: true, discardReasons: [`심판 실패: ${message}`] };
-    }
   }
 
   private flag(name: string): string | undefined {
@@ -868,6 +712,13 @@ export class SimRunner {
     );
   }
 
+  private createJudging(localRuntime: SimConfig['ollama']): SimRunJudging {
+    return new SimRunJudging({
+      logger: this.context.container.logger,
+      registry: this.judgeRegistryFor(localRuntime),
+    });
+  }
+
   private async describeEngineCommit(engineVersion: string): Promise<string> {
     return await describeEngine(dirname(process.argv[1] ?? process.cwd()), engineVersion);
   }
@@ -921,7 +772,7 @@ export class SimRunner {
       engineCommit,
       engineVersion,
       factory: this.createWorkspaceFactory(input),
-      judgeRegistry: this.judgeRegistryFor(input.localRuntime),
+      judging: this.createJudging(input.localRuntime),
     };
 
     return await this.executeOpenRepeats(pointRun, done);
@@ -1010,12 +861,15 @@ export class SimRunner {
       { genre: input.genre, pointLabel: ref.point.label, repeat: ref.repeat },
       trackRun.drafts,
     );
-    const verdictFields: Partial<RunRecord> = await this.judgeRepeat(
-      pointRun,
-      ref,
-      trackRun,
+    const verdictFields: Partial<RunRecord> = await pointRun.judging.judgeRepeat({
+      judge: input.judge,
+      materials: input.materials,
+      generation: input.generation,
+      scenes: input.scenes,
+      drafts: trackRun.drafts,
+      label: `${ref.point.label} ${ref.repeat}회`,
       draftsDir,
-    );
+    });
     const record: RunRecord = createRepeatRecord(pointRun, ref, {
       trackRun,
       draftsDir,
@@ -1025,68 +879,6 @@ export class SimRunner {
 
     await appendRun(input.outPath, record);
     this.context.container.logger.info(describeRepeatRecord(ref, trackRun, record));
-  }
-
-  private async judgeRepeat(
-    pointRun: PointRun,
-    ref: RepeatRef,
-    trackRun: TrackRunResult,
-    draftsDir: string,
-  ): Promise<Partial<RunRecord>> {
-    const { input } = pointRun;
-
-    try {
-      if (input.judge !== undefined && input.materials?.axisFloors !== undefined) {
-        return await this.judgeAxisDrafts(
-          pointRun,
-          input.judge,
-          input.materials.axisFloors,
-          trackRun,
-        );
-      }
-      if (input.judge !== undefined && input.materials !== undefined) {
-        return await this.judgeChainDrafts({
-          judgeRegistry: pointRun.judgeRegistry,
-          judge: input.judge,
-          generation: input.generation,
-          materials: input.materials,
-          scenes: input.scenes,
-          drafts: trackRun.drafts,
-          label: `${ref.point.label} ${ref.repeat}회`,
-          draftsDir,
-        });
-      }
-      return {};
-    } catch (error) {
-      const message: string = extractErrorMessage(error);
-      this.context.container.logger.warn(
-        `${ref.point.label} ${ref.repeat}회 · 심판 실패, 생성 결과만 남깁니다: ${message}`,
-      );
-      return { discarded: true, discardReasons: [`심판 실패: ${message}`] };
-    }
-  }
-
-  private async judgeAxisDrafts(
-    pointRun: PointRun,
-    selection: Selection,
-    axisFloors: ReadonlyMap<string, string>,
-    trackRun: TrackRunResult,
-  ): Promise<Partial<RunRecord>> {
-    const judge: SimJudge = createSimJudge({
-      registry: pointRun.judgeRegistry,
-      judge: selection,
-      generation: pointRun.input.generation,
-    });
-    const verdicts: readonly AxisVerdict[] = await judgeAxis({
-      judge,
-      scenes: createAxisScenes(pointRun.input.scenes, trackRun.drafts, axisFloors),
-    });
-
-    for (const verdict of verdicts) {
-      this.context.container.logger.info(describeAxisVerdict(verdict));
-    }
-
-    return { axisVerdicts: verdicts } as Partial<RunRecord>;
   }
 
   private async refuseMissingLocalModels(input: LocalModelDemand): Promise<string | undefined> {
@@ -1112,44 +904,5 @@ export class SimRunner {
     return missing.length === 0
       ? undefined
       : `ollama 에 없는 모델입니다: ${missing.join(', ')} (있는 것: ${available.join(', ') || '없음'}). ollama pull 로 받거나 sim.config 의 모델을 고치세요.`;
-  }
-
-  private async judgeChainDrafts(input: ChainJudgement): Promise<Partial<RunRecord>> {
-    const judge: SimJudge = createSimJudge({
-      registry: input.judgeRegistry,
-      judge: input.judge,
-      generation: input.generation,
-    });
-    const generatedForFloor: string | undefined = input.drafts.get(
-      input.materials.floorDraft.sceneStem,
-    );
-    const verdict: PanelVerdict = await judgeChain({
-      judge,
-      scenes: orderChainDrafts(input),
-      genre: input.materials.genre,
-      floorCandidates: [
-        { kind: 'generated', draft: generatedForFloor ?? '' },
-        { kind: 'floor', draft: input.materials.floorDraft.text },
-      ],
-      critic: { names: input.materials.characterNames },
-    });
-
-    let fields: Partial<RunRecord> = createPanelVerdictFields(verdict);
-
-    if (verdict.critic !== undefined && !verdict.critic.gate.passed) {
-      this.context.container.logger.warn(
-        `${input.label} · 비평 관문 실패 (회차는 유지): ${verdict.critic.gate.reason}`,
-      );
-    }
-
-    if (input.materials.ledger !== undefined && !verdict.discarded) {
-      fields = { ...fields, ...(await scoreRecall(input, input.materials.ledger, judge)) };
-    }
-
-    for (const problem of describeKeptVerdictProblems(input.label, input.draftsDir, verdict)) {
-      this.context.container.logger.warn(problem);
-    }
-
-    return { ...fields, judgeTokens: judgeUsageTotals(judge) };
   }
 }
