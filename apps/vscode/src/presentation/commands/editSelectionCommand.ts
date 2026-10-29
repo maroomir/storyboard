@@ -1,20 +1,21 @@
 import { storyboardCommandIds } from '@/contributionIds';
-import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import {
-  runAugmentDraft,
+  AugmentDraftCommandBase,
   type AugmentDraftCommandDependencies,
-} from '@/presentation/commands/augmentDraft';
+} from '@/presentation/commands/augmentDraftCommandBase';
 import type { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 
-export class EditSelectionCommand implements IExtensionCommand {
+export class EditSelectionCommand extends AugmentDraftCommandBase {
   public readonly id: string = storyboardCommandIds.draftEditSelection;
 
   public constructor(
-    private readonly dependencies: AugmentDraftCommandDependencies,
-    private readonly previewProvider: VirtualDocumentStore,
-  ) {}
+    dependencies: AugmentDraftCommandDependencies,
+    previewProvider: VirtualDocumentStore,
+  ) {
+    super(dependencies, previewProvider);
+  }
 
   public async run(
     sceneUri?: vscode.Uri,
@@ -35,14 +36,6 @@ export class EditSelectionCommand implements IExtensionCommand {
       await vscode.window.showInformationMessage('수정 지시문을 입력해 주세요.');
       return;
     }
-    return runAugmentDraft(
-      'selection',
-      this.dependencies,
-      this.previewProvider,
-      sceneUri,
-      draftUri,
-      rangeArg,
-      instruction,
-    );
+    return this.augment('selection', sceneUri, draftUri, rangeArg, instruction);
   }
 }

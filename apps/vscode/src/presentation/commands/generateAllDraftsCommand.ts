@@ -10,7 +10,7 @@ import type {
 import type { DraftManager, RunGate } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { stageProgressLabel } from './generateDraft';
+import { stageProgressLabel } from '@/presentation/commands/sceneStageLabels';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
 

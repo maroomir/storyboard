@@ -1,13 +1,17 @@
 import { storyboardCommandIds } from '@/contributionIds';
-import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import { createCard, type CreateCardCommandDependencies } from '@/presentation/commands/createCard';
+import {
+  CreateCardCommandBase,
+  type CreateCardCommandDependencies,
+} from '@/presentation/commands/createCardCommandBase';
 
-export class CreateBackgroundCardCommand implements IExtensionCommand {
+export class CreateBackgroundCardCommand extends CreateCardCommandBase {
   public readonly id: string = storyboardCommandIds.backgroundCreate;
 
-  public constructor(private readonly dependencies: CreateCardCommandDependencies) {}
+  public constructor(dependencies: CreateCardCommandDependencies) {
+    super(dependencies);
+  }
 
   public run(): Promise<void> {
-    return createCard('location', this.dependencies.cards);
+    return this.create('location');
   }
 }

@@ -1,18 +1,19 @@
 import { storyboardCommandIds } from '@/contributionIds';
-import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import {
-  runCommand,
+  GenerateDraftCommandBase,
   type GenerateDraftCommandDependencies,
-} from '@/presentation/commands/generateDraft';
+} from '@/presentation/commands/generateDraftCommandBase';
 
-export class GenerateDraftCommand implements IExtensionCommand {
+export class GenerateDraftCommand extends GenerateDraftCommandBase {
   public readonly id: string = storyboardCommandIds.draftGenerate;
 
-  public constructor(private readonly dependencies: GenerateDraftCommandDependencies) {}
+  public constructor(dependencies: GenerateDraftCommandDependencies) {
+    super(dependencies);
+  }
 
   public run(uri?: vscode.Uri): Promise<void> {
-    return runCommand(uri, false, this.dependencies);
+    return this.generate(uri, { shouldOverwrite: false });
   }
 }
