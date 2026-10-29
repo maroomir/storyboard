@@ -60,70 +60,107 @@ export class SummarizeChaptersUseCase implements IUseCase<
     return await runUseCase<SummarizeChaptersResult>(
       this.host.logger,
       'Summarize chapters failed',
-      async () => {
-        if (!(await this.repositories.chapterSummaries.hasChapterPlan(workspaceRoot))) {
-          return { kind: 'missing_outline', ok: false };
-        }
-
-        const source: ManuscriptAssemblySource =
-          await this.repositories.chapterSummaries.loadAssemblySource(workspaceRoot);
-        if (source.draftsByOrder.size === 0) {
-          return { kind: 'missing_drafts', ok: false };
-        }
-
-        const manuscript: AssembledManuscript = assembleManuscript({
-          draftsByOrder: source.draftsByOrder,
-          plan: source.plan,
-          projectName: source.projectName,
-        });
-        const targeted: AssembledChapter[] =
-          options.chapterIndex === undefined
-            ? manuscript.chapters
-            : manuscript.chapters.slice(options.chapterIndex, options.chapterIndex + 1);
-
-        if (targeted.length === 0) {
-          return { kind: 'missing_drafts', ok: false };
-        }
-
-        const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
-        const providerId: AiProviderId = this.ai.gateway.getTaskProvider('chapterSummary');
-        const sourceHashes: Map<string, string> = new Map(
-          manuscript.chapters.map((chapter) => [
-            chapter.chapterTitle,
-            computeDraftBodyHash(chapter.markdown),
-          ]),
-        );
-        let summaries: readonly ChapterSummary[] =
-          options.chapterIndex === undefined
-            ? []
-            : auditChapterSummaries(await this.readExisting(workspaceRoot), sourceHashes).summaries;
-
-        for (const [index, chapter] of targeted.entries()) {
-          if (options.shouldCancel?.()) {
-            return { kind: 'cancelled', ok: false };
-          }
-
-          options.onProgress?.(index + 1, targeted.length);
-          const summary: string = await aiService.summarizeChapter(
-            { body: chapter.markdown, chapterTitle: chapter.chapterTitle },
-            { providerId },
-          );
-          summaries = mergeChapterSummary(summaries, {
-            chapterTitle: chapter.chapterTitle,
-            summary,
-            sourceHash: computeDraftBodyHash(chapter.markdown),
-            isStale: false,
-          });
-        }
-
-        const summaryUri: StoryUri = await this.repositories.chapterSummaries.saveChapterSummaries(
-          workspaceRoot,
-          buildChapterSummariesMarkdown(source.projectName, summaries),
-        );
-
-        return { kind: 'summarized', ok: true, summaryCount: summaries.length, summaryUri };
-      },
+      async () => await this.summarizeChapters(workspaceRoot, options),
     );
+  }
+
+  private async summarizeChapters(
+    workspaceRoot: StoryUri,
+    options: SummarizeChaptersOptions,
+  ): Promise<SummarizeChaptersResult> {
+    if (!(await this.repositories.chapterSummaries.hasChapterPlan(workspaceRoot))) {
+      return { kind: 'missing_outline', ok: false };
+    }
+
+    const source: ManuscriptAssemblySource =
+      await this.repositories.chapterSummaries.loadAssemblySource(workspaceRoot);
+    if (source.draftsByOrder.size === 0) {
+      return { kind: 'missing_drafts', ok: false };
+    }
+
+    const manuscript: AssembledManuscript = assembleManuscript({
+      draftsByOrder: source.draftsByOrder,
+      plan: source.plan,
+      projectName: source.projectName,
+    });
+    const targeted: AssembledChapter[] =
+      options.chapterIndex === undefined
+        ? manuscript.chapters
+        : manuscript.chapters.slice(options.chapterIndex, options.chapterIndex + 1);
+
+    if (targeted.length === 0) {
+      return { kind: 'missing_drafts', ok: false };
+    }
+
+    const summaries: readonly ChapterSummary[] | undefined = await this.summarizeTargetedChapters(
+      workspaceRoot,
+      manuscript,
+      targeted,
+      options,
+    );
+    if (summaries === undefined) {
+      return { kind: 'cancelled', ok: false };
+    }
+
+    const summaryUri: StoryUri = await this.repositories.chapterSummaries.saveChapterSummaries(
+      workspaceRoot,
+      buildChapterSummariesMarkdown(source.projectName, summaries),
+    );
+
+    return { kind: 'summarized', ok: true, summaryCount: summaries.length, summaryUri };
+  }
+
+  private async summarizeTargetedChapters(
+    workspaceRoot: StoryUri,
+    manuscript: AssembledManuscript,
+    targeted: readonly AssembledChapter[],
+    options: SummarizeChaptersOptions,
+  ): Promise<readonly ChapterSummary[] | undefined> {
+    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
+    const providerId: AiProviderId = this.ai.gateway.getTaskProvider('chapterSummary');
+    let summaries: readonly ChapterSummary[] = await this.loadKeptSummaries(
+      workspaceRoot,
+      manuscript,
+      options.chapterIndex,
+    );
+
+    for (const [index, chapter] of targeted.entries()) {
+      if (options.shouldCancel?.()) {
+        return undefined;
+      }
+
+      options.onProgress?.(index + 1, targeted.length);
+      const summary: string = await aiService.summarizeChapter(
+        { body: chapter.markdown, chapterTitle: chapter.chapterTitle },
+        { providerId },
+      );
+      summaries = mergeChapterSummary(summaries, {
+        chapterTitle: chapter.chapterTitle,
+        summary,
+        sourceHash: computeDraftBodyHash(chapter.markdown),
+        isStale: false,
+      });
+    }
+
+    return summaries;
+  }
+
+  private async loadKeptSummaries(
+    workspaceRoot: StoryUri,
+    manuscript: AssembledManuscript,
+    chapterIndex: number | undefined,
+  ): Promise<readonly ChapterSummary[]> {
+    if (chapterIndex === undefined) {
+      return [];
+    }
+
+    const sourceHashes: Map<string, string> = new Map(
+      manuscript.chapters.map((chapter) => [
+        chapter.chapterTitle,
+        computeDraftBodyHash(chapter.markdown),
+      ]),
+    );
+    return auditChapterSummaries(await this.readExisting(workspaceRoot), sourceHashes).summaries;
   }
 
   private async readExisting(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
