@@ -6,7 +6,7 @@ import { AiRpc } from '@/presentation/messaging/aiRpcHandlers';
 import { aiProviderIds } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import { ContractRpc } from '@/presentation/messaging/contractRpcHandlers';
-import { SettingsRpc, getSettingsReadSnapshot } from '@/presentation/messaging/settingsRpcHandlers';
+import { SettingsRpc } from '@/presentation/messaging/settingsRpcHandlers';
 import type { StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
@@ -27,8 +27,16 @@ export class SettingsPanelProvider implements ISettingsPanel {
   private panel: vscode.WebviewPanel | undefined;
   private bridge: DisposableHandle | undefined;
   private hostSubscriptions: vscode.Disposable | undefined;
+  private readonly settingsRpc: SettingsRpc;
 
-  public constructor(private readonly dependencies: SettingsPanelDependencies) {}
+  public constructor(private readonly dependencies: SettingsPanelDependencies) {
+    this.settingsRpc = new SettingsRpc({
+      configBridge: dependencies.configBridge,
+      secretStore: dependencies.secretStore,
+      registry: dependencies.aiProviderRegistry,
+      configFiles: dependencies.configFiles,
+    });
+  }
 
   public reveal(extensionUri: vscode.Uri): void {
     if (this.panel) {
@@ -47,11 +55,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
 
   private async open(extensionUri: vscode.Uri): Promise<void> {
     const initialSnapshot: StoryboardResponsePayload<'settings.read'> =
-      await getSettingsReadSnapshot({
-        configBridge: this.dependencies.configBridge,
-        registry: this.dependencies.aiProviderRegistry,
-        configFiles: this.dependencies.configFiles,
-      });
+      await this.settingsRpc.readSnapshot();
 
     const panel: vscode.WebviewPanel = vscode.window.createWebviewPanel(
       panelViewType,
@@ -96,11 +100,8 @@ export class SettingsPanelProvider implements ISettingsPanel {
       return;
     }
 
-    const payload: StoryboardResponsePayload<'settings.read'> = await getSettingsReadSnapshot({
-      configBridge: this.dependencies.configBridge,
-      registry: this.dependencies.aiProviderRegistry,
-      configFiles: this.dependencies.configFiles,
-    });
+    const payload: StoryboardResponsePayload<'settings.read'> =
+      await this.settingsRpc.readSnapshot();
 
     await this.panel.webview.postMessage({
       type: 'event',
@@ -112,12 +113,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
   private createHandlers(): StoryboardRpcHandlers {
     return {
       ...new AiRpc(this.dependencies.aiProviderRegistry).handlers(),
-      ...new SettingsRpc({
-        configBridge: this.dependencies.configBridge,
-        secretStore: this.dependencies.secretStore,
-        registry: this.dependencies.aiProviderRegistry,
-        configFiles: this.dependencies.configFiles,
-      }).handlers(),
+      ...this.settingsRpc.handlers(),
       ...new ContractRpc().handlers(),
     };
   }

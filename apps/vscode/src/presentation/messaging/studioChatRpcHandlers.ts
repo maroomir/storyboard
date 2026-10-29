@@ -80,7 +80,7 @@ export class StudioChatRpc {
             isValidationEnabled: this.deps.configBridge.isStudioValidationEnabled(),
             resolveLookup: (requests) =>
               new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
-            ...toolResolverFor(this.deps, root, payload.entity, entityContext),
+            ...this.toolResolverFor(root, payload.entity, entityContext),
             resolveFollowUps: (followUps) =>
               new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
             createTurnId: () => crypto.randomUUID(),
@@ -100,6 +100,51 @@ export class StudioChatRpc {
       },
     };
   }
+
+  private toolResolverFor(
+    root: vscode.Uri,
+    entity: StudioEntity,
+    entityContext: StudioEntityContext,
+  ): Pick<StudioChatRequest, 'resolveInvoke'> {
+    if (entityContext.baseline === undefined || entityContext.targetUri === undefined) {
+      return {};
+    }
+
+    if (entityContext.patchTarget === 'draft') {
+      return {
+        resolveInvoke: new StudioInvokeResolver(
+          {
+            aiGateway: this.deps.aiGateway,
+            logger: this.deps.logger,
+            diagnostics: this.deps.toolDiagnostics,
+          },
+          {
+            workspaceRoot: root,
+            sceneStem: entity.key,
+            draftUri: entityContext.targetUri,
+            baseline: entityContext.baseline,
+          },
+        ).resolve,
+      };
+    }
+
+    return {
+      resolveInvoke: new StudioCardInvokeResolver(
+        {
+          aiGateway: this.deps.aiGateway,
+          cards: this.deps.cards,
+          logger: this.deps.logger,
+        },
+        {
+          workspaceRoot: root,
+          entity,
+          entityLabel: entityContext.entityLabel,
+          context: entityContext.context,
+          baseline: entityContext.baseline,
+        },
+      ).resolve,
+    };
+  }
 }
 
 function usageAttributionFor(entity: StudioEntity): Pick<StudioChatRequest, 'attribution'> {
@@ -108,52 +153,6 @@ function usageAttributionFor(entity: StudioEntity): Pick<StudioChatRequest, 'att
   }
 
   return { attribution: { primary: { kind: entity.kind, id: entity.key } } };
-}
-
-function toolResolverFor(
-  deps: StudioChatRpcHandlersDependencies,
-  root: vscode.Uri,
-  entity: StudioEntity,
-  entityContext: StudioEntityContext,
-): Pick<StudioChatRequest, 'resolveInvoke'> {
-  if (entityContext.baseline === undefined || entityContext.targetUri === undefined) {
-    return {};
-  }
-
-  if (entityContext.patchTarget === 'draft') {
-    return {
-      resolveInvoke: new StudioInvokeResolver(
-        {
-          aiGateway: deps.aiGateway,
-          logger: deps.logger,
-          diagnostics: deps.toolDiagnostics,
-        },
-        {
-          workspaceRoot: root,
-          sceneStem: entity.key,
-          draftUri: entityContext.targetUri,
-          baseline: entityContext.baseline,
-        },
-      ).resolve,
-    };
-  }
-
-  return {
-    resolveInvoke: new StudioCardInvokeResolver(
-      {
-        aiGateway: deps.aiGateway,
-        cards: deps.cards,
-        logger: deps.logger,
-      },
-      {
-        workspaceRoot: root,
-        entity,
-        entityLabel: entityContext.entityLabel,
-        context: entityContext.context,
-        baseline: entityContext.baseline,
-      },
-    ).resolve,
-  };
 }
 
 function readSelectedDraftText(entityContext: StudioEntityContext): string | undefined {
