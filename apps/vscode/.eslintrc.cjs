@@ -1,4 +1,5 @@
 const explicitTypeRules = require("../../scripts/lint/explicitTypeRules.cjs");
+const { functionSizeLimits, functionSizeExemption } = require("../../scripts/lint/functionSizeRules.cjs");
 
 module.exports = {
   root: true,
@@ -16,6 +17,7 @@ module.exports = {
   ignorePatterns: ["out", "dist", "node_modules"],
   rules: {
     ...explicitTypeRules,
+    ...functionSizeLimits,
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", ignoreRestSiblings: true }],
     "no-warning-comments": [
@@ -29,7 +31,11 @@ module.exports = {
   overrides: [
     {
       files: ["test/**", "scripts/**", "*.config.ts", "*.config.mts"],
-      rules: { "no-restricted-syntax": "off" }
+      rules: { "no-restricted-syntax": "off", ...functionSizeExemption }
+    },
+    {
+      files: ["**/*.tsx", "src/bootstrap/modules/*.ts"],
+      rules: functionSizeExemption
     }
   ]
 }
