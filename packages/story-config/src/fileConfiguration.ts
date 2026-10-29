@@ -9,7 +9,7 @@ import {
 } from 'node:fs';
 import { dirname } from 'node:path';
 
-import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
+import type { ConfigurationInspection, StoryboardConfigurationLike } from '@storyboard/story-ai';
 import {
   hiddenProviderEnabledKey,
   hiddenProviderIds,
@@ -192,98 +192,118 @@ export interface FileConfiguration extends StoryboardConfigurationLike {
   readonly targetFile: (target: ConfigurationTarget) => string | undefined;
 }
 
-export function createFileConfiguration(options: FileConfigurationOptions): FileConfiguration {
-  const overrides: Readonly<Record<string, unknown>> = options.overrides ?? {};
-  const cache: Map<string, CachedFile> = new Map<string, CachedFile>();
-  let enabledHiddenProviders: { readonly key: string; readonly ids: AiProviderId[] } | undefined;
+interface EnabledHiddenProviders {
+  readonly key: string;
+  readonly ids: AiProviderId[];
+}
 
-  function enabledHiddenProviderIds(): AiProviderId[] {
-    const key: string = fileKey(options.userConfigFile);
+class JsonFileConfiguration implements FileConfiguration {
+  private readonly overrides: Readonly<Record<string, unknown>>;
+  private readonly cache: Map<string, CachedFile> = new Map<string, CachedFile>();
+  private enabledHiddenProviders: EnabledHiddenProviders | undefined;
 
-    if (enabledHiddenProviders?.key === key) {
-      return enabledHiddenProviders.ids;
+  public constructor(private readonly options: FileConfigurationOptions) {
+    this.overrides = options.overrides ?? {};
+  }
+
+  public readonly get = <T>(section: string, defaultValue: T): T => {
+    const value: unknown = lookup(this.merged(), section);
+    return value === undefined ? defaultValue : (value as T);
+  };
+
+  public readonly inspect = <T>(section: string): ConfigurationInspection<T> => ({
+    globalValue: lookup(this.read(this.options.userConfigFile), section) as T | undefined,
+    workspaceValue: lookup(this.read(this.options.workspaceConfigFile), section) as T | undefined,
+  });
+
+  public readonly update = async <T>(
+    section: string,
+    value: T,
+    target: number = configurationTargets.user,
+  ): Promise<void> => {
+    const file: string | undefined = this.targetFile(target as ConfigurationTarget);
+
+    if (file === undefined) {
+      throw new ConfigFileError(
+        'write-failed',
+        this.options.userConfigFile,
+        '워크스페이스 설정 파일이 없어 이 작품에만 저장할 수 없습니다.',
+      );
     }
 
-    const ids: AiProviderId[] = readEnabledHiddenProviderIds(options.userConfigFile);
-    enabledHiddenProviders = { key, ids };
+    const settings: Record<string, unknown> = structuredClone(parseConfigFile(file));
+    assignNested(settings, section, value);
+    writeConfigFile(file, settings);
+    this.cache.delete(file);
+  };
+
+  public readonly targetFile = (target: ConfigurationTarget): string | undefined => {
+    return target === configurationTargets.workspace
+      ? this.options.workspaceConfigFile
+      : this.options.userConfigFile;
+  };
+
+  private enabledHiddenProviderIds(): AiProviderId[] {
+    const key: string = fileKey(this.options.userConfigFile);
+
+    if (this.enabledHiddenProviders?.key === key) {
+      return this.enabledHiddenProviders.ids;
+    }
+
+    const ids: AiProviderId[] = readEnabledHiddenProviderIds(this.options.userConfigFile);
+    this.enabledHiddenProviders = { key, ids };
     return ids;
   }
 
-  function read(file: string | undefined): Record<string, unknown> {
+  private read(file: string | undefined): Record<string, unknown> {
     if (file === undefined) {
       return {};
     }
 
-    const enabledHiddenIds: AiProviderId[] = enabledHiddenProviderIds();
+    const enabledHiddenIds: AiProviderId[] = this.enabledHiddenProviderIds();
     const key: string = `${fileKey(file)}:${enabledHiddenIds.join(',')}`;
-    const cached: CachedFile | undefined = cache.get(file);
+    const cached: CachedFile | undefined = this.cache.get(file);
 
     if (cached && cached.key === key) {
       return cached.value;
     }
 
-    let value: Record<string, unknown>;
-
-    try {
-      value = parseConfigFile(file);
-      for (const warning of validateConfigSettings(file, value, enabledHiddenIds)) {
-        options.onUnknownKey?.(warning);
-      }
-    } catch (error) {
-      if (!options.onInvalidFile || !(error instanceof ConfigFileError)) {
-        throw error;
-      }
-
-      options.onInvalidFile(error);
-      value = {};
-    }
-
-    cache.set(file, { key, value });
+    const value: Record<string, unknown> = this.loadValidatedFile(file, enabledHiddenIds);
+    this.cache.set(file, { key, value });
     return value;
   }
 
-  function targetFile(target: ConfigurationTarget): string | undefined {
-    return target === configurationTargets.workspace
-      ? options.workspaceConfigFile
-      : options.userConfigFile;
-  }
-
-  function merged(): Record<string, unknown> {
-    return {
-      ...mergeDeep(read(options.userConfigFile), read(options.workspaceConfigFile)),
-      ...overrides,
-    };
-  }
-
-  return {
-    get: <T>(section: string, defaultValue: T): T => {
-      const value: unknown = lookup(merged(), section);
-      return value === undefined ? defaultValue : (value as T);
-    },
-    inspect: <T>(section: string) => ({
-      globalValue: lookup(read(options.userConfigFile), section) as T | undefined,
-      workspaceValue: lookup(read(options.workspaceConfigFile), section) as T | undefined,
-    }),
-    update: async <T>(
-      section: string,
-      value: T,
-      target: number = configurationTargets.user,
-    ): Promise<void> => {
-      const file: string | undefined = targetFile(target as ConfigurationTarget);
-
-      if (file === undefined) {
-        throw new ConfigFileError(
-          'write-failed',
-          options.userConfigFile,
-          '워크스페이스 설정 파일이 없어 이 작품에만 저장할 수 없습니다.',
-        );
+  private loadValidatedFile(
+    file: string,
+    enabledHiddenIds: readonly AiProviderId[],
+  ): Record<string, unknown> {
+    try {
+      const value: Record<string, unknown> = parseConfigFile(file);
+      for (const warning of validateConfigSettings(file, value, enabledHiddenIds)) {
+        this.options.onUnknownKey?.(warning);
+      }
+      return value;
+    } catch (error) {
+      if (!this.options.onInvalidFile || !(error instanceof ConfigFileError)) {
+        throw error;
       }
 
-      const settings: Record<string, unknown> = structuredClone(parseConfigFile(file));
-      assignNested(settings, section, value);
-      writeConfigFile(file, settings);
-      cache.delete(file);
-    },
-    targetFile,
-  };
+      this.options.onInvalidFile(error);
+      return {};
+    }
+  }
+
+  private merged(): Record<string, unknown> {
+    return {
+      ...mergeDeep(
+        this.read(this.options.userConfigFile),
+        this.read(this.options.workspaceConfigFile),
+      ),
+      ...this.overrides,
+    };
+  }
+}
+
+export function createFileConfiguration(options: FileConfigurationOptions): FileConfiguration {
+  return new JsonFileConfiguration(options);
 }
