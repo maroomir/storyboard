@@ -69,94 +69,129 @@ function trackUntilClosed(child: ChildProcess): void {
   child.once('error', () => runningChildren.delete(child));
 }
 
+class CliChildRun {
+  private readonly child: ChildProcessWithoutNullStreams;
+  private readonly stopTimers: NodeJS.Timeout[] = [];
+  private timeoutTimer: NodeJS.Timeout | undefined;
+  private failure: CliRunFailure | undefined;
+  private stderr: string = '';
+  private pendingLine: string = '';
+  private isSettled: boolean = false;
+
+  public constructor(
+    private readonly request: CliRunRequest,
+    private readonly resolve: (runResult: CliRunResult) => void,
+  ) {
+    this.child = spawn(request.command, [...request.args], {
+      env: childEnvironment(request.withoutEnvironment),
+      cwd: getEmptyWorkingDirectory(),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: false,
+      detached: usesProcessGroup,
+    });
+
+    trackUntilClosed(this.child);
+  }
+
+  public start(): void {
+    this.timeoutTimer = setTimeout(() => this.stop('timeout'), this.request.timeoutMs);
+    this.watchAbortSignal();
+    this.readChildOutput();
+
+    this.child.on('error', this.onChildError);
+    this.child.on('close', this.onChildClose);
+
+    this.child.stdin.on('error', () => undefined);
+    this.child.stdin.end(this.request.stdin);
+  }
+
+  private watchAbortSignal(): void {
+    if (this.request.signal?.aborted) {
+      this.onAbort();
+    } else {
+      this.request.signal?.addEventListener('abort', this.onAbort);
+    }
+  }
+
+  private readChildOutput(): void {
+    this.child.stdout.setEncoding('utf8');
+    this.child.stdout.on('data', this.onStdoutChunk);
+
+    this.child.stderr.setEncoding('utf8');
+    this.child.stderr.on('data', this.onStderrChunk);
+  }
+
+  private readonly onAbort = (): void => this.stop('aborted');
+
+  private readonly onStdoutChunk = (chunk: string): void => {
+    const lines: string[] = (this.pendingLine + chunk).split('\n');
+    this.pendingLine = lines.pop() ?? '';
+
+    for (const line of lines) {
+      this.request.onStdoutLine?.(line);
+    }
+  };
+
+  private readonly onStderrChunk = (chunk: string): void => {
+    this.stderr = (this.stderr + chunk).slice(-stderrTailLimit);
+  };
+
+  private readonly onChildError = (error: NodeJS.ErrnoException): void => {
+    this.settle({
+      exitCode: null,
+      stderr: error.message,
+      failure: error.code === 'ENOENT' ? 'not-found' : this.failure,
+    });
+  };
+
+  private readonly onChildClose = (exitCode: number | null): void => {
+    if (this.pendingLine.length > 0) {
+      this.request.onStdoutLine?.(this.pendingLine);
+    }
+
+    this.settle({
+      exitCode,
+      stderr: this.stderr,
+      ...(this.failure === undefined ? {} : { failure: this.failure }),
+    });
+  };
+
+  private stop(reason: CliRunFailure): void {
+    if (this.failure !== undefined) {
+      return;
+    }
+
+    this.failure = reason;
+    signalChildUnlessAlreadyExited(this.child, 'SIGTERM');
+    this.stopTimers.push(
+      setTimeout(
+        () => signalChildUnlessAlreadyExited(this.child, 'SIGKILL'),
+        stopGraceMilliseconds,
+      ),
+      setTimeout(
+        () => this.settle({ exitCode: this.child.exitCode, stderr: this.stderr, failure: reason }),
+        stopGraceMilliseconds + killGraceMilliseconds,
+      ),
+    );
+  }
+
+  private settle(runResult: CliRunResult): void {
+    if (this.isSettled) {
+      return;
+    }
+
+    this.isSettled = true;
+    clearTimeout(this.timeoutTimer);
+    this.stopTimers.forEach(clearTimeout);
+    this.request.signal?.removeEventListener('abort', this.onAbort);
+    this.resolve(runResult);
+  }
+}
+
 export class NodeCliRunner implements ICliRunner {
   public run(request: CliRunRequest): Promise<CliRunResult> {
-    return new Promise((resolve) => {
-      const child: ChildProcessWithoutNullStreams = spawn(request.command, [...request.args], {
-        env: childEnvironment(request.withoutEnvironment),
-        cwd: getEmptyWorkingDirectory(),
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: false,
-        detached: usesProcessGroup,
-      });
-
-      trackUntilClosed(child);
-
-      let failure: CliRunFailure | undefined;
-      let stderr: string = '';
-      let pendingLine: string = '';
-      let isSettled: boolean = false;
-      const stopTimers: NodeJS.Timeout[] = [];
-
-      const settle = (runResult: CliRunResult): void => {
-        if (isSettled) {
-          return;
-        }
-
-        isSettled = true;
-        clearTimeout(timer);
-        stopTimers.forEach(clearTimeout);
-        request.signal?.removeEventListener('abort', onAbort);
-        resolve(runResult);
-      };
-
-      const stop = (reason: CliRunFailure): void => {
-        if (failure !== undefined) {
-          return;
-        }
-
-        failure = reason;
-        signalChildUnlessAlreadyExited(child, 'SIGTERM');
-        stopTimers.push(
-          setTimeout(() => signalChildUnlessAlreadyExited(child, 'SIGKILL'), stopGraceMilliseconds),
-          setTimeout(
-            () => settle({ exitCode: child.exitCode, stderr, failure: reason }),
-            stopGraceMilliseconds + killGraceMilliseconds,
-          ),
-        );
-      };
-      const onAbort = (): void => stop('aborted');
-      const timer: NodeJS.Timeout = setTimeout(() => stop('timeout'), request.timeoutMs);
-
-      if (request.signal?.aborted) {
-        onAbort();
-      } else {
-        request.signal?.addEventListener('abort', onAbort);
-      }
-
-      child.stdout.setEncoding('utf8');
-      child.stdout.on('data', (chunk: string) => {
-        const lines: string[] = (pendingLine + chunk).split('\n');
-        pendingLine = lines.pop() ?? '';
-
-        for (const line of lines) {
-          request.onStdoutLine?.(line);
-        }
-      });
-
-      child.stderr.setEncoding('utf8');
-      child.stderr.on('data', (chunk: string) => {
-        stderr = (stderr + chunk).slice(-stderrTailLimit);
-      });
-
-      child.on('error', (error: NodeJS.ErrnoException) => {
-        settle({
-          exitCode: null,
-          stderr: error.message,
-          failure: error.code === 'ENOENT' ? 'not-found' : failure,
-        });
-      });
-
-      child.on('close', (exitCode) => {
-        if (pendingLine.length > 0) {
-          request.onStdoutLine?.(pendingLine);
-        }
-
-        settle({ exitCode, stderr, ...(failure === undefined ? {} : { failure }) });
-      });
-
-      child.stdin.on('error', () => undefined);
-      child.stdin.end(request.stdin);
+    return new Promise((resolve: (runResult: CliRunResult) => void): void => {
+      new CliChildRun(request, resolve).start();
     });
   }
 }

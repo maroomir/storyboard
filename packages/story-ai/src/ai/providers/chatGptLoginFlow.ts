@@ -124,6 +124,42 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
   });
 }
 
+function createLoginAttempt(
+  existing: OAuthConnection | undefined,
+  hostId: string,
+  port: number,
+): AuthorizationAttempt {
+  const registration: OAuthRegistration | undefined = existing?.registration;
+
+  return createAuthorizationAttempt({
+    hostId,
+    redirectUri: loopbackRedirectUri(port),
+    ...(registration === undefined ? {} : { clientId: registration.clientId }),
+    ...(existing?.tokens?.idToken === undefined ? {} : { idTokenHint: existing.tokens.idToken }),
+    ...(registration?.email === undefined ? {} : { loginHint: registration.email }),
+  });
+}
+
+function validateLoginGrant(
+  registration: OAuthRegistration | undefined,
+  identity: IdTokenIdentity,
+  tokenResponse: TokenResponse,
+): void {
+  if (registration !== undefined && registration.subject !== identity.subject) {
+    throw new ChatGptOAuthError(
+      'client-mismatch',
+      '로그인한 계정이 저장된 등록의 계정과 다릅니다. 먼저 `storyboard logout chatgpt` 로 등록을 지우고 다시 로그인하세요.',
+    );
+  }
+
+  if (!hasPlanUsageScope(tokenResponse.scopes)) {
+    throw new ChatGptOAuthError(
+      'plan-usage-not-granted',
+      '로그인은 됐지만 ChatGPT 구독 사용 권한을 받지 못했습니다. 다시 로그인하면서 권한 요청에 동의하세요.',
+    );
+  }
+}
+
 export class ChatGptLoginFlow {
   private readonly oauth: ChatGptOAuthClient;
   private readonly now: () => Date;
@@ -144,72 +180,22 @@ export class ChatGptLoginFlow {
     );
 
     try {
-      const attempt: AuthorizationAttempt = createAuthorizationAttempt({
-        hostId,
-        redirectUri: loopbackRedirectUri(listener.port),
-        ...(registration === undefined ? {} : { clientId: registration.clientId }),
-        ...(existing?.tokens?.idToken === undefined
-          ? {}
-          : { idTokenHint: existing.tokens.idToken }),
-        ...(registration?.email === undefined ? {} : { loginHint: registration.email }),
-      });
-
-      const wasOpened: boolean = await browser.openBrowser(attempt.url).catch(() => false);
-      browser.onAuthorizationUrl(attempt.url, wasOpened);
-
-      const query: URLSearchParams = await withTimeout(
-        listener.query,
-        this.deps.timeoutMs ?? defaultTimeoutMs,
-        '제한 시간 안에 브라우저 로그인이 끝나지 않았습니다. 다시 실행하세요.',
+      const attempt: AuthorizationAttempt = createLoginAttempt(existing, hostId, listener.port);
+      const callback: AuthorizedCallback = await this.waitForAuthorizedCallback(
+        browser,
+        attempt,
+        listener,
       );
-      const callback: AuthorizedCallback = readAuthorizationCallback(query, attempt);
-
       const tokenResponse: TokenResponse = await this.oauth.exchangeAuthorizationCode({
         clientId: callback.clientId,
         code: callback.code,
         codeVerifier: attempt.codeVerifier,
         redirectUri: attempt.redirectUri,
       });
+      const identity: IdTokenIdentity = await this.verifyIdentity(tokenResponse, callback, attempt);
 
-      if (tokenResponse.idToken === undefined) {
-        throw new ChatGptOAuthError(
-          'invalid-id-token',
-          'ID 토큰을 검증하지 못했습니다: 응답에 없습니다',
-        );
-      }
-
-      const discovery: DiscoveryDocument = await this.oauth.fetchDiscoveryDocument();
-      const identity: IdTokenIdentity = validateIdToken(tokenResponse.idToken, {
-        clientId: callback.clientId,
-        nonce: attempt.nonce,
-        keys: await this.oauth.fetchJsonWebKeys(discovery.jwksUri),
-        now: this.now(),
-      });
-
-      if (registration !== undefined && registration.subject !== identity.subject) {
-        throw new ChatGptOAuthError(
-          'client-mismatch',
-          '로그인한 계정이 저장된 등록의 계정과 다릅니다. 먼저 `storyboard logout chatgpt` 로 등록을 지우고 다시 로그인하세요.',
-        );
-      }
-
-      if (!hasPlanUsageScope(tokenResponse.scopes)) {
-        throw new ChatGptOAuthError(
-          'plan-usage-not-granted',
-          '로그인은 됐지만 ChatGPT 구독 사용 권한을 받지 못했습니다. 다시 로그인하면서 권한 요청에 동의하세요.',
-        );
-      }
-
-      const connection: OAuthConnection = {
-        hostId,
-        registration: {
-          clientId: callback.clientId,
-          subject: identity.subject,
-          ...(identity.email === undefined ? {} : { email: identity.email }),
-        },
-        tokens: tokensFromResponse(tokenResponse, this.now()),
-      };
-      await this.deps.secretStore.setOAuthConnection(providerId, connection);
+      validateLoginGrant(registration, identity, tokenResponse);
+      await this.saveConnection(hostId, callback, identity, tokenResponse);
 
       return { accountLabel: identity.email, isNewRegistration: registration === undefined };
     } finally {
@@ -246,5 +232,62 @@ export class ChatGptLoginFlow {
     });
 
     return { wasConnected: true, isRevoked };
+  }
+
+  private async waitForAuthorizedCallback(
+    browser: BrowserPrompt,
+    attempt: AuthorizationAttempt,
+    listener: CallbackListener,
+  ): Promise<AuthorizedCallback> {
+    const wasOpened: boolean = await browser.openBrowser(attempt.url).catch(() => false);
+    browser.onAuthorizationUrl(attempt.url, wasOpened);
+
+    const query: URLSearchParams = await withTimeout(
+      listener.query,
+      this.deps.timeoutMs ?? defaultTimeoutMs,
+      '제한 시간 안에 브라우저 로그인이 끝나지 않았습니다. 다시 실행하세요.',
+    );
+
+    return readAuthorizationCallback(query, attempt);
+  }
+
+  private async verifyIdentity(
+    tokenResponse: TokenResponse,
+    callback: AuthorizedCallback,
+    attempt: AuthorizationAttempt,
+  ): Promise<IdTokenIdentity> {
+    if (tokenResponse.idToken === undefined) {
+      throw new ChatGptOAuthError(
+        'invalid-id-token',
+        'ID 토큰을 검증하지 못했습니다: 응답에 없습니다',
+      );
+    }
+
+    const discovery: DiscoveryDocument = await this.oauth.fetchDiscoveryDocument();
+
+    return validateIdToken(tokenResponse.idToken, {
+      clientId: callback.clientId,
+      nonce: attempt.nonce,
+      keys: await this.oauth.fetchJsonWebKeys(discovery.jwksUri),
+      now: this.now(),
+    });
+  }
+
+  private async saveConnection(
+    hostId: string,
+    callback: AuthorizedCallback,
+    identity: IdTokenIdentity,
+    tokenResponse: TokenResponse,
+  ): Promise<void> {
+    const connection: OAuthConnection = {
+      hostId,
+      registration: {
+        clientId: callback.clientId,
+        subject: identity.subject,
+        ...(identity.email === undefined ? {} : { email: identity.email }),
+      },
+      tokens: tokensFromResponse(tokenResponse, this.now()),
+    };
+    await this.deps.secretStore.setOAuthConnection(providerId, connection);
   }
 }

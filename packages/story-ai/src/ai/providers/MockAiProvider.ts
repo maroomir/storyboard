@@ -53,143 +53,141 @@ function syntheticUsageFromMessages(request: AiGenerateRequest, responseText: st
   };
 }
 
-function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
-  const promptSummary: string = userPrompt.length > 0 ? userPrompt : '입력된 프롬프트가 없습니다.';
+type MockResponseBuilder = (promptSummary: string) => string;
 
-  switch (taskName) {
-    case 'situationExtraction':
-      return JSON.stringify([
-        {
-          characters: [],
-          situation: extractSceneInput(promptSummary),
-        },
-      ]);
-    case 'sceneDraft':
-      return [`[Mock AI: ${taskName}]`, extractDraftInput(promptSummary)].join('\n');
-    case 'sceneSkeleton':
-      return createMockSceneSkeleton(promptSummary);
-    case 'sceneDialoguePolish':
-      return createMockDialoguePolish(promptSummary);
-    case 'sceneBeatActor':
-      return createMockBeatProposal(promptSummary);
-    case 'sceneBeatArbiter':
-      return createMockBeatPassage(promptSummary);
-    case 'sceneBeatJudge':
-      return createMockBeatVerdict(promptSummary);
-    case 'traitsExtraction':
-      return ['- 상황을 관찰하고 차분하게 반응함', '- 대화 속에서 감정을 분명하게 드러냄'].join(
-        '\n',
-      );
-    case 'grammarCheck':
-      return createMockGrammarIssues(promptSummary);
-    case 'continuityCheck':
-      return '[]';
-    case 'factExtraction':
-      return '[]';
-    case 'cardFactExtraction':
-      return JSON.stringify({ attributes: [], relations: [], arc: { summary: '' } });
-    case 'backgroundFactConflicts':
-      return JSON.stringify({ conflicts: [] });
-    case 'backgroundFactExtraction':
-      return JSON.stringify({
-        description: [],
-        senses: [],
-        time: '',
-        weather: '',
-        characterNames: [],
-      });
-    case 'cardRecommendation':
-      return '[]';
-    case 'storyCompletion':
-      return JSON.stringify({
-        scenes: [
+function createMockStoryCompletion(): string {
+  return JSON.stringify({
+    scenes: [
+      {
+        slug: 'the-last-recall',
+        title: '마지막 기억의 행방',
+        characterIds: [],
+        body: '[목적]\n기억세공소의 중심 갈등을 선택으로 매듭짓는다.\n\n[결말]\n주인공은 잃어버린 기억을 돌려주고, 대가를 감당하며 다음 이야기를 위한 작은 여지를 남긴다.',
+        resolvedThreads: ['중심 갈등'],
+        openThreads: ['새로운 의뢰'],
+      },
+    ],
+    centralQuestion: '무엇을 기억으로 남길 것인가?',
+    climaxChoice: '기억을 소유하지 않고 돌려준다.',
+  });
+}
+
+function createMockSceneStructure(): string {
+  return JSON.stringify({
+    purpose: '모의 목적',
+    conflict: '모의 갈등',
+    twist: '모의 반전',
+    emotionalShift: '모의 감정 변화',
+    foreshadowing: ['모의 복선'],
+    neededCanon: ['모의 설정'],
+  });
+}
+
+function createMockChapterPlan(): string {
+  return JSON.stringify({
+    acts: [
+      {
+        title: '1막',
+        chapters: [
           {
-            slug: 'the-last-recall',
-            title: '마지막 기억의 행방',
-            characterIds: [],
-            body: '[목적]\n기억세공소의 중심 갈등을 선택으로 매듭짓는다.\n\n[결말]\n주인공은 잃어버린 기억을 돌려주고, 대가를 감당하며 다음 이야기를 위한 작은 여지를 남긴다.',
-            resolvedThreads: ['중심 갈등'],
-            openThreads: ['새로운 의뢰'],
-          },
-        ],
-        centralQuestion: '무엇을 기억으로 남길 것인가?',
-        climaxChoice: '기억을 소유하지 않고 돌려준다.',
-      });
-    case 'storyCardBuild':
-      return JSON.stringify({ entities: [] });
-    case 'noteExtraction':
-      return JSON.stringify({ notes: [], entities: [], scenes: [], premise: [] });
-    case 'noteSynthesis':
-      return JSON.stringify({ setting: {}, synopsis: {} });
-    case 'noteCardConsolidation':
-      return JSON.stringify({ cards: [] });
-    case 'cardFactVerification':
-      return '[]';
-    case 'sceneGrounding':
-      return JSON.stringify({
-        incident: '모의 사건',
-        place: '모의 장소',
-        relation: '모의 관계',
-        time: '모의 시점',
-      });
-    case 'sceneBeats':
-      return JSON.stringify(['모의 비트 하나', '모의 비트 둘', '모의 비트 셋']);
-    case 'sceneStructure':
-      return JSON.stringify({
-        purpose: '모의 목적',
-        conflict: '모의 갈등',
-        twist: '모의 반전',
-        emotionalShift: '모의 감정 변화',
-        foreshadowing: ['모의 복선'],
-        neededCanon: ['모의 설정'],
-      });
-    case 'outlineSynopsis':
-      return JSON.stringify({
-        logline: '모의 로그라인',
-        mainConflicts: ['모의 갈등'],
-        ending: '모의 결말',
-      });
-    case 'chapterPlan':
-      return JSON.stringify({
-        acts: [
-          {
-            title: '1막',
-            chapters: [
+            title: '1장',
+            scenes: [
               {
-                title: '1장',
-                scenes: [
-                  {
-                    id: 'sc-1-1',
-                    title: '첫 만남',
-                    purpose: '두 사람이 만난다',
-                    characters: ['hana'],
-                  },
-                  {
-                    id: 'sc-1-2',
-                    title: '엇갈림',
-                    purpose: '오해가 생긴다',
-                    characters: ['hana', 'jun'],
-                  },
-                ],
+                id: 'sc-1-1',
+                title: '첫 만남',
+                purpose: '두 사람이 만난다',
+                characters: ['hana'],
+              },
+              {
+                id: 'sc-1-2',
+                title: '엇갈림',
+                purpose: '오해가 생긴다',
+                characters: ['hana', 'jun'],
               },
             ],
           },
         ],
-      });
-    case 'outlineCharacters':
-      return JSON.stringify({
-        characters: [
-          { id: 'hana', name: '하나', role: 'main', description: ['모의 주인공'] },
-          { id: 'jun', name: '준', role: 'supporting', description: ['모의 조연'] },
-        ],
-      });
-    case 'inlineCompletion':
-      return createMockInlineCompletion(promptSummary);
-    case 'draftExpansion':
-      return createMockDraftExpansion(promptSummary);
-  }
+      },
+    ],
+  });
+}
 
-  return `[Mock AI: ${taskName}] ${promptSummary}`;
+function createMockOutlineCharacters(): string {
+  return JSON.stringify({
+    characters: [
+      { id: 'hana', name: '하나', role: 'main', description: ['모의 주인공'] },
+      { id: 'jun', name: '준', role: 'supporting', description: ['모의 조연'] },
+    ],
+  });
+}
+
+const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuilder>>> = {
+  situationExtraction: (promptSummary: string): string =>
+    JSON.stringify([
+      {
+        characters: [],
+        situation: extractSceneInput(promptSummary),
+      },
+    ]),
+  sceneDraft: (promptSummary: string): string =>
+    ['[Mock AI: sceneDraft]', extractDraftInput(promptSummary)].join('\n'),
+  sceneSkeleton: createMockSceneSkeleton,
+  sceneDialoguePolish: createMockDialoguePolish,
+  sceneBeatActor: createMockBeatProposal,
+  sceneBeatArbiter: createMockBeatPassage,
+  sceneBeatJudge: createMockBeatVerdict,
+  traitsExtraction: (): string =>
+    ['- 상황을 관찰하고 차분하게 반응함', '- 대화 속에서 감정을 분명하게 드러냄'].join('\n'),
+  grammarCheck: createMockGrammarIssues,
+  continuityCheck: (): string => '[]',
+  factExtraction: (): string => '[]',
+  cardFactExtraction: (): string =>
+    JSON.stringify({ attributes: [], relations: [], arc: { summary: '' } }),
+  backgroundFactConflicts: (): string => JSON.stringify({ conflicts: [] }),
+  backgroundFactExtraction: (): string =>
+    JSON.stringify({
+      description: [],
+      senses: [],
+      time: '',
+      weather: '',
+      characterNames: [],
+    }),
+  cardRecommendation: (): string => '[]',
+  storyCompletion: createMockStoryCompletion,
+  storyCardBuild: (): string => JSON.stringify({ entities: [] }),
+  noteExtraction: (): string =>
+    JSON.stringify({ notes: [], entities: [], scenes: [], premise: [] }),
+  noteSynthesis: (): string => JSON.stringify({ setting: {}, synopsis: {} }),
+  noteCardConsolidation: (): string => JSON.stringify({ cards: [] }),
+  cardFactVerification: (): string => '[]',
+  sceneGrounding: (): string =>
+    JSON.stringify({
+      incident: '모의 사건',
+      place: '모의 장소',
+      relation: '모의 관계',
+      time: '모의 시점',
+    }),
+  sceneBeats: (): string => JSON.stringify(['모의 비트 하나', '모의 비트 둘', '모의 비트 셋']),
+  sceneStructure: createMockSceneStructure,
+  outlineSynopsis: (): string =>
+    JSON.stringify({
+      logline: '모의 로그라인',
+      mainConflicts: ['모의 갈등'],
+      ending: '모의 결말',
+    }),
+  chapterPlan: createMockChapterPlan,
+  outlineCharacters: createMockOutlineCharacters,
+  inlineCompletion: createMockInlineCompletion,
+  draftExpansion: createMockDraftExpansion,
+};
+
+function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
+  const promptSummary: string = userPrompt.length > 0 ? userPrompt : '입력된 프롬프트가 없습니다.';
+  const buildResponse: MockResponseBuilder | undefined = mockResponseBuilders[taskName];
+
+  return buildResponse === undefined
+    ? `[Mock AI: ${taskName}] ${promptSummary}`
+    : buildResponse(promptSummary);
 }
 
 function extractSceneInput(prompt: string): string {
