@@ -48,7 +48,8 @@ export class NovelGenerateCommand implements ICommandHandler {
     flags: ['revise-iterations'],
   };
 
-  public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
+  public async execute(context: CommandContext): Promise<CommandOutcome> {
+    const { container } = context;
     const interrupted: NovelRunState | undefined = await container.novel.findResumableRun(
       container.workspaceRoot,
       {
@@ -77,17 +78,26 @@ export class NovelGenerateCommand implements ICommandHandler {
       return cancelledBeforeRun;
     }
 
+    const resumeState: NovelRunState | undefined =
+      restartChoice === 'resume' ? interrupted : undefined;
+
+    return describeNovelRun(await this.runNovel(context, resumeState));
+  }
+
+  private async runNovel(
+    { container, args }: CommandContext,
+    resumeState: NovelRunState | undefined,
+  ): Promise<NovelRunResult> {
     const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
     const novelPlan: readonly NovelStageName[] = resolveNovelPipelinePlan();
     const reviseIterations: string | undefined = flagString(args.flags, 'revise-iterations');
-    const novelRun: NovelRunResult = await container.novel.run({
+
+    return await container.novel.run({
       workspaceUri: container.workspaceRoot,
       project,
       runMode: unattendedRunApprovesEveryGate,
       ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
-      ...(restartChoice === 'resume' && interrupted !== undefined
-        ? { resumeState: interrupted }
-        : {}),
+      ...(resumeState === undefined ? {} : { resumeState }),
       onProgress: (stage, message) =>
         container.progress.update({
           line: `${novelStageLabel(stage)}: ${message}`,
@@ -101,27 +111,29 @@ export class NovelGenerateCommand implements ICommandHandler {
       shouldCancel: () => false,
       shouldPause: container.pauseRequests.watch(),
     });
-
-    const { spending } = novelRun;
-    const budgetNote: string =
-      novelRun.outcome === 'paused' && spending.isOverBudget
-        ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 ${formatUsd(spending.costUsd)}).`
-        : '';
-    const cacheNote: string =
-      spending.cache !== undefined && spending.cache.cachedTokens > 0
-        ? ` 프롬프트 캐시 적중 ${Math.round((spending.cache.cachedTokens / spending.cache.promptTokens) * 100)}%, 절약 ${formatUsd(spending.cache.savedUsd)}.`
-        : '';
-
-    return {
-      ok: novelRun.outcome === 'completed',
-      message:
-        novelRun.outcome === 'failed'
-          ? `장편 생성에 실패했습니다: ${novelRun.message}`
-          : `${novelRun.message}${budgetNote}${cacheNote}`,
-      data: { ...novelRun, costUsd: spending.costUsd },
-      ...(novelRun.outcome === 'paused' || novelRun.outcome === 'cancelled'
-        ? { stop: novelRun.outcome }
-        : {}),
-    };
   }
+}
+
+function describeNovelRun(novelRun: NovelRunResult): CommandOutcome {
+  const { spending } = novelRun;
+  const budgetNote: string =
+    novelRun.outcome === 'paused' && spending.isOverBudget
+      ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 ${formatUsd(spending.costUsd)}).`
+      : '';
+  const cacheNote: string =
+    spending.cache !== undefined && spending.cache.cachedTokens > 0
+      ? ` 프롬프트 캐시 적중 ${Math.round((spending.cache.cachedTokens / spending.cache.promptTokens) * 100)}%, 절약 ${formatUsd(spending.cache.savedUsd)}.`
+      : '';
+
+  return {
+    ok: novelRun.outcome === 'completed',
+    message:
+      novelRun.outcome === 'failed'
+        ? `장편 생성에 실패했습니다: ${novelRun.message}`
+        : `${novelRun.message}${budgetNote}${cacheNote}`,
+    data: { ...novelRun, costUsd: spending.costUsd },
+    ...(novelRun.outcome === 'paused' || novelRun.outcome === 'cancelled'
+      ? { stop: novelRun.outcome }
+      : {}),
+  };
 }

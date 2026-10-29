@@ -48,40 +48,42 @@ export class DraftCheckCommand implements ICommandHandler {
       text: body,
     });
 
-    switch (draftCheck.kind) {
-      case 'failed':
-        return failure(draftCheck.message);
-      case 'slop':
-        return {
-          ok: draftCheck.findings.length === 0,
-          message:
-            draftCheck.findings.length === 0
-              ? '상투 표현을 찾지 못했습니다.'
-              : `${draftCheck.findings.length}건`,
-          data: draftCheck.findings,
-        };
-      case 'grammar':
-        return {
-          ok: draftCheck.issues.length === 0,
-          message:
-            draftCheck.issues.length === 0
-              ? '문법 문제를 찾지 못했습니다.'
-              : `${draftCheck.issues.length}건`,
-          data: draftCheck.issues,
-        };
-      case 'continuity':
-        if (!draftCheck.hasFacts) {
-          return success('대조할 정전 사실이 없습니다.', []);
-        }
+    return describeDraftCheck(draftCheck);
+  }
+}
 
-        return {
-          ok: draftCheck.issues.length === 0,
-          message:
-            draftCheck.issues.length === 0
-              ? '연속성 문제를 찾지 못했습니다.'
-              : `${draftCheck.issues.length}건`,
-          data: draftCheck.issues,
-        };
-    }
+function describeFindingCount(
+  findings: readonly unknown[],
+  cleanMessage: string,
+): Pick<CommandOutcome, 'ok' | 'message'> {
+  return {
+    ok: findings.length === 0,
+    message: findings.length === 0 ? cleanMessage : `${findings.length}건`,
+  };
+}
+
+function describeDraftCheck(draftCheck: CheckDraftResult): CommandOutcome {
+  switch (draftCheck.kind) {
+    case 'failed':
+      return failure(draftCheck.message);
+    case 'slop':
+      return {
+        ...describeFindingCount(draftCheck.findings, '상투 표현을 찾지 못했습니다.'),
+        data: draftCheck.findings,
+      };
+    case 'grammar':
+      return {
+        ...describeFindingCount(draftCheck.issues, '문법 문제를 찾지 못했습니다.'),
+        data: draftCheck.issues,
+      };
+    case 'continuity':
+      if (!draftCheck.hasFacts) {
+        return success('대조할 정전 사실이 없습니다.', []);
+      }
+
+      return {
+        ...describeFindingCount(draftCheck.issues, '연속성 문제를 찾지 못했습니다.'),
+        data: draftCheck.issues,
+      };
   }
 }

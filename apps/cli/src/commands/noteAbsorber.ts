@@ -200,33 +200,57 @@ export class NoteAbsorber {
 
     const { bundle } = collected;
     const estimate: NoteAbsorbEstimate = this.container.notes.estimate(bundle);
+    const estimateStop: CommandOutcome | undefined = await this.confirmEstimate(
+      args,
+      bundle,
+      estimate,
+      options,
+    );
+
+    return estimateStop ?? (await this.planAndApply(args, bundle, estimate, options));
+  }
+
+  private async confirmEstimate(
+    args: ParsedArguments,
+    bundle: NoteBundle,
+    estimate: NoteAbsorbEstimate,
+    options: NoteAbsorbOptions,
+  ): Promise<CommandOutcome | undefined> {
     const estimateLines: string[] = describeEstimate(bundle, estimate);
-    const isConfirmed: boolean = flagBoolean(args.flags, 'yes');
 
-    if (!isConfirmed) {
-      if (this.container.prompter === undefined) {
-        return success(
-          [
-            ...estimateLines,
-            '',
-            `이대로 진행하려면 --yes 를 붙이세요: ${options.retryCommand}`,
-          ].join('\n'),
-          { estimate, skipped: bundle.skipped },
-        );
-      }
-
-      if (
-        !(await confirm(this.container.prompter, '노트를 AI 로 정리할까요?', estimateLines, '정리'))
-      ) {
-        return {
-          ok: false,
-          message: '취소했습니다. 아무것도 쓰지 않았습니다.',
-          data: { estimate },
-          stop: 'cancelled',
-        };
-      }
+    if (flagBoolean(args.flags, 'yes')) {
+      return undefined;
     }
 
+    if (this.container.prompter === undefined) {
+      return success(
+        [...estimateLines, '', `이대로 진행하려면 --yes 를 붙이세요: ${options.retryCommand}`].join(
+          '\n',
+        ),
+        { estimate, skipped: bundle.skipped },
+      );
+    }
+
+    if (
+      !(await confirm(this.container.prompter, '노트를 AI 로 정리할까요?', estimateLines, '정리'))
+    ) {
+      return {
+        ok: false,
+        message: '취소했습니다. 아무것도 쓰지 않았습니다.',
+        data: { estimate },
+        stop: 'cancelled',
+      };
+    }
+
+    return undefined;
+  }
+
+  private async planAndApply(
+    args: ParsedArguments,
+    bundle: NoteBundle,
+    estimate: NoteAbsorbEstimate,
+    options: NoteAbsorbOptions,
+  ): Promise<CommandOutcome> {
     const planned: PlanNoteAbsorbResult = await this.container.notes.plan({
       workspaceRoot: this.container.workspaceRoot,
       bundle,
@@ -245,27 +269,53 @@ export class NoteAbsorber {
       });
     }
 
-    if (!isConfirmed && this.container.prompter !== undefined) {
-      if (
-        !(await confirm(
-          this.container.prompter,
-          '이대로 워크스페이스에 반영할까요?',
-          planLines,
-          '반영',
-        ))
-      ) {
-        return {
-          ok: false,
-          message: '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
-          data: { plan: planned.plan },
-          stop: 'cancelled',
-        };
-      }
+    const planStop: CommandOutcome | undefined = await this.confirmPlan(
+      args,
+      planLines,
+      planned.plan,
+    );
+
+    return planStop ?? (await this.applyPlan(args, bundle, estimate, planned.plan, options));
+  }
+
+  private async confirmPlan(
+    args: ParsedArguments,
+    planLines: readonly string[],
+    plan: NoteAbsorbPlan,
+  ): Promise<CommandOutcome | undefined> {
+    const isConfirmed: boolean = flagBoolean(args.flags, 'yes');
+
+    if (isConfirmed || this.container.prompter === undefined) {
+      return undefined;
     }
 
+    const isApproved: boolean = await confirm(
+      this.container.prompter,
+      '이대로 워크스페이스에 반영할까요?',
+      planLines,
+      '반영',
+    );
+
+    return isApproved
+      ? undefined
+      : {
+          ok: false,
+          message: '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
+          data: { plan },
+          stop: 'cancelled',
+        };
+  }
+
+  private async applyPlan(
+    args: ParsedArguments,
+    bundle: NoteBundle,
+    estimate: NoteAbsorbEstimate,
+    plan: NoteAbsorbPlan,
+    options: NoteAbsorbOptions,
+  ): Promise<CommandOutcome> {
     const applied: ApplyNoteAbsorbResult = await this.container.notes.apply({
       workspaceRoot: this.container.workspaceRoot,
-      plan: planned.plan,
+      plan,
       location: bundle.location,
       shouldFillContract: options.shouldFillContract,
       shouldReplaceCandidates: flagBoolean(args.flags, 'replace-candidates'),
@@ -275,6 +325,6 @@ export class NoteAbsorber {
       return failure(applied.message);
     }
 
-    return success(describeOutcome(applied).join('\n'), { estimate, plan: planned.plan, applied });
+    return success(describeOutcome(applied).join('\n'), { estimate, plan, applied });
   }
 }

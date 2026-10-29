@@ -28,6 +28,27 @@ function describeProvider(providerId: AiProviderId): string {
   return 'API 키 필요';
 }
 
+function describeSetupSaved(
+  container: CliContainer,
+  providerId: AiProviderId,
+  keyStored: boolean,
+  loginNote: CommandOutcome | undefined,
+): CommandOutcome {
+  const home: StoryboardHomePaths = container.homePaths;
+
+  return success(
+    `기본 프로바이더를 ${providerId} 로 저장했습니다: ${container.configWriteFile}` +
+      (keyStored ? `\nAPI 키를 저장했습니다: ${home.secretsFile}` : '') +
+      (loginNote === undefined ? '' : `\n${loginNote.message}`),
+    {
+      providerId,
+      model: container.configBridge.getProviderConfig(providerId).model,
+      keyStored,
+      file: container.configWriteFile,
+    },
+  );
+}
+
 export class SetupCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'setup',
@@ -41,23 +62,22 @@ export class SetupCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const { configBridge, secretStore } = container;
+    const { configBridge } = container;
     const flagProvider: string | undefined = flagString(args.flags, 'provider');
     const current: AiProviderId | undefined = configBridge.isDefaultProviderConfigured()
       ? configBridge.getDefaultProvider()
       : undefined;
 
-    let providerId: AiProviderId | undefined;
-
-    if (flagProvider !== undefined) {
-      providerId = flagProvider as AiProviderId;
-    } else if (container.canPrompt) {
-      providerId = await this.chooseProviderInteractively(current);
-    } else {
+    if (flagProvider === undefined && !container.canPrompt) {
       return failure(
         '터미널이 아니어서 질문할 수 없습니다. `storyboard setup --provider <id>` 로 지정해 주세요.',
       );
     }
+
+    const providerId: AiProviderId | undefined =
+      flagProvider !== undefined
+        ? (flagProvider as AiProviderId)
+        : await this.chooseProviderInteractively(current);
 
     if (providerId === undefined) {
       return failure('프로바이더를 고르지 않아 설정을 바꾸지 않았습니다.');
@@ -71,43 +91,41 @@ export class SetupCommand implements ICommandHandler {
       await configBridge.setProviderModel(providerId, model);
     }
 
-    let keyStored: boolean = false;
-
-    if (requiresApiKey(providerId) && !(await secretStore.hasApiKey(providerId))) {
-      if (container.canPrompt) {
-        const key: string = await askSecret(
-          `${providerId} API 키 (비워 두면 나중에 apikey set 으로): `,
-        );
-
-        if (key.trim().length > 0) {
-          await secretStore.setApiKey(providerId, key);
-          keyStored = true;
-        }
-      } else {
-        process.stderr.write(
-          `[warn] ${providerId} 는 API 키가 필요합니다: echo "$KEY" | storyboard apikey set ${providerId}\n`,
-        );
-      }
-    }
-
-    const home: StoryboardHomePaths = container.homePaths;
+    const keyStored: boolean = await this.storeApiKeyIfMissing(container, providerId);
     const loginNote: CommandOutcome | undefined = await this.signInIfNeeded(container, providerId);
 
     if (loginNote !== undefined && !loginNote.ok) {
       return loginNote;
     }
 
-    return success(
-      `기본 프로바이더를 ${providerId} 로 저장했습니다: ${container.configWriteFile}` +
-        (keyStored ? `\nAPI 키를 저장했습니다: ${home.secretsFile}` : '') +
-        (loginNote === undefined ? '' : `\n${loginNote.message}`),
-      {
-        providerId,
-        model: configBridge.getProviderConfig(providerId).model,
-        keyStored,
-        file: container.configWriteFile,
-      },
+    return describeSetupSaved(container, providerId, keyStored, loginNote);
+  }
+
+  private async storeApiKeyIfMissing(
+    container: CliContainer,
+    providerId: AiProviderId,
+  ): Promise<boolean> {
+    if (!requiresApiKey(providerId) || (await container.secretStore.hasApiKey(providerId))) {
+      return false;
+    }
+
+    if (!container.canPrompt) {
+      process.stderr.write(
+        `[warn] ${providerId} 는 API 키가 필요합니다: echo "$KEY" | storyboard apikey set ${providerId}\n`,
+      );
+      return false;
+    }
+
+    const key: string = await askSecret(
+      `${providerId} API 키 (비워 두면 나중에 apikey set 으로): `,
     );
+
+    if (key.trim().length === 0) {
+      return false;
+    }
+
+    await container.secretStore.setApiKey(providerId, key);
+    return true;
   }
 
   private async chooseProviderInteractively(

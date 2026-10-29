@@ -7,6 +7,34 @@ import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import type { CliContainer } from '@/container';
 import type { GenerateSceneBeatsResult } from '@storyboard/story-engine';
 
+class ScenePlotTally {
+  private readonly beatsByStem: Record<string, unknown> = {};
+  private readonly failures: string[] = [];
+  private proposed: number = 0;
+
+  public record(stem: string, beatGeneration: GenerateSceneBeatsResult): void {
+    this.beatsByStem[stem] = beatGeneration;
+    if (!beatGeneration.ok) {
+      this.failures.push(stem);
+    } else if (beatGeneration.kind === 'proposed') {
+      this.proposed += 1;
+    }
+  }
+
+  public toOutcome(sceneCount: number, dryRun: boolean): CommandOutcome {
+    const { failures, proposed } = this;
+
+    return {
+      ok: failures.length === 0,
+      message:
+        failures.length === 0
+          ? `씬 ${proposed}개의 비트를 ${dryRun ? '제안했습니다 (적용하지 않음)' : '썼습니다'}, ${sceneCount - proposed}개는 그대로 둡니다.`
+          : `${failures.length}건 실패 (비트 ${proposed}개 처리): ${failures.join(', ')}`,
+      data: { proposed, failures, results: this.beatsByStem },
+    };
+  }
+}
+
 export class ScenePlotCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'scene plot',
@@ -24,37 +52,7 @@ export class ScenePlotCommand implements ICommandHandler {
     const dryRun: boolean = flagBoolean(args.flags, 'dry-run');
 
     if (flagBoolean(args.flags, 'all')) {
-      const stems: string[] = (await container.drafts.listScenes(container.workspaceRoot)).map(
-        (scene) => scene.stem,
-      );
-      const beatsByStem: Record<string, unknown> = {};
-      const failures: string[] = [];
-      let proposed: number = 0;
-
-      for (const stem of stems) {
-        const beatGeneration: GenerateSceneBeatsResult = await this.generateBeats(
-          container,
-          stem,
-          force,
-          dryRun,
-        );
-        beatsByStem[stem] = beatGeneration;
-        if (!beatGeneration.ok) {
-          failures.push(stem);
-        } else if (beatGeneration.kind === 'proposed') {
-          proposed += 1;
-          container.logger.info(`${stem}: 비트 ${beatGeneration.beats.length}개`);
-        }
-      }
-
-      return {
-        ok: failures.length === 0,
-        message:
-          failures.length === 0
-            ? `씬 ${proposed}개의 비트를 ${dryRun ? '제안했습니다 (적용하지 않음)' : '썼습니다'}, ${stems.length - proposed}개는 그대로 둡니다.`
-            : `${failures.length}건 실패 (비트 ${proposed}개 처리): ${failures.join(', ')}`,
-        data: { proposed, failures, results: beatsByStem },
-      };
+      return this.plotAllScenes(container, force, dryRun);
     }
 
     const stem: string | undefined = sceneStemFrom(args);
@@ -85,6 +83,32 @@ export class ScenePlotCommand implements ICommandHandler {
         : `비트 ${beatGeneration.beats.length}개를 제안했습니다 (적용하지 않음).`,
       { stem, beats: beatGeneration.beats, written: beatGeneration.written },
     );
+  }
+
+  private async plotAllScenes(
+    container: CliContainer,
+    force: boolean,
+    dryRun: boolean,
+  ): Promise<CommandOutcome> {
+    const stems: string[] = (await container.drafts.listScenes(container.workspaceRoot)).map(
+      (scene) => scene.stem,
+    );
+    const tally: ScenePlotTally = new ScenePlotTally();
+
+    for (const stem of stems) {
+      const beatGeneration: GenerateSceneBeatsResult = await this.generateBeats(
+        container,
+        stem,
+        force,
+        dryRun,
+      );
+      tally.record(stem, beatGeneration);
+      if (beatGeneration.ok && beatGeneration.kind === 'proposed') {
+        container.logger.info(`${stem}: 비트 ${beatGeneration.beats.length}개`);
+      }
+    }
+
+    return tally.toOutcome(stems.length, dryRun);
   }
 
   private generateBeats(
