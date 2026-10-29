@@ -96,6 +96,14 @@ export function getValueOrigin(snapshot: SettingsReadSnapshot, key: string): Con
   return snapshot.origins[key] ?? 'default';
 }
 
+type SnapshotContentCheck = (snapshot: SettingsReadSnapshot) => boolean;
+
+const snapshotContentChecks: readonly SnapshotContentCheck[] = [
+  hasValidSettingCatalog,
+  hasValidProviderCatalogs,
+  hasValidTaskCatalog,
+];
+
 export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot | undefined {
   if (!value || typeof value !== 'object') {
     return undefined;
@@ -106,7 +114,20 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
     return undefined;
   }
 
-  if (
+  if (!hasSnapshotSections(candidate)) {
+    return undefined;
+  }
+
+  const isContentValid: boolean = snapshotContentChecks.every(
+    (check: SnapshotContentCheck): boolean => check(candidate),
+  );
+  return isContentValid ? candidate : undefined;
+}
+
+function hasSnapshotSections(
+  candidate: Partial<SettingsReadSnapshot>,
+): candidate is SettingsReadSnapshot {
+  const isMissingSection: boolean =
     !Array.isArray(candidate.providers) ||
     !candidate.providerConfigs ||
     !candidate.taskAssignments ||
@@ -119,77 +140,86 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
     !Array.isArray(candidate.settingCatalog) ||
     !candidate.settingValues ||
     typeof candidate.settingValues !== 'object' ||
-    typeof candidate.isDefaultProviderConfigured !== 'boolean'
-  ) {
-    return undefined;
-  }
+    typeof candidate.isDefaultProviderConfigured !== 'boolean';
 
-  for (const definition of candidate.settingCatalog) {
-    if (
-      !definition ||
-      typeof definition !== 'object' ||
-      typeof (definition as SettingDefinition).key !== 'string' ||
-      typeof (definition as SettingDefinition).label !== 'string'
-    ) {
-      return undefined;
-    }
-  }
+  return !isMissingSection;
+}
 
-  for (const id of aiProviderIds) {
-    const cfg: unknown = (candidate.providerConfigs as Record<string, unknown>)[id];
+function hasValidSettingCatalog(snapshot: SettingsReadSnapshot): boolean {
+  return snapshot.settingCatalog.every(
+    (definition: unknown): boolean =>
+      !!definition &&
+      typeof definition === 'object' &&
+      typeof (definition as SettingDefinition).key === 'string' &&
+      typeof (definition as SettingDefinition).label === 'string',
+  );
+}
+
+function hasValidProviderCatalogs(snapshot: SettingsReadSnapshot): boolean {
+  return aiProviderIds.every((id: AiProviderId): boolean => {
+    const cfg: unknown = (snapshot.providerConfigs as Record<string, unknown>)[id];
     if (!cfg || typeof cfg !== 'object' || typeof (cfg as { model?: unknown }).model !== 'string') {
-      return undefined;
+      return false;
     }
-    const models: unknown = (candidate.modelCatalog as Record<string, unknown>)[id];
-    if (!Array.isArray(models) || models.length === 0) {
-      return undefined;
+    const models: unknown = (snapshot.modelCatalog as Record<string, unknown>)[id];
+    return Array.isArray(models) && models.length > 0;
+  });
+}
+
+function hasValidTaskCatalog(snapshot: SettingsReadSnapshot): boolean {
+  const taskAssignments: Record<string, unknown> = snapshot.taskAssignments as Record<
+    string,
+    unknown
+  >;
+  return snapshot.taskCatalog.every((taskEntry: unknown): boolean =>
+    isValidTaskEntry(taskEntry, taskAssignments),
+  );
+}
+
+function isValidTaskEntry(
+  taskEntry: unknown,
+  taskAssignments: Readonly<Record<string, unknown>>,
+): boolean {
+  if (!taskEntry || typeof taskEntry !== 'object') {
+    return false;
+  }
+
+  const task: Record<string, unknown> = taskEntry as Record<string, unknown>;
+  if (typeof task.name !== 'string' || task.name.trim().length === 0) {
+    return false;
+  }
+  if (typeof task.label !== 'string' || task.label.trim().length === 0) {
+    return false;
+  }
+
+  return isValidTaskAssignment(taskAssignments[task.name]);
+}
+
+function isValidTaskAssignment(assignment: unknown): boolean {
+  if (!assignment || typeof assignment !== 'object') {
+    return false;
+  }
+
+  const row: Record<string, unknown> = assignment as Record<string, unknown>;
+  if (!('providerId' in row) || !('model' in row)) {
+    return false;
+  }
+
+  const providerId: unknown = row.providerId;
+  const model: unknown = row.model;
+  const usesDefaultProvider: boolean = providerId === null || providerId === undefined;
+
+  if (!usesDefaultProvider) {
+    if (typeof providerId !== 'string' || !isAiProviderId(providerId)) {
+      return false;
     }
   }
 
-  for (const taskEntry of candidate.taskCatalog) {
-    if (!taskEntry || typeof taskEntry !== 'object') {
-      return undefined;
-    }
-
-    const task: Record<string, unknown> = taskEntry as Record<string, unknown>;
-    if (typeof task.name !== 'string' || task.name.trim().length === 0) {
-      return undefined;
-    }
-    if (typeof task.label !== 'string' || task.label.trim().length === 0) {
-      return undefined;
-    }
-
-    const taskName: string = task.name;
-    const assignment: unknown = (candidate.taskAssignments as Record<string, unknown>)[taskName];
-    if (!assignment || typeof assignment !== 'object') {
-      return undefined;
-    }
-
-    const row: Record<string, unknown> = assignment as Record<string, unknown>;
-    if (!('providerId' in row) || !('model' in row)) {
-      return undefined;
-    }
-
-    const providerId: unknown = row.providerId;
-    const model: unknown = row.model;
-    const usesDefaultProvider: boolean = providerId === null || providerId === undefined;
-
-    if (!usesDefaultProvider) {
-      if (typeof providerId !== 'string' || !isAiProviderId(providerId)) {
-        return undefined;
-      }
-    }
-
-    if (model !== null && model !== undefined && typeof model !== 'string') {
-      return undefined;
-    }
-
-    if (usesDefaultProvider && model !== null && model !== undefined) {
-      return undefined;
-    }
+  if (model !== null && model !== undefined && typeof model !== 'string') {
+    return false;
   }
 
-  return candidate as SettingsReadSnapshot;
+  return !(usesDefaultProvider && model !== null && model !== undefined);
 }
 
 export function hasTaskOverride(snapshot: SettingsReadSnapshot, taskName: AiTaskName): boolean {
