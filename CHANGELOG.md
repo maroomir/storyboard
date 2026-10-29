@@ -33,6 +33,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **씬 파이프라인이 실행 하나를 아는 `SceneGenerationRun` 과 단계별 파일로 나뉘었습니다.** `pipeline/scene/` 아래 단계 9개가 파일 하나·클래스 하나씩이고, 단계 안의 함수는 실행 컨텍스트를 가방으로 다시 받지 않고 `run` 에서 읽습니다. 단계 id 와 카탈로그는 그대로입니다.
 - **CLI 는 명령의 첫 단어가 파일입니다.** `commands/draft.ts`·`scene.ts`·`card.ts`… 와 `setup.ts`·`doctor.ts`·`config.ts`·`params.ts` 로 나뉘었고, `index.ts` 는 핸들러 표만 남았습니다. 결과는 `outcomes.ts` 의 `failure`·`success` 로 만듭니다.
 - **검사 두 가지를 다듬었습니다.** 릴리즈의 diff 계약은 데스크톱 `ko.ts` 의 키와 문자열이 바뀔 때만 `en.ts` 를 요구합니다. 그래서 주석이나 서식만 바뀐 경우는 통과합니다. 워크스페이스 아키텍처 검사는 패키지가 자기 진입 파일(`#model/contracts` 같은 package.json `exports`)이나 폴더 배럴(`…/index`)을 가져오면 실패합니다. 이런 import 는 레이어 검사를 그대로 통과했기 때문입니다. 구조 변경의 전후를 재는 `npm run metrics`(파일 크기, 의존성 가방, 가방 인자 함수, `Pick<>`, 내보낸 타입 수)가 생겼습니다.
+- **익스텐션 명령 안의 함수가 클래스 메서드가 됐습니다.** 명령 id 는 `contributionIds.ts` 의 `storyboardCommandIds` 표 하나에 있고 `manifest.spec` 이 package.json 과 양방향으로 대조합니다. 의존성을 받던 모듈 함수는 각 명령 클래스의 비공개 메서드가 됐고, 명령 둘·셋이 같은 흐름을 쓰던 초안 생성·보충·카드 만들기·이름 바꾸기·추천은 추상 기반 클래스(`GenerateDraftCommandBase` 등)를 상속합니다. Studio 제안·설정·대화 RPC 의 남은 단계도 각 `XRpc` 클래스의 메서드입니다. 명령·화면·저장 형식은 그대로입니다.
 
 ## [0.13.4] - 2026-10-24
 
