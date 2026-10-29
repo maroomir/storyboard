@@ -42,6 +42,93 @@ function lengthAtNextSceneBreak(
   return undefined;
 }
 
+function startsWithDialogue(text: string): boolean {
+  return /^[“"]/.test(text);
+}
+
+class SkeletonSectionBuilder {
+  private readonly sections: string[] = [];
+  private remainingLength: number;
+  private current: string[] = [];
+  private currentLength: number = 0;
+  private closedSections: number = 0;
+
+  public constructor(
+    private readonly units: readonly SkeletonUnit[],
+    private readonly sectionCount: number,
+  ) {
+    this.remainingLength = units.reduce((sum, unit) => sum + unit.text.length, 0);
+  }
+
+  public addUnit(unit: SkeletonUnit, index: number): void {
+    this.current.push(unit.text);
+    this.currentLength += unit.text.length;
+
+    if (this.shouldCloseAfter(unit, index)) {
+      this.closeSection();
+    }
+  }
+
+  public toSections(): string[] {
+    if (this.current.length > 0) {
+      this.sections.push(this.current.join('\n\n'));
+    }
+
+    return this.sections;
+  }
+
+  private shouldCloseAfter(unit: SkeletonUnit, index: number): boolean {
+    const remainingUnits: number = this.units
+      .slice(index + 1)
+      .filter((rest) => !rest.endsScene).length;
+    const remainingSections: number = this.sectionCount - this.closedSections - 1;
+    if (remainingSections <= 0 || remainingUnits === 0) {
+      return false;
+    }
+
+    const budget: number = this.remainingLength / (this.sectionCount - this.closedSections);
+    const atSceneBreak: boolean = this.isBalancedSceneBreak(unit, index, budget);
+    const filled: boolean = this.isFilled(unit, index, budget);
+    const mustClose: boolean = remainingUnits === remainingSections;
+
+    return atSceneBreak || filled || mustClose;
+  }
+
+  private isBalancedSceneBreak(unit: SkeletonUnit, index: number, budget: number): boolean {
+    const nextBreakLength: number | undefined = lengthAtNextSceneBreak(
+      this.units,
+      index,
+      this.currentLength,
+    );
+
+    return (
+      unit.endsScene &&
+      this.currentLength >= budget / 2 &&
+      (nextBreakLength === undefined ||
+        Math.abs(this.currentLength - budget) <= Math.abs(nextBreakLength - budget))
+    );
+  }
+
+  private isFilled(unit: SkeletonUnit, index: number, budget: number): boolean {
+    const nextUnit: SkeletonUnit | undefined = this.units[index + 1];
+    const continuesExchange: boolean =
+      startsWithDialogue(unit.text) ||
+      (nextUnit !== undefined && !nextUnit.endsScene && startsWithDialogue(nextUnit.text));
+
+    return (
+      this.currentLength >= budget && (!continuesExchange || this.currentLength >= budget * 1.5)
+    );
+  }
+
+  private closeSection(): void {
+    this.sections.push(this.current.join('\n\n'));
+    this.remainingLength -= this.currentLength;
+    this.current = [];
+    this.currentLength = 0;
+    this.closedSections += 1;
+  }
+}
+
 export function splitSkeletonIntoSections(skeleton: string, sectionCount: number): string[] {
   const trimmed: string = skeleton.trim();
 
@@ -56,52 +143,10 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
     return [trimmed];
   }
 
-  const sections: string[] = [];
-  let remainingLength: number = units.reduce((sum, unit) => sum + unit.text.length, 0);
-  let current: string[] = [];
-  let currentLength: number = 0;
-  let closedSections: number = 0;
+  const builder: SkeletonSectionBuilder = new SkeletonSectionBuilder(units, sectionCount);
+  units.forEach((unit, index) => builder.addUnit(unit, index));
 
-  units.forEach((unit, index) => {
-    current.push(unit.text);
-    currentLength += unit.text.length;
-
-    const remainingUnits: number = units.slice(index + 1).filter((rest) => !rest.endsScene).length;
-    const remainingSections: number = sectionCount - closedSections - 1;
-    if (remainingSections <= 0 || remainingUnits === 0) {
-      return;
-    }
-
-    const budget: number = remainingLength / (sectionCount - closedSections);
-    const nextBreakLength: number | undefined = lengthAtNextSceneBreak(units, index, currentLength);
-    const atSceneBreak: boolean =
-      unit.endsScene &&
-      currentLength >= budget / 2 &&
-      (nextBreakLength === undefined ||
-        Math.abs(currentLength - budget) <= Math.abs(nextBreakLength - budget));
-    const nextUnit: SkeletonUnit | undefined = units[index + 1];
-    const startsWithDialogue = (text: string): boolean => /^[“"]/.test(text);
-    const continuesExchange: boolean =
-      startsWithDialogue(unit.text) ||
-      (nextUnit !== undefined && !nextUnit.endsScene && startsWithDialogue(nextUnit.text));
-    const filled: boolean =
-      currentLength >= budget && (!continuesExchange || currentLength >= budget * 1.5);
-    const mustClose: boolean = remainingUnits === remainingSections;
-
-    if (atSceneBreak || filled || mustClose) {
-      sections.push(current.join('\n\n'));
-      remainingLength -= currentLength;
-      current = [];
-      currentLength = 0;
-      closedSections += 1;
-    }
-  });
-
-  if (current.length > 0) {
-    sections.push(current.join('\n\n'));
-  }
-
-  return sections;
+  return builder.toSections();
 }
 
 export function planSectionTargetLengths(

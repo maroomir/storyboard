@@ -339,74 +339,110 @@ export interface PlannedBreakResult {
   readonly hasNoMarkers: boolean;
 }
 
-export function applyPlannedSceneBreaks(
-  skeleton: string,
-  plan: SceneBreakPlan,
-): PlannedBreakResult {
-  const out: string[] = [];
-  const seen: Set<number> = new Set<number>();
-  const coordinates: (string | undefined)[] = [];
-  const openingNumbers: number[] = [];
-  const hasContent = (): boolean => out.some((line) => line.trim().length > 0);
-  const openSegment = (segmentNumber: number): void => {
-    coordinates.push(plan.segments[segmentNumber - 1]?.coordinate);
-    openingNumbers.push(segmentNumber);
-  };
+class PlannedBreakAssembly {
+  private readonly lines: string[] = [];
+  private readonly seen: Set<number> = new Set<number>();
+  private readonly coordinates: (string | undefined)[] = [];
+  private readonly openingNumbers: number[] = [];
 
-  for (const line of skeleton.split('\n')) {
+  public constructor(private readonly plan: SceneBreakPlan) {}
+
+  public addSkeletonLine(line: string): void {
     if (line.trim() === SCENE_BREAK_LINE) {
-      continue;
+      return;
     }
 
     const markers: number[] = [...line.matchAll(SEGMENT_MARKER)].map((match) => Number(match[1]));
     for (const segmentNumber of markers) {
-      if (seen.has(segmentNumber) || segmentNumber < 1 || segmentNumber > plan.segments.length) {
-        continue;
-      }
-
-      seen.add(segmentNumber);
-      if (segmentNumber === 1 || !hasContent()) {
-        if (coordinates.length === 0) {
-          openSegment(segmentNumber);
-        }
-        continue;
-      }
-
-      if (coordinates.length === 0) {
-        openSegment(1);
-      }
-      out.push('', SCENE_BREAK_LINE, '');
-      openSegment(segmentNumber);
+      this.addSegmentMarker(segmentNumber);
     }
 
+    this.addLineWithoutMarkers(line);
+  }
+
+  public finish(): PlannedBreakResult {
+    if (this.coordinates.length === 0) {
+      this.openSegment(1);
+    }
+
+    return {
+      text: this.lines
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim(),
+      coordinates: this.coordinates,
+      beats: this.collectSegmentBeats(),
+      missingMarkers: this.plan.segments.length - this.seen.size,
+      hasNoMarkers: this.seen.size === 0,
+    };
+  }
+
+  private addSegmentMarker(segmentNumber: number): void {
+    if (!this.isUnseenPlannedSegment(segmentNumber)) {
+      return;
+    }
+
+    this.seen.add(segmentNumber);
+    if (segmentNumber === 1 || !this.hasContent()) {
+      if (this.coordinates.length === 0) {
+        this.openSegment(segmentNumber);
+      }
+      return;
+    }
+
+    if (this.coordinates.length === 0) {
+      this.openSegment(1);
+    }
+    this.lines.push('', SCENE_BREAK_LINE, '');
+    this.openSegment(segmentNumber);
+  }
+
+  private isUnseenPlannedSegment(segmentNumber: number): boolean {
+    return (
+      !this.seen.has(segmentNumber) &&
+      segmentNumber >= 1 &&
+      segmentNumber <= this.plan.segments.length
+    );
+  }
+
+  private addLineWithoutMarkers(line: string): void {
     const rest: string = line.replace(ANY_MARKER, '');
     if (rest === line) {
-      out.push(line);
+      this.lines.push(line);
     } else if (rest.trim().length > 0) {
-      out.push(rest.trim());
+      this.lines.push(rest.trim());
     }
   }
 
-  if (coordinates.length === 0) {
-    openSegment(1);
+  private hasContent(): boolean {
+    return this.lines.some((line) => line.trim().length > 0);
   }
 
-  const beats: number[][] = openingNumbers.map((opening, index) => {
-    const next: number = openingNumbers[index + 1] ?? plan.segments.length + 1;
-    const from: number = index === 0 ? 1 : opening;
-    return plan.segments.slice(from - 1, next - 1).flatMap((segment) => segment.beats);
-  });
+  private openSegment(segmentNumber: number): void {
+    this.coordinates.push(this.plan.segments[segmentNumber - 1]?.coordinate);
+    this.openingNumbers.push(segmentNumber);
+  }
 
-  return {
-    text: out
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim(),
-    coordinates,
-    beats,
-    missingMarkers: plan.segments.length - seen.size,
-    hasNoMarkers: seen.size === 0,
-  };
+  private collectSegmentBeats(): number[][] {
+    return this.openingNumbers.map((opening, index) => {
+      const next: number = this.openingNumbers[index + 1] ?? this.plan.segments.length + 1;
+      const from: number = index === 0 ? 1 : opening;
+      return this.plan.segments.slice(from - 1, next - 1).flatMap((segment) => segment.beats);
+    });
+  }
+}
+
+export function applyPlannedSceneBreaks(
+  skeleton: string,
+  plan: SceneBreakPlan,
+): PlannedBreakResult {
+  const assembly: PlannedBreakAssembly = new PlannedBreakAssembly(plan);
+
+  for (const line of skeleton.split('\n')) {
+    assembly.addSkeletonLine(line);
+  }
+
+  return assembly.finish();
 }
 
 export function countSceneBreakLines(text: string): number {
@@ -427,60 +463,96 @@ function similarity(paragraph: string, reference: string): number {
     : countSharedShingles(needle, normalizeForMatch(reference)) / needle.length;
 }
 
-export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): string | undefined {
-  const parts: string[] = sectionSkeleton.split('\n');
+interface ParagraphMatch {
+  readonly index: number;
+  readonly score: number;
+}
+
+function splitSkeletonSegments(sectionSkeleton: string): string[] {
   const skeletonParts: string[][] = [[]];
-  for (const line of parts) {
+  for (const line of sectionSkeleton.split('\n')) {
     if (line.trim() === SCENE_BREAK_LINE) {
       skeletonParts.push([]);
     } else {
       skeletonParts.at(-1)?.push(line);
     }
   }
-  const segments: string[] = skeletonParts.map((lines) => lines.join('\n').trim());
-  const paragraphs: string[] = paragraphsOf(
+
+  return skeletonParts.map((lines) => lines.join('\n').trim());
+}
+
+function paragraphsWithoutSceneBreaks(expanded: string): string[] {
+  return paragraphsOf(
     expanded
       .split('\n')
       .filter((line) => line.trim() !== SCENE_BREAK_LINE)
       .join('\n'),
   );
+}
 
-  const leadingBreak: boolean = segments[0] === '';
-  const trailingBreak: boolean = segments.length > 1 && segments.at(-1) === '';
-  const inner: string[] = segments.slice(leadingBreak ? 1 : 0, trailingBreak ? -1 : undefined);
+function findBestParagraphMatch(
+  anchor: string,
+  paragraphs: readonly string[],
+  lastIndex: number,
+): ParagraphMatch | undefined {
+  let best: ParagraphMatch | undefined;
+
+  for (let index: number = lastIndex + 1; index < paragraphs.length; index += 1) {
+    const score: number = similarity(anchor, paragraphs[index] as string);
+    if (score > 0 && (best === undefined || score > best.score)) {
+      best = { index, score };
+    }
+  }
+
+  return best;
+}
+
+function locateSegmentStart(
+  inner: readonly string[],
+  segment: number,
+  paragraphs: readonly string[],
+  lastIndex: number,
+): number | undefined {
+  const current: string = inner[segment] as string;
+  const anchor: string = paragraphsOf(current)[0] ?? '';
+  const best: ParagraphMatch | undefined = findBestParagraphMatch(anchor, paragraphs, lastIndex);
+  if (best === undefined) {
+    return undefined;
+  }
+
+  const before: string | undefined = paragraphs[best.index - 1];
+  const isBeforeCloserToCurrent: boolean =
+    before !== undefined &&
+    best.index - 1 > lastIndex &&
+    similarity(before, current) > similarity(before, inner[segment - 1] as string);
+
+  return isBeforeCloserToCurrent ? best.index - 1 : best.index;
+}
+
+function locateBreakIndices(
+  inner: readonly string[],
+  paragraphs: readonly string[],
+): number[] | undefined {
   const breakBefore: number[] = [];
   let lastIndex: number = 0;
 
   for (let segment: number = 1; segment < inner.length; segment += 1) {
-    const current: string = inner[segment] as string;
-    const anchor: string = paragraphsOf(current)[0] ?? '';
-    let best: { index: number; score: number } | undefined;
-
-    for (let index: number = lastIndex + 1; index < paragraphs.length; index += 1) {
-      const score: number = similarity(anchor, paragraphs[index] as string);
-      if (score > 0 && (best === undefined || score > best.score)) {
-        best = { index, score };
-      }
-    }
-
-    if (best === undefined) {
+    const index: number | undefined = locateSegmentStart(inner, segment, paragraphs, lastIndex);
+    if (index === undefined) {
       return undefined;
-    }
-
-    let index: number = best.index;
-    const before: string | undefined = paragraphs[index - 1];
-    if (
-      before !== undefined &&
-      index - 1 > lastIndex &&
-      similarity(before, current) > similarity(before, inner[segment - 1] as string)
-    ) {
-      index -= 1;
     }
 
     breakBefore.push(index);
     lastIndex = index;
   }
 
+  return breakBefore;
+}
+
+function insertSceneBreaks(
+  paragraphs: readonly string[],
+  breakBefore: readonly number[],
+): string[] {
   const blocks: string[] = [];
   paragraphs.forEach((paragraph, index) => {
     if (breakBefore.includes(index)) {
@@ -489,10 +561,29 @@ export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): s
     blocks.push(paragraph);
   });
 
+  return blocks;
+}
+
+export function restoreSceneBreaks(sectionSkeleton: string, expanded: string): string | undefined {
+  const segments: string[] = splitSkeletonSegments(sectionSkeleton);
+  const paragraphs: string[] = paragraphsWithoutSceneBreaks(expanded);
+
+  const hasLeadingBreak: boolean = segments[0] === '';
+  const hasTrailingBreak: boolean = segments.length > 1 && segments.at(-1) === '';
+  const inner: string[] = segments.slice(
+    hasLeadingBreak ? 1 : 0,
+    hasTrailingBreak ? -1 : undefined,
+  );
+  const breakBefore: number[] | undefined = locateBreakIndices(inner, paragraphs);
+
+  if (breakBefore === undefined) {
+    return undefined;
+  }
+
   return [
-    ...(leadingBreak ? [SCENE_BREAK_LINE] : []),
-    ...blocks,
-    ...(trailingBreak ? [SCENE_BREAK_LINE] : []),
+    ...(hasLeadingBreak ? [SCENE_BREAK_LINE] : []),
+    ...insertSceneBreaks(paragraphs, breakBefore),
+    ...(hasTrailingBreak ? [SCENE_BREAK_LINE] : []),
   ].join('\n\n');
 }
 
