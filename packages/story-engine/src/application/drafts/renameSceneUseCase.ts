@@ -106,16 +106,18 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       return { ok: false, kind: 'missing', message: `씬이 없습니다: ${from.stem}` };
     }
 
+    return await this.renameExistingScene(root, { from, to });
+  }
+
+  private async renameExistingScene(
+    root: StoryUri,
+    rename: SceneRename,
+  ): Promise<RenameSceneResult> {
+    const { from, to } = rename;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
-    const rename: SceneRename = { from, to };
     const memoryScopes: readonly StoryboardProjectPaths[] = await this.listMemoryScopes(paths);
     const moves: PlannedWrite[] = await this.planMoves(paths, memoryScopes, rename);
-    const isResuming: boolean = await this.isInterruptedRename(paths, rename, moves);
-    const occupant: string | undefined = await this.findSceneWithOrder(
-      paths,
-      to.order,
-      isResuming ? [from.stem, to.stem] : [from.stem],
-    );
+    const occupant: string | undefined = await this.findOrderOccupant(paths, rename, moves);
 
     if (occupant !== undefined) {
       return {
@@ -127,6 +129,40 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     const rewrites: PlannedWrite[] = await this.planRewrites(paths, memoryScopes, rename);
 
+    await this.applyPlannedWrites(paths, rename, moves, rewrites);
+
+    return {
+      ok: true,
+      kind: 'renamed',
+      fromStem: from.stem,
+      toStem: to.stem,
+      hasOrderChanged: from.order !== to.order,
+      movedFiles: moves.map((move) => relativePath(root, move.to)),
+      rewrittenFiles: rewrites.map((rewrite) => relativePath(root, rewrite.to)),
+    };
+  }
+
+  private async findOrderOccupant(
+    paths: StoryboardProjectPaths,
+    rename: SceneRename,
+    moves: readonly PlannedWrite[],
+  ): Promise<string | undefined> {
+    const { from, to } = rename;
+    const isResuming: boolean = await this.isInterruptedRename(paths, rename, moves);
+
+    return await this.findSceneWithOrder(
+      paths,
+      to.order,
+      isResuming ? [from.stem, to.stem] : [from.stem],
+    );
+  }
+
+  private async applyPlannedWrites(
+    paths: StoryboardProjectPaths,
+    rename: SceneRename,
+    moves: readonly PlannedWrite[],
+    rewrites: readonly PlannedWrite[],
+  ): Promise<void> {
     await this.host.fileSystem.writeFile(
       paths.sceneRenameJournal,
       toBytes(serializeSceneRenameJournal(rename)),
@@ -144,16 +180,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     await this.deleteEmptyDirectories(paths, rename);
     await this.host.fileSystem.delete(paths.sceneRenameJournal);
-
-    return {
-      ok: true,
-      kind: 'renamed',
-      fromStem: from.stem,
-      toStem: to.stem,
-      hasOrderChanged: from.order !== to.order,
-      movedFiles: moves.map((move) => relativePath(root, move.to)),
-      rewrittenFiles: rewrites.map((rewrite) => relativePath(root, rewrite.to)),
-    };
   }
 
   private async isInterruptedRename(
@@ -215,68 +241,106 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     memoryScopes: readonly StoryboardProjectPaths[],
     rename: SceneRename,
   ): Promise<PlannedWrite[]> {
-    const root: StoryUri = paths.workspaceRoot;
-    const { from, to } = rename;
     const moves: PlannedWrite[] = [];
 
-    const planMove = async (
-      source: StoryUri,
-      target: StoryUri,
-      transform: (raw: string) => string,
-    ): Promise<void> => {
-      const raw: string | undefined = await this.readTextIfExists(source);
+    await this.planSceneFileMoves(moves, paths, rename);
+    await this.planDraftHistoryMoves(moves, paths, rename);
+    await this.planCacheFileMoves(moves, paths, memoryScopes, rename);
+    await this.planStudioSessionMoves(moves, paths, rename);
 
-      if (raw !== undefined) {
-        moves.push({ from: source, to: target, content: transform(raw) });
-      }
-    };
-    const stemFile = (directory: StoryUri, stem: string, extension: string): StoryUri =>
-      joinUri(directory, `${stem}${extension}`);
+    return moves;
+  }
 
-    await planMove(scenePath(root, from.stem), scenePath(root, to.stem), (raw) =>
+  private async addMove(
+    moves: PlannedWrite[],
+    source: StoryUri,
+    target: StoryUri,
+    transform: (raw: string) => string,
+  ): Promise<void> {
+    const raw: string | undefined = await this.readTextIfExists(source);
+
+    if (raw !== undefined) {
+      moves.push({ from: source, to: target, content: transform(raw) });
+    }
+  }
+
+  private async planSceneFileMoves(
+    moves: PlannedWrite[],
+    paths: StoryboardProjectPaths,
+    rename: SceneRename,
+  ): Promise<void> {
+    const root: StoryUri = paths.workspaceRoot;
+    const { from, to } = rename;
+
+    await this.addMove(moves, scenePath(root, from.stem), scenePath(root, to.stem), (raw) =>
       rewriteSceneCardStemText(raw, rename),
     );
-    await planMove(
+    await this.addMove(
+      moves,
       joinUri(paths.sceneDirectory, sceneSummaryFileName(from.stem)),
       joinUri(paths.sceneDirectory, sceneSummaryFileName(to.stem)),
       (raw) => raw,
     );
-    await planMove(draftPath(root, from.stem), draftPath(root, to.stem), (raw) =>
+    await this.addMove(moves, draftPath(root, from.stem), draftPath(root, to.stem), (raw) =>
       serializeDraft({ ...parseDraft(raw), sceneStem: to.stem }),
     );
+  }
 
-    const historyFrom: StoryUri = draftHistorySceneDirectory(root, from.stem);
-    const historyTo: StoryUri = draftHistorySceneDirectory(root, to.stem);
+  private async planDraftHistoryMoves(
+    moves: PlannedWrite[],
+    paths: StoryboardProjectPaths,
+    rename: SceneRename,
+  ): Promise<void> {
+    const historyFrom: StoryUri = draftHistorySceneDirectory(paths.workspaceRoot, rename.from.stem);
+    const historyTo: StoryUri = draftHistorySceneDirectory(paths.workspaceRoot, rename.to.stem);
 
     for (const fileName of await this.listFileNames(historyFrom)) {
-      await planMove(joinUri(historyFrom, fileName), joinUri(historyTo, fileName), (raw) =>
-        rewriteArchivedDraftStem(raw, to.stem),
+      await this.addMove(
+        moves,
+        joinUri(historyFrom, fileName),
+        joinUri(historyTo, fileName),
+        (raw) => rewriteArchivedDraftStem(raw, rename.to.stem),
       );
     }
+  }
 
-    const rewriteJson = (raw: string): string => rewriteJsonSceneStems(raw, rename) ?? raw;
-
+  private async planCacheFileMoves(
+    moves: PlannedWrite[],
+    paths: StoryboardProjectPaths,
+    memoryScopes: readonly StoryboardProjectPaths[],
+    rename: SceneRename,
+  ): Promise<void> {
     for (const directory of [
       paths.sceneCacheDirectory,
       paths.bibleCacheDirectory,
       paths.cardCacheDirectory,
       ...memoryScopes.map((scope) => scope.sceneDialogueDirectory),
     ]) {
-      await planMove(
-        stemFile(directory, from.stem, '.json'),
-        stemFile(directory, to.stem, '.json'),
-        rewriteJson,
+      await this.addMove(
+        moves,
+        stemFileUri(directory, rename.from.stem, '.json'),
+        stemFileUri(directory, rename.to.stem, '.json'),
+        (raw) => rewriteJsonSceneStemsOrKeep(raw, rename),
       );
     }
+  }
 
-    const sessionsFrom: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', from.stem);
-    const sessionsTo: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', to.stem);
+  private async planStudioSessionMoves(
+    moves: PlannedWrite[],
+    paths: StoryboardProjectPaths,
+    rename: SceneRename,
+  ): Promise<void> {
+    const sessionsFrom: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', rename.from.stem);
+    const sessionsTo: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', rename.to.stem);
 
     for (const fileName of await this.listFileNames(sessionsFrom)) {
-      await planMove(joinUri(sessionsFrom, fileName), joinUri(sessionsTo, fileName), rewriteJson);
+      await this.addMove(
+        moves,
+        joinUri(sessionsFrom, fileName),
+        joinUri(sessionsTo, fileName),
+        (raw) => rewriteJsonSceneStemsOrKeep(raw, rename),
+      );
     }
-
-    return moves;
   }
 
   private async planRewrites(
@@ -286,87 +350,67 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   ): Promise<PlannedWrite[]> {
     const rewrites: PlannedWrite[] = [];
 
-    const planRewrite = async (
-      uri: StoryUri,
-      rewrite: (raw: string) => string | undefined,
-    ): Promise<void> => {
-      const raw: string | undefined = await this.readTextIfExists(uri);
-      const rewritten: string | undefined = raw === undefined ? undefined : rewrite(raw);
-
-      if (rewritten !== undefined && rewritten !== raw) {
-        rewrites.push({ to: uri, content: rewritten });
-      }
-    };
-    const mentionsStem = (raw: string): boolean => raw.includes(rename.from.stem);
-
     for (const scope of memoryScopes) {
-      await planRewrite(scope.storyState, (raw) => {
-        const state: StoryState = parseStoryState(raw);
-        const renumbered: StoryState = renumberStoryStateScene(state, rename);
-
-        return renumbered === state ? undefined : serializeStoryState(renumbered);
-      });
-
-      for (const directory of [scope.personaMemoryDirectory, scope.backgroundMemoryDirectory]) {
-        for (const fileName of await this.listFileNames(directory)) {
-          await planRewrite(joinUri(directory, fileName), (raw) =>
-            mentionsStem(raw) ? rewriteJsonSceneStems(raw, rename) : undefined,
-          );
-        }
-      }
+      await this.planMemoryScopeRewrites(rewrites, scope, rename);
     }
 
-    await planRewrite(paths.bibleCanon, (raw) => {
-      const bible: StoryBible = parseBible(raw);
-      const rewritten: StoryBible = rewriteBibleSceneReferences(bible, rename);
-
-      return rewritten === bible ? undefined : serializeBible(rewritten);
-    });
-
-    await planRewrite(paths.outlineRevisionPlan, (raw) => {
-      if (!mentionsStem(raw)) {
-        return undefined;
-      }
-
-      const plan: RevisionPlan = parseRevisionPlan(raw);
-      const entries: RevisionPlanEntry[] = plan.entries
-        .map((entry) =>
-          entry.sceneStem === rename.from.stem ? { ...entry, sceneStem: rename.to.stem } : entry,
-        )
-        .sort((left, right) => left.sceneStem.localeCompare(right.sceneStem));
-
-      return serializeRevisionPlan({ ...plan, entries });
-    });
+    await this.addRewrite(rewrites, paths.bibleCanon, (raw) => rewriteBibleText(raw, rename));
+    await this.addRewrite(rewrites, paths.outlineRevisionPlan, (raw) =>
+      rewriteRevisionPlanText(raw, rename),
+    );
 
     for (const uri of [paths.usageLedger, joinUri(paths.cacheDirectory, 'studio-followups.json')]) {
-      await planRewrite(uri, (raw) =>
-        mentionsStem(raw) ? rewriteJsonSceneStems(raw, rename) : undefined,
-      );
+      await this.addRewrite(rewrites, uri, (raw) => rewriteMentionedJsonSceneStems(raw, rename));
     }
 
+    await this.planCharacterCardRewrites(rewrites, paths, rename);
+
+    return rewrites;
+  }
+
+  private async addRewrite(
+    rewrites: PlannedWrite[],
+    uri: StoryUri,
+    rewrite: (raw: string) => string | undefined,
+  ): Promise<void> {
+    const raw: string | undefined = await this.readTextIfExists(uri);
+    const rewritten: string | undefined = raw === undefined ? undefined : rewrite(raw);
+
+    if (rewritten !== undefined && rewritten !== raw) {
+      rewrites.push({ to: uri, content: rewritten });
+    }
+  }
+
+  private async planMemoryScopeRewrites(
+    rewrites: PlannedWrite[],
+    scope: StoryboardProjectPaths,
+    rename: SceneRename,
+  ): Promise<void> {
+    await this.addRewrite(rewrites, scope.storyState, (raw) => rewriteStoryStateText(raw, rename));
+
+    for (const directory of [scope.personaMemoryDirectory, scope.backgroundMemoryDirectory]) {
+      for (const fileName of await this.listFileNames(directory)) {
+        await this.addRewrite(rewrites, joinUri(directory, fileName), (raw) =>
+          rewriteMentionedJsonSceneStems(raw, rename),
+        );
+      }
+    }
+  }
+
+  private async planCharacterCardRewrites(
+    rewrites: PlannedWrite[],
+    paths: StoryboardProjectPaths,
+    rename: SceneRename,
+  ): Promise<void> {
     for (const fileName of await this.listFileNames(paths.characterDirectory)) {
       if (!fileName.endsWith('.card')) {
         continue;
       }
 
-      await planRewrite(joinUri(paths.characterDirectory, fileName), (raw) => {
-        if (!mentionsStem(raw)) {
-          return undefined;
-        }
-
-        const card: StoryboardCard = parseCard(raw);
-
-        if (card.type !== 'character') {
-          return undefined;
-        }
-
-        const rewritten: CharacterCard = rewriteCharacterArcSceneRefs(card, rename);
-
-        return rewritten === card ? undefined : serializeCard(rewritten);
-      });
+      await this.addRewrite(rewrites, joinUri(paths.characterDirectory, fileName), (raw) =>
+        rewriteCharacterCardText(raw, rename),
+      );
     }
-
-    return rewrites;
   }
 
   private async deleteEmptyDirectories(
@@ -413,6 +457,67 @@ function rewriteArchivedDraftStem(raw: string, toStem: string): string {
   } catch {
     return raw;
   }
+}
+
+function stemFileUri(directory: StoryUri, stem: string, extension: string): StoryUri {
+  return joinUri(directory, `${stem}${extension}`);
+}
+
+function mentionsFromStem(raw: string, rename: SceneRename): boolean {
+  return raw.includes(rename.from.stem);
+}
+
+function rewriteJsonSceneStemsOrKeep(raw: string, rename: SceneRename): string {
+  return rewriteJsonSceneStems(raw, rename) ?? raw;
+}
+
+function rewriteMentionedJsonSceneStems(raw: string, rename: SceneRename): string | undefined {
+  return mentionsFromStem(raw, rename) ? rewriteJsonSceneStems(raw, rename) : undefined;
+}
+
+function rewriteStoryStateText(raw: string, rename: SceneRename): string | undefined {
+  const state: StoryState = parseStoryState(raw);
+  const renumbered: StoryState = renumberStoryStateScene(state, rename);
+
+  return renumbered === state ? undefined : serializeStoryState(renumbered);
+}
+
+function rewriteBibleText(raw: string, rename: SceneRename): string | undefined {
+  const bible: StoryBible = parseBible(raw);
+  const rewritten: StoryBible = rewriteBibleSceneReferences(bible, rename);
+
+  return rewritten === bible ? undefined : serializeBible(rewritten);
+}
+
+function rewriteRevisionPlanText(raw: string, rename: SceneRename): string | undefined {
+  if (!mentionsFromStem(raw, rename)) {
+    return undefined;
+  }
+
+  const plan: RevisionPlan = parseRevisionPlan(raw);
+  const entries: RevisionPlanEntry[] = plan.entries
+    .map((entry) =>
+      entry.sceneStem === rename.from.stem ? { ...entry, sceneStem: rename.to.stem } : entry,
+    )
+    .sort((left, right) => left.sceneStem.localeCompare(right.sceneStem));
+
+  return serializeRevisionPlan({ ...plan, entries });
+}
+
+function rewriteCharacterCardText(raw: string, rename: SceneRename): string | undefined {
+  if (!mentionsFromStem(raw, rename)) {
+    return undefined;
+  }
+
+  const card: StoryboardCard = parseCard(raw);
+
+  if (card.type !== 'character') {
+    return undefined;
+  }
+
+  const rewritten: CharacterCard = rewriteCharacterArcSceneRefs(card, rename);
+
+  return rewritten === card ? undefined : serializeCard(rewritten);
 }
 
 function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undefined {

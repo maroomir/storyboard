@@ -11,6 +11,7 @@ import type {
   CharacterCard,
   StoryState,
   Draft,
+  StyleDirective,
 } from '@storyboard/story-model';
 import {
   AiProviderError,
@@ -65,6 +66,15 @@ export type { GenerateDraftRequest, GenerateDraftResult } from './draftGeneratio
 
 export interface GenerateDraftCollaborators {
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
+}
+
+interface PostGenerationUpdateContext {
+  readonly updates: PostGenerationUpdateManager;
+  readonly inputs: SceneGenerationInputs;
+  readonly options: GenerateDraftWorkflowOptions;
+  readonly aiService: StoryboardAiService;
+  readonly pipelineResult: RunSceneGenerationPipelineResult;
+  readonly detectedCharacterCards: CharacterCard[];
 }
 
 export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
@@ -209,29 +219,14 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     pipelineResult: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
     cacheProviders: SceneCacheRecord['providers'],
   ): Promise<GenerateDraftResult> {
-    const { paths, threadPaths, scene, project, draftUri, cacheUri } = inputs;
+    const { paths, threadPaths, scene, draftUri, cacheUri } = inputs;
 
     if (pipelineResult.draftBody.trim().length === 0) {
       return { ok: false, kind: 'failed', message: emptyDraftBodyMessage(scene.stem) };
     }
 
-    if (pipelineResult.dialoguePolish) {
-      const { lineCount, polishedCount, contestedCount } = pipelineResult.dialoguePolish;
-      this.host.logger.info(
-        `${scene.stem}: 대사 다듬기 ${polishedCount}/${lineCount}개 손봄${contestedCount > 0 ? `, ${contestedCount}개는 화자가 겹쳐 뼈대 유지` : ''}`,
-      );
-    }
-
-    const sceneDraftConfig: TaskAiConfigResolved = this.ai.gateway.getTaskAiConfig('sceneDraft');
-    const draft: Draft = createDraft({
-      sceneStem: scene.stem,
-      format: project.format,
-      body: pipelineResult.draftBody,
-      warnings: pipelineResult.warnings,
-      generator: this.host.generator,
-      providerId: sceneDraftConfig.providerId,
-      model: sceneDraftConfig.model,
-    });
+    this.logDialoguePolish(scene.stem, pipelineResult);
+    const draft: Draft = this.createGeneratedDraft(inputs, pipelineResult);
 
     await this.repositories.sceneCache.ensureDirectory(paths.sceneCacheDirectory);
 
@@ -245,21 +240,11 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       bodyHash,
     );
 
-    const isOurs: boolean = await this.isDraftOursToOverwrite(inputs, options);
-    if (!isOurs) {
-      this.host.logger.warn(
-        `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${scene.stem}`,
-      );
-    }
-    await this.maybeArchiveExistingDraft(inputs, options, !isOurs);
+    await this.archiveDraftBeforeOverwrite(inputs, options);
 
     await this.repositories.drafts.write(draftUri, draft);
 
-    if (pipelineResult.dialogueRecord) {
-      await new SceneDialogueStore(this.host.fileSystem, threadPaths).save(
-        pipelineResult.dialogueRecord,
-      );
-    }
+    await this.saveDialogueRecord(threadPaths, pipelineResult);
 
     await this.repositories.sceneCache.write(cacheUri, cacheRecord);
 
@@ -277,13 +262,65 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     };
   }
 
+  private logDialoguePolish(
+    sceneStem: string,
+    pipelineResult: RunSceneGenerationPipelineResult,
+  ): void {
+    if (pipelineResult.dialoguePolish) {
+      const { lineCount, polishedCount, contestedCount } = pipelineResult.dialoguePolish;
+      this.host.logger.info(
+        `${sceneStem}: 대사 다듬기 ${polishedCount}/${lineCount}개 손봄${contestedCount > 0 ? `, ${contestedCount}개는 화자가 겹쳐 뼈대 유지` : ''}`,
+      );
+    }
+  }
+
+  private createGeneratedDraft(
+    inputs: SceneGenerationInputs,
+    pipelineResult: RunSceneGenerationPipelineResult,
+  ): Draft {
+    const sceneDraftConfig: TaskAiConfigResolved = this.ai.gateway.getTaskAiConfig('sceneDraft');
+
+    return createDraft({
+      sceneStem: inputs.scene.stem,
+      format: inputs.project.format,
+      body: pipelineResult.draftBody,
+      warnings: pipelineResult.warnings,
+      generator: this.host.generator,
+      providerId: sceneDraftConfig.providerId,
+      model: sceneDraftConfig.model,
+    });
+  }
+
+  private async archiveDraftBeforeOverwrite(
+    inputs: SceneGenerationInputs,
+    options: GenerateDraftWorkflowOptions,
+  ): Promise<void> {
+    const isOurs: boolean = await this.isDraftOursToOverwrite(inputs, options);
+    if (!isOurs) {
+      this.host.logger.warn(
+        `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${inputs.scene.stem}`,
+      );
+    }
+    await this.maybeArchiveExistingDraft(inputs, options, !isOurs);
+  }
+
+  private async saveDialogueRecord(
+    threadPaths: SceneGenerationInputs['threadPaths'],
+    pipelineResult: RunSceneGenerationPipelineResult,
+  ): Promise<void> {
+    if (pipelineResult.dialogueRecord) {
+      await new SceneDialogueStore(this.host.fileSystem, threadPaths).save(
+        pipelineResult.dialogueRecord,
+      );
+    }
+  }
+
   private schedulePostGenerationUpdates(
     inputs: SceneGenerationInputs,
     options: GenerateDraftWorkflowOptions,
     aiService: StoryboardAiService,
     pipelineResult: RunSceneGenerationPipelineResult,
   ): void {
-    const { workspaceFolder, paths, scene, context } = inputs;
     const updates: PostGenerationUpdateManager | undefined =
       this.collaborators.postGenerationUpdates;
 
@@ -291,10 +328,28 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       return;
     }
 
-    const { fileSystem, logger } = this.host;
-    const detectedCharacterCards: CharacterCard[] = context.characters.filter((card) =>
+    const detectedCharacterCards: CharacterCard[] = inputs.context.characters.filter((card) =>
       pipelineResult.detectedCharacters.includes(card.name),
     );
+    const updateContext: PostGenerationUpdateContext = {
+      updates,
+      inputs,
+      options,
+      aiService,
+      pipelineResult,
+      detectedCharacterCards,
+    };
+
+    this.scheduleCharacterTraits(updateContext);
+    this.scheduleBibleCandidates(updateContext);
+    this.scheduleCardCandidates(updateContext);
+    this.scheduleBackgroundCharacters(updateContext);
+  }
+
+  private scheduleCharacterTraits(updateContext: PostGenerationUpdateContext): void {
+    const { updates, inputs, options, aiService, pipelineResult, detectedCharacterCards } =
+      updateContext;
+    const { workspaceFolder, scene } = inputs;
 
     updates.scheduleCharacterTraits({
       queueKey: workspaceFolder.uri.toString(),
@@ -302,11 +357,17 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       draftBody: pipelineResult.draftBody,
       detectedCharacterCards,
       aiService,
-      fileSystem,
+      fileSystem: this.host.fileSystem,
       resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
-      logger,
+      logger: this.host.logger,
       onComplete: options.onTraitsUpdateComplete,
     });
+  }
+
+  private scheduleBibleCandidates(updateContext: PostGenerationUpdateContext): void {
+    const { updates, inputs, aiService, pipelineResult, detectedCharacterCards } = updateContext;
+    const { workspaceFolder, paths, scene } = inputs;
+    const { fileSystem, logger } = this.host;
 
     updates.scheduleBibleCandidates({
       queueKey: `${workspaceFolder.uri.toString()}#bible`,
@@ -319,6 +380,12 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
       logger,
     });
+  }
+
+  private scheduleCardCandidates(updateContext: PostGenerationUpdateContext): void {
+    const { updates, inputs, aiService, pipelineResult, detectedCharacterCards } = updateContext;
+    const { workspaceFolder, paths, scene, context } = inputs;
+    const { fileSystem, logger } = this.host;
 
     updates.scheduleCardCandidates({
       queueKey: `${workspaceFolder.uri.toString()}#cards`,
@@ -333,16 +400,21 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),
       logger,
     });
+  }
+
+  private scheduleBackgroundCharacters(updateContext: PostGenerationUpdateContext): void {
+    const { updates, inputs, detectedCharacterCards } = updateContext;
+    const { workspaceFolder, context } = inputs;
 
     if (context.background) {
       updates.scheduleBackgroundCharacters({
         queueKey: `${workspaceFolder.uri.toString()}#background`,
         backgroundId: context.background.id,
         detectedCharacterCards,
-        fileSystem,
+        fileSystem: this.host.fileSystem,
         resolveBackgroundCardUri: (backgroundId) =>
           backgroundCardPath(workspaceFolder.uri, backgroundId),
-        logger,
+        logger: this.host.logger,
       });
     }
   }
@@ -351,69 +423,26 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     inputs: SceneGenerationInputs,
     options: GenerateDraftWorkflowOptions,
   ): Promise<GenerateDraftResult> {
-    const { workspaceFolder, paths, threadPaths, scene, project, context, previousContext } =
-      inputs;
-
-    const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceFolder.uri);
-    const pipelineProviders: SceneGenerationPipelineTaskProviders = {
-      personaGeneration: this.ai.gateway.getTaskProvider('personaGeneration'),
-      sceneSkeleton: this.ai.gateway.getTaskProvider('sceneSkeleton'),
-      sceneBeatActor: this.ai.gateway.getTaskProvider('sceneBeatActor'),
-      sceneBeatArbiter: this.ai.gateway.getTaskProvider('sceneBeatArbiter'),
-      sceneBeatJudge: this.ai.gateway.getTaskProvider('sceneBeatJudge'),
-      sceneDialoguePolish: this.ai.gateway.getTaskProvider('sceneDialoguePolish'),
-      sceneDialogueAttribution: this.ai.gateway.getTaskProvider('sceneDialogueAttribution'),
-      sceneSectionExpansion: this.ai.gateway.getTaskProvider('sceneSectionExpansion'),
-    };
+    const aiService: StoryboardAiService = this.ai.gateway.createService(
+      inputs.workspaceFolder.uri,
+    );
+    const pipelineProviders: SceneGenerationPipelineTaskProviders = this.resolvePipelineProviders();
     const cacheProviders = {
       ...pipelineProviders,
       traitsExtraction: this.ai.gateway.getTaskProvider('traitsExtraction'),
     } satisfies Partial<Record<AiTaskName, AiProviderId>>;
 
-    const backgroundId: string | undefined = context.background?.id;
-    const backgroundRecentExcerpt: string | undefined = backgroundId
-      ? await new DraftRepository(this.host.fileSystem).findRecentBackgroundExcerpt(
-          paths,
-          scene.stem,
-          backgroundId,
-        )
-      : undefined;
+    const backgroundRecentExcerpt: string | undefined =
+      await this.findBackgroundRecentExcerpt(inputs);
 
     try {
-      const pipelineResult: RunSceneGenerationPipelineResult = await new SceneGenerationPipeline({
-        sceneStem: scene.stem,
-        context,
+      const pipelineResult: RunSceneGenerationPipelineResult = await this.createScenePipeline(
+        inputs,
+        options,
         aiService,
-        format: project.format,
-        styleDirective: buildStyleDirective(
-          project.setting,
-          scene.frontmatter.relationStage,
-          scene.frontmatter.targetWordCount,
-          scene.body,
-          inputs.narration,
-        ),
-        previousContext,
-        canonFactLines: inputs.canonFactLines,
-        characterKnowledge: inputs.characterKnowledge,
-        characterRelations: inputs.characterRelations,
-        providers: pipelineProviders,
-        onProgress: (stage, current, total): void => {
-          if (options.shouldCancel?.()) {
-            return;
-          }
-
-          options.onPipelineProgress?.(stage, current, total);
-        },
-        shouldCancel: options.shouldCancel,
-        useContextCondense: this.host.configBridge.isAiContextCondenseEnabled(),
-        sectionOutputLimit: this.host.configBridge.getSectionOutputLimit(),
-        tuning: this.host.configBridge.getSceneGenerationTuning(),
-        personaStore: new PersonaMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
-        backgroundStore: new BackgroundMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
-        backgroundFactConflictStore: new BackgroundFactConflictStore(this.host.fileSystem, paths),
-        dialogueCorpus: new SceneDialogueStore(this.host.fileSystem, threadPaths),
+        pipelineProviders,
         backgroundRecentExcerpt,
-      }).run();
+      ).run();
 
       return await this.persistGeneratedDraft(
         inputs,
@@ -423,22 +452,107 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
         cacheProviders,
       );
     } catch (error) {
-      if (error instanceof SceneGenerationPipelineCancelledError) {
-        return { ok: false, kind: 'cancelled' };
-      }
-
-      if (error instanceof AiProviderError && error.code === 'usage-limit') {
-        return { ok: false, kind: 'failed', reason: 'usage-limit', message: error.message };
-      }
-
-      const message: string = extractErrorMessage(error);
-      return reportWorkflowFailure(
-        options,
-        'Draft generation failed',
-        error,
-        `초안 생성에 실패했습니다: ${message}`,
-      );
+      return this.describeGenerationFailure(error, options);
     }
+  }
+
+  private resolvePipelineProviders(): SceneGenerationPipelineTaskProviders {
+    return {
+      personaGeneration: this.ai.gateway.getTaskProvider('personaGeneration'),
+      sceneSkeleton: this.ai.gateway.getTaskProvider('sceneSkeleton'),
+      sceneBeatActor: this.ai.gateway.getTaskProvider('sceneBeatActor'),
+      sceneBeatArbiter: this.ai.gateway.getTaskProvider('sceneBeatArbiter'),
+      sceneBeatJudge: this.ai.gateway.getTaskProvider('sceneBeatJudge'),
+      sceneDialoguePolish: this.ai.gateway.getTaskProvider('sceneDialoguePolish'),
+      sceneDialogueAttribution: this.ai.gateway.getTaskProvider('sceneDialogueAttribution'),
+      sceneSectionExpansion: this.ai.gateway.getTaskProvider('sceneSectionExpansion'),
+    };
+  }
+
+  private async findBackgroundRecentExcerpt(
+    inputs: SceneGenerationInputs,
+  ): Promise<string | undefined> {
+    const backgroundId: string | undefined = inputs.context.background?.id;
+
+    return backgroundId
+      ? await new DraftRepository(this.host.fileSystem).findRecentBackgroundExcerpt(
+          inputs.paths,
+          inputs.scene.stem,
+          backgroundId,
+        )
+      : undefined;
+  }
+
+  private createScenePipeline(
+    inputs: SceneGenerationInputs,
+    options: GenerateDraftWorkflowOptions,
+    aiService: StoryboardAiService,
+    providers: SceneGenerationPipelineTaskProviders,
+    backgroundRecentExcerpt: string | undefined,
+  ): SceneGenerationPipeline {
+    const { paths, threadPaths, scene, project, context, previousContext } = inputs;
+
+    return new SceneGenerationPipeline({
+      sceneStem: scene.stem,
+      context,
+      aiService,
+      format: project.format,
+      styleDirective: this.buildSceneStyleDirective(inputs),
+      previousContext,
+      canonFactLines: inputs.canonFactLines,
+      characterKnowledge: inputs.characterKnowledge,
+      characterRelations: inputs.characterRelations,
+      providers,
+      onProgress: (stage, current, total): void => {
+        if (options.shouldCancel?.()) {
+          return;
+        }
+
+        options.onPipelineProgress?.(stage, current, total);
+      },
+      shouldCancel: options.shouldCancel,
+      useContextCondense: this.host.configBridge.isAiContextCondenseEnabled(),
+      sectionOutputLimit: this.host.configBridge.getSectionOutputLimit(),
+      tuning: this.host.configBridge.getSceneGenerationTuning(),
+      personaStore: new PersonaMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
+      backgroundStore: new BackgroundMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
+      backgroundFactConflictStore: new BackgroundFactConflictStore(this.host.fileSystem, paths),
+      dialogueCorpus: new SceneDialogueStore(this.host.fileSystem, threadPaths),
+      backgroundRecentExcerpt,
+    });
+  }
+
+  private buildSceneStyleDirective(inputs: SceneGenerationInputs): StyleDirective | undefined {
+    const { project, scene } = inputs;
+
+    return buildStyleDirective(
+      project.setting,
+      scene.frontmatter.relationStage,
+      scene.frontmatter.targetWordCount,
+      scene.body,
+      inputs.narration,
+    );
+  }
+
+  private describeGenerationFailure(
+    error: unknown,
+    options: GenerateDraftWorkflowOptions,
+  ): GenerateDraftResult {
+    if (error instanceof SceneGenerationPipelineCancelledError) {
+      return { ok: false, kind: 'cancelled' };
+    }
+
+    if (error instanceof AiProviderError && error.code === 'usage-limit') {
+      return { ok: false, kind: 'failed', reason: 'usage-limit', message: error.message };
+    }
+
+    const message: string = extractErrorMessage(error);
+    return reportWorkflowFailure(
+      options,
+      'Draft generation failed',
+      error,
+      `초안 생성에 실패했습니다: ${message}`,
+    );
   }
 
   private async generateDraftForWorkspaceSceneWorkflow(
