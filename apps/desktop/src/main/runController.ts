@@ -30,6 +30,7 @@ import {
   ProjectRepository,
 } from '@storyboard/story-engine';
 
+import type { NovelRunResult } from '@storyboard/story-app';
 import type {
   RunApprovalRequest,
   RunKind,
@@ -52,6 +53,12 @@ export interface RunControllerDependencies {
   readonly translate: (key: MessageKey, params?: MessageParams) => string;
   readonly snapshot: (message: string) => Promise<void>;
   readonly onChange: (snapshot: RunSnapshot) => void;
+}
+
+interface RunCompletion {
+  readonly outcome: RunOutcome;
+  readonly message: string;
+  readonly snapshotMessage: string;
 }
 
 interface PendingApproval extends RunApprovalRequest {
@@ -144,20 +151,13 @@ export class RunController {
     mode: NovelRunMode,
     resume: boolean,
   ): Promise<ServiceResult<RunSnapshot>> {
-    const { container, translate } = this.dependencies;
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
-    const project: StoryboardProject = await new ProjectRepository(container.fileSystem).read(
-      paths.projectJson,
-    );
-    const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
+    const { translate } = this.dependencies;
+    const project: StoryboardProject = await this.readProject();
+    const contractRefusal: ServiceResult<RunSnapshot> | undefined =
+      this.refuseIncompleteContract(project);
 
-    if (readiness.missing.length > 0) {
-      return fail(
-        'contract-incomplete',
-        translate('error.contractIncomplete', {
-          fields: readiness.missing.map((key) => contractFieldLabels[key]).join(', '),
-        }),
-      );
+    if (contractRefusal !== undefined) {
+      return contractRefusal;
     }
 
     const resumeState: NovelRunState | undefined = resume
@@ -181,37 +181,7 @@ export class RunController {
       }),
     );
 
-    void this.finishWhenDone(
-      run,
-      container.novel
-        .run({
-          workspaceUri: container.workspaceRoot,
-          project,
-          runMode,
-          ...(resumeState === undefined ? {} : { resumeState }),
-          onProgress: (stage, message) => this.recordProgress(run, stage, message),
-          requestApproval: (kind, info) => this.askApproval(run, kind, info),
-          shouldCancel: () => false,
-          shouldPause: () => run.isPauseRequested,
-          onBudgetReached: () => this.noteBudgetReached(run),
-        })
-        .then((result) => {
-          const outcome: RunOutcome =
-            result.outcome === 'paused' && result.spending.isOverBudget ? 'budget' : result.outcome;
-          const message: string =
-            outcome === 'budget'
-              ? translate('run.outcome.budget', { budget: result.spending.budgetUsd })
-              : outcome === 'completed'
-                ? translate('run.outcome.completed')
-                : result.message;
-
-          return {
-            outcome,
-            message,
-            snapshotMessage: translate('snapshot.novelFinished', { message }),
-          };
-        }),
-    );
+    void this.finishWhenDone(run, this.runNovel(run, project, runMode, resumeState));
 
     return succeed(this.snapshot());
   }
@@ -327,9 +297,73 @@ export class RunController {
     return succeed(run);
   }
 
+  private async readProject(): Promise<StoryboardProject> {
+    const { container } = this.dependencies;
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
+
+    return await new ProjectRepository(container.fileSystem).read(paths.projectJson);
+  }
+
+  private refuseIncompleteContract(
+    project: StoryboardProject,
+  ): ServiceResult<RunSnapshot> | undefined {
+    const readiness: GenerationContractReadiness = validateGenerationContract(project.setting);
+
+    if (readiness.missing.length === 0) {
+      return undefined;
+    }
+
+    return fail(
+      'contract-incomplete',
+      this.dependencies.translate('error.contractIncomplete', {
+        fields: readiness.missing.map((key) => contractFieldLabels[key]).join(', '),
+      }),
+    );
+  }
+
+  private async runNovel(
+    run: ActiveRun,
+    project: StoryboardProject,
+    runMode: NovelRunMode,
+    resumeState: NovelRunState | undefined,
+  ): Promise<RunCompletion> {
+    const { container } = this.dependencies;
+    const result: NovelRunResult = await container.novel.run({
+      workspaceUri: container.workspaceRoot,
+      project,
+      runMode,
+      ...(resumeState === undefined ? {} : { resumeState }),
+      onProgress: (stage, message) => this.recordProgress(run, stage, message),
+      requestApproval: (kind, info) => this.askApproval(run, kind, info),
+      shouldCancel: () => false,
+      shouldPause: () => run.isPauseRequested,
+      onBudgetReached: () => this.noteBudgetReached(run),
+    });
+
+    return this.describeNovelCompletion(result);
+  }
+
+  private describeNovelCompletion(result: NovelRunResult): RunCompletion {
+    const { translate } = this.dependencies;
+    const outcome: RunOutcome =
+      result.outcome === 'paused' && result.spending.isOverBudget ? 'budget' : result.outcome;
+    const message: string =
+      outcome === 'budget'
+        ? translate('run.outcome.budget', { budget: result.spending.budgetUsd })
+        : outcome === 'completed'
+          ? translate('run.outcome.completed')
+          : result.message;
+
+    return {
+      outcome,
+      message,
+      snapshotMessage: translate('snapshot.novelFinished', { message }),
+    };
+  }
+
   private async finishWhenDone(
     run: ActiveRun,
-    work: Promise<{ outcome: RunOutcome; message: string; snapshotMessage: string }>,
+    work: Promise<RunCompletion>,
   ): Promise<void> {
     let outcome: RunOutcome;
     let message: string;
@@ -372,7 +406,7 @@ export class RunController {
     sceneUri: ReturnType<typeof scenePath>,
     title: string,
     force: boolean,
-  ): Promise<{ outcome: RunOutcome; message: string; snapshotMessage: string }> {
+  ): Promise<RunCompletion> {
     const { container, translate } = this.dependencies;
     const shouldCancel = (): boolean => run.isPauseRequested;
     const draftGeneration: GenerateDraftResult = await container.drafts.generate({
