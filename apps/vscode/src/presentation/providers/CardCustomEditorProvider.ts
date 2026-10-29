@@ -23,6 +23,7 @@ import {
 import type {
   SceneCard,
   WorkspaceCard,
+  StoryboardRequestPayload,
   StoryboardResponsePayload,
   StoryboardCard,
   CardCollectProposal,
@@ -137,7 +138,7 @@ async function initializeCardEditor(
 
   const bridge: StoryboardWebviewBridge = createWebviewBridge(
     webviewPanel.webview,
-    createCardEditorHandlers(document, dependencies, previewProvider),
+    new CardEditorRpc(document, dependencies, previewProvider).handlers(),
   );
   const documentChangeSubscription: vscode.Disposable = vscode.workspace.onDidChangeTextDocument(
     (event) => {
@@ -167,103 +168,130 @@ async function postCardChanged(
   });
 }
 
-function createCardEditorHandlers(
-  document: vscode.TextDocument,
-  dependencies: CardCustomEditorDependencies,
-  previewProvider: VirtualDocumentStore,
-): StoryboardRpcHandlers {
-  return {
-    'cards.read': async (): Promise<{ readonly card: WorkspaceCard }> => ({
-      card: await loadEditorCard(document),
-    }),
-    'cards.write': async (payload): Promise<{ readonly card: WorkspaceCard }> => {
-      await persistEditorCard(document, payload.card);
-      return { card: payload.card };
-    },
-    'cards.writeRaw': async (
-      payload,
-    ): Promise<{ readonly card: WorkspaceCard; readonly rawText: string }> => {
-      const card: WorkspaceCard = parseWorkspaceCard(payload.rawText);
-      const rawText: string = await persistEditorCard(document, card);
-      return { card, rawText };
-    },
-    'cards.structureScene': async (): Promise<
-      StoryboardResponsePayload<'cards.structureScene'>
-    > => {
-      const card: WorkspaceCard = await loadEditorCard(document);
+class CardEditorRpc {
+  public constructor(
+    private readonly document: vscode.TextDocument,
+    private readonly dependencies: CardCustomEditorDependencies,
+    private readonly previewProvider: VirtualDocumentStore,
+  ) {}
 
-      if (card.type !== 'scene') {
-        throw new Error('씬 카드에서만 구조화를 제안할 수 있습니다.');
-      }
+  public handlers(): StoryboardRpcHandlers {
+    return {
+      'cards.read': this.readCard,
+      'cards.write': this.writeCard,
+      'cards.writeRaw': this.writeRawCard,
+      'cards.structureScene': this.structureScene,
+      'cards.collect': this.collectProposals,
+      'cards.applyCollect': this.applyCollect,
+      'cards.previewCollect': this.previewCollect,
+    };
+  }
 
-      const summary: string = card.summary?.trim() ?? '';
-      if (summary.length === 0) {
-        throw new Error('summary가 비어 있어 구조화를 제안할 수 없습니다.');
-      }
+  private readonly readCard = async (): Promise<{ readonly card: WorkspaceCard }> => ({
+    card: await loadEditorCard(this.document),
+  });
 
-      const missingFields: SceneStructureFieldKey[] = collectMissingStructureFields(card);
-      if (missingFields.length === 0) {
-        return { proposal: {} };
-      }
+  private readonly writeCard = async (
+    payload: StoryboardRequestPayload<'cards.write'>,
+  ): Promise<{ readonly card: WorkspaceCard }> => {
+    await persistEditorCard(this.document, payload.card);
+    return { card: payload.card };
+  };
 
-      const fileName: string = document.uri.path.split('/').pop() ?? '';
-      const sceneStem: string = parseSceneFileName(fileName)?.stem ?? card.id;
-      const proposal: SceneStructureProposal = await dependencies.aiGateway
-        .createService(document.uri)
-        .proposeSceneStructure(
-          {
-            sceneSummary: summary,
-            missingFields,
-            knownFields: describeKnownStructureFields(card),
-          },
-          {
-            providerId: dependencies.aiGateway.getTaskProvider('sceneStructure'),
-            attribution: { primary: { kind: 'scene', id: sceneStem } },
-          },
-        );
+  private readonly writeRawCard = async (
+    payload: StoryboardRequestPayload<'cards.writeRaw'>,
+  ): Promise<{ readonly card: WorkspaceCard; readonly rawText: string }> => {
+    const card: WorkspaceCard = parseWorkspaceCard(payload.rawText);
+    const rawText: string = await persistEditorCard(this.document, card);
+    return { card, rawText };
+  };
 
-      return { proposal };
-    },
-    'cards.collect': async (): Promise<StoryboardResponsePayload<'cards.collect'>> => {
-      const card: StoryboardCard = parseCard(document.getText());
-      const workspaceRoot: vscode.Uri = getDocumentWorkspaceRoot(document);
-      const proposals: CardCollectProposal[] = await dependencies.cards.collectProposals({
-        workspaceRoot,
-        card,
-      });
+  private readonly structureScene = async (): Promise<
+    StoryboardResponsePayload<'cards.structureScene'>
+  > => {
+    const card: WorkspaceCard = await loadEditorCard(this.document);
 
-      return { proposals };
-    },
-    'cards.applyCollect': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'cards.applyCollect'>> => {
-      const card: StoryboardCard = parseCard(document.getText());
-      const merged: StoryboardCard = applyCardCollectProposals(card, payload.accepted);
-      await replaceDocumentText(document, serializeCard(merged));
+    if (card.type !== 'scene') {
+      throw new Error('씬 카드에서만 구조화를 제안할 수 있습니다.');
+    }
 
-      return { card: merged };
-    },
-    'cards.previewCollect': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'cards.previewCollect'>> => {
-      const card: StoryboardCard = parseCard(document.getText());
-      const merged: StoryboardCard = applyCardCollectProposals(card, payload.accepted);
-      const previewUri: vscode.Uri = collectPreviewUri(document.uri);
-      previewProvider.setContent(previewUri, serializeCard(merged));
+    const summary: string = card.summary?.trim() ?? '';
+    if (summary.length === 0) {
+      throw new Error('summary가 비어 있어 구조화를 제안할 수 없습니다.');
+    }
 
-      const fileName: string = document.uri.path.split('/').at(-1) ?? 'card';
-      await vscode.commands.executeCommand(
-        'vscode.diff',
-        document.uri,
-        previewUri,
-        `${fileName} ↔ 수집 제안`,
-        {
-          preview: true,
-        },
-      );
+    const missingFields: SceneStructureFieldKey[] = collectMissingStructureFields(card);
+    if (missingFields.length === 0) {
+      return { proposal: {} };
+    }
 
-      return {};
-    },
+    return { proposal: await this.proposeSceneStructure(card, summary, missingFields) };
+  };
+
+  private async proposeSceneStructure(
+    card: SceneCard,
+    summary: string,
+    missingFields: readonly SceneStructureFieldKey[],
+  ): Promise<SceneStructureProposal> {
+    const { aiGateway } = this.dependencies;
+    const fileName: string = this.document.uri.path.split('/').pop() ?? '';
+    const sceneStem: string = parseSceneFileName(fileName)?.stem ?? card.id;
+    return await aiGateway.createService(this.document.uri).proposeSceneStructure(
+      {
+        sceneSummary: summary,
+        missingFields,
+        knownFields: describeKnownStructureFields(card),
+      },
+      {
+        providerId: aiGateway.getTaskProvider('sceneStructure'),
+        attribution: { primary: { kind: 'scene', id: sceneStem } },
+      },
+    );
+  }
+
+  private readonly collectProposals = async (): Promise<
+    StoryboardResponsePayload<'cards.collect'>
+  > => {
+    const card: StoryboardCard = parseCard(this.document.getText());
+    const workspaceRoot: vscode.Uri = getDocumentWorkspaceRoot(this.document);
+    const proposals: CardCollectProposal[] = await this.dependencies.cards.collectProposals({
+      workspaceRoot,
+      card,
+    });
+
+    return { proposals };
+  };
+
+  private readonly applyCollect = async (
+    payload: StoryboardRequestPayload<'cards.applyCollect'>,
+  ): Promise<StoryboardResponsePayload<'cards.applyCollect'>> => {
+    const card: StoryboardCard = parseCard(this.document.getText());
+    const merged: StoryboardCard = applyCardCollectProposals(card, payload.accepted);
+    await replaceDocumentText(this.document, serializeCard(merged));
+
+    return { card: merged };
+  };
+
+  private readonly previewCollect = async (
+    payload: StoryboardRequestPayload<'cards.previewCollect'>,
+  ): Promise<StoryboardResponsePayload<'cards.previewCollect'>> => {
+    const card: StoryboardCard = parseCard(this.document.getText());
+    const merged: StoryboardCard = applyCardCollectProposals(card, payload.accepted);
+    const previewUri: vscode.Uri = collectPreviewUri(this.document.uri);
+    this.previewProvider.setContent(previewUri, serializeCard(merged));
+
+    const fileName: string = this.document.uri.path.split('/').at(-1) ?? 'card';
+    await vscode.commands.executeCommand(
+      'vscode.diff',
+      this.document.uri,
+      previewUri,
+      `${fileName} ↔ 수집 제안`,
+      {
+        preview: true,
+      },
+    );
+
+    return {};
   };
 }
 

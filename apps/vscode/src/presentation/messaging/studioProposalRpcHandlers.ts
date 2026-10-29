@@ -110,58 +110,13 @@ export class StudioProposalRpc {
       return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
     }
 
-    const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
-      vscodeFileSystem,
-    ).readEntityContext(root, entity, sceneFocusOf(proposal.targetFile));
+    const context: PatchableContextResult = await loadPatchableContext(root, entity, proposal);
 
-    if (!entityContext?.targetUri || entityContext.baseline === undefined) {
-      return { ok: false, message: '수정할 파일을 찾을 수 없습니다.' };
+    if (!context.ok) {
+      return context;
     }
 
-    if (entityContext.targetFile !== proposal.targetFile) {
-      return { ok: false, message: `${proposal.targetFile} 를 더 이상 대상으로 삼을 수 없습니다.` };
-    }
-
-    if (hashBaseline(entityContext.baseline) !== proposal.baselineHash) {
-      return { ok: false, message: staleBaselineMessage };
-    }
-
-    const isDraft: boolean = entityContext.patchTarget === 'draft';
-    const patchBaseline: string = isDraft
-      ? extractDraftBody(entityContext.baseline)
-      : entityContext.baseline;
-
-    const patchOutcome: StudioPatchResult = applyStudioPatch(
-      patchBaseline,
-      proposal.patch,
-      entityContext.patchTarget,
-    );
-
-    if (!patchOutcome.ok) {
-      return { ok: false, message: patchOutcome.message };
-    }
-
-    if (entityContext.patchTarget === 'sceneCard') {
-      const brokenReference: string | undefined = await findBrokenSceneReference(
-        root,
-        proposal.patch,
-      );
-
-      if (brokenReference !== undefined) {
-        return { ok: false, message: brokenReference };
-      }
-    }
-
-    return {
-      ok: true,
-      targetUri: entityContext.targetUri,
-      targetFile: entityContext.targetFile,
-      text: isDraft
-        ? rewriteDraftBody(entityContext.baseline, patchOutcome.text)
-        : patchOutcome.text,
-      changedFields: patchOutcome.changedFields,
-      lengthDelta: patchOutcome.text.trim().length - patchBaseline.trim().length,
-    };
+    return await applyProposalPatch(root, proposal, context);
   }
 
   private async archiveDraftBeforeApply(
@@ -231,7 +186,91 @@ type PreparedApply =
       readonly changedFields: readonly string[];
       readonly lengthDelta: number;
     }
-  | { readonly ok: false; readonly message: string };
+  | PreparedApplyFailure;
+
+interface PreparedApplyFailure {
+  readonly ok: false;
+  readonly message: string;
+}
+
+interface PatchableContext {
+  readonly ok: true;
+  readonly targetUri: StoryUri;
+  readonly targetFile: string;
+  readonly patchTarget: StudioEntityContext['patchTarget'];
+  readonly baseline: string;
+}
+
+type PatchableContextResult = PatchableContext | PreparedApplyFailure;
+
+async function loadPatchableContext(
+  root: vscode.Uri,
+  entity: StudioEntity,
+  proposal: StudioProposalTurn,
+): Promise<PatchableContextResult> {
+  const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
+    vscodeFileSystem,
+  ).readEntityContext(root, entity, sceneFocusOf(proposal.targetFile));
+
+  if (!entityContext?.targetUri || entityContext.baseline === undefined) {
+    return { ok: false, message: '수정할 파일을 찾을 수 없습니다.' };
+  }
+
+  if (entityContext.targetFile !== proposal.targetFile) {
+    return { ok: false, message: `${proposal.targetFile} 를 더 이상 대상으로 삼을 수 없습니다.` };
+  }
+
+  if (hashBaseline(entityContext.baseline) !== proposal.baselineHash) {
+    return { ok: false, message: staleBaselineMessage };
+  }
+
+  return {
+    ok: true,
+    targetUri: entityContext.targetUri,
+    targetFile: entityContext.targetFile,
+    patchTarget: entityContext.patchTarget,
+    baseline: entityContext.baseline,
+  };
+}
+
+async function applyProposalPatch(
+  root: vscode.Uri,
+  proposal: StudioProposalTurn,
+  context: PatchableContext,
+): Promise<PreparedApply> {
+  const isDraft: boolean = context.patchTarget === 'draft';
+  const patchBaseline: string = isDraft ? extractDraftBody(context.baseline) : context.baseline;
+
+  const patchOutcome: StudioPatchResult = applyStudioPatch(
+    patchBaseline,
+    proposal.patch,
+    context.patchTarget,
+  );
+
+  if (!patchOutcome.ok) {
+    return { ok: false, message: patchOutcome.message };
+  }
+
+  if (context.patchTarget === 'sceneCard') {
+    const brokenReference: string | undefined = await findBrokenSceneReference(
+      root,
+      proposal.patch,
+    );
+
+    if (brokenReference !== undefined) {
+      return { ok: false, message: brokenReference };
+    }
+  }
+
+  return {
+    ok: true,
+    targetUri: context.targetUri,
+    targetFile: context.targetFile,
+    text: isDraft ? rewriteDraftBody(context.baseline, patchOutcome.text) : patchOutcome.text,
+    changedFields: patchOutcome.changedFields,
+    lengthDelta: patchOutcome.text.trim().length - patchBaseline.trim().length,
+  };
+}
 
 async function findBrokenSceneReference(
   root: vscode.Uri,
