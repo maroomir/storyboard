@@ -6,6 +6,13 @@ import { availableProviderIds } from '@/adapters/availableProviders';
 import type { ProviderModelConfig, TaskAiConfigOverride } from '@storyboard/story-ai';
 import { aiTaskNames, storyboardSettingCatalog } from '@storyboard/story-model';
 import { success } from '@/commands/outcomes';
+import type { CliContainer } from '@/container';
+
+interface ConfigRow {
+  readonly key: string;
+  readonly value: unknown;
+  readonly origin: string;
+}
 
 export class ConfigShowCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -17,20 +24,42 @@ export class ConfigShowCommand implements ICommandHandler {
   };
 
   public async execute({ container }: CommandContext): Promise<CommandOutcome> {
-    const { configBridge } = container;
     const editor: ConfigEditor = new ConfigEditor(container);
-    const rows: Array<{ key: string; value: unknown; origin: string }> = [
-      {
-        key: 'ai.provider.default',
-        value: configBridge.isDefaultProviderConfigured()
-          ? configBridge.getDefaultProvider()
-          : null,
-        origin: editor.describeOrigin('ai.provider.default'),
-      },
+    const rows: ConfigRow[] = [
+      this.describeDefaultProviderRow(container, editor),
+      ...this.describeProviderRows(container, editor),
+      ...this.describeTaskRows(container, editor),
+      ...this.describeSettingRows(container, editor),
     ];
 
+    const width: number = Math.max(...rows.map((row) => row.key.length));
+    const lines: string[] = rows.map(
+      (row) =>
+        `${row.key.padEnd(width)}  ${String(row.value ?? '(없음)').padEnd(24)}  ${row.origin}`,
+    );
+    const files: string[] = [
+      `공통 설정: ${container.homePaths.configFile}`,
+      ...(container.workspaceConfigFile ? [`이 작품 설정: ${container.workspaceConfigFile}`] : []),
+    ];
+
+    return success([...files, '', ...lines].join('\n'), { rows, files });
+  }
+
+  private describeDefaultProviderRow(container: CliContainer, editor: ConfigEditor): ConfigRow {
+    const { configBridge } = container;
+
+    return {
+      key: 'ai.provider.default',
+      value: configBridge.isDefaultProviderConfigured() ? configBridge.getDefaultProvider() : null,
+      origin: editor.describeOrigin('ai.provider.default'),
+    };
+  }
+
+  private describeProviderRows(container: CliContainer, editor: ConfigEditor): ConfigRow[] {
+    const rows: ConfigRow[] = [];
+
     for (const providerId of availableProviderIds()) {
-      const runtime: ProviderModelConfig = configBridge.getProviderConfig(providerId);
+      const runtime: ProviderModelConfig = container.configBridge.getProviderConfig(providerId);
       for (const key of providerKeys) {
         const value: string | number | undefined = runtime[key];
         if (value !== undefined) {
@@ -40,8 +69,15 @@ export class ConfigShowCommand implements ICommandHandler {
       }
     }
 
+    return rows;
+  }
+
+  private describeTaskRows(container: CliContainer, editor: ConfigEditor): ConfigRow[] {
+    const rows: ConfigRow[] = [];
+
     for (const taskName of aiTaskNames) {
-      const route: TaskAiConfigOverride | null = configBridge.getTaskAiConfigOverride(taskName);
+      const route: TaskAiConfigOverride | null =
+        container.configBridge.getTaskAiConfigOverride(taskName);
       if (route === null) {
         continue;
       }
@@ -58,24 +94,14 @@ export class ConfigShowCommand implements ICommandHandler {
       }
     }
 
-    for (const definition of storyboardSettingCatalog) {
-      rows.push({
-        key: definition.key,
-        value: configBridge.getSettingValue(definition.key),
-        origin: editor.describeOrigin(definition.key),
-      });
-    }
+    return rows;
+  }
 
-    const width: number = Math.max(...rows.map((row) => row.key.length));
-    const lines: string[] = rows.map(
-      (row) =>
-        `${row.key.padEnd(width)}  ${String(row.value ?? '(없음)').padEnd(24)}  ${row.origin}`,
-    );
-    const files: string[] = [
-      `공통 설정: ${container.homePaths.configFile}`,
-      ...(container.workspaceConfigFile ? [`이 작품 설정: ${container.workspaceConfigFile}`] : []),
-    ];
-
-    return success([...files, '', ...lines].join('\n'), { rows, files });
+  private describeSettingRows(container: CliContainer, editor: ConfigEditor): ConfigRow[] {
+    return storyboardSettingCatalog.map((definition) => ({
+      key: definition.key,
+      value: container.configBridge.getSettingValue(definition.key),
+      origin: editor.describeOrigin(definition.key),
+    }));
   }
 }

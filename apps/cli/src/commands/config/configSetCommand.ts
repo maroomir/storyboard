@@ -13,6 +13,7 @@ import {
 import { availableProviderIds, isAvailableProviderId } from '@/adapters/availableProviders';
 import { flagString } from '@/cliArguments';
 import { failure } from '@/commands/outcomes';
+import type { CliContainer } from '@/container';
 import {
   decimalSettingStep,
   extractErrorMessage,
@@ -38,7 +39,6 @@ export class ConfigSetCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const { configBridge } = container;
     const editor: ConfigEditor = new ConfigEditor(container);
     const key: string | undefined = flagString(args.flags, 'key') ?? args.positionals[0];
     const raw: string | undefined = flagString(args.flags, 'value') ?? args.positionals[1];
@@ -49,25 +49,7 @@ export class ConfigSetCommand implements ICommandHandler {
     }
 
     if (key === 'ai.provider.default') {
-      if (!isAvailableProviderId(raw)) {
-        return failure(
-          `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
-        );
-      }
-
-      const modelProblem: string | undefined =
-        modelFlag === undefined ? undefined : findProviderModelProblem(raw, modelFlag);
-      if (modelProblem !== undefined) {
-        return failure(modelProblem);
-      }
-
-      await configBridge.setDefaultProvider(raw);
-      if (modelFlag === undefined) {
-        return editor.describeSaved(key, raw);
-      }
-
-      await configBridge.setProviderModel(raw, modelFlag);
-      return editor.describeSaved(key, raw, [`providers.${raw}.model = ${modelFlag}`]);
+      return this.setDefaultProvider(container, editor, raw, modelFlag);
     }
 
     const taskMatch: RegExpExecArray | null = taskKeyPattern.exec(key);
@@ -89,25 +71,68 @@ export class ConfigSetCommand implements ICommandHandler {
       container,
     ).setKey(key, raw);
 
-    if (hiddenProviderOutcome !== undefined) {
-      return hiddenProviderOutcome;
+    return hiddenProviderOutcome ?? this.setProviderOrSetting(container, editor, key, raw);
+  }
+
+  private async setDefaultProvider(
+    container: CliContainer,
+    editor: ConfigEditor,
+    raw: string,
+    modelFlag: string | undefined,
+  ): Promise<CommandOutcome> {
+    const key: string = 'ai.provider.default';
+
+    if (!isAvailableProviderId(raw)) {
+      return failure(
+        `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
+      );
     }
 
+    const modelProblem: string | undefined =
+      modelFlag === undefined ? undefined : findProviderModelProblem(raw, modelFlag);
+    if (modelProblem !== undefined) {
+      return failure(modelProblem);
+    }
+
+    await container.configBridge.setDefaultProvider(raw);
+    if (modelFlag === undefined) {
+      return editor.describeSaved(key, raw);
+    }
+
+    await container.configBridge.setProviderModel(raw, modelFlag);
+    return editor.describeSaved(key, raw, [`providers.${raw}.model = ${modelFlag}`]);
+  }
+
+  private async setProviderOrSetting(
+    container: CliContainer,
+    editor: ConfigEditor,
+    key: string,
+    raw: string,
+  ): Promise<CommandOutcome> {
     const providerMatch: RegExpExecArray | null = new RegExp(
       `^providers\\.([a-z-]+)\\.(${providerKeys.join('|')})$`,
     ).exec(key);
 
-    if (providerMatch) {
-      const providerId: string = providerMatch[1] ?? '';
-      const field: ProviderKey = providerMatch[2] as ProviderKey;
-
-      if (!isAvailableProviderId(providerId)) {
-        return failure(`알 수 없는 프로바이더: ${providerId}`);
-      }
-
-      return editor.setProviderField(providerId, field, raw);
+    if (!providerMatch) {
+      return this.setSetting(container, editor, key, raw);
     }
 
+    const providerId: string = providerMatch[1] ?? '';
+    const field: ProviderKey = providerMatch[2] as ProviderKey;
+
+    if (!isAvailableProviderId(providerId)) {
+      return failure(`알 수 없는 프로바이더: ${providerId}`);
+    }
+
+    return editor.setProviderField(providerId, field, raw);
+  }
+
+  private async setSetting(
+    container: CliContainer,
+    editor: ConfigEditor,
+    key: string,
+    raw: string,
+  ): Promise<CommandOutcome> {
     const definition: StoryboardSettingDefinition | undefined = storyboardSettingCatalog.find(
       (entry) => entry.key === key,
     );
@@ -122,24 +147,30 @@ export class ConfigSetCommand implements ICommandHandler {
       return failure(`${key} 는 ${definition.kind} 값이어야 합니다.`);
     }
 
-    if (definition.kind === 'decimal' && !isOnDecimalStep(value as number)) {
-      return failure(
-        `${definition.label}(${key}) 값은 소수 둘째 자리(${decimalSettingStep} 단위)까지만 받습니다: ${raw}`,
-      );
-    }
+    const valueProblem: string | undefined = describeSettingValueProblem(definition, raw, value);
 
-    const rangeProblem: string | undefined = describeOutOfRange(definition, value);
-
-    if (rangeProblem !== undefined) {
-      return failure(rangeProblem);
+    if (valueProblem !== undefined) {
+      return failure(valueProblem);
     }
 
     try {
-      await configBridge.setSettingValue(key, value);
+      await container.configBridge.setSettingValue(key, value);
     } catch (error) {
       return failure(extractErrorMessage(error));
     }
 
     return editor.describeSaved(key, value);
   }
+}
+
+function describeSettingValueProblem(
+  definition: StoryboardSettingDefinition,
+  raw: string,
+  value: string | number | boolean,
+): string | undefined {
+  if (definition.kind === 'decimal' && !isOnDecimalStep(value as number)) {
+    return `${definition.label}(${definition.key}) 값은 소수 둘째 자리(${decimalSettingStep} 단위)까지만 받습니다: ${raw}`;
+  }
+
+  return describeOutOfRange(definition, value);
 }

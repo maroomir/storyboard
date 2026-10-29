@@ -39,6 +39,67 @@ function describeGitRepository(outcome: GitRepositoryOutcome): string {
   }
 }
 
+type ContractAnswers = Record<string, string>;
+
+interface ContractQuestion {
+  readonly flag: string;
+  readonly ask: (prompter: IPrompter) => Promise<ContractAnswers | undefined>;
+}
+
+const decideLater: string = '';
+
+async function askGenre(prompter: IPrompter): Promise<ContractAnswers | undefined> {
+  const genre: string | undefined = await prompter.askText({
+    title: '장르',
+    hint: '비우면 나중에',
+  });
+  if (genre === undefined) {
+    return undefined;
+  }
+  prompter.announce(`◇  장르  › ${genre.length > 0 ? genre : '나중에'}`);
+  return genre.length > 0 ? { genre } : {};
+}
+
+async function askPointOfView(prompter: IPrompter): Promise<ContractAnswers | undefined> {
+  const pov: string | undefined = await prompter.choose<string>({
+    title: '시점',
+    details: [],
+    options: [
+      ...pointOfViews.map((value) => ({ label: pointOfViewCatalog[value].optionLabel, value })),
+      { label: '나중에 정하기', value: decideLater },
+    ],
+  });
+  if (pov === undefined) {
+    return undefined;
+  }
+  prompter.announce(
+    `◇  시점  › ${pov === decideLater ? '나중에' : pointOfViewCatalog[pov as PointOfView].label}`,
+  );
+  return pov === decideLater ? {} : { pov };
+}
+
+async function askComposition(prompter: IPrompter): Promise<ContractAnswers | undefined> {
+  const composition: CompositionKind | undefined = await prompter.choose<CompositionKind>({
+    title: '구성',
+    details: [],
+    options: compositionKinds.map((value) => ({
+      label: compositionCatalog[value].optionLabel,
+      value,
+    })),
+  });
+  if (composition === undefined) {
+    return undefined;
+  }
+  prompter.announce(`◇  구성  › ${compositionCatalog[composition].label}`);
+  return { composition };
+}
+
+const contractQuestions: readonly ContractQuestion[] = [
+  { flag: 'genre', ask: askGenre },
+  { flag: 'pov', ask: askPointOfView },
+  { flag: 'composition', ask: askComposition },
+];
+
 export class InitCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'init',
@@ -82,30 +143,7 @@ export class InitCommand implements ICommandHandler {
     const isExistingWorkspace: boolean = await container.fileSystem.exists(paths.projectJson);
 
     if (flagBoolean(args.flags, 'repair')) {
-      if (!isExistingWorkspace) {
-        return failure('Storyboard 워크스페이스가 아닙니다: storyboard init --title "작품 이름"');
-      }
-
-      await new WorkspaceInitializer(container.fileSystem).createDirectories(paths);
-      await new WorkspaceInitializer(container.fileSystem).ensureGitignore(paths.gitignore);
-      const addedAgentGuides: string[] = await new WorkspaceInitializer(
-        container.fileSystem,
-      ).writeAgentGuidesIfMissing(paths);
-      const gitRepository: GitRepositoryOutcome = ensureGitRepository(
-        container.workspaceRoot.fsPath,
-      );
-      const sealedSceneOrders: readonly number[] = await this.sealStoryState(container, paths);
-
-      return success(
-        (sealedSceneOrders.length === 0
-          ? '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.'
-          : `디렉터리와 .gitignore 를 최신으로 맞추고, 이야기 상태 원장의 씬 ${formatSceneOrderRanges(sealedSceneOrders)}를 지금의 카드·씬으로 봉인했습니다. 작품 계약은 그대로입니다.`) +
-          (addedAgentGuides.length === 0
-            ? ''
-            : ` 에이전트 지침 ${addedAgentGuides.join(', ')} 를 추가했습니다.`) +
-          describeGitRepository(gitRepository),
-        { repaired: true, sealedSceneOrders, addedAgentGuides, gitRepository },
-      );
+      return this.repairWorkspace(container, paths, isExistingWorkspace);
     }
 
     if (isExistingWorkspace) {
@@ -118,10 +156,7 @@ export class InitCommand implements ICommandHandler {
     const hasName: boolean = name !== undefined && name.trim().length > 0;
 
     if (!hasName && container.prompter !== undefined) {
-      const answers: Record<string, string> | undefined = await this.askContract(
-        container.prompter,
-        args,
-      );
+      const answers: ContractAnswers | undefined = await this.askContract(container.prompter, args);
 
       return answers === undefined
         ? { ok: false, message: '취소했습니다. 아무것도 만들지 않았습니다.', stop: 'cancelled' }
@@ -132,6 +167,43 @@ export class InitCommand implements ICommandHandler {
       return failure('작품 이름이 필요합니다: storyboard init --title "작품 이름"');
     }
 
+    return this.createWorkspace(container, args, name);
+  }
+
+  private async repairWorkspace(
+    container: CliContainer,
+    paths: StoryboardProjectPaths,
+    isExistingWorkspace: boolean,
+  ): Promise<CommandOutcome> {
+    if (!isExistingWorkspace) {
+      return failure('Storyboard 워크스페이스가 아닙니다: storyboard init --title "작품 이름"');
+    }
+
+    await new WorkspaceInitializer(container.fileSystem).createDirectories(paths);
+    await new WorkspaceInitializer(container.fileSystem).ensureGitignore(paths.gitignore);
+    const addedAgentGuides: string[] = await new WorkspaceInitializer(
+      container.fileSystem,
+    ).writeAgentGuidesIfMissing(paths);
+    const gitRepository: GitRepositoryOutcome = ensureGitRepository(container.workspaceRoot.fsPath);
+    const sealedSceneOrders: readonly number[] = await this.sealStoryState(container, paths);
+
+    return success(
+      (sealedSceneOrders.length === 0
+        ? '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.'
+        : `디렉터리와 .gitignore 를 최신으로 맞추고, 이야기 상태 원장의 씬 ${formatSceneOrderRanges(sealedSceneOrders)}를 지금의 카드·씬으로 봉인했습니다. 작품 계약은 그대로입니다.`) +
+        (addedAgentGuides.length === 0
+          ? ''
+          : ` 에이전트 지침 ${addedAgentGuides.join(', ')} 를 추가했습니다.`) +
+        describeGitRepository(gitRepository),
+      { repaired: true, sealedSceneOrders, addedAgentGuides, gitRepository },
+    );
+  }
+
+  private async createWorkspace(
+    container: CliContainer,
+    args: ParsedArguments,
+    name: string,
+  ): Promise<CommandOutcome> {
     const contract: ContractInput = await new WorkspaceInput(container).readContract(args);
 
     if ('message' in contract) {
@@ -154,20 +226,39 @@ export class InitCommand implements ICommandHandler {
     const fromNotes: string | undefined = flagString(args.flags, 'from-notes');
 
     if (fromNotes !== undefined) {
-      const absorbed: CommandOutcome = await new NoteAbsorber(container).absorb(args, fromNotes, {
-        shouldFillContract: true,
-        retryCommand: `storyboard notes absorb '${fromNotes.replace(/'/g, `'\\''`)}' --yes`,
-      });
-
-      return {
-        ok: absorbed.ok,
-        message:
-          `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
-          `${describeGitRepository(gitRepository)}\n${absorbed.message}`,
-        data: { id: project.id, name: project.name, gitRepository, notes: absorbed.data ?? null },
-      };
+      return this.absorbNotesIntoCreated(container, args, fromNotes, project, gitRepository);
     }
 
+    return this.describeCreatedWorkspace(container, project, createdNarrators, gitRepository);
+  }
+
+  private async absorbNotesIntoCreated(
+    container: CliContainer,
+    args: ParsedArguments,
+    fromNotes: string,
+    project: StoryboardProject,
+    gitRepository: GitRepositoryOutcome,
+  ): Promise<CommandOutcome> {
+    const absorbed: CommandOutcome = await new NoteAbsorber(container).absorb(args, fromNotes, {
+      shouldFillContract: true,
+      retryCommand: `storyboard notes absorb '${fromNotes.replace(/'/g, `'\\''`)}' --yes`,
+    });
+
+    return {
+      ok: absorbed.ok,
+      message:
+        `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
+        `${describeGitRepository(gitRepository)}\n${absorbed.message}`,
+      data: { id: project.id, name: project.name, gitRepository, notes: absorbed.data ?? null },
+    };
+  }
+
+  private describeCreatedWorkspace(
+    container: CliContainer,
+    project: StoryboardProject,
+    createdNarrators: readonly string[],
+    gitRepository: GitRepositoryOutcome,
+  ): CommandOutcome {
     return success(
       [
         `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
@@ -212,8 +303,7 @@ export class InitCommand implements ICommandHandler {
   private async askContract(
     prompter: IPrompter,
     args: ParsedArguments,
-  ): Promise<Record<string, string> | undefined> {
-    const later: string = '';
+  ): Promise<ContractAnswers | undefined> {
     prompter.announce('┌  새 작품 만들기');
 
     const title: string | undefined = await prompter.askText({ title: '작품 이름' });
@@ -221,56 +311,18 @@ export class InitCommand implements ICommandHandler {
       return undefined;
     }
     prompter.announce(`◇  작품 이름  › ${title}`);
-    const answers: Record<string, string> = { title };
+    const answers: ContractAnswers = { title };
 
-    if (flagString(args.flags, 'genre') === undefined) {
-      const genre: string | undefined = await prompter.askText({
-        title: '장르',
-        hint: '비우면 나중에',
-      });
-      if (genre === undefined) {
+    for (const question of contractQuestions) {
+      if (flagString(args.flags, question.flag) !== undefined) {
+        continue;
+      }
+
+      const answer: ContractAnswers | undefined = await question.ask(prompter);
+      if (answer === undefined) {
         return undefined;
       }
-      prompter.announce(`◇  장르  › ${genre.length > 0 ? genre : '나중에'}`);
-      if (genre.length > 0) {
-        answers.genre = genre;
-      }
-    }
-
-    if (flagString(args.flags, 'pov') === undefined) {
-      const pov: string | undefined = await prompter.choose<string>({
-        title: '시점',
-        details: [],
-        options: [
-          ...pointOfViews.map((value) => ({ label: pointOfViewCatalog[value].optionLabel, value })),
-          { label: '나중에 정하기', value: later },
-        ],
-      });
-      if (pov === undefined) {
-        return undefined;
-      }
-      prompter.announce(
-        `◇  시점  › ${pov === later ? '나중에' : pointOfViewCatalog[pov as PointOfView].label}`,
-      );
-      if (pov !== later) {
-        answers.pov = pov;
-      }
-    }
-
-    if (flagString(args.flags, 'composition') === undefined) {
-      const composition: CompositionKind | undefined = await prompter.choose<CompositionKind>({
-        title: '구성',
-        details: [],
-        options: compositionKinds.map((value) => ({
-          label: compositionCatalog[value].optionLabel,
-          value,
-        })),
-      });
-      if (composition === undefined) {
-        return undefined;
-      }
-      prompter.announce(`◇  구성  › ${compositionCatalog[composition].label}`);
-      answers.composition = composition;
+      Object.assign(answers, answer);
     }
 
     prompter.announce('└  만드는 중…');
