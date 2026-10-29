@@ -27,6 +27,11 @@ export interface GenerateDraftOptions {
   readonly shouldOverwrite: boolean;
 }
 
+interface DraftProgressReporter {
+  readonly progress: vscode.Progress<{ readonly message?: string }>;
+  readonly token: vscode.CancellationToken;
+}
+
 export abstract class GenerateDraftCommandBase implements IExtensionCommand {
   public abstract readonly id: string;
 
@@ -71,74 +76,100 @@ export abstract class GenerateDraftCommandBase implements IExtensionCommand {
         title: shouldOverwrite ? 'Storyboard 초안 다시 생성' : 'Storyboard 초안 생성',
         cancellable: true,
       },
-      async (progress, token) => {
-        progress.report({ message: '준비 중…' });
-
-        const draftGeneration: GenerateDraftResult = await this.dependencies.drafts.generate({
-          sceneUri,
-          force: shouldOverwrite,
-          confirmSceneGrounding,
-          onTraitsUpdateComplete: (summary) => {
-            if (summary.updatedCardCount > 0) {
-              void vscode.window.showInformationMessage(
-                `캐릭터 카드 ${summary.updatedCardCount}개에 특성·최근 대사를 반영했습니다.`,
-              );
-            }
-          },
-          onPipelineProgress: (stage, current, total) => {
-            if (!token.isCancellationRequested) {
-              const label: string = stageProgressLabel(stage);
-              progress.report({
-                message: total > 1 ? `${label} (${current}/${total})…` : `${label}…`,
-              });
-            }
-          },
-          onSaving: () => {
-            if (!token.isCancellationRequested) {
-              progress.report({ message: '파일 저장 중…' });
-            }
-          },
-          shouldCancel: () => token.isCancellationRequested,
-        });
-
-        if (!draftGeneration.ok) {
-          if (draftGeneration.kind === 'failed') {
-            void showStoryboardFailure(draftGeneration.message);
-          }
-          return;
-        }
-
-        await openDraftResult(draftGeneration);
-
-        if (draftGeneration.kind === 'generated') {
-          const reviseResult: ReviseDraftWorkflowResult | undefined =
-            await this.dependencies.drafts.reviseAfterGenerate(sceneUri, {
-              onProgress: (message) => progress.report({ message }),
-              shouldCancel: () => token.isCancellationRequested,
-            });
-          const reviseWarning: string | undefined =
-            reviseResult && describeReviseOutcome(reviseResult).warning;
-          if (reviseWarning) {
-            await vscode.window.showWarningMessage(
-              reviseResult?.rejection
-                ? `${reviseWarning} Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`
-                : reviseWarning,
-            );
-          }
-        }
-
-        progress.report({
-          message: draftGeneration.kind === 'cache_hit' ? '캐시된 초안을 열었습니다.' : '완료',
-        });
-        void vscode.window.showInformationMessage(
-          draftGeneration.kind === 'cache_hit'
-            ? CACHE_HIT_MESSAGE
-            : shouldOverwrite
-              ? REGENERATE_SUCCESS_MESSAGE
-              : GENERATE_SUCCESS_MESSAGE,
-        );
-      },
+      (progress, token) =>
+        this.generateWithProgress(sceneUri, shouldOverwrite, { progress, token }),
     );
+  }
+
+  private async generateWithProgress(
+    sceneUri: vscode.Uri,
+    shouldOverwrite: boolean,
+    reporter: DraftProgressReporter,
+  ): Promise<void> {
+    reporter.progress.report({ message: '준비 중…' });
+
+    const draftGeneration: GenerateDraftResult = await this.requestDraft(
+      sceneUri,
+      shouldOverwrite,
+      reporter,
+    );
+
+    if (!draftGeneration.ok) {
+      if (draftGeneration.kind === 'failed') {
+        void showStoryboardFailure(draftGeneration.message);
+      }
+      return;
+    }
+
+    await openDraftResult(draftGeneration);
+
+    if (draftGeneration.kind === 'generated') {
+      await this.reviseGeneratedDraft(sceneUri, reporter);
+    }
+
+    reporter.progress.report({
+      message: draftGeneration.kind === 'cache_hit' ? '캐시된 초안을 열었습니다.' : '완료',
+    });
+    void vscode.window.showInformationMessage(
+      draftGeneration.kind === 'cache_hit'
+        ? CACHE_HIT_MESSAGE
+        : shouldOverwrite
+          ? REGENERATE_SUCCESS_MESSAGE
+          : GENERATE_SUCCESS_MESSAGE,
+    );
+  }
+
+  private async requestDraft(
+    sceneUri: vscode.Uri,
+    shouldOverwrite: boolean,
+    { progress, token }: DraftProgressReporter,
+  ): Promise<GenerateDraftResult> {
+    return await this.dependencies.drafts.generate({
+      sceneUri,
+      force: shouldOverwrite,
+      confirmSceneGrounding,
+      onTraitsUpdateComplete: (summary) => {
+        if (summary.updatedCardCount > 0) {
+          void vscode.window.showInformationMessage(
+            `캐릭터 카드 ${summary.updatedCardCount}개에 특성·최근 대사를 반영했습니다.`,
+          );
+        }
+      },
+      onPipelineProgress: (stage, current, total) => {
+        if (!token.isCancellationRequested) {
+          const label: string = stageProgressLabel(stage);
+          progress.report({
+            message: total > 1 ? `${label} (${current}/${total})…` : `${label}…`,
+          });
+        }
+      },
+      onSaving: () => {
+        if (!token.isCancellationRequested) {
+          progress.report({ message: '파일 저장 중…' });
+        }
+      },
+      shouldCancel: () => token.isCancellationRequested,
+    });
+  }
+
+  private async reviseGeneratedDraft(
+    sceneUri: vscode.Uri,
+    { progress, token }: DraftProgressReporter,
+  ): Promise<void> {
+    const reviseResult: ReviseDraftWorkflowResult | undefined =
+      await this.dependencies.drafts.reviseAfterGenerate(sceneUri, {
+        onProgress: (message) => progress.report({ message }),
+        shouldCancel: () => token.isCancellationRequested,
+      });
+    const reviseWarning: string | undefined =
+      reviseResult && describeReviseOutcome(reviseResult).warning;
+    if (reviseWarning) {
+      await vscode.window.showWarningMessage(
+        reviseResult?.rejection
+          ? `${reviseWarning} Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`
+          : reviseWarning,
+      );
+    }
   }
 }
 

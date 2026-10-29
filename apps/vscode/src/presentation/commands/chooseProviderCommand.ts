@@ -20,41 +20,7 @@ export class ProviderChooser {
   public constructor(private readonly deps: ChooseProviderDependencies) {}
 
   public async choose(): Promise<AiProviderId | undefined> {
-    const statuses: AiProviderStatus[] = await this.deps.registry.listProviders();
-    const current: AiProviderId | undefined = this.deps.configBridge.isDefaultProviderConfigured()
-      ? this.deps.configBridge.getDefaultProvider()
-      : undefined;
-
-    const items: ProviderPickItem[] = listSelectableProviderIds(
-      current,
-      this.deps.configBridge.getEnabledHiddenProviderIds(),
-    ).map((providerId) => {
-      const status: AiProviderStatus | undefined = statuses.find(
-        (entry) => entry.providerId === providerId,
-      );
-      const notes: string[] = [];
-
-      if (providerId === current) {
-        notes.push('현재 기본');
-      }
-
-      if (providerId === 'ollama') {
-        notes.push('로컬');
-      } else if (providerId === 'mock') {
-        notes.push('가짜 텍스트 · 흐름 확인용');
-      } else if (!requiresApiKey(providerId)) {
-        notes.push('구독 로그인');
-      } else {
-        notes.push(status?.hasApiKey ? 'API 키 저장됨' : 'API 키 필요');
-      }
-
-      return {
-        providerId,
-        label: status?.displayName ?? providerId,
-        description: notes.join(' · '),
-        ...(status?.model ? { detail: `모델: ${status.model}` } : {}),
-      };
-    });
+    const items: ProviderPickItem[] = await this.createProviderPicks();
 
     const picked: ProviderPickItem | undefined = await vscode.window.showQuickPick(items, {
       title: 'Storyboard 기본 AI 제공자',
@@ -72,17 +38,7 @@ export class ProviderChooser {
       requiresApiKey(picked.providerId) &&
       !(await this.deps.secretStore.hasApiKey(picked.providerId))
     ) {
-      const apiKey: string | undefined = await vscode.window.showInputBox({
-        title: `${picked.label} API 키`,
-        prompt:
-          '키를 입력하면 ~/.storyboard/secrets.json 에 저장됩니다. 비워 두면 나중에 설정에서 넣을 수 있습니다.',
-        password: true,
-        ignoreFocusOut: true,
-      });
-
-      if (apiKey !== undefined && apiKey.trim().length > 0) {
-        await this.deps.secretStore.setApiKey(picked.providerId, apiKey);
-      }
+      await this.askForApiKey(picked);
     }
 
     void vscode.window.showInformationMessage(
@@ -106,6 +62,67 @@ export class ProviderChooser {
       await this.choose();
     }
   }
+
+  private async createProviderPicks(): Promise<ProviderPickItem[]> {
+    const statuses: AiProviderStatus[] = await this.deps.registry.listProviders();
+    const current: AiProviderId | undefined = this.deps.configBridge.isDefaultProviderConfigured()
+      ? this.deps.configBridge.getDefaultProvider()
+      : undefined;
+
+    return listSelectableProviderIds(
+      current,
+      this.deps.configBridge.getEnabledHiddenProviderIds(),
+    ).map((providerId) => {
+      const status: AiProviderStatus | undefined = statuses.find(
+        (entry) => entry.providerId === providerId,
+      );
+
+      return {
+        providerId,
+        label: status?.displayName ?? providerId,
+        description: describeProviderNotes(providerId, current, status).join(' · '),
+        ...(status?.model ? { detail: `모델: ${status.model}` } : {}),
+      };
+    });
+  }
+
+  private async askForApiKey(picked: ProviderPickItem): Promise<void> {
+    const apiKey: string | undefined = await vscode.window.showInputBox({
+      title: `${picked.label} API 키`,
+      prompt:
+        '키를 입력하면 ~/.storyboard/secrets.json 에 저장됩니다. 비워 두면 나중에 설정에서 넣을 수 있습니다.',
+      password: true,
+      ignoreFocusOut: true,
+    });
+
+    if (apiKey !== undefined && apiKey.trim().length > 0) {
+      await this.deps.secretStore.setApiKey(picked.providerId, apiKey);
+    }
+  }
+}
+
+function describeProviderNotes(
+  providerId: AiProviderId,
+  current: AiProviderId | undefined,
+  status: AiProviderStatus | undefined,
+): string[] {
+  const notes: string[] = [];
+
+  if (providerId === current) {
+    notes.push('현재 기본');
+  }
+
+  if (providerId === 'ollama') {
+    notes.push('로컬');
+  } else if (providerId === 'mock') {
+    notes.push('가짜 텍스트 · 흐름 확인용');
+  } else if (!requiresApiKey(providerId)) {
+    notes.push('구독 로그인');
+  } else {
+    notes.push(status?.hasApiKey ? 'API 키 저장됨' : 'API 키 필요');
+  }
+
+  return notes;
 }
 
 export class ChooseProviderCommand implements IExtensionCommand {

@@ -64,10 +64,28 @@ export class AbsorbNotesCommand implements IExtensionCommand {
       return;
     }
 
+    const bundle: NoteBundle | undefined = await this.collectNotes(folder);
+
+    if (bundle === undefined || !(await this.confirmEstimate(bundle))) {
+      return;
+    }
+
+    const plan: NoteAbsorbPlan | undefined = await this.planAbsorb(folder, bundle);
+
+    if (plan === undefined || !(await this.confirmPlan(plan))) {
+      return;
+    }
+
+    await runHoldingWorkspaceLock(this.dependencies.runGate, folder.uri, '노트 흡수', () =>
+      this.applyPlan(folder, plan, bundle),
+    );
+  }
+
+  private async collectNotes(folder: vscode.WorkspaceFolder): Promise<NoteBundle | undefined> {
     const location: NoteLocation | undefined = await this.pickNoteLocation();
 
     if (location === undefined) {
-      return;
+      return undefined;
     }
 
     const collected: CollectNotesResult = await this.dependencies.notes.collect({
@@ -77,10 +95,13 @@ export class AbsorbNotesCommand implements IExtensionCommand {
 
     if (!collected.ok) {
       await vscode.window.showErrorMessage(collected.message);
-      return;
+      return undefined;
     }
 
-    const { bundle } = collected;
+    return collected.bundle;
+  }
+
+  private async confirmEstimate(bundle: NoteBundle): Promise<boolean> {
     const estimate: NoteAbsorbEstimate = this.dependencies.notes.estimate(bundle);
     const isEstimateAccepted: '정리' | undefined = await vscode.window.showInformationMessage(
       '노트를 AI 로 정리할까요?',
@@ -88,10 +109,13 @@ export class AbsorbNotesCommand implements IExtensionCommand {
       '정리',
     );
 
-    if (isEstimateAccepted !== '정리') {
-      return;
-    }
+    return isEstimateAccepted === '정리';
+  }
 
+  private async planAbsorb(
+    folder: vscode.WorkspaceFolder,
+    bundle: NoteBundle,
+  ): Promise<NoteAbsorbPlan | undefined> {
     const planned: PlanNoteAbsorbResult = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: '노트를 정리하는 중…' },
       () => this.dependencies.notes.plan({ workspaceRoot: folder.uri, bundle }),
@@ -99,12 +123,16 @@ export class AbsorbNotesCommand implements IExtensionCommand {
 
     if (!planned.ok) {
       await vscode.window.showErrorMessage(planned.message);
-      return;
+      return undefined;
     }
 
+    return planned.plan;
+  }
+
+  private async confirmPlan(plan: NoteAbsorbPlan): Promise<boolean> {
     const isPlanAccepted: '반영' | undefined = await vscode.window.showInformationMessage(
       '이대로 워크스페이스에 반영할까요?',
-      { modal: true, detail: describePlan(planned.plan).join('\n') },
+      { modal: true, detail: describePlan(plan).join('\n') },
       '반영',
     );
 
@@ -112,30 +140,36 @@ export class AbsorbNotesCommand implements IExtensionCommand {
       await vscode.window.showInformationMessage(
         '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
       );
+      return false;
+    }
+
+    return true;
+  }
+
+  private async applyPlan(
+    folder: vscode.WorkspaceFolder,
+    plan: NoteAbsorbPlan,
+    bundle: NoteBundle,
+  ): Promise<void> {
+    const applied: ApplyNoteAbsorbResult = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: '노트를 반영하는 중…' },
+      () =>
+        this.dependencies.notes.apply({
+          workspaceRoot: folder.uri,
+          plan,
+          location: bundle.location,
+          shouldFillContract: false,
+          shouldReplaceCandidates: false,
+        }),
+    );
+
+    if (!applied.ok) {
+      this.dependencies.logger.show();
+      await vscode.window.showErrorMessage(applied.message);
       return;
     }
 
-    await runHoldingWorkspaceLock(this.dependencies.runGate, folder.uri, '노트 흡수', async () => {
-      const applied: ApplyNoteAbsorbResult = await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: '노트를 반영하는 중…' },
-        () =>
-          this.dependencies.notes.apply({
-            workspaceRoot: folder.uri,
-            plan: planned.plan,
-            location: bundle.location,
-            shouldFillContract: false,
-            shouldReplaceCandidates: false,
-          }),
-      );
-
-      if (!applied.ok) {
-        this.dependencies.logger.show();
-        await vscode.window.showErrorMessage(applied.message);
-        return;
-      }
-
-      await vscode.window.showInformationMessage(describeOutcome(applied).join(' '));
-    });
+    await vscode.window.showInformationMessage(describeOutcome(applied).join(' '));
   }
 
   private async pickNoteLocation(): Promise<NoteLocation | undefined> {

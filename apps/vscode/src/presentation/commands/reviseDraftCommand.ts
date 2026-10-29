@@ -20,41 +20,57 @@ export interface ReviseDraftCommandDependencies {
   readonly drafts: Pick<DraftManager, 'reviseScene'>;
 }
 
+interface ReviseTarget {
+  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly sceneStem: string;
+  readonly draftUri: StoryUri;
+}
+
+async function resolveReviseTarget(invokedUri?: vscode.Uri): Promise<ReviseTarget | undefined> {
+  const targetUri: vscode.Uri | undefined =
+    invokedUri ?? vscode.window.activeTextEditor?.document.uri;
+
+  if (!targetUri || targetUri.scheme !== 'file') {
+    await vscode.window.showErrorMessage('씬 또는 초안 파일을 연 뒤 다시 시도해 주세요.');
+    return undefined;
+  }
+
+  const workspaceFolder: vscode.WorkspaceFolder | undefined =
+    vscode.workspace.getWorkspaceFolder(targetUri);
+
+  if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
+    await vscode.window.showWarningMessage('Storyboard 프로젝트가 아닙니다.');
+    return undefined;
+  }
+
+  const sceneStem: string | undefined = resolveSceneStem(targetUri);
+
+  if (!sceneStem) {
+    await vscode.window.showErrorMessage('씬/초안 파일명은 `NN-slug` 형식이어야 합니다.');
+    return undefined;
+  }
+
+  const draftUri: StoryUri = draftPath(workspaceFolder.uri, sceneStem);
+
+  if (!(await uriExists(draftUri))) {
+    await vscode.window.showInformationMessage(
+      '초안이 없습니다. 먼저 Generate Draft를 실행해 주세요.',
+    );
+    return undefined;
+  }
+
+  return { workspaceFolder, sceneStem, draftUri };
+}
+
 export class ReviseDraftCommand implements IExtensionCommand {
   public readonly id: string = storyboardCommandIds.draftReviseLoop;
 
   public constructor(private readonly dependencies: ReviseDraftCommandDependencies) {}
 
   public async run(invokedUri?: vscode.Uri): Promise<void> {
-    const targetUri: vscode.Uri | undefined =
-      invokedUri ?? vscode.window.activeTextEditor?.document.uri;
+    const target: ReviseTarget | undefined = await resolveReviseTarget(invokedUri);
 
-    if (!targetUri || targetUri.scheme !== 'file') {
-      await vscode.window.showErrorMessage('씬 또는 초안 파일을 연 뒤 다시 시도해 주세요.');
-      return;
-    }
-
-    const workspaceFolder: vscode.WorkspaceFolder | undefined =
-      vscode.workspace.getWorkspaceFolder(targetUri);
-
-    if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
-      await vscode.window.showWarningMessage('Storyboard 프로젝트가 아닙니다.');
-      return;
-    }
-
-    const sceneStem: string | undefined = resolveSceneStem(targetUri);
-
-    if (!sceneStem) {
-      await vscode.window.showErrorMessage('씬/초안 파일명은 `NN-slug` 형식이어야 합니다.');
-      return;
-    }
-
-    const draftUri: StoryUri = draftPath(workspaceFolder.uri, sceneStem);
-
-    if (!(await uriExists(draftUri))) {
-      await vscode.window.showInformationMessage(
-        '초안이 없습니다. 먼저 Generate Draft를 실행해 주세요.',
-      );
+    if (!target) {
       return;
     }
 
@@ -64,32 +80,38 @@ export class ReviseDraftCommand implements IExtensionCommand {
         title: 'Storyboard 초안 검수·재작성',
         cancellable: true,
       },
-      async (progress, token) => {
-        try {
-          const revision: ReviseDraftWorkflowResult | undefined =
-            await this.dependencies.drafts.reviseScene(workspaceFolder.uri, sceneStem, {
-              onProgress: (message) => progress.report({ message }),
-              shouldCancel: () => token.isCancellationRequested,
-            });
-
-          if (!revision) {
-            await vscode.window.showInformationMessage(
-              '초안이 없습니다. 먼저 Generate Draft를 실행해 주세요.',
-            );
-            return;
-          }
-
-          const document: vscode.TextDocument = await vscode.workspace.openTextDocument(draftUri);
-          await vscode.window.showTextDocument(document);
-          await this.reportResult(revision);
-        } catch (error) {
-          this.dependencies.logger.error('Draft revise loop failed', error);
-          this.dependencies.logger.show();
-          const message: string = extractErrorMessage(error);
-          await showStoryboardFailure(`초안 검수·재작성에 실패했습니다: ${message}`);
-        }
-      },
+      (progress, token) => this.reviseWithProgress(target, progress, token),
     );
+  }
+
+  private async reviseWithProgress(
+    { workspaceFolder, sceneStem, draftUri }: ReviseTarget,
+    progress: vscode.Progress<{ readonly message?: string }>,
+    token: vscode.CancellationToken,
+  ): Promise<void> {
+    try {
+      const revision: ReviseDraftWorkflowResult | undefined =
+        await this.dependencies.drafts.reviseScene(workspaceFolder.uri, sceneStem, {
+          onProgress: (message) => progress.report({ message }),
+          shouldCancel: () => token.isCancellationRequested,
+        });
+
+      if (!revision) {
+        await vscode.window.showInformationMessage(
+          '초안이 없습니다. 먼저 Generate Draft를 실행해 주세요.',
+        );
+        return;
+      }
+
+      const document: vscode.TextDocument = await vscode.workspace.openTextDocument(draftUri);
+      await vscode.window.showTextDocument(document);
+      await this.reportResult(revision);
+    } catch (error) {
+      this.dependencies.logger.error('Draft revise loop failed', error);
+      this.dependencies.logger.show();
+      const message: string = extractErrorMessage(error);
+      await showStoryboardFailure(`초안 검수·재작성에 실패했습니다: ${message}`);
+    }
   }
 
   private async reportResult(revision: {

@@ -46,23 +46,7 @@ export class CreateSceneCommand implements IExtensionCommand {
       return;
     }
 
-    const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-      paths.projectJson,
-    );
-    const digitCount: number = resolveScenePrefixDigitCount(
-      project.editor.scenePrefixDigits,
-      this.dependencies.configBridge.inspectScenePrefixDigits(),
-    );
-
-    const directoryEntries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
-      paths.sceneDirectory,
-    );
-    const sceneFileNames: string[] = directoryEntries
-      .filter(([, fileType]) => fileType === vscode.FileType.File)
-      .map(([name]) => name);
-
-    const nextOrder: number = computeNextSceneOrderFromSceneFileNames(sceneFileNames);
-    const prefix: string = formatSceneOrderPrefix(nextOrder, digitCount);
+    const prefix: string = await this.resolveNextScenePrefix(paths);
 
     const slug: string | undefined = await vscode.window.showInputBox({
       title: '새 씬 슬러그',
@@ -91,5 +75,25 @@ export class CreateSceneCommand implements IExtensionCommand {
 
     const document: vscode.TextDocument = await vscode.workspace.openTextDocument(sceneUri);
     await vscode.window.showTextDocument(document);
+  }
+
+  private async resolveNextScenePrefix(paths: StoryboardProjectPaths): Promise<string> {
+    const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
+      paths.projectJson,
+    );
+    const digitCount: number = resolveScenePrefixDigitCount(
+      project.editor.scenePrefixDigits,
+      this.dependencies.configBridge.inspectScenePrefixDigits(),
+    );
+
+    const directoryEntries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
+      paths.sceneDirectory,
+    );
+    const sceneFileNames: string[] = directoryEntries
+      .filter(([, fileType]) => fileType === vscode.FileType.File)
+      .map(([name]) => name);
+
+    const nextOrder: number = computeNextSceneOrderFromSceneFileNames(sceneFileNames);
+    return formatSceneOrderPrefix(nextOrder, digitCount);
   }
 }
