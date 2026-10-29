@@ -111,6 +111,14 @@ interface ResolvedExecutionContext {
   readonly detectedCharacters: string[];
 }
 
+interface SceneNarrationInputs {
+  readonly body: string;
+  readonly narrativeParts: SceneNarrativeParts;
+  readonly tuning: ResolvedSceneGenerationTuning;
+  readonly beats: SceneBeat[];
+  readonly breakPlan: SceneBreakPlan | undefined;
+}
+
 function resolveExecutionContext(input: RunSceneGenerationPipelineInput): ResolvedExecutionContext {
   const {
     context,
@@ -123,6 +131,34 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     shouldCancel,
   } = input;
   const sceneStem: string = input.sceneStem ?? input.context.scene.stem;
+  const narration: SceneNarrationInputs = resolveNarrationInputs(input);
+  assertSceneBodyPresent(narration.body);
+  const detectedCharacters: string[] = requireCharacterNames(context);
+
+  return {
+    context,
+    aiService,
+    format,
+    styleDirective,
+    providers,
+    onProgress,
+    shouldCancel,
+    narrativeSource: resolveNarrativeSource(context, narration),
+    design: narration.narrativeParts.design,
+    breakPlan: narration.breakPlan,
+    tuning: narration.tuning,
+    condensedPreviousContext: condensePreviousContext(
+      previousContext,
+      input.useContextCondense === true,
+      narration.tuning.contextCondensedMaxChars,
+    ),
+    sceneRef: { kind: 'scene', id: sceneStem },
+    detectedCharacters,
+  };
+}
+
+function resolveNarrationInputs(input: RunSceneGenerationPipelineInput): SceneNarrationInputs {
+  const { context } = input;
   const body: string = context.scene.body.trim();
   const narrativeParts: SceneNarrativeParts = splitSceneNarrativeSource(
     renderNarrativeBodyWithCastNames(context) ?? body,
@@ -135,12 +171,18 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     tuning.sceneBreakTimeJumpMinutes,
   );
 
+  return { body, narrativeParts, tuning, beats, breakPlan };
+}
+
+function assertSceneBodyPresent(body: string): void {
   if (body.length === 0) {
     throw new Error(
       '씬 본문이 비어 있습니다. scene 파일에 장면 설명을 작성한 뒤 다시 시도해주세요.',
     );
   }
+}
 
+function requireCharacterNames(context: SceneContext): string[] {
   const detectedCharacters: string[] = context.characters.map((character) => character.name);
   if (detectedCharacters.length === 0) {
     throw new Error(
@@ -148,29 +190,13 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     );
   }
 
-  return {
-    context,
-    aiService,
-    format,
-    styleDirective,
-    providers,
-    onProgress,
-    shouldCancel,
-    narrativeSource:
-      breakPlan === undefined
-        ? narrativeParts.narrative
-        : renderPlannedNarrative(beats, breakPlan, castNameOf(context)),
-    design: narrativeParts.design,
-    breakPlan,
-    tuning,
-    condensedPreviousContext: condensePreviousContext(
-      previousContext,
-      input.useContextCondense === true,
-      tuning.contextCondensedMaxChars,
-    ),
-    sceneRef: { kind: 'scene', id: sceneStem },
-    detectedCharacters,
-  };
+  return detectedCharacters;
+}
+
+function resolveNarrativeSource(context: SceneContext, narration: SceneNarrationInputs): string {
+  return narration.breakPlan === undefined
+    ? narration.narrativeParts.narrative
+    : renderPlannedNarrative(narration.beats, narration.breakPlan, castNameOf(context));
 }
 
 export function castNameOf(context: SceneContext): (ref: string) => string {
