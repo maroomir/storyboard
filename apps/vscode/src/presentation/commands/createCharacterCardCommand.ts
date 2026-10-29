@@ -1,12 +1,9 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import {
-  createCharacterCommand,
-  createCard,
-  type CreateCardCommandDependencies,
-} from '@/presentation/commands/createCard';
+import { createCard, type CreateCardCommandDependencies } from '@/presentation/commands/createCard';
 
 export class CreateCharacterCardCommand implements IExtensionCommand {
-  public readonly id: string = createCharacterCommand;
+  public readonly id: string = storyboardCommandIds.characterCreate;
 
   public constructor(private readonly dependencies: CreateCardCommandDependencies) {}
 

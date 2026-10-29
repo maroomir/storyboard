@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import { ProjectRepository } from '@storyboard/story-engine';
 import type {
@@ -23,8 +24,6 @@ import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vsco
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const generateSceneSeedsCommand: string = 'storyboard.scene.generateAllSeeds';
-
 const outlineFileSystem: ReadWriteFileSystem = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
     vscode.workspace.fs.readFile(uri as vscode.Uri),
@@ -37,7 +36,7 @@ export interface GenerateSceneSeedsCommandDependencies {
 }
 
 export class GenerateSceneSeedsCommand implements IExtensionCommand {
-  public readonly id: string = generateSceneSeedsCommand;
+  public readonly id: string = storyboardCommandIds.sceneGenerateAllSeeds;
 
   public constructor(private readonly dependencies: GenerateSceneSeedsCommandDependencies) {}
 

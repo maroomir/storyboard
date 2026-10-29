@@ -1,12 +1,12 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import {
-  recommendCharacterCommand,
   recommendCards,
   type RecommendCardDependencies,
 } from '@/presentation/commands/recommendCards';
 
 export class RecommendCharacterCardsCommand implements IExtensionCommand {
-  public readonly id: string = recommendCharacterCommand;
+  public readonly id: string = storyboardCommandIds.characterRecommend;
 
   public constructor(private readonly dependencies: RecommendCardDependencies) {}
 

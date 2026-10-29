@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -6,10 +7,8 @@ import { extractErrorMessage, parseScene } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type { CompletedStoryScene, CompleteStoryScenesProposal } from '@storyboard/story-engine';
 
-const completeStoryCommand: string = 'storyboard.scene.completeStory';
-
 export class CompleteStoryScenesCommand implements IExtensionCommand {
-  public readonly id: string = completeStoryCommand;
+  public readonly id: string = storyboardCommandIds.sceneCompleteStory;
 
   public constructor(
     private readonly novel: Pick<NovelManager, 'completeScenes' | 'hasCurrentCompletionSources'>,

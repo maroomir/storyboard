@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -7,10 +8,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { contractFieldLabels } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
-import { openSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-
-const GENERATE_OUTLINE_COMMAND: string = 'storyboard.outline.generate';
 
 export type GenerateOutlineCommandDependencies = {
   readonly novel: Pick<NovelManager, 'generateOutline'>;
@@ -18,7 +16,7 @@ export type GenerateOutlineCommandDependencies = {
 };
 
 export class GenerateOutlineCommand implements IExtensionCommand {
-  public readonly id: string = GENERATE_OUTLINE_COMMAND;
+  public readonly id: string = storyboardCommandIds.outlineGenerate;
 
   public constructor(private readonly dependencies: GenerateOutlineCommandDependencies) {}
 
@@ -103,7 +101,7 @@ async function reportResult(
       openSettings,
     );
     if (choice === openSettings) {
-      await vscode.commands.executeCommand(openSettingsCommand);
+      await vscode.commands.executeCommand(storyboardCommandIds.settingsOpen);
     }
     return;
   }

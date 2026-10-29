@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -11,8 +12,6 @@ import type {
 } from '@storyboard/story-engine';
 import type { CardCandidateItem, MergedNoteCardCandidate } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-
-const promoteCommand: string = 'storyboard.cards.promoteCandidates';
 
 type CandidateQuickPickItem = vscode.QuickPickItem &
   (
@@ -141,7 +140,7 @@ interface PromotionOutcome {
 }
 
 export class PromoteCardCandidatesCommand implements IExtensionCommand {
-  public readonly id: string = promoteCommand;
+  public readonly id: string = storyboardCommandIds.cardsPromoteCandidates;
 
   public constructor(
     private readonly dependencies: {

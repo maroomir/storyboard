@@ -1,11 +1,10 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import { listSelectableProviderIds, requiresApiKey } from '@storyboard/story-model';
 import type { AiProviderId, AiProviderStatus } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
-
-export const chooseProviderCommand: string = 'storyboard.provider.choose';
 
 export interface ChooseProviderDependencies {
   readonly configBridge: ConfigBridge;
@@ -110,7 +109,7 @@ export class ProviderChooser {
 }
 
 export class ChooseProviderCommand implements IExtensionCommand {
-  public readonly id: string = chooseProviderCommand;
+  public readonly id: string = storyboardCommandIds.providerChoose;
 
   public constructor(private readonly deps: ChooseProviderDependencies) {}
 

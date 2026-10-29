@@ -1,14 +1,14 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import {
-  GENERATE_DRAFT_COMMAND,
   runCommand,
   type GenerateDraftCommandDependencies,
 } from '@/presentation/commands/generateDraft';
 
 export class GenerateDraftCommand implements IExtensionCommand {
-  public readonly id: string = GENERATE_DRAFT_COMMAND;
+  public readonly id: string = storyboardCommandIds.draftGenerate;
 
   public constructor(private readonly dependencies: GenerateDraftCommandDependencies) {}
 

@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -8,15 +9,13 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const SUMMARIZE_CHAPTERS_COMMAND: string = 'storyboard.manuscript.summaries';
-
 export type SummarizeChaptersCommandDependencies = {
   readonly logger: IStoryboardLogger;
   readonly manuscript: Pick<ManuscriptManager, 'summarizeChapters'>;
 };
 
 export class SummarizeChaptersCommand implements IExtensionCommand {
-  public readonly id: string = SUMMARIZE_CHAPTERS_COMMAND;
+  public readonly id: string = storyboardCommandIds.manuscriptSummaries;
 
   public constructor(private readonly dependencies: SummarizeChaptersCommandDependencies) {}
 

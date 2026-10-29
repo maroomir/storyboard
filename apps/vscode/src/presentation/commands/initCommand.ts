@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import {
   createWorkspaceReadme,
@@ -21,14 +22,12 @@ import {
 } from '@/infrastructure/vscode/workspace';
 import { createDefaultProjectJson } from '@storyboard/story-engine';
 
-const initCommand: string = 'storyboard.init';
-
 export interface InitCommandDependencies {
   readonly logger: IStoryboardLogger;
 }
 
 export class InitCommand implements IExtensionCommand {
-  public readonly id: string = initCommand;
+  public readonly id: string = storyboardCommandIds.init;
 
   public constructor(private readonly dependencies: InitCommandDependencies) {}
 

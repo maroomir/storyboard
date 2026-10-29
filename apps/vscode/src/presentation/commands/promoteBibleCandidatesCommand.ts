@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -8,8 +9,6 @@ import type {
 } from '@storyboard/story-engine';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { BibleFact } from '@storyboard/story-model';
-
-const promoteCommand: string = 'storyboard.bible.promoteCandidates';
 
 interface CandidateQuickPickItem extends vscode.QuickPickItem {
   readonly fact: BibleFact;
@@ -86,7 +85,7 @@ async function runPromote(
 }
 
 export class PromoteBibleCandidatesCommand implements IExtensionCommand {
-  public readonly id: string = promoteCommand;
+  public readonly id: string = storyboardCommandIds.biblePromoteCandidates;
 
   public constructor(
     private readonly dependencies: {

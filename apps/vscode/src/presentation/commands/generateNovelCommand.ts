@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -16,11 +17,8 @@ import type {
   StoryboardProject,
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
-import { openSettingsCommand } from '@/presentation/commands/openSettingsCommand';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from './workspaceRunLock';
-
-const generateNovelCommand: string = 'storyboard.novel.generate';
 
 const contractFieldLabels: Record<ContractFieldKey, string> = {
   genre: '장르',
@@ -42,7 +40,7 @@ export interface GenerateNovelCommandDependencies {
 }
 
 export class GenerateNovelCommand implements IExtensionCommand {
-  public readonly id: string = generateNovelCommand;
+  public readonly id: string = storyboardCommandIds.novelGenerate;
 
   public constructor(private readonly dependencies: GenerateNovelCommandDependencies) {}
 
@@ -71,7 +69,7 @@ async function runGenerateNovel(dependencies: GenerateNovelCommandDependencies):
       openSettings,
     );
     if (choice === openSettings) {
-      await vscode.commands.executeCommand(openSettingsCommand);
+      await vscode.commands.executeCommand(storyboardCommandIds.settingsOpen);
     }
     return;
   }

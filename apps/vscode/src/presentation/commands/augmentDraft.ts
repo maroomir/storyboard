@@ -18,9 +18,6 @@ import { resolveExpandRange } from './expandDraftCommand';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-export const augmentDraftCommand: string = 'storyboard.draft.augment';
-export const augmentSelectionCommand: string = 'storyboard.draft.augmentSelection';
-export const editSelectionCommand: string = 'storyboard.draft.editSelection';
 export const augmentPreviewScheme: string = 'storyboard-augment';
 
 export interface AugmentDraftCommandDependencies {

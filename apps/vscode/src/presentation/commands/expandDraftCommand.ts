@@ -1,3 +1,4 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
@@ -8,8 +9,6 @@ import { extractErrorMessage, isDraftMarkdownFile, parseDraft } from '@storyboar
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-
-const expandDraftCommand: string = 'storyboard.draft.expand';
 
 export interface ExpandDraftCommandDependencies {
   readonly drafts: Pick<DraftManager, 'expand'>;
@@ -161,7 +160,7 @@ async function runExpandDraftCommand(
 }
 
 export class ExpandDraftCommand implements IExtensionCommand {
-  public readonly id: string = expandDraftCommand;
+  public readonly id: string = storyboardCommandIds.draftExpand;
 
   public constructor(private readonly dependencies: ExpandDraftCommandDependencies) {}
 

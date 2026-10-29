@@ -1,10 +1,10 @@
+import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import { aiProviderIds, requiresApiKey } from '@storyboard/story-model';
 import { SecretStore } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-model';
-const setApiKeyCommand: string = 'storyboard.apiKey.set';
 const apiKeyProviderIds: AiProviderId[] = aiProviderIds.filter(requiresApiKey);
 
 export interface SetApiKeyCommandDependencies {
@@ -12,7 +12,7 @@ export interface SetApiKeyCommandDependencies {
 }
 
 export class SetApiKeyCommand implements IExtensionCommand {
-  public readonly id: string = setApiKeyCommand;
+  public readonly id: string = storyboardCommandIds.apiKeySet;
 
   public constructor(private readonly dependencies: SetApiKeyCommandDependencies) {}
 
