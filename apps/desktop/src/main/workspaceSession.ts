@@ -9,18 +9,15 @@ import {
   type CompositionPreset,
   type RenameSceneResult,
   type SaveDraftEditResult,
-  ProjectRepository,
   WorkspaceInitializer,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
-  getStoryboardProjectPaths,
   scenePath,
   NodeUri,
   STORYBOARD_RELATIVE_PATHS,
   readSceneFile,
   type ProjectSetting,
-  type StoryboardProjectPaths,
   type WorkspaceRunLockRecord,
   type SceneFile,
 } from '@storyboard/story-model';
@@ -213,12 +210,12 @@ export class WorkspaceSession {
   }
 
   public async title(): Promise<string> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    return (await new ProjectRepository(this.container.fileSystem).read(paths.projectJson)).name;
+    return (await this.container.project.read(this.container.workspaceRoot)).name;
   }
 
   public async overview(): Promise<WorkspaceOverview> {
-    return await new WorkspaceReader(this.container).readOverview(this.runs.generatingSceneStem,
+    return await new WorkspaceReader(this.container).readOverview(
+      this.runs.generatingSceneStem,
       await this.foreignLockMessage(),
     );
   }

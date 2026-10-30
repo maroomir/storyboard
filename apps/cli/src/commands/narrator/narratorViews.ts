@@ -30,11 +30,11 @@ export function toNarratorData(card: NarratorCard): Record<string, unknown> {
 }
 
 export async function describeSceneNarration(
-  container: Pick<CliContainer, 'workspaceRoot' | 'cards' | 'novel'>,
+  container: Pick<CliContainer, 'workspaceRoot' | 'cards' | 'project'>,
   sceneNarrator: string | undefined,
   povCharacter: string | undefined,
 ): Promise<string> {
-  const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
+  const project: StoryboardProject = await container.project.read(container.workspaceRoot);
 
   try {
     const narration: NarrationDirective | undefined = resolveNarration({

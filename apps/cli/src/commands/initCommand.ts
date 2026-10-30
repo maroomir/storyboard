@@ -11,7 +11,6 @@ import type { CliContainer } from '@/container';
 import {
   mergeProjectSetting,
   StoryMemoryAuditor,
-  ProjectRepository,
   WorkspaceInitializer,
 } from '@storyboard/story-engine';
 import {
@@ -284,8 +283,8 @@ export class InitCommand implements ICommandHandler {
     container: CliContainer,
     paths: ReturnType<typeof getStoryboardProjectPaths>,
   ): Promise<readonly number[]> {
-    const project: StoryboardProject | undefined = await new ProjectRepository(container.fileSystem)
-      .read(paths.projectJson)
+    const project: StoryboardProject | undefined = await container.project
+      .read(container.workspaceRoot)
       .catch(() => undefined);
 
     if (project === undefined) {

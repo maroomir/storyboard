@@ -44,6 +44,7 @@ export class DraftModule implements IApplicationModule {
       fileSystem,
       runGate,
       logger,
+      project,
       usageRecorder,
     } = this.platform;
     const augmentPreview: PreviewDocuments = new PreviewDocuments(augmentPreviewScheme);
@@ -79,7 +80,7 @@ export class DraftModule implements IApplicationModule {
         new AugmentDraftCommand({ drafts, logger }, augmentPreview.store),
         new AugmentSelectionCommand({ drafts, logger }, augmentPreview.store),
         new EditSelectionCommand({ drafts, logger }, augmentPreview.store),
-        new CreateSceneCommand({ configBridge }),
+        new CreateSceneCommand({ configBridge, project }),
         new OpenSceneDraftCommand(),
         new RenameSceneCommand({ drafts, runGate }),
         new ResealStoryStateCommand({ configBridge, fileSystem, logger }),

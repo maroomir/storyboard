@@ -21,7 +21,7 @@ export class ProjectShowCommand implements ICommandHandler {
   };
 
   public async execute({ container }: CommandContext): Promise<CommandOutcome> {
-    const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
+    const project: StoryboardProject = await container.project.read(container.workspaceRoot);
     const setting: ProjectSetting | undefined = project.setting;
     const { missing } = validateGenerationContract(setting);
     const rows: readonly (readonly [string, string | number | undefined])[] = [

@@ -73,7 +73,6 @@ import {
   type ICardSidebarRepository,
   type INarratorCardRepository,
   type INovelRunStateRepository,
-  type IOutlineRepository,
   type ISceneSidebarRepository,
 } from '@storyboard/story-engine';
 import { type WorkspaceRunLockOwner } from '@storyboard/story-model';
@@ -87,6 +86,7 @@ import { CardManager } from '#app/managers/cardManager';
 import { DraftManager } from '#app/managers/draftManager';
 import { ManuscriptManager } from '#app/managers/manuscriptManager';
 import { NoteManager } from '#app/managers/noteManager';
+import { ProjectManager } from '#app/managers/projectManager';
 import { NovelManager } from '#app/managers/novelManager';
 import { StudioManager } from '#app/managers/studioManager';
 import { RunGate } from '#app/runGate';
@@ -125,7 +125,6 @@ interface EngineGraph {
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly narratorCardRepository: INarratorCardRepository;
   readonly novelRunStateRepository: INovelRunStateRepository;
-  readonly outlineRepository: IOutlineRepository;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
@@ -173,6 +172,7 @@ export class StoryboardApplication {
   public readonly novel: NovelManager;
   public readonly studio: StudioManager;
   public readonly notes: NoteManager;
+  public readonly project: ProjectManager;
   public readonly runGate: RunGate;
   private readonly resourceRoots: readonly StoryUri[];
   public readonly aiGateway: AiGateway;
@@ -195,6 +195,7 @@ export class StoryboardApplication {
     this.novel = new NovelManager(services);
     this.studio = new StudioManager(services);
     this.notes = new NoteManager(services);
+    this.project = new ProjectManager(services);
     this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
     this.resourceRoots = dependencies.resourceRoots ?? [];
     this.aiGateway = services.aiGateway;
@@ -227,7 +228,7 @@ export class StoryboardApplication {
       fileSystem: this.fileSystem,
       drafts: this.drafts,
       cards: this.cards,
-      novel: this.novel,
+      project: this.project,
     });
   }
 
@@ -303,7 +304,6 @@ function buildServices(
     cardSidebarRepository: repositories.cardSidebar,
     narratorCardRepository: repositories.narratorCards,
     novelRunStateRepository: repositories.novelRunState,
-    outlineRepository: repositories.outline,
     sceneSidebarRepository: repositories.sceneSidebar,
     applyDraftFormatUseCase: new ApplyDraftFormatUseCase(host, ai),
     applyNoteAbsorbUseCase: new ApplyNoteAbsorbUseCase(host, repositories),

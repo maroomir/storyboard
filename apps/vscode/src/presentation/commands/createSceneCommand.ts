@@ -1,7 +1,6 @@
+import type { ProjectManager } from '@storyboard/story-app';
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import { ProjectRepository } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import {
@@ -23,6 +22,7 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 
 export interface CreateSceneCommandDependencies {
   readonly configBridge: ConfigBridge;
+  readonly project: Pick<ProjectManager, 'read'>;
 }
 
 export class CreateSceneCommand implements IExtensionCommand {
@@ -78,9 +78,7 @@ export class CreateSceneCommand implements IExtensionCommand {
   }
 
   private async resolveNextScenePrefix(paths: StoryboardProjectPaths): Promise<string> {
-    const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-      paths.projectJson,
-    );
+    const project: StoryboardProject = await this.dependencies.project.read(paths.workspaceRoot);
     const digitCount: number = resolveScenePrefixDigitCount(
       project.editor.scenePrefixDigits,
       this.dependencies.configBridge.inspectScenePrefixDigits(),

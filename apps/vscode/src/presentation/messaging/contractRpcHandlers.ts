@@ -1,5 +1,4 @@
 import type * as vscode from 'vscode';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type {
   StoryboardRequestPayload,
@@ -7,128 +6,113 @@ import type {
   NarratorCard,
   ProjectSetting,
   StoryboardProject,
-  StoryUri,
-  StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import {
   contractFieldKeys,
-  serializeNarratorCard,
-  joinStoryPath,
   describeNarration,
   validateGenerationContract,
-  getStoryboardProjectPaths,
 } from '@storyboard/story-model';
 import {
   buildCompositionPreset,
-  NarratorCardRepository,
   type CompositionPreset,
-  ProjectRepository,
+  type UpdateProjectContractResult,
 } from '@storyboard/story-engine';
+import type { CardManager, ProjectManager } from '@storyboard/story-app';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 
 type ProjectContractSnapshot = StoryboardResponsePayload<'project.readContract'>;
 
+type NarratorSummary = { id: string; name: string; summary: string };
+
+export interface ContractRpcDependencies {
+  readonly project: Pick<ProjectManager, 'read' | 'updateContract'>;
+  readonly cards: Pick<CardManager, 'listNarrators'>;
+}
+
 export class ContractRpc {
+  public constructor(private readonly dependencies: ContractRpcDependencies) {}
+
   public handlers(): StoryboardRpcHandlers {
     return {
       'project.readContract': async (): Promise<
         StoryboardResponsePayload<'project.readContract'>
-      > => readContractSnapshot(),
+      > => this.readContractSnapshot(),
 
       'project.updateContract': async (
         payload,
-      ): Promise<StoryboardResponsePayload<'project.updateContract'>> => updateContract(payload),
+      ): Promise<StoryboardResponsePayload<'project.updateContract'>> =>
+        this.updateContract(payload),
     };
   }
-}
 
-async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
-  const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
-  if (!root) {
-    return notAProjectSnapshot();
-  }
-
-  const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-    getStoryboardProjectPaths(root).projectJson,
-  );
-  return buildSnapshot(project, await readNarratorSummaries(root));
-}
-
-async function readNarratorSummaries(
-  root: StoryUri,
-): Promise<{ id: string; name: string; summary: string }[]> {
-  const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
-    vscodeFileSystem,
-  ).list(root);
-
-  return [...narrators.values()].map((card) => ({
-    id: card.id,
-    name: card.name,
-    summary: describeNarration({
-      person: card.person,
-      knowledge: card.knowledge,
-      ...(card.focal === undefined ? {} : { focal: card.focal }),
-      tense: card.tense ?? 'past',
-    }),
-  }));
-}
-
-async function updateContract(
-  payload: StoryboardRequestPayload<'project.updateContract'>,
-): Promise<ProjectContractSnapshot> {
-  const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
-  if (!root) {
-    return notAProjectSnapshot();
-  }
-
-  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
-  const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-    paths.projectJson,
-  );
-  const preset: CompositionPreset | undefined =
-    payload.composition == null
-      ? undefined
-      : buildCompositionPreset({
-          composition: payload.composition,
-          ...(payload.episodeCount === undefined ? {} : { episodeCount: payload.episodeCount }),
-          ...(payload.povCharacters && payload.povCharacters.length > 0
-            ? { povCharacters: payload.povCharacters }
-            : {}),
-          ...(payload.pov == null ? {} : { pov: payload.pov }),
-        });
-  const nextProject: StoryboardProject = {
-    ...project,
-    setting: mergeContractSetting(project.setting, payload, preset),
-  };
-
-  await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, nextProject);
-  await writePresetNarrators(paths.narratorDirectory, preset?.narratorCards ?? []);
-
-  return buildSnapshot(nextProject, await readNarratorSummaries(root));
-}
-
-async function writePresetNarrators(
-  narratorDirectory: StoryUri,
-  cards: readonly NarratorCard[],
-): Promise<void> {
-  if (cards.length === 0) {
-    return;
-  }
-
-  await vscodeFileSystem.createDirectory(narratorDirectory);
-
-  for (const card of cards) {
-    const uri: StoryUri = joinStoryPath(narratorDirectory, `${card.id}.card`);
-
-    if (!(await vscodeFileSystem.exists(uri))) {
-      await vscodeFileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
+  private async readContractSnapshot(): Promise<ProjectContractSnapshot> {
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    if (!root) {
+      return notAProjectSnapshot();
     }
+
+    const project: StoryboardProject = await this.dependencies.project.read(root);
+    return buildSnapshot(project, await this.readNarratorSummaries(root));
   }
+
+  private async readNarratorSummaries(root: vscode.Uri): Promise<NarratorSummary[]> {
+    const narrators: ReadonlyMap<string, NarratorCard> =
+      await this.dependencies.cards.listNarrators(root);
+
+    return [...narrators.values()].map((card) => ({
+      id: card.id,
+      name: card.name,
+      summary: describeNarration({
+        person: card.person,
+        knowledge: card.knowledge,
+        ...(card.focal === undefined ? {} : { focal: card.focal }),
+        tense: card.tense ?? 'past',
+      }),
+    }));
+  }
+
+  private async updateContract(
+    payload: StoryboardRequestPayload<'project.updateContract'>,
+  ): Promise<ProjectContractSnapshot> {
+    const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
+    if (!root) {
+      return notAProjectSnapshot();
+    }
+
+    const preset: CompositionPreset | undefined = buildPresetFrom(payload);
+    const updated: UpdateProjectContractResult = await this.dependencies.project.updateContract({
+      workspaceRoot: root,
+      setting: buildContractPatch(payload, preset),
+      narratorCards: preset?.narratorCards ?? [],
+    });
+
+    if (!updated.ok) {
+      throw new Error(updated.message);
+    }
+
+    const project: StoryboardProject = await this.dependencies.project.read(root);
+    return buildSnapshot(project, await this.readNarratorSummaries(root));
+  }
+}
+
+function buildPresetFrom(
+  payload: StoryboardRequestPayload<'project.updateContract'>,
+): CompositionPreset | undefined {
+  return payload.composition == null
+    ? undefined
+    : buildCompositionPreset({
+        composition: payload.composition,
+        ...(payload.episodeCount === undefined ? {} : { episodeCount: payload.episodeCount }),
+        ...(payload.povCharacters && payload.povCharacters.length > 0
+          ? { povCharacters: payload.povCharacters }
+          : {}),
+        ...(payload.pov == null ? {} : { pov: payload.pov }),
+      });
 }
 
 function buildSnapshot(
   project: StoryboardProject,
-  narrators: readonly { id: string; name: string; summary: string }[],
+  narrators: readonly NarratorSummary[],
 ): ProjectContractSnapshot {
   return {
     isStoryboardProject: true,
@@ -147,7 +131,7 @@ function notAProjectSnapshot(): ProjectContractSnapshot {
 
 function toContractSetting(
   setting: ProjectSetting | undefined,
-  narrators: readonly { id: string; name: string; summary: string }[],
+  narrators: readonly NarratorSummary[],
 ): NonNullable<ProjectContractSnapshot['setting']> {
   return {
     genre: setting?.genre,
@@ -167,20 +151,11 @@ function toContractSetting(
   };
 }
 
-function mergeContractSetting(
-  existing: ProjectSetting | undefined,
+function buildContractPatch(
   payload: StoryboardRequestPayload<'project.updateContract'>,
   preset: CompositionPreset | undefined,
-): ProjectSetting {
-  const base: ProjectSetting = existing ?? {
-    tags: [],
-    prohibitions: [],
-    styleConstraints: [],
-    qualityCriteria: [],
-  };
-
+): Partial<ProjectSetting> {
   return {
-    ...base,
     genre: normalizeText(payload.genre),
     audience: normalizeText(payload.audience),
     pov: payload.pov ?? undefined,

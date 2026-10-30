@@ -9,12 +9,7 @@ import type {
   CardReading,
   ResourceOverrideReport,
 } from '@storyboard/story-app';
-import {
-  ChapterMemoryAuditor,
-  StoryMemoryAuditor,
-  NarratorCardRepository,
-  ProjectRepository,
-} from '@storyboard/story-engine';
+import { ChapterMemoryAuditor, StoryMemoryAuditor } from '@storyboard/story-engine';
 import {
   backgroundCardRelativePath,
   findUnknownBeatCast,
@@ -464,14 +459,11 @@ export class DoctorChecks {
   }
 
   private async surveyNarration(sceneCards: SceneCardCensus['cards']): Promise<NarrationSurvey> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
-      this.container.fileSystem,
-    ).list(this.container.workspaceRoot);
-    const project: StoryboardProject | undefined = await new ProjectRepository(
-      this.container.fileSystem,
-    )
-      .read(paths.projectJson)
+    const narrators: ReadonlyMap<string, NarratorCard> = await this.container.cards.listNarrators(
+      this.container.workspaceRoot,
+    );
+    const project: StoryboardProject | undefined = await this.container.project
+      .read(this.container.workspaceRoot)
       .catch(() => undefined);
     const unreadableLedgerLines: string[] = await this.findUnreadableLedgerLines(project);
     const narrationlessScenes: string[] = await this.findNarrationlessScenes(sceneCards, project);
@@ -543,10 +535,8 @@ export class DoctorChecks {
       return [];
     }
 
-    const project: StoryboardProject | undefined = await new ProjectRepository(
-      this.container.fileSystem,
-    )
-      .read(paths.projectJson)
+    const project: StoryboardProject | undefined = await this.container.project
+      .read(this.container.workspaceRoot)
       .catch(() => undefined);
 
     if (project === undefined) {

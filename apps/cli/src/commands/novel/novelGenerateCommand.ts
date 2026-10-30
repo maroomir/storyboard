@@ -88,7 +88,7 @@ export class NovelGenerateCommand implements ICommandHandler {
     { container, args }: CommandContext,
     resumeState: NovelRunState | undefined,
   ): Promise<NovelRunResult> {
-    const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
+    const project: StoryboardProject = await container.project.read(container.workspaceRoot);
     const novelPlan: readonly NovelStageName[] = resolveNovelPipelinePlan();
     const reviseIterations: string | undefined = flagString(args.flags, 'revise-iterations');
 

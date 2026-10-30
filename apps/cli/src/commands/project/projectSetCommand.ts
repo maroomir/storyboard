@@ -46,7 +46,7 @@ export class ProjectSetCommand implements ICommandHandler {
       );
     }
 
-    const updated: UpdateProjectContractResult = await container.novel.updateContract({
+    const updated: UpdateProjectContractResult = await container.project.updateContract({
       workspaceRoot: container.workspaceRoot,
       setting: contract.setting,
       ...(contract.narratorCards === undefined ? {} : { narratorCards: contract.narratorCards }),

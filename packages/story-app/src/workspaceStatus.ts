@@ -18,7 +18,7 @@ import {
 
 import type { CardManager } from '#app/managers/cardManager';
 import type { DraftManager, DraftReading } from '#app/managers/draftManager';
-import type { NovelManager } from '#app/managers/novelManager';
+import type { ProjectManager } from '#app/managers/projectManager';
 
 export type WorkspaceNextStep =
   | 'fill-contract'
@@ -80,7 +80,7 @@ export interface DescribeWorkspaceStatusInput {
   readonly fileSystem: IFileSystem;
   readonly drafts: DraftManager;
   readonly cards: CardManager;
-  readonly novel: NovelManager;
+  readonly project: ProjectManager;
 }
 
 async function describeOutline(
@@ -153,10 +153,10 @@ async function countCards(
 export async function describeWorkspaceStatus(
   input: DescribeWorkspaceStatusInput,
 ): Promise<WorkspaceStatus> {
-  const { workspaceRoot, fileSystem, drafts, cards, novel } = input;
+  const { workspaceRoot, fileSystem, drafts, cards, project: projects } = input;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
 
-  const project: StoryboardProject = await novel.readProject(workspaceRoot);
+  const project: StoryboardProject = await projects.read(workspaceRoot);
   const missingContract: ContractFieldKey[] = validateGenerationContract(project.setting).missing;
   const outline: WorkspaceOutlineStatus = await describeOutline(fileSystem, paths);
 

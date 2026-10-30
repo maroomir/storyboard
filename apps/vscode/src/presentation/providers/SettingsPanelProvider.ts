@@ -5,7 +5,10 @@ import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/
 import { AiRpc } from '@/presentation/messaging/aiRpcHandlers';
 import { aiProviderIds } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
-import { ContractRpc } from '@/presentation/messaging/contractRpcHandlers';
+import {
+  ContractRpc,
+  type ContractRpcDependencies,
+} from '@/presentation/messaging/contractRpcHandlers';
 import { SettingsRpc } from '@/presentation/messaging/settingsRpcHandlers';
 import type { StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
@@ -17,6 +20,7 @@ export interface SettingsPanelDependencies {
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
   readonly configFiles: () => SettingsConfigFiles;
+  readonly contract: ContractRpcDependencies;
 }
 
 export interface ISettingsPanel extends vscode.Disposable {
@@ -114,7 +118,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
     return {
       ...new AiRpc(this.dependencies.aiProviderRegistry).handlers(),
       ...this.settingsRpc.handlers(),
-      ...new ContractRpc().handlers(),
+      ...new ContractRpc(this.dependencies.contract).handlers(),
     };
   }
 

@@ -1,6 +1,5 @@
 import {
   describeWorkspaceRunLockHolder,
-  getStoryboardProjectPaths,
   novelStageNames,
   scenePath,
   validateGenerationContract,
@@ -11,7 +10,6 @@ import {
   readSceneFile,
   usageCacheHitRate,
   type UsageAmount,
-  type StoryboardProjectPaths,
   type StoryboardProject,
   type GenerationContractReadiness,
   type StoryUri,
@@ -25,7 +23,6 @@ import {
   type NovelApprovalKind,
   type UsageMeterSession,
   type WorkspaceRunLock,
-  ProjectRepository,
 } from '@storyboard/story-engine';
 
 import type { GenerateAndReviseDraftResult, NovelRunResult } from '@storyboard/story-app';
@@ -297,9 +294,8 @@ export class RunController {
 
   private async readProject(): Promise<StoryboardProject> {
     const { container } = this.dependencies;
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(container.workspaceRoot);
 
-    return await new ProjectRepository(container.fileSystem).read(paths.projectJson);
+    return await container.project.read(container.workspaceRoot);
   }
 
   private refuseIncompleteContract(
