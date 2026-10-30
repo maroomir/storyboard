@@ -31,7 +31,7 @@ export class DraftCondenseCommand implements ICommandHandler {
       return failure('--lines 는 40-60 형식이어야 합니다.');
     }
 
-    const project: StoryboardProject = await container.novel.readProject(container.workspaceRoot);
+    const project: StoryboardProject = await container.project.read(container.workspaceRoot);
 
     return new DraftRewriter(container).rewriteDraft(stem, range, async (target) => {
       const condensed: CondenseDraftResult = await container.drafts.condense({

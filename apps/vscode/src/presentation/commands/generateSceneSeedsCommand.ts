@@ -1,6 +1,6 @@
+import type { ProjectManager } from '@storyboard/story-app';
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import { ProjectRepository } from '@storyboard/story-engine';
 import type {
   StoryUri,
   ReadWriteFileSystem,
@@ -8,7 +8,6 @@ import type {
   StoryboardProject,
   ChapterPlan,
 } from '@storyboard/story-model';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import {
@@ -33,6 +32,7 @@ const outlineFileSystem: ReadWriteFileSystem = {
 
 export interface GenerateSceneSeedsCommandDependencies {
   readonly configBridge: ConfigBridge;
+  readonly project: Pick<ProjectManager, 'read'>;
 }
 
 export class GenerateSceneSeedsCommand implements IExtensionCommand {
@@ -82,9 +82,7 @@ export class GenerateSceneSeedsCommand implements IExtensionCommand {
   private async loadSceneSeeds(
     paths: StoryboardProjectPaths,
   ): Promise<GeneratedSceneSeed[] | undefined> {
-    const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-      paths.projectJson,
-    );
+    const project: StoryboardProject = await this.dependencies.project.read(paths.workspaceRoot);
     const digitCount: number = resolveScenePrefixDigitCount(
       project.editor.scenePrefixDigits,
       this.dependencies.configBridge.inspectScenePrefixDigits(),

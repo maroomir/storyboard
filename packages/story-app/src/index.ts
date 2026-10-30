@@ -29,6 +29,7 @@ export {
   type NovelRunSpending,
 } from '#app/managers/novelManager';
 export { NoteManager, type NoteManagerDependencies } from '#app/managers/noteManager';
+export { ProjectManager, type ProjectManagerDependencies } from '#app/managers/projectManager';
 export { StudioManager, type StudioManagerDependencies } from '#app/managers/studioManager';
 export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from '#app/runGate';
 export {

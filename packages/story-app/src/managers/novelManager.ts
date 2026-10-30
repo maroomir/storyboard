@@ -12,16 +12,12 @@ import {
   type GenerateOutlineResult,
   type GenerateOutlineUseCase,
   type INovelRunStateRepository,
-  type IOutlineRepository,
   type NovelPipeline,
   type NovelPipelineResult,
   type NovelPipelineRunOptions,
   type SeedScenesRequest,
   type SeedScenesResult,
   type SeedScenesUseCase,
-  type UpdateProjectContractRequest,
-  type UpdateProjectContractResult,
-  type UpdateProjectContractUseCase,
   type StoryFileSnapshot,
   type UsageMeter,
   type UsageMeterSession,
@@ -30,7 +26,6 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import {
   isResumable,
   type NovelRunState,
-  type StoryboardProject,
   type StoryUri,
   type UsageAmount,
   type UsageCacheAmount,
@@ -42,10 +37,8 @@ export interface NovelManagerDependencies {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly seedScenesUseCase: SeedScenesUseCase;
-  readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly novelRunStateRepository: INovelRunStateRepository;
-  readonly outlineRepository: IOutlineRepository;
   readonly configBridge: ConfigBridge;
   readonly usageMeter: UsageMeter;
   readonly fileSystem: IFileSystem;
@@ -134,16 +127,6 @@ export class NovelManager {
     });
 
     return holder === undefined ? state : undefined;
-  }
-
-  public readProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
-    return this.deps.outlineRepository.loadProject(workspaceRoot);
-  }
-
-  public updateContract(
-    request: UpdateProjectContractRequest,
-  ): Promise<UpdateProjectContractResult> {
-    return this.deps.updateProjectContractUseCase.execute(request);
   }
 
   public generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResult> {

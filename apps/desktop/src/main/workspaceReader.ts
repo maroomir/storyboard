@@ -38,7 +38,6 @@ import {
   type ChapterNarrationDefaults,
   type IFileSystem,
   type SceneThreadContext,
-  ProjectRepository,
 } from '@storyboard/story-engine';
 
 import type {
@@ -182,9 +181,7 @@ export class WorkspaceReader {
   ): Promise<WorkspaceOverview> {
     const { fileSystem, workspaceRoot } = this.container;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
-      paths.projectJson,
-    );
+    const project: StoryboardProject = await this.container.project.read(workspaceRoot);
     const sceneFileNames: string[] = await listSceneFiles(paths, fileSystem);
 
     const scenesByStem: Map<string, TocScene> = new Map<string, TocScene>();
@@ -235,8 +232,7 @@ export class WorkspaceReader {
     };
   }
 
-  public async readDraftDocument(stem: string,
-  ): Promise<DraftDocument> {
+  public async readDraftDocument(stem: string): Promise<DraftDocument> {
     const draft: DraftState = await readDraftState(
       this.container.fileSystem,
       draftPath(this.container.workspaceRoot, stem),
@@ -244,13 +240,10 @@ export class WorkspaceReader {
     return { stem, ...draft };
   }
 
-  public async readSceneNotes(stem: string,
-  ): Promise<SceneNotes> {
+  public async readSceneNotes(stem: string): Promise<SceneNotes> {
     const { fileSystem, workspaceRoot } = this.container;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
-      paths.projectJson,
-    );
+    const project: StoryboardProject = await this.container.project.read(workspaceRoot);
     const scene: SceneFile = await readSceneFile(
       scenePath(workspaceRoot, stem),
       fileSystem,
@@ -306,7 +299,8 @@ export class WorkspaceReader {
       scene.order,
     );
 
-    const narration: NarrationSummary | undefined = await this.summarizeNarration(paths,
+    const narration: NarrationSummary | undefined = await this.summarizeNarration(
+      paths,
       scene,
       project,
       chapterDefaults,
@@ -369,7 +363,10 @@ export class WorkspaceReader {
     project: StoryboardProject,
     stem: string,
   ): Promise<string | undefined> {
-    const plan: ChapterPlan | undefined = await readChapterPlanIfAny(paths, this.container.fileSystem);
+    const plan: ChapterPlan | undefined = await readChapterPlanIfAny(
+      paths,
+      this.container.fileSystem,
+    );
 
     return plan === undefined ? undefined : this.findChapterTitle(plan, project, stem);
   }
@@ -425,9 +422,9 @@ export class WorkspaceReader {
       const narratorName: string | undefined =
         directive.narratorId === undefined
           ? undefined
-          : (await new NarratorCardRepository(this.container.fileSystem).list(paths.workspaceRoot)).get(
-              directive.narratorId,
-            )?.name;
+          : (
+              await new NarratorCardRepository(this.container.fileSystem).list(paths.workspaceRoot)
+            ).get(directive.narratorId)?.name;
 
       return {
         ...(directive.person === undefined ? {} : { person: directive.person }),

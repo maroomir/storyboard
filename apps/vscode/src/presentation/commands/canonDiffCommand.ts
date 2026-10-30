@@ -1,6 +1,6 @@
+import type { ProjectManager } from '@storyboard/story-app';
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import { ProjectRepository } from '@storyboard/story-engine';
 import type {
   StoryUri,
   ReadWriteFileSystem,
@@ -8,7 +8,6 @@ import type {
   CanonDiffResult,
   StoryBible,
 } from '@storyboard/story-model';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import {
@@ -35,6 +34,7 @@ const fileSystem: ReadWriteFileSystem & ReadWriteFileSystem = {
 
 export interface CanonDiffCommandDependencies {
   readonly logger: IStoryboardLogger;
+  readonly project: Pick<ProjectManager, 'read'>;
 }
 
 export class CanonDiffCommand implements IExtensionCommand {
@@ -56,9 +56,7 @@ export class CanonDiffCommand implements IExtensionCommand {
       const { pending, reportUri } = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'Canon diff 정리 중…' },
         async () => {
-          const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-            paths.projectJson,
-          );
+          const project: StoryboardProject = await this.dependencies.project.read(workspaceRoot);
           const canon: StoryBible = (await uriExists(paths.bibleCanon))
             ? await readBibleFile(paths.bibleCanon, fileSystem)
             : createEmptyBible();

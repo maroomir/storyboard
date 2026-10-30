@@ -25,6 +25,7 @@ export interface DesktopContainer extends Pick<
   | 'cards'
   | 'notes'
   | 'novel'
+  | 'project'
   | 'studio'
   | 'runGate'
   | 'aiGateway'
@@ -56,7 +57,9 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
   const { logger } = options;
 
   const fileSystem: NodeFileSystem = new NodeFileSystem();
-  const secretStore: SecretStore = new SecretStore(createFileSecretStorage(options.homePaths.secretsFile));
+  const secretStore: SecretStore = new SecretStore(
+    createFileSecretStorage(options.homePaths.secretsFile),
+  );
   const configuration: FileConfiguration = createFileConfiguration({
     userConfigFile: options.homePaths.configFile,
     workspaceConfigFile: resolveWorkspaceConfigFile(workspaceRoot.fsPath),
@@ -67,7 +70,9 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     getConfiguration: () => configuration,
     writeTarget: configurationTargets.user,
   });
-  const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder(fileSystem, (message) => logger.warn(message));
+  const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder(fileSystem, (message) =>
+    logger.warn(message),
+  );
 
   const application: StoryboardApplication = new StoryboardApplication(
     {
@@ -91,6 +96,7 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     cards: application.cards,
     notes: application.notes,
     novel: application.novel,
+    project: application.project,
     studio: application.studio,
     runGate: application.runGate,
     aiGateway: application.aiGateway,

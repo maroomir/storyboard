@@ -33,6 +33,7 @@ export class WorkbenchModule implements IApplicationModule {
       configBridge,
       homeStores,
       logger,
+      project,
       proposalReviewService,
       secretStore,
       studio,
@@ -51,6 +52,7 @@ export class WorkbenchModule implements IApplicationModule {
       secretStore,
       configBridge,
       configFiles,
+      contract: { project, cards },
     });
 
     this.disposables.add(

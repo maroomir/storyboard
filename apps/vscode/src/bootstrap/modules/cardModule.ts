@@ -40,6 +40,7 @@ export class CardModule implements IApplicationModule {
       cards,
       notes,
       logger,
+      project,
       proposalReviewService,
       usageRecorder,
     } = this.platform;
@@ -62,7 +63,7 @@ export class CardModule implements IApplicationModule {
         new RenameBackgroundCardCommand(),
         new PromoteBibleCandidatesCommand({ logger, cards }),
         new PromoteCardCandidatesCommand({ logger, cards, notes }),
-        new CanonDiffCommand({ logger }),
+        new CanonDiffCommand({ logger, project }),
       ]),
       new CardRenameParticipant(logger).register(),
       new CardDiagnosticsProvider({ logger }).register(),
