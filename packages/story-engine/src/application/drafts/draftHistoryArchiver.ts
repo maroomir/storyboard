@@ -23,17 +23,22 @@ export class DraftHistoryArchiver {
   public async archiveWhenHistoryIsKept(
     workspaceRoot: StoryUri,
     sceneStem: string,
+    draftUri: StoryUri = draftPath(workspaceRoot, sceneStem),
   ): Promise<string | undefined> {
     return this.shouldArchive('per-setting')
-      ? await this.archive(workspaceRoot, sceneStem)
+      ? await this.archive(workspaceRoot, sceneStem, draftUri)
       : undefined;
   }
 
-  public async archive(workspaceRoot: StoryUri, sceneStem: string): Promise<string | undefined> {
+  public async archive(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+    draftUri: StoryUri = draftPath(workspaceRoot, sceneStem),
+  ): Promise<string | undefined> {
     const historyDirectory: StoryUri = draftHistorySceneDirectory(workspaceRoot, sceneStem);
 
     return await archiveExistingDraft({
-      draftUri: draftPath(workspaceRoot, sceneStem),
+      draftUri,
       historyDirectory,
       resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
       fileSystem: this.host.fileSystem,

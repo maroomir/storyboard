@@ -293,6 +293,10 @@ export class Uri {
     return new Uri("file", path)
   }
 
+  static from(components: { readonly scheme: string; readonly path?: string }): Uri {
+    return new Uri(components.scheme, components.path ?? "")
+  }
+
   static joinPath(base: Uri, ...pathSegments: string[]): Uri {
     const sep = base.fsPath.includes("\\") ? "\\" : "/"
     let next = base.fsPath.replace(new RegExp(`${sep}$`), "")
