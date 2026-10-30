@@ -1143,7 +1143,7 @@ packages/story-engine/src/
 
 packages/story-app/src/
   storyboardApplication.ts   # 호스트 어댑터 6개 → 엔진 객체 그래프를 한 번 조립하는 컴포지션 루트
-  managers/                  # drafts·manuscript·cards·novel·studio 파사드 — 앱이 부르는 동사
+  managers/                  # drafts·manuscript·cards·novel·project·workspace·studio·notes 파사드 — 앱이 부르는 동사
   runGate.ts                 # 작품 실행 잠금
   resourceOverrides.ts       # 작가 리소스 계층(prompts/·craftContract·promptVariants·compositionPresets) 로더
   parameterRegistry.ts       # 설정·생성 손잡이·프롬프트 온도를 출처와 함께 한 목록으로
