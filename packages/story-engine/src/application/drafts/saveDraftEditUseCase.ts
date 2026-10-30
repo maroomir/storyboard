@@ -3,12 +3,13 @@ import {
   parseDraft,
   serializeDraft,
   type StoryUri,
-  archiveExistingDraft,
-  draftHistorySceneDirectory,
   draftPath,
-  joinUri,
   type Draft,
 } from '@storyboard/story-model';
+import {
+  DraftHistoryArchiver,
+  type DraftArchivePolicy,
+} from '#engine/application/drafts/draftHistoryArchiver';
 
 import type { IUseCase } from '#engine/application/useCase';
 
@@ -16,7 +17,7 @@ export interface SaveDraftEditRequest {
   readonly workspaceRoot: StoryUri;
   readonly sceneStem: string;
   readonly body: string;
-  readonly archivePrevious: boolean;
+  readonly archive?: DraftArchivePolicy;
 }
 
 export type SaveDraftEditResult =
@@ -25,7 +26,11 @@ export type SaveDraftEditResult =
   | { readonly ok: false; readonly kind: 'missing' };
 
 export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, SaveDraftEditResult> {
-  public constructor(private readonly host: HostAdapters) {}
+  private readonly archiver: DraftHistoryArchiver;
+
+  public constructor(private readonly host: HostAdapters) {
+    this.archiver = new DraftHistoryArchiver(host);
+  }
 
   public async execute(request: SaveDraftEditRequest): Promise<SaveDraftEditResult> {
     const draftUri: StoryUri = draftPath(request.workspaceRoot, request.sceneStem);
@@ -42,8 +47,10 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
       return { ok: true, kind: 'unchanged' };
     }
 
-    const archivedAs: string | undefined = request.archivePrevious
-      ? await this.archive(request.workspaceRoot, request.sceneStem, draftUri)
+    const archivedAs: string | undefined = this.archiver.shouldArchive(
+      request.archive ?? 'per-setting',
+    )
+      ? await this.archiver.archive(request.workspaceRoot, request.sceneStem)
       : undefined;
 
     await this.host.fileSystem.writeFile(
@@ -54,20 +61,5 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
     return archivedAs === undefined
       ? { ok: true, kind: 'saved' }
       : { ok: true, kind: 'saved', archivedAs };
-  }
-
-  private async archive(
-    workspaceRoot: StoryUri,
-    sceneStem: string,
-    draftUri: StoryUri,
-  ): Promise<string | undefined> {
-    const historyDirectory: StoryUri = draftHistorySceneDirectory(workspaceRoot, sceneStem);
-
-    return await archiveExistingDraft({
-      draftUri,
-      historyDirectory,
-      resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-      fileSystem: this.host.fileSystem,
-    });
   }
 }

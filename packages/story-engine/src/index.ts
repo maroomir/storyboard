@@ -38,6 +38,7 @@ export * from '#engine/application/drafts/reviseDraftUseCase';
 export * from '#engine/application/drafts/checkDraftUseCase';
 export * from '#engine/application/drafts/createSceneUseCase';
 export * from '#engine/application/drafts/renameSceneUseCase';
+export * from '#engine/application/drafts/draftHistoryArchiver';
 export * from '#engine/application/drafts/saveDraftEditUseCase';
 export * from '#engine/application/project/compositionPresets';
 export * from '#engine/application/notes/applyNoteAbsorbUseCase';

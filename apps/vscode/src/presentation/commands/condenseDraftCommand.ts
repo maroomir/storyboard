@@ -13,22 +13,15 @@ import {
   createDraft,
   parseDraft,
   serializeDraft,
-  archiveExistingDraft,
-  draftHistorySceneDirectory,
   isDraftMarkdownFile,
-  joinUri,
-  type StoryUri,
 } from '@storyboard/story-model';
-import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 export interface CondenseDraftCommandDependencies {
-  readonly drafts: Pick<DraftManager, 'condense'>;
-  readonly configBridge: ConfigBridge;
+  readonly drafts: Pick<DraftManager, 'condense' | 'archiveDraftWhenHistoryIsKept'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -196,21 +189,11 @@ export class CondenseDraftCommand implements IExtensionCommand {
   }
 
   private async archiveDraftBeforeApply(target: CondenseTarget): Promise<void> {
-    if (!this.dependencies.configBridge.isKeepDraftHistoryEnabled()) {
-      return;
-    }
-
     try {
-      const historyDirectory: StoryUri = draftHistorySceneDirectory(
+      await this.dependencies.drafts.archiveDraftWhenHistoryIsKept(
         target.workspaceFolder.uri,
         target.draft.sceneStem,
       );
-      await archiveExistingDraft({
-        draftUri: target.editor.document.uri,
-        historyDirectory,
-        resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-        fileSystem: draftHistoryFileSystem,
-      });
     } catch (error) {
       this.dependencies.logger.warn(
         `이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`,

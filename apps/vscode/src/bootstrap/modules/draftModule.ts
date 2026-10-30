@@ -76,7 +76,7 @@ export class DraftModule implements IApplicationModule {
         new ApplyDraftFormatCommand({ drafts, logger }),
         new ReviseDraftCommand({ configBridge, drafts, logger }),
         new ExpandDraftCommand({ drafts, logger }),
-        new CondenseDraftCommand({ drafts, configBridge, logger }, condensePreview.store),
+        new CondenseDraftCommand({ drafts, logger }, condensePreview.store),
         new AugmentDraftCommand({ drafts, logger }, augmentPreview.store),
         new AugmentSelectionCommand({ drafts, logger }, augmentPreview.store),
         new EditSelectionCommand({ drafts, logger }, augmentPreview.store),
