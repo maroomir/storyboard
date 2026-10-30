@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   isWithin,
+  refuseEngineConstruction,
   requireAliasForSourceImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
@@ -39,6 +40,10 @@ function refuseWideExtensionEntry(filePath, importPath, _statement, report) {
 
 runArchitectureCheck('Extension', SOURCE_ROOT, {
   rules: [refuseInfrastructureReachingOutward],
-  importRules: [refuseWideExtensionEntry, requireAliasForSourceImport(SOURCE_ROOT, '@/')],
+  importRules: [
+    refuseWideExtensionEntry,
+    refuseEngineConstruction('Extension'),
+    requireAliasForSourceImport(SOURCE_ROOT, '@/'),
+  ],
   aliases: { '@/': '@/' },
 });
