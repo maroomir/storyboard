@@ -24,6 +24,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 내부
 
+- **CLI 명령 한 번의 실행이 클래스가 됐습니다.** 709줄이던 `commandDispatcher.ts` 에는 동사 찾기와 실행 전 거절만 남고, 로거·진행 표시·컨테이너·열기 준비·초안 비교·실행 잠금·결과 출력은 `CommandRun` 의 단계가 됐습니다. 공유 타입은 `dispatchContract.ts` 에 있습니다. 명령·출력·종료 코드는 그대로입니다.
 - **앱은 매니저 동사만 부릅니다.** `project`(project.json 읽기·계약 수정)와 `workspace`(만들기·복구·열기 준비·이야기 상태 감사와 봉인) 매니저를 새로 두었고, 세 앱이 엔진 객체를 직접 만들거나 설정을 직접 읽어 조립하던 흐름(생성 후 감수, 카드 만들기, 시점 해석, 초안 히스토리 보관, 원본 축소의 압축률·문맥)을 매니저 동사 하나씩으로 옮겼습니다. `novel.readProject`·`novel.updateContract`·`drafts.resealStoryState`·`drafts.reviseAfterGenerate`·`cards.exists`/`deriveUniqueId`/`write` 는 새 동사로 바뀌었고, 작품 파일 형식은 그대로입니다.
 - **소스 모듈은 어디서나 별칭으로 가져옵니다.** 앱은 `@/`(웹뷰는 `@webview/`), 패키지는 자기 `#` 접두사로만 자기 모듈을 가리키고, 같은 폴더의 `./sibling` 도 아키텍처 검사가 거부합니다. 옆에 둔 데이터·스타일 파일(`./x.params.json`, `./styles.css`)만 상대 경로로 남습니다. CLI 가 story-app 내부를 경로로 가져오던 곳은 패키지 진입점을 쓰도록 바꿨습니다. 동작은 그대로입니다.
 - **ChatGPT 로그인과 OAuth 호출이 클래스가 됐습니다.** `ChatGptOAuthClient` 가 fetch 를 생성자로 받아 토큰 교환·갱신·디스커버리·키 목록·해지를 메서드로 가지고, `ChatGptLoginFlow` 가 비밀 저장소를 받아 `login`·`logout` 을 합니다. 토큰 갱신을 한 번에 하나로 줄 세우던 모듈 변수는 프로바이더의 필드가 됐습니다. 동작과 저장 형식은 그대로입니다.
