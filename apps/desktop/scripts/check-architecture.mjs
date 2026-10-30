@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   allowListRule,
   isWithin,
+  refuseEngineConstruction,
   refusePipelineAssembly,
   requireAliasForSourceImport,
   runArchitectureCheck,
@@ -81,6 +82,7 @@ runArchitectureCheck('Desktop', SOURCE_ROOT, {
     refuseNodeReachFromTheBrowserSide,
     refusePreloadDependencies,
     refuseDirectPipelineImport,
+    refuseEngineConstruction('Desktop', ['UsageLedgerRecorder']),
     refuseUiLibrariesOutsideRenderer,
     requireAliasForSourceImport(SOURCE_ROOT, '@/'),
   ],

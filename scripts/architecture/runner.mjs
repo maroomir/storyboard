@@ -70,6 +70,35 @@ export function refusePipelineAssembly(appName) {
   };
 }
 
+// An app reaches the engine through the managers StoryboardApplication builds. Constructing an engine
+// class itself is how an app starts its own copy of a flow another app already has, so it fails
+// unless the class is a host-side piece the app's composition root hands in (allowedClasses).
+export function refuseEngineConstruction(appName, allowedClasses = []) {
+  return (filePath, importPath, statement, report) => {
+    if (importPath !== '@storyboard/story-engine' || !ts.isImportDeclaration(statement)) {
+      return;
+    }
+
+    const clause = statement.importClause;
+    const bindings = clause?.namedBindings;
+
+    if (!clause || clause.isTypeOnly || !bindings || !ts.isNamedImports(bindings)) {
+      return;
+    }
+
+    const text = fs.readFileSync(filePath, 'utf8');
+
+    for (const element of bindings.elements) {
+      const localName = element.name.text;
+      const isConstructed = new RegExp(`\\bnew\\s+${localName}\\s*[(<]`).test(text);
+
+      if (!element.isTypeOnly && isConstructed && !allowedClasses.includes(localName)) {
+        report(`${appName} constructs the engine's ${localName}; call a manager verb instead`, filePath);
+      }
+    }
+  };
+}
+
 export function collectSourceFiles(directoryPath) {
   if (!fs.existsSync(directoryPath)) {
     return [];
