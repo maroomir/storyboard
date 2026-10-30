@@ -54,6 +54,10 @@ function resolverWith(service: FakeService): {
     },
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
     diagnostics,
+    documents: {
+      drafts: { readSceneContext: vi.fn(), readSceneNarrative: vi.fn() },
+      project: { read: vi.fn() },
+    },
   } as unknown as StudioInvokeResolverDependencies;
 
   const input: StudioInvokeResolverInput = {

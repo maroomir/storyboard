@@ -1,18 +1,13 @@
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import type { StudioDocumentManagers } from '@/presentation/messaging/studioToolResolver';
 import * as vscode from 'vscode';
 
 import type { StudioChatRequest, StudioChatStage } from '@storyboard/story-engine';
 import type { CardManager, StudioManager } from '@storyboard/story-app';
 import { extractDraftBody } from '@storyboard/story-model';
 
-import {
-  StudioContextRepository,
-  type StudioEntityContext,
-  type StudioSceneFocus,
-} from '@storyboard/story-engine';
+import { type StudioEntityContext, type StudioSceneFocus } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { StudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
 import { StudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
@@ -25,12 +20,12 @@ import type {
 } from '@storyboard/story-model';
 
 export interface StudioChatRpcHandlersDependencies {
-  readonly studio: Pick<StudioManager, 'chat'>;
+  readonly studio: Pick<StudioManager, 'chat' | 'context'>;
   readonly aiGateway: AiGateway;
   readonly cards: Pick<CardManager, 'collectProposals'>;
   readonly logger: IStoryboardLogger;
   readonly toolDiagnostics: StudioToolDiagnostics;
-  readonly configBridge: ConfigBridge;
+  readonly documents: StudioDocumentManagers;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly getTarget: () => Promise<StudioTarget>;
   readonly postProgress: (stage: StudioChatStage | 'idle') => void;
@@ -53,9 +48,12 @@ export class StudioChatRpc {
         }
 
         const target: StudioTarget = await this.deps.getTarget();
-        const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
-          vscodeFileSystem,
-        ).readEntityContext(root, payload.entity, sceneFocusOf(target));
+        const entityContext: StudioEntityContext | undefined =
+          await this.deps.studio.context.readEntityContext(
+            root,
+            payload.entity,
+            sceneFocusOf(target),
+          );
 
         if (!entityContext) {
           return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
@@ -77,12 +75,10 @@ export class StudioChatRpc {
             hasSelection: selection !== undefined,
             ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
             ...usageAttributionFor(payload.entity),
-            isValidationEnabled: this.deps.configBridge.isStudioValidationEnabled(),
-            resolveLookup: (requests) =>
-              new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
+            resolveLookup: (requests) => this.deps.studio.context.resolveLookups(root, requests),
             ...this.toolResolverFor(root, payload.entity, entityContext),
             resolveFollowUps: (followUps) =>
-              new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
+              this.deps.studio.context.resolveFollowUps(root, followUps),
             createTurnId: () => crypto.randomUUID(),
             onStage: this.deps.postProgress,
           });
@@ -117,6 +113,7 @@ export class StudioChatRpc {
             aiGateway: this.deps.aiGateway,
             logger: this.deps.logger,
             diagnostics: this.deps.toolDiagnostics,
+            documents: this.deps.documents,
           },
           {
             workspaceRoot: root,

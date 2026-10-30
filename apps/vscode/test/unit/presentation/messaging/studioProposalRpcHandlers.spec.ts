@@ -1,7 +1,13 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { hashBaseline } from "@storyboard/story-engine"
+import {
+  DraftHistoryArchiver,
+  StudioContextRepository,
+  hashBaseline,
+  type HostAdapters
+} from "@storyboard/story-engine"
+import { vscodeFileSystem } from "@/infrastructure/vscode/vscodeFileSystem"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { StudioProposalRpc } from "@/presentation/messaging/studioProposalRpcHandlers"
 import type { ProposalReviewService } from "@/presentation/providers/proposalReviewService"
@@ -101,7 +107,11 @@ function bridgeWith(): FakeWebview {
     new StudioProposalRpc({
       reviewService,
       followUpRepository,
-      configBridge,
+      drafts: {
+        archiveDraftWhenHistoryIsKept: (root, stem): Promise<string | undefined> =>
+          new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
+      },
+      studio: { context: new StudioContextRepository(vscodeFileSystem) },
       logger: harnessLogger,
       getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot,
       createFollowUpId: (): string => "follow-1"

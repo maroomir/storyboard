@@ -29,6 +29,7 @@ import type {
   StoryCardTarget,
   StoryFileSnapshot,
   IBackgroundFactConflictStore,
+  CardCollectRepository,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
@@ -45,6 +46,8 @@ import {
   type StoryboardCard,
   type StoryUri,
   type BibleSubjectKind,
+  type CharacterRef,
+  type RelationListCharacter,
 } from '@storyboard/story-model';
 
 export interface CardReading {
@@ -70,6 +73,7 @@ export interface CardManagerDependencies {
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly narratorCardRepository: INarratorCardRepository;
+  readonly cardCollectRepository: CardCollectRepository;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly fileSystem: IFileSystem;
 }
@@ -127,6 +131,14 @@ export class CardManager {
     }
 
     return reports;
+  }
+
+  public loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CharacterRef[]> {
+    return this.deps.cardCollectRepository.loadCharacterRoster(workspaceRoot);
+  }
+
+  public listRelationCharacters(workspaceRoot: StoryUri): Promise<RelationListCharacter[]> {
+    return this.deps.cardCollectRepository.listRelationCharacters(workspaceRoot);
   }
 
   public listNarrators(workspaceRoot: StoryUri): Promise<ReadonlyMap<string, NarratorCard>> {
