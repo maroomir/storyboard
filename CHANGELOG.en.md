@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-31
+
 ### Changed
 
 - **The three apps show amounts of money the same way.** Every amount now has two decimals ($0.50, $12.40). The desktop's one-decimal form from $10 up and the extension usage badge's four-decimal form below one cent ($0.0042) are gone; less than a cent shows as $0.00.
