@@ -9,14 +9,12 @@ import {
 import { flagString } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
 import {
-  createEmptyBackground,
-  createEmptyCharacter,
+  createEmptyCard,
   slugify,
   type BibleSubjectKind,
-  type Character,
-  type LocationBackgroundCard,
   type StoryUri,
 } from '@storyboard/story-model';
+import type { CreateCardResult } from '@storyboard/story-engine';
 
 export class CardCreateCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -58,26 +56,22 @@ export class CardCreateCommand implements ICommandHandler {
       return failure(`id 는 영소문자·숫자·하이픈만 쓸 수 있습니다: ${suggested}`);
     }
 
-    if (
-      explicitId !== undefined &&
-      (await container.cards.exists(container.workspaceRoot, cardType, explicitId))
-    ) {
+    const created: CreateCardResult = await container.cards.create({
+      workspaceRoot: container.workspaceRoot,
+      cardType,
+      id: suggested,
+      whenIdIsTaken: explicitId === undefined ? 'number-it' : 'refuse',
+      buildCard: (id) => createEmptyCard(cardType, id, name.trim()),
+    });
+
+    if (!created.ok) {
       return failure(
-        `이미 있는 카드입니다: ${explicitId}. 다른 id 를 주거나 card show ${explicitId} 로 확인하세요.`,
+        `이미 있는 카드입니다: ${created.id}. 다른 id 를 주거나 card show ${created.id} 로 확인하세요.`,
       );
     }
 
-    const id: string = await container.cards.deriveUniqueId(
-      container.workspaceRoot,
-      cardType,
-      suggested,
-      suggested,
-    );
-    const card: Character | LocationBackgroundCard =
-      kind === 'character'
-        ? createEmptyCharacter(id, name.trim())
-        : createEmptyBackground(id, name.trim());
-    const uri: StoryUri = await container.cards.write(container.workspaceRoot, card);
+    const id: string = created.id;
+    const uri: StoryUri = created.uri;
 
     return success(`${id} 카드를 만들었습니다.`, { id, path: (uri as StoryUri).fsPath });
   }

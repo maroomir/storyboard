@@ -15,7 +15,7 @@ import {
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 export interface RecommendCardsCommandDependencies {
-  readonly cards: Pick<CardManager, 'recommend' | 'deriveUniqueId' | 'write'>;
+  readonly cards: Pick<CardManager, 'recommend' | 'create'>;
 }
 
 export abstract class RecommendCardsCommandBase implements IExtensionCommand {
@@ -117,16 +117,14 @@ export abstract class RecommendCardsCommandBase implements IExtensionCommand {
         continue;
       }
 
-      const id: string = await this.dependencies.cards.deriveUniqueId(
+      await this.dependencies.cards.create({
         workspaceRoot,
         cardType,
-        base ?? suggestCardId(recommendation.name),
-        cardType === 'character' ? 'character' : 'background',
-      );
-      await this.dependencies.cards.write(
-        workspaceRoot,
-        buildCardFromRecommendation(category, id, recommendation),
-      );
+        id: base ?? suggestCardId(recommendation.name),
+        fallbackId: cardType === 'character' ? 'character' : 'background',
+        whenIdIsTaken: 'number-it',
+        buildCard: (id) => buildCardFromRecommendation(category, id, recommendation),
+      });
       created += 1;
     }
 

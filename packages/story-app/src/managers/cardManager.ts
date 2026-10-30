@@ -7,6 +7,8 @@ import type {
   CollectCardProposalsRequest,
   CollectCardProposalsUseCase,
   CreateCardUseCase,
+  CreateCardRequest,
+  CreateCardResult,
   IBibleCandidateRepository,
   CreateNarratorCardResult,
   ICardSidebarRepository,
@@ -142,30 +144,8 @@ export class CardManager {
     return this.deps.narratorCardRepository.remove(workspaceRoot, id);
   }
 
-  public deriveUniqueId(
-    workspaceRoot: StoryUri,
-    cardType: StoryboardCard['type'],
-    suggestedId: string,
-    fallbackId: string,
-  ): Promise<string> {
-    return this.deps.createCardUseCase.deriveUniqueId(
-      workspaceRoot,
-      cardType,
-      suggestedId,
-      fallbackId,
-    );
-  }
-
-  public exists(
-    workspaceRoot: StoryUri,
-    cardType: StoryboardCard['type'],
-    id: string,
-  ): Promise<boolean> {
-    return this.deps.createCardUseCase.exists(workspaceRoot, cardType, id);
-  }
-
-  public write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
-    return this.deps.createCardUseCase.write(workspaceRoot, card);
+  public create(request: CreateCardRequest): Promise<CreateCardResult> {
+    return this.deps.createCardUseCase.execute(request);
   }
 
   public rename(request: RenameCardRequest): Promise<RenameCardResult> {
