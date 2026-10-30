@@ -24,6 +24,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 내부
 
+- **엔진 유스케이스가 의존성과 요청을 섞어 넘기지 않습니다.** 초안 생성 계열이 호스트·AI·저장소를 요청과 한 객체(`GenerateDraftServices`·`GenerateDraftWorkflowOptions`)로 섞어 함수에 넘기던 것을 생성자로 의존성을 받는 클래스(`SceneGenerationInputsLoader`·`SceneGroundingResolver`·`SceneBeatsResolver`·`StoryStateRecorder`·`WorkflowFailureReporter`)로 바꿨고, 소설 실행도 의존성(`NovelRunDependencies`)과 실행 옵션을 따로 받습니다. 생성 결과는 그대로입니다.
 - **CLI 명령 한 번의 실행이 클래스가 됐습니다.** 709줄이던 `commandDispatcher.ts` 에는 동사 찾기와 실행 전 거절만 남고, 로거·진행 표시·컨테이너·열기 준비·초안 비교·실행 잠금·결과 출력은 `CommandRun` 의 단계가 됐습니다. 공유 타입은 `dispatchContract.ts` 에 있습니다. 명령·출력·종료 코드는 그대로입니다.
 - **앱은 매니저 동사만 부릅니다.** `project`(project.json 읽기·계약 수정)와 `workspace`(만들기·복구·열기 준비·이야기 상태 감사와 봉인) 매니저를 새로 두었고, 세 앱이 엔진 객체를 직접 만들거나 설정을 직접 읽어 조립하던 흐름(생성 후 감수, 카드 만들기, 시점 해석, 초안 히스토리 보관, 원본 축소의 압축률·문맥)을 매니저 동사 하나씩으로 옮겼습니다. `novel.readProject`·`novel.updateContract`·`drafts.resealStoryState`·`drafts.reviseAfterGenerate`·`cards.exists`/`deriveUniqueId`/`write` 는 새 동사로 바뀌었고, 작품 파일 형식은 그대로입니다.
 - **소스 모듈은 어디서나 별칭으로 가져옵니다.** 앱은 `@/`(웹뷰는 `@webview/`), 패키지는 자기 `#` 접두사로만 자기 모듈을 가리키고, 같은 폴더의 `./sibling` 도 아키텍처 검사가 거부합니다. 옆에 둔 데이터·스타일 파일(`./x.params.json`, `./styles.css`)만 상대 경로로 남습니다. CLI 가 story-app 내부를 경로로 가져오던 곳은 패키지 진입점을 쓰도록 바꿨습니다. 동작은 그대로입니다.
