@@ -5,7 +5,7 @@ import {
   type StoryWorkspaceFolder,
 } from '@storyboard/story-model';
 import { UsageLedgerRecorder, type IStoryboardLogger } from '@storyboard/story-engine';
-import { StoryboardApplication, type ResourceOverrideReport } from '@storyboard/story-app';
+import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import {
   configurationTargets,
@@ -40,7 +40,6 @@ export interface DesktopContainer extends Pick<
   readonly workspaceRoot: StoryUri;
   readonly fileSystem: NodeFileSystem;
   readonly configuration: FileConfiguration;
-  readonly loadResourceOverrides: () => Promise<ResourceOverrideReport>;
   readonly usageLedger: UsageLedgerRecorder;
 }
 
@@ -112,6 +111,5 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     workspaceRoot,
     configuration,
     usageLedger,
-    loadResourceOverrides: () => application.loadResourceOverrides(),
   };
 }

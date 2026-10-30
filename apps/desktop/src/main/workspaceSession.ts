@@ -127,7 +127,9 @@ export class WorkspaceSession {
     }
 
     const container: DesktopContainer = WorkspaceSession.createContainer(options);
-    const resources: ResourceOverrideReport = await container.loadResourceOverrides();
+    const resources: ResourceOverrideReport = await container.workspace.prepare(
+      container.workspaceRoot,
+    );
     for (const problem of resources.problems) {
       options.logger.warn(problem.message);
     }

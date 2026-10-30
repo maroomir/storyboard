@@ -234,6 +234,18 @@ describe('creating a work', () => {
     expect(result.ok ? undefined : result.error.code).toBe('already-exists');
   });
 
+  it('moves legacy memory into place when a work is opened', async () => {
+    await expectOk('workspace.create', { parentDirectory: join(documents, 'Storyboard'), request: createRequest });
+    await expectOk('workspace.close', {});
+    mkdirSync(join(workspacePath(), '.storyboard', 'cache'), { recursive: true });
+    writeFileSync(join(workspacePath(), '.storyboard', 'cache', 'storyState.md'), '- [1] 옛 원장\n');
+
+    await expectOk('workspace.open', { recentPath: workspacePath() });
+
+    expect(readFileSync(join(workspacePath(), STORYBOARD_RELATIVE_PATHS.storyState), 'utf8')).toBe('- [1] 옛 원장\n');
+    expect(existsSync(join(workspacePath(), '.storyboard', 'cache', 'storyState.md'))).toBe(false);
+  });
+
   it('opens a recent work only when main put it on the list', async () => {
     const result = await invoke('workspace.open', { recentPath: tmpdir() });
 
