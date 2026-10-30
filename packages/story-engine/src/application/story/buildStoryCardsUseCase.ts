@@ -12,8 +12,8 @@ import {
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '@storyboard/story-model';
-import type { StoryFeatureSource, StoryFileSnapshot } from './storyFeatureSource';
-import { StoryFeatureSourceError } from './storyFeatureSource';
+import type { StoryFeatureSource, StoryFileSnapshot } from '#engine/application/story/storyFeatureSource';
+import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureSource';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 
 const SCENE_CHUNK_SIZE: number = 40_000;

@@ -1,4 +1,4 @@
-import { parseJsonObject } from './aiResponseParser';
+import { parseJsonObject } from '#model/contracts/aiResponseParser';
 
 type UntypedFields = Readonly<Record<string, unknown>>;
 

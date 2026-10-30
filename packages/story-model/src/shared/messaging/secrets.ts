@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { providerIdSchema, type ProviderId } from './atoms';
+import { providerIdSchema, type ProviderId } from '#model/shared/messaging/atoms';
 
 export interface SecretsWriteApiKeyRequestPayload {
   providerId: ProviderId;

@@ -1,13 +1,13 @@
-import type { AiTextGateway } from './AiTextGateway';
-import { toPromptMessages } from './aiResponseCoercion';
-import { StudioAgentPrompt, type StudioAgentPromptInput } from './prompts/studioAgent';
-import { StudioCardAuditPrompt, type StudioCardAuditPromptInput } from './prompts/studioCardAudit';
-import { StudioCardSeedPrompt } from './prompts/studioCardSeed';
+import type { AiTextGateway } from '#ai/ai/AiTextGateway';
+import { toPromptMessages } from '#ai/ai/aiResponseCoercion';
+import { StudioAgentPrompt, type StudioAgentPromptInput } from '#ai/ai/prompts/studioAgent';
+import { StudioCardAuditPrompt, type StudioCardAuditPromptInput } from '#ai/ai/prompts/studioCardAudit';
+import { StudioCardSeedPrompt } from '#ai/ai/prompts/studioCardSeed';
 import {
   StudioValidationPrompt,
   type StudioValidationPromptInput,
-} from './prompts/studioValidation';
-import type { GenerateTextOptions } from './aiServiceTypes';
+} from '#ai/ai/prompts/studioValidation';
+import type { GenerateTextOptions } from '#ai/ai/aiServiceTypes';
 import {
   coerceStudioAgentAction,
   type StudioAgentAction,

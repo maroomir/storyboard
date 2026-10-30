@@ -18,7 +18,7 @@ import type {
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
 
 const contractFieldLabels: Record<ContractFieldKey, string> = {
   genre: '장르',

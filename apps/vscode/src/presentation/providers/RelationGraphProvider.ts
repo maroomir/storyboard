@@ -8,7 +8,7 @@ import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/
 import { AiRpc } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-model';
-import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
 import { STORYBOARD_GLOBS } from '@storyboard/story-model';
 

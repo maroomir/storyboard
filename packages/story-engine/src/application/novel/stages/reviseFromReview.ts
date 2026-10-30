@@ -9,7 +9,7 @@ import type {
   ReviewStageResult,
   ReviewTarget,
 } from '#engine/application/novel/novelPipelineContract';
-import { VolumeReviewer } from './volumeReviewer';
+import { VolumeReviewer } from '#engine/application/novel/stages/volumeReviewer';
 
 export class ReviseFromReviewStage implements INovelStage {
   public readonly id: NovelStageName = 'revise-from-review';

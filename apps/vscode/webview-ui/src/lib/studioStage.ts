@@ -1,4 +1,4 @@
-import type { StudioCardStage, StudioReviewState, StudioStage, StudioTarget } from './types';
+import type { StudioCardStage, StudioReviewState, StudioStage, StudioTarget } from '@webview/lib/types';
 
 const millisecondsPerDay: number = 86_400_000;
 

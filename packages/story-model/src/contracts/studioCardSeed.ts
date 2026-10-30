@@ -1,5 +1,5 @@
 import type { BibleSubjectKind } from '#model/format/bible';
-import { parseJsonObject } from './aiResponseParser';
+import { parseJsonObject } from '#model/contracts/aiResponseParser';
 
 export interface StudioCardSeed {
   readonly kind: BibleSubjectKind;

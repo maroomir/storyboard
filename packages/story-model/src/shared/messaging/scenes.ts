@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { uriStringSchema } from './atoms';
+import { uriStringSchema } from '#model/shared/messaging/atoms';
 
 export interface ScenesListRequestPayload {
   [key: string]: never;

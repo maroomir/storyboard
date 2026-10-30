@@ -2,20 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { AppBootstrap, DesktopSettings, RunSnapshot, UiLanguage, WorkspaceOverview } from '@/shared/dto';
 
-import { ProviderSetup } from './components/ProviderSetup';
-import { RunDrawer } from './components/RunDrawer';
-import { TopBar, type WorkspaceView } from './components/TopBar';
-import { desktopBridge } from './lib/bridge';
-import { call } from './lib/call';
-import { I18nProvider, useI18n } from './lib/i18n';
-import type { WorkspaceChange } from './lib/workspaceChange';
-import { Bible } from './screens/Bible';
-import { Desk } from './screens/Desk';
-import { History } from './screens/History';
-import { Settings } from './screens/Settings';
-import { Welcome } from './screens/Welcome';
-import { Wizard } from './screens/Wizard';
-import { NotesAbsorb } from './components/NotesAbsorb';
+import { ProviderSetup } from '@/renderer/components/ProviderSetup';
+import { RunDrawer } from '@/renderer/components/RunDrawer';
+import { TopBar, type WorkspaceView } from '@/renderer/components/TopBar';
+import { desktopBridge } from '@/renderer/lib/bridge';
+import { call } from '@/renderer/lib/call';
+import { I18nProvider, useI18n } from '@/renderer/lib/i18n';
+import type { WorkspaceChange } from '@/renderer/lib/workspaceChange';
+import { Bible } from '@/renderer/screens/Bible';
+import { Desk } from '@/renderer/screens/Desk';
+import { History } from '@/renderer/screens/History';
+import { Settings } from '@/renderer/screens/Settings';
+import { Welcome } from '@/renderer/screens/Welcome';
+import { Wizard } from '@/renderer/screens/Wizard';
+import { NotesAbsorb } from '@/renderer/components/NotesAbsorb';
 import type { DesktopBridge, InvokeResponses } from '@/shared/ipcContract';
 import { extractErrorMessage } from '@storyboard/story-model/contracts';
 

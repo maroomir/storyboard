@@ -20,9 +20,9 @@ import {
 } from '@storyboard/story-model';
 import { type PlanNoteAbsorbRequest } from '@storyboard/story-engine';
 
-import type { ParsedArguments } from '../src/cliArguments';
-import { commands, findCommand } from '../src/commands/index';
-import { createCliContainer } from '../src/container';
+import type { ParsedArguments } from '@/cliArguments';
+import { commands, findCommand } from '@/commands/index';
+import { createCliContainer } from '@/container';
 
 const vault = join(__dirname, 'fixtures', 'notes', 'obsidianVault', '달의 문');
 

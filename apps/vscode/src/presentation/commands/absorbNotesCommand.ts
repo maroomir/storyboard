@@ -21,7 +21,7 @@ import {
   type NoteSourceKind,
 } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
 
 export interface AbsorbNotesCommandDependencies {
   readonly logger: IStoryboardLogger;

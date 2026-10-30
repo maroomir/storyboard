@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 
 import type { ContinuityIssue, GrammarIssue } from '@storyboard/story-ai';
 
-import { mapContinuityIssuesToDiagnostics } from './ContinuityDiagnosticsProvider';
-import { mapGrammarIssuesToDiagnostics } from './GrammarDiagnosticsProvider';
+import { mapContinuityIssuesToDiagnostics } from '@/presentation/providers/ContinuityDiagnosticsProvider';
+import { mapGrammarIssuesToDiagnostics } from '@/presentation/providers/GrammarDiagnosticsProvider';
 
 export class StudioToolDiagnostics implements vscode.Disposable {
   private readonly continuityCollection: vscode.DiagnosticCollection =

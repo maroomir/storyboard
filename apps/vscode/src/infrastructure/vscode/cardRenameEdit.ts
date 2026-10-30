@@ -17,7 +17,7 @@ import {
   type StoryUri,
   type BibleSubjectKind,
 } from '@storyboard/story-model';
-import { uriExists } from './workspace';
+import { uriExists } from '@/infrastructure/vscode/workspace';
 
 export interface CardRenameCandidate {
   readonly kind: BibleSubjectKind;

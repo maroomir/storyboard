@@ -20,6 +20,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 내부
 
+- **소스 모듈은 어디서나 별칭으로 가져옵니다.** 앱은 `@/`(웹뷰는 `@webview/`), 패키지는 자기 `#` 접두사로만 자기 모듈을 가리키고, 같은 폴더의 `./sibling` 도 아키텍처 검사가 거부합니다. 옆에 둔 데이터·스타일 파일(`./x.params.json`, `./styles.css`)만 상대 경로로 남습니다. CLI 가 story-app 내부를 경로로 가져오던 곳은 패키지 진입점을 쓰도록 바꿨습니다. 동작은 그대로입니다.
 - **ChatGPT 로그인과 OAuth 호출이 클래스가 됐습니다.** `ChatGptOAuthClient` 가 fetch 를 생성자로 받아 토큰 교환·갱신·디스커버리·키 목록·해지를 메서드로 가지고, `ChatGptLoginFlow` 가 비밀 저장소를 받아 `login`·`logout` 을 합니다. 토큰 갱신을 한 번에 하나로 줄 세우던 모듈 변수는 프로바이더의 필드가 됐습니다. 동작과 저장 형식은 그대로입니다.
 - **씬 파이프라인의 뼈대 작성과 감수 루프가 클래스가 됐습니다.** `SkeletonDrafter` 가 실행 하나를 받아 분할 호출·재시도·채택을 하고, `ReviseLoop` 가 검사·구간 재작성 회차를 돕니다. 배경 묘사·배경 사실 상충·페르소나 조립은 각 스테이지의 비공개 단계가 됐고, 구간 계획과 검증은 `sectionPlanning.ts`·`sectionValidation.ts` 로 나뉘었습니다. 단계 id 와 생성 결과는 그대로입니다.
 - **소설 스테이지와 영속 도우미가 클래스가 됐습니다.** 소설 파이프라인은 씬 쪽처럼 `NovelRun` 위에서 스테이지 클래스 8개(`application/novel/stages/`)를 걷습니다. 파일 시스템을 첫 인자로 받던 도우미 함수들은 `WorkspaceFiles`·`WorkspaceInitializer`·`StudioContextRepository`·`RevisionPlanRecorder`·카드 기억 저장소 4종·`SceneNarrationResolver`·`StoryMemoryAuditor`·`ChapterMemoryAuditor` 와 기존 리포지토리의 메서드가 됐고, project.json 읽기·쓰기는 `ProjectRepository` 로 모였습니다. 씬 문맥 조립의 파일 읽기는 story-model 에서 엔진의 `SceneContextReader` 로 옮겨 모델에는 순수 규칙만 남습니다. 작품 파일 형식과 생성 결과는 그대로입니다.

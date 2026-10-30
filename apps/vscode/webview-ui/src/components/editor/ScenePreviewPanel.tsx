@@ -7,7 +7,7 @@ import {
   type SceneStructureTextField,
 } from '@storyboard/story-model/contracts';
 import type { SceneCard } from '@webview/lib/types';
-import { Pill } from '../ui/Pill';
+import { Pill } from '@webview/components/ui/Pill';
 
 const previewShellClass: string =
   'relative flex min-w-0 flex-col gap-4 overflow-hidden rounded-xl border border-sb-border/90 bg-gradient-to-b from-sb-bg-widget/50 via-sb-bg-sidebar to-sb-bg-sidebar/95 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.2)]';

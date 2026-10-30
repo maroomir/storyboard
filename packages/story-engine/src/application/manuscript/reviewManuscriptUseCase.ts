@@ -10,7 +10,7 @@ import {
   buildManuscriptReviewMarkdown,
   collectChapterPlanCharacterIds,
 } from '@storyboard/story-model';
-import { reviewChapterWindows, type ChapterWindowReviewResult } from './reviewChapterWindows';
+import { reviewChapterWindows, type ChapterWindowReviewResult } from '#engine/application/manuscript/reviewChapterWindows';
 import type { ManuscriptReviewSource } from '#engine/application/manuscript/manuscriptRepositories';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 

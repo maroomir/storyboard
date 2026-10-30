@@ -1,4 +1,4 @@
-import { commandCatalog, findCommandSpec } from './commands/index';
+import { commandCatalog, findCommandSpec } from '@/commands/index';
 import {
   commandGroupIds,
   commandGroups,
@@ -10,10 +10,10 @@ import {
   type CommandGroup,
   type CommandSpec,
   type FlagSpec,
-} from './commands/catalog';
-import { renderColumns, type ColumnRow } from './terminal/layout';
-import { plainTerminalStream, type TerminalStream } from './terminal/profile';
-import { wrapToWidth } from './terminal/width';
+} from '@/commands/catalog';
+import { renderColumns, type ColumnRow } from '@/terminal/layout';
+import { plainTerminalStream, type TerminalStream } from '@/terminal/profile';
+import { wrapToWidth } from '@/terminal/width';
 
 const maximumHelpWidth: number = 100;
 

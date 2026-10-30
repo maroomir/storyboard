@@ -1,5 +1,5 @@
 import type { AiMessage, AttributeCandidate, Severity, UsageAttribution } from '@storyboard/story-model';
-import type { PromptArtifact } from './prompts/types';
+import type { PromptArtifact } from '#ai/ai/prompts/types';
 
 type UntypedFields = Readonly<Record<string, unknown>>;
 

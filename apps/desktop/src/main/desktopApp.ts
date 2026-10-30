@@ -8,11 +8,11 @@ import type { AppBootstrap, UiLanguage, WorkspaceOverview } from '@/shared/dto';
 import { resolveUiLanguage, translate, type MessageKey, type MessageParams } from '@/shared/i18n/translate';
 import type { DesktopEventName, DesktopEvents, WorkspaceCreateRequest } from '@/shared/ipcContract';
 
-import { DesktopLogger } from './desktopLogger';
-import { DesktopStateStore } from './desktopState';
-import { fail, succeed, type ServiceFailure, type ServiceResult } from './serviceResult';
-import { createHomeSettingsStores, SettingsService, type SettingsStores } from './settingsService';
-import { WorkspaceSession, workspaceFolderName } from './workspaceSession';
+import { DesktopLogger } from '@/main/desktopLogger';
+import { DesktopStateStore } from '@/main/desktopState';
+import { fail, succeed, type ServiceFailure, type ServiceResult } from '@/main/serviceResult';
+import { createHomeSettingsStores, SettingsService, type SettingsStores } from '@/main/settingsService';
+import { WorkspaceSession, workspaceFolderName } from '@/main/workspaceSession';
 
 export interface DesktopAppPorts {
   readonly homePaths: StoryboardHomePaths;

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { methodSchema, requestIdSchema, storyboardMessageProtocolVersion } from './atoms';
+import { methodSchema, requestIdSchema, storyboardMessageProtocolVersion } from '#model/shared/messaging/atoms';
 import {
   storyboardRequestPayloadSchemas,
   storyboardResponsePayloadSchemas,
@@ -8,7 +8,7 @@ import {
   type StoryboardRequestPayload,
   type StoryboardResponseMethod,
   type StoryboardResponsePayload,
-} from './registry';
+} from '#model/shared/messaging/registry';
 
 type StoryboardRequestMessageMap = {
   readonly [M in StoryboardRequestMethod]: {

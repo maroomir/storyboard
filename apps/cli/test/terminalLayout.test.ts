@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { minimumBoxWidth, renderBox, renderColumns } from '../src/terminal/layout';
-import { measureWidth, padEndToWidth, truncateToWidth, wrapToWidth } from '../src/terminal/width';
+import { minimumBoxWidth, renderBox, renderColumns } from '@/terminal/layout';
+import { measureWidth, padEndToWidth, truncateToWidth, wrapToWidth } from '@/terminal/width';
 
 describe('terminal width', () => {
   it('counts Hangul as two columns and color codes as none', () => {

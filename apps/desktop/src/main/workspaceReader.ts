@@ -53,7 +53,7 @@ import type {
   WorkspaceOverview,
 } from '@/shared/dto';
 
-import type { DesktopContainer } from './desktopContainer';
+import type { DesktopContainer } from '@/main/desktopContainer';
 
 const shownFactCount: number = 6;
 

@@ -10,10 +10,10 @@ import type {
   IBackgroundMemoryStore,
   IPersonaMemoryStore,
   ISceneDialogueCorpus,
-} from './memoryStore';
+} from '#engine/pipeline/memoryStore';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import type { SceneGenerationTuning } from './sceneGenerationTuning';
-import type { SceneStageId } from './sceneStageCatalog';
+import type { SceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
+import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAiService,
   | 'createCharacterPersona'
@@ -55,7 +55,7 @@ export class SceneGenerationPipelineCancelledError extends Error {
   }
 }
 
-export type { SceneGenerationTuning } from './sceneGenerationTuning';
+export type { SceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 
 export interface RunSceneGenerationPipelineInput {
   readonly context: SceneContext;

@@ -10,7 +10,7 @@ import {
   type InvokeResult,
 } from '@/shared/ipcContract';
 
-import { fail, type ServiceResult } from './serviceResult';
+import { fail, type ServiceResult } from '@/main/serviceResult';
 import { extractErrorMessage } from '@storyboard/story-model';
 
 export type InvokeHandlers = {

@@ -3,8 +3,8 @@ import React from 'react';
 
 import { measureWidth, padEndToWidth, truncateToWidth } from '@/terminal/width';
 
-import type { InputSuggestion } from './session';
-import { useTuiTheme, type TuiTheme } from './tuiTheme';
+import type { InputSuggestion } from '@/tui/session';
+import { useTuiTheme, type TuiTheme } from '@/tui/tuiTheme';
 
 const visibleRows: number = 8;
 const summaryPaddingColumns: number = 8;

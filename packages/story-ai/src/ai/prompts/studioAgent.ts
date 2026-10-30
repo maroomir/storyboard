@@ -5,9 +5,9 @@ import {
   type StudioAgentToolName,
   type StudioPatchTarget,
 } from '@storyboard/story-model';
-import { renderPrompt } from './promptResource';
-import { promptTuning } from './promptTuning';
-import type { PromptArtifact, PromptModule } from './types';
+import { renderPrompt } from '#ai/ai/prompts/promptResource';
+import { promptTuning } from '#ai/ai/prompts/promptTuning';
+import type { PromptArtifact, PromptModule } from '#ai/ai/prompts/types';
 
 export interface StudioAgentPromptInput {
   readonly entityKind: StudioAgentEntityKind;

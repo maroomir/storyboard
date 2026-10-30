@@ -29,7 +29,7 @@ import type {
   SnapshotEntry,
   UiLanguage,
   WorkspaceOverview,
-} from './dto';
+} from '@/shared/dto';
 
 const sceneStemSchema: z.ZodType<string> = z.string().regex(sceneStemPattern);
 const cardIdSchema: z.ZodType<string> = z.string().regex(cardIdPattern);

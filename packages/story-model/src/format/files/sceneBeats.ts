@@ -1,4 +1,4 @@
-import { parseSceneCard, serializeSceneCard } from './scene';
+import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
 import type { SceneBeat, SceneCard } from '#model/format/scene';
 
 export function planSceneBeatCount(

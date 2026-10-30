@@ -17,15 +17,15 @@ import {
   riskNotAcknowledgedMessage,
   unknownProviderMessage,
 } from '@storyboard/story-model';
-import './providers';
-import { createRegisteredProvider, type ProviderClientFactories } from './providerFactory';
+import '#ai/ai/providers/index';
+import { createRegisteredProvider, type ProviderClientFactories } from '#ai/ai/providerFactory';
 import { SecretStore } from '#ai/ports/SecretStore';
 import {
   ConfigBridge,
   type ProviderModelConfig,
   type TaskAiConfigResolved,
 } from '#ai/ports/ConfigBridge';
-import type { PromptVariantId } from './prompts/types';
+import type { PromptVariantId } from '#ai/ai/prompts/types';
 
 export interface AiProviderRegistryOptions extends ProviderClientFactories {
   readonly secretStore: SecretStore;

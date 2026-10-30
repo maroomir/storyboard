@@ -2,7 +2,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import type { Theme } from '@/terminal/theme';
 
-import type { LiveArea } from './liveArea';
+import type { LiveArea } from '@/adapters/liveArea';
 import { formatUsd } from '@storyboard/story-model';
 
 export interface ProgressUnit {

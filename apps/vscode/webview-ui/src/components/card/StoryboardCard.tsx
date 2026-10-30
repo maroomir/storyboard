@@ -3,10 +3,10 @@ import { motion, type MotionProps, type TargetAndTransition, type Transition } f
 import type React from 'react';
 
 import type { CharacterRole, StoryboardCard as StoryboardCardModel } from '@webview/lib/types';
-import { cardGameFrameClass, cardGameInnerBevelClass } from './cardFrameStyles';
-import { CardImagePane } from './CardImagePane';
-import { CardRoleBadge } from './CardRoleBadge';
-import { CardTagRow } from './CardTagRow';
+import { cardGameFrameClass, cardGameInnerBevelClass } from '@webview/components/card/cardFrameStyles';
+import { CardImagePane } from '@webview/components/card/CardImagePane';
+import { CardRoleBadge } from '@webview/components/card/CardRoleBadge';
+import { CardTagRow } from '@webview/components/card/CardTagRow';
 import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
 
 export type StoryboardCardProps = {

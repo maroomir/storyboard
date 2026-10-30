@@ -11,7 +11,7 @@ import {
   parseSceneFileName,
 } from '@storyboard/story-model';
 import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
-import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
+import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from '#engine/application/drafts/reviseDraftUseCase';
 
 export type ReviseGateHooks = {
   readonly onProgress?: (message: string) => void;

@@ -22,7 +22,7 @@ import {
   validateDraftCandidate,
   type DraftCandidateRejectionReason,
   type DraftCandidateValidation,
-} from './draftCandidateValidation';
+} from '#engine/pipeline/draftCandidateValidation';
 import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
@@ -31,14 +31,14 @@ import {
   type ReviewIssue,
   type ReviewRouting,
   type RoutingCharacter,
-} from './reviewRouting';
+} from '#engine/pipeline/reviewRouting';
 import {
   joinDraftSections,
   locateQuoteSection,
   replaceSectionText,
   splitDraftSections,
   type DraftSections,
-} from './revisionSections';
+} from '#engine/pipeline/revisionSections';
 
 export interface ReviseLoopCharacter extends RoutingCharacter {
   readonly name: string;

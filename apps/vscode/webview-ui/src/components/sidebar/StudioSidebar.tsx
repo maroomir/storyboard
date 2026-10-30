@@ -38,10 +38,10 @@ import type {
   StudioStage,
   StudioTarget,
 } from '@webview/lib/types';
-import { Button } from '../ui/Button';
-import { Pill } from '../ui/Pill';
-import { SectionHeader } from '../ui/SectionHeader';
-import { sbInputClass } from '../ui/formClasses';
+import { Button } from '@webview/components/ui/Button';
+import { Pill } from '@webview/components/ui/Pill';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
+import { sbInputClass } from '@webview/components/ui/formClasses';
 import {
   findTool,
   isToolTarget,
@@ -50,9 +50,9 @@ import {
   type StudioComposerTool,
   type StudioToolEntry,
 } from '@webview/lib/studioTools';
-import { StudioSessionList } from './StudioSessionList';
-import { StudioToolMenu } from './StudioToolMenu';
-import { StudioTurnView, type StudioProposalActions } from './StudioTurnView';
+import { StudioSessionList } from '@webview/components/sidebar/StudioSessionList';
+import { StudioToolMenu } from '@webview/components/sidebar/StudioToolMenu';
+import { StudioTurnView, type StudioProposalActions } from '@webview/components/sidebar/StudioTurnView';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 import type { BibleSubjectKind } from '@storyboard/story-model/contracts';

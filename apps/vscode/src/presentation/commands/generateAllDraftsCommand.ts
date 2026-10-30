@@ -12,7 +12,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { stageProgressLabel } from '@/presentation/commands/sceneStageLabels';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
 
 export type GenerateAllDraftsCommandDependencies = {
   readonly runGate: Pick<RunGate, 'hold'>;

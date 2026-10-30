@@ -1,4 +1,4 @@
-import type { MessageKey } from './ko';
+import type { MessageKey } from '@/shared/i18n/ko';
 
 export const enMessages: Readonly<Record<MessageKey, string>> = {
   'common.save': 'Save',

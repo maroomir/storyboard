@@ -1,4 +1,4 @@
-import type { BackgroundCard, LocationBackgroundCard } from './card';
+import type { BackgroundCard, LocationBackgroundCard } from '#model/format/card';
 
 export type Background = BackgroundCard;
 

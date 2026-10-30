@@ -4,7 +4,7 @@ import { cardSchema, cardTypes, characterRoles, type CardType } from '#model/for
 import { narratorCardSchema } from '#model/format/narrator';
 import { sceneCardSchema } from '#model/format/scene';
 import { cardCollectProposalSchema, type CardCollectProposal } from '#model/shared/cardCollect';
-import { uriStringSchema } from './atoms';
+import { uriStringSchema } from '#model/shared/messaging/atoms';
 import type { StoryboardCard } from '#model/format/card';
 import type { NarratorCard } from '#model/format/narrator';
 import type { SceneCard } from '#model/format/scene';

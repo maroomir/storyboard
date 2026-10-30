@@ -2,31 +2,32 @@ export {
   StoryboardApplication,
   type StoryboardApplicationDependencies,
   type StoryboardApplicationOptions,
-} from './storyboardApplication';
+} from '#app/storyboardApplication';
 export {
   CardManager,
   type CardManagerDependencies,
+  type BackgroundFactConflictReport,
   type CardReading,
-} from './managers/cardManager';
+} from '#app/managers/cardManager';
 export {
   DraftManager,
   type DraftManagerDependencies,
   type DraftReading,
-} from './managers/draftManager';
+} from '#app/managers/draftManager';
 export {
   ManuscriptManager,
   type ManuscriptManagerDependencies,
-} from './managers/manuscriptManager';
+} from '#app/managers/manuscriptManager';
 export {
   NovelManager,
   type NovelManagerDependencies,
   type NovelRunRequest,
   type NovelRunResult,
   type NovelRunSpending,
-} from './managers/novelManager';
-export { NoteManager, type NoteManagerDependencies } from './managers/noteManager';
-export { StudioManager, type StudioManagerDependencies } from './managers/studioManager';
-export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from './runGate';
+} from '#app/managers/novelManager';
+export { NoteManager, type NoteManagerDependencies } from '#app/managers/noteManager';
+export { StudioManager, type StudioManagerDependencies } from '#app/managers/studioManager';
+export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from '#app/runGate';
 export {
   describeParameters,
   type DescribeParametersInput,
@@ -34,14 +35,14 @@ export {
   type ParameterKind,
   type ParameterOrigin,
   type ParameterReport,
-} from './parameterRegistry';
+} from '#app/parameterRegistry';
 export {
   describeWorkspaceStatus,
   workspaceNextSteps,
   type DescribeWorkspaceStatusInput,
   type WorkspaceNextStep,
   type WorkspaceStatus,
-} from './workspaceStatus';
+} from '#app/workspaceStatus';
 export {
   loadResourceOverrides,
   resourceLayout,
@@ -49,4 +50,4 @@ export {
   type ResourceOverrideKind,
   type ResourceOverrideProblem,
   type ResourceOverrideReport,
-} from './resourceOverrides';
+} from '#app/resourceOverrides';

@@ -1,9 +1,9 @@
-import type { StoryUri } from './storyUri';
-import { characterMatchTokens, type BackgroundCard, type CharacterCard } from './card';
-import type { SceneFile } from './scene';
-import { revealKnownBy, type BibleFact } from './bible';
-import { detectCharactersInText } from './characterDetector';
-import type { StoryStateFocalFilter } from './storyState';
+import type { StoryUri } from '#model/format/storyUri';
+import { characterMatchTokens, type BackgroundCard, type CharacterCard } from '#model/format/card';
+import type { SceneFile } from '#model/format/scene';
+import { revealKnownBy, type BibleFact } from '#model/format/bible';
+import { detectCharactersInText } from '#model/format/characterDetector';
+import type { StoryStateFocalFilter } from '#model/format/storyState';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: StoryUri;

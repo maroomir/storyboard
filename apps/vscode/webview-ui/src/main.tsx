@@ -1,23 +1,23 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 
-import './lib/types';
-import { CardEditor } from './components/editor/CardEditor';
+import '@webview/lib/types';
+import { CardEditor } from '@webview/components/editor/CardEditor';
 import {
   parseRelationGraphInitialData,
   RelationGraph,
-} from './components/relation/RelationGraphView';
-import { SettingsView } from './components/settings/SettingsView';
-import { CardsSidebar } from './components/sidebar/CardsSidebar';
-import { SidebarPlaceholder } from './components/sidebar/Placeholder';
-import { ScenesSidebar } from './components/sidebar/ScenesSidebar';
-import { StudioSidebar } from './components/sidebar/StudioSidebar';
+} from '@webview/components/relation/RelationGraphView';
+import { SettingsView } from '@webview/components/settings/SettingsView';
+import { CardsSidebar } from '@webview/components/sidebar/CardsSidebar';
+import { SidebarPlaceholder } from '@webview/components/sidebar/Placeholder';
+import { ScenesSidebar } from '@webview/components/sidebar/ScenesSidebar';
+import { StudioSidebar } from '@webview/components/sidebar/StudioSidebar';
 import {
   parseCardEditorInitialData,
   parseSidebarCardsInitialData,
   parseSidebarScenesInitialData,
   parseStudioInitialData,
-} from './lib/messaging';
+} from '@webview/lib/messaging';
 import './styles.css';
 
 function App(): React.ReactElement {

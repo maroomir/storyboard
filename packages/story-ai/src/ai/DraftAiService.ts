@@ -1,27 +1,27 @@
-import type { GenerateTextOptions } from './aiServiceTypes';
+import type { GenerateTextOptions } from '#ai/ai/aiServiceTypes';
 
 export interface ContinuityCheckOptions extends GenerateTextOptions {
   readonly hasSceneMarkers?: boolean;
 }
-import { AiTextGateway } from './AiTextGateway';
+import { AiTextGateway } from '#ai/ai/AiTextGateway';
 import {
   toContinuityIssue,
   toGrammarIssue,
   toPromptMessages,
   type ContinuityIssue,
   type GrammarIssue,
-} from './aiResponseCoercion';
-import { ContinuityCheckPrompt } from './prompts/continuityCheck';
-import { DraftAugmentPrompt, type DraftAugmentInput } from './prompts/draftAugment';
-import { DraftCritiquePrompt, type DraftCritiqueInput } from './prompts/draftCritique';
-import { DraftCondensePrompt, type DraftCondenseInput } from './prompts/draftCondense';
-import { DraftExpansionPrompt } from './prompts/draftExpansion';
-import { DraftRevisionPrompt, type DraftRevisionInput } from './prompts/draftRevision';
-import { GrammarCheckPrompt } from './prompts/grammarCheck';
-import { InlineCompletionPrompt } from './prompts/inlineCompletion';
-import { SceneCoveragePrompt } from './prompts/sceneCoverage';
-import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from './prompts/storyStateUpdate';
-import type { PromptArtifact, PromptConfig, PromptVariantId } from './prompts/types';
+} from '#ai/ai/aiResponseCoercion';
+import { ContinuityCheckPrompt } from '#ai/ai/prompts/continuityCheck';
+import { DraftAugmentPrompt, type DraftAugmentInput } from '#ai/ai/prompts/draftAugment';
+import { DraftCritiquePrompt, type DraftCritiqueInput } from '#ai/ai/prompts/draftCritique';
+import { DraftCondensePrompt, type DraftCondenseInput } from '#ai/ai/prompts/draftCondense';
+import { DraftExpansionPrompt } from '#ai/ai/prompts/draftExpansion';
+import { DraftRevisionPrompt, type DraftRevisionInput } from '#ai/ai/prompts/draftRevision';
+import { GrammarCheckPrompt } from '#ai/ai/prompts/grammarCheck';
+import { InlineCompletionPrompt } from '#ai/ai/prompts/inlineCompletion';
+import { SceneCoveragePrompt } from '#ai/ai/prompts/sceneCoverage';
+import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from '#ai/ai/prompts/storyStateUpdate';
+import type { PromptArtifact, PromptConfig, PromptVariantId } from '#ai/ai/prompts/types';
 import type { AiGenerateResponse, AiTaskName } from '@storyboard/story-model';
 import {
   coerceCritiqueIssues,

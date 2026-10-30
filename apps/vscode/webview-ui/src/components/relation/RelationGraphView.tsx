@@ -4,7 +4,7 @@ import type { Simulation, SimulationNodeDatum } from 'd3-force';
 import { select, type Selection } from 'd3-selection';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { SectionHeader } from '../ui/SectionHeader';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { createRequestId } from '@webview/lib/messaging';
 import { shortenLineSegment, type LineSegment } from '@webview/lib/lineSegment';

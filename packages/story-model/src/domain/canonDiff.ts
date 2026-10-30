@@ -1,4 +1,4 @@
-import type { BibleCandidateRecord } from './files/bibleCandidates';
+import type { BibleCandidateRecord } from '#model/domain/files/bibleCandidates';
 import { resolveSceneOrder } from '#model/format/scene';
 import type { BibleFact, StoryBible } from '#model/format/bible';
 export interface CanonDiffResult {

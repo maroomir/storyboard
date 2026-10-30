@@ -5,23 +5,23 @@ import type {
 } from '#engine/application/engineServices';
 import { extractErrorMessage } from '@storyboard/story-model';
 import type { NovelStageName } from '@storyboard/story-model';
-import { NovelRun } from './novelRun';
-import type { INovelStage } from './novelStage';
-import { resolveNovelPipelinePlan } from './novelStageCatalog';
+import { NovelRun } from '#engine/application/novel/novelRun';
+import type { INovelStage } from '#engine/application/novel/novelStage';
+import { resolveNovelPipelinePlan } from '#engine/application/novel/novelStageCatalog';
 import type {
   NovelPipelineCollaborators,
   NovelPipelineOptions,
   NovelPipelineResult,
   NovelPipelineRunOptions,
-} from './novelPipelineContract';
-import { AssembleStage } from './stages/assemble';
-import { ChaptersStage } from './stages/chapters';
-import { CharactersStage } from './stages/characters';
-import { OutlineStage } from './stages/outline';
-import { ReviewStage } from './stages/review';
-import { ReviseFromReviewStage } from './stages/reviseFromReview';
-import { SeedsStage } from './stages/seeds';
-import { SummariesStage } from './stages/summaries';
+} from '#engine/application/novel/novelPipelineContract';
+import { AssembleStage } from '#engine/application/novel/stages/assemble';
+import { ChaptersStage } from '#engine/application/novel/stages/chapters';
+import { CharactersStage } from '#engine/application/novel/stages/characters';
+import { OutlineStage } from '#engine/application/novel/stages/outline';
+import { ReviewStage } from '#engine/application/novel/stages/review';
+import { ReviseFromReviewStage } from '#engine/application/novel/stages/reviseFromReview';
+import { SeedsStage } from '#engine/application/novel/stages/seeds';
+import { SummariesStage } from '#engine/application/novel/stages/summaries';
 
 export type {
   INovelOutlineRepository,
@@ -29,14 +29,14 @@ export type {
   INovelRunStateRepository,
   ISceneSeedRepository,
   NovelReviewSource,
-} from './novelPipelinePorts';
+} from '#engine/application/novel/novelPipelinePorts';
 export type {
   NovelApprovalKind,
   NovelPipelineOptions,
   NovelPipelineOutcome,
   NovelPipelineResult,
   NovelPipelineRunOptions,
-} from './novelPipelineContract';
+} from '#engine/application/novel/novelPipelineContract';
 
 export const novelStages: Readonly<Record<NovelStageName, INovelStage>> = {
   outline: new OutlineStage(),

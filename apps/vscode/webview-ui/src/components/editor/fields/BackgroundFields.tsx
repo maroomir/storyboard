@@ -2,7 +2,7 @@ import type React from 'react';
 
 import type { StoryboardCard } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
-import { ListField } from './ListField';
+import { ListField } from '@webview/components/editor/fields/ListField';
 import type { LocationKind } from '@storyboard/story-model/contracts';
 
 export function BackgroundFields({

@@ -4,7 +4,7 @@ import { renderBox } from '@/terminal/layout';
 import type { TerminalStream } from '@/terminal/profile';
 import { wrapToWidth } from '@/terminal/width';
 
-import { liveAreaReservedColumns, type LiveArea } from './liveArea';
+import { liveAreaReservedColumns, type LiveArea } from '@/adapters/liveArea';
 
 const eraseAnsweredQuestionLine: string = '\u001b[1A\u001b[2K';
 

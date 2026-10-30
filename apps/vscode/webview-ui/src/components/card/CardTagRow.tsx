@@ -3,7 +3,7 @@ import { Map, User, type LucideIcon } from 'lucide-react';
 import type React from 'react';
 
 import type { CardType } from '@webview/lib/types';
-import { Pill } from '../ui/Pill';
+import { Pill } from '@webview/components/ui/Pill';
 import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
 
 export type CardTagRowProps = {

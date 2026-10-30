@@ -2,8 +2,8 @@ import { History, MessageSquare } from 'lucide-react';
 import React from 'react';
 
 import type { StudioSessionSummary } from '@webview/lib/types';
-import { EmptyState } from '../ui/EmptyState';
-import { Pill } from '../ui/Pill';
+import { EmptyState } from '@webview/components/ui/EmptyState';
+import { Pill } from '@webview/components/ui/Pill';
 
 export function StudioSessionList({
   sessions,

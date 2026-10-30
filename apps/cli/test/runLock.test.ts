@@ -14,8 +14,8 @@ import {
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { commandCatalog } from '../src/commands/index';
-import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
+import { commandCatalog } from '@/commands/index';
+import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
 
 const desktopHolder: WorkspaceRunLockHolder = {
   owner: 'desktop',

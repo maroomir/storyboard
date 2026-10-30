@@ -6,30 +6,30 @@ import { render } from 'ink-testing-library';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { foldLines, StoryboardTui } from '../src/tui/app';
-import { findHistoryMatch } from '../src/tui/lineEditor';
+import { foldLines, StoryboardTui } from '@/tui/app';
+import { findHistoryMatch } from '@/tui/lineEditor';
 import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
 import { NodeUri, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
-import { CommandDispatcher } from '../src/commands/commandDispatcher';
-import { canShowWordmark, storyboardWordmark } from '../src/terminal/banner';
-import { measureWidth } from '../src/terminal/width';
-import { Banner } from '../src/tui/banner';
-import { describeHeader } from '../src/tui/index';
-import { Dashboard, describeDraftProgress } from '../src/tui/dashboard';
+import { CommandDispatcher } from '@/commands/commandDispatcher';
+import { canShowWordmark, storyboardWordmark } from '@/terminal/banner';
+import { measureWidth } from '@/terminal/width';
+import { Banner } from '@/tui/banner';
+import { describeHeader } from '@/tui/index';
+import { Dashboard, describeDraftProgress } from '@/tui/dashboard';
 import {
   classifyReaderLine,
   countManuscriptCharacters,
   DraftReader,
   layoutReaderLines,
-} from '../src/tui/draftReader';
-import { readWorkspaceView } from '../src/tui/workspaceView';
-import { StatusBar } from '../src/tui/statusBar';
-import { runShellCommand } from '../src/adapters/shellCommand';
-import { describeSpending, splitCommandLine, suggestForInput } from '../src/tui/session';
-import { loadTuiThemeName, saveTuiThemeName } from '../src/tui/tuiTheme';
-import { selectVisibleWindow } from '../src/tui/suggestionList';
+} from '@/tui/draftReader';
+import { readWorkspaceView } from '@/tui/workspaceView';
+import { StatusBar } from '@/tui/statusBar';
+import { runShellCommand } from '@/adapters/shellCommand';
+import { describeSpending, splitCommandLine, suggestForInput } from '@/tui/session';
+import { loadTuiThemeName, saveTuiThemeName } from '@/tui/tuiTheme';
+import { selectVisibleWindow } from '@/tui/suggestionList';
 
 let home: string;
 let cwd: string;

@@ -51,18 +51,18 @@ import {
   type GenerateDraftRequest,
   type GenerateDraftResult,
   type GenerateDraftWorkflowOptions,
-} from './draftGenerationContract';
+} from '#engine/application/drafts/draftGenerationContract';
 import {
   loadSceneGenerationInputs,
   reportWorkflowFailure,
   type SceneGenerationInputs,
   type SceneGenerationInputsResult,
-} from './sceneGenerationInputs';
+} from '#engine/application/drafts/sceneGenerationInputs';
 import type { IUseCase } from '#engine/application/useCase';
-import { updateStoryStateAfterGeneration } from './updateStoryState';
+import { updateStoryStateAfterGeneration } from '#engine/application/drafts/updateStoryState';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 
-export type { GenerateDraftRequest, GenerateDraftResult } from './draftGenerationContract';
+export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
 
 export interface GenerateDraftCollaborators {
   readonly postGenerationUpdates?: PostGenerationUpdateManager;

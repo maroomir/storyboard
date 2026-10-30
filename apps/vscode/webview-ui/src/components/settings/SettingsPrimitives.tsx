@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2, LoaderCircle, PlugZap } from 'lucide-react';
 import React from 'react';
 
-import { originLabel, type ConnectionTestState } from './settingsSnapshot';
+import { originLabel, type ConnectionTestState } from '@webview/components/settings/settingsSnapshot';
 import type { ConfigValueOrigin } from '@storyboard/story-model/contracts';
 
 interface ConnectionStateView {

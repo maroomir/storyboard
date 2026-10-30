@@ -1,9 +1,9 @@
 import { Pencil, Sparkles, Trash2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { CostBadge } from '../ui/CostBadge';
-import { Button } from '../ui/Button';
-import { EmptyState } from '../ui/EmptyState';
+import { CostBadge } from '@webview/components/ui/CostBadge';
+import { Button } from '@webview/components/ui/Button';
+import { EmptyState } from '@webview/components/ui/EmptyState';
 import {
   createRequestId,
   parseSidebarCardsInitialData,

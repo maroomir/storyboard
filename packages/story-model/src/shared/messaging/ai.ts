@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { aiTaskNameSchema, providerIdSchema, requestIdSchema, type ProviderId } from './atoms';
+import { aiTaskNameSchema, providerIdSchema, requestIdSchema, type ProviderId } from '#model/shared/messaging/atoms';
 import type { AiMessage, AiProviderStatus, AiTaskName, AiUsage } from '#model/contracts/aiTypes';
 
 const aiMessageSchema: z.ZodType<AiMessage> = z.object({

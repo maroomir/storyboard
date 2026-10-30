@@ -4,11 +4,11 @@ import { render } from 'ink-testing-library';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { LiveArea } from '../src/adapters/liveArea';
-import { describeChoiceLines, TerminalPrompter } from '../src/adapters/prompter';
-import { measureWidth } from '../src/terminal/width';
-import { createTheme } from '../src/terminal/theme';
-import { ChoiceDialog } from '../src/tui/choiceDialog';
+import { LiveArea } from '@/adapters/liveArea';
+import { describeChoiceLines, TerminalPrompter } from '@/adapters/prompter';
+import { measureWidth } from '@/terminal/width';
+import { createTheme } from '@/terminal/theme';
+import { ChoiceDialog } from '@/tui/choiceDialog';
 
 const stream = { isTty: true, columns: 80, theme: createTheme(false) };
 const request = {

@@ -5,7 +5,7 @@ import {
   allowListRule,
   isWithin,
   refusePipelineAssembly,
-  requireAliasForEscapingImport,
+  requireAliasForSourceImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
 
@@ -82,7 +82,7 @@ runArchitectureCheck('Desktop', SOURCE_ROOT, {
     refusePreloadDependencies,
     refuseDirectPipelineImport,
     refuseUiLibrariesOutsideRenderer,
-    requireAliasForEscapingImport(SOURCE_ROOT, '@/'),
+    requireAliasForSourceImport(SOURCE_ROOT, '@/'),
   ],
   aliases: { '@/': '@/' },
 });

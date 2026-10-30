@@ -29,7 +29,7 @@ import {
   tokensFromResponse,
   type FetchLike,
   type TokenResponse,
-} from './chatGptOAuth';
+} from '#ai/ai/providers/chatGptOAuth';
 import type { ProviderModelConfig } from '#ai/ports/ConfigBridge';
 
 const providerId: AiProviderId = 'chatgpt';

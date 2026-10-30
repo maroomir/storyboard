@@ -5,7 +5,7 @@ import type {
   NovelStageName,
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
-import { groupChapterStems, type ChapterGroup } from './chapterGrouping';
+import { groupChapterStems, type ChapterGroup } from '#engine/application/novel/chapterGrouping';
 import type {
   NovelAiService,
   NovelApprovalKind,
@@ -13,7 +13,7 @@ import type {
   NovelPipelineResult,
   NovelPipelineServices,
   ReviewStageResult,
-} from './novelPipelineContract';
+} from '#engine/application/novel/novelPipelineContract';
 
 export interface ApprovalRequest {
   readonly kind: NovelApprovalKind;

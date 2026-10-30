@@ -15,8 +15,8 @@ import {
 import type { ChatGptProvider, FetchLike, OAuthConnection } from '@storyboard/story-ai';
 import type { CliContainer } from '@/container';
 import { createChatGptProvider } from '@/commands/loginProviders';
-import type { CommandOutcome } from './outcome';
-import { success } from './outcomes';
+import type { CommandOutcome } from '@/commands/outcome';
+import { success } from '@/commands/outcomes';
 import { failure } from '@/commands/outcomes';
 import type { DoctorCheck } from '@/commands/doctorCheck';
 

@@ -7,7 +7,7 @@ import {
   type CollectedNotes,
   type INoteSource,
   type NoteLocation,
-} from './noteSource';
+} from '#engine/application/notes/noteSource';
 
 export interface CollectNotesRequest {
   readonly workspaceRoot: StoryUri;

@@ -4,10 +4,10 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
-import { markOutcome } from '../src/commands/outcomeView';
-import type { TerminalFacts } from '../src/terminal/profile';
-import { createTheme } from '../src/terminal/theme';
+import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
+import { markOutcome } from '@/commands/outcomeView';
+import type { TerminalFacts } from '@/terminal/profile';
+import { createTheme } from '@/terminal/theme';
 
 const silentLogger = {
   info: () => undefined,

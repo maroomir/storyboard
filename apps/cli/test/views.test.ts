@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { serializeDraft } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { commandCatalog } from '../src/commands/index';
-import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
-import { nextStepCommands } from '../src/commands/workspaceNextStep';
+import { commandCatalog } from '@/commands/index';
+import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
+import { nextStepCommands } from '@/commands/workspaceNextStep';
 
 const silentLogger = {
   info: () => undefined,

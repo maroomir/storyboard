@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { LiveArea } from '../src/adapters/liveArea';
+import { LiveArea } from '@/adapters/liveArea';
 import {
   describeChecklist,
   formatElapsed,
   LineRunProgress,
   RailRunProgress,
-} from '../src/adapters/runProgress';
-import { createTheme } from '../src/terminal/theme';
+} from '@/adapters/runProgress';
+import { createTheme } from '@/terminal/theme';
 
 function recordingStream(): { written: string[]; write: (text: string) => void } {
   const written: string[] = [];

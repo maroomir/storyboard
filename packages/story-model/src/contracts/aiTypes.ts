@@ -1,4 +1,4 @@
-import type { AiProviderId, AiTaskName } from './ai';
+import type { AiProviderId, AiTaskName } from '#model/contracts/ai';
 
 export {
   aiProviderIds,
@@ -7,14 +7,14 @@ export {
   aiTaskNames,
   isAiProviderId,
   requiresApiKey,
-} from './ai';
+} from '#model/contracts/ai';
 export type {
   AiProviderId,
   AiTaskCatalogEntry,
   AiTaskName,
   UsageAmount,
   UsageSummaryByEntity,
-} from './ai';
+} from '#model/contracts/ai';
 
 export type AiMessageRole = 'system' | 'user' | 'assistant';
 

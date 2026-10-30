@@ -1,8 +1,8 @@
 import type { BibleCard, CanonFact, DesktopSettings, NotesApplyView, SnapshotEntry } from '@/shared/dto';
-import type { DesktopApp } from './desktopApp';
-import type { InvokeHandlers } from './ipcRouter';
-import { fail, succeed, type ServiceResult } from './serviceResult';
-import type { WorkspaceSession } from './workspaceSession';
+import type { DesktopApp } from '@/main/desktopApp';
+import type { InvokeHandlers } from '@/main/ipcRouter';
+import { fail, succeed, type ServiceResult } from '@/main/serviceResult';
+import type { WorkspaceSession } from '@/main/workspaceSession';
 import type { RemovedBibleCard } from '@/main/bibleService';
 
 async function withSession<T>(

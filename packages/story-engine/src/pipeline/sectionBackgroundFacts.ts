@@ -1,4 +1,4 @@
-import { placeWordSet } from './sceneCoordinates';
+import { placeWordSet } from '#engine/pipeline/sceneCoordinates';
 
 const ELSEWHERE_LABEL: string = '다른 자리';
 

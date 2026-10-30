@@ -9,7 +9,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import type { IStudioSessionRepository } from '@storyboard/story-engine';
 import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import { StudioContextRepository } from '@storyboard/story-engine';
-import type { ProposalReviewService } from './proposalReviewService';
+import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import {
   createWebviewBridge,
   type StoryboardRpcHandlers,
@@ -24,14 +24,17 @@ import type {
 import type { StudioChatStage } from '@storyboard/story-engine';
 import type { CardManager, StudioManager } from '@storyboard/story-app';
 import type { AiGateway } from '@storyboard/story-engine';
-import { StudioToolDiagnostics } from './studioToolDiagnostics';
+import { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import { StudioCardUpdateRpc } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
 import { StudioChatRpc } from '@/presentation/messaging/studioChatRpcHandlers';
 import { StudioFollowUpRpc } from '@/presentation/messaging/studioFollowUpRpcHandlers';
 import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { StudioSessionRpc } from '@/presentation/messaging/studioSessionRpcHandlers';
-import { computeStudioTarget, resolveActiveStudioFocus } from './studioTarget';
-import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import {
+  computeStudioTarget,
+  resolveActiveStudioFocus,
+} from '@/presentation/providers/studioTarget';
+import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
 
 export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode.Disposable {

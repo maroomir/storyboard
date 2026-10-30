@@ -3,7 +3,14 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { collectSourceFiles, getImportPath, parseSourceFile } from './runner.mjs';
+import ts from 'typescript';
+
+import {
+  collectSourceFiles,
+  getImportPath,
+  parseSourceFile,
+  requireAliasForSourceImport,
+} from './runner.mjs';
 
 // The rules here belong to the repository, not to one app: a package that imports `vscode` breaks
 // the CLI and the desktop just as much as the extension, and an owned literal may be repeated from
@@ -48,7 +55,19 @@ function listEntryModules(name) {
 
 function isEntryOrBarrelImport(importPath, prefix, entryModules) {
   const subpath = importPath.slice(prefix.length);
-  return entryModules.includes(subpath) || subpath === 'index' || subpath.endsWith('/index');
+  return entryModules.includes(subpath) || isBarrelModule(subpath);
+}
+
+function isBarrelModule(subpath) {
+  return subpath === 'index' || subpath.endsWith('/index');
+}
+
+// An entry file or a folder barrel exists to gather barrels, and an import with no bindings (the
+// provider registrations) names nothing whose home it could hide.
+function isBarrelImportAllowed(statement, importerSubpath, entryModules) {
+  const isImporterABarrel = entryModules.includes(importerSubpath) || isBarrelModule(importerSubpath);
+  const isSideEffectImport = ts.isImportDeclaration(statement) && !statement.importClause;
+  return isImporterABarrel || isSideEffectImport;
 }
 
 const summary = [];
@@ -65,10 +84,12 @@ function checkSharedPackages(failures) {
     const files = collectSourceFiles(packageRoot);
     const prefix = PACKAGE_INTERNAL_PREFIXES[name];
     const entryModules = listEntryModules(name);
+    const requirePrefix = requireAliasForSourceImport(packageRoot, prefix);
     summary.push(`${files.length} ${name}`);
 
     for (const filePath of files) {
       const relative = path.relative(packageRoot, filePath).replaceAll(path.sep, '/');
+      const importerSubpath = relative.replace(/\.tsx?$/, '');
       const text = fs.readFileSync(filePath, 'utf8');
 
       // An inline `import('vscode').Uri` is not an import statement, so the statement walk below
@@ -98,9 +119,15 @@ function checkSharedPackages(failures) {
           );
         }
 
+        requirePrefix(filePath, importPath, statement, (message, _from, target) => {
+          const to = path.relative(packageRoot, target).replaceAll(path.sep, '/');
+          failures.push(`${name} ${message}: ${relative} -> ${to}`);
+        });
+
         if (
           importPath.startsWith(prefix) &&
-          isEntryOrBarrelImport(importPath, prefix, entryModules)
+          isEntryOrBarrelImport(importPath, prefix, entryModules) &&
+          !isBarrelImportAllowed(statement, importerSubpath, entryModules)
         ) {
           failures.push(
             `${name} imports its own entry file or a folder barrel; import the defining module: ${relative} -> ${importPath}`,
@@ -161,9 +188,32 @@ function checkOwnedLiterals(failures) {
   }
 }
 
+const WEBVIEW_ROOT = path.join(REPO_ROOT, 'apps', 'vscode', 'webview-ui', 'src');
+
+// The webview bundle has no architecture check of its own, so its alias rule is kept here.
+function checkWebviewAliases(failures) {
+  const requireWebviewAlias = requireAliasForSourceImport(WEBVIEW_ROOT, '@webview/');
+
+  for (const filePath of collectSourceFiles(WEBVIEW_ROOT)) {
+    for (const statement of parseSourceFile(filePath).statements) {
+      const importPath = getImportPath(statement);
+
+      if (!importPath) {
+        continue;
+      }
+
+      requireWebviewAlias(filePath, importPath, statement, (message, from, target) => {
+        const toRepo = (file) => path.relative(REPO_ROOT, file).replaceAll(path.sep, '/');
+        failures.push(`webview ${message}: ${toRepo(from)} -> ${toRepo(target)}`);
+      });
+    }
+  }
+}
+
 const failures = [];
 
 checkSharedPackages(failures);
+checkWebviewAliases(failures);
 checkOwnedLiterals(failures);
 
 if (failures.length > 0) {

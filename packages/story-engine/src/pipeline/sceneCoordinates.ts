@@ -4,7 +4,7 @@ import {
   type SceneBeat,
 } from '@storyboard/story-model';
 
-import { placeWords } from './sceneBreakPlan';
+import { placeWords } from '#engine/pipeline/sceneBreakPlan';
 
 const COORDINATE_MARKER: RegExp = /⟪([^⟪⟫\n]*)⟫/g;
 const SCENE_BREAK_LINE: string = '---';

@@ -1,4 +1,4 @@
-import { STORYBOARD_RELATIVE_PATHS } from './paths';
+import { STORYBOARD_RELATIVE_PATHS } from '#model/format/paths';
 
 export const storyboardGitignoreMarker: string = '# Storyboard generated files';
 

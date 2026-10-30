@@ -30,7 +30,7 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 - Keep shared message/state types in a shared module once source structure exists.
 - Use explicit command and message names prefixed with `storyboard`.
 - Apply the clean code standards in `.claude/rules/clean-code.md` when writing or reviewing code.
-- Use import aliases: `@/` → `apps/vscode/src/` (extension host), `@webview/` → `apps/vscode/webview-ui/src/` (webview). Prefer them over long `../../` chains; do not use `@/` from webview code.
+- Use import aliases: `@/` → `apps/vscode/src/` (extension host), `@webview/` → `apps/vscode/webview-ui/src/` (webview). Every import of a source module goes through its alias, `./sibling` included; do not use `@/` from webview code.
 - Do not commit generated build output unless the packaging workflow requires it.
 - Do not store API keys, tokens, or personal workspace paths in committed code.
 

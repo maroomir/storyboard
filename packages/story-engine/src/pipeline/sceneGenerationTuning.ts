@@ -5,7 +5,7 @@ import {
   type ViolationWeights,
 } from '@storyboard/story-model';
 
-import { pipelineDefaults } from './pipelineDefaults';
+import { pipelineDefaults } from '#engine/pipeline/pipelineDefaults';
 
 export {
   sectionViolationKinds,

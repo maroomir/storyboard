@@ -16,7 +16,7 @@ import {
   providerCatalog,
   type AiUsage,
 } from '@storyboard/story-model';
-import { type OpenAiChatCompletionResponse, type OpenAiClientLike } from './OpenAiProvider';
+import { type OpenAiChatCompletionResponse, type OpenAiClientLike } from '#ai/ai/providers/OpenAiProvider';
 import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 export const grokApiBaseUrl: string = providerCatalog.grok.defaultBaseUrl;

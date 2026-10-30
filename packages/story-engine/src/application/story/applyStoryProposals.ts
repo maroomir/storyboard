@@ -9,8 +9,8 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import { applyStoryCardChanges, type StoryCardTarget } from './buildStoryCardsUseCase';
-import type { CompletedStoryScene } from './completeStoryScenesUseCase';
+import { applyStoryCardChanges, type StoryCardTarget } from '#engine/application/story/buildStoryCardsUseCase';
+import type { CompletedStoryScene } from '#engine/application/story/completeStoryScenesUseCase';
 
 export interface ApplyStoryCardTargetsResult {
   readonly writtenIds: readonly string[];

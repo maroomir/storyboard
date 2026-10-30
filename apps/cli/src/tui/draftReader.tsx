@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 
 import { measureWidth, wrapToWidth } from '@/terminal/width';
 
-import { useTuiTheme, type TuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from '@/tui/tuiTheme';
 
 export interface DraftReaderProps {
   readonly title: string;

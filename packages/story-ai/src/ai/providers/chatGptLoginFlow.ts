@@ -22,7 +22,7 @@ import {
   type FetchLike,
   type IdTokenIdentity,
   type TokenResponse,
-} from './chatGptOAuth';
+} from '#ai/ai/providers/chatGptOAuth';
 
 const providerId: AiProviderId = 'chatgpt';
 const defaultTimeoutMs: number = 5 * 60 * 1000;

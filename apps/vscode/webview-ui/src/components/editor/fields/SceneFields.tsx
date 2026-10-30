@@ -2,7 +2,7 @@ import type React from 'react';
 
 import type { NarratorSummary, SceneCard, SceneGrounding } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
-import { ListField } from './ListField';
+import { ListField } from '@webview/components/editor/fields/ListField';
 import type { SceneStructureTextField } from '@storyboard/story-model/contracts';
 
 const sceneTextareaClass: string = `${sbInputClass} min-h-20 resize-y leading-normal`;

@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { readRuns } from '@storyboard/story-sim';
 
-import type { ParsedArguments } from '../src/cliArguments';
-import { commands, findCommand } from '../src/commands/index';
-import { createCliContainer } from '../src/container';
+import type { ParsedArguments } from '@/cliArguments';
+import { commands, findCommand } from '@/commands/index';
+import { createCliContainer } from '@/container';
 
 let home: string;
 let track: string;

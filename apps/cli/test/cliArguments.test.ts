@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { flagBoolean, isParseFailure, parseArguments, resolveVerb } from '../src/cliArguments';
+import { flagBoolean, isParseFailure, parseArguments, resolveVerb } from '@/cliArguments';
 
 describe('parseArguments', () => {
   it('honours -h and -v as the long flags', () => {

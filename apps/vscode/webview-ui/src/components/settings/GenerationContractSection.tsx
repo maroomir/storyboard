@@ -16,8 +16,8 @@ import {
   type StoryThreadEntry,
 } from '@storyboard/story-model/contracts';
 
-import { ListField } from '../editor/fields/ListField';
-import { SectionHeader } from '../ui/SectionHeader';
+import { ListField } from '@webview/components/editor/fields/ListField';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
 
 const sbInputClass: string =
   'w-full rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-3 py-2 text-sb-fg-input outline-none transition focus:border-sb-border-focus focus:ring-1 focus:ring-sb-border-focus/40';

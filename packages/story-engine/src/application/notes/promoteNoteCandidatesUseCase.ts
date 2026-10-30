@@ -16,7 +16,7 @@ import {
   removeNoteCandidateChange,
   shouldProposeCardCollect,
 } from '@storyboard/story-model';
-import type { NoteCandidateLoad } from './noteAbsorbRepository';
+import type { NoteCandidateLoad } from '#engine/application/notes/noteAbsorbRepository';
 
 export type PrepareNoteCandidatePromotionResult =
   | { readonly kind: 'no_candidates' }

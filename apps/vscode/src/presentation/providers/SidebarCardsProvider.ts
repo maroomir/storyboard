@@ -20,7 +20,7 @@ import type {
   SidebarCardsInitialData,
 } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
-import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
 
 interface SidebarCardsProviderOptions {

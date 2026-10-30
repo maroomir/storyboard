@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   orderedLayerRule,
   refusePipelineAssembly,
-  requireAliasForEscapingImport,
+  requireAliasForSourceImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
 
@@ -22,6 +22,6 @@ const refuseDirectPipelineImport = refusePipelineAssembly('CLI');
 
 runArchitectureCheck('CLI', SOURCE_ROOT, {
   rules: [orderedLayerRule(LAYER_ORDER, SOURCE_ROOT)],
-  importRules: [refuseDirectPipelineImport, requireAliasForEscapingImport(SOURCE_ROOT, '@/')],
+  importRules: [refuseDirectPipelineImport, requireAliasForSourceImport(SOURCE_ROOT, '@/')],
   aliases: { '@/': '@/' },
 });

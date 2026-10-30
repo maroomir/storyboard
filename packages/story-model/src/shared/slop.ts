@@ -1,4 +1,4 @@
-import { slopPhrases } from './slopPhrases';
+import { slopPhrases } from '#model/shared/slopPhrases';
 
 export type SlopKind = 'phrase' | 'contrast' | 'trigram';
 

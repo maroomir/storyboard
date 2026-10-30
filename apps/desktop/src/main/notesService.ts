@@ -5,8 +5,8 @@ import type { ApplyNoteAbsorbResult, CollectNotesResult, NoteLocation, PlanNoteA
 import type { NotesApplyView, NotesEstimateView, NotesPlanView } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 
-import type { DesktopContainer } from './desktopContainer';
-import { fail, succeed, type ServiceResult } from './serviceResult';
+import type { DesktopContainer } from '@/main/desktopContainer';
+import { fail, succeed, type ServiceResult } from '@/main/serviceResult';
 
 export type NotesLocationRequest =
   | { readonly kind: 'path'; readonly path: string }

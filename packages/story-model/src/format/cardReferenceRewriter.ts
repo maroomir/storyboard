@@ -4,7 +4,7 @@ import {
   type CharacterCard,
   type CharacterRelation,
   type StoryboardCard,
-} from './card';
+} from '#model/format/card';
 
 export function setCardId(card: StoryboardCard, newId: string): StoryboardCard {
   if (card.type === 'character') {

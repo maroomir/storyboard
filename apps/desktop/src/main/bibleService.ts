@@ -27,7 +27,7 @@ import { ZodError, type ZodSafeParseResult, type ZodType } from 'zod';
 
 import type { BibleCard, BibleCardKind, BibleCardSummary, CanonFact } from '@/shared/dto';
 
-import { fail, succeed, type ServiceResult } from './serviceResult';
+import { fail, succeed, type ServiceResult } from '@/main/serviceResult';
 
 function directoryOf(paths: StoryboardProjectPaths, kind: BibleCardKind): StoryUri {
   switch (kind) {

@@ -4,7 +4,7 @@ import {
   type SceneGrounding,
   type SceneGroundingFieldKey,
 } from '#model/format/scene';
-import { parseSceneCard, serializeSceneCard } from './scene';
+import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
 
 export function missingSceneGroundingFields(
   grounding: SceneGrounding | undefined,

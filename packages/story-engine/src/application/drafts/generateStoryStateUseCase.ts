@@ -9,9 +9,9 @@ import {
   readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
-import type { GenerateDraftWorkflowOptions } from './draftGenerationContract';
-import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from './sceneGenerationInputs';
-import { recordStoryStateFromDraft } from './updateStoryState';
+import type { GenerateDraftWorkflowOptions } from '#engine/application/drafts/draftGenerationContract';
+import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from '#engine/application/drafts/sceneGenerationInputs';
+import { recordStoryStateFromDraft } from '#engine/application/drafts/updateStoryState';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
 

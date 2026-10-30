@@ -1,4 +1,4 @@
-import { providerCatalog } from './providerCatalog';
+import { providerCatalog } from '#model/contracts/providerCatalog';
 
 export type {
   AiProviderId,
@@ -8,7 +8,7 @@ export type {
   ProviderModelOption,
   ProviderModelOptions,
   ProviderTransport,
-} from './providerCatalog';
+} from '#model/contracts/providerCatalog';
 export {
   acceptsTemperature,
   aiProviderIds,
@@ -24,9 +24,9 @@ export {
   providerCatalog,
   storyboardModelCatalog,
   storyboardModelPricing,
-} from './providerCatalog';
+} from '#model/contracts/providerCatalog';
 
-import type { AiProviderId } from './providerCatalog';
+import type { AiProviderId } from '#model/contracts/providerCatalog';
 
 export type AiTaskName =
   | 'sceneGrounding'

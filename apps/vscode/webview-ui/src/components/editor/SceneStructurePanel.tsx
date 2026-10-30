@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 import type { SceneCard } from '@webview/lib/types';
-import { Button } from '../ui/Button';
+import { Button } from '@webview/components/ui/Button';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { callRpc } from '@webview/lib/rpcClient';
 

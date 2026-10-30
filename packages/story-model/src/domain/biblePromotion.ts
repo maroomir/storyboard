@@ -1,6 +1,6 @@
 import { resolveSceneOrder } from '#model/format/scene';
 import type { BibleFact, StoryBible } from '#model/format/bible';
-import type { BibleCandidateRecord } from './files/bibleCandidates';
+import type { BibleCandidateRecord } from '#model/domain/files/bibleCandidates';
 export function seedPromotedFact(fact: BibleFact): BibleFact {
   if (fact.validFrom !== undefined || fact.sourceScene === undefined) {
     return fact;

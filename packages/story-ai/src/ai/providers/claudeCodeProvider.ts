@@ -18,7 +18,7 @@ import {
   type JsonRecord,
   isJsonRecord,
 } from '@storyboard/story-model';
-import { NodeCliRunner } from './nodeCliRunner';
+import { NodeCliRunner } from '#ai/ai/providers/nodeCliRunner';
 import type { CliProviderConfig, ProviderModelConfig } from '#ai/ports/ConfigBridge';
 
 const providerId: AiProviderId = 'claude-code';

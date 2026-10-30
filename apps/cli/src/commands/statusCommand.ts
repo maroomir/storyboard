@@ -9,7 +9,7 @@ import {
   nextStepCommands,
 } from '@/commands/workspaceNextStep';
 import type { WorkspaceStatus } from '@storyboard/story-app';
-import { success } from './outcomes';
+import { success } from '@/commands/outcomes';
 
 export class StatusCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {

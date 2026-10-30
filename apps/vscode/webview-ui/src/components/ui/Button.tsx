@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import type React from 'react';
 
-import { sbControlButtonClass } from './formClasses';
+import { sbControlButtonClass } from '@webview/components/ui/formClasses';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 

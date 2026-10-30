@@ -1,9 +1,9 @@
 import type { UsageSummaryByEntity } from '#model/contracts/ai';
 import type { BibleSubjectKind } from '#model/format/bible';
-import type { SidebarCardSummary } from './cards';
-import type { RelationListCharacter } from './relations';
-import type { SceneListItem } from './scenes';
-import type { StudioSessionSnapshot, StudioTarget } from './studio';
+import type { SidebarCardSummary } from '#model/shared/messaging/cards';
+import type { RelationListCharacter } from '#model/shared/messaging/relations';
+import type { SceneListItem } from '#model/shared/messaging/scenes';
+import type { StudioSessionSnapshot, StudioTarget } from '#model/shared/messaging/studio';
 
 export interface RelationGraphInitialData {
   readonly title: string;

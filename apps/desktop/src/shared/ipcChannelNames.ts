@@ -1,4 +1,4 @@
-import type { DesktopEventName } from './ipcContract';
+import type { DesktopEventName } from '@/shared/ipcContract';
 
 export const ipcInvokeChannelName: string = 'storyboard:invoke';
 

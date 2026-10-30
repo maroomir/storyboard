@@ -16,9 +16,9 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 
-import type { CardManager } from './managers/cardManager';
-import type { DraftManager, DraftReading } from './managers/draftManager';
-import type { NovelManager } from './managers/novelManager';
+import type { CardManager } from '#app/managers/cardManager';
+import type { DraftManager, DraftReading } from '#app/managers/draftManager';
+import type { NovelManager } from '#app/managers/novelManager';
 
 export type WorkspaceNextStep =
   | 'fill-contract'

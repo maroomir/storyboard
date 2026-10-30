@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { hasForeignScript } from '#model/format/foreignScript';
 
-import { parseJsonObject } from './aiResponseParser';
+import { parseJsonObject } from '#model/contracts/aiResponseParser';
 import type { StoryStateSection } from '#model/format/storyState';
 
 export const storyStateUpdateSections: readonly [StoryStateSection, ...StoryStateSection[]] = [

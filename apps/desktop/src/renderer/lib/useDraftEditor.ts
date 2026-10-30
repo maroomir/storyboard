@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DraftDocument } from '@/shared/dto';
 
-import { call } from './call';
-import { DraftAutosave, type AutosaveState } from './draftAutosave';
+import { call } from '@/renderer/lib/call';
+import { DraftAutosave, type AutosaveState } from '@/renderer/lib/draftAutosave';
 import { extractErrorMessage } from '@storyboard/story-model/contracts';
 
 export interface DraftEditor {

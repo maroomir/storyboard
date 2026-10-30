@@ -1,6 +1,6 @@
 import type { SceneDialogueRewrite } from '@storyboard/story-ai';
-import { quotedDialoguePatternFor } from './sectionValidation';
-import type { ResolvedSceneGenerationTuning } from './sceneGenerationTuning';
+import { quotedDialoguePatternFor } from '#engine/pipeline/sectionValidation';
+import type { ResolvedSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 
 export interface NumberedDialogue {
   readonly start: number;

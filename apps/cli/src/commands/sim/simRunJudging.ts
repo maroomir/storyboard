@@ -16,7 +16,7 @@ import {
   type SceneDraft,
   type SimJudge,
 } from '@storyboard/story-sim';
-import { judgeUsageTotals, type JudgeMaterials, type Selection, type TrackScene } from './simTrack';
+import { judgeUsageTotals, type JudgeMaterials, type Selection, type TrackScene } from '@/commands/sim/simTrack';
 
 export interface SimRunJudgingDependencies {
   readonly logger: IStoryboardLogger;

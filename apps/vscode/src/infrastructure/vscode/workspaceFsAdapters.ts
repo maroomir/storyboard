@@ -5,7 +5,7 @@ import type {
 } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
-import { writeFileAtomically } from './atomicWrite';
+import { writeFileAtomically } from '@/infrastructure/vscode/atomicWrite';
 
 export const vscodeFsAdapter: ReadWriteFileSystem = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>

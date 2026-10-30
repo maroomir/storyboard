@@ -8,10 +8,10 @@ import {
   type ReviseDraftWorkflowResult,
 } from '@storyboard/story-engine';
 import type { DraftManager, RunGate } from '@storyboard/story-app';
-import { confirmSceneGrounding } from './confirmSceneGrounding';
+import { confirmSceneGrounding } from '@/presentation/commands/confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
 import { resolveSceneUriFromInvocation } from '@/presentation/commands/sceneInvocation';
 
 const CACHE_HIT_MESSAGE: string = '입력이 동일하여 캐시된 초안을 엽니다.';

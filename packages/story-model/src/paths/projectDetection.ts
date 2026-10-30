@@ -1,5 +1,5 @@
-import { getStoryboardProjectPaths } from './projectPaths';
-import type { StoryUri, StoryWorkspaceFolder } from './storyUri';
+import { getStoryboardProjectPaths } from '#model/paths/projectPaths';
+import type { StoryUri, StoryWorkspaceFolder } from '#model/paths/storyUri';
 
 export type UriExists = (uri: StoryUri) => Promise<boolean>;
 

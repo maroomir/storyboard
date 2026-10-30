@@ -9,9 +9,9 @@ import {
   createWarningDiagnostic,
   toRange,
   type DiagnosticsProviderDependencies,
-} from './diagnosticsShared';
+} from '@/presentation/providers/diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { LatestRequestGuard } from './latestRequestGuard';
+import { LatestRequestGuard } from '@/presentation/providers/latestRequestGuard';
 import type { GrammarIssue } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 

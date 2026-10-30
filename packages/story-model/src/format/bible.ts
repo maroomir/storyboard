@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { resolveSceneOrder } from './scene';
+import { resolveSceneOrder } from '#model/format/scene';
 
 export const storyBibleVersion: string = '1.0.0';
 

@@ -1,6 +1,6 @@
-import { renderPrompt } from './promptResource';
-import { promptTuning } from './promptTuning';
-import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
+import { renderPrompt } from '#ai/ai/prompts/promptResource';
+import { promptTuning } from '#ai/ai/prompts/promptTuning';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from '#ai/ai/prompts/types';
 
 export const SituationExtractionPrompt: PromptModule<[input: string, variant?: PromptVariantId]> = {
   config: promptTuning('situationExtraction'),

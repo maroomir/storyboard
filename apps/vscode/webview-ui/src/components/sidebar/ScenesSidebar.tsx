@@ -25,9 +25,9 @@ import type {
 } from '@webview/lib/types';
 import { formatUsageBadgeLabel, formatUsageBadgeTooltip } from '@webview/lib/costFormat';
 
-import { Button } from '../ui/Button';
-import { CostBadge } from '../ui/CostBadge';
-import { EmptyState } from '../ui/EmptyState';
+import { Button } from '@webview/components/ui/Button';
+import { CostBadge } from '@webview/components/ui/CostBadge';
+import { EmptyState } from '@webview/components/ui/EmptyState';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { emptyUsageAmount } from '@storyboard/story-model/contracts';
 

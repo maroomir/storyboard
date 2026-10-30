@@ -6,8 +6,8 @@ import {
   type StoryboardSettingDefinition,
 } from '#model/contracts/settingCatalog';
 import { storyboardModelCatalog, type ProviderModelOption } from '#model/contracts/providerCatalog';
-import { aiProviderStatusSchema } from './ai';
-import { aiTaskNameSchema, providerIdSchema, type ProviderId } from './atoms';
+import { aiProviderStatusSchema } from '#model/shared/messaging/ai';
+import { aiTaskNameSchema, providerIdSchema, type ProviderId } from '#model/shared/messaging/atoms';
 import type { AiProviderId, AiTaskCatalogEntry, AiTaskName } from '#model/contracts/ai';
 import type { StoryboardSettingKind } from '#model/contracts/settingCatalog';
 import type { AiProviderStatus } from '#model/contracts/aiTypes';

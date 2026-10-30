@@ -1,17 +1,17 @@
 import { assumedColumnsWithoutTerminal } from '@/terminal/profile';
-import { ConsoleLogger } from './adapters/consoleLogger';
-import { LiveArea } from './adapters/liveArea';
-import { PauseRequests } from './adapters/pauseRequests';
-import { TerminalPrompter } from './adapters/prompter';
-import { CommandDispatcher, type DispatchResult } from './commands/commandDispatcher';
+import { ConsoleLogger } from '@/adapters/consoleLogger';
+import { LiveArea } from '@/adapters/liveArea';
+import { PauseRequests } from '@/adapters/pauseRequests';
+import { TerminalPrompter } from '@/adapters/prompter';
+import { CommandDispatcher, type DispatchResult } from '@/commands/commandDispatcher';
 import {
   bellSignal,
   createWindowTitle,
   bellAfterRunLongerThanMs,
   popWindowTitle,
   pushWindowTitle,
-} from './terminal/signals';
-import { runTui } from './tui/index';
+} from '@/terminal/signals';
+import { runTui } from '@/tui/index';
 import { extractErrorMessage } from '@storyboard/story-model';
 
 const version: string = '0.13.4';

@@ -1,4 +1,4 @@
-import { booleanFlagNames, valueFlagNames } from './commands/catalog';
+import { booleanFlagNames, valueFlagNames } from '@/commands/catalog';
 
 export interface ParsedArguments {
   readonly path: readonly string[];

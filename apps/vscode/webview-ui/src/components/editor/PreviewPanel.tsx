@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import type React from 'react';
 
-import { CardTagRow } from '../card/CardTagRow';
-import { StoryboardCard as HeroCard } from '../card/StoryboardCard';
-import { Pill } from '../ui/Pill';
+import { CardTagRow } from '@webview/components/card/CardTagRow';
+import { StoryboardCard as HeroCard } from '@webview/components/card/StoryboardCard';
+import { Pill } from '@webview/components/ui/Pill';
 import { CHARACTER_ROLE_OPTIONS } from '@webview/lib/characterSidebarGroups';
 import type { CharacterRole, StoryboardCard } from '@webview/lib/types';
 import type { LocationKind } from '@storyboard/story-model/contracts';

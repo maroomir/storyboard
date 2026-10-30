@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 
 import type { CardEditorInitialData, StoryboardCard } from '@webview/lib/types';
-import { IconButton } from '../ui/IconButton';
-import { SectionHeader } from '../ui/SectionHeader';
-import { sbYamlTextareaClass } from '../ui/formClasses';
+import { IconButton } from '@webview/components/ui/IconButton';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
+import { sbYamlTextareaClass } from '@webview/components/ui/formClasses';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { callRpc } from '@webview/lib/rpcClient';
 

@@ -1,4 +1,4 @@
-import { type AiProviderId } from './aiTypes';
+import { type AiProviderId } from '#model/contracts/aiTypes';
 
 export type AiProviderErrorCode =
   | 'missing-provider'

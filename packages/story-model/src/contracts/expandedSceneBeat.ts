@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { parseJsonArray } from './aiResponseParser';
+import { parseJsonArray } from '#model/contracts/aiResponseParser';
 
 export interface ExpandedSceneBeat {
   readonly text: string;

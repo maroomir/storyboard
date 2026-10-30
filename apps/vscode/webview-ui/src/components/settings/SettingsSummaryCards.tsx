@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { Button } from '../ui/Button';
-import { getProviderStatus, hasTaskOverride, type AiProviderId, type SettingsReadSnapshot } from './settingsSnapshot';
+import { Button } from '@webview/components/ui/Button';
+import { getProviderStatus, hasTaskOverride, type AiProviderId, type SettingsReadSnapshot } from '@webview/components/settings/settingsSnapshot';
 import { aiProviderIds, requiresApiKey, type AiProviderStatus } from '@storyboard/story-model/contracts';
 
 const summaryCardClass: string =

@@ -23,7 +23,7 @@ import type {
   SidebarScenesInitialData,
 } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
-import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { sidebarViewIds, storyboardCommandIds } from '@/contributionIds';
 
 export interface SidebarScenesProviderDependencies {

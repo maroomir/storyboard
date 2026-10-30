@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { cardCollectProposalSchema, type CardCollectProposal } from './cardCollect';
+import { cardCollectProposalSchema, type CardCollectProposal } from '#model/shared/cardCollect';
 import type { BibleSubjectKind } from '#model/format/bible';
 
 export type NoteSourceKind = 'obsidian' | 'notion' | 'notion-export';

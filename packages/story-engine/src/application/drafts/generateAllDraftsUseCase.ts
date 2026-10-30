@@ -1,8 +1,8 @@
 import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
-import type { GenerateDraftResult, GenerateDraftUseCase } from './generateDraftUseCase';
-import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
-import { describeReviseOutcome, type ReviseDraftWorkflowResult } from './reviseDraftUseCase';
+import type { GenerateDraftResult, GenerateDraftUseCase } from '#engine/application/drafts/generateDraftUseCase';
+import type { ReviseAfterGenerateGate } from '#engine/application/drafts/reviseAfterGenerateGate';
+import { describeReviseOutcome, type ReviseDraftWorkflowResult } from '#engine/application/drafts/reviseDraftUseCase';
 import type { IUseCase } from '#engine/application/useCase';
 import type { BatchSceneList } from '#engine/application/drafts/draftRepositories';
 import type { StoryUri } from '@storyboard/story-model';

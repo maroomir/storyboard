@@ -1,5 +1,5 @@
 import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
-import type { StoryUri } from './storyUri';
+import type { StoryUri } from '#model/format/storyUri';
 
 export type StoryStateSection = 'facts' | 'relations' | 'revealed' | 'motifs';
 

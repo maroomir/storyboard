@@ -11,7 +11,7 @@ import {
   createDiagnostic,
   toRange,
   type DiagnosticsProviderDependencies,
-} from './diagnosticsShared';
+} from '@/presentation/providers/diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ContinuityIssue } from '@storyboard/story-ai';
 

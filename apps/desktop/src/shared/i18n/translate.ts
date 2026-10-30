@@ -1,9 +1,9 @@
 import type { UiLanguage } from '@/shared/dto';
 
-import { enMessages } from './en';
-import { koMessages, type MessageKey } from './ko';
+import { enMessages } from '@/shared/i18n/en';
+import { koMessages, type MessageKey } from '@/shared/i18n/ko';
 
-export type { MessageKey } from './ko';
+export type { MessageKey } from '@/shared/i18n/ko';
 
 export type MessageParams = Readonly<Record<string, string | number>>;
 

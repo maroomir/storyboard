@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCard } from '#model/format/card';
 import { narratorCardSchema, type NarratorCard } from '#model/format/narrator';
 import { sceneCardSchema, type SceneCard } from '#model/format/scene';
-import { serializeSceneCard } from './scene';
+import { serializeSceneCard } from '#model/format/files/scene';
 import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';

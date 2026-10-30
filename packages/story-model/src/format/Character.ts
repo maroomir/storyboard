@@ -1,4 +1,4 @@
-import type { CharacterCard } from './card';
+import type { CharacterCard } from '#model/format/card';
 
 export type Character = CharacterCard;
 

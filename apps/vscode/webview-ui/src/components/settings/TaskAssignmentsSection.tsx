@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 
-import { Button } from '../ui/Button';
-import { IconButton } from '../ui/IconButton';
-import { SectionHeader } from '../ui/SectionHeader';
-import { StatusPill } from './SettingsPrimitives';
+import { Button } from '@webview/components/ui/Button';
+import { IconButton } from '@webview/components/ui/IconButton';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
+import { StatusPill } from '@webview/components/settings/SettingsPrimitives';
 import {
   listSnapshotSelectableProviderIds,
   formatDefaultProviderSummary,
@@ -16,8 +16,8 @@ import {
   type AiTaskName,
   type SettingsReadSnapshot,
   type TaskAiAssignment,
-} from './settingsSnapshot';
-import { sbInlineSelectClass, sbInputClass, sectionCardClass } from './settingsStyles';
+} from '@webview/components/settings/settingsSnapshot';
+import { sbInlineSelectClass, sbInputClass, sectionCardClass } from '@webview/components/settings/settingsStyles';
 import {
   isAiProviderId,
   type AiTaskCatalogEntry,

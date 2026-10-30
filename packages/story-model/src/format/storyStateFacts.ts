@@ -3,7 +3,7 @@ import {
   storyStateSectionLabels,
   type StoryState,
   type StoryStateSection,
-} from './storyState';
+} from '#model/format/storyState';
 
 const checkableSections: readonly StoryStateSection[] = ['facts', 'relations', 'revealed'];
 

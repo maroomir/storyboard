@@ -1,4 +1,4 @@
-import type { ProjectFormat } from './project';
+import type { ProjectFormat } from '#model/format/project';
 
 export interface Draft {
   readonly sceneStem: string;

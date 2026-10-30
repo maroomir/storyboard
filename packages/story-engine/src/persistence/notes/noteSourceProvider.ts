@@ -6,9 +6,9 @@ import {
   type INoteSourceProvider,
   type NoteLocation,
 } from '#engine/application/notes/noteSource';
-import { NotionExportNoteSource } from './notionExportNoteSource';
-import { NotionNoteSource, type NoteHttpFetch } from './notionNoteSource';
-import { ObsidianNoteSource } from './obsidianNoteSource';
+import { NotionExportNoteSource } from '#engine/persistence/notes/notionExportNoteSource';
+import { NotionNoteSource, type NoteHttpFetch } from '#engine/persistence/notes/notionNoteSource';
+import { ObsidianNoteSource } from '#engine/persistence/notes/obsidianNoteSource';
 
 export interface NoteSourceProviderCollaborators {
   readonly fetch: NoteHttpFetch;

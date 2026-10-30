@@ -1,7 +1,7 @@
 import type { ReasoningEffort } from '@storyboard/story-model';
 
-import { promptResourceKeys, promptResources } from './promptResource';
-import type { PromptConfig } from './types';
+import { promptResourceKeys, promptResources } from '#ai/ai/prompts/promptResource';
+import type { PromptConfig } from '#ai/ai/prompts/types';
 
 export type PromptTuningKey = string;
 

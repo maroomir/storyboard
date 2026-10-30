@@ -2,7 +2,7 @@ import { Box, Text, useInput } from 'ink';
 import React, { useState } from 'react';
 
 import type { ChoiceRequest } from '@/adapters/prompter';
-import { useTuiTheme, type TuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from '@/tui/tuiTheme';
 
 export interface ChoiceDialogProps {
   readonly request: ChoiceRequest<unknown>;

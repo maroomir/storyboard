@@ -8,8 +8,8 @@ import {
   computeCompletions,
   formatCompletions,
   renderCompletionScript,
-} from '../src/commands/completion';
-import { CommandDispatcher } from '../src/commands/commandDispatcher';
+} from '@/commands/completion';
+import { CommandDispatcher } from '@/commands/commandDispatcher';
 
 let cwd: string;
 let home: string;

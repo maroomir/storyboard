@@ -15,7 +15,7 @@ import {
 
 import type { NarrationSummary, UiLanguage } from '@/shared/dto';
 
-import type { Translate } from './i18n';
+import type { Translate } from '@/renderer/lib/i18n';
 
 const englishPointOfView: Record<PointOfView, string> = {
   first: 'First person',

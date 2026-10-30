@@ -27,7 +27,7 @@ import {
 import type { DesktopSettings, ProviderOption, SettingEntry, UiLanguage } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 
-import { fail, succeed, type ServiceResult } from './serviceResult';
+import { fail, succeed, type ServiceResult } from '@/main/serviceResult';
 
 const basicSettingKeys: Set<string> = new Set(['budget.run.limitUsd', 'revise.loop.afterGenerate', 'editor.draft.keepHistory']);
 

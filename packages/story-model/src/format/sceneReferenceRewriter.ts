@@ -1,9 +1,9 @@
-import type { BibleFact, StoryBible } from './bible';
-import type { CharacterCard } from './card';
+import type { BibleFact, StoryBible } from '#model/format/bible';
+import type { CharacterCard } from '#model/format/card';
 import { z } from 'zod';
 
-import { parseSceneStem, type SceneFileNameParts } from './scene';
-import type { StoryState, StoryStateEntry } from './storyState';
+import { parseSceneStem, type SceneFileNameParts } from '#model/format/scene';
+import type { StoryState, StoryStateEntry } from '#model/format/storyState';
 
 export interface SceneRename {
   readonly from: SceneFileNameParts;

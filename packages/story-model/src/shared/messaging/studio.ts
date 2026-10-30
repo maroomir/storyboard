@@ -9,7 +9,7 @@ import {
   type StudioPatch,
 } from '#model/contracts/studioAgent';
 
-import { uriStringSchema } from './atoms';
+import { uriStringSchema } from '#model/shared/messaging/atoms';
 import type {
   StudioValidationState,
   StudioValidationVerdict,

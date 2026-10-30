@@ -1,6 +1,6 @@
 import type { NovelStageName } from '@storyboard/story-model';
-import type { NovelPipelineResult } from './novelPipelineContract';
-import type { NovelRun } from './novelRun';
+import type { NovelPipelineResult } from '#engine/application/novel/novelPipelineContract';
+import type { NovelRun } from '#engine/application/novel/novelRun';
 
 export interface INovelStage {
   readonly id: NovelStageName;

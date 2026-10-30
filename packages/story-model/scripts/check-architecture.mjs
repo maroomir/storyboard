@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   allowListRule,
-  requireAliasForEscapingImport,
+  requireAliasForSourceImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
 
@@ -23,6 +23,6 @@ const ALLOWED_IMPORTS = {
 
 runArchitectureCheck('Model', SOURCE_ROOT, {
   rules: [allowListRule(ALLOWED_IMPORTS, SOURCE_ROOT)],
-  importRules: [requireAliasForEscapingImport(SOURCE_ROOT, '#model/')],
+  importRules: [requireAliasForSourceImport(SOURCE_ROOT, '#model/')],
   aliases: { '#model/': '#model/' },
 });

@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { cacheTtls, reasoningEfforts, type CacheTtl } from '@storyboard/story-model';
 
-import { promptResourceSources } from './resources.generated';
-import { renderTemplate, type TemplatePartials, type TemplateView } from './template';
-import type { PromptArtifact, PromptConfig, PromptVariantId } from './types';
+import { promptResourceSources } from '#ai/ai/prompts/resources.generated';
+import { renderTemplate, type TemplatePartials, type TemplateView } from '#ai/ai/prompts/template';
+import type { PromptArtifact, PromptConfig, PromptVariantId } from '#ai/ai/prompts/types';
 
 export type PromptSectionName = 'system' | 'prefix' | 'user';
 

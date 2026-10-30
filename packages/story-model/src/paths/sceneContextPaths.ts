@@ -1,5 +1,5 @@
-import { joinStoryPath, type StoryUri } from './storyUri';
-import type { StoryboardProjectPaths } from './projectPaths';
+import { joinStoryPath, type StoryUri } from '#model/paths/storyUri';
+import type { StoryboardProjectPaths } from '#model/paths/projectPaths';
 import type { SceneContextWorkspacePaths } from '#model/format/sceneContext';
 
 export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspacePaths {

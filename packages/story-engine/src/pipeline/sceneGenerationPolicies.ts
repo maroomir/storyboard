@@ -1,6 +1,6 @@
 import type { SituationWithCharacters } from '@storyboard/story-ai';
 
-import { pipelineDefaults } from './pipelineDefaults';
+import { pipelineDefaults } from '#engine/pipeline/pipelineDefaults';
 
 export function dedupeSituations(
   items: readonly SituationWithCharacters[],

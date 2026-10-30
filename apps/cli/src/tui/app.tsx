@@ -1,24 +1,24 @@
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useLineEditor, type LineEditorState } from './lineEditor';
+import { useLineEditor, type LineEditorState } from '@/tui/lineEditor';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 
-import { Banner } from './banner';
-import { ChoiceDialog } from './choiceDialog';
-import { Dashboard } from './dashboard';
-import { DraftReader } from './draftReader';
-import { StatusBar } from './statusBar';
-import { TextDialog } from './textDialog';
+import { Banner } from '@/tui/banner';
+import { ChoiceDialog } from '@/tui/choiceDialog';
+import { Dashboard } from '@/tui/dashboard';
+import { DraftReader } from '@/tui/draftReader';
+import { StatusBar } from '@/tui/statusBar';
+import { TextDialog } from '@/tui/textDialog';
 import {
   TuiThemeContext,
   tuiThemes,
   useTuiTheme,
   type TuiTheme,
   type TuiThemeName,
-} from './tuiTheme';
-import { SuggestionList } from './suggestionList';
-import type { TuiHeaderInfo, WorkspaceView } from './workspaceView';
+} from '@/tui/tuiTheme';
+import { SuggestionList } from '@/tui/suggestionList';
+import type { TuiHeaderInfo, WorkspaceView } from '@/tui/workspaceView';
 
 export type { TuiHeaderInfo };
 import {
@@ -29,7 +29,7 @@ import {
   type LogTone,
   type TuiSession,
   type TuiSessionOptions,
-} from './session';
+} from '@/tui/session';
 
 export interface StoryboardTuiProps extends TuiSessionOptions {
   readonly header: TuiHeaderInfo;

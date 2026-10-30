@@ -21,8 +21,8 @@ import { computeCompletions, listWorkspaceMentions, type Completion } from '@/co
 import { CommandDispatcher, type DispatchResult } from '@/commands/commandDispatcher';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
-import { saveTuiThemeName, tuiThemeLabels, tuiThemeNames, type TuiThemeName } from './tuiTheme';
-import { isWorkspace } from './workspaceView';
+import { saveTuiThemeName, tuiThemeLabels, tuiThemeNames, type TuiThemeName } from '@/tui/tuiTheme';
+import { isWorkspace } from '@/tui/workspaceView';
 import { availableProviderIds } from '@/adapters/availableProviders';
 
 export type LogTone = 'input' | 'progress' | 'result' | 'error' | 'hint';

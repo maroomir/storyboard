@@ -2,11 +2,11 @@ import type { AiProvider, AiProviderId } from '@storyboard/story-model';
 import type { ConfigBridge, ProviderModelConfig } from '#ai/ports/ConfigBridge';
 import type { ICliRunner } from '#ai/ports/cliRunner';
 import type { SecretStore } from '#ai/ports/SecretStore';
-import type { FetchLike } from './providers/chatGptOAuth';
-import type { ClaudeClientLike } from './providers/ClaudeProvider';
-import type { GoogleClientLike } from './providers/GoogleProvider';
-import type { OllamaClientLike } from './providers/OllamaProvider';
-import type { OpenAiClientLike } from './providers/OpenAiProvider';
+import type { FetchLike } from '#ai/ai/providers/chatGptOAuth';
+import type { ClaudeClientLike } from '#ai/ai/providers/ClaudeProvider';
+import type { GoogleClientLike } from '#ai/ai/providers/GoogleProvider';
+import type { OllamaClientLike } from '#ai/ai/providers/OllamaProvider';
+import type { OpenAiClientLike } from '#ai/ai/providers/OpenAiProvider';
 
 export interface ProviderClientFactories {
   readonly createCliRunner?: () => ICliRunner;

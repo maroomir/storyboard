@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { canShowWordmark, storyboardTagline, storyboardWordmark } from '@/terminal/banner';
-import { useTuiTheme, type TuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from '@/tui/tuiTheme';
 
 export interface BannerProps {
   readonly version: string;

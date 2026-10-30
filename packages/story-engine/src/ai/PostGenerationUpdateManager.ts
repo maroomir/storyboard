@@ -1,19 +1,19 @@
 import {
   updateBackgroundCharactersFromScene,
   type ScheduleBackgroundCharacterUpdateInput,
-} from './backgroundCharacterUpdater';
+} from '#engine/ai/backgroundCharacterUpdater';
 import {
   updateBibleCandidatesFromDraft,
   type ScheduleBibleCandidateUpdateInput,
-} from './bibleCandidateUpdater';
+} from '#engine/ai/bibleCandidateUpdater';
 import {
   updateCardCandidatesFromDraft,
   type ScheduleCardCandidateUpdateInput,
-} from './cardCandidateUpdater';
+} from '#engine/ai/cardCandidateUpdater';
 import {
   updateCharacterTraitsFromDraft,
   type ScheduleCharacterTraitsUpdateInput,
-} from './traitsUpdater';
+} from '#engine/ai/traitsUpdater';
 
 class KeyedTaskQueue {
   private readonly chains: Map<string, Promise<unknown>> = new Map<string, Promise<unknown>>();

@@ -1,4 +1,4 @@
-import { createTheme, plainTheme, shouldUseColor, type Theme } from './theme';
+import { createTheme, plainTheme, shouldUseColor, type Theme } from '@/terminal/theme';
 
 export interface TerminalStreamFacts {
   readonly isTty: boolean;

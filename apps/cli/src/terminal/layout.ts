@@ -1,4 +1,4 @@
-import { measureWidth, padEndToWidth, truncateToWidth, wrapToWidth } from './width';
+import { measureWidth, padEndToWidth, truncateToWidth, wrapToWidth } from '@/terminal/width';
 
 export const minimumBoxWidth: number = 40;
 

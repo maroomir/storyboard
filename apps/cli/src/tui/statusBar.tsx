@@ -1,8 +1,8 @@
 import { Box, Text } from 'ink';
 import React from 'react';
 
-import type { WorkspaceView } from './workspaceView';
-import { useTuiTheme, type TuiTheme } from './tuiTheme';
+import type { WorkspaceView } from '@/tui/workspaceView';
+import { useTuiTheme, type TuiTheme } from '@/tui/tuiTheme';
 
 export interface StatusBarProps {
   readonly view: WorkspaceView;

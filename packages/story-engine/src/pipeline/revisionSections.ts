@@ -1,4 +1,4 @@
-import { countSharedShingles, normalizeForMatch } from './textMatch';
+import { countSharedShingles, normalizeForMatch } from '#engine/pipeline/textMatch';
 
 export interface DraftSections {
   readonly sections: readonly string[];

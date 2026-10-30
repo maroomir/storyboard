@@ -1,4 +1,4 @@
-import { findCommand } from '../src/commands/index';
+import { findCommand } from '@/commands/index';
 import type { CommandOutcome } from '@/commands/outcome';
 import { ConfigSetCommand } from '@/commands/config/configSetCommand';
 import { ConfigShowCommand } from '@/commands/config/configShowCommand';
@@ -20,11 +20,11 @@ import {
   type BackgroundCard,
 } from '@storyboard/story-model';
 
-import { createCliContainer } from '../src/container';
-import { commands } from '../src/commands';
-import type { ParsedArguments } from '../src/cliArguments';
-import { createTheme } from '../src/terminal/theme';
-import { measureWidth } from '../src/terminal/width';
+import { createCliContainer } from '@/container';
+import { commands } from '@/commands/index';
+import type { ParsedArguments } from '@/cliArguments';
+import { createTheme } from '@/terminal/theme';
+import { measureWidth } from '@/terminal/width';
 
 let home: string;
 let workspace: string;

@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { describeNextStep, nextStepCommands } from '@/commands/workspaceNextStep';
-import { useTuiTheme, type TuiTheme } from './tuiTheme';
+import { useTuiTheme, type TuiTheme } from '@/tui/tuiTheme';
 
 const progressBarWidth: number = 24;
 

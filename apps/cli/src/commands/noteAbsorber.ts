@@ -17,7 +17,7 @@ import type {
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
 import type { IPrompter } from '@/adapters/prompter';
 import type { CliContainer } from '@/container';
-import type { CommandOutcome } from './outcome';
+import type { CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
 
 export function parseNoteLocation(raw: string): NoteLocation {

@@ -80,10 +80,12 @@ What each check actually enforces, so a green run is not read as more than it is
   — every shared package stays free of `vscode` (including inline `import('vscode')` types), of app
   imports (`@/`, `@webview/`) and of another package's `#` internal prefix; no package imports its
   own entry file (its package.json `exports`) or a folder `index` through its prefix, since those
-  re-export whole layers; and an owned literal (`OWNED_LITERALS`) appears only in its owner file
+  re-export whole layers (an entry file or barrel gathering barrels, and an import with no bindings,
+  are exempt); every package addresses its own modules through its prefix and the webview through
+  `@webview/`, never by a relative path; and an owned literal (`OWNED_LITERALS`) appears only in its owner file
   across every app and package.
 - `apps/vscode/scripts/check-architecture.mjs` — the extension entry may import only `vscode` and
-  `./bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles.
+  `@/bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles.
   The inner layers left for the engine, so nothing here validates them any more.
 - `apps/cli` enforces its own ordered layer direction and rejects cycles, and additionally fails
   if it imports the engine's pipeline assembly symbols (`refusePipelineAssembly` in

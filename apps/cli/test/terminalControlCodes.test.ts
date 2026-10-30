@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isScreenDrawing, keepTextAndColors } from '../src/terminal/controlCodes';
+import { isScreenDrawing, keepTextAndColors } from '@/terminal/controlCodes';
 
 describe('keepTextAndColors', () => {
   it('drops cursor moves, screen clears and mode switches, keeping text and color', () => {

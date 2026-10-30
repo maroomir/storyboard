@@ -1,4 +1,4 @@
-import { sectionViolationKinds } from './sectionViolationKinds';
+import { sectionViolationKinds } from '#model/contracts/sectionViolationKinds';
 
 export type GenerationParameterKind = 'ratio' | 'count' | 'chars' | 'weight';
 

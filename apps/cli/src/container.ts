@@ -25,10 +25,10 @@ import {
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
-import { PauseRequests } from './adapters/pauseRequests';
-import type { IPrompter } from './adapters/prompter';
-import { LineRunProgress, type IRunProgress } from './adapters/runProgress';
-import { resolveCliPaths, type CliPaths } from './adapters/paths';
+import { PauseRequests } from '@/adapters/pauseRequests';
+import type { IPrompter } from '@/adapters/prompter';
+import { LineRunProgress, type IRunProgress } from '@/adapters/runProgress';
+import { resolveCliPaths, type CliPaths } from '@/adapters/paths';
 import {
   configurationTargets,
   createFileConfiguration,

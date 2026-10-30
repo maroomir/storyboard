@@ -4,7 +4,7 @@ import {
   type SceneDialogueTurn,
 } from '@storyboard/story-model';
 
-import { pipelineDefaults } from './pipelineDefaults';
+import { pipelineDefaults } from '#engine/pipeline/pipelineDefaults';
 
 export const VOICE_SAMPLE_LIMIT: number = pipelineDefaults.voiceSamples.limit;
 

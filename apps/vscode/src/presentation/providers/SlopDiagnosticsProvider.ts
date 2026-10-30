@@ -10,9 +10,9 @@ import {
   createWarningDiagnostic,
   toRange,
   type DiagnosticsProviderDependencies,
-} from './diagnosticsShared';
+} from '@/presentation/providers/diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { LatestRequestGuard } from './latestRequestGuard';
+import { LatestRequestGuard } from '@/presentation/providers/latestRequestGuard';
 
 const slopSource: string = 'storyboard-slop';
 const slopDebounceMs: number = 700;

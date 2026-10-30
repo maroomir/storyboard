@@ -20,7 +20,7 @@ import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { Draft } from '@storyboard/story-model';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '@storyboard/story-ai';
-import { resolveExpandRange } from './expandDraftCommand';
+import { resolveExpandRange } from '@/presentation/commands/expandDraftCommand';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 

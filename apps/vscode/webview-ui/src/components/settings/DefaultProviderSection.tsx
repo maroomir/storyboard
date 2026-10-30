@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
-import { SectionHeader } from '../ui/SectionHeader';
-import { OriginPill, StatusPill } from './SettingsPrimitives';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
+import { OriginPill, StatusPill } from '@webview/components/settings/SettingsPrimitives';
 import {
   getProviderStatus,
   getValueOrigin,
@@ -9,8 +9,8 @@ import {
   parseSaveTarget,
   pickModelForTaskProvider,
   type SettingsReadSnapshot,
-} from './settingsSnapshot';
-import { sbSelectClass, sectionCardClass } from './settingsStyles';
+} from '@webview/components/settings/settingsSnapshot';
+import { sbSelectClass, sectionCardClass } from '@webview/components/settings/settingsStyles';
 import {
   isAiProviderId,
   type AiProviderId,

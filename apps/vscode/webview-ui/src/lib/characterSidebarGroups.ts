@@ -1,4 +1,4 @@
-import type { CharacterRole, SidebarCardSummary } from './types';
+import type { CharacterRole, SidebarCardSummary } from '@webview/lib/types';
 
 type CharacterSidebarGroupKey = CharacterRole | 'unclassified';
 

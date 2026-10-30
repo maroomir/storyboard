@@ -1,8 +1,8 @@
 import { render, type Instance } from 'ink';
 
-import { StoryboardTui } from './app';
-import { loadTuiThemeName } from './tuiTheme';
-import { describeHeader, readWorkspaceView, type TuiHeaderInfo } from './workspaceView';
+import { StoryboardTui } from '@/tui/app';
+import { loadTuiThemeName } from '@/tui/tuiTheme';
+import { describeHeader, readWorkspaceView, type TuiHeaderInfo } from '@/tui/workspaceView';
 import type { TuiSessionOptions } from '@/tui/session';
 
 export { describeHeader };

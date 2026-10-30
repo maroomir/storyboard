@@ -3,7 +3,7 @@ import type { GenerateTextOptions } from '@storyboard/story-ai';
 import {
   SceneGenerationPipelineCancelledError,
   type SceneGenerationPipelineTaskProviders,
-} from './sceneGenerationTypes';
+} from '#engine/pipeline/sceneGenerationTypes';
 
 export function buildGenerateOptions(
   providers: Readonly<SceneGenerationPipelineTaskProviders> | undefined,

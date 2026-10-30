@@ -13,7 +13,7 @@ import {
 } from '@storyboard/story-model/contracts';
 import type { NarratorCard } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
-import { ListField } from './ListField';
+import { ListField } from '@webview/components/editor/fields/ListField';
 
 export function NarratorFields({
   card,

@@ -6,7 +6,7 @@ import type {
 InvokeResult,
 } from '@/shared/ipcContract';
 
-import { desktopBridge } from './bridge';
+import { desktopBridge } from '@/renderer/lib/bridge';
 
 export class BridgeError extends Error {
   public constructor(public readonly failure: DesktopError) {

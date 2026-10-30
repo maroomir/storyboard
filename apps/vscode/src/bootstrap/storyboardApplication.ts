@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
-import type { IApplicationModule } from './lifecycle/applicationModule';
-import { CardModule } from './modules/cardModule';
-import { DraftModule } from './modules/draftModule';
-import { NovelModule } from './modules/novelModule';
-import { PlatformModule, type IPlatformServices } from './modules/platformModule';
-import { ProjectModule } from './modules/projectModule';
-import { WorkbenchModule } from './modules/workbenchModule';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
+import { CardModule } from '@/bootstrap/modules/cardModule';
+import { DraftModule } from '@/bootstrap/modules/draftModule';
+import { NovelModule } from '@/bootstrap/modules/novelModule';
+import { PlatformModule, type IPlatformServices } from '@/bootstrap/modules/platformModule';
+import { ProjectModule } from '@/bootstrap/modules/projectModule';
+import { WorkbenchModule } from '@/bootstrap/modules/workbenchModule';
 
 type ApplicationState =
   | { readonly status: 'created' }

@@ -47,18 +47,18 @@ import {
   renderUnknownFlag,
   renderUsage,
 } from '@/help';
-import type { CommandSpec } from './catalog';
+import type { CommandSpec } from '@/commands/catalog';
 import {
   completionShells,
   computeCompletions,
   formatCompletions,
   renderCompletionScript,
   type Completion,
-} from './completion';
-import { findCommand, findCommandSpec, commands } from './index';
-import type { ICommandHandler } from './commandHandler';
-import type { CommandOutcome } from './outcome';
-import { markOutcome, renderNextStep } from './outcomeView';
+} from '@/commands/completion';
+import { findCommand, findCommandSpec, commands } from '@/commands/index';
+import type { ICommandHandler } from '@/commands/commandHandler';
+import type { CommandOutcome } from '@/commands/outcome';
+import { markOutcome, renderNextStep } from '@/commands/outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
 import type { ResourceOverrideReport, WorkspaceHoldResult } from '@storyboard/story-app';
 

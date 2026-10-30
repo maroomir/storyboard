@@ -229,14 +229,17 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
 
 Two kinds of reference, two mechanisms. The architecture checks enforce both.
 
-- **Inside an app**: `@/` maps to that app's `src/`. Every reference that climbs out of its own
-  folder uses it — a bare `./sibling` is fine, `../` is a build failure. The webview keeps its own
+- **Inside an app**: `@/` maps to that app's `src/`, and every import of a source module uses it —
+  `./sibling` and `../` are both build failures, so a file reads the same wherever it sits. Only a
+  data or style file beside its module (`./x.params.json`, `./styles.css`) stays relative, since no
+  alias reaches it. Tests import what they test through `@/` as well. The webview keeps its own
   `@webview/` so the host and the browser bundle never share one prefix.
 - **Inside a package**: a Node subpath import declared in the package's own `package.json`
   (`#engine/`, `#model/`, `#ai/`, `#git/`). It is **not** a bundler alias, and that is
   the point: apps bundle package source, and a bundler's alias table is global, so a package using
-  `@/` would silently resolve to the *app's* `src/` — a wrong file, no error, in a green build. A
-  package must never use another package's prefix.
+  `@/` would silently resolve to the *app's* `src/` — a wrong file, no error, in a green build.
+  Every import of the package's own modules uses its prefix, `./sibling` included. A package must
+  never use another package's prefix.
 - **Across packages**: the package name (`@storyboard/story-model`), never a path.
 - **One source of truth**: a project's own `tsconfig.json` holds its `paths`; `scripts/aliases.mjs`
   reads it and hands the same table to esbuild, Vite and Vitest. Never restate a path in a bundler

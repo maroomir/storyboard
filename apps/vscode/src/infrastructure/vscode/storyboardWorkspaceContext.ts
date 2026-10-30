@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { anyStoryboardProjectInWorkspace } from './workspace';
+import { anyStoryboardProjectInWorkspace } from '@/infrastructure/vscode/workspace';
 import { workspaceReadyContextKey } from '@/contributionIds';
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTerminalProfile, assumedColumnsWithoutTerminal } from '../src/terminal/profile';
-import { createTheme, plainTheme, shouldUseColor } from '../src/terminal/theme';
+import { createTerminalProfile, assumedColumnsWithoutTerminal } from '@/terminal/profile';
+import { createTheme, plainTheme, shouldUseColor } from '@/terminal/theme';
 
 const terminal = { isTty: true, env: {}, hasNoColorFlag: false, isJsonOutput: false };
 

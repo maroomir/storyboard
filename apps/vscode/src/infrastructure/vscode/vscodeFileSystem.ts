@@ -5,7 +5,7 @@ import type { StoryUri } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
-import { writeFileAtomically } from './atomicWrite';
+import { writeFileAtomically } from '@/infrastructure/vscode/atomicWrite';
 
 export class VscodeFileSystem implements IFileSystem {
   public async readFile(uri: StoryUri): Promise<Uint8Array> {

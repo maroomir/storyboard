@@ -8,7 +8,7 @@ import {
 } from '@storyboard/story-model';
 
 import promptVariantRulesData from './promptVariants.params.json';
-import { type PromptVariantId } from './types';
+import { type PromptVariantId } from '#ai/ai/prompts/types';
 
 export interface XsVariantRule {
   readonly providers: readonly AiProviderId[];

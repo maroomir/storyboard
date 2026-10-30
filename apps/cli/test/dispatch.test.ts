@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CommandDispatcher, type DispatchDependencies } from '../src/commands/commandDispatcher';
+import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
 
 let home: string;
 let cwd: string;

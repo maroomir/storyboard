@@ -4,7 +4,11 @@ import { WorkspaceInput } from '@/commands/workspaceInput';
 import { isGitRepository } from '@/adapters/gitRepository';
 import type { CliContainer } from '@/container';
 import type { ProviderModelConfig } from '@storyboard/story-ai';
-import type { CardReading, ResourceOverrideReport } from '@storyboard/story-app';
+import type {
+  BackgroundFactConflictReport,
+  CardReading,
+  ResourceOverrideReport,
+} from '@storyboard/story-app';
 import {
   ChapterMemoryAuditor,
   StoryMemoryAuditor,
@@ -40,7 +44,6 @@ import {
 } from '@storyboard/story-model';
 import { existsSync, readFileSync } from 'fs';
 import { basename } from 'path';
-import type { BackgroundFactConflictReport } from '../../../../packages/story-app/src/managers/cardManager';
 
 export interface SceneCardCensus {
   readonly withoutBeats: number;

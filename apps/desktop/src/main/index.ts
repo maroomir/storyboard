@@ -8,10 +8,10 @@ import { resolveStoryboardHomePaths } from '@storyboard/story-config';
 
 import { ipcEventChannelName, ipcInvokeChannelName } from '@/shared/ipcChannelNames';
 
-import { DesktopApp, type ConfirmQuestion } from './desktopApp';
-import { createInvokeHandlers } from './invokeHandlers';
-import { IpcRouter } from './ipcRouter';
-import { createMainWindow, defaultMainWindowFiles } from './mainWindow';
+import { DesktopApp, type ConfirmQuestion } from '@/main/desktopApp';
+import { createInvokeHandlers } from '@/main/invokeHandlers';
+import { IpcRouter } from '@/main/ipcRouter';
+import { createMainWindow, defaultMainWindowFiles } from '@/main/mainWindow';
 import type { InvokeChannel, InvokeResult } from '@/shared/ipcContract';
 
 let mainWindow: BrowserWindow | undefined;

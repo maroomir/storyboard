@@ -16,7 +16,7 @@ import {
   getStoryboardProjectPaths,
   type SceneBeat,
 } from '@storyboard/story-model';
-import { hasSceneBeats, proposeSceneBeats } from './resolveSceneBeats';
+import { hasSceneBeats, proposeSceneBeats } from '#engine/application/drafts/resolveSceneBeats';
 
 export interface GenerateSceneBeatsRequest {
   readonly workspaceRoot: StoryUri;

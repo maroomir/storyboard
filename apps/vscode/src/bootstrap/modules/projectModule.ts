@@ -11,7 +11,7 @@ import { StoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWo
 import { CommandRegistrar } from '@/bootstrap/commandRegistrar';
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
-import type { IPlatformServices } from './platformModule';
+import type { IPlatformServices } from '@/bootstrap/modules/platformModule';
 
 export class ProjectModule implements IApplicationModule {
   private readonly disposables: DisposableStore = new DisposableStore();

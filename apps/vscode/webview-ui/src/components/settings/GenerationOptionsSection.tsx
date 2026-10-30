@@ -1,22 +1,22 @@
 import React, { useMemo, useState } from 'react';
 
-import { Button } from '../ui/Button';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Button } from '@webview/components/ui/Button';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
 import {
   decimalSettingStep,
   parseSettingNumberInput,
   type SettingsMutationOkResponsePayload,
 } from '@storyboard/story-model/contracts';
 
-import { OriginPill } from './SettingsPrimitives';
+import { OriginPill } from '@webview/components/settings/SettingsPrimitives';
 import {
   getValueOrigin,
   parseSaveTarget,
   type SettingDefinition,
   type SettingsReadSnapshot,
   type SettingValue,
-} from './settingsSnapshot';
-import { sbInputClass, sectionCardClass } from './settingsStyles';
+} from '@webview/components/settings/settingsSnapshot';
+import { sbInputClass, sectionCardClass } from '@webview/components/settings/settingsStyles';
 
 export interface SettingsSectionProps {
   readonly snapshot: SettingsReadSnapshot;

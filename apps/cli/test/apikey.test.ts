@@ -4,9 +4,9 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { ParsedArguments } from '../src/cliArguments';
-import { commands, findCommand } from '../src/commands/index';
-import { createCliContainer } from '../src/container';
+import type { ParsedArguments } from '@/cliArguments';
+import { commands, findCommand } from '@/commands/index';
+import { createCliContainer } from '@/container';
 
 const silentLogger = { info: (): void => {}, warn: (): void => {}, error: (): void => {} };
 

@@ -12,12 +12,15 @@ export function isWithin(filePath, directory) {
   return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
-// An import that climbs out of its own folder must go through the project's alias. Relative chains
-// break the moment a file moves, and they are what the alias exists to replace. An escape that
-// lands outside the source root (a manifest, say) is none of this rule's business.
-export function requireAliasForEscapingImport(sourceRoot, alias) {
+// A source module is always named through the project's alias, never by a relative path, so one
+// file reads the same wherever it sits and moving a folder never rewrites its neighbours' imports.
+// A data or style file beside its module (`./x.params.json`, `./styles.css`) has no alias form, and
+// a path that lands outside the source root (a manifest, say) is none of this rule's business.
+const ASSET_IMPORT_PATTERN = /\.(json|css)$/;
+
+export function requireAliasForSourceImport(sourceRoot, alias) {
   return (filePath, importPath, _statement, report) => {
-    if (!importPath.startsWith('../')) {
+    if (!importPath.startsWith('.') || ASSET_IMPORT_PATTERN.test(importPath)) {
       return;
     }
 
@@ -27,7 +30,7 @@ export function requireAliasForEscapingImport(sourceRoot, alias) {
       return;
     }
 
-    report(`Relative import escapes its folder; use ${alias}`, filePath, target);
+    report(`Relative import of a source module; use ${alias}`, filePath, target);
   };
 }
 

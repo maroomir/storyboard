@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PauseRequests } from '../src/adapters/pauseRequests';
+import { PauseRequests } from '@/adapters/pauseRequests';
 
 describe('pause requests', () => {
   it('refuses when no run can pause, so Ctrl+C ends the process as before', () => {

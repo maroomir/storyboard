@@ -22,7 +22,7 @@ import type {
   UsageAmount,
   UsageCacheAmount,
   UsageSummaryByEntity,
-} from './types';
+} from '@webview/lib/types';
 import {
   addUsageAmount,
   emptyUsageAmount,

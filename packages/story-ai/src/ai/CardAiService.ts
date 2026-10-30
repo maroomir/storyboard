@@ -1,26 +1,26 @@
-import type { GenerateTextOptions } from './aiServiceTypes';
-import { toFactCandidate, toPromptMessages } from './aiResponseCoercion';
-import { AiTextGateway } from './AiTextGateway';
+import type { GenerateTextOptions } from '#ai/ai/aiServiceTypes';
+import { toFactCandidate, toPromptMessages } from '#ai/ai/aiResponseCoercion';
+import { AiTextGateway } from '#ai/ai/AiTextGateway';
 import {
   BackgroundFactExtractionPrompt,
   coerceBackgroundFactExtraction,
   type BackgroundFactExtraction,
-} from './prompts/backgroundFactExtraction';
+} from '#ai/ai/prompts/backgroundFactExtraction';
 import {
   CardCandidateExtractionPrompt,
   coerceCardCandidateExtraction,
   type CardCandidateExtraction,
-} from './prompts/cardCandidateExtraction';
-import { CardCandidateVerificationPrompt } from './prompts/cardCandidateVerification';
+} from '#ai/ai/prompts/cardCandidateExtraction';
+import { CardCandidateVerificationPrompt } from '#ai/ai/prompts/cardCandidateVerification';
 import {
   CardRecommendationPrompt,
   coerceCardRecommendations,
   type RecommendedEntity,
-} from './prompts/cardRecommendation';
-import { FactExtractionPrompt } from './prompts/factExtraction';
-import { NoteCardConsolidationPrompt } from './prompts/noteCardConsolidation';
-import { NoteExtractionPrompt } from './prompts/noteExtraction';
-import { NoteSynthesisPrompt } from './prompts/noteSynthesis';
+} from '#ai/ai/prompts/cardRecommendation';
+import { FactExtractionPrompt } from '#ai/ai/prompts/factExtraction';
+import { NoteCardConsolidationPrompt } from '#ai/ai/prompts/noteCardConsolidation';
+import { NoteExtractionPrompt } from '#ai/ai/prompts/noteExtraction';
+import { NoteSynthesisPrompt } from '#ai/ai/prompts/noteSynthesis';
 import {
   coerceNoteSynthesis,
   readNoteConsolidationResponse,
@@ -28,8 +28,8 @@ import {
   type NoteConsolidationTarget,
   type NoteSynthesis,
 } from '@storyboard/story-model';
-import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
-import type { PromptArtifact, PromptConfig, PromptVariantId } from './prompts/types';
+import { TraitsExtractionPrompt } from '#ai/ai/prompts/traitsExtraction';
+import type { PromptArtifact, PromptConfig, PromptVariantId } from '#ai/ai/prompts/types';
 import type {
   AiGenerateResponse,
   UsageAttribution,

@@ -11,7 +11,7 @@ import {
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { createDiagnostic } from './diagnosticsShared';
+import { createDiagnostic } from '@/presentation/providers/diagnosticsShared';
 
 const cardSource: string = 'storyboard-card';
 const cardGlobs: readonly string[] = [

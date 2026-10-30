@@ -22,7 +22,7 @@ import {
 import { flagBoolean, flagString } from '@/cliArguments';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
-import { findModelProfilesFile, scoreKey } from './simTrack';
+import { findModelProfilesFile, scoreKey } from '@/commands/sim/simTrack';
 import { regressionLines } from '@/commands/sim/simTrack';
 
 interface PointLineView {

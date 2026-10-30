@@ -1,14 +1,14 @@
 import { characterMatchTokens, findForeignScriptSpans } from '@storyboard/story-model';
 import type { CharacterCard, ForeignScriptSpan } from '@storyboard/story-model';
 
-import { pipelineDefaults } from './pipelineDefaults';
-import { resolveSceneGenerationTuning } from './sceneGenerationTuning';
+import { pipelineDefaults } from '#engine/pipeline/pipelineDefaults';
+import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import type {
   ResolvedSceneGenerationTuning,
   SceneGenerationTuningInput,
   SectionViolationKind,
-} from './sceneGenerationTuning';
-import { SCENE_BREAK_LINE } from './sectionPlanning';
+} from '#engine/pipeline/sceneGenerationTuning';
+import { SCENE_BREAK_LINE } from '#engine/pipeline/sectionPlanning';
 import { countCatchphrase, type CatchphraseCount } from '#engine/pipeline/catchphrases';
 
 interface LineSpan {

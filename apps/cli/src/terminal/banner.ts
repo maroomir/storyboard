@@ -1,4 +1,4 @@
-import { measureWidth } from './width';
+import { measureWidth } from '@/terminal/width';
 
 export const storyboardWordmark: readonly string[] = [
   '█▀▀ ▀█▀ █▀█ █▀█ █ █ █▄▄ █▀█ ▄▀█ █▀█ █▀▄',

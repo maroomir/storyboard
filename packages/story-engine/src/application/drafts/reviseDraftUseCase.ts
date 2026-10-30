@@ -44,7 +44,7 @@ import {
   SceneNarrationResolver,
   type ChapterNarrationDefaults,
   type SceneThreadContext,
-} from './sceneNarrationResolver';
+} from '#engine/application/drafts/sceneNarrationResolver';
 import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';

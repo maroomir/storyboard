@@ -17,7 +17,7 @@ import type {
   CardCandidateExtraction,
   StoryboardAiService,
 } from '@storyboard/story-ai';
-import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
+import { extractQuotedUtterancesForCharacter } from '#engine/ai/traitsUpdater';
 import { buildTargetResolver } from '#engine/ai/cardCandidateUpdater';
 
 interface ProposalWithScenes {

@@ -6,15 +6,15 @@ import {
   type SceneGrounding,
   type StyleDirective,
 } from '@storyboard/story-model';
-import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
-import { promptTuning } from './promptTuning';
-import type { SceneBeatProposal } from './sceneBeatActor';
+import { renderPrompt } from '#ai/ai/prompts/promptResource';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from '#ai/ai/prompts/types';
+import { promptTuning } from '#ai/ai/prompts/promptTuning';
+import type { SceneBeatProposal } from '#ai/ai/prompts/sceneBeatActor';
 import {
   renderBeatDirective,
   renderNextBeats,
   type SceneBeatDirective,
-} from './sceneBeatBlocks';
+} from '#ai/ai/prompts/sceneBeatBlocks';
 
 export interface SceneBeatArbiterInput {
   readonly beat: SceneBeatDirective;

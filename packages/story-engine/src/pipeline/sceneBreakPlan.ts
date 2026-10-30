@@ -5,7 +5,7 @@ import {
   type SceneBeatDetail,
 } from '@storyboard/story-model';
 
-import { countSharedShingles, normalizeForMatch } from './textMatch';
+import { countSharedShingles, normalizeForMatch } from '#engine/pipeline/textMatch';
 
 const SCENE_BREAK_LINE: string = '---';
 const SEGMENT_MARKER: RegExp = /⟪\s*대목\s*(\d+)\s*⟫/g;

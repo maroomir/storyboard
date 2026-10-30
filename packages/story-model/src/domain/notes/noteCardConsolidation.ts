@@ -9,7 +9,7 @@ import type { StoryboardCard } from '#model/format/card';
 import { normalizeCardListText } from '#model/domain/cardCollect';
 import type { CardCollectProposal } from '#model/shared/cardCollect';
 
-import type { NoteAbsorbPlan, NoteCardPlan } from './noteAbsorbPlan';
+import type { NoteAbsorbPlan, NoteCardPlan } from '#model/domain/notes/noteAbsorbPlan';
 
 type CardKind = NoteConsolidationTarget['type'];
 type ListKind = 'alias' | 'trait' | 'tag' | 'descriptionLine' | 'voiceLine' | 'desireLine' | 'sense';

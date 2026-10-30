@@ -3,7 +3,7 @@ import type React from 'react';
 import type { CharacterRole, StoryboardCard } from '@webview/lib/types';
 import { CHARACTER_ROLE_OPTIONS } from '@webview/lib/characterSidebarGroups';
 import { sbInputClass } from '@webview/components/ui/formClasses';
-import { ListField } from './ListField';
+import { ListField } from '@webview/components/editor/fields/ListField';
 
 export function CharacterFields({
   card,

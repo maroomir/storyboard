@@ -18,7 +18,7 @@ import type {
   StoryUri,
 } from '@storyboard/story-model';
 
-import type { ResourceOverrideApplied, ResourceOverrideReport } from './resourceOverrides';
+import type { ResourceOverrideApplied, ResourceOverrideReport } from '#app/resourceOverrides';
 
 export type ParameterKind = 'setting' | 'generation' | 'prompt';
 

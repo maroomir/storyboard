@@ -1,4 +1,4 @@
-import type { AiProviderRegistry } from './providerRegistry';
+import type { AiProviderRegistry } from '#ai/ai/providerRegistry';
 import type {
   AiGenerateResponse,
   AiMessage,
@@ -8,14 +8,14 @@ import type {
   AiTaskName,
 } from '@storyboard/story-model';
 import { projectUsageAttribution } from '@storyboard/story-model';
-import { isAttributed } from './aiResponseCoercion';
-import { selectPromptVariant } from './prompts/promptVariants';
-import type { PromptVariantId } from './prompts/types';
+import { isAttributed } from '#ai/ai/aiResponseCoercion';
+import { selectPromptVariant } from '#ai/ai/prompts/promptVariants';
+import type { PromptVariantId } from '#ai/ai/prompts/types';
 import type {
   GenerateTextOptions,
   OnUsageRecordCallback,
   StoryboardAiServiceOptions,
-} from './aiServiceTypes';
+} from '#ai/ai/aiServiceTypes';
 import type { TaskAiConfigResolved } from '#ai/ports/ConfigBridge';
 
 export class AiTextGateway {

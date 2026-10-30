@@ -3,15 +3,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { createRequestId } from '@webview/lib/messaging';
 
-import { Button } from '../ui/Button';
-import { SectionHeader } from '../ui/SectionHeader';
-import { Tabs, type TabItem } from '../ui/Tabs';
-import { DefaultProviderSection } from './DefaultProviderSection';
-import { GenerationContractSection } from './GenerationContractSection';
-import { GenerationOptionsSection } from './GenerationOptionsSection';
-import { ProviderConfigCard } from './ProviderConfigCard';
-import { SettingsSummaryCards } from './SettingsSummaryCards';
-import { TaskAssignmentsSection } from './TaskAssignmentsSection';
+import { Button } from '@webview/components/ui/Button';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
+import { Tabs, type TabItem } from '@webview/components/ui/Tabs';
+import { DefaultProviderSection } from '@webview/components/settings/DefaultProviderSection';
+import { GenerationContractSection } from '@webview/components/settings/GenerationContractSection';
+import { GenerationOptionsSection } from '@webview/components/settings/GenerationOptionsSection';
+import { ProviderConfigCard } from '@webview/components/settings/ProviderConfigCard';
+import { SettingsSummaryCards } from '@webview/components/settings/SettingsSummaryCards';
+import { TaskAssignmentsSection } from '@webview/components/settings/TaskAssignmentsSection';
 import {
   listSnapshotSelectableProviderIds,
   originLabel,
@@ -19,7 +19,7 @@ import {
   type AiProviderId,
   type ConnectionTestState,
   type SettingsReadSnapshot,
-} from './settingsSnapshot';
+} from '@webview/components/settings/settingsSnapshot';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import type { SettingsMutationOkResponsePayload } from '@storyboard/story-model/contracts';
 

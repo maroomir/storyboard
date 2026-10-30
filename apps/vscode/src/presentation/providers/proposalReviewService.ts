@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { VirtualDocumentStore } from './virtualDocumentStore';
+import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 
 const proposalPreviewScheme: string = 'storyboard-proposal';
 

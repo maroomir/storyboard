@@ -32,72 +32,72 @@ import {
   type NoteExtractionNote,
   type ExpandedSceneBeat,
 } from '@storyboard/story-model';
-import { AiTextGateway } from './AiTextGateway';
+import { AiTextGateway } from '#ai/ai/AiTextGateway';
 import {
   CardAiService,
   type ExtractCardCandidatesByCharacterOptions,
   type ExtractFactsByCharacterOptions,
   type ExtractTraitsByCharacterOptions,
-} from './CardAiService';
+} from '#ai/ai/CardAiService';
 import {
   DraftAiService,
   type ContinuityCheckOptions,
   type DraftExpansionContext,
   type InlineCompletionContext,
-} from './DraftAiService';
-import { SceneAiService } from './SceneAiService';
+} from '#ai/ai/DraftAiService';
+import { SceneAiService } from '#ai/ai/SceneAiService';
 import {
   StudioAgentService,
   type StudioAgentRunInput,
   type StudioAgentRunOptions,
-} from './StudioAgentService';
-import type { SceneDialoguePolishResult } from './prompts/sceneDialoguePolish';
-import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
-import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
-import type { AiProviderRegistry } from './providerRegistry';
-import { ChapterPlanPrompt } from './prompts/chapterPlan';
-import { OutlineCharactersPrompt } from './prompts/outlineCharacters';
-import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
-import type { DraftAugmentInput } from './prompts/draftAugment';
-import type { DraftCritiqueInput } from './prompts/draftCritique';
-import type { DraftRevisionInput } from './prompts/draftRevision';
-import type { DraftCondenseInput } from './prompts/draftCondense';
-import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
-import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
-import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
-import { type RecommendedEntity } from './prompts/cardRecommendation';
+} from '#ai/ai/StudioAgentService';
+import type { SceneDialoguePolishResult } from '#ai/ai/prompts/sceneDialoguePolish';
+import type { StudioCardAuditPromptInput } from '#ai/ai/prompts/studioCardAudit';
+import type { GenerateTextOptions, StoryboardAiServiceOptions } from '#ai/ai/aiServiceTypes';
+import type { AiProviderRegistry } from '#ai/ai/providerRegistry';
+import { ChapterPlanPrompt } from '#ai/ai/prompts/chapterPlan';
+import { OutlineCharactersPrompt } from '#ai/ai/prompts/outlineCharacters';
+import { ChapterSummaryPrompt, type ChapterSummaryInput } from '#ai/ai/prompts/chapterSummary';
+import type { DraftAugmentInput } from '#ai/ai/prompts/draftAugment';
+import type { DraftCritiqueInput } from '#ai/ai/prompts/draftCritique';
+import type { DraftRevisionInput } from '#ai/ai/prompts/draftRevision';
+import type { DraftCondenseInput } from '#ai/ai/prompts/draftCondense';
+import { OutlineSynopsisPrompt } from '#ai/ai/prompts/outlineSynopsis';
+import { type CardCandidateExtraction } from '#ai/ai/prompts/cardCandidateExtraction';
+import { type BackgroundFactExtraction } from '#ai/ai/prompts/backgroundFactExtraction';
+import { type RecommendedEntity } from '#ai/ai/prompts/cardRecommendation';
 import {
   type NoteConsolidationResult,
   type NoteConsolidationTarget,
   type NoteSynthesis,
 } from '@storyboard/story-model';
-import { type PromptArtifact, type PromptConfig, type PromptVariantId } from './prompts/types';
-import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
+import { type PromptArtifact, type PromptConfig, type PromptVariantId } from '#ai/ai/prompts/types';
+import type { StoryStateUpdateInput } from '#ai/ai/prompts/storyStateUpdate';
 import {
   toPromptMessages,
   type ContinuityIssue,
   type GrammarIssue,
   type SituationWithCharacters,
-} from './aiResponseCoercion';
+} from '#ai/ai/aiResponseCoercion';
 import type { StudioValidationPromptInput } from '#ai/ai/prompts/studioValidation';
 
-export type { ContinuityIssue, GrammarIssue, SituationWithCharacters } from './aiResponseCoercion';
+export type { ContinuityIssue, GrammarIssue, SituationWithCharacters } from '#ai/ai/aiResponseCoercion';
 export type {
   GenerateTextOptions,
   OnUsageRecordCallback,
   StoryboardAiServiceOptions,
-} from './aiServiceTypes';
+} from '#ai/ai/aiServiceTypes';
 
 export type {
   ExtractCardCandidatesByCharacterOptions,
   ExtractFactsByCharacterOptions,
   ExtractTraitsByCharacterOptions,
-} from './CardAiService';
+} from '#ai/ai/CardAiService';
 export type {
   ContinuityCheckOptions,
   DraftExpansionContext,
   InlineCompletionContext,
-} from './DraftAiService';
+} from '#ai/ai/DraftAiService';
 
 export class StoryboardAiService {
   private readonly cardAiService: CardAiService;

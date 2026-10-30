@@ -35,7 +35,7 @@ alwaysApply: true
 
 - **`@/`** → `apps/vscode/src/` (extension bundle).
 - **`@webview/`** → `apps/vscode/webview-ui/src/` (webview only). Do not use `@/` inside webview code.
-- Prefer aliases over deep `../../` imports; short `./` / single `../` sibling imports are OK.
+- Every import of a source module goes through its alias, `./sibling` included; only a data or style file beside its module (`./x.params.json`, `./styles.css`) stays relative.
 
 ## Narration and Composition
 
@@ -93,7 +93,7 @@ apps/vscode/src/infrastructure/    # VSCode adapters: fs, settings, secrets, usa
 apps/cli/src/                      # adapters/ then commands/ (verb definitions)
 ```
 
-The root `scripts/architecture/check-workspace.mjs` (first step of the root `npm run lint`) enforces: every shared package stays free of `vscode`, app imports and another package's `#` internal prefix, never imports its own entry file or a folder `index` through its prefix, and every owned literal (`OWNED_LITERALS`) stays in its owner file. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles. `packages/story-model` enforces its own layer direction (`format` ← `contracts` ← `shared` ← `domain` ← `paths`), and `packages/story-engine` keeps `pipeline`, `ports` and `ai` to themselves, with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
+The root `scripts/architecture/check-workspace.mjs` (first step of the root `npm run lint`) enforces: every shared package stays free of `vscode`, app imports and another package's `#` internal prefix, never imports its own entry file or a folder `index` through its prefix (an entry file or barrel gathering barrels, and an import with no bindings, are exempt), addresses its own modules through its prefix rather than a relative path, and every owned literal (`OWNED_LITERALS`) stays in its owner file. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles. `packages/story-model` enforces its own layer direction (`format` ← `contracts` ← `shared` ← `domain` ← `paths`), and `packages/story-engine` keeps `pipeline`, `ports` and `ai` to themselves, with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
 
 ## Messaging and state
 

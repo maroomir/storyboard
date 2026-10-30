@@ -8,9 +8,9 @@ import type { ConfigBridgeDependencies } from '@storyboard/story-ai';
 import type { GenerationKnobs, UsageRecord } from '@storyboard/story-model';
 import { ConfigBridge } from '@storyboard/story-ai';
 
-import type { ParsedArguments } from '../src/cliArguments';
-import { commands, findCommand } from '../src/commands/index';
-import { createCliContainer, type CliContainerOptions } from '../src/container';
+import type { ParsedArguments } from '@/cliArguments';
+import { commands, findCommand } from '@/commands/index';
+import { createCliContainer, type CliContainerOptions } from '@/container';
 
 let home: string;
 let workspace: string;

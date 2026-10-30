@@ -16,7 +16,7 @@ import type {
   StudioProposalTurn,
   StudioValidationVerdict,
 } from '@webview/lib/types';
-import { Button } from '../ui/Button';
+import { Button } from '@webview/components/ui/Button';
 
 export interface StudioProposalActions {
   readonly onPreview: (turn: StudioProposalTurn) => void;

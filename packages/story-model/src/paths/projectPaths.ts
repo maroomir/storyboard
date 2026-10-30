@@ -15,7 +15,7 @@ import {
   threadMemoryRelativePath,
 } from '#model/format/paths';
 import { mainThreadId } from '#model/format/project';
-import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from './storyUri';
+import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from '#model/paths/storyUri';
 
 import type { StudioEntity } from '#model/shared/messaging/studio';
 

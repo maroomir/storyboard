@@ -69,8 +69,8 @@ import {
   type OverlayPoint,
   type Selection,
   type TrackScene,
-} from './simTrack';
-import { SimRunJudging } from './simRunJudging';
+} from '@/commands/sim/simTrack';
+import { SimRunJudging } from '@/commands/sim/simRunJudging';
 
 interface PreparedSim {
   readonly trackRoot: string;

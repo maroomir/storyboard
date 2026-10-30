@@ -6,11 +6,11 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createCliContainer } from '../src/container';
+import { createCliContainer } from '@/container';
 
 const prompt = vi.hoisted(() => ({ answer: '' }));
 
-vi.mock('../src/commands/prompt', () => ({
+vi.mock('@/commands/prompt', () => ({
   askLine: async () => prompt.answer,
   askSecret: async () => '',
 }));

@@ -8,7 +8,7 @@ import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/
 import { ContractRpc } from '@/presentation/messaging/contractRpcHandlers';
 import { SettingsRpc } from '@/presentation/messaging/settingsRpcHandlers';
 import type { StoryboardResponsePayload } from '@storyboard/story-model';
-import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 
 const panelViewType: string = 'storyboard.settings';
 

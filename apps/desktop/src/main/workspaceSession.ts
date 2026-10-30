@@ -31,15 +31,15 @@ import type { DraftDocument, RunSnapshot, SceneNotes, WorkspaceOverview } from '
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 import type { DesktopErrorCode, WorkspaceCreateRequest } from '@/shared/ipcContract';
 
-import { BibleService } from './bibleService';
-import { NotesService } from './notesService';
-import { createDesktopContainer, type DesktopContainer } from './desktopContainer';
-import type { DesktopLogger } from './desktopLogger';
-import { RunController } from './runController';
-import { fail, succeed, type ServiceFailure, type ServiceResult } from './serviceResult';
-import { locateSnapshotRepository, SnapshotService } from './snapshotService';
-import { watchWorkspace, type WorkspaceChange } from './workspaceWatcher';
-import { WorkspaceReader } from './workspaceReader';
+import { BibleService } from '@/main/bibleService';
+import { NotesService } from '@/main/notesService';
+import { createDesktopContainer, type DesktopContainer } from '@/main/desktopContainer';
+import type { DesktopLogger } from '@/main/desktopLogger';
+import { RunController } from '@/main/runController';
+import { fail, succeed, type ServiceFailure, type ServiceResult } from '@/main/serviceResult';
+import { locateSnapshotRepository, SnapshotService } from '@/main/snapshotService';
+import { watchWorkspace, type WorkspaceChange } from '@/main/workspaceWatcher';
+import { WorkspaceReader } from '@/main/workspaceReader';
 import type { ResourceOverrideReport } from '@storyboard/story-app';
 
 export interface WorkspaceSessionOptions {

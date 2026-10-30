@@ -53,7 +53,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 - **`@/`** → that app's own `src/` — defined per app in [`apps/vscode`](apps/vscode/tsconfig.json) and [`apps/cli`](apps/cli/tsconfig.json).
 - **`@webview/`** → [`apps/vscode/webview-ui/src/`](apps/vscode/webview-ui/src/) (webview UI only). Do not use `@/` from webview code; keep the extension/webview boundary obvious.
 - **`#engine/`, `#model/`, `#ai/`, `#git/`** → each package's own `src/`, declared as Node subpath imports in that package's `package.json`. Packages must not use `@/`: apps bundle package source through one global alias table, so `@/` inside a package resolves to the *app's* `src/` with no error. A package must not use another package's prefix either.
-- Any import that climbs out of its own folder uses the alias; `./sibling` is fine and `../` fails the architecture check.
+- Every import of a source module uses the alias, `./sibling` included; a relative path fails the architecture check. Only a data or style file beside its module (`./x.params.json`, `./styles.css`) stays relative.
 - Aliases live in each project's `tsconfig.json`; [`scripts/aliases.mjs`](scripts/aliases.mjs) feeds the same table to esbuild, Vite, and Vitest, so no bundler config restates a path.
 
 ## Narration and Composition

@@ -4,7 +4,7 @@ import {
   type StudioAgentToolName,
 } from '@storyboard/story-model/contracts';
 
-import type { StudioTarget } from './types';
+import type { StudioTarget } from '@webview/lib/types';
 
 export type StudioToolName = StudioAgentToolName;
 

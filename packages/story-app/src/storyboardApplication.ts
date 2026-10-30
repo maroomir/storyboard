@@ -83,16 +83,16 @@ import {
   type ConfigBridge,
   type SecretStore,
 } from '@storyboard/story-ai';
-import { CardManager } from './managers/cardManager';
-import { DraftManager } from './managers/draftManager';
-import { ManuscriptManager } from './managers/manuscriptManager';
-import { NoteManager } from './managers/noteManager';
-import { NovelManager } from './managers/novelManager';
-import { StudioManager } from './managers/studioManager';
-import { RunGate } from './runGate';
-import { describeParameters, type ParameterReport } from './parameterRegistry';
-import { loadResourceOverrides, type ResourceOverrideReport } from './resourceOverrides';
-import { describeWorkspaceStatus, type WorkspaceStatus } from './workspaceStatus';
+import { CardManager } from '#app/managers/cardManager';
+import { DraftManager } from '#app/managers/draftManager';
+import { ManuscriptManager } from '#app/managers/manuscriptManager';
+import { NoteManager } from '#app/managers/noteManager';
+import { NovelManager } from '#app/managers/novelManager';
+import { StudioManager } from '#app/managers/studioManager';
+import { RunGate } from '#app/runGate';
+import { describeParameters, type ParameterReport } from '#app/parameterRegistry';
+import { loadResourceOverrides, type ResourceOverrideReport } from '#app/resourceOverrides';
+import { describeWorkspaceStatus, type WorkspaceStatus } from '#app/workspaceStatus';
 import type { StoryUri } from '@storyboard/story-model';
 
 export interface StoryboardApplicationDependencies {

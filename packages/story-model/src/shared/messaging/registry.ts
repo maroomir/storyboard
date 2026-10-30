@@ -9,7 +9,7 @@ import {
   aiProvidersCheckConnectionResponsePayloadSchema,
   aiProvidersListRequestPayloadSchema,
   aiProvidersListResponsePayloadSchema,
-} from './ai';
+} from '#model/shared/messaging/ai';
 import {
   cardsApplyCollectRequestPayloadSchema,
   cardsApplyCollectResponsePayloadSchema,
@@ -35,14 +35,14 @@ import {
   cardsWriteResponsePayloadSchema,
   cardsStructureSceneRequestPayloadSchema,
   cardsStructureSceneResponsePayloadSchema,
-} from './cards';
+} from '#model/shared/messaging/cards';
 import {
   projectReadContractRequestPayloadSchema,
   projectReadContractResponsePayloadSchema,
   projectUpdateContractRequestPayloadSchema,
   projectUpdateContractResponsePayloadSchema,
-} from './project';
-import { relationsListRequestPayloadSchema, relationsListResponsePayloadSchema } from './relations';
+} from '#model/shared/messaging/project';
+import { relationsListRequestPayloadSchema, relationsListResponsePayloadSchema } from '#model/shared/messaging/relations';
 import {
   scenesGenerateDraftRequestPayloadSchema,
   scenesGenerateDraftResponsePayloadSchema,
@@ -52,13 +52,13 @@ import {
   scenesOpenDraftResponsePayloadSchema,
   scenesOpenSceneRequestPayloadSchema,
   scenesOpenSceneResponsePayloadSchema,
-} from './scenes';
+} from '#model/shared/messaging/scenes';
 import {
   secretsDeleteApiKeyRequestPayloadSchema,
   secretsDeleteApiKeyResponsePayloadSchema,
   secretsWriteApiKeyRequestPayloadSchema,
   secretsWriteApiKeyResponsePayloadSchema,
-} from './secrets';
+} from '#model/shared/messaging/secrets';
 import {
   settingsMutationOkResponsePayloadSchema,
   settingsReadRequestPayloadSchema,
@@ -68,7 +68,7 @@ import {
   settingsUpdateProviderModelRequestPayloadSchema,
   settingsUpdateSettingValueRequestPayloadSchema,
   settingsUpdateTaskAiConfigRequestPayloadSchema,
-} from './settings';
+} from '#model/shared/messaging/settings';
 import {
   studioCardUpdateRequestPayloadSchema,
   studioCardUpdateResponsePayloadSchema,
@@ -96,12 +96,12 @@ import {
   studioSessionSaveResponsePayloadSchema,
   studioStageRequestPayloadSchema,
   studioStageResponsePayloadSchema,
-} from './studio';
-import { usageReadRequestPayloadSchema, usageReadResponsePayloadSchema } from './usage';
+} from '#model/shared/messaging/studio';
+import { usageReadRequestPayloadSchema, usageReadResponsePayloadSchema } from '#model/shared/messaging/usage';
 import {
   workspaceRunCommandRequestPayloadSchema,
   workspaceRunCommandResponsePayloadSchema,
-} from './commands';
+} from '#model/shared/messaging/commands';
 
 export const storyboardRequestPayloadSchemas = {
   'cards.list': cardsListRequestPayloadSchema,

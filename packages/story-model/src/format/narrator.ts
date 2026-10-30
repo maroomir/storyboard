@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { pointOfViews, type PointOfView } from './project';
+import { pointOfViews, type PointOfView } from '#model/format/project';
 
 export type NarratorPerson = 'first' | 'second' | 'third';
 

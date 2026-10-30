@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import profileData from './modelProfiles.params.json';
 
-import { modelProfileKnobIds } from './generationParameters';
+import { modelProfileKnobIds } from '#model/contracts/generationParameters';
 
 export interface ModelMeasurement {
   date: string;

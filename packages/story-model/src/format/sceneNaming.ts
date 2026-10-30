@@ -1,4 +1,4 @@
-import { parseSceneFileName, sceneFileNamePattern, type SceneFileNameParts } from './scene';
+import { parseSceneFileName, sceneFileNamePattern, type SceneFileNameParts } from '#model/format/scene';
 
 const sceneSlugInputPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 

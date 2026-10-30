@@ -3,7 +3,7 @@ import type { INovelStage } from '#engine/application/novel/novelStage';
 import type { NovelPipelineResult } from '#engine/application/novel/novelPipelineContract';
 import type { NovelRun } from '#engine/application/novel/novelRun';
 import type { ReviewStageResult } from '#engine/application/novel/novelPipelineContract';
-import { VolumeReviewer } from './volumeReviewer';
+import { VolumeReviewer } from '#engine/application/novel/stages/volumeReviewer';
 
 export class ReviewStage implements INovelStage {
   public readonly id: NovelStageName = 'review';

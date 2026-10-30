@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createWindowTitle, linkFilePaths } from '../src/terminal/signals';
-import { measureWidth } from '../src/terminal/width';
+import { createWindowTitle, linkFilePaths } from '@/terminal/signals';
+import { measureWidth } from '@/terminal/width';
 
 const existing = new Set(['/work/draft/01-a.md', '/home/me/.storyboard/config.json']);
 const isExistingPath = (path: string): boolean => existing.has(path);

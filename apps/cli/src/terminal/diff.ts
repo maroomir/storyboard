@@ -1,4 +1,4 @@
-import type { Theme } from './theme';
+import type { Theme } from '@/terminal/theme';
 
 export type DiffLine =
   | { readonly kind: 'same'; readonly text: string }

@@ -15,7 +15,7 @@ import type {
 } from '@storyboard/story-model';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import { validateGenerationContract, toOutlineBrief } from '@storyboard/story-model';
-import { refuseChapterCountMismatch } from './chapterPlanContract';
+import { refuseChapterCountMismatch } from '#engine/application/novel/chapterPlanContract';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 
 export type GenerateOutlineOptions = {

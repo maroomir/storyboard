@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createWorkspaceAgentGuide } from '@storyboard/story-engine';
 import { describe, expect, it } from 'vitest';
 
-import { commandCatalog } from '../src/commands/index';
+import { commandCatalog } from '@/commands/index';
 import {
   commandGroupIds,
   commandGroups,
@@ -12,9 +12,9 @@ import {
   draftCheckKinds,
   globalFlagNames,
   initLanguages,
-} from '../src/commands/catalog';
-import { computeCompletions } from '../src/commands/completion';
-import { commands } from '../src/commands/index';
+} from '@/commands/catalog';
+import { computeCompletions } from '@/commands/completion';
+import { commands } from '@/commands/index';
 import {
   renderCommandHelp,
   renderFullUsage,
@@ -26,9 +26,9 @@ import {
   renamedCommands,
   suggestFlags,
   suggestVerbs,
-} from '../src/help';
-import { createTheme } from '../src/terminal/theme';
-import { measureWidth } from '../src/terminal/width';
+} from '@/help';
+import { createTheme } from '@/terminal/theme';
+import { measureWidth } from '@/terminal/width';
 
 const setupSource = readFileSync(new URL('../src/commands/setupCommand.ts', import.meta.url), 'utf8');
 const commandMentionPattern = /storyboard ([a-z][a-z0-9-]*)(?: ([a-z][a-z0-9-]*))?/g;

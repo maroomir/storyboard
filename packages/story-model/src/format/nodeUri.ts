@@ -1,6 +1,6 @@
 import { isAbsolute, resolve, sep } from 'node:path';
 
-import type { StoryUri } from './storyUri';
+import type { StoryUri } from '#model/format/storyUri';
 
 const isWindows: boolean = sep === '\\';
 

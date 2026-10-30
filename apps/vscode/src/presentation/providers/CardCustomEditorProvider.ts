@@ -36,7 +36,7 @@ import type {
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { CardCollectRepository, NarratorCardRepository } from '@storyboard/story-engine';
-import { VirtualDocumentStore } from './virtualDocumentStore';
+import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import {
   createWebviewBridge,
   type StoryboardRpcHandlers,
@@ -44,7 +44,7 @@ import {
 } from '@/presentation/messaging/bridge';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
-import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
 
 export interface CardCustomEditorDependencies {

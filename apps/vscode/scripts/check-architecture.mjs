@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   isWithin,
-  requireAliasForEscapingImport,
+  requireAliasForSourceImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
 
@@ -32,13 +32,13 @@ function refuseWideExtensionEntry(filePath, importPath, _statement, report) {
     return;
   }
 
-  if (!importPath.startsWith('./bootstrap/')) {
+  if (!importPath.startsWith('@/bootstrap/')) {
     report(`extension.ts imports outside bootstrap (${importPath})`, filePath);
   }
 }
 
 runArchitectureCheck('Extension', SOURCE_ROOT, {
   rules: [refuseInfrastructureReachingOutward],
-  importRules: [refuseWideExtensionEntry, requireAliasForEscapingImport(SOURCE_ROOT, '@/')],
+  importRules: [refuseWideExtensionEntry, requireAliasForSourceImport(SOURCE_ROOT, '@/')],
   aliases: { '@/': '@/' },
 });

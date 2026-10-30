@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { cardIdPattern, characterRoles, type CharacterRole } from './card';
+import { cardIdPattern, characterRoles, type CharacterRole } from '#model/format/card';
 import {
   pointOfViews,
   type CompositionKind,
@@ -9,7 +9,7 @@ import {
   type ProjectSetting,
   type StoryboardProject,
   type StoryThreadEntry,
-} from './project';
+} from '#model/format/project';
 import { coerceOptionalString, coerceStringList, isJsonRecord } from '#model/format/unknownValues';
 
 export const outlineVersion: string = '1.0.0';

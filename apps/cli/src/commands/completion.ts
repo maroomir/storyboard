@@ -19,7 +19,7 @@ import {
   storyboardSettingCatalog,
   aiTaskCatalog,
 } from '@storyboard/story-model';
-import { commandCatalog, findCommandSpec } from './index';
+import { commandCatalog, findCommandSpec } from '@/commands/index';
 import {
   cardCategories,
   completionShells,
@@ -30,9 +30,9 @@ import {
   type CommandSpec,
   type FlagSpec,
   globalFlagNames,
-} from './catalog';
+} from '@/commands/catalog';
 import { availableProviderIds } from '@/adapters/availableProviders';
-export { completionShells, type CompletionShell } from './catalog';
+export { completionShells, type CompletionShell } from '@/commands/catalog';
 
 export interface Completion {
   readonly text: string;

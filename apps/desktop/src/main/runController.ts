@@ -41,8 +41,8 @@ import type {
 } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 
-import type { DesktopContainer } from './desktopContainer';
-import { fail, succeed, type ServiceResult } from './serviceResult';
+import type { DesktopContainer } from '@/main/desktopContainer';
+import { fail, succeed, type ServiceResult } from '@/main/serviceResult';
 
 type SceneStage = Parameters<NonNullable<GenerateDraftRequest['onPipelineProgress']>>[0];
 

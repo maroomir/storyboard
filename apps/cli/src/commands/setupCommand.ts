@@ -10,7 +10,7 @@ import {
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
 import { LoginCommand } from '@/commands/loginCommand';
-import { askLine, askSecret } from './prompt';
+import { askLine, askSecret } from '@/commands/prompt';
 import { enabledHiddenProviderIds } from '@/adapters/availableProviders';
 import type { StoryboardHomePaths } from '@storyboard/story-config';
 import { failure, success } from '@/commands/outcomes';

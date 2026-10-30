@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { craftContractOverrideSchema, type CraftContractOverride } from './craftContract';
+import { craftContractOverrideSchema, type CraftContractOverride } from '#model/format/craftContract';
 
 export const storyboardProjectVersion: string = '1.0.0';
 

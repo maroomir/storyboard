@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { CardCollectProposal, StoryboardCard } from '@webview/lib/types';
-import { Button } from '../ui/Button';
-import { SectionHeader } from '../ui/SectionHeader';
+import { Button } from '@webview/components/ui/Button';
+import { SectionHeader } from '@webview/components/ui/SectionHeader';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { callRpc } from '@webview/lib/rpcClient';
 

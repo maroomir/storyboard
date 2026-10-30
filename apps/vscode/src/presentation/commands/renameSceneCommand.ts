@@ -15,7 +15,7 @@ import {
   resolveStoryboardWorkspaceRoot,
   uriExists,
 } from '@/infrastructure/vscode/workspace';
-import { runHoldingWorkspaceLock } from './workspaceRunLock';
+import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
 import type { RenameSceneResult } from '@storyboard/story-engine';
 
 export interface RenameSceneCommandDependencies {

@@ -6,49 +6,49 @@ import type {
   SceneStructureFieldKey,
 SceneStructureProposal,
 } from '@storyboard/story-model';
-import type { GenerateTextOptions } from './aiServiceTypes';
+import type { GenerateTextOptions } from '#ai/ai/aiServiceTypes';
 import {
   toPromptMessages,
   toSituationWithCharacters,
   type SituationWithCharacters,
-} from './aiResponseCoercion';
-import { AiTextGateway } from './AiTextGateway';
-import { BackgroundDescriptionPrompt } from './prompts/backgroundDescription';
-import { BackgroundFactConflictsPrompt } from './prompts/backgroundFactConflicts';
-import { GenreFormattingPrompt } from './prompts/genreFormatting';
-import { PersonaGenerationPrompt } from './prompts/personaGeneration';
-import { SceneBeatsPrompt } from './prompts/sceneBeats';
-import { SceneGroundingPrompt } from './prompts/sceneGrounding';
-import { SceneSkeletonPrompt, type SceneSkeletonInput } from './prompts/sceneSkeleton';
+} from '#ai/ai/aiResponseCoercion';
+import { AiTextGateway } from '#ai/ai/AiTextGateway';
+import { BackgroundDescriptionPrompt } from '#ai/ai/prompts/backgroundDescription';
+import { BackgroundFactConflictsPrompt } from '#ai/ai/prompts/backgroundFactConflicts';
+import { GenreFormattingPrompt } from '#ai/ai/prompts/genreFormatting';
+import { PersonaGenerationPrompt } from '#ai/ai/prompts/personaGeneration';
+import { SceneBeatsPrompt } from '#ai/ai/prompts/sceneBeats';
+import { SceneGroundingPrompt } from '#ai/ai/prompts/sceneGrounding';
+import { SceneSkeletonPrompt, type SceneSkeletonInput } from '#ai/ai/prompts/sceneSkeleton';
 import {
   coerceBeatProposal,
   SceneBeatActorPrompt,
   type SceneBeatActorInput,
   type SceneBeatProposal,
-} from './prompts/sceneBeatActor';
+} from '#ai/ai/prompts/sceneBeatActor';
 import {
   SceneBeatArbiterPrompt,
   splitBeatPassage,
   type SceneBeatArbiterInput,
   type SceneBeatPassage,
-} from './prompts/sceneBeatArbiter';
-import { parseBeatJsonObject } from './prompts/sceneBeatBlocks';
+} from '#ai/ai/prompts/sceneBeatArbiter';
+import { parseBeatJsonObject } from '#ai/ai/prompts/sceneBeatBlocks';
 import {
   coerceBeatVerdict,
   SceneBeatJudgePrompt,
   type SceneBeatJudgeInput,
   type SceneBeatVerdict,
-} from './prompts/sceneBeatJudge';
+} from '#ai/ai/prompts/sceneBeatJudge';
 import {
   SceneDialogueAttributionPrompt,
   type SceneDialogueAttributionInput,
-} from './prompts/sceneDialogueAttribution';
+} from '#ai/ai/prompts/sceneDialogueAttribution';
 import {
   coerceDialogueRewrites,
   SceneDialoguePolishPrompt,
   type SceneDialoguePolishInput,
   type SceneDialoguePolishResult,
-} from './prompts/sceneDialoguePolish';
+} from '#ai/ai/prompts/sceneDialoguePolish';
 import {
   coerceDialogueAttribution,
   type DialogueAttribution,
@@ -69,9 +69,9 @@ isSceneStructureListField,
 import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
-} from './prompts/sceneSectionExpansion';
-import { SceneStructurePrompt } from './prompts/sceneStructure';
-import { SituationExtractionPrompt } from './prompts/situationExtraction';
+} from '#ai/ai/prompts/sceneSectionExpansion';
+import { SceneStructurePrompt } from '#ai/ai/prompts/sceneStructure';
+import { SituationExtractionPrompt } from '#ai/ai/prompts/situationExtraction';
 import type { PromptArtifact, PromptVariantId } from '#ai/ai/prompts/types';
 
 export class SceneAiService {

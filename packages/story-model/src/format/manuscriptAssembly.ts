@@ -1,6 +1,6 @@
 import { reserveUniqueSlug, slugify } from '#model/format/slug';
-import { flattenChapterPlan } from './outline';
-import type { ChapterPlan, FlatChapterScene } from './outline';
+import { flattenChapterPlan } from '#model/format/outline';
+import type { ChapterPlan, FlatChapterScene } from '#model/format/outline';
 
 export interface ManuscriptDraftEntry {
   readonly stem: string;

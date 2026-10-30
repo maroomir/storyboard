@@ -31,13 +31,13 @@ import {
   SceneNarrationResolver,
   type ChapterNarrationDefaults,
   type SceneThreadContext,
-} from './sceneNarrationResolver';
+} from '#engine/application/drafts/sceneNarrationResolver';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '#engine/pipeline/sceneGenerationPolicies';
-import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './draftGenerationContract';
-import { resolveSceneBeats } from './resolveSceneBeats';
-import { resolveSceneGrounding, type SceneGroundingOutcome } from './resolveSceneGrounding';
-import { StoryMemoryAuditor, type StoryMemoryAudit } from './storyMemoryAuditor';
+import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from '#engine/application/drafts/draftGenerationContract';
+import { resolveSceneBeats } from '#engine/application/drafts/resolveSceneBeats';
+import { resolveSceneGrounding, type SceneGroundingOutcome } from '#engine/application/drafts/resolveSceneGrounding';
+import { StoryMemoryAuditor, type StoryMemoryAudit } from '#engine/application/drafts/storyMemoryAuditor';
 import {
   ChapterMemoryAuditor,
   type ChapterMemoryAudit,

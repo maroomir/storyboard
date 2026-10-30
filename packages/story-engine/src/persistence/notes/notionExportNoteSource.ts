@@ -15,7 +15,7 @@ import {
   type INoteSource,
 } from '#engine/application/notes/noteSource';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { readZipEntries, ZipArchiveError, type ZipEntry } from './zipArchive';
+import { readZipEntries, ZipArchiveError, type ZipEntry } from '#engine/persistence/notes/zipArchive';
 
 interface ZipNoteFile {
   readonly entry: ZipEntry;

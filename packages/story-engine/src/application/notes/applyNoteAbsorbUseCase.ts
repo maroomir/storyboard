@@ -22,7 +22,7 @@ import {
   mergeNoteSynopsisCandidate,
   serializeSynopsisMarkdown,
 } from '@storyboard/story-model';
-import type { NoteCandidateLoad } from './noteAbsorbRepository';
+import type { NoteCandidateLoad } from '#engine/application/notes/noteAbsorbRepository';
 
 export interface ApplyNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;

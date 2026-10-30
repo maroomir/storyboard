@@ -12,8 +12,8 @@ import { storyboardModelCatalog } from '@storyboard/story-model';
 import type { OllamaClientLike, StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { chooseCostAxis } from '@storyboard/story-sim';
 
-import { commands, findCommand } from '../src/commands/index';
-import { createCliContainer } from '../src/container';
+import { commands, findCommand } from '@/commands/index';
+import { createCliContainer } from '@/container';
 
 let home: string;
 let workspace: string;

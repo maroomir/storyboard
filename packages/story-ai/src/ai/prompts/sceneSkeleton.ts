@@ -8,11 +8,11 @@ import {
   voiceStyleLines,
   type StyleDirective,
 } from '@storyboard/story-model';
-import { personaCatchphraseView } from './characterCatchphrases';
-import { personaKnowledgeView } from './characterKnowledge';
-import { renderPrompt } from './promptResource';
-import { type PromptArtifact, type PromptModule, type PromptVariantId } from './types';
-import { promptTuning } from './promptTuning';
+import { personaCatchphraseView } from '#ai/ai/prompts/characterCatchphrases';
+import { personaKnowledgeView } from '#ai/ai/prompts/characterKnowledge';
+import { renderPrompt } from '#ai/ai/prompts/promptResource';
+import { type PromptArtifact, type PromptModule, type PromptVariantId } from '#ai/ai/prompts/types';
+import { promptTuning } from '#ai/ai/prompts/promptTuning';
 
 export interface SceneSkeletonInput {
   readonly narrativeSource: string;

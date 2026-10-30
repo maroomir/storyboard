@@ -1,7 +1,7 @@
 import { readEnabledHiddenProviderIds } from '@storyboard/story-config';
 import { listAvailableProviderIds, type AiProviderId } from '@storyboard/story-model';
 
-import { resolveCliPaths } from './paths';
+import { resolveCliPaths } from '@/adapters/paths';
 
 export function enabledHiddenProviderIds(env: NodeJS.ProcessEnv = process.env): AiProviderId[] {
   return readEnabledHiddenProviderIds(resolveCliPaths(env).configFile);

@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 
-import { Button } from '../ui/Button';
-import { ConnectionTestButton, StatusPill } from './SettingsPrimitives';
+import { Button } from '@webview/components/ui/Button';
+import { ConnectionTestButton, StatusPill } from '@webview/components/settings/SettingsPrimitives';
 import {
   getProviderStatus,
   parseSaveTarget,
   type AiProviderId,
   type ConnectionTestState,
   type SettingsReadSnapshot,
-} from './settingsSnapshot';
-import { fieldGroupClass, sbInputClass } from './settingsStyles';
+} from '@webview/components/settings/settingsSnapshot';
+import { fieldGroupClass, sbInputClass } from '@webview/components/settings/settingsStyles';
 import {
   requiresApiKey,
   type AiProviderStatus,
