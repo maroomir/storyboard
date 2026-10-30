@@ -9,7 +9,6 @@ import type {
   CardReading,
   ResourceOverrideReport,
 } from '@storyboard/story-app';
-import { ChapterMemoryAuditor, StoryMemoryAuditor } from '@storyboard/story-engine';
 import {
   backgroundCardRelativePath,
   findUnknownBeatCast,
@@ -543,12 +542,7 @@ export class DoctorChecks {
       return [];
     }
 
-    const { audit } = await new StoryMemoryAuditor({
-      fileSystem: this.container.fileSystem,
-      paths,
-      format: project.format,
-      sceneBreakJoiner: this.container.configBridge.getDraftSceneBreakSeparator(),
-    }).audit();
+    const { audit } = await this.container.workspace.auditStoryState(this.container.workspaceRoot);
 
     if (audit.staleSceneOrders.length > 0) {
       return [
@@ -582,10 +576,9 @@ export class DoctorChecks {
       return [];
     }
 
-    const { audit } = await new ChapterMemoryAuditor({
-      fileSystem: this.container.fileSystem,
-      paths,
-    }).audit();
+    const { audit } = await this.container.workspace.auditChapterMemory(
+      this.container.workspaceRoot,
+    );
 
     if (audit.summaries.length === 0) {
       return [];

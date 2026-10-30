@@ -41,11 +41,11 @@ export class DraftModule implements IApplicationModule {
       aiGateway,
       configBridge,
       drafts,
-      fileSystem,
       runGate,
       logger,
       project,
       usageRecorder,
+      workspace,
     } = this.platform;
     const augmentPreview: PreviewDocuments = new PreviewDocuments(augmentPreviewScheme);
     const condensePreview: PreviewDocuments = new PreviewDocuments(CONDENSE_PREVIEW_SCHEME);
@@ -83,7 +83,7 @@ export class DraftModule implements IApplicationModule {
         new CreateSceneCommand({ configBridge, project }),
         new OpenSceneDraftCommand(),
         new RenameSceneCommand({ drafts, runGate }),
-        new ResealStoryStateCommand({ configBridge, fileSystem, logger }),
+        new ResealStoryStateCommand({ workspace, logger }),
         ...grammar.commands,
         ...continuity.commands,
         ...slop.commands,

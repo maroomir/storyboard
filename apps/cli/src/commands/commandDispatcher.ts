@@ -4,16 +4,11 @@ import {
   storyboardModelCatalog,
   type AiProviderId,
   STORYBOARD_RELATIVE_PATHS,
-  getStoryboardProjectPaths,
   usageCacheHitRate,
   type ProviderModelOptions,
 } from '@storyboard/story-model';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
-import {
-  type IStoryboardLogger,
-  type UsageMeterSession,
-  WorkspaceInitializer,
-} from '@storyboard/story-engine';
+import { type IStoryboardLogger, type UsageMeterSession } from '@storyboard/story-engine';
 import {
   flagBoolean,
   flagString,
@@ -561,11 +556,9 @@ export class CommandDispatcher {
 }
 
 async function prepareWorkspace(container: CliContainer): Promise<void> {
-  await new WorkspaceInitializer(container.fileSystem).migrateLegacyMemory(
-    getStoryboardProjectPaths(container.workspaceRoot),
+  const resources: ResourceOverrideReport = await container.workspace.prepare(
+    container.workspaceRoot,
   );
-
-  const resources: ResourceOverrideReport = await container.loadResourceOverrides();
   for (const problem of resources.problems) {
     container.logger.warn(problem.message);
   }

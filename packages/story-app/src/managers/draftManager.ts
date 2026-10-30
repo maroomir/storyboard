@@ -44,8 +44,6 @@ import type {
   SaveDraftEditResult,
   SaveDraftEditUseCase,
 } from '@storyboard/story-engine';
-import { StoryMemoryAuditor, ProjectRepository } from '@storyboard/story-engine';
-import type { ConfigBridge } from '@storyboard/story-ai';
 import {
   draftPath,
   getStoryboardProjectPaths,
@@ -55,8 +53,6 @@ import {
   type Draft,
   type SceneFile,
   type SceneListItem,
-  type StoryboardProject,
-  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -95,7 +91,6 @@ export interface DraftManagerDependencies {
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly fileSystem: IFileSystem;
-  readonly configBridge: ConfigBridge;
 }
 
 export class DraftManager {
@@ -224,23 +219,6 @@ export class DraftManager {
 
   public generateStoryState(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     return this.deps.generateStoryStateUseCase.execute(request);
-  }
-
-  public async resealStoryState(
-    workspaceRoot: StoryUri,
-    sceneOrders?: readonly number[],
-  ): Promise<readonly number[]> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const project: StoryboardProject = await new ProjectRepository(this.deps.fileSystem).read(
-      paths.projectJson,
-    );
-
-    return await new StoryMemoryAuditor({
-      fileSystem: this.deps.fileSystem,
-      paths,
-      format: project.format,
-      sceneBreakJoiner: this.deps.configBridge.getDraftSceneBreakSeparator(),
-    }).reseal(sceneOrders);
   }
 
   public renameScene(request: RenameSceneRequest): Promise<RenameSceneResult> {

@@ -30,6 +30,11 @@ export {
 } from '#app/managers/novelManager';
 export { NoteManager, type NoteManagerDependencies } from '#app/managers/noteManager';
 export { ProjectManager, type ProjectManagerDependencies } from '#app/managers/projectManager';
+export {
+  WorkspaceManager,
+  type WorkspaceManagerDependencies,
+  type WorkspaceRepairResult,
+} from '#app/managers/workspaceManager';
 export { StudioManager, type StudioManagerDependencies } from '#app/managers/studioManager';
 export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from '#app/runGate';
 export {

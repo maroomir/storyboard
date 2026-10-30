@@ -9,7 +9,6 @@ import {
   type CompositionPreset,
   type RenameSceneResult,
   type SaveDraftEditResult,
-  WorkspaceInitializer,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
@@ -22,7 +21,6 @@ import {
   type SceneFile,
 } from '@storyboard/story-model';
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
-import { NodeFileSystem } from '@storyboard/story-node';
 
 import type { DraftDocument, RunSnapshot, SceneNotes, WorkspaceOverview } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
@@ -128,13 +126,7 @@ export class WorkspaceSession {
       );
     }
 
-    const container: DesktopContainer = createDesktopContainer({
-      workspacePath: options.workspacePath,
-      homePaths: options.homePaths,
-      logger: options.logger,
-      version: options.version,
-      onInvalidConfigFile: options.onInvalidConfigFile,
-    });
+    const container: DesktopContainer = WorkspaceSession.createContainer(options);
     const resources: ResourceOverrideReport = await container.loadResourceOverrides();
     for (const problem of resources.problems) {
       options.logger.warn(problem.message);
@@ -175,6 +167,16 @@ export class WorkspaceSession {
     return succeed(session);
   }
 
+  private static createContainer(options: WorkspaceSessionOptions): DesktopContainer {
+    return createDesktopContainer({
+      workspacePath: options.workspacePath,
+      homePaths: options.homePaths,
+      logger: options.logger,
+      version: options.version,
+      onInvalidConfigFile: options.onInvalidConfigFile,
+    });
+  }
+
   public static async create(
     options: WorkspaceSessionOptions & { readonly request: WorkspaceCreateRequest },
   ): Promise<ServiceResult<WorkspaceSession>> {
@@ -188,7 +190,7 @@ export class WorkspaceSession {
     await mkdir(options.workspacePath, { recursive: true });
 
     const { setting, preset } = contractSettingFrom(options.request);
-    await new WorkspaceInitializer(new NodeFileSystem()).createWorkspace({
+    await WorkspaceSession.createContainer(options).workspace.create({
       workspaceRoot: NodeUri.file(options.workspacePath),
       name: options.request.title,
       setting,
