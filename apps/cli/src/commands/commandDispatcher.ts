@@ -4,11 +4,9 @@ import {
   storyboardModelCatalog,
   type AiProviderId,
   STORYBOARD_RELATIVE_PATHS,
-  usageCacheHitRate,
   type ProviderModelOptions,
 } from '@storyboard/story-model';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
-import { type IStoryboardLogger, type UsageMeterSession } from '@storyboard/story-engine';
 import {
   flagBoolean,
   flagString,
@@ -19,21 +17,12 @@ import {
   type ParseFailure,
   type RawArguments,
 } from '@/cliArguments';
-import type { LiveArea } from '@/adapters/liveArea';
-import type { PauseRequests } from '@/adapters/pauseRequests';
-import type { IPrompter } from '@/adapters/prompter';
-import { LineRunProgress, RailRunProgress, type IRunProgress } from '@/adapters/runProgress';
-import { createCliContainer, type CliContainer } from '@/container';
 import {
   createTerminalProfile,
   plainTerminalFacts,
-  type TerminalFacts,
   type TerminalProfile,
   type TerminalStream,
 } from '@/terminal/profile';
-import { diffSentences, renderSentenceDiff } from '@/terminal/diff';
-import { linkFilePaths } from '@/terminal/signals';
-import type { Theme } from '@/terminal/theme';
 import {
   renderCommandHelp,
   renderFullUsage,
@@ -53,9 +42,18 @@ import {
 import { findCommand, findCommandSpec, commands } from '@/commands/index';
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandOutcome } from '@/commands/outcome';
-import { markOutcome, renderNextStep } from '@/commands/outcomeView';
+import { markOutcome } from '@/commands/outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
-import type { ResourceOverrideReport, WorkspaceHoldResult } from '@storyboard/story-app';
+import { CommandRun, reportText } from '@/commands/commandRun';
+import type {
+  DispatchDependencies,
+  DispatchResult,
+  Invocation,
+  OutputMode,
+  WorkspaceTarget,
+} from '@/commands/dispatchContract';
+
+export type { DispatchDependencies, DispatchResult } from '@/commands/dispatchContract';
 
 const configWritingVerbs: Set<string> = new Set(['setup', 'config set', 'config unset']);
 
@@ -68,42 +66,6 @@ function resolveConfigWriteTarget(
   }
 
   return isWorkspace ? configurationTargets.workspace : undefined;
-}
-
-export interface DispatchDependencies {
-  readonly version: string;
-  readonly cwd: string;
-  readonly isInteractive: boolean;
-  readonly createLogger: (
-    showProgress: boolean,
-    stderrTheme: Theme,
-    showsErrorStack: boolean,
-  ) => IStoryboardLogger;
-  readonly terminal?: TerminalFacts;
-  readonly liveArea?: LiveArea;
-  readonly pauseRequests?: PauseRequests;
-  readonly createPrompter?: (stderr: TerminalStream) => IPrompter;
-}
-
-export interface DispatchResult {
-  readonly exitCode: number;
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly outcome?: CommandOutcome;
-  readonly launchTui?: boolean;
-  readonly costUsd?: number;
-}
-
-interface OutputMode {
-  readonly json: boolean;
-}
-
-function reportText(outcome: CommandOutcome, mode: OutputMode): string {
-  if (mode.json) {
-    return `${JSON.stringify({ ok: outcome.ok, message: outcome.message, data: outcome.data ?? null })}\n`;
-  }
-
-  return `${outcome.message}\n`;
 }
 
 function failure(message: string, mode: OutputMode, stream: TerminalStream): DispatchResult {
@@ -164,58 +126,6 @@ function removeVerbWords(argv: readonly string[], verbWords: readonly string[]):
   return rest;
 }
 
-interface Invocation {
-  readonly argv: readonly string[];
-  readonly args: ParsedArguments;
-  readonly verb: string;
-  readonly mode: OutputMode;
-  readonly terminal: TerminalProfile;
-}
-
-interface WorkspaceTarget {
-  readonly workspacePath: string;
-  readonly spec: CommandSpec | undefined;
-  readonly needsWorkspace: boolean;
-  readonly isWorkspace: boolean;
-  readonly configWriteTarget: ConfigurationTarget | undefined;
-}
-
-interface DraftSnapshot {
-  readonly stem: string;
-  readonly body: string;
-}
-
-interface FinishedCommandRun {
-  readonly invocation: Invocation;
-  readonly spec: CommandSpec | undefined;
-  readonly container: CliContainer;
-  readonly outcome: CommandOutcome;
-  readonly costUsd: number;
-  readonly draftSnapshot: DraftSnapshot | undefined;
-}
-
-class RunUsageRelay {
-  private meter: UsageMeterSession | undefined = undefined;
-
-  public attach(meter: UsageMeterSession): void {
-    this.meter = meter;
-  }
-
-  public readonly readCostUsd = (): number =>
-    this.meter === undefined ? 0 : this.meter.reading().costUsd;
-
-  public readonly readUnpricedTokens = (): number => {
-    if (this.meter === undefined) {
-      return 0;
-    }
-
-    return this.meter.reading().hasUnpricedUsage ? this.meter.reading().tokens : 0;
-  };
-
-  public readonly readCacheHitRate = (): number | undefined =>
-    this.meter === undefined ? undefined : usageCacheHitRate(this.meter.reading());
-}
-
 function describeParseFailure(parsed: ParseFailure): string {
   return parsed.unknownFlag === undefined
     ? `${parsed.message}\n전체 옵션: storyboard --help`
@@ -271,43 +181,6 @@ function describeWorkspaceRefusal(verb: string, target: WorkspaceTarget): string
   }
 
   return undefined;
-}
-
-function renderOutcomeStdout(
-  outcome: CommandOutcome,
-  isAction: boolean,
-  invocation: Invocation,
-): string {
-  const { mode, terminal } = invocation;
-  const markedMessage: string = markOutcome(
-    outcome.message,
-    {
-      ok: outcome.ok,
-      isAction,
-      ...(outcome.stop === undefined ? {} : { stop: outcome.stop }),
-      ...(outcome.isDrawn === undefined ? {} : { isDrawn: outcome.isDrawn }),
-    },
-    terminal.stdout,
-  );
-
-  return mode.json
-    ? reportText(outcome, mode)
-    : `${terminal.stdout.isTty ? linkFilePaths(markedMessage, existsSync) : markedMessage}\n`;
-}
-
-function shouldSuggestNextStep(
-  outcome: CommandOutcome,
-  isAction: boolean,
-  invocation: Invocation,
-): boolean {
-  return (
-    outcome.ok &&
-    outcome.stop === undefined &&
-    isAction &&
-    !invocation.mode.json &&
-    invocation.terminal.stderr.isTty &&
-    !flagBoolean(invocation.args.flags, 'quiet')
-  );
 }
 
 export class CommandDispatcher {
@@ -423,7 +296,7 @@ export class CommandDispatcher {
       return failure(workspaceRefusal, mode, terminal.stderr);
     }
 
-    return this.runCommand(command, invocation, target);
+    return new CommandRun({ command, invocation, target, dispatch: this.deps }).execute();
   }
 
   private resolveWorkspaceTarget({ args, verb }: Invocation): WorkspaceTarget {
@@ -447,256 +320,4 @@ export class CommandDispatcher {
       configWriteTarget,
     };
   }
-
-  private async runCommand(
-    command: ICommandHandler,
-    invocation: Invocation,
-    target: WorkspaceTarget,
-  ): Promise<DispatchResult> {
-    const usageRelay: RunUsageRelay = new RunUsageRelay();
-    const showProgress: boolean = this.shouldShowProgress(invocation);
-    const logger: IStoryboardLogger = this.createLogger(invocation, showProgress);
-    const progress: IRunProgress = this.createProgress(
-      invocation,
-      showProgress,
-      logger,
-      usageRelay,
-    );
-    const container: CliContainer = this.createContainer(invocation, target, logger, progress);
-
-    if (target.needsWorkspace) {
-      await prepareWorkspace(container);
-    }
-
-    const draftSnapshot: DraftSnapshot | undefined = await snapshotDraft(
-      invocation,
-      target.spec,
-      container,
-    );
-    const meter: UsageMeterSession = container.usageMeter.startSession();
-    usageRelay.attach(meter);
-
-    const outcome: CommandOutcome = await runReportingProgress(progress, () =>
-      executeCommand(command, invocation, target.spec, container),
-    );
-    meter.stop();
-
-    return buildCommandResult({
-      invocation,
-      spec: target.spec,
-      container,
-      outcome,
-      costUsd: meter.reading().costUsd,
-      draftSnapshot,
-    });
-  }
-
-  private shouldShowProgress({ args, mode }: Invocation): boolean {
-    return (
-      flagBoolean(args.flags, 'verbose') ||
-      (this.deps.isInteractive && !mode.json && !flagBoolean(args.flags, 'quiet'))
-    );
-  }
-
-  private createLogger({ args, terminal }: Invocation, showProgress: boolean): IStoryboardLogger {
-    return this.deps.createLogger(
-      showProgress,
-      terminal.stderr.theme,
-      flagBoolean(args.flags, 'verbose'),
-    );
-  }
-
-  private createProgress(
-    { mode, terminal }: Invocation,
-    showProgress: boolean,
-    logger: IStoryboardLogger,
-    usageRelay: RunUsageRelay,
-  ): IRunProgress {
-    return this.deps.liveArea !== undefined && showProgress && terminal.stderr.isTty && !mode.json
-      ? new RailRunProgress({
-          liveArea: this.deps.liveArea,
-          theme: terminal.stderr.theme,
-          readCostUsd: usageRelay.readCostUsd,
-          readUnpricedTokens: usageRelay.readUnpricedTokens,
-          readCacheHitRate: usageRelay.readCacheHitRate,
-        })
-      : new LineRunProgress(logger);
-  }
-
-  private createContainer(
-    { args, mode, terminal }: Invocation,
-    target: WorkspaceTarget,
-    logger: IStoryboardLogger,
-    progress: IRunProgress,
-  ): CliContainer {
-    const { deps } = this;
-    const reviseIterations: string | undefined = flagString(args.flags, 'revise-iterations');
-    const configWriteTarget: ConfigurationTarget | undefined = target.configWriteTarget;
-
-    return createCliContainer({
-      workspacePath: target.workspacePath,
-      logger,
-      progress,
-      ...(deps.pauseRequests === undefined ? {} : { pauseRequests: deps.pauseRequests }),
-      ...(deps.createPrompter === undefined || mode.json
-        ? {}
-        : { prompter: deps.createPrompter(terminal.stderr) }),
-      canPrompt: deps.isInteractive,
-      version: deps.version,
-      ...(flagString(args.flags, 'provider') === undefined
-        ? {}
-        : { provider: flagString(args.flags, 'provider') }),
-      ...(flagString(args.flags, 'model') === undefined
-        ? {}
-        : { model: flagString(args.flags, 'model') }),
-      ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
-      ...(configWriteTarget === undefined ? {} : { configWriteTarget }),
-    });
-  }
-}
-
-async function prepareWorkspace(container: CliContainer): Promise<void> {
-  const resources: ResourceOverrideReport = await container.workspace.prepare(
-    container.workspaceRoot,
-  );
-  for (const problem of resources.problems) {
-    container.logger.warn(problem.message);
-  }
-}
-
-async function readDraftBody(container: CliContainer, stem: string): Promise<string | undefined> {
-  return (await container.drafts.readDraft(container.workspaceRoot, stem))?.draft.body;
-}
-
-async function snapshotDraft(
-  { args, mode, terminal }: Invocation,
-  spec: CommandSpec | undefined,
-  container: CliContainer,
-): Promise<DraftSnapshot | undefined> {
-  const shouldShowDraftChanges: boolean =
-    spec?.rewritesDraft === true &&
-    terminal.stderr.isTty &&
-    !mode.json &&
-    !flagBoolean(args.flags, 'quiet');
-  const stem: string | undefined = args.positionals[0]?.replace(/\.card$/, '');
-
-  if (!shouldShowDraftChanges || stem === undefined) {
-    return undefined;
-  }
-
-  const body: string | undefined = await readDraftBody(container, stem);
-  return body === undefined ? undefined : { stem, body };
-}
-
-async function describeDraftChanges(
-  outcome: CommandOutcome,
-  snapshot: DraftSnapshot | undefined,
-  container: CliContainer,
-  stream: TerminalStream,
-): Promise<string> {
-  if (!outcome.ok || snapshot === undefined) {
-    return '';
-  }
-
-  return renderDraftChanges(
-    snapshot.stem,
-    snapshot.body,
-    await readDraftBody(container, snapshot.stem),
-    stream,
-  );
-}
-
-function executeCommand(
-  command: ICommandHandler,
-  { args, verb, terminal }: Invocation,
-  spec: CommandSpec | undefined,
-  container: CliContainer,
-): Promise<CommandOutcome> {
-  return spec?.writesWorkspace === true
-    ? runHoldingWorkspaceLock(container, verb, () =>
-        command.execute({ container, args, stdout: terminal.stdout }),
-      )
-    : command.execute({ container, args, stdout: terminal.stdout });
-}
-
-async function buildCommandResult(run: FinishedCommandRun): Promise<DispatchResult> {
-  const { invocation, outcome, container } = run;
-  const isAction: boolean = run.spec?.writesWorkspace === true || invocation.verb === 'init';
-  const stdout: string = renderOutcomeStdout(outcome, isAction, invocation);
-  const draftChanges: string = await describeDraftChanges(
-    outcome,
-    run.draftSnapshot,
-    container,
-    invocation.terminal.stderr,
-  );
-  const nextStep: string = shouldSuggestNextStep(outcome, isAction, invocation)
-    ? await suggestNextStep(container, invocation.terminal.stderr)
-    : '';
-
-  return {
-    exitCode: outcome.ok ? 0 : 1,
-    costUsd: run.costUsd,
-    stdout,
-    stderr: `${draftChanges}${nextStep}`,
-    outcome,
-  };
-}
-
-const hintOmittedSoTheFinishedRunStillSucceeds: string = '';
-
-async function suggestNextStep(
-  container: ReturnType<typeof createCliContainer>,
-  stream: TerminalStream,
-): Promise<string> {
-  try {
-    return renderNextStep(await container.describeWorkspace(), stream);
-  } catch {
-    return hintOmittedSoTheFinishedRunStillSucceeds;
-  }
-}
-
-function renderDraftChanges(
-  stem: string,
-  before: string,
-  after: string | undefined,
-  stream: TerminalStream,
-): string {
-  if (after === undefined || after === before) {
-    return '';
-  }
-
-  return `${renderSentenceDiff(`draft/${stem}.md`, diffSentences(before, after), stream.theme).join('\n')}\n`;
-}
-
-async function runReportingProgress(
-  progress: IRunProgress,
-  run: () => Promise<CommandOutcome>,
-): Promise<CommandOutcome> {
-  try {
-    return await run();
-  } finally {
-    progress.finish();
-  }
-}
-
-async function runHoldingWorkspaceLock(
-  container: ReturnType<typeof createCliContainer>,
-  verb: string,
-  run: () => Promise<CommandOutcome>,
-): Promise<CommandOutcome> {
-  const held: WorkspaceHoldResult<CommandOutcome> = await container.runGate.hold(
-    container.workspaceRoot,
-    `storyboard ${verb}`,
-    run,
-  );
-
-  if (!held.ok) {
-    return {
-      ok: false,
-      message: `${held.message}. 끝난 뒤 다시 실행하세요.`,
-      data: { heldBy: held.heldBy },
-    };
-  }
-
-  return held.value;
 }
