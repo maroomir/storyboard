@@ -102,10 +102,7 @@ export class WorkspaceInitializer {
     await this.createDirectories(paths);
     await new ProjectRepository(this.fileSystem).write(paths.projectJson, project);
     await this.ensureGitignore(paths.gitignore);
-    await this.fileSystem.writeFile(
-      paths.readme,
-      new TextEncoder().encode(createWorkspaceReadme(project.name)),
-    );
+    await this.writeReadmeIfMissing(paths.readme, project.name);
     await this.writeAgentGuidesIfMissing(paths);
     const createdNarrators: string[] = await this.writeNarratorCardsIfMissing(
       paths,
@@ -113,6 +110,17 @@ export class WorkspaceInitializer {
     );
 
     return { project, createdNarrators };
+  }
+
+  private async writeReadmeIfMissing(readmeUri: StoryUri, projectName: string): Promise<void> {
+    if (await this.fileSystem.exists(readmeUri)) {
+      return;
+    }
+
+    await this.fileSystem.writeFile(
+      readmeUri,
+      new TextEncoder().encode(createWorkspaceReadme(projectName)),
+    );
   }
 
   public async createDirectories(paths: StoryboardProjectPaths): Promise<void> {
