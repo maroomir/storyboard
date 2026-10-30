@@ -13,6 +13,9 @@ export {
   DraftManager,
   type DraftManagerDependencies,
   type DraftReading,
+  type GenerateAndReviseDraftRequest,
+  type GenerateAndReviseDraftResult,
+  type ReadyDraft,
 } from '#app/managers/draftManager';
 export {
   ManuscriptManager,

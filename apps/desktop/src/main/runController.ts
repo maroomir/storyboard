@@ -22,15 +22,13 @@ import {
   describeReviseOutcome,
   type AcquireWorkspaceRunLockResult,
   type GenerateDraftRequest,
-  type GenerateDraftResult,
   type NovelApprovalKind,
-  type ReviseDraftWorkflowResult,
   type UsageMeterSession,
   type WorkspaceRunLock,
   ProjectRepository,
 } from '@storyboard/story-engine';
 
-import type { NovelRunResult } from '@storyboard/story-app';
+import type { GenerateAndReviseDraftResult, NovelRunResult } from '@storyboard/story-app';
 import type {
   RunApprovalRequest,
   RunKind,
@@ -361,10 +359,7 @@ export class RunController {
     };
   }
 
-  private async finishWhenDone(
-    run: ActiveRun,
-    work: Promise<RunCompletion>,
-  ): Promise<void> {
+  private async finishWhenDone(run: ActiveRun, work: Promise<RunCompletion>): Promise<void> {
     let outcome: RunOutcome;
     let message: string;
     let snapshotMessage: string | undefined;
@@ -409,19 +404,23 @@ export class RunController {
   ): Promise<RunCompletion> {
     const { container, translate } = this.dependencies;
     const shouldCancel = (): boolean => run.isPauseRequested;
-    const draftGeneration: GenerateDraftResult = await container.drafts.generate({
-      sceneUri,
-      force,
-      confirmSceneGrounding: async ({ grounding }) => grounding,
-      onPipelineProgress: (stage, current, total) =>
-        this.appendLog(
-          translate('log.sceneStage', {
-            title,
-            stage: this.sceneStageLabel(stage, current, total),
-          }),
-        ),
-      shouldCancel,
-    });
+    const { generation: draftGeneration, revision: revised }: GenerateAndReviseDraftResult =
+      await container.drafts.generateAndRevise({
+        sceneUri,
+        force,
+        isReviseAllowed: true,
+        onReviseProgress: (message) =>
+          this.appendLog(translate('log.sceneRevising', { title, message })),
+        confirmSceneGrounding: async ({ grounding }) => grounding,
+        onPipelineProgress: (stage, current, total) =>
+          this.appendLog(
+            translate('log.sceneStage', {
+              title,
+              stage: this.sceneStageLabel(stage, current, total),
+            }),
+          ),
+        shouldCancel,
+      });
     const snapshotMessage: string = translate('snapshot.sceneGenerated', { title });
 
     if (!draftGeneration.ok) {
@@ -442,11 +441,6 @@ export class RunController {
       };
     }
 
-    const revised: ReviseDraftWorkflowResult | undefined =
-      await container.drafts.reviseAfterGenerate(sceneUri, {
-        onProgress: (message) => this.appendLog(translate('log.sceneRevising', { title, message })),
-        shouldCancel,
-      });
     const reviseWarning: string | undefined = revised && describeReviseOutcome(revised).warning;
     if (reviseWarning) {
       this.appendLog(translate('log.sceneRevising', { title, message: reviseWarning }), 'warn');

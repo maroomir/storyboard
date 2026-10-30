@@ -14,10 +14,10 @@ import {
   describeReviseOutcome,
   type GenerateAllDraftsResult,
   type GenerateAllDraftsSummary,
-  type GenerateDraftResult,
   type ReviseDraftWorkflowResult,
   type ReviseOutcome,
 } from '@storyboard/story-engine';
+import type { GenerateAndReviseDraftResult, ReadyDraft } from '@storyboard/story-app';
 import type { StoryUri } from '@storyboard/story-model';
 
 export class DraftGenerateCommand implements ICommandHandler {
@@ -71,76 +71,61 @@ export class DraftGenerateCommand implements ICommandHandler {
     return describeBatchSummary(batchGeneration.summary);
   }
 
-  private async generateScene(context: CommandContext): Promise<CommandOutcome> {
-    const { container, args } = context;
+  private async generateScene({ container, args }: CommandContext): Promise<CommandOutcome> {
     const stem: string | undefined = sceneStemFrom(args);
     if (stem === undefined) {
       return failure('씬 stem을 지정해 주세요. 예: storyboard draft generate 01-scene-1-1');
     }
 
-    const draftGeneration: GenerateDraftResult = await container.drafts.generate({
-      sceneUri: sceneUriFor(container.workspaceRoot, stem),
-      force: flagBoolean(args.flags, 'force'),
-      onPipelineProgress: (stage, current, total) => {
-        const step: string = `${sceneStageLabels[stage] ?? stage} ${current}/${total}`;
-        container.progress.update({ line: step, step });
-      },
-    });
+    const { generation, revision }: GenerateAndReviseDraftResult =
+      await container.drafts.generateAndRevise({
+        sceneUri: sceneUriFor(container.workspaceRoot, stem),
+        force: flagBoolean(args.flags, 'force'),
+        isReviseAllowed: !flagBoolean(args.flags, 'no-revise'),
+        onPipelineProgress: (stage, current, total) => {
+          const step: string = `${sceneStageLabels[stage] ?? stage} ${current}/${total}`;
+          container.progress.update({ line: step, step });
+        },
+        onDraftReady: (draft) => {
+          for (const warning of draftWarningsOf(draft)) {
+            container.logger.warn(warning);
+          }
+        },
+        onReviseProgress: (message) => container.progress.update({ line: message, step: message }),
+      });
 
-    if (!draftGeneration.ok) {
-      return failure(draftGeneration.kind === 'failed' ? draftGeneration.message : '취소했습니다.');
+    if (!generation.ok) {
+      return failure(generation.kind === 'failed' ? generation.message : '취소했습니다.');
     }
 
-    const warnings: readonly string[] =
-      draftGeneration.kind === 'generated' ? draftGeneration.warnings : [];
-    for (const warning of warnings) {
-      container.logger.warn(warning);
-    }
-
-    const revise: ReviseOutcome | undefined =
-      draftGeneration.kind === 'generated'
-        ? await this.reviseGeneratedDraft(context, stem)
-        : undefined;
-
-    return success(
-      draftGeneration.kind === 'cache_hit'
-        ? '입력이 같아 기존 초안을 씁니다.'
-        : '초안을 생성했습니다.',
-      {
-        draft: (draftGeneration.draftUri as StoryUri).fsPath,
-        warnings: revise?.warning ? [...warnings, revise.warning] : warnings,
-        ...(revise === undefined ? {} : { revise }),
-      },
-    );
+    return this.describeGeneratedScene(container, generation, revision);
   }
 
-  private async reviseGeneratedDraft(
-    { container, args }: CommandContext,
-    stem: string,
-  ): Promise<ReviseOutcome | undefined> {
-    const reviseRequested: boolean =
-      !flagBoolean(args.flags, 'no-revise') &&
-      container.configBridge.isReviseAfterGenerateEnabled();
-
-    if (!reviseRequested) {
-      return undefined;
-    }
-
-    const revised: ReviseDraftWorkflowResult | undefined = await container.drafts.reviseScene(
-      container.workspaceRoot,
-      stem,
-      {
-        onProgress: (message) => container.progress.update({ line: message, step: message }),
-      },
-    );
-    const revise: ReviseOutcome | undefined = revised && describeReviseOutcome(revised);
+  private describeGeneratedScene(
+    container: CommandContext['container'],
+    draft: ReadyDraft,
+    revision: ReviseDraftWorkflowResult | undefined,
+  ): CommandOutcome {
+    const warnings: readonly string[] = draftWarningsOf(draft);
+    const revise: ReviseOutcome | undefined = revision && describeReviseOutcome(revision);
 
     if (revise?.warning) {
       container.logger.warn(revise.warning);
     }
 
-    return revise;
+    return success(
+      draft.kind === 'cache_hit' ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
+      {
+        draft: (draft.draftUri as StoryUri).fsPath,
+        warnings: revise?.warning ? [...warnings, revise.warning] : warnings,
+        ...(revise === undefined ? {} : { revise }),
+      },
+    );
   }
+}
+
+function draftWarningsOf(draft: ReadyDraft): readonly string[] {
+  return draft.kind === 'generated' ? draft.warnings : [];
 }
 
 function describeBatchSummary(summary: GenerateAllDraftsSummary): CommandOutcome {

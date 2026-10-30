@@ -24,6 +24,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
+import type { GenerateAndReviseDraftRequest } from '@storyboard/story-app';
 
 import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
@@ -1007,22 +1008,18 @@ describe('draft generate warnings', () => {
       },
       progress: { update: ({ line }: { line: string }) => warned.push(line), finish: () => {} },
       drafts: stubManager(real.drafts, {
-        generate: async () => ({
-          ok: true,
-          kind: 'generated',
-          draftUri: real.workspaceRoot,
-          warnings: ['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)'],
-        }),
-        reviseScene: async (
-          _root: unknown,
-          _stem: string,
-          options: { onProgress: (m: string) => void },
-        ) => {
-          options.onProgress('검사 중 (1/1)');
-          return undefined;
+        generateAndRevise: async (request: GenerateAndReviseDraftRequest) => {
+          const generation = {
+            ok: true,
+            kind: 'generated',
+            draftUri: real.workspaceRoot,
+            warnings: ['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)'],
+          } as const;
+          await request.onDraftReady?.(generation);
+          request.onReviseProgress?.('검사 중 (1/1)');
+          return { generation, revision: undefined };
         },
       } as never),
-      configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
     const outcome = await findCommand('draft generate')!.execute({
@@ -1036,6 +1033,37 @@ describe('draft generate warnings', () => {
   });
 });
 
+describe('draft generate --no-revise', () => {
+  it('asks the manager not to review the new draft', async () => {
+    const requests: GenerateAndReviseDraftRequest[] = [];
+    const real = container();
+    const stubbed = {
+      ...real,
+      progress: { update: () => {}, finish: () => {} },
+      drafts: stubManager(real.drafts, {
+        generateAndRevise: async (request: GenerateAndReviseDraftRequest) => {
+          requests.push(request);
+          return {
+            generation: { ok: true, kind: 'generated', draftUri: real.workspaceRoot, warnings: [] },
+            revision: undefined,
+          };
+        },
+      } as never),
+    } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
+
+    await findCommand('draft generate')!.execute({
+      container: stubbed,
+      args: args(['draft', 'generate'], { 'no-revise': true }, ['01-first']),
+    });
+    await findCommand('draft generate')!.execute({
+      container: stubbed,
+      args: args(['draft', 'generate'], {}, ['01-first']),
+    });
+
+    expect(requests.map((request) => request.isReviseAllowed)).toEqual([false, true]);
+  });
+});
+
 describe('draft generate after a failed review', () => {
   it('succeeds with the review status and a warning when the rewrite timed out', async () => {
     const warned: string[] = [];
@@ -1045,23 +1073,23 @@ describe('draft generate after a failed review', () => {
       logger: { ...silentLogger, warn: (message: string) => warned.push(message) },
       progress: { update: () => {}, finish: () => {} },
       drafts: stubManager(real.drafts, {
-        generate: async () => ({
-          ok: true,
-          kind: 'generated',
-          draftUri: real.workspaceRoot,
-          warnings: [],
-        }),
-        reviseScene: async () => ({
-          passed: false,
-          revisionCount: 0,
-          remainingBlocking: 2,
-          cancelled: false,
-          instructions: [],
-          preservedOriginal: false,
-          failure: { stage: 'revise', kind: 'timeout', message: '600초 안에 끝나지 않아 중단했습니다.' },
+        generateAndRevise: async () => ({
+          generation: { ok: true, kind: 'generated', draftUri: real.workspaceRoot, warnings: [] },
+          revision: {
+            passed: false,
+            revisionCount: 0,
+            remainingBlocking: 2,
+            cancelled: false,
+            instructions: [],
+            preservedOriginal: false,
+            failure: {
+              stage: 'revise',
+              kind: 'timeout',
+              message: '600초 안에 끝나지 않아 중단했습니다.',
+            },
+          },
         }),
       } as never),
-      configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
     } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
 
     const outcome = await findCommand('draft generate')!.execute({

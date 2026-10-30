@@ -33,7 +33,6 @@ import type {
   IFileSystem,
   ISceneSidebarRepository,
   ReviseAfterGenerateGate,
-  ReviseAfterGenerateHooks,
   ReviseDraftRequest,
   ReviseDraftUseCase,
   ReviseDraftWorkflowResult,
@@ -64,6 +63,19 @@ import {
 export interface DraftReading {
   readonly uri: StoryUri;
   readonly draft: Draft;
+}
+
+export type ReadyDraft = Extract<GenerateDraftResult, { readonly ok: true }>;
+
+export interface GenerateAndReviseDraftRequest extends GenerateDraftRequest {
+  readonly isReviseAllowed: boolean;
+  readonly onDraftReady?: (draft: ReadyDraft) => Promise<void> | void;
+  readonly onReviseProgress?: (message: string) => void;
+}
+
+export interface GenerateAndReviseDraftResult {
+  readonly generation: GenerateDraftResult;
+  readonly revision: ReviseDraftWorkflowResult | undefined;
 }
 
 export interface DraftManagerDependencies {
@@ -146,11 +158,28 @@ export class DraftManager {
     return this.deps.reviseDraftUseCase.execute(request);
   }
 
-  public reviseAfterGenerate(
-    sceneUri: StoryUri,
-    hooks: ReviseAfterGenerateHooks = {},
-  ): Promise<ReviseDraftWorkflowResult | undefined> {
-    return this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, hooks);
+  public async generateAndRevise(
+    request: GenerateAndReviseDraftRequest,
+  ): Promise<GenerateAndReviseDraftResult> {
+    const { isReviseAllowed, onDraftReady, onReviseProgress, ...generateRequest } = request;
+    const generation: GenerateDraftResult = await this.generate(generateRequest);
+
+    if (!generation.ok) {
+      return { generation, revision: undefined };
+    }
+
+    await onDraftReady?.(generation);
+
+    const isFreshDraft: boolean = generation.kind === 'generated';
+    const revision: ReviseDraftWorkflowResult | undefined =
+      isFreshDraft && isReviseAllowed
+        ? await this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(request.sceneUri, {
+            onProgress: onReviseProgress,
+            shouldCancel: request.shouldCancel,
+          })
+        : undefined;
+
+    return { generation, revision };
   }
 
   public reviseScene(
