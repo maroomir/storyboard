@@ -34,6 +34,7 @@ export async function createChatGptProvider(
   return new ChatGptProvider({
     model: configBridge.getProviderConfig('chatgpt').model,
     connection: await secretStore.getOAuthConnection('chatgpt'),
+    loadConnection: () => secretStore.getOAuthConnection('chatgpt'),
     saveConnection: (connection) => secretStore.setOAuthConnection('chatgpt', connection),
     ...(fetchImpl === undefined ? {} : { fetch: fetchImpl }),
   });

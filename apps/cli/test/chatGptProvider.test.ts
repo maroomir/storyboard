@@ -91,15 +91,31 @@ function completedEvents(text: string): unknown[] {
   ];
 }
 
+interface ConnectionStore {
+  current: OAuthConnection | undefined;
+  readonly saved: OAuthConnection[];
+}
+
+function createConnectionStore(initial: OAuthConnection = connection()): ConnectionStore {
+  return { current: initial, saved: [] };
+}
+
 function createProvider(
   fetchImpl: FetchLike,
-  options: { readonly connection?: OAuthConnection; readonly now?: () => Date } = {},
+  options: {
+    readonly connection?: OAuthConnection;
+    readonly now?: () => Date;
+    readonly store?: ConnectionStore;
+  } = {},
 ): { readonly provider: ChatGptProvider; readonly saved: OAuthConnection[] } {
-  const saved: OAuthConnection[] = [];
+  const store = options.store ?? createConnectionStore(options.connection);
+  const saved = store.saved;
   const provider = new ChatGptProvider({
     model: 'gpt-6-sol',
-    connection: options.connection ?? connection(),
+    connection: store.current,
+    loadConnection: async () => store.current,
     saveConnection: async (next) => {
+      store.current = next;
       saved.push(next);
     },
     fetch: fetchImpl,
@@ -534,6 +550,7 @@ describe('the ChatGPT plan provider: the call', () => {
       new ChatGptProvider({
         model: 'gpt-6-sol',
         connection: { hostId: 'urn:uuid:host-1' },
+        loadConnection: async () => undefined,
         saveConnection: async () => undefined,
       });
     } catch (error) {
@@ -575,6 +592,39 @@ describe('the ChatGPT plan provider: the call', () => {
       refreshToken: 'refresh-2',
       expiresAt: '2026-10-24T10:57:00.000Z',
     });
+  });
+
+  it('refreshes once across providers built per call and lets each use the rotated token', async () => {
+    const fetchImpl = fakeFetch((request) =>
+      request.url === chatGptTokenUrl
+        ? jsonResponse({
+            access_token: 'access-2',
+            refresh_token: 'refresh-2',
+            expires_in: 3600,
+            scope: 'openid',
+          })
+        : sseResponse(completedEvents('글')),
+    );
+    const nearExpiry = new Date('2026-10-24T09:57:00Z');
+    const store = createConnectionStore();
+    const first = createProvider(fetchImpl, { now: () => nearExpiry, store });
+    const second = createProvider(fetchImpl, { now: () => nearExpiry, store });
+
+    await Promise.all([
+      first.provider.generate(userRequest),
+      second.provider.generate(userRequest),
+    ]);
+
+    const refreshes = fetchImpl.requests.filter((request) => request.url === chatGptTokenUrl);
+    const calls = fetchImpl.requests.filter((request) => request.url.endsWith('/responses'));
+
+    expect(refreshes).toHaveLength(1);
+    expect(calls.map((request) => request.headers.authorization)).toEqual([
+      'Bearer access-2',
+      'Bearer access-2',
+    ]);
+    expect(store.saved).toHaveLength(1);
+    expect(store.current?.tokens?.refreshToken).toBe('refresh-2');
   });
 
   it('clears a spent refresh token, keeps the registration and asks for a new login', async () => {
