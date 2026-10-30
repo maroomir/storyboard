@@ -100,7 +100,7 @@ vi.mock('@storyboard/story-ai', async (importOriginal) => ({
 
 import {
   NovelPipeline,
-  type NovelPipelineServices,
+  type NovelRunDependencies,
   type NovelPipelineRunOptions,
 } from '@storyboard/story-engine';
 
@@ -165,7 +165,7 @@ const project: StoryboardProject = {
 const workspaceUri = vscode.Uri.file('/ws/project');
 
 interface PipelineHarness {
-  readonly dependencies: NovelPipelineServices;
+  readonly dependencies: NovelRunDependencies;
   readonly options: NovelPipelineRunOptions;
   readonly progressStages: NovelStageName[];
   readonly progressMessages: { stage: NovelStageName; message: string }[];
@@ -179,7 +179,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
   const persistedStates: NovelRunState[] = [];
   const approvals: { kind: string; info: string }[] = [];
 
-  const dependencies: NovelPipelineServices = {
+  const dependencies: NovelRunDependencies = {
     host: createTestHost({
       configBridge: { inspectScenePrefixDigits: (): undefined => undefined } as never,
       logger: { error: () => undefined, info: () => undefined } as never,

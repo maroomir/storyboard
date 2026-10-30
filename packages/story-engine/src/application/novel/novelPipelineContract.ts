@@ -34,16 +34,12 @@ export interface NovelPipelineRunOptions {
   readonly stages?: readonly NovelStageName[];
 }
 
-export interface NovelPipelineServices {
+export interface NovelRunDependencies {
   readonly host: HostAdapters;
   readonly ai: AiServices;
   readonly repositories: WorkspaceRepositories;
   readonly collaborators: NovelPipelineCollaborators;
 }
-
-export type NovelPipelineOptions = NovelPipelineRunOptions & {
-  readonly deps: NovelPipelineServices;
-};
 
 export type NovelPipelineOutcome = 'completed' | 'paused' | 'cancelled' | 'failed';
 

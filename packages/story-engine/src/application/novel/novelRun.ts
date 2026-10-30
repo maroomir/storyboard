@@ -9,9 +9,9 @@ import { groupChapterStems, type ChapterGroup } from '#engine/application/novel/
 import type {
   NovelAiService,
   NovelApprovalKind,
-  NovelPipelineOptions,
   NovelPipelineResult,
-  NovelPipelineServices,
+  NovelPipelineRunOptions,
+  NovelRunDependencies,
   ReviewStageResult,
 } from '#engine/application/novel/novelPipelineContract';
 
@@ -39,7 +39,10 @@ export class NovelRun {
   private loadedPlan: Promise<ChapterPlan> | undefined = undefined;
   private loadedGroups: Promise<readonly ChapterGroup[]> | undefined = undefined;
 
-  public constructor(public readonly options: NovelPipelineOptions) {
+  public constructor(
+    public readonly services: NovelRunDependencies,
+    public readonly options: NovelPipelineRunOptions,
+  ) {
     this.paths = getStoryboardProjectPaths(options.workspaceUri);
     this.completed = new Set<NovelStageName>(options.resumeState?.completedStages ?? []);
     this.state = {
@@ -52,10 +55,6 @@ export class NovelRun {
       completedStages: [...this.completed],
       nextChapterIndex: options.resumeState?.nextChapterIndex ?? 0,
     };
-  }
-
-  public get services(): NovelPipelineServices {
-    return this.options.deps;
   }
 
   public async persist(patch: Partial<NovelRunState>): Promise<void> {

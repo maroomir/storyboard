@@ -10,7 +10,6 @@ import type { INovelStage } from '#engine/application/novel/novelStage';
 import { resolveNovelPipelinePlan } from '#engine/application/novel/novelStageCatalog';
 import type {
   NovelPipelineCollaborators,
-  NovelPipelineOptions,
   NovelPipelineResult,
   NovelPipelineRunOptions,
 } from '#engine/application/novel/novelPipelineContract';
@@ -32,7 +31,6 @@ export type {
 } from '#engine/application/novel/novelPipelinePorts';
 export type {
   NovelApprovalKind,
-  NovelPipelineOptions,
   NovelPipelineOutcome,
   NovelPipelineResult,
   NovelPipelineRunOptions,
@@ -58,16 +56,15 @@ export class NovelPipeline {
   ) {}
 
   public async run(options: NovelPipelineRunOptions): Promise<NovelPipelineResult> {
-    const runOptions: NovelPipelineOptions = {
-      ...options,
-      deps: {
+    const run: NovelRun = new NovelRun(
+      {
         host: this.host,
         ai: this.ai,
         repositories: this.repositories,
         collaborators: this.collaborators,
       },
-    };
-    const run: NovelRun = new NovelRun(runOptions);
+      options,
+    );
 
     try {
       await run.persist({ status: 'running' });
