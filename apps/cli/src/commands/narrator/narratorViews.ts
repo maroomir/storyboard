@@ -1,9 +1,8 @@
 import {
-  resolveNarration,
   type NarratorCard,
   describeNarration,
   type NarrationDirective,
-  type StoryboardProject,
+  type SceneFile,
   extractErrorMessage,
 } from '@storyboard/story-model';
 import type { CliContainer } from '@/container';
@@ -30,22 +29,14 @@ export function toNarratorData(card: NarratorCard): Record<string, unknown> {
 }
 
 export async function describeSceneNarration(
-  container: Pick<CliContainer, 'workspaceRoot' | 'cards' | 'project'>,
-  sceneNarrator: string | undefined,
-  povCharacter: string | undefined,
+  container: Pick<CliContainer, 'workspaceRoot' | 'drafts'>,
+  scene: SceneFile,
 ): Promise<string> {
-  const project: StoryboardProject = await container.project.read(container.workspaceRoot);
-
   try {
-    const narration: NarrationDirective | undefined = resolveNarration({
-      ...(sceneNarrator === undefined ? {} : { sceneNarrator }),
-      ...(project.setting?.narration?.defaultNarrator === undefined
-        ? {}
-        : { defaultNarrator: project.setting.narration.defaultNarrator }),
-      ...(project.setting?.pov === undefined ? {} : { pov: project.setting.pov }),
-      ...(povCharacter === undefined ? {} : { focalFallback: povCharacter }),
-      narrators: await container.cards.listNarrators(container.workspaceRoot),
-    });
+    const narration: NarrationDirective | undefined = await container.drafts.resolveSceneNarration(
+      container.workspaceRoot,
+      scene,
+    );
 
     return narration ? describeNarration(narration) : '지정 없음';
   } catch (error) {
