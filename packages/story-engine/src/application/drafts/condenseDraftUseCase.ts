@@ -28,10 +28,6 @@ export interface CondenseDraftRequest {
   readonly sceneStem: string;
   readonly format: ProjectFormat;
   readonly body: string;
-  readonly maxCompressionPercent: number;
-  readonly intent?: string;
-  readonly facts?: readonly string[];
-  readonly characterCards?: readonly string[];
 }
 
 export type CondenseDraftResult =
@@ -60,14 +56,6 @@ interface CondenseSceneContext {
 
 const condenseWithoutContextWhenTheSceneCannotBeRead: CondenseSceneContext = {};
 
-function hasCallerContext(request: CondenseDraftRequest): boolean {
-  return (
-    request.intent !== undefined ||
-    request.facts !== undefined ||
-    request.characterCards !== undefined
-  );
-}
-
 export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, CondenseDraftResult> {
   public constructor(
     private readonly host: HostAdapters,
@@ -76,7 +64,7 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
 
   public async execute(request: CondenseDraftRequest): Promise<CondenseDraftResult> {
     const lengthPolicy: DraftCandidateLengthPolicy = {
-      maxCompressionPercent: request.maxCompressionPercent,
+      maxCompressionPercent: this.host.configBridge.getMaxCompressionPercent(),
     };
     const minimumLength: number = resolveMinimumDraftLength(request.body.length, lengthPolicy);
 
@@ -84,9 +72,10 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
       this.host.logger,
       'Condense draft failed',
       async () => {
-        const context: CondenseSceneContext = hasCallerContext(request)
-          ? request
-          : await this.loadSceneContext(request.workspaceRoot, request.sceneStem);
+        const context: CondenseSceneContext = await this.loadSceneContext(
+          request.workspaceRoot,
+          request.sceneStem,
+        );
         const text: string = await this.ai.gateway
           .createService(request.workspaceRoot)
           .condenseDraft(

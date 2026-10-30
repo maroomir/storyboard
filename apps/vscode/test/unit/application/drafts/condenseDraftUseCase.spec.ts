@@ -15,7 +15,7 @@ function createUseCase(result: string): {
   };
   const logger = { error: vi.fn() };
 
-  return { condenseDraft, useCase: new CondenseDraftUseCase(createTestHost({ logger: logger as never }), createTestAi({ gateway: aiGateway as never })) };
+  return { condenseDraft, useCase: new CondenseDraftUseCase(createTestHost({ logger: logger as never, configBridge: { getMaxCompressionPercent: () => 50 } as never }), createTestAi({ gateway: aiGateway as never })) };
 }
 
 const body = '가'.repeat(600);
@@ -29,7 +29,6 @@ describe('CondenseDraftUseCase', () => {
       sceneStem: '01-scene',
       format: 'novel',
       body,
-      maxCompressionPercent: 50,
     });
 
     expect(result).toEqual({ kind: 'condensed', ok: true, text: '나'.repeat(300) });
@@ -48,7 +47,6 @@ describe('CondenseDraftUseCase', () => {
         sceneStem: '01-scene',
         format: 'novel',
         body,
-        maxCompressionPercent: 50,
       }),
     ).resolves.toMatchObject({ kind: 'rejected', reason: 'not-shorter', ok: false });
   });
@@ -62,7 +60,6 @@ describe('CondenseDraftUseCase', () => {
         sceneStem: '01-scene',
         format: 'novel',
         body,
-        maxCompressionPercent: 50,
       }),
     ).resolves.toEqual({
       kind: 'review-required',
@@ -83,7 +80,6 @@ describe('CondenseDraftUseCase', () => {
         sceneStem: '01-scene',
         format: 'novel',
         body,
-        maxCompressionPercent: 50,
       }),
     ).resolves.toMatchObject({ kind: 'rejected', reason: 'empty', ok: false });
     await expect(
@@ -92,7 +88,6 @@ describe('CondenseDraftUseCase', () => {
         sceneStem: '01-scene',
         format: 'novel',
         body,
-        maxCompressionPercent: 50,
       }),
     ).resolves.toMatchObject({ kind: 'rejected', reason: 'meta-response', ok: false });
   });

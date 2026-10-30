@@ -1,5 +1,3 @@
-import { SceneContextReader } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
@@ -13,30 +11,17 @@ import type { CondenseDraftResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import {
   createDraft,
-  formatBibleFactLines,
   parseDraft,
-  readSceneFile,
   serializeDraft,
   archiveExistingDraft,
-  sceneContextPaths,
   draftHistorySceneDirectory,
-  getStoryboardProjectPaths,
   isDraftMarkdownFile,
   joinUri,
-  type SceneFile,
-  type SceneContextWorkspacePaths,
-  type SceneContext,
-  type NarrativeContext,
   type StoryUri,
 } from '@storyboard/story-model';
-import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
-import {
-  draftHistoryFileSystem,
-  vscodeFsAdapter,
-} from '@/infrastructure/vscode/workspaceFsAdapters';
+import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -52,12 +37,6 @@ interface CondenseTarget {
   readonly workspaceFolder: vscode.WorkspaceFolder;
   readonly documentText: string;
   readonly draft: ReturnType<typeof parseDraft>;
-}
-
-interface CondenseContext {
-  readonly intent?: string;
-  readonly facts?: readonly string[];
-  readonly characterCards?: readonly string[];
 }
 
 export class CondenseDraftCommand implements IExtensionCommand {
@@ -100,7 +79,6 @@ export class CondenseDraftCommand implements IExtensionCommand {
   }
 
   private async condenseDraft(target: CondenseTarget): Promise<CondenseDraftResult> {
-    const context: CondenseContext = await this.loadCondenseContext(target);
     return await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -113,8 +91,6 @@ export class CondenseDraftCommand implements IExtensionCommand {
           sceneStem: target.draft.sceneStem,
           format: target.draft.format,
           body: target.draft.body,
-          maxCompressionPercent: this.dependencies.configBridge.getMaxCompressionPercent(),
-          ...context,
         }),
     );
   }
@@ -201,42 +177,6 @@ export class CondenseDraftCommand implements IExtensionCommand {
         '드래프트 형식을 해석할 수 없습니다. frontmatter를 확인해 주세요.',
       );
       return undefined;
-    }
-  }
-
-  private async loadCondenseContext(target: CondenseTarget): Promise<CondenseContext> {
-    const sceneUri: vscode.Uri | undefined = deriveSceneUri(
-      target.workspaceFolder,
-      target.documentText,
-    );
-    if (!sceneUri) {
-      return {};
-    }
-
-    try {
-      const scene: SceneFile = await readSceneFile(
-        sceneUri,
-        vscodeFsAdapter,
-        sceneUri.path.split('/').at(-1) ?? '',
-      );
-      const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(
-        getStoryboardProjectPaths(target.workspaceFolder.uri),
-      );
-      const context: SceneContext = await new SceneContextReader(vscodeFileSystem).build(
-        contextPaths,
-        scene,
-      );
-      const narrative: NarrativeContext = await new SceneContextReader(
-        vscodeFileSystem,
-      ).buildNarrative(contextPaths, context);
-
-      return {
-        intent: scene.body,
-        facts: formatBibleFactLines(context, narrative.bibleFacts),
-        characterCards: formatAugmentCards(context.characters, undefined),
-      };
-    } catch {
-      return {};
     }
   }
 

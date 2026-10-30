@@ -39,7 +39,6 @@ export class DraftCondenseCommand implements ICommandHandler {
         sceneStem: stem,
         format: project.format,
         body: target,
-        maxCompressionPercent: container.configBridge.getMaxCompressionPercent(),
       });
 
       return condensed.ok
