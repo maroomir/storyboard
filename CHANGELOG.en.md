@@ -25,6 +25,7 @@ after the first public release.
 - **Parallel requests no longer refresh some providers' connection at the same time.** When parallel stages used a connection close to expiry, each refreshed it on its own and a later request could be rejected, dropping the connection. Only one refresh now runs per process, and a waiting request rereads the stored connection and uses it as it is.
 - **The extension's condense keeps the open draft in history.** When the file name differs from the front matter `sceneStem` (a copy or a rename), it archived the other draft named in the front matter or nothing at all; it now keeps the open document as it was before the condensed text is applied, under `.draft/`.
 - **Creating a card in the extension's Studio no longer fails when the editor cannot open it.** When opening the editor failed after the card file was written, the webview received an unhandled error; it now gets the created card and the fill instruction, and the failed open is logged as a warning.
+- **Moving legacy AI memory when a work opens no longer touches another app's run, and a failure no longer keeps the work closed.** While another app holds the run lock, the old memory in `.storyboard/cache/` stays where it is and moves on the next open. If moving it fails (a permission error, say), a warning is logged and the work opens with the author resources loaded as usual. The CLI, the desktop app and the extension follow the same rule.
 
 ### Internal
 

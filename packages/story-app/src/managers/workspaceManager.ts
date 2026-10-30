@@ -7,6 +7,7 @@ import {
   type CreateWorkspaceRequest,
   type CreateWorkspaceResult,
   type IFileSystem,
+  type IStoryboardLogger,
   type MemoryMigrationResult,
   type StoryMemoryAudit,
 } from '@storyboard/story-engine';
@@ -18,11 +19,14 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 import { loadResourceOverrides, type ResourceOverrideReport } from '#app/resourceOverrides';
+import type { RunGate } from '#app/runGate';
 
 export interface WorkspaceManagerDependencies {
   readonly fileSystem: IFileSystem;
   readonly configBridge: ConfigBridge;
   readonly resourceRoots: readonly StoryUri[];
+  readonly runGate: Pick<RunGate, 'describeHolder'>;
+  readonly logger: IStoryboardLogger;
 }
 
 export interface WorkspaceRepairResult {
@@ -31,6 +35,7 @@ export interface WorkspaceRepairResult {
 }
 
 const nothingSealedWhileTheProjectIsUnreadable: readonly number[] = [];
+const nothingMovedUntilTheNextOpen: MemoryMigrationResult = { movedPaths: [] };
 
 export class WorkspaceManager {
   public constructor(private readonly deps: WorkspaceManagerDependencies) {}
@@ -63,8 +68,15 @@ export class WorkspaceManager {
     return await loadResourceOverrides(this.deps.fileSystem, this.deps.resourceRoots);
   }
 
-  public migrateLegacyMemory(workspaceRoot: StoryUri): Promise<MemoryMigrationResult> {
-    return this.createInitializer().migrateLegacyMemory(getStoryboardProjectPaths(workspaceRoot));
+  public async migrateLegacyMemory(workspaceRoot: StoryUri): Promise<MemoryMigrationResult> {
+    try {
+      return await this.migrateLegacyMemoryUnlessAnotherRunHoldsTheWorkspace(workspaceRoot);
+    } catch (error) {
+      this.deps.logger.warn(
+        `옛 AI 기억을 .storyboard/memory/ 로 옮기지 못했습니다. 다음에 열 때 다시 옮깁니다: ${String(error)}`,
+      );
+      return nothingMovedUntilTheNextOpen;
+    }
   }
 
   public async auditStoryState(workspaceRoot: StoryUri): Promise<StoryMemoryAudit> {
@@ -89,6 +101,19 @@ export class WorkspaceManager {
       fileSystem: this.deps.fileSystem,
       paths: getStoryboardProjectPaths(workspaceRoot),
     }).audit();
+  }
+
+  private async migrateLegacyMemoryUnlessAnotherRunHoldsTheWorkspace(
+    workspaceRoot: StoryUri,
+  ): Promise<MemoryMigrationResult> {
+    const runHolder: string | undefined = await this.deps.runGate.describeHolder(workspaceRoot);
+    if (runHolder !== undefined) {
+      return nothingMovedUntilTheNextOpen;
+    }
+
+    return await this.createInitializer().migrateLegacyMemory(
+      getStoryboardProjectPaths(workspaceRoot),
+    );
   }
 
   private createInitializer(): WorkspaceInitializer {
