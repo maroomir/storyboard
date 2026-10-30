@@ -41,6 +41,7 @@ const invalidUserErrorCode: string = 'subscription_sharing_invalid_user';
 export interface ChatGptProviderOptions {
   readonly model: string | undefined;
   readonly connection: OAuthConnection | undefined;
+  readonly loadConnection: () => Promise<OAuthConnection | undefined>;
   readonly saveConnection: (connection: OAuthConnection) => Promise<void>;
   readonly fetch?: FetchLike;
   readonly now?: () => Date;
@@ -165,19 +166,33 @@ function parseEventLine(line: string): JsonRecord | undefined {
   }
 }
 
+type SignedInConnection = OAuthConnection & {
+  readonly registration: OAuthRegistration;
+  readonly tokens: OAuthTokens;
+};
+
+let refreshTail: Promise<unknown> = Promise.resolve();
+
+function runRefreshInTurn<T>(task: () => Promise<T>): Promise<T> {
+  const turn: Promise<T> = refreshTail.then(task);
+  refreshTail = turn.catch(() => undefined);
+  return turn;
+}
+
+function isSignedIn(connection: OAuthConnection | undefined): connection is SignedInConnection {
+  return connection?.tokens !== undefined && connection.registration !== undefined;
+}
+
 export class ChatGptProvider implements AiProvider {
   public readonly id: AiProviderId = providerId;
   public readonly displayName: string = getProviderDisplayName(providerId);
   private readonly model: string;
-  private connection: OAuthConnection & {
-    readonly registration: OAuthRegistration;
-    readonly tokens: OAuthTokens;
-  };
+  private connection: SignedInConnection;
+  private readonly loadConnection: () => Promise<OAuthConnection | undefined>;
   private readonly saveConnection: (connection: OAuthConnection) => Promise<void>;
   private readonly fetch: FetchLike;
   private readonly oauth: ChatGptOAuthClient;
   private readonly now: () => Date;
-  private refreshTail: Promise<unknown> = Promise.resolve();
 
   public constructor(options: ChatGptProviderOptions) {
     const model: string | undefined = options.model?.trim();
@@ -187,16 +202,13 @@ export class ChatGptProvider implements AiProvider {
     }
 
     const { connection } = options;
-    if (connection?.tokens === undefined || connection.registration === undefined) {
+    if (!isSignedIn(connection)) {
       throw new AiProviderError('login-required', this.id, loginRequiredMessage(this.id));
     }
 
     this.model = model;
-    this.connection = {
-      ...connection,
-      registration: connection.registration,
-      tokens: connection.tokens,
-    };
+    this.connection = connection;
+    this.loadConnection = options.loadConnection;
     this.saveConnection = options.saveConnection;
     this.fetch = options.fetch ?? globalThis.fetch;
     this.oauth = new ChatGptOAuthClient(this.fetch);
@@ -427,16 +439,24 @@ export class ChatGptProvider implements AiProvider {
       return this.connection.tokens;
     }
 
-    const refreshed: Promise<OAuthTokens> = this.refreshTail.then(() => this.refresh());
-    this.refreshTail = refreshed.catch(() => undefined);
-    return await refreshed;
+    return await runRefreshInTurn(() => this.refreshUnlessAnotherCallDid());
+  }
+
+  private async refreshUnlessAnotherCallDid(): Promise<OAuthTokens> {
+    const stored: OAuthConnection | undefined = await this.loadConnection();
+    if (!isSignedIn(stored)) {
+      throw new AiProviderError('login-required', this.id, loginRequiredMessage(this.id));
+    }
+
+    this.connection = stored;
+    if (!shouldRefreshTokens(stored.tokens, this.now())) {
+      return stored.tokens;
+    }
+
+    return await this.refresh();
   }
 
   private async refresh(): Promise<OAuthTokens> {
-    if (!shouldRefreshTokens(this.connection.tokens, this.now())) {
-      return this.connection.tokens;
-    }
-
     const { registration, tokens } = this.connection;
 
     try {
@@ -474,6 +494,8 @@ registerProviderFactory(providerId, async (context) => {
   return new ChatGptProvider({
     model: context.modelOverride ?? config.model,
     connection: await context.secretStore.getOAuthConnection(providerId),
+    loadConnection: (): Promise<OAuthConnection | undefined> =>
+      context.secretStore.getOAuthConnection(providerId),
     saveConnection: (connection: OAuthConnection): Promise<void> =>
       context.secretStore.setOAuthConnection(providerId, connection),
     ...(fetchImpl === undefined ? {} : { fetch: fetchImpl }),
