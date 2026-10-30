@@ -415,7 +415,10 @@ describe('card build', () => {
       },
     ]);
 
-    const outcome = await findCommand('card build')!.execute({ container, args: args(['card', 'build']) });
+    const outcome = await findCommand('card build')!.execute({
+      container,
+      args: args(['card', 'build']),
+    });
 
     expect(outcome.ok).toBe(true);
     expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain(
@@ -455,7 +458,10 @@ describe('card build', () => {
       },
     ]);
 
-    const outcome = await findCommand('card build')!.execute({ container, args: args(['card', 'build']) });
+    const outcome = await findCommand('card build')!.execute({
+      container,
+      args: args(['card', 'build']),
+    });
 
     expect(outcome.message).toContain('방송실');
     expect(existsSync(join(workspace, 'background', 'new-card-2.card'))).toBe(false);
@@ -643,7 +649,14 @@ describe('pre-0.8 workspace repair', () => {
   it('warns about a povCharacter scene the work gives no narration to', async () => {
     writeFileSync(
       join(workspace, 'scene', '01-first.card'),
-      ['type: scene', 'id: 01-first', 'povCharacter: hana', 'beats:', '  - 하나가 문을 연다.', ''].join('\n'),
+      [
+        'type: scene',
+        'id: 01-first',
+        'povCharacter: hana',
+        'beats:',
+        '  - 하나가 문을 연다.',
+        '',
+      ].join('\n'),
     );
 
     const before = await run('doctor', args(['doctor']));
@@ -928,7 +941,10 @@ describe('novel generate progress', () => {
       } as never),
     } as unknown as Parameters<(typeof commands)['novel generate']>[0]['container'];
 
-    await findCommand('novel generate')!.execute({ container: stubbed, args: args(['novel', 'generate']) });
+    await findCommand('novel generate')!.execute({
+      container: stubbed,
+      args: args(['novel', 'generate']),
+    });
 
     expect(logged).toEqual(['아웃라인: 아웃라인 생성 중…']);
   });
@@ -1244,12 +1260,67 @@ describe('scene show', () => {
       join(workspace, 'scene', '01-bridge.card'),
       'type: scene\nid: 01-bridge\nnarrator: wide\nthread: ep2\n',
     );
+    declareThreads({ ep2: { title: '2화' } });
 
     const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-bridge']));
 
     expect(outcome.message).toContain('전지');
     expect(outcome.message).toContain('줄기: ep2');
   });
+
+  it('reports the main thread when the work declares no threads, as generation does', async () => {
+    await run('scene create', args(['scene', 'create'], { name: 'bridge' }));
+    writeFileSync(
+      join(workspace, 'scene', '01-bridge.card'),
+      'type: scene\nid: 01-bridge\nthread: ep2\n',
+    );
+
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-bridge']));
+
+    expect(outcome.message).toContain('줄기: main');
+  });
+
+  it('falls back to the narrator its chapter names', async () => {
+    await run(
+      'narrator create',
+      args(['narrator', 'create'], { person: 'third', knowledge: 'omniscient' }, ['wide']),
+    );
+    await run('scene create', args(['scene', 'create'], { name: 'harbor' }));
+    mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+      [
+        'version: 1.0.0',
+        'acts:',
+        '  - id: act-1',
+        '    title: 1막',
+        '    chapters:',
+        '      - id: chapter-1',
+        '        title: 1장',
+        '        narrator: wide',
+        '        scenes:',
+        '          - id: harbor',
+        '            title: 항구',
+        '            purpose: 하나가 항구에 닿는다',
+        '',
+      ].join('\n'),
+    );
+
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-harbor']));
+
+    expect(outcome.message).toContain('전지');
+  });
+
+  function declareThreads(threads: Record<string, { title: string }>): void {
+    const projectFile = join(workspace, '.storyboard', 'project.json');
+    const project = JSON.parse(readFileSync(projectFile, 'utf8')) as {
+      setting?: Record<string, unknown>;
+    };
+    writeFileSync(
+      projectFile,
+      JSON.stringify({ ...project, setting: { ...project.setting, threads } }, null, 2),
+    );
+  }
 });
 
 describe('doctor: unreadable ledger lines', () => {
@@ -1502,7 +1573,10 @@ describe('spend that belongs to no scene', () => {
       usageSink: { record: async (_root, usage) => void records.push(usage) },
     });
 
-    await findCommand('novel generate')!.execute({ container: recording, args: args(['novel', 'generate']) });
+    await findCommand('novel generate')!.execute({
+      container: recording,
+      args: args(['novel', 'generate']),
+    });
 
     const outlineRecords = records.filter((record) =>
       ['outlineSynopsis', 'chapterPlan'].includes(record.taskName),
@@ -1566,7 +1640,10 @@ describe('novel generate again', () => {
           }),
     });
 
-    await findCommand('novel generate')!.execute({ container: again, args: args(['novel', 'generate']) });
+    await findCommand('novel generate')!.execute({
+      container: again,
+      args: args(['novel', 'generate']),
+    });
 
     return { tasks: records.map((record) => record.taskName), questions };
   }

@@ -4,7 +4,8 @@ import type { CommandSpec } from '@/commands/catalog';
 import { describeSceneNarration } from '@/commands/narrator/narratorViews';
 import { failure, success } from '@/commands/outcomes';
 import { sceneStemFrom } from '@/commands/sceneArguments';
-import { mainThreadId, type SceneFile } from '@storyboard/story-model';
+import type { SceneFile } from '@storyboard/story-model';
+import type { SceneThreadContext } from '@storyboard/story-engine';
 
 export class SceneShowCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -30,12 +31,11 @@ export class SceneShowCommand implements ICommandHandler {
     if (scene === undefined) {
       return failure(`씬을 찾을 수 없습니다: ${stem}`);
     }
-    const narration: string = await describeSceneNarration(
-      container,
-      scene.card.narrator,
-      scene.frontmatter.povCharacter,
+    const narration: string = await describeSceneNarration(container, scene);
+    const { threadId: thread }: SceneThreadContext = await container.drafts.resolveSceneThread(
+      container.workspaceRoot,
+      scene,
     );
-    const thread: string = scene.card.thread ?? mainThreadId;
 
     return success(
       [
