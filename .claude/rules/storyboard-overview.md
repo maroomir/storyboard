@@ -90,7 +90,8 @@ What each check actually enforces, so a green run is not read as more than it is
 - `apps/cli` enforces its own ordered layer direction and rejects cycles, and additionally fails
   if it imports the engine's pipeline assembly symbols (`refusePipelineAssembly` in
   `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. The
-  desktop applies the same rule.
+  desktop applies the same rule. All three apps fail when they construct an engine class
+  (`refuseEngineConstruction`); the desktop's `UsageLedgerRecorder` is the one listed exception.
 - `packages/story-model` — its own layer direction: `format` may import only itself, `contracts`
   only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; plus
   no cycles.
