@@ -246,6 +246,36 @@ describe('creating a work', () => {
     expect(existsSync(join(workspacePath(), '.storyboard', 'cache', 'storyState.md'))).toBe(false);
   });
 
+  it('leaves legacy memory in place when another app holds the work it opens', async () => {
+    await expectOk('workspace.create', { parentDirectory: join(documents, 'Storyboard'), request: createRequest });
+    await expectOk('workspace.close', {});
+    mkdirSync(join(workspacePath(), '.storyboard', 'cache'), { recursive: true });
+    writeFileSync(join(workspacePath(), '.storyboard', 'cache', 'storyState.md'), '- [1] 옛 원장\n');
+    const record = createWorkspaceRunLockRecord(
+      { owner: 'cli', label: 'storyboard novel generate', pid: 1, hostname: 'elsewhere' },
+      'cli-token',
+      new Date(),
+    );
+    writeFileSync(join(workspacePath(), STORYBOARD_RELATIVE_PATHS.runLock), serializeWorkspaceRunLock(record));
+
+    await expectOk('workspace.open', { recentPath: workspacePath() });
+
+    expect(readFileSync(join(workspacePath(), '.storyboard', 'cache', 'storyState.md'), 'utf8')).toBe('- [1] 옛 원장\n');
+    expect(existsSync(join(workspacePath(), STORYBOARD_RELATIVE_PATHS.storyState))).toBe(false);
+  });
+
+  it('opens the work even when legacy memory cannot be moved', async () => {
+    await expectOk('workspace.create', { parentDirectory: join(documents, 'Storyboard'), request: createRequest });
+    await expectOk('workspace.close', {});
+    mkdirSync(join(workspacePath(), '.storyboard', 'cache', 'storyState.md'), { recursive: true });
+
+    await expectOk('workspace.open', { recentPath: workspacePath() });
+    const overview = await expectOk('workspace.overview', {});
+
+    expect(overview).toBeDefined();
+    expect(readFileSync(join(home, 'logs', 'desktop.log'), 'utf8')).toContain('옛 AI 기억을');
+  });
+
   it('opens a recent work only when main put it on the list', async () => {
     const result = await invoke('workspace.open', { recentPath: tmpdir() });
 

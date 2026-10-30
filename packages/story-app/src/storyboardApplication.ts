@@ -213,6 +213,8 @@ export class StoryboardApplication {
       fileSystem: services.fileSystem,
       configBridge: services.configBridge,
       resourceRoots: this.resourceRoots,
+      runGate: this.runGate,
+      logger: services.logger,
     });
     this.aiGateway = services.aiGateway;
     this.aiProviderRegistry = services.aiProviderRegistry;
