@@ -81,11 +81,24 @@ export class StudioCardUpdateRpc {
           };
         }
 
-        await vscode.window.showTextDocument(created.uri, { preview: true });
+        await this.openCreatedCardWarningOnFailure(created.uri, seed);
 
         return { ok: true, message: `${cardFile(seed)} 를 만들었어요.`, instruction };
       },
     };
+  }
+
+  private async openCreatedCardWarningOnFailure(
+    uri: vscode.Uri,
+    seed: StudioCardSeed,
+  ): Promise<void> {
+    try {
+      await vscode.window.showTextDocument(uri, { preview: true });
+    } catch (error) {
+      this.deps.logger.warn(
+        `Studio 카드 ${cardFile(seed)} 를 만들었지만 열지 못했습니다: ${String(error)}`,
+      );
+    }
   }
 }
 

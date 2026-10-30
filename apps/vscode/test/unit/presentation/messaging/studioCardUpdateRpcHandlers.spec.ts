@@ -14,6 +14,7 @@ interface Harness {
   readonly seed: ReturnType<typeof vi.fn>;
   readonly written: unknown[];
   readonly exists: ReturnType<typeof vi.fn>;
+  readonly warn: ReturnType<typeof vi.fn>;
 }
 
 let shownDocuments: string[];
@@ -37,6 +38,7 @@ function harness(): Harness {
   const seed = vi.fn(async () => ({ kind: 'character', name: '정난정', id: 'jeong-nan-jeong' }));
   const exists = vi.fn(async () => false);
   const written: unknown[] = [];
+  const warn = vi.fn();
 
   const deps = {
     aiGateway: {
@@ -58,11 +60,11 @@ function harness(): Harness {
           }),
         ).execute(request),
     },
-    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+    logger: { warn, error: vi.fn(), info: vi.fn() },
     getProjectRoot: async () => vscode.Uri.file('/workspace'),
   } as unknown as StudioCardUpdateRpcHandlersDependencies;
 
-  return { handlers: new StudioCardUpdateRpc(deps).handlers(), seed, written, exists };
+  return { handlers: new StudioCardUpdateRpc(deps).handlers(), seed, written, exists, warn };
 }
 
 async function create(h: Harness, text = description): Promise<Record<string, unknown>> {
@@ -89,6 +91,22 @@ describe('studio.card.update', () => {
     expect(shownDocuments[0]).toContain('jeong-nan-jeong.card');
     expect(String(response.instruction)).toContain('이 설명으로 카드를 채워줘');
     expect(String(response.instruction)).toContain('정난정');
+  });
+
+  it('reports the card as created and warns when the editor cannot open it', async () => {
+    const h = harness();
+    (vscode.window as { showTextDocument?: unknown }).showTextDocument =
+      async (): Promise<never> => {
+        throw new Error('editor unavailable');
+      };
+
+    const response = await create(h);
+
+    expect(response.ok).toBe(true);
+    expect(h.written).toHaveLength(1);
+    expect(String(response.message)).toContain('character/jeong-nan-jeong.card 를 만들었어요');
+    expect(String(response.instruction)).toContain('이 설명으로 카드를 채워줘');
+    expect(h.warn).toHaveBeenCalledWith(expect.stringContaining('열지 못했습니다'));
   });
 
   it('creates a background card when the seed says so', async () => {
