@@ -45,13 +45,22 @@ import type {
   SaveDraftEditUseCase,
 } from '@storyboard/story-engine';
 import {
+  ProjectRepository,
+  SceneNarrationResolver,
+  type ChapterNarrationDefaults,
+  type SceneThreadContext,
+} from '@storyboard/story-engine';
+import {
   draftPath,
   getStoryboardProjectPaths,
   parseDraft,
   readSceneFile,
   scenePath,
   type Draft,
+  type NarrationDirective,
   type SceneFile,
+  type StoryboardProject,
+  type StoryboardProjectPaths,
   type SceneListItem,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -219,6 +228,48 @@ export class DraftManager {
 
   public generateStoryState(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     return this.deps.generateStoryStateUseCase.execute(request);
+  }
+
+  public async resolveSceneNarration(
+    workspaceRoot: StoryUri,
+    scene: SceneFile,
+  ): Promise<NarrationDirective | undefined> {
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.deps.fileSystem);
+    const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
+      paths,
+      scene.order,
+    );
+
+    return await resolver.resolveNarration(
+      paths,
+      scene,
+      await this.readProject(paths),
+      chapterDefaults,
+    );
+  }
+
+  public async resolveSceneThread(
+    workspaceRoot: StoryUri,
+    scene: SceneFile,
+  ): Promise<SceneThreadContext> {
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.deps.fileSystem);
+    const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
+      paths,
+      scene.order,
+    );
+
+    return await resolver.resolveThread(
+      paths,
+      scene,
+      await this.readProject(paths),
+      chapterDefaults.thread,
+    );
+  }
+
+  private readProject(paths: StoryboardProjectPaths): Promise<StoryboardProject> {
+    return new ProjectRepository(this.deps.fileSystem).read(paths.projectJson);
   }
 
   public renameScene(request: RenameSceneRequest): Promise<RenameSceneResult> {
