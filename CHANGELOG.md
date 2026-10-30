@@ -24,6 +24,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 내부
 
+- **익스텐션의 에디터 기능도 매니저를 거칩니다.** 스튜디오·인라인 완성·관계 그래프·카드 편집기가 엔진 저장소를 직접 만들던 것을 `studio`(문맥·세션·후속 작업)·`drafts`(씬 문맥)·`cards`(인물 명단·관계 인물) 매니저로 옮겼고, 스튜디오의 검증 설정과 초안 히스토리 판단도 매니저가 합니다. 화면과 동작은 그대로입니다.
 - **엔진 유스케이스가 의존성과 요청을 섞어 넘기지 않습니다.** 초안 생성 계열이 호스트·AI·저장소를 요청과 한 객체(`GenerateDraftServices`·`GenerateDraftWorkflowOptions`)로 섞어 함수에 넘기던 것을 생성자로 의존성을 받는 클래스(`SceneGenerationInputsLoader`·`SceneGroundingResolver`·`SceneBeatsResolver`·`StoryStateRecorder`·`WorkflowFailureReporter`)로 바꿨고, 소설 실행도 의존성(`NovelRunDependencies`)과 실행 옵션을 따로 받습니다. 생성 결과는 그대로입니다.
 - **CLI 명령 한 번의 실행이 클래스가 됐습니다.** 709줄이던 `commandDispatcher.ts` 에는 동사 찾기와 실행 전 거절만 남고, 로거·진행 표시·컨테이너·열기 준비·초안 비교·실행 잠금·결과 출력은 `CommandRun` 의 단계가 됐습니다. 공유 타입은 `dispatchContract.ts` 에 있습니다. 명령·출력·종료 코드는 그대로입니다.
 - **앱은 매니저 동사만 부릅니다.** `project`(project.json 읽기·계약 수정)와 `workspace`(만들기·복구·열기 준비·이야기 상태 감사와 봉인) 매니저를 새로 두었고, 세 앱이 엔진 객체를 직접 만들거나 설정을 직접 읽어 조립하던 흐름(생성 후 감수, 카드 만들기, 시점 해석, 초안 히스토리 보관, 원본 축소의 압축률·문맥)을 매니저 동사 하나씩으로 옮겼습니다. `novel.readProject`·`novel.updateContract`·`drafts.resealStoryState`·`drafts.reviseAfterGenerate`·`cards.exists`/`deriveUniqueId`/`write` 는 새 동사로 바뀌었고, 작품 파일 형식은 그대로입니다.
