@@ -57,14 +57,23 @@ vi.mock('../../../../../../packages/story-engine/src/pipeline/scene/sceneGenerat
 
 import {
   GenerateDraftUseCase,
+  type AiServices,
+  type GenerateDraftCollaborators,
   type GenerateDraftRequest,
   type GenerateDraftResult,
-  type GenerateDraftServices,
+  type HostAdapters,
+  type WorkspaceRepositories,
   SceneGenerationPipelineCancelledError,
 } from "@storyboard/story-engine"
 import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const workspaceRoot = vscode.Uri.file("/ws")
+
+interface GenerateDraftServices extends GenerateDraftCollaborators {
+  readonly host: HostAdapters
+  readonly ai: AiServices
+  readonly repositories: WorkspaceRepositories
+}
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
 const workspaceFolder: WorkspaceFolder = { uri: workspaceRoot as never, name: "ws", index: 0 }
 

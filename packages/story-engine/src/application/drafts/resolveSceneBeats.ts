@@ -13,7 +13,7 @@ import {
   type SceneFile,
 } from '@storyboard/story-model';
 
-export interface SceneBeatsOptions {
+export interface SceneBeatsResolverDependencies {
   readonly host: HostAdapters;
   readonly ai: AiServices;
   readonly repositories: WorkspaceRepositories;
@@ -29,71 +29,76 @@ export interface SceneBeatCastCard {
   readonly aliases?: readonly string[];
 }
 
-export async function resolveSceneBeats(
-  sceneUri: StoryUri,
-  scene: SceneFile,
-  characters: readonly SceneBeatCastCard[],
-  options: SceneBeatsOptions,
-): Promise<SceneFile> {
-  if (!options.host.configBridge.isAutoBeatsEnabled() || hasSceneBeats(scene)) {
-    return scene;
+export class SceneBeatsResolver {
+  public constructor(private readonly dependencies: SceneBeatsResolverDependencies) {}
+
+  public async resolve(
+    sceneUri: StoryUri,
+    scene: SceneFile,
+    characters: readonly SceneBeatCastCard[],
+  ): Promise<SceneFile> {
+    const { host, repositories } = this.dependencies;
+
+    if (!host.configBridge.isAutoBeatsEnabled() || hasSceneBeats(scene)) {
+      return scene;
+    }
+
+    let beats: SceneBeat[];
+    try {
+      beats = await this.propose(sceneUri, scene, characters);
+    } catch (error) {
+      host.logger.warn(`씬 비트를 전개하지 못했습니다: ${String(error)}`);
+      return scene;
+    }
+
+    if (beats.length === 0) {
+      host.logger.warn('씬 비트 전개 응답이 비어 있어 카드의 재료로만 생성합니다.');
+      return scene;
+    }
+
+    try {
+      await repositories.scenes.writeBeats(sceneUri, beats);
+    } catch (error) {
+      host.logger.warn(`씬 비트를 저장하지 못했습니다: ${String(error)}`);
+    }
+
+    return withSceneBeats(scene, beats);
   }
 
-  let beats: SceneBeat[];
-  try {
-    beats = await proposeSceneBeats(sceneUri, scene, characters, options);
-  } catch (error) {
-    options.host.logger.warn(`씬 비트를 전개하지 못했습니다: ${String(error)}`);
-    return scene;
-  }
-
-  if (beats.length === 0) {
-    options.host.logger.warn('씬 비트 전개 응답이 비어 있어 카드의 재료로만 생성합니다.');
-    return scene;
-  }
-
-  try {
-    await options.repositories.scenes.writeBeats(sceneUri, beats);
-  } catch (error) {
-    options.host.logger.warn(`씬 비트를 저장하지 못했습니다: ${String(error)}`);
-  }
-
-  return withSceneBeats(scene, beats);
-}
-
-export async function proposeSceneBeats(
-  sceneUri: StoryUri,
-  scene: SceneFile,
-  characters: readonly SceneBeatCastCard[],
-  options: SceneBeatsOptions,
-): Promise<SceneBeat[]> {
-  const targetLength: number | undefined = resolveSceneTargetLength(
-    scene.frontmatter.targetWordCount,
-    scene.body,
-  );
-  const beatCount: number = planSceneBeatCount(
-    targetLength,
-    options.host.configBridge.getCharsPerBeat(),
-    options.host.configBridge.getMinBeats(),
-  );
-
-  const proposals: ExpandedSceneBeat[] = await options.ai.gateway
-    .createService(sceneUri)
-    .proposeSceneBeats(
-      {
-        sceneBody: renderSceneCardBody({ ...scene.card, beats: undefined }),
-        ...(scene.summaryText === undefined ? {} : { summary: scene.summaryText }),
-        grounding: scene.frontmatter.grounding,
-        characterNames: characters.map((character) => character.name),
-        beatCount,
-      },
-      {
-        providerId: options.ai.gateway.getTaskProvider('sceneBeats'),
-        attribution: { primary: { kind: 'scene', id: scene.stem } },
-      },
+  public async propose(
+    sceneUri: StoryUri,
+    scene: SceneFile,
+    characters: readonly SceneBeatCastCard[],
+  ): Promise<SceneBeat[]> {
+    const { host, ai } = this.dependencies;
+    const targetLength: number | undefined = resolveSceneTargetLength(
+      scene.frontmatter.targetWordCount,
+      scene.body,
+    );
+    const beatCount: number = planSceneBeatCount(
+      targetLength,
+      host.configBridge.getCharsPerBeat(),
+      host.configBridge.getMinBeats(),
     );
 
-  return proposals.map((proposal) => toSceneBeat(proposal, characters));
+    const proposals: ExpandedSceneBeat[] = await ai.gateway
+      .createService(sceneUri)
+      .proposeSceneBeats(
+        {
+          sceneBody: renderSceneCardBody({ ...scene.card, beats: undefined }),
+          ...(scene.summaryText === undefined ? {} : { summary: scene.summaryText }),
+          grounding: scene.frontmatter.grounding,
+          characterNames: characters.map((character) => character.name),
+          beatCount,
+        },
+        {
+          providerId: ai.gateway.getTaskProvider('sceneBeats'),
+          attribution: { primary: { kind: 'scene', id: scene.stem } },
+        },
+      );
+
+    return proposals.map((proposal) => toSceneBeat(proposal, characters));
+  }
 }
 
 export function toSceneBeat(

@@ -16,7 +16,7 @@ import {
   getStoryboardProjectPaths,
   type SceneBeat,
 } from '@storyboard/story-model';
-import { hasSceneBeats, proposeSceneBeats } from '#engine/application/drafts/resolveSceneBeats';
+import { hasSceneBeats, SceneBeatsResolver } from '#engine/application/drafts/resolveSceneBeats';
 
 export interface GenerateSceneBeatsRequest {
   readonly workspaceRoot: StoryUri;
@@ -37,11 +37,15 @@ export type GenerateSceneBeatsResult =
   | { readonly ok: false; readonly kind: 'failed'; readonly message: string };
 
 export class GenerateSceneBeatsUseCase {
+  private readonly beatsResolver: SceneBeatsResolver;
+
   public constructor(
     private readonly host: HostAdapters,
-    private readonly ai: AiServices,
+    ai: AiServices,
     private readonly repositories: WorkspaceRepositories,
-  ) {}
+  ) {
+    this.beatsResolver = new SceneBeatsResolver({ host, ai, repositories });
+  }
 
   public async execute(request: GenerateSceneBeatsRequest): Promise<GenerateSceneBeatsResult> {
     let scene: SceneFile;
@@ -70,11 +74,7 @@ export class GenerateSceneBeatsUseCase {
 
     let beats: SceneBeat[];
     try {
-      beats = await proposeSceneBeats(request.sceneUri, scene, context.characters, {
-        host: this.host,
-        ai: this.ai,
-        repositories: this.repositories,
-      });
+      beats = await this.beatsResolver.propose(request.sceneUri, scene, context.characters);
     } catch (error) {
       this.host.logger.error('Failed to propose scene beats', error);
       return {

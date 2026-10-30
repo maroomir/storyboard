@@ -29,13 +29,21 @@ vi.mock("@/infrastructure/vscode/workspace", () => ({
 }))
 import {
   GenerateDraftUseCase,
+  type AiServices,
   type GenerateDraftResult,
   type GenerateDraftRequest,
-  type GenerateDraftServices
+  type HostAdapters,
+  type WorkspaceRepositories
 } from "@storyboard/story-engine"
 import { createTestAi, createTestHost, createTestRepositories } from "@storyboard/story-engine/testing"
 
 const workspaceRoot = vscode.Uri.file("/ws")
+
+interface GenerateDraftServices {
+  readonly host: HostAdapters
+  readonly ai: AiServices
+  readonly repositories: WorkspaceRepositories
+}
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
 const workspaceFolder: WorkspaceFolder = { uri: workspaceRoot as never, name: "ws", index: 0 }
 

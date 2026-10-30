@@ -9,9 +9,12 @@ import {
   readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
-import type { GenerateDraftWorkflowOptions } from '#engine/application/drafts/draftGenerationContract';
-import { loadSceneGenerationInputs, type SceneGenerationInputsResult } from '#engine/application/drafts/sceneGenerationInputs';
-import { recordStoryStateFromDraft } from '#engine/application/drafts/updateStoryState';
+import {
+  SceneGenerationInputsLoader,
+  type SceneGenerationInputsRequest,
+  type SceneGenerationInputsResult,
+} from '#engine/application/drafts/sceneGenerationInputs';
+import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
 
@@ -42,12 +45,24 @@ export interface ScenesWithDrafts {
   readonly withoutDraft: readonly string[];
 }
 
+const recordedSceneInputsRequest: SceneGenerationInputsRequest = {
+  skipSceneGrounding: true,
+  skipSceneBeats: true,
+  suppressLoggerPanel: true,
+};
+
 export class GenerateStoryStateUseCase {
+  private readonly inputsLoader: SceneGenerationInputsLoader;
+  private readonly storyStateRecorder: StoryStateRecorder;
+
   public constructor(
     private readonly host: HostAdapters,
     private readonly ai: AiServices,
-    private readonly repositories: WorkspaceRepositories,
-  ) {}
+    repositories: WorkspaceRepositories,
+  ) {
+    this.inputsLoader = new SceneGenerationInputsLoader({ host, ai, repositories });
+    this.storyStateRecorder = new StoryStateRecorder({ host, ai });
+  }
 
   public async execute(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     const scenes: ScenesWithDrafts = await this.listScenesWithDrafts(request);
@@ -86,17 +101,10 @@ export class GenerateStoryStateUseCase {
     scene: { readonly stem: string; readonly order: number; readonly sceneUri: StoryUri },
     aiService: StoryboardAiService,
   ): Promise<'recorded' | 'kept'> {
-    const options: GenerateDraftWorkflowOptions = {
-      host: this.host,
-      ai: this.ai,
-      repositories: this.repositories,
-      sceneUri: scene.sceneUri,
-      force: true,
-      skipSceneGrounding: true,
-      skipSceneBeats: true,
-      suppressLoggerPanel: true,
-    };
-    const loaded: SceneGenerationInputsResult = await loadSceneGenerationInputs(scene.sceneUri, options);
+    const loaded: SceneGenerationInputsResult = await this.inputsLoader.load(
+      scene.sceneUri,
+      recordedSceneInputsRequest,
+    );
     if (!loaded.ok) {
       throw new Error(
         loaded.result.ok === false && loaded.result.kind === 'failed'
@@ -119,7 +127,7 @@ export class GenerateStoryStateUseCase {
     const draftText: string = new TextDecoder().decode(
       await this.host.fileSystem.readFile(draftPath(request.workspaceRoot, scene.stem)),
     );
-    await recordStoryStateFromDraft(inputs, options, aiService, extractDraftBody(draftText));
+    await this.storyStateRecorder.recordFromDraft(inputs, aiService, extractDraftBody(draftText));
 
     return 'recorded';
   }

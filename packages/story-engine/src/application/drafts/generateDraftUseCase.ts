@@ -50,16 +50,15 @@ import {
   emptyDraftBodyMessage,
   type GenerateDraftRequest,
   type GenerateDraftResult,
-  type GenerateDraftWorkflowOptions,
 } from '#engine/application/drafts/draftGenerationContract';
 import {
-  loadSceneGenerationInputs,
-  reportWorkflowFailure,
+  SceneGenerationInputsLoader,
+  WorkflowFailureReporter,
   type SceneGenerationInputs,
   type SceneGenerationInputsResult,
 } from '#engine/application/drafts/sceneGenerationInputs';
 import type { IUseCase } from '#engine/application/useCase';
-import { updateStoryStateAfterGeneration } from '#engine/application/drafts/updateStoryState';
+import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 
 export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
@@ -71,28 +70,30 @@ export interface GenerateDraftCollaborators {
 interface PostGenerationUpdateContext {
   readonly updates: PostGenerationUpdateManager;
   readonly inputs: SceneGenerationInputs;
-  readonly options: GenerateDraftWorkflowOptions;
+  readonly request: GenerateDraftRequest;
   readonly aiService: StoryboardAiService;
   readonly pipelineResult: RunSceneGenerationPipelineResult;
   readonly detectedCharacterCards: CharacterCard[];
 }
 
 export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
+  private readonly inputsLoader: SceneGenerationInputsLoader;
+  private readonly storyStateRecorder: StoryStateRecorder;
+  private readonly failureReporter: WorkflowFailureReporter;
+
   public constructor(
     private readonly host: HostAdapters,
     private readonly ai: AiServices,
     private readonly repositories: WorkspaceRepositories,
     private readonly collaborators: GenerateDraftCollaborators,
-  ) {}
+  ) {
+    this.inputsLoader = new SceneGenerationInputsLoader({ host, ai, repositories });
+    this.storyStateRecorder = new StoryStateRecorder({ host, ai });
+    this.failureReporter = new WorkflowFailureReporter(host.logger);
+  }
 
   public async execute(request: GenerateDraftRequest): Promise<GenerateDraftResult> {
-    return await this.generateDraftForWorkspaceSceneWorkflow(request.sceneUri, {
-      host: this.host,
-      ai: this.ai,
-      repositories: this.repositories,
-      ...this.collaborators,
-      ...request,
-    });
+    return await this.generateDraftForWorkspaceSceneWorkflow(request);
   }
 
   private toBackgroundSnapshot(
@@ -109,10 +110,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     };
   }
 
-  private async isCacheHit(
-    inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
-  ): Promise<boolean> {
+  private async isCacheHit(inputs: SceneGenerationInputs): Promise<boolean> {
     if (!(await this.host.fileSystem.exists(inputs.draftUri))) {
       return false;
     }
@@ -163,10 +161,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     };
   }
 
-  private async isDraftOursToOverwrite(
-    inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
-  ): Promise<boolean> {
+  private async isDraftOursToOverwrite(inputs: SceneGenerationInputs): Promise<boolean> {
     if (!(await this.host.fileSystem.exists(inputs.draftUri))) {
       return true;
     }
@@ -188,7 +183,6 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
   private async maybeArchiveExistingDraft(
     inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
     force: boolean,
   ): Promise<void> {
     if (!force && !this.host.configBridge.isKeepDraftHistoryEnabled()) {
@@ -214,7 +208,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
   private async persistGeneratedDraft(
     inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
+    request: GenerateDraftRequest,
     aiService: StoryboardAiService,
     pipelineResult: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
     cacheProviders: SceneCacheRecord['providers'],
@@ -230,7 +224,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
     await this.repositories.sceneCache.ensureDirectory(paths.sceneCacheDirectory);
 
-    options.onSaving?.();
+    request.onSaving?.();
 
     const bodyHash: string = computeDraftBodyHash(parseDraft(serializeDraft(draft)).body);
     const cacheRecord: SceneCacheRecord = this.buildSceneCacheRecord(
@@ -240,7 +234,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       bodyHash,
     );
 
-    await this.archiveDraftBeforeOverwrite(inputs, options);
+    await this.archiveDraftBeforeOverwrite(inputs);
 
     await this.repositories.drafts.write(draftUri, draft);
 
@@ -248,10 +242,14 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
     await this.repositories.sceneCache.write(cacheUri, cacheRecord);
 
-    await updateStoryStateAfterGeneration(inputs, options, aiService, pipelineResult.draftBody);
+    await this.storyStateRecorder.updateAfterGeneration(
+      inputs,
+      aiService,
+      pipelineResult.draftBody,
+    );
 
     if (this.host.configBridge.isUpdateCardsAfterGenerateEnabled()) {
-      this.schedulePostGenerationUpdates(inputs, options, aiService, pipelineResult);
+      this.schedulePostGenerationUpdates(inputs, request, aiService, pipelineResult);
     }
 
     return {
@@ -291,17 +289,14 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     });
   }
 
-  private async archiveDraftBeforeOverwrite(
-    inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
-  ): Promise<void> {
-    const isOurs: boolean = await this.isDraftOursToOverwrite(inputs, options);
+  private async archiveDraftBeforeOverwrite(inputs: SceneGenerationInputs): Promise<void> {
+    const isOurs: boolean = await this.isDraftOursToOverwrite(inputs);
     if (!isOurs) {
       this.host.logger.warn(
         `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${inputs.scene.stem}`,
       );
     }
-    await this.maybeArchiveExistingDraft(inputs, options, !isOurs);
+    await this.maybeArchiveExistingDraft(inputs, !isOurs);
   }
 
   private async saveDialogueRecord(
@@ -317,7 +312,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
   private schedulePostGenerationUpdates(
     inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
+    request: GenerateDraftRequest,
     aiService: StoryboardAiService,
     pipelineResult: RunSceneGenerationPipelineResult,
   ): void {
@@ -334,7 +329,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     const updateContext: PostGenerationUpdateContext = {
       updates,
       inputs,
-      options,
+      request,
       aiService,
       pipelineResult,
       detectedCharacterCards,
@@ -347,7 +342,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
   }
 
   private scheduleCharacterTraits(updateContext: PostGenerationUpdateContext): void {
-    const { updates, inputs, options, aiService, pipelineResult, detectedCharacterCards } =
+    const { updates, inputs, request, aiService, pipelineResult, detectedCharacterCards } =
       updateContext;
     const { workspaceFolder, scene } = inputs;
 
@@ -360,7 +355,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       fileSystem: this.host.fileSystem,
       resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
       logger: this.host.logger,
-      onComplete: options.onTraitsUpdateComplete,
+      onComplete: request.onTraitsUpdateComplete,
     });
   }
 
@@ -421,7 +416,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
   private async runAndPersistDraft(
     inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
+    request: GenerateDraftRequest,
   ): Promise<GenerateDraftResult> {
     const aiService: StoryboardAiService = this.ai.gateway.createService(
       inputs.workspaceFolder.uri,
@@ -438,7 +433,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     try {
       const pipelineResult: RunSceneGenerationPipelineResult = await this.createScenePipeline(
         inputs,
-        options,
+        request,
         aiService,
         pipelineProviders,
         backgroundRecentExcerpt,
@@ -446,13 +441,13 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
       return await this.persistGeneratedDraft(
         inputs,
-        options,
+        request,
         aiService,
         pipelineResult,
         cacheProviders,
       );
     } catch (error) {
-      return this.describeGenerationFailure(error, options);
+      return this.describeGenerationFailure(error, request);
     }
   }
 
@@ -485,7 +480,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
   private createScenePipeline(
     inputs: SceneGenerationInputs,
-    options: GenerateDraftWorkflowOptions,
+    request: GenerateDraftRequest,
     aiService: StoryboardAiService,
     providers: SceneGenerationPipelineTaskProviders,
     backgroundRecentExcerpt: string | undefined,
@@ -504,13 +499,13 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       characterRelations: inputs.characterRelations,
       providers,
       onProgress: (stage, current, total): void => {
-        if (options.shouldCancel?.()) {
+        if (request.shouldCancel?.()) {
           return;
         }
 
-        options.onPipelineProgress?.(stage, current, total);
+        request.onPipelineProgress?.(stage, current, total);
       },
-      shouldCancel: options.shouldCancel,
+      shouldCancel: request.shouldCancel,
       useContextCondense: this.host.configBridge.isAiContextCondenseEnabled(),
       sectionOutputLimit: this.host.configBridge.getSectionOutputLimit(),
       tuning: this.host.configBridge.getSceneGenerationTuning(),
@@ -536,7 +531,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
   private describeGenerationFailure(
     error: unknown,
-    options: GenerateDraftWorkflowOptions,
+    request: GenerateDraftRequest,
   ): GenerateDraftResult {
     if (error instanceof SceneGenerationPipelineCancelledError) {
       return { ok: false, kind: 'cancelled' };
@@ -547,8 +542,8 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     }
 
     const message: string = extractErrorMessage(error);
-    return reportWorkflowFailure(
-      options,
+    return this.failureReporter.report(
+      request,
       'Draft generation failed',
       error,
       `초안 생성에 실패했습니다: ${message}`,
@@ -556,20 +551,22 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
   }
 
   private async generateDraftForWorkspaceSceneWorkflow(
-    sceneUri: StoryUri,
-    options: GenerateDraftWorkflowOptions,
+    request: GenerateDraftRequest,
   ): Promise<GenerateDraftResult> {
-    const loaded: SceneGenerationInputsResult = await loadSceneGenerationInputs(sceneUri, options);
+    const loaded: SceneGenerationInputsResult = await this.inputsLoader.load(
+      request.sceneUri,
+      request,
+    );
     if (!loaded.ok) {
       return loaded.result;
     }
 
     const inputs: SceneGenerationInputs = loaded.inputs;
 
-    if (!options.force && (await this.isCacheHit(inputs, options))) {
+    if (!request.force && (await this.isCacheHit(inputs))) {
       return await this.openCachedDraft(inputs.draftUri);
     }
 
-    return await this.runAndPersistDraft(inputs, options);
+    return await this.runAndPersistDraft(inputs, request);
   }
 }
