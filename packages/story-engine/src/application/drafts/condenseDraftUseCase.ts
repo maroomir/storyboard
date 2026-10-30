@@ -1,5 +1,19 @@
 import type { AiServices, HostAdapters } from '#engine/application/engineServices';
-import type { StoryUri, ProjectFormat } from '@storyboard/story-model';
+import {
+  formatBibleFactLines,
+  getStoryboardProjectPaths,
+  readSceneFile,
+  sceneContextPaths,
+  scenePath,
+  type NarrativeContext,
+  type ProjectFormat,
+  type SceneContext,
+  type SceneContextWorkspacePaths,
+  type SceneFile,
+  type StoryUri,
+} from '@storyboard/story-model';
+import { formatAugmentCards } from '@storyboard/story-ai';
+import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import {
   resolveMinimumDraftLength,
@@ -38,6 +52,22 @@ export type CondenseDraftResult =
     }
   | { readonly kind: 'failed'; readonly ok: false; readonly message: string };
 
+interface CondenseSceneContext {
+  readonly intent?: string;
+  readonly facts?: readonly string[];
+  readonly characterCards?: readonly string[];
+}
+
+const condenseWithoutContextWhenTheSceneCannotBeRead: CondenseSceneContext = {};
+
+function hasCallerContext(request: CondenseDraftRequest): boolean {
+  return (
+    request.intent !== undefined ||
+    request.facts !== undefined ||
+    request.characterCards !== undefined
+  );
+}
+
 export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, CondenseDraftResult> {
   public constructor(
     private readonly host: HostAdapters,
@@ -54,6 +84,9 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
       this.host.logger,
       'Condense draft failed',
       async () => {
+        const context: CondenseSceneContext = hasCallerContext(request)
+          ? request
+          : await this.loadSceneContext(request.workspaceRoot, request.sceneStem);
         const text: string = await this.ai.gateway
           .createService(request.workspaceRoot)
           .condenseDraft(
@@ -61,9 +94,9 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
               body: request.body,
               format: request.format,
               targetLength: minimumLength,
-              intent: request.intent,
-              facts: request.facts,
-              characterCards: request.characterCards,
+              intent: context.intent,
+              facts: context.facts,
+              characterCards: context.characterCards,
             },
             {
               providerId: this.ai.gateway.getTaskProvider('draftRevision'),
@@ -102,5 +135,39 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
         return { kind: 'condensed', ok: true, text };
       },
     );
+  }
+
+  private async loadSceneContext(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+  ): Promise<CondenseSceneContext> {
+    const { fileSystem } = this.host;
+
+    try {
+      const scene: SceneFile = await readSceneFile(
+        scenePath(workspaceRoot, sceneStem),
+        fileSystem,
+        `${sceneStem}.card`,
+      );
+      const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(
+        getStoryboardProjectPaths(workspaceRoot),
+      );
+      const context: SceneContext = await new SceneContextReader(fileSystem).build(
+        contextPaths,
+        scene,
+      );
+      const narrative: NarrativeContext = await new SceneContextReader(fileSystem).buildNarrative(
+        contextPaths,
+        context,
+      );
+
+      return {
+        intent: scene.body,
+        facts: formatBibleFactLines(context, narrative.bibleFacts),
+        characterCards: formatAugmentCards(context.characters, undefined),
+      };
+    } catch {
+      return condenseWithoutContextWhenTheSceneCannotBeRead;
+    }
   }
 }
