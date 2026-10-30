@@ -87,6 +87,7 @@ import { DraftManager } from '#app/managers/draftManager';
 import { ManuscriptManager } from '#app/managers/manuscriptManager';
 import { NoteManager } from '#app/managers/noteManager';
 import { ProjectManager } from '#app/managers/projectManager';
+import { WorkspaceManager } from '#app/managers/workspaceManager';
 import { NovelManager } from '#app/managers/novelManager';
 import { StudioManager } from '#app/managers/studioManager';
 import { RunGate } from '#app/runGate';
@@ -173,6 +174,7 @@ export class StoryboardApplication {
   public readonly studio: StudioManager;
   public readonly notes: NoteManager;
   public readonly project: ProjectManager;
+  public readonly workspace: WorkspaceManager;
   public readonly runGate: RunGate;
   private readonly resourceRoots: readonly StoryUri[];
   public readonly aiGateway: AiGateway;
@@ -198,6 +200,11 @@ export class StoryboardApplication {
     this.project = new ProjectManager(services);
     this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
     this.resourceRoots = dependencies.resourceRoots ?? [];
+    this.workspace = new WorkspaceManager({
+      fileSystem: services.fileSystem,
+      configBridge: services.configBridge,
+      resourceRoots: this.resourceRoots,
+    });
     this.aiGateway = services.aiGateway;
     this.aiProviderRegistry = services.aiProviderRegistry;
     this.configBridge = services.configBridge;

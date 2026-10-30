@@ -1,29 +1,21 @@
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import {
-  createWorkspaceReadme,
-  ProjectRepository,
-  WorkspaceInitializer,
-} from '@storyboard/story-engine';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import type { CreateWorkspaceResult } from '@storyboard/story-engine';
+import type { WorkspaceManager } from '@storyboard/story-app';
 import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { refreshStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
-import {
-  getStoryboardProjectPaths,
-  type StoryboardProject,
-  type StoryboardProjectPaths,
-} from '@storyboard/story-model';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-model';
 import {
   ensureUriDoesNotExist,
   getTargetWorkspaceFolder,
   uriExists,
 } from '@/infrastructure/vscode/workspace';
-import { createDefaultProjectJson } from '@storyboard/story-engine';
 
 export interface InitCommandDependencies {
   readonly logger: IStoryboardLogger;
+  readonly workspace: Pick<WorkspaceManager, 'create'>;
 }
 
 export class InitCommand implements IExtensionCommand {
@@ -45,16 +37,13 @@ export class InitCommand implements IExtensionCommand {
         return;
       }
 
-      const project: StoryboardProject = createDefaultProjectJson({ name: workspaceFolder.name });
-
-      await new WorkspaceInitializer(vscodeFileSystem).createDirectories(paths);
-      await new ProjectRepository(vscodeFileSystem).write(paths.projectJson, project);
+      const { project }: CreateWorkspaceResult = await this.dependencies.workspace.create({
+        workspaceRoot: workspaceFolder.uri,
+        name: workspaceFolder.name,
+      });
       await this.writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
       await this.writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
       await this.writeFileIfMissing(paths.sampleScene, createSampleScene());
-      await new WorkspaceInitializer(vscodeFileSystem).ensureGitignore(paths.gitignore);
-      await this.writeFileIfMissing(paths.readme, createWorkspaceReadme(project.name));
-      await new WorkspaceInitializer(vscodeFileSystem).writeAgentGuidesIfMissing(paths);
 
       this.dependencies.logger.info(
         `Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`,

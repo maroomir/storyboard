@@ -49,6 +49,7 @@ export interface CliContainer extends Pick<
   | 'studio'
   | 'notes'
   | 'project'
+  | 'workspace'
   | 'runGate'
   | 'aiGateway'
   | 'aiProviderRegistry'
@@ -189,6 +190,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     studio: application.studio,
     notes: application.notes,
     project: application.project,
+    workspace: application.workspace,
     runGate: application.runGate,
     aiGateway: application.aiGateway,
     aiProviderRegistry: application.aiProviderRegistry,

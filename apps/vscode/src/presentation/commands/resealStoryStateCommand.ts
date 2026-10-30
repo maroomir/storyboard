@@ -2,25 +2,14 @@ import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
-import type { ConfigBridge } from '@storyboard/story-ai';
-import type {
-  IFileSystem,
-  IStoryboardLogger,
-  StoryStateAuditRequest,
-} from '@storyboard/story-engine';
-import { StoryMemoryAuditor, ProjectRepository } from '@storyboard/story-engine';
-import {
-  getStoryboardProjectPaths,
-  formatSceneOrderRanges,
-  type StoryboardProjectPaths,
-  type StoryboardProject,
-} from '@storyboard/story-model';
+import type { IStoryboardLogger, StoryMemoryAudit } from '@storyboard/story-engine';
+import type { WorkspaceManager } from '@storyboard/story-app';
+import { formatSceneOrderRanges } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 export type ResealStoryStateCommandDependencies = {
-  readonly configBridge: ConfigBridge;
-  readonly fileSystem: IFileSystem;
+  readonly workspace: Pick<WorkspaceManager, 'auditStoryState' | 'resealStoryState'>;
   readonly logger: IStoryboardLogger;
 };
 
@@ -41,21 +30,10 @@ export class ResealStoryStateCommand implements IExtensionCommand {
       return;
     }
 
-    const { configBridge, fileSystem, logger } = this.dependencies;
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
+    const { workspace, logger } = this.dependencies;
 
     try {
-      const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
-        paths.projectJson,
-      );
-      const request: StoryStateAuditRequest = {
-        fileSystem,
-        paths,
-        format: project.format,
-        sceneBreakJoiner: configBridge.getDraftSceneBreakSeparator(),
-      };
-      const auditor: StoryMemoryAuditor = new StoryMemoryAuditor(request);
-      const { audit } = await auditor.audit();
+      const { audit }: StoryMemoryAudit = await workspace.auditStoryState(workspaceFolder.uri);
 
       if (audit.staleSceneOrders.length === 0) {
         await vscode.window.showInformationMessage('다시 봉인할 낡은 항목이 없습니다.');
@@ -72,7 +50,7 @@ export class ResealStoryStateCommand implements IExtensionCommand {
         return;
       }
 
-      const resealed: readonly number[] = await auditor.reseal();
+      const resealed: readonly number[] = await workspace.resealStoryState(workspaceFolder.uri);
 
       await vscode.window.showInformationMessage(
         `씬 ${formatSceneOrderRanges(resealed)}의 원장 항목을 다시 봉인했습니다.`,

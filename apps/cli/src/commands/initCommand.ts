@@ -1,3 +1,4 @@
+import type { WorkspaceRepairResult } from '@storyboard/story-app';
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
@@ -8,11 +9,7 @@ import { WorkspaceInput, type ContractInput } from '@/commands/workspaceInput';
 import { NoteAbsorber } from '@/commands/noteAbsorber';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
-import {
-  mergeProjectSetting,
-  StoryMemoryAuditor,
-  WorkspaceInitializer,
-} from '@storyboard/story-engine';
+import { mergeProjectSetting } from '@storyboard/story-engine';
 import {
   compositionCatalog,
   compositionKinds,
@@ -178,13 +175,9 @@ export class InitCommand implements ICommandHandler {
       return failure('Storyboard 워크스페이스가 아닙니다: storyboard init --title "작품 이름"');
     }
 
-    await new WorkspaceInitializer(container.fileSystem).createDirectories(paths);
-    await new WorkspaceInitializer(container.fileSystem).ensureGitignore(paths.gitignore);
-    const addedAgentGuides: string[] = await new WorkspaceInitializer(
-      container.fileSystem,
-    ).writeAgentGuidesIfMissing(paths);
+    const { addedAgentGuides, sealedSceneOrders }: WorkspaceRepairResult =
+      await container.workspace.repair(container.workspaceRoot);
     const gitRepository: GitRepositoryOutcome = ensureGitRepository(container.workspaceRoot.fsPath);
-    const sealedSceneOrders: readonly number[] = await this.sealStoryState(container, paths);
 
     return success(
       (sealedSceneOrders.length === 0
@@ -212,9 +205,7 @@ export class InitCommand implements ICommandHandler {
     const language: string | undefined = flagString(args.flags, 'language');
     const setting: ProjectSetting | undefined =
       contract.setting === undefined ? undefined : mergeProjectSetting(undefined, contract.setting);
-    const { project, createdNarrators } = await new WorkspaceInitializer(
-      container.fileSystem,
-    ).createWorkspace({
+    const { project, createdNarrators } = await container.workspace.create({
       workspaceRoot: container.workspaceRoot,
       name,
       ...(language === undefined ? {} : { language }),
@@ -277,26 +268,6 @@ export class InitCommand implements ICommandHandler {
         gitRepository,
       },
     );
-  }
-
-  private async sealStoryState(
-    container: CliContainer,
-    paths: ReturnType<typeof getStoryboardProjectPaths>,
-  ): Promise<readonly number[]> {
-    const project: StoryboardProject | undefined = await container.project
-      .read(container.workspaceRoot)
-      .catch(() => undefined);
-
-    if (project === undefined) {
-      return [];
-    }
-
-    return await new StoryMemoryAuditor({
-      fileSystem: container.fileSystem,
-      paths,
-      format: project.format,
-      sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
-    }).seal();
   }
 
   private async askContract(

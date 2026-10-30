@@ -27,7 +27,7 @@ export class StateResealCommand implements ICommandHandler {
       );
     }
 
-    const resealed: readonly number[] = await container.drafts.resealStoryState(
+    const resealed: readonly number[] = await container.workspace.resealStoryState(
       container.workspaceRoot,
       sceneOrders,
     );

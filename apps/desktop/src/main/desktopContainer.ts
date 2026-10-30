@@ -26,6 +26,7 @@ export interface DesktopContainer extends Pick<
   | 'notes'
   | 'novel'
   | 'project'
+  | 'workspace'
   | 'studio'
   | 'runGate'
   | 'aiGateway'
@@ -97,6 +98,7 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     notes: application.notes,
     novel: application.novel,
     project: application.project,
+    workspace: application.workspace,
     studio: application.studio,
     runGate: application.runGate,
     aiGateway: application.aiGateway,
