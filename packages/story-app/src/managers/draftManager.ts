@@ -33,6 +33,7 @@ import type {
   IFileSystem,
   ISceneSidebarRepository,
   ReviseAfterGenerateGate,
+  DraftHistoryArchiver,
   ReviseDraftRequest,
   ReviseDraftUseCase,
   ReviseDraftWorkflowResult,
@@ -90,6 +91,7 @@ export interface DraftManagerDependencies {
   readonly generateStoryStateUseCase: GenerateStoryStateUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
+  readonly draftHistoryArchiver: DraftHistoryArchiver;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly checkDraftUseCase: CheckDraftUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
@@ -208,6 +210,13 @@ export class DraftManager {
 
   public applyAugmentation(request: ApplyAugmentedDraftRequest): Promise<void> {
     return this.deps.augmentDraftUseCase.applyAugmentedDraft(request);
+  }
+
+  public archiveDraftWhenHistoryIsKept(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+  ): Promise<string | undefined> {
+    return this.deps.draftHistoryArchiver.archiveWhenHistoryIsKept(workspaceRoot, sceneStem);
   }
 
   public condense(request: CondenseDraftRequest): Promise<CondenseDraftResult> {

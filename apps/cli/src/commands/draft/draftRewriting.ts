@@ -69,7 +69,6 @@ export class DraftRewriter {
       workspaceRoot: this.container.workspaceRoot,
       sceneStem: stem,
       body: replaceLines(body, range, transformed.text),
-      archivePrevious: this.container.configBridge.isKeepDraftHistoryEnabled(),
     });
 
     if (!saved.ok) {

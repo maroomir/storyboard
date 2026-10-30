@@ -9,6 +9,7 @@ import {
   type CompositionPreset,
   type RenameSceneResult,
   type SaveDraftEditResult,
+  type DraftArchivePolicy,
 } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
@@ -232,6 +233,10 @@ export class WorkspaceSession {
     return await new WorkspaceReader(this.container).readDraftDocument(stem);
   }
 
+  private archiveOncePerEditingSession(stem: string): DraftArchivePolicy {
+    return this.archivedStems.has(stem) ? 'never' : 'always';
+  }
+
   public async saveDraft(
     stem: string,
     body: string,
@@ -243,15 +248,13 @@ export class WorkspaceSession {
       return refusal;
     }
 
-    const archivePrevious: boolean =
-      reason === 'ai-edit'
-        ? this.container.configBridge.isKeepDraftHistoryEnabled()
-        : !this.archivedStems.has(stem);
+    const archive: DraftArchivePolicy =
+      reason === 'ai-edit' ? 'per-setting' : this.archiveOncePerEditingSession(stem);
     const savedEdit: SaveDraftEditResult = await this.container.drafts.saveEdit({
       workspaceRoot: this.container.workspaceRoot,
       sceneStem: stem,
       body,
-      archivePrevious,
+      archive,
     });
 
     if (!savedEdit.ok) {

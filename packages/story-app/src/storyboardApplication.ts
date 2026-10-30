@@ -46,6 +46,7 @@ import {
   RenameCardUseCase,
   ReviewManuscriptUseCase,
   ReviseAfterGenerateGate,
+  DraftHistoryArchiver,
   ReviseDraftUseCase,
   RenameSceneUseCase,
   SaveDraftEditUseCase,
@@ -158,6 +159,7 @@ interface EngineGraph {
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
+  readonly draftHistoryArchiver: DraftHistoryArchiver;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
   readonly seedScenesUseCase: SeedScenesUseCase;
@@ -351,6 +353,7 @@ function buildServices(
     renameSceneUseCase: new RenameSceneUseCase(host),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase(host, ai, repositories),
     reviseAfterGenerateGate,
+    draftHistoryArchiver: new DraftHistoryArchiver(host),
     reviseDraftUseCase,
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
