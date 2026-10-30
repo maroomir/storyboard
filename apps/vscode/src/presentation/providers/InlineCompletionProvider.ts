@@ -1,13 +1,10 @@
-import { SceneContextReader } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import type { DraftManager } from '@storyboard/story-app';
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import {
-  getStoryboardProjectPaths,
   isDraftMarkdownFile,
   sceneFilePath,
-  sceneContextPaths,
   STORYBOARD_GLOBS,
   parseDraft,
   readSceneFile,
@@ -16,7 +13,6 @@ import type {
   BackgroundCard,
   CharacterCard,
   SceneContext,
-  SceneContextWorkspacePaths,
   SceneFile,
   SceneFileNameParts,
   StoryUri,
@@ -38,6 +34,7 @@ const inlineMaxActiveCharacters: number = 3;
 export interface DraftInlineCompletionProviderDependencies {
   readonly aiGateway: AiGateway;
   readonly configBridge: ConfigBridge;
+  readonly drafts: Pick<DraftManager, 'readSceneContext'>;
 }
 
 interface InlineCompletionCacheValue {
@@ -212,11 +209,8 @@ export class DraftInlineCompletionProvider implements vscode.InlineCompletionIte
       const fileName: string = sceneUri.path.split('/').pop() ?? '';
       const scene: SceneFile = await readSceneFile(sceneUri, vscodeFsAdapter, fileName);
 
-      const paths: SceneContextWorkspacePaths = sceneContextPaths(
-        getStoryboardProjectPaths(workspaceFolder.uri),
-      );
-      const sceneContext: SceneContext = await new SceneContextReader(vscodeFileSystem).build(
-        paths,
+      const sceneContext: SceneContext = await this.dependencies.drafts.readSceneContext(
+        workspaceFolder.uri,
         scene,
       );
 

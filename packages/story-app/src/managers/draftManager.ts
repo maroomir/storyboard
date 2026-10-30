@@ -47,6 +47,7 @@ import type {
 } from '@storyboard/story-engine';
 import {
   ProjectRepository,
+  SceneContextReader,
   SceneNarrationResolver,
   type ChapterNarrationDefaults,
   type SceneThreadContext,
@@ -58,7 +59,10 @@ import {
   readSceneFile,
   scenePath,
   type Draft,
+  sceneContextPaths,
+  type NarrativeContext,
   type NarrationDirective,
+  type SceneContext,
   type SceneFile,
   type StoryboardProject,
   type StoryboardProjectPaths,
@@ -237,6 +241,23 @@ export class DraftManager {
 
   public generateStoryState(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {
     return this.deps.generateStoryStateUseCase.execute(request);
+  }
+
+  public readSceneContext(workspaceRoot: StoryUri, scene: SceneFile): Promise<SceneContext> {
+    return new SceneContextReader(this.deps.fileSystem).build(
+      sceneContextPaths(getStoryboardProjectPaths(workspaceRoot)),
+      scene,
+    );
+  }
+
+  public readSceneNarrative(
+    workspaceRoot: StoryUri,
+    context: SceneContext,
+  ): Promise<NarrativeContext> {
+    return new SceneContextReader(this.deps.fileSystem).buildNarrative(
+      sceneContextPaths(getStoryboardProjectPaths(workspaceRoot)),
+      context,
+    );
   }
 
   public async resolveSceneNarration(

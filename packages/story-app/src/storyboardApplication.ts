@@ -59,6 +59,9 @@ import {
   SeedScenesUseCase,
   StoryFeatureRepository,
   StudioChatUseCase,
+  StudioContextRepository,
+  StudioSessionRepository,
+  StudioFollowUpRepository,
   SummarizeChaptersUseCase,
   UpdateProjectContractUseCase,
   UsageMeter,
@@ -164,6 +167,10 @@ interface EngineGraph {
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
   readonly seedScenesUseCase: SeedScenesUseCase;
   readonly studioChatUseCase: StudioChatUseCase;
+  readonly studioContextRepository: StudioContextRepository;
+  readonly studioSessionRepository: StudioSessionRepository;
+  readonly studioFollowUpRepository: StudioFollowUpRepository;
+  readonly cardCollectRepository: CardCollectRepository;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
 }
@@ -358,6 +365,10 @@ function buildServices(
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
     studioChatUseCase: new StudioChatUseCase(host, ai),
+    studioContextRepository: new StudioContextRepository(fileSystem),
+    studioSessionRepository: new StudioSessionRepository(fileSystem),
+    studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
+    cardCollectRepository: new CardCollectRepository(fileSystem),
     summarizeChaptersUseCase,
     updateProjectContractUseCase: new UpdateProjectContractUseCase(host),
   };

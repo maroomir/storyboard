@@ -1,26 +1,20 @@
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import type { DraftManager, StudioManager } from '@storyboard/story-app';
 import * as vscode from 'vscode';
 
 import {
   extractDraftBody,
   parseDraft,
   serializeDraft,
-  archiveExistingDraft,
   applyStudioPatch,
   backgroundCardPath,
   characterCardPath,
-  draftHistorySceneDirectory,
-  joinUri,
 } from '@storyboard/story-model';
-
-import type { ConfigBridge } from '@storyboard/story-ai';
 
 import { StudioContextRepository, hashBaseline } from '@storyboard/story-engine';
 import type { StudioSceneFocus } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { IStudioFollowUpRepository, StudioEntityContext } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {
   StoryboardResponsePayload,
@@ -35,7 +29,8 @@ import { cardExists } from '@/presentation/messaging/studioCardToolResolver';
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;
   readonly followUpRepository: IStudioFollowUpRepository;
-  readonly configBridge: Pick<ConfigBridge, 'isKeepDraftHistoryEnabled'>;
+  readonly drafts: Pick<DraftManager, 'archiveDraftWhenHistoryIsKept'>;
+  readonly studio: Pick<StudioManager, 'context'>;
   readonly logger: Pick<IStoryboardLogger, 'warn'>;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly createFollowUpId: () => string;
@@ -110,7 +105,12 @@ export class StudioProposalRpc {
       return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
     }
 
-    const context: PatchableContextResult = await loadPatchableContext(root, entity, proposal);
+    const context: PatchableContextResult = await loadPatchableContext(
+      this.deps.studio.context,
+      root,
+      entity,
+      proposal,
+    );
 
     if (!context.ok) {
       return context;
@@ -127,10 +127,6 @@ export class StudioProposalRpc {
       return;
     }
 
-    if (!this.deps.configBridge.isKeepDraftHistoryEnabled()) {
-      return;
-    }
-
     const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
 
     if (!root) {
@@ -138,14 +134,7 @@ export class StudioProposalRpc {
     }
 
     try {
-      const historyDirectory: StoryUri = draftHistorySceneDirectory(root, entity.key);
-
-      await archiveExistingDraft({
-        draftUri: prepared.targetUri,
-        historyDirectory,
-        resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-        fileSystem: draftHistoryFileSystem,
-      });
+      await this.deps.drafts.archiveDraftWhenHistoryIsKept(root, entity.key);
     } catch (error) {
       this.deps.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
     }
@@ -204,13 +193,16 @@ interface PatchableContext {
 type PatchableContextResult = PatchableContext | PreparedApplyFailure;
 
 async function loadPatchableContext(
+  studioContext: StudioContextRepository,
   root: vscode.Uri,
   entity: StudioEntity,
   proposal: StudioProposalTurn,
 ): Promise<PatchableContextResult> {
-  const entityContext: StudioEntityContext | undefined = await new StudioContextRepository(
-    vscodeFileSystem,
-  ).readEntityContext(root, entity, sceneFocusOf(proposal.targetFile));
+  const entityContext: StudioEntityContext | undefined = await studioContext.readEntityContext(
+    root,
+    entity,
+    sceneFocusOf(proposal.targetFile),
+  );
 
   if (!entityContext?.targetUri || entityContext.baseline === undefined) {
     return { ok: false, message: '수정할 파일을 찾을 수 없습니다.' };

@@ -89,7 +89,7 @@ export class DraftModule implements IApplicationModule {
         ...slop.commands,
       ]),
       new CharacterHoverProvider().register(),
-      new DraftInlineCompletionProvider({ aiGateway, configBridge }).register(),
+      new DraftInlineCompletionProvider({ aiGateway, configBridge, drafts }).register(),
       grammar.register(),
       continuity.register(),
       slop.register(),

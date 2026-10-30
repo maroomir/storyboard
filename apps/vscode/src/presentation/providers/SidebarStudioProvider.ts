@@ -1,14 +1,11 @@
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import type { StudioDocumentManagers } from '@/presentation/messaging/studioToolResolver';
 import * as vscode from 'vscode';
-
-import type { ConfigBridge } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import type { IStudioSessionRepository } from '@storyboard/story-engine';
 import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
-import { StudioContextRepository } from '@storyboard/story-engine';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import {
   createWebviewBridge,
@@ -45,13 +42,13 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   public constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly sessionRepository: IStudioSessionRepository,
-    private readonly studio: Pick<StudioManager, 'chat'>,
+    private readonly studio: Pick<StudioManager, 'chat' | 'context'>,
     private readonly aiGateway: AiGateway,
     private readonly cards: Pick<CardManager, 'collectProposals' | 'create'>,
     private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
-    private readonly configBridge: ConfigBridge,
+    private readonly documents: StudioDocumentManagers,
     private readonly logger: IStoryboardLogger,
   ) {}
 
@@ -134,7 +131,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
 
         const target: StudioTarget = await computeStudioTarget(resolveActiveStudioFocus());
         return {
-          stage: await new StudioContextRepository(vscodeFileSystem).readStage(root, target),
+          stage: await this.studio.context.readStage(root, target),
         };
       },
       ...new StudioChatRpc({
@@ -143,7 +140,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         cards: this.cards,
         logger: this.logger,
         toolDiagnostics: this.toolDiagnostics,
-        configBridge: this.configBridge,
+        documents: this.documents,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         getTarget: () => computeStudioTarget(resolveActiveStudioFocus()),
         postProgress: (stage) => this.postChatProgress(stage),
@@ -157,7 +154,8 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       ...new StudioProposalRpc({
         reviewService: this.reviewService,
         followUpRepository: this.followUpRepository,
-        configBridge: this.configBridge,
+        drafts: this.documents.drafts,
+        studio: this.studio,
         logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         createFollowUpId: () => crypto.randomUUID(),

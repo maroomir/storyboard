@@ -1,5 +1,4 @@
-import { SceneContextReader, ProjectRepository } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import type { DraftManager, ProjectManager } from '@storyboard/story-app';
 import type * as vscode from 'vscode';
 
 import { formatAugmentCards } from '@storyboard/story-ai';
@@ -9,9 +8,7 @@ import type {
   StudioAgentToolSpan,
   ProjectFormat,
   SceneContext,
-  StoryboardProjectPaths,
   SceneFile,
-  SceneContextWorkspacePaths,
   NarrativeContext,
   StoryboardProject,
   UsageAttribution,
@@ -20,8 +17,6 @@ import {
   extractDraftBody,
   formatBibleFactLines,
   readSceneFile,
-  sceneContextPaths,
-  getStoryboardProjectPaths,
   scenePath,
 } from '@storyboard/story-model';
 
@@ -34,6 +29,15 @@ export interface StudioInvokeResolverDependencies {
   readonly aiGateway: AiGateway;
   readonly logger: IStoryboardLogger;
   readonly diagnostics: StudioToolDiagnostics;
+  readonly documents: StudioDocumentManagers;
+}
+
+export interface StudioDocumentManagers {
+  readonly drafts: Pick<
+    DraftManager,
+    'readSceneContext' | 'readSceneNarrative' | 'archiveDraftWhenHistoryIsKept'
+  >;
+  readonly project: Pick<ProjectManager, 'read'>;
 }
 
 export interface StudioInvokeResolverInput {
@@ -50,36 +54,6 @@ interface LoadedSceneContext {
   readonly sceneContext: SceneContext;
   readonly bibleFacts: NarrativeContext['bibleFacts'];
   readonly format: ProjectFormat;
-}
-
-async function loadSceneContext(
-  input: StudioInvokeResolverInput,
-): Promise<LoadedSceneContext | undefined> {
-  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(input.workspaceRoot);
-  const sceneFileName: string = `${input.sceneStem}.card`;
-
-  try {
-    const scene: SceneFile = await readSceneFile(
-      scenePath(input.workspaceRoot, input.sceneStem),
-      vscodeFsAdapter,
-      sceneFileName,
-    );
-    const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-    const sceneContext: SceneContext = await new SceneContextReader(vscodeFileSystem).build(
-      contextPaths,
-      scene,
-    );
-    const narrative: NarrativeContext = await new SceneContextReader(
-      vscodeFileSystem,
-    ).buildNarrative(contextPaths, sceneContext);
-    const project: StoryboardProject = await new ProjectRepository(vscodeFileSystem).read(
-      paths.projectJson,
-    );
-
-    return { sceneContext, bibleFacts: narrative.bibleFacts, format: project.format };
-  } catch {
-    return undefined;
-  }
 }
 
 function describeContinuityIssue(issue: ContinuityIssue): string {
@@ -123,8 +97,31 @@ export class StudioInvokeResolver {
     }
   };
 
+  private async loadSceneContext(): Promise<LoadedSceneContext | undefined> {
+    const { drafts, project } = this.deps.documents;
+    const { workspaceRoot, sceneStem } = this.input;
+
+    try {
+      const scene: SceneFile = await readSceneFile(
+        scenePath(workspaceRoot, sceneStem),
+        vscodeFsAdapter,
+        `${sceneStem}.card`,
+      );
+      const sceneContext: SceneContext = await drafts.readSceneContext(workspaceRoot, scene);
+      const narrative: NarrativeContext = await drafts.readSceneNarrative(
+        workspaceRoot,
+        sceneContext,
+      );
+      const { format }: StoryboardProject = await project.read(workspaceRoot);
+
+      return { sceneContext, bibleFacts: narrative.bibleFacts, format };
+    } catch {
+      return undefined;
+    }
+  }
+
   private async runContinuityCheck(): Promise<string> {
-    const scene: LoadedSceneContext | undefined = await loadSceneContext(this.input);
+    const scene: LoadedSceneContext | undefined = await this.loadSceneContext();
 
     if (!scene) {
       return '[도구 결과: continuityCheck] 씬 자료를 읽지 못해 검사를 건너뛰었다.';
@@ -222,7 +219,7 @@ export class StudioInvokeResolver {
       );
     }
 
-    const scene: LoadedSceneContext | undefined = await loadSceneContext(this.input);
+    const scene: LoadedSceneContext | undefined = await this.loadSceneContext();
 
     if (request.tool === 'condense') {
       return service.condenseDraft(

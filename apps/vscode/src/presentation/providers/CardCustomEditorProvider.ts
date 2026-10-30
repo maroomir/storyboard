@@ -1,4 +1,3 @@
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import { uriExists } from '@/infrastructure/vscode/workspace';
 import * as vscode from 'vscode';
 
@@ -35,7 +34,6 @@ import type {
   SceneStructureProposal,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { CardCollectRepository, NarratorCardRepository } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import {
   createWebviewBridge,
@@ -50,7 +48,7 @@ import { cardEditorViewType } from '@/contributionIds';
 export interface CardCustomEditorDependencies {
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
-  readonly cards: Pick<CardManager, 'collectProposals'>;
+  readonly cards: Pick<CardManager, 'collectProposals' | 'loadCharacterRoster' | 'listNarrators'>;
   readonly usageRecorder: UsageRecorder;
   readonly logger: IStoryboardLogger;
 }
@@ -127,6 +125,7 @@ async function initializeCardEditor(
   const initialData: CardEditorInitialData = await createInitialData(
     document,
     webviewPanel.webview,
+    dependencies.cards,
   );
 
   webviewPanel.webview.html = createWebviewHtml(webviewPanel.webview, {
@@ -146,7 +145,7 @@ async function initializeCardEditor(
         return;
       }
 
-      void postCardChanged(document, webviewPanel);
+      void postCardChanged(document, webviewPanel, dependencies.cards);
     },
   );
 
@@ -159,8 +158,13 @@ async function initializeCardEditor(
 async function postCardChanged(
   document: vscode.TextDocument,
   webviewPanel: vscode.WebviewPanel,
+  cards: CardCustomEditorDependencies['cards'],
 ): Promise<void> {
-  const payload: CardEditorInitialData = await createInitialData(document, webviewPanel.webview);
+  const payload: CardEditorInitialData = await createInitialData(
+    document,
+    webviewPanel.webview,
+    cards,
+  );
   await webviewPanel.webview.postMessage({
     type: 'event',
     method: 'cards.changed',
@@ -295,10 +299,11 @@ class CardEditorRpc {
   };
 }
 
-async function loadNarratorRoster(workspaceRoot: vscode.Uri): Promise<NarratorSummary[]> {
-  const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
-    vscodeFileSystem,
-  ).list(workspaceRoot);
+async function loadNarratorRoster(
+  cards: Pick<CardManager, 'listNarrators'>,
+  workspaceRoot: vscode.Uri,
+): Promise<NarratorSummary[]> {
+  const narrators: ReadonlyMap<string, NarratorCard> = await cards.listNarrators(workspaceRoot);
 
   return [...narrators.values()].map((card) => ({
     id: card.id,
@@ -315,6 +320,7 @@ async function loadNarratorRoster(workspaceRoot: vscode.Uri): Promise<NarratorSu
 async function createInitialData(
   document: vscode.TextDocument,
   webview: vscode.Webview,
+  cards: CardCustomEditorDependencies['cards'],
 ): Promise<CardEditorInitialData> {
   const rawText: string = document.getText();
   const workspaceRoot: vscode.Uri = getDocumentWorkspaceRoot(document);
@@ -322,11 +328,9 @@ async function createInitialData(
   try {
     const card: WorkspaceCard = await loadEditorCard(document);
     const characterRoster: readonly CharacterRosterEntry[] | undefined =
-      card.type === 'character'
-        ? await new CardCollectRepository(vscodeFileSystem).loadCharacterRoster(workspaceRoot)
-        : undefined;
+      card.type === 'character' ? await cards.loadCharacterRoster(workspaceRoot) : undefined;
     const narratorRoster: NarratorSummary[] | undefined =
-      card.type === 'scene' ? await loadNarratorRoster(workspaceRoot) : undefined;
+      card.type === 'scene' ? await loadNarratorRoster(cards, workspaceRoot) : undefined;
 
     return {
       documentUri: document.uri.toString(),

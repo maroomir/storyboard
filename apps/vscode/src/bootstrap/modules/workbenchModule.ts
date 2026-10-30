@@ -12,8 +12,6 @@ import { SettingsPanelProvider } from '@/presentation/providers/SettingsPanelPro
 import { SidebarStudioProvider } from '@/presentation/providers/SidebarStudioProvider';
 import { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import { ProviderStatusBarItem } from '@/presentation/statusBar/providerStatusBarItem';
-import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
-import { StudioFollowUpRepository, StudioSessionRepository } from '@storyboard/story-engine';
 
 import { CommandRegistrar } from '@/bootstrap/commandRegistrar';
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
@@ -31,6 +29,7 @@ export class WorkbenchModule implements IApplicationModule {
       aiProviderRegistry,
       cards,
       configBridge,
+      drafts,
       homeStores,
       logger,
       project,
@@ -46,6 +45,7 @@ export class WorkbenchModule implements IApplicationModule {
     });
     const relationGraphPanel: RelationGraphProvider = new RelationGraphProvider({
       aiProviderRegistry,
+      cards,
     });
     const settingsPanel: SettingsPanelProvider = new SettingsPanelProvider({
       aiProviderRegistry,
@@ -58,14 +58,14 @@ export class WorkbenchModule implements IApplicationModule {
     this.disposables.add(
       new SidebarStudioProvider(
         context.extensionUri,
-        new StudioSessionRepository(vscodeFileSystem),
+        studio.sessions,
         studio,
         aiGateway,
         cards,
         new StudioToolDiagnostics(),
         proposalReviewService,
-        new StudioFollowUpRepository(vscodeFileSystem),
-        configBridge,
+        studio.followUps,
+        { drafts, project },
         logger,
       ).register(),
       new CommandRegistrar().register([
