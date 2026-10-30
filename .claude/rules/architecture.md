@@ -49,6 +49,11 @@ of a class builds an instance).
 - Facade: `StoryboardApplication` is the one composition root and a manager fronts each domain; a
   further facade only when orchestration spans several services and the direct flow is no longer
   readable.
+- Apps speak to the engine only through manager verbs: an app never constructs an engine class, never
+  reads a setting the engine decides with, and never strings together a flow another app also needs —
+  that flow becomes one manager verb. `refuseEngineConstruction` in
+  `scripts/architecture/runner.mjs` fails an app that `new`s an engine class; the only exception is a
+  host-side piece its composition root hands in (the desktop's `UsageLedgerRecorder`).
 - Adapters keep external APIs and runtime-specific details out of domain code.
 - Abstraction follows variation: an `I`-port, a Strategy or a Factory needs at least two real
   implementations or a defined extension point. A single-use behaviour is a plain class (when it

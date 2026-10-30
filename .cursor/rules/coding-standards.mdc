@@ -221,7 +221,8 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI and the desktop must not import the engine's
   pipeline assembly symbols (`refusePipelineAssembly` in `scripts/architecture/runner.mjs` owns the
-  list).
+  list), and no app may construct an engine class (`refuseEngineConstruction`, with a per-app list of
+  host-side exceptions).
 - When a utility is needed in a second app or package (atomic write, hashing, a logger contract),
   promote the existing one into a shared package instead of re-implementing it locally.
 

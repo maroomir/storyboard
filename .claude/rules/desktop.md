@@ -10,7 +10,7 @@ extension; only its host adapters and screens are its own.
   `StoryboardApplication` (`drafts.generate`, `drafts.saveEdit`, `novel.run`, …) and never assembles
   pipeline stages.
   `apps/desktop/scripts/check-architecture.mjs` fails on an import of the engine's pipeline
-  assembly symbols.
+  assembly symbols and on constructing an engine class other than `UsageLedgerRecorder`.
 - **One process folder per Electron process.** `src/main` (Node), `src/preload`, `src/renderer`
   (browser) meet only through `src/shared` (the IPC contract, DTOs, messages). The architecture check
   enforces the allow-list, keeps Node builtins, `electron` and package barrels out of the renderer
