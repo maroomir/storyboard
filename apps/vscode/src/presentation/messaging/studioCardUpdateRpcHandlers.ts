@@ -1,23 +1,20 @@
 import * as vscode from 'vscode';
 
-import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
+import { createEmptyCard } from '@storyboard/story-model';
 import type {
   StudioCardSeed,
   StoryboardResponsePayload,
-  StoryUri,
-  Character,
-  LocationBackgroundCard,
   BibleSubjectKind,
 } from '@storyboard/story-model';
 
-import type { AiGateway } from '@storyboard/story-engine';
+import type { AiGateway, CreateCardResult } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 
 export interface StudioCardUpdateRpcHandlersDependencies {
   readonly aiGateway: AiGateway;
-  readonly cards: Pick<CardManager, 'exists' | 'write'>;
+  readonly cards: Pick<CardManager, 'create'>;
   readonly logger: IStoryboardLogger;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
 }
@@ -60,7 +57,22 @@ export class StudioCardUpdateRpc {
           seed.kind === 'character' ? 'character' : 'location';
         const instruction: string = fillInstruction(payload.description);
 
-        if (await this.deps.cards.exists(root, cardType, seed.id)) {
+        let created: CreateCardResult;
+
+        try {
+          created = await this.deps.cards.create({
+            workspaceRoot: root,
+            cardType,
+            id: seed.id,
+            whenIdIsTaken: 'refuse',
+            buildCard: (id) => createEmptyCard(cardType, id, seed.name),
+          });
+        } catch (error) {
+          this.deps.logger.warn(`Studio 카드 생성 실패: ${String(error)}`);
+          return { ok: false, message: '카드 파일을 만들지 못했어요.' };
+        }
+
+        if (!created.ok) {
           await openCardLeavingInstructionStagedOnFailure(root, seed);
           return {
             ok: true,
@@ -69,18 +81,7 @@ export class StudioCardUpdateRpc {
           };
         }
 
-        const card: Character | LocationBackgroundCard =
-          seed.kind === 'character'
-            ? createEmptyCharacter(seed.id, seed.name)
-            : createEmptyBackground(seed.id, seed.name);
-
-        try {
-          const uri: StoryUri = await this.deps.cards.write(root, card);
-          await vscode.window.showTextDocument(uri, { preview: true });
-        } catch (error) {
-          this.deps.logger.warn(`Studio 카드 생성 실패: ${String(error)}`);
-          return { ok: false, message: '카드 파일을 만들지 못했어요.' };
-        }
+        await vscode.window.showTextDocument(created.uri, { preview: true });
 
         return { ok: true, message: `${cardFile(seed)} 를 만들었어요.`, instruction };
       },

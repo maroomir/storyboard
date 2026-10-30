@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { CreateCardUseCase, type CreateCardRequest } from '@storyboard/story-engine';
+import { createTestRepositories } from '@storyboard/story-engine/testing';
+
 import { StudioCardUpdateRpc } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
 import type { StudioCardUpdateRpcHandlersDependencies } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
 
@@ -41,12 +44,19 @@ function harness(): Harness {
       getTaskProvider: () => 'mock',
     },
     cards: {
-      exists,
-      write: vi.fn(async (_root: unknown, card: unknown) => {
-        written.push(card);
-        const id = (card as { id: string }).id;
-        return vscode.Uri.file(`/workspace/character/${id}.card`);
-      }),
+      create: (request: CreateCardRequest) =>
+        new CreateCardUseCase(
+          createTestRepositories({
+            cardWriter: {
+              exists,
+              write: vi.fn(async (_root: unknown, card: unknown) => {
+                written.push(card);
+                const id = (card as { id: string }).id;
+                return vscode.Uri.file(`/workspace/character/${id}.card`);
+              }),
+            },
+          }),
+        ).execute(request),
     },
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
     getProjectRoot: async () => vscode.Uri.file('/workspace'),

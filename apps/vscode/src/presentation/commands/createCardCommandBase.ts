@@ -3,13 +3,13 @@ import * as vscode from 'vscode';
 
 import type { CardManager } from '@storyboard/story-app';
 import { getTargetWorkspaceFolder } from '@/infrastructure/vscode/workspace';
-import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
-import type { StoryboardCard, StoryUri } from '@storyboard/story-model';
+import { createEmptyCard, type StoryboardCard } from '@storyboard/story-model';
+import type { CreateCardResult } from '@storyboard/story-engine';
 import { cardEditorViewType } from '@/contributionIds';
 import { suggestCardId, validateCardId } from '@/presentation/commands/createCard';
 
 export interface CreateCardCommandDependencies {
-  readonly cards: Pick<CardManager, 'exists' | 'write'>;
+  readonly cards: Pick<CardManager, 'create'>;
 }
 
 export abstract class CreateCardCommandBase implements IExtensionCommand {
@@ -50,25 +50,18 @@ export abstract class CreateCardCommandBase implements IExtensionCommand {
       return;
     }
 
-    const card: StoryboardCard = createEmptyCard(cardType, id, name);
-    if (await this.dependencies.cards.exists(workspaceFolder.uri, card.type, card.id)) {
+    const created: CreateCardResult = await this.dependencies.cards.create({
+      workspaceRoot: workspaceFolder.uri,
+      cardType,
+      id,
+      whenIdIsTaken: 'refuse',
+      buildCard: (cardId) => createEmptyCard(cardType, cardId, name),
+    });
+    if (!created.ok) {
       await vscode.window.showWarningMessage(`이미 존재하는 카드입니다: ${id}`);
       return;
     }
 
-    const cardUri: StoryUri = await this.dependencies.cards.write(workspaceFolder.uri, card);
-    await vscode.commands.executeCommand('vscode.openWith', cardUri, cardEditorViewType);
+    await vscode.commands.executeCommand('vscode.openWith', created.uri, cardEditorViewType);
   }
-}
-
-function createEmptyCard(
-  cardType: StoryboardCard['type'],
-  id: string,
-  name: string,
-): StoryboardCard {
-  if (cardType === 'character') {
-    return createEmptyCharacter(id, name);
-  }
-
-  return createEmptyBackground(id, name);
 }
