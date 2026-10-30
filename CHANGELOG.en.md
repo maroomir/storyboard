@@ -23,6 +23,7 @@ after the first public release.
 - **The end-of-scene catchphrase warning no longer counts letters inside other words.** A catchphrase such as «이 몸» was also counted inside «윗사람이 몸소»; it now follows the actor loop's rule and counts only where the preceding character is not Hangul.
 - **Building cards from scenes recognises a name whose Hangul arrives decomposed.** A name in decomposed form (NFD, as macOS file names spell it) is normalised to NFC before it is matched, as the note import already did, so the same person no longer gets a second card.
 - **Parallel requests no longer refresh some providers' connection at the same time.** When parallel stages used a connection close to expiry, each refreshed it on its own and a later request could be rejected, dropping the connection. Only one refresh now runs per process, and a waiting request rereads the stored connection and uses it as it is.
+- **The extension's condense keeps the open draft in history.** When the file name differs from the front matter `sceneStem` (a copy or a rename), it archived the other draft named in the front matter or nothing at all; it now keeps the open document as it was before the condensed text is applied, under `.draft/`.
 
 ### Internal
 

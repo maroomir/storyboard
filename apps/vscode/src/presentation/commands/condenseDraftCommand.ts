@@ -193,6 +193,7 @@ export class CondenseDraftCommand implements IExtensionCommand {
       await this.dependencies.drafts.archiveDraftWhenHistoryIsKept(
         target.workspaceFolder.uri,
         target.draft.sceneStem,
+        target.editor.document.uri,
       );
     } catch (error) {
       this.dependencies.logger.warn(

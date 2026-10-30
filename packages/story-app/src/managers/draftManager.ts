@@ -219,8 +219,13 @@ export class DraftManager {
   public archiveDraftWhenHistoryIsKept(
     workspaceRoot: StoryUri,
     sceneStem: string,
+    draftUri?: StoryUri,
   ): Promise<string | undefined> {
-    return this.deps.draftHistoryArchiver.archiveWhenHistoryIsKept(workspaceRoot, sceneStem);
+    return this.deps.draftHistoryArchiver.archiveWhenHistoryIsKept(
+      workspaceRoot,
+      sceneStem,
+      draftUri,
+    );
   }
 
   public condense(request: CondenseDraftRequest): Promise<CondenseDraftResult> {
