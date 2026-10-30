@@ -33,9 +33,6 @@ import {
 } from '@storyboard/story-model';
 import {
   groupChapterStems,
-  NarratorCardRepository,
-  SceneNarrationResolver,
-  type ChapterNarrationDefaults,
   type IFileSystem,
   type SceneThreadContext,
 } from '@storyboard/story-engine';
@@ -252,9 +249,7 @@ export class WorkspaceReader {
     const warnings: string[] = [];
 
     const { narration, thread }: SceneNarrationNotes = await this.resolveSceneNarration(
-      paths,
       scene,
-      project,
       warnings,
     );
     const draft: DraftState = await readDraftState(fileSystem, draftPath(workspaceRoot, stem));
@@ -286,31 +281,13 @@ export class WorkspaceReader {
   }
 
   private async resolveSceneNarration(
-    paths: StoryboardProjectPaths,
     scene: SceneFile,
-    project: StoryboardProject,
     warnings: string[],
   ): Promise<SceneNarrationNotes> {
-    const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(
-      this.container.fileSystem,
-    );
-    const chapterDefaults: ChapterNarrationDefaults = await narrationResolver.readChapterDefaults(
-      paths,
-      scene.order,
-    );
-
-    const narration: NarrationSummary | undefined = await this.summarizeNarration(
-      paths,
+    const narration: NarrationSummary | undefined = await this.summarizeNarration(scene, warnings);
+    const thread: SceneThreadContext = await this.container.drafts.resolveSceneThread(
+      this.container.workspaceRoot,
       scene,
-      project,
-      chapterDefaults,
-      warnings,
-    );
-    const thread: SceneThreadContext = await narrationResolver.resolveThread(
-      paths,
-      scene,
-      project,
-      chapterDefaults.thread,
     );
 
     return { narration, thread };
@@ -404,16 +381,16 @@ export class WorkspaceReader {
   }
 
   private async summarizeNarration(
-    paths: StoryboardProjectPaths,
     scene: SceneFile,
-    project: StoryboardProject,
-    chapterDefaults: ChapterNarrationDefaults,
     warnings: string[],
   ): Promise<NarrationSummary | undefined> {
+    const { drafts, cards, workspaceRoot } = this.container;
+
     try {
-      const directive: NarrationDirective | undefined = await new SceneNarrationResolver(
-        this.container.fileSystem,
-      ).resolveNarration(paths, scene, project, chapterDefaults);
+      const directive: NarrationDirective | undefined = await drafts.resolveSceneNarration(
+        workspaceRoot,
+        scene,
+      );
 
       if (directive === undefined) {
         return undefined;
@@ -422,9 +399,7 @@ export class WorkspaceReader {
       const narratorName: string | undefined =
         directive.narratorId === undefined
           ? undefined
-          : (
-              await new NarratorCardRepository(this.container.fileSystem).list(paths.workspaceRoot)
-            ).get(directive.narratorId)?.name;
+          : (await cards.listNarrators(workspaceRoot)).get(directive.narratorId)?.name;
 
       return {
         ...(directive.person === undefined ? {} : { person: directive.person }),
