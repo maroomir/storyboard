@@ -2,12 +2,13 @@ import * as vscode from 'vscode';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import { stageProgressLabel } from '@/presentation/commands/sceneStageLabels';
 
-import {
-  describeReviseOutcome,
-  type GenerateDraftResult,
-  type ReviseDraftWorkflowResult,
-} from '@storyboard/story-engine';
-import type { DraftManager, RunGate } from '@storyboard/story-app';
+import { describeReviseOutcome, type ReviseDraftWorkflowResult } from '@storyboard/story-engine';
+import type {
+  DraftManager,
+  GenerateAndReviseDraftResult,
+  ReadyDraft,
+  RunGate,
+} from '@storyboard/story-app';
 import { confirmSceneGrounding } from '@/presentation/commands/confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
@@ -20,7 +21,7 @@ const GENERATE_SUCCESS_MESSAGE: string = '초안을 생성해 저장했습니다
 
 export interface GenerateDraftCommandDependencies {
   readonly runGate: Pick<RunGate, 'hold'>;
-  readonly drafts: Pick<DraftManager, 'generate' | 'reviseAfterGenerate'>;
+  readonly drafts: Pick<DraftManager, 'generateAndRevise'>;
 }
 
 export interface GenerateDraftOptions {
@@ -88,30 +89,26 @@ export abstract class GenerateDraftCommandBase implements IExtensionCommand {
   ): Promise<void> {
     reporter.progress.report({ message: '준비 중…' });
 
-    const draftGeneration: GenerateDraftResult = await this.requestDraft(
+    const { generation, revision }: GenerateAndReviseDraftResult = await this.requestDraft(
       sceneUri,
       shouldOverwrite,
       reporter,
     );
 
-    if (!draftGeneration.ok) {
-      if (draftGeneration.kind === 'failed') {
-        void showStoryboardFailure(draftGeneration.message);
+    if (!generation.ok) {
+      if (generation.kind === 'failed') {
+        void showStoryboardFailure(generation.message);
       }
       return;
     }
 
-    await openDraftResult(draftGeneration);
-
-    if (draftGeneration.kind === 'generated') {
-      await this.reviseGeneratedDraft(sceneUri, reporter);
-    }
+    await warnAboutRevision(revision);
 
     reporter.progress.report({
-      message: draftGeneration.kind === 'cache_hit' ? '캐시된 초안을 열었습니다.' : '완료',
+      message: generation.kind === 'cache_hit' ? '캐시된 초안을 열었습니다.' : '완료',
     });
     void vscode.window.showInformationMessage(
-      draftGeneration.kind === 'cache_hit'
+      generation.kind === 'cache_hit'
         ? CACHE_HIT_MESSAGE
         : shouldOverwrite
           ? REGENERATE_SUCCESS_MESSAGE
@@ -123,10 +120,13 @@ export abstract class GenerateDraftCommandBase implements IExtensionCommand {
     sceneUri: vscode.Uri,
     shouldOverwrite: boolean,
     { progress, token }: DraftProgressReporter,
-  ): Promise<GenerateDraftResult> {
-    return await this.dependencies.drafts.generate({
+  ): Promise<GenerateAndReviseDraftResult> {
+    return await this.dependencies.drafts.generateAndRevise({
       sceneUri,
       force: shouldOverwrite,
+      isReviseAllowed: true,
+      onDraftReady: openDraftResult,
+      onReviseProgress: (message) => progress.report({ message }),
       confirmSceneGrounding,
       onTraitsUpdateComplete: (summary) => {
         if (summary.updatedCardCount > 0) {
@@ -151,31 +151,21 @@ export abstract class GenerateDraftCommandBase implements IExtensionCommand {
       shouldCancel: () => token.isCancellationRequested,
     });
   }
-
-  private async reviseGeneratedDraft(
-    sceneUri: vscode.Uri,
-    { progress, token }: DraftProgressReporter,
-  ): Promise<void> {
-    const reviseResult: ReviseDraftWorkflowResult | undefined =
-      await this.dependencies.drafts.reviseAfterGenerate(sceneUri, {
-        onProgress: (message) => progress.report({ message }),
-        shouldCancel: () => token.isCancellationRequested,
-      });
-    const reviseWarning: string | undefined =
-      reviseResult && describeReviseOutcome(reviseResult).warning;
-    if (reviseWarning) {
-      await vscode.window.showWarningMessage(
-        reviseResult?.rejection
-          ? `${reviseWarning} Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`
-          : reviseWarning,
-      );
-    }
-  }
 }
 
-async function openDraftResult(
-  generated: Extract<GenerateDraftResult, { ok: true }>,
-): Promise<void> {
+async function openDraftResult(generated: ReadyDraft): Promise<void> {
   const document: vscode.TextDocument = await vscode.workspace.openTextDocument(generated.draftUri);
   await vscode.window.showTextDocument(document);
+}
+
+async function warnAboutRevision(revision: ReviseDraftWorkflowResult | undefined): Promise<void> {
+  const reviseWarning: string | undefined = revision && describeReviseOutcome(revision).warning;
+
+  if (reviseWarning) {
+    await vscode.window.showWarningMessage(
+      revision?.rejection
+        ? `${reviseWarning} Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`
+        : reviseWarning,
+    );
+  }
 }
