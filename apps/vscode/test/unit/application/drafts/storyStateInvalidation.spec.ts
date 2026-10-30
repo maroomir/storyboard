@@ -12,7 +12,7 @@ import type { FileSystemDirectoryEntry, IFileSystem } from "@storyboard/story-en
 import {
   StoryMemoryAuditor,
 } from "../../../../../../packages/story-engine/src/application/drafts/storyMemoryAuditor"
-import { toStoryStateEntries, updateStoryStateAfterGeneration } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
+import { StoryStateRecorder, toStoryStateEntries } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
 
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>()
@@ -314,7 +314,7 @@ describe("StoryMemoryAuditor.audit", () => {
 describe("ledger updates after generation", () => {
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn(), dispose: vi.fn() }
 
-  function generationOptions(fileSystem: MemoryWorkspace): never {
+  function recorderDependencies(fileSystem: MemoryWorkspace): never {
     return {
       host: { fileSystem, logger },
       ai: { gateway: { getTaskProvider: () => "provider:storyStateUpdate" } }
@@ -341,9 +341,8 @@ describe("ledger updates after generation", () => {
   it("records the scene input hash so the next audit has something to compare", async () => {
     const fileSystem = new MemoryWorkspace()
 
-    await updateStoryStateAfterGeneration(
+    await new StoryStateRecorder(recorderDependencies(fileSystem)).updateAfterGeneration(
       generationInputs(1, hashA),
-      generationOptions(fileSystem),
       aiService([{ section: "facts", text: "1화 사실" }]),
       "본문"
     )
@@ -355,9 +354,8 @@ describe("ledger updates after generation", () => {
     const fileSystem = new MemoryWorkspace()
     logger.warn.mockClear()
 
-    await updateStoryStateAfterGeneration(
+    await new StoryStateRecorder(recorderDependencies(fileSystem)).updateAfterGeneration(
       generationInputs(1, hashA),
-      generationOptions(fileSystem),
       aiService([{ section: "facts", text: "본 일", witnesses: ["낯선 이"] }]),
       "본문"
     )
@@ -373,9 +371,8 @@ describe("ledger updates after generation", () => {
       "# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1] 지켜야 할 사실\n"
     )
 
-    await updateStoryStateAfterGeneration(
+    await new StoryStateRecorder(recorderDependencies(fileSystem)).updateAfterGeneration(
       generationInputs(1, hashA),
-      generationOptions(fileSystem),
       aiService([]),
       "본문"
     )
@@ -446,7 +443,7 @@ describe("ledger updates after generation", () => {
       context: { characters: [{ id: "hana", name: "서한아", aliases: ["한서"] }, { id: "jun", name: "준" }] }
     } as never
 
-    await updateStoryStateAfterGeneration(inputs, generationOptions(fileSystem), service as never, "본문")
+    await new StoryStateRecorder(recorderDependencies(fileSystem)).updateAfterGeneration(inputs, service as never, "본문")
 
     expect(service.updateStoryState.mock.calls[0]?.[0]).toMatchObject({
       characterNames: ["서한아 (별칭: 한서)", "준"]
@@ -468,9 +465,8 @@ describe("ledger updates after generation", () => {
       ].join("\n")
     )
 
-    await updateStoryStateAfterGeneration(
+    await new StoryStateRecorder(recorderDependencies(fileSystem)).updateAfterGeneration(
       generationInputs(1, hashB),
-      generationOptions(fileSystem),
       aiService([{ section: "facts", text: "다시 만든 1화 사실" }]),
       "본문"
     )

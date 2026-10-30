@@ -8,7 +8,7 @@ import {
 } from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { StoryState, StoryStateUpdateItem } from '@storyboard/story-model';
-import type { GenerateDraftWorkflowOptions } from '#engine/application/drafts/draftGenerationContract';
+import type { AiServices, HostAdapters } from '#engine/application/engineServices';
 import type { SceneGenerationInputs } from '#engine/application/drafts/sceneGenerationInputs';
 
 export interface StoryStateEntryMapping {
@@ -88,55 +88,60 @@ export function witnessNameLabels(
   );
 }
 
-export async function updateStoryStateAfterGeneration(
-  inputs: SceneGenerationInputs,
-  options: GenerateDraftWorkflowOptions,
-  aiService: StoryboardAiService,
-  draftBody: string,
-): Promise<void> {
-  try {
-    await recordStoryStateFromDraft(inputs, options, aiService, draftBody);
-  } catch (error) {
-    options.host.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);
-  }
+export interface StoryStateRecorderDependencies {
+  readonly host: HostAdapters;
+  readonly ai: AiServices;
 }
 
-export async function recordStoryStateFromDraft(
-  inputs: SceneGenerationInputs,
-  options: GenerateDraftWorkflowOptions,
-  aiService: StoryboardAiService,
-  draftBody: string,
-): Promise<void> {
-  const { threadPaths, scene, context, inputHash } = inputs;
+export class StoryStateRecorder {
+  public constructor(private readonly dependencies: StoryStateRecorderDependencies) {}
 
-  const previous: StoryState = await readStoryState(
-    threadPaths.storyState,
-    options.host.fileSystem,
-  );
-  const items: StoryStateUpdateItem[] = await aiService.updateStoryState(
-    {
-      sceneTitle: scene.stem,
-      draftBody,
-      previousState: formatStoryStateForPrompt(previous, scene.order, draftBody),
-      characterNames: witnessNameLabels(context.characters),
-    },
-    {
-      providerId: options.ai.gateway.getTaskProvider('storyStateUpdate'),
-      attribution: { primary: { kind: 'scene', id: scene.stem } },
-    },
-  );
-
-  const mapping: StoryStateEntryMapping = toStoryStateEntries(items, context.characters);
-  if (mapping.unknownWitnesses.length > 0) {
-    options.host.logger.warn(
-      `${scene.stem}: 이야기 상태의 목격자 이름 ${mapping.unknownWitnesses.join(', ')}이(가) 등장인물 카드와 맞지 않아 그 항목은 씬의 모든 인물이 아는 것으로 기록했습니다. 가명·호칭이면 그 카드의 aliases 에 적어 주세요`,
-    );
+  public async updateAfterGeneration(
+    inputs: SceneGenerationInputs,
+    aiService: StoryboardAiService,
+    draftBody: string,
+  ): Promise<void> {
+    try {
+      await this.recordFromDraft(inputs, aiService, draftBody);
+    } catch (error) {
+      this.dependencies.host.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);
+    }
   }
 
-  const merged: StoryState =
-    items.length === 0
-      ? recordStoryStateScene(previous, scene.order, inputHash)
-      : mergeStoryState(previous, mapping.entries, scene.order, inputHash);
+  public async recordFromDraft(
+    inputs: SceneGenerationInputs,
+    aiService: StoryboardAiService,
+    draftBody: string,
+  ): Promise<void> {
+    const { host, ai } = this.dependencies;
+    const { threadPaths, scene, context, inputHash } = inputs;
 
-  await writeStoryState(threadPaths.storyState, merged, options.host.fileSystem);
+    const previous: StoryState = await readStoryState(threadPaths.storyState, host.fileSystem);
+    const items: StoryStateUpdateItem[] = await aiService.updateStoryState(
+      {
+        sceneTitle: scene.stem,
+        draftBody,
+        previousState: formatStoryStateForPrompt(previous, scene.order, draftBody),
+        characterNames: witnessNameLabels(context.characters),
+      },
+      {
+        providerId: ai.gateway.getTaskProvider('storyStateUpdate'),
+        attribution: { primary: { kind: 'scene', id: scene.stem } },
+      },
+    );
+
+    const mapping: StoryStateEntryMapping = toStoryStateEntries(items, context.characters);
+    if (mapping.unknownWitnesses.length > 0) {
+      host.logger.warn(
+        `${scene.stem}: 이야기 상태의 목격자 이름 ${mapping.unknownWitnesses.join(', ')}이(가) 등장인물 카드와 맞지 않아 그 항목은 씬의 모든 인물이 아는 것으로 기록했습니다. 가명·호칭이면 그 카드의 aliases 에 적어 주세요`,
+      );
+    }
+
+    const merged: StoryState =
+      items.length === 0
+        ? recordStoryStateScene(previous, scene.order, inputHash)
+        : mergeStoryState(previous, mapping.entries, scene.order, inputHash);
+
+    await writeStoryState(threadPaths.storyState, merged, host.fileSystem);
+  }
 }
