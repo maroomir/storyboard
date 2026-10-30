@@ -29,6 +29,7 @@ function createUseCase(): CondenseDraftUseCase {
   const host = {
     fileSystem: new NodeFileSystem(),
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() },
+    configBridge: { getMaxCompressionPercent: () => 30 },
   } as unknown as HostAdapters;
   const ai = {
     gateway: {
@@ -66,31 +67,16 @@ afterEach(() => {
 });
 
 describe('CondenseDraftUseCase', () => {
-  it('reads the scene context itself when the caller gives none', async () => {
+  it('reads the scene context itself', async () => {
     const result = await createUseCase().execute({
       workspaceRoot: NodeUri.file(directory),
       sceneStem: '01-pier',
       format: 'novel',
       body,
-      maxCompressionPercent: 30,
     });
 
     expect(result.ok).toBe(true);
     expect(condenseInputs[0]?.facts).toBeDefined();
     expect(condenseInputs[0]?.characterCards).toBeDefined();
-  });
-
-  it('keeps the context the caller gives', async () => {
-    await createUseCase().execute({
-      workspaceRoot: NodeUri.file(directory),
-      sceneStem: '01-pier',
-      format: 'novel',
-      body,
-      maxCompressionPercent: 30,
-      intent: '호출자가 준 의도',
-    });
-
-    expect(condenseInputs[0]?.intent).toBe('호출자가 준 의도');
-    expect(condenseInputs[0]?.facts).toBeUndefined();
   });
 });
