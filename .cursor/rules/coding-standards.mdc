@@ -84,8 +84,8 @@ for schema-first types and the error-class template. Generic readability and ver
   and counters carried through a loop are a small private class. Aim for 40 lines; eslint fails a
   function over 60 lines (blank lines and comments not counted) or over complexity 20
   (`scripts/lint/functionSizeRules.cjs`). React/Ink components and hooks, tests and the
-  composition roots (`buildServices`, `createCliContainer`, the bootstrap modules,
-  `createInvokeHandlers`) are exempt by file in each `.eslintrc.cjs`.
+  composition roots (`buildServices`, `createCliContainer`, the bootstrap modules) are exempt by
+  file in each `.eslintrc.cjs`.
 - **Use cases implement `IUseCase<Request, Result>`** (`story-engine/src/application/useCase.ts`):
   one `execute(request)` taking a single request object, expected failures returned through
   `runUseCase` / `failedResult`, never positional arguments. Apps do not call a use case: they call
