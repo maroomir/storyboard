@@ -36,17 +36,17 @@ describe('RunGate', () => {
   it('refuses while another app holds the workspace and names that holder', async () => {
     const fileSystem = new NodeFileSystem();
     const root = NodeUri.file(workspace);
-    const desktop = new RunGate({ fileSystem, owner: 'desktop' });
+    const extension = new RunGate({ fileSystem, owner: 'vscode' });
     const cli = new RunGate({ fileSystem, owner: 'cli' });
 
-    const acquired = await desktop.acquire(root, '장편 생성');
+    const acquired = await extension.acquire(root, '장편 생성');
     expect(acquired.ok).toBe(true);
 
     const held = await cli.hold(root, 'storyboard draft generate', async () => 'ran');
 
     expect(held.ok).toBe(false);
     if (!held.ok) {
-      expect(held.heldBy.owner).toBe('desktop');
+      expect(held.heldBy.owner).toBe('vscode');
       expect(held.message).toContain('장편 생성');
     }
 

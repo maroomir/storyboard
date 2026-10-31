@@ -15,6 +15,5 @@ export {
   resolveStoryboardHome,
   resolveStoryboardHomePaths,
   resolveWorkspaceConfigFile,
-  workspaceConfigRelativePath,
   type StoryboardHomePaths,
 } from '#config/home';

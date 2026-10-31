@@ -4,10 +4,10 @@ type WorkspaceRunLockVersion = 1;
 
 const workspaceRunLockVersion: WorkspaceRunLockVersion = 1;
 
-export type WorkspaceRunLockOwner = 'cli' | 'desktop' | 'vscode';
+export type WorkspaceRunLockOwner = 'cli' | 'vscode';
 
 export const workspaceRunLockOwners: readonly [WorkspaceRunLockOwner, ...WorkspaceRunLockOwner[]] =
-  ['cli', 'desktop', 'vscode'];
+  ['cli', 'vscode'];
 
 interface WorkspaceRunLockTiming {
   readonly heartbeatIntervalMs: number;
@@ -93,7 +93,6 @@ export function isWorkspaceRunLockStale(record: WorkspaceRunLockRecord, now: Dat
 export function describeWorkspaceRunLockHolder(record: WorkspaceRunLockHolder): string {
   const appLabel: Record<WorkspaceRunLockOwner, string> = {
     cli: 'CLI',
-    desktop: '데스크톱 앱',
     vscode: 'VSCode 확장',
   };
 

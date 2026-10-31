@@ -9,7 +9,7 @@ export interface StoryboardHomePaths {
   readonly cacheDirectory: string;
 }
 
-export const workspaceConfigRelativePath: string = '.storyboard/config.json';
+const workspaceConfigRelativePath: string = '.storyboard/config.json';
 
 export function expandHome(path: string): string {
   if (path === '~') {

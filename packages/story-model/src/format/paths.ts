@@ -1,6 +1,6 @@
 import { sampleCardFileName } from '#model/format/sampleCard';
 
-export interface StoryboardRelativePaths {
+interface StoryboardRelativePaths {
   readonly metadataDirectory: string;
   readonly projectJson: string;
   readonly cacheDirectory: string;

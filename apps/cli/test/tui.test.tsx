@@ -141,11 +141,11 @@ describe('readWorkspaceView', () => {
     const acquired = await acquireWorkspaceRunLock({
       fileSystem: new NodeFileSystem(),
       workspaceRoot: NodeUri.file(cwd),
-      holder: { owner: 'desktop', label: '소설 생성', pid: process.pid, hostname: 'here' },
+      holder: { owner: 'vscode', label: '소설 생성', pid: process.pid, hostname: 'here' },
     });
     expect(acquired.ok).toBe(true);
 
-    expect((await readWorkspaceView(cwd, '0')).lockHolder).toContain('데스크톱 앱');
+    expect((await readWorkspaceView(cwd, '0')).lockHolder).toContain('VSCode 확장');
   });
 
   it('reads the work status a home screen shows', async () => {
@@ -410,7 +410,7 @@ describe('StoryboardTui', () => {
   it('keeps a status line under the prompt', async () => {
     const view = {
       header: { workspaceLabel: '밤의 항해', providerLabel: 'mock' },
-      lockHolder: '데스크톱 앱이(가) «소설 생성» 작업 중입니다',
+      lockHolder: 'VSCode 확장이(가) «소설 생성» 작업 중입니다',
     };
     const { lastFrame } = render(
       <StoryboardTui
