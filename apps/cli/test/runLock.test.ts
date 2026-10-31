@@ -17,8 +17,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { commandCatalog } from '@/commands/index';
 import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
 
-const desktopHolder: WorkspaceRunLockHolder = {
-  owner: 'desktop',
+const extensionHolder: WorkspaceRunLockHolder = {
+  owner: 'vscode',
   label: '장편 생성',
   pid: 4242,
   hostname: 'writer-mac',
@@ -39,7 +39,7 @@ function lockFile(): string {
 }
 
 function plantLock(heartbeatAt: Date): void {
-  const record = createWorkspaceRunLockRecord(desktopHolder, 'desktop-token', heartbeatAt);
+  const record = createWorkspaceRunLockRecord(extensionHolder, 'extension-token', heartbeatAt);
   writeFileSync(lockFile(), serializeWorkspaceRunLock(record));
 }
 
@@ -83,7 +83,7 @@ describe('workspace run lock', () => {
 
     const second = await acquireWorkspaceRunLock({
       ...lockOptions(),
-      holder: desktopHolder,
+      holder: extensionHolder,
     });
     expect(second.ok).toBe(false);
     expect(second.ok ? undefined : second.heldBy.owner).toBe('cli');
@@ -120,7 +120,7 @@ describe('workspace run lock', () => {
       await acquired.lock.release();
     }
 
-    expect(readFileSync(lockFile(), 'utf8')).toContain('desktop-token');
+    expect(readFileSync(lockFile(), 'utf8')).toContain('extension-token');
   });
 });
 
@@ -131,7 +131,7 @@ describe('CLI verbs and the run lock', () => {
     const result = await new CommandDispatcher(deps()).dispatch(['project', 'set', '--genre', '판타지']);
 
     expect(result.exitCode).toBe(1);
-    expect(result.stdout).toContain('데스크톱 앱이(가) «장편 생성» 작업 중입니다');
+    expect(result.stdout).toContain('VSCode 확장이(가) «장편 생성» 작업 중입니다');
   });
 
   it('still answers read-only verbs while the workspace is held', async () => {

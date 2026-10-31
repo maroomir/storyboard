@@ -194,14 +194,6 @@ const socialBackgroundShape = {
   ...backgroundBaseShape,
 } satisfies z.ZodRawShape;
 
-export const characterCardSchema: z.ZodType<CharacterCard> = z.object(characterCardShape);
-export const locationBackgroundSchema: z.ZodType<LocationBackgroundCard> =
-  z.object(locationBackgroundShape);
-export const temporalBackgroundSchema: z.ZodType<TemporalBackgroundCard> =
-  z.object(temporalBackgroundShape);
-export const socialBackgroundSchema: z.ZodType<SocialBackgroundCard> =
-  z.object(socialBackgroundShape);
-
 export const cardSchema: z.ZodType<StoryboardCard> = z.discriminatedUnion('type', [
   z.object(characterCardShape),
   z.object(locationBackgroundShape),

@@ -54,8 +54,8 @@ describe("runHoldingWorkspaceLock", () => {
   it("does not run and warns when another app holds the workspace", async () => {
     const fileSystem = createMemoryFileSystem()
     const record = createWorkspaceRunLockRecord(
-      { owner: "desktop", label: "장편 생성", pid: 1, hostname: "writer" },
-      "desktop-token",
+      { owner: "cli", label: "장편 생성", pid: 1, hostname: "writer" },
+      "cli-token",
       new Date()
     )
     fileSystem.files.set(lockPath, new TextEncoder().encode(serializeWorkspaceRunLock(record)))
@@ -65,6 +65,6 @@ describe("runHoldingWorkspaceLock", () => {
     await runHoldingWorkspaceLock(new RunGate({ fileSystem, owner: "vscode" }), workspaceRoot, "초안 생성", run)
 
     expect(run).not.toHaveBeenCalled()
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("데스크톱 앱이(가) «장편 생성»"))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("CLI이(가) «장편 생성»"))
   })
 })

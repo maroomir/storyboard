@@ -1686,7 +1686,7 @@ describe('novel generate again', () => {
     await acquireWorkspaceRunLock({
       fileSystem: app.fileSystem,
       workspaceRoot: app.workspaceRoot,
-      holder: { owner: 'desktop', label: '장편 생성', pid: 1, hostname: 'test' },
+      holder: { owner: 'vscode', label: '장편 생성', pid: 1, hostname: 'test' },
     });
 
     expect(await lookup()).toBeUndefined();

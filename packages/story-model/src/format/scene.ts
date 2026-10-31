@@ -53,10 +53,6 @@ export function sceneBeatText(beat: SceneBeat): string {
   return typeof beat === 'string' ? beat : beat.text;
 }
 
-export function sceneBeatTexts(beats: readonly SceneBeat[] | undefined): string[] {
-  return (beats ?? []).map(sceneBeatText);
-}
-
 export interface UnknownBeatCast {
   readonly beat: number;
   readonly ref: string;

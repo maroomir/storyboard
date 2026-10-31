@@ -47,8 +47,8 @@ function writeLegacyStoryState(): void {
 
 function holdRunLockFromAnotherApp(): void {
   const record = createWorkspaceRunLockRecord(
-    { owner: 'desktop', label: '소설 생성', pid: 1, hostname: 'elsewhere' },
-    'desktop-token',
+    { owner: 'vscode', label: '소설 생성', pid: 1, hostname: 'elsewhere' },
+    'extension-token',
     new Date(),
   );
   writeFileSync(
