@@ -2,10 +2,12 @@ import { matchesAnyGlob } from './glob.mjs';
 
 // Turns a list of changed files into the checks to run: a file belongs to the first area whose
 // paths match it, every area touched contributes its checks, and a file no row claims is reported
-// so the table cannot silently rot as folders are added.
+// so the table cannot silently rot as folders are added. A deleted file no row claims is only
+// counted: its row went with it, and there is nothing left to check.
 
-export function planImpact(changedFiles, impactMap) {
+export function planImpact(changedFiles, impactMap, deletedFiles = []) {
   const ignored = [];
+  const removed = [];
   const unmapped = [];
   const filesByArea = new Map();
 
@@ -17,7 +19,7 @@ export function planImpact(changedFiles, impactMap) {
 
     const area = impactMap.areas.find((candidate) => matchesAnyGlob(candidate.paths, file));
     if (area === undefined) {
-      unmapped.push(file);
+      (deletedFiles.includes(file) ? removed : unmapped).push(file);
       continue;
     }
 
@@ -42,7 +44,7 @@ export function planImpact(changedFiles, impactMap) {
     }
   }
 
-  return { areas, checks: mergeTestRuns(checks), ignored, unmapped };
+  return { areas, checks: mergeTestRuns(checks), ignored, removed, unmapped };
 }
 
 const testRunPattern = /^npm run test --workspace (\S+)(?: -- (.+))?$/;
@@ -91,6 +93,9 @@ export function formatImpactPlan(range, changedCount, plan) {
   }
   if (plan.ignored.length > 0) {
     lines.push(`  ${'(ignored)'.padEnd(22)} ${plan.ignored.length} files`);
+  }
+  if (plan.removed.length > 0) {
+    lines.push(`  ${'(removed)'.padEnd(22)} ${plan.removed.length} files`);
   }
   for (const file of plan.unmapped) {
     lines.push(`  !! unmapped: ${file}`);

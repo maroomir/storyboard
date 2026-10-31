@@ -56,7 +56,7 @@ jobs. Its steps are also separate scripts:
 - `npm run bvt:impact` — the impact map (`bvt/impactMap.json`): the changed files pick the areas
   they touch, and the checks of those areas run — focused tests plus what `verify` does not run,
   such as the bundles and the prompt-resource check. A changed file that belongs to no area fails
-  the run; give it a row. `node scripts/bvt/runImpactMap.mjs v0.12.1 --plan` prints the plan for
+  the run; give it a row. A deleted file that no area claims is only counted. `node scripts/bvt/runImpactMap.mjs v0.12.1 --plan` prints the plan for
   another range without running it.
 - `npm run bvt:golden` — golden workspaces (`bvt/golden/`): the built CLI drives each scenario in
   `scenarios.json` with the `mock` provider and every file the work would commit is compared with

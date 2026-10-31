@@ -22,14 +22,15 @@ interface ImpactPlan {
   readonly areas: readonly { id: string; files: string[]; checks: readonly string[] }[];
   readonly checks: readonly { run: string; areas: string[] }[];
   readonly ignored: readonly string[];
+  readonly removed: readonly string[];
   readonly unmapped: readonly string[];
 }
 
 const repoRoot = join(__dirname, '..', '..', '..');
 const impactMap = JSON.parse(readFileSync(join(repoRoot, 'bvt/impactMap.json'), 'utf8')) as ImpactMap;
 
-function plan(files: readonly string[]): ImpactPlan {
-  return planImpact(files, impactMap) as ImpactPlan;
+function plan(files: readonly string[], deletedFiles: readonly string[] = []): ImpactPlan {
+  return planImpact(files, impactMap, deletedFiles) as ImpactPlan;
 }
 
 describe('impact map', () => {
@@ -90,5 +91,14 @@ describe('impact map', () => {
 
     expect(result.unmapped).toEqual(['tools/newThing/index.ts']);
     expect(formatImpactPlan('v1..HEAD', 1, result)).toContain('!! unmapped: tools/newThing/index.ts');
+  });
+
+  it('counts a deleted file no row claims instead of failing on it', () => {
+    const result = plan(['tools/oldThing/index.ts', 'apps/cli/src/index.ts'], ['tools/oldThing/index.ts', 'apps/cli/src/index.ts']);
+
+    expect(result.unmapped).toEqual([]);
+    expect(result.removed).toEqual(['tools/oldThing/index.ts']);
+    expect(result.areas.map((area) => area.id)).toEqual(['cli']);
+    expect(formatImpactPlan('v1..HEAD', 2, result)).toContain('(removed)');
   });
 });

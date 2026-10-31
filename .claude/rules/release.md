@@ -26,7 +26,7 @@ in `bvt/`, and each step is also its own script:
   first area whose `paths` match owns it; the checks of every touched area run once each (test runs
   of one workspace are merged into one vitest start), with `STORYBOARD_HOME` pointed at an empty
   directory so the machine's config cannot change the answer. **A file no row claims fails the
-  run**, and `apps/cli/test/bvtImpactMap.test.ts` fails as soon as a tracked file has no row, so a
+  run** (a deleted one is only counted, since its row went with it), and `apps/cli/test/bvtImpactMap.test.ts` fails as soon as a tracked file has no row, so a
   new folder gets its row before it ships. `--plan` prints the checks without running them. An
   area's checks are the focused tests of what it changes plus what `verify` does not run: the
   bundles, the prompt-resource check, the workflow YAML parse.
