@@ -9,7 +9,7 @@ assembly. Every step is a file in the work's repository, so any stage can be ins
 rerun. The core is not one giant prompt but scene-by-scene generation that is fed the previous
 prose, the canon, and a story-state ledger.
 
-Three apps share one engine. A work is a git repository, and the AI key is the writer's own
+Two apps share one engine. A work is a git repository, and the AI key is the writer's own
 (`~/.storyboard/secrets.json`). Claude Max subscribers can create that key with the monthly API
 credits their plan includes: [`API_KEY_GUIDE.md`](API_KEY_GUIDE.md) (Korean).
 
@@ -17,7 +17,6 @@ credits their plan includes: [`API_KEY_GUIDE.md`](API_KEY_GUIDE.md) (Korean).
 |---|---|---|
 | **CLI** `storyboard` | Terminal users and AI agents                       | The reference implementation; every feature is one command away |
 | **VS Code extension** | Writers who want cards, scenes and drafts inside the editor | Card editor, draft diagnostics, the Studio panel |
-| **Desktop app** | Writers without developer tools | A manuscript desk, a run drawer, automatic version history |
 
 ## Install
 
@@ -32,9 +31,6 @@ curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/in
 ```bash
 code --install-extension storyboard-vscode-*.vsix
 ```
-
-**Desktop app** — download the `.dmg` (macOS) or `-setup.exe` (Windows) from the
-[latest release](https://github.com/maroomir/storyboard/releases/latest) and run it.
 
 ## One cycle
 
@@ -64,7 +60,6 @@ An npm-workspaces monorepo. Packages expose TypeScript source with no build step
 | --- | --- | --- |
 | [`apps/vscode`](apps/vscode/) | `storyboard-vscode` | The VS Code extension: a fiction-writing IDE |
 | [`apps/cli`](apps/cli/) | `@storyboard/cli` | The CLI (`storyboard`): the headline product and reference implementation |
-| [`apps/desktop`](apps/desktop/) | `@storyboard/desktop` | The desktop app for writers (Electron; macOS Apple Silicon and Windows) |
 | [`packages/story-app`](packages/story-app/) | `@storyboard/story-app` | The composition root and manager facades every app shares |
 | [`packages/story-engine`](packages/story-engine/) | `@storyboard/story-engine` | Runtime-agnostic core: use cases, persistence, host ports, the scene and novel pipelines |
 | [`packages/story-model`](packages/story-model/) | `@storyboard/story-model` | File format (schemas, codecs, path conventions, shared fixtures), contracts, pure policies |
@@ -78,15 +73,14 @@ An npm-workspaces monorepo. Packages expose TypeScript source with no build step
 ```bash
 npm ci            # install every workspace from the root
 npm run lint      # architecture checks, eslint, tsc, prettier for every workspace
-npm test          # the three apps' tests; they run on the mock provider, no API key needed
-npm run build     # bundle the extension, the CLI and the desktop app
+npm test          # both apps' tests; they run on the mock provider, no API key needed
+npm run build     # bundle the extension and the CLI
 npm run package:vsix   # package the extension (written to apps/vscode/)
 npm run cli:build      # bundle the CLI (apps/cli/dist/)
-npm run desktop:dev    # run the desktop app in development
 ```
 
-Usage lives in the [extension](apps/vscode/README.en.md), [CLI](apps/cli/README.md) and
-[desktop](apps/desktop/README.md) READMEs; the structure and file formats of a work in
+Usage lives in the [extension](apps/vscode/README.en.md) and [CLI](apps/cli/README.md) READMEs;
+the structure and file formats of a work in
 [`ARCHITECTURE.md`](ARCHITECTURE.md) (Korean); the release process in [`RELEASE.md`](RELEASE.md).
 
 ## Contributing

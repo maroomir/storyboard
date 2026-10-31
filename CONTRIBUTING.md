@@ -1,8 +1,8 @@
 # Contributing to Storyboard
 
 Storyboard generates long-form fiction in small, inspectable steps: a project contract, cards,
-an outline, scene seeds, scene drafts, reviews, and an assembled manuscript. Three apps (a VS Code
-extension, a CLI and a desktop app) run the same engine. The goal is a tool many writers use, so
+an outline, scene seeds, scene drafts, reviews, and an assembled manuscript. Two apps (a VS Code
+extension and a CLI) run the same engine. The goal is a tool many writers use, so
 contributions of any size are welcome — new features and changes to existing behavior as much as bug
 fixes. Small, focused pull requests get the fastest turnaround; for a larger change, open an issue
 first so the direction is agreed before the code is written.
@@ -17,8 +17,8 @@ provider.
 ```bash
 npm ci              # install every workspace from the root
 npm run lint        # architecture checks, eslint, tsc, prettier — for every workspace
-npm test            # the three apps' test suites (packages are tested through the apps)
-npm run build       # bundle the extension, the CLI and the desktop app
+npm test            # both apps' test suites (packages are tested through the apps)
+npm run build       # bundle the extension and the CLI
 npm run cli:build && node apps/cli/dist/index.mjs --help
 ```
 
@@ -34,11 +34,10 @@ green too.
 | `packages/story-engine` | Use cases, repositories, the ports a host implements, the scene and novel generation stages |
 | `packages/story-app` | `StoryboardApplication`: builds the object graph once for every app |
 | `packages/story-config` | `~/.storyboard`: config layers, the 0600 secrets file, watchers |
-| `packages/story-node` | Node adapters shared by the CLI and the desktop app |
+| `packages/story-node` | Node adapters the CLI runs on |
 | `packages/story-sim` | Quality and cost measurement (knob sweeps, reader panel) |
 | `apps/cli` | The reference implementation. Every verb calls the engine; it owns no orchestration |
 | `apps/vscode` | The extension: VS Code adapters, commands, the webview |
-| `apps/desktop` | Electron: main, preload and renderer meet only through `src/shared` |
 
 `ARCHITECTURE.md` describes the workspace a writer sees. The rules under `.claude/rules/` are the
 detailed conventions; `coding-standards.md` and `clean-code.md` are the two to read before a larger
@@ -57,8 +56,6 @@ Typical changes and what they touch:
 - **An extension command**: `apps/vscode/package.json`, its registration, and a CLI verb or a
   documented exemption. `apps/cli/test/parity.test.ts` fails when the extension gains a command the
   CLI cannot run.
-- **A desktop screen**: the IPC channel in `src/shared/ipcContract.ts` with its zod schema, the
-  handler, and strings added to `src/shared/i18n/ko.ts` first (`en.ts` is typed against it).
 
 ## What the checks enforce
 
@@ -109,6 +106,5 @@ Welcome. Storyboard is itself a tool that agents drive, and this repository ship
 
 ## Reporting problems
 
-Bugs and feature requests go to GitHub issues using the templates. Anything touching API keys,
-file writes outside the workspace, or the desktop app's git operations goes through `SECURITY.md`
-instead.
+Bugs and feature requests go to GitHub issues using the templates. Anything touching API keys or
+file writes outside the workspace goes through `SECURITY.md` instead.

@@ -16,7 +16,7 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 
 ## Project Assumptions
 
-- `storyboard` is three apps over one engine: a VSCode extension, a CLI and a desktop app for writers. The CLI is the reference implementation.
+- `storyboard` is two apps over one engine: a VSCode extension and a CLI. The CLI is the reference implementation.
 - Cline is a reference project, not a dependency contract.
 - The repository is currently minimal, so distinguish existing implementation from intended architecture.
 - Prefer incremental scaffolding over copying Cline's full structure prematurely.

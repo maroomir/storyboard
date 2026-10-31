@@ -70,7 +70,7 @@ alwaysApply: true
 
 ## Current layout
 
-The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with three apps over one engine (extension, CLI, desktop). The inner layers live in `packages/story-model` and `packages/story-engine`; each app supplies host adapters and nothing else.
+The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with two apps over one engine (extension, CLI). The inner layers live in `packages/story-model` and `packages/story-engine`; each app supplies host adapters and nothing else.
 
 ```text
 packages/story-model/src/     # model ← ai ← engine ← app

@@ -139,8 +139,8 @@ storyboard novel generate
 storyboard manuscript assemble && storyboard manuscript review
 ```
 
-`novel generate` is unattended: every approval gate is passed automatically, and a run the desktop
-app or the extension started in an approval mode is continued the same way. At a terminal it asks
+`novel generate` is unattended: every approval gate is passed automatically, and a run the extension
+started in an approval mode is continued the same way. At a terminal it asks
 whether to continue an interrupted run or start over; in a pipe or with `--json` it continues.
 
 `outline generate` refuses until the contract names a genre, an audience, a point of view and a

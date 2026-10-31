@@ -133,7 +133,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
 | `.draft/` | 덮어쓰기 전 이전 초안 히스토리 (`editor.draft.keepHistory` 활성 시) | **제외** (재생성 가능) |
 | `manuscript/` | chapter/volume로 조립한 원고 | **제외** (재생성 가능) |
-| `AGENTS.md`, `CLAUDE.md` | 작품 저장소에서 도는 코딩 에이전트가 본문을 직접 쓰지 않고 `storyboard` CLI를 거치게 하는 지침. 세 앱의 init이 없을 때만 쓰고 `storyboard init --repair`가 빠진 것만 채운다. 작가가 «작품 메모» 절을 채운다 | 추적 |
+| `AGENTS.md`, `CLAUDE.md` | 작품 저장소에서 도는 코딩 에이전트가 본문을 직접 쓰지 않고 `storyboard` CLI를 거치게 하는 지침. 두 앱의 init이 없을 때만 쓰고 `storyboard init --repair`가 빠진 것만 채운다. 작가가 «작품 메모» 절을 채운다 | 추적 |
 
 ## 4. 파일 포맷 명세
 
@@ -1109,13 +1109,12 @@ ReviewIssue {
 
 저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. **버전도 루트 하나**이며 `npm run version:sync`가 두 앱에 복제한다.
 
-앱은 셋이고 서로를 모른다. 모두 `packages/story-engine`(유즈케이스·저장 계층·파이프라인)과 그 아래 `packages/story-model`(파일 포맷·계약·도메인 정책·경로 규칙)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록. Node 위에서 도는 앱이 똑같이 쓰는 파일시스템(`NodeFileSystem`)과 워크스페이스 탐색(`NodeWorkspaceLocator`)은 `packages/story-node`에 한 벌만 둔다. 어댑터를 받아 엔진의 객체 그래프(리포지토리·유즈케이스·NovelPipeline)를 한 번 조립하는 컴포지션 루트는 `packages/story-app`의 `StoryboardApplication`이고, 각 앱의 컨테이너는 자기 어댑터만 만들어 넘긴다. 앱은 그 위의 매니저(`drafts`·`manuscript`·`cards`·`novel`·`studio`)의 동사만 부르고, 유즈케이스는 `IUseCase<Request, Result>` 한 형태(`execute(request)`)를 구현한다.
+앱은 둘이고 서로를 모른다. 모두 `packages/story-engine`(유즈케이스·저장 계층·파이프라인)과 그 아래 `packages/story-model`(파일 포맷·계약·도메인 정책·경로 규칙)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록. Node 위에서 도는 앱이 똑같이 쓰는 파일시스템(`NodeFileSystem`)과 워크스페이스 탐색(`NodeWorkspaceLocator`)은 `packages/story-node`에 한 벌만 둔다. 어댑터를 받아 엔진의 객체 그래프(리포지토리·유즈케이스·NovelPipeline)를 한 번 조립하는 컴포지션 루트는 `packages/story-app`의 `StoryboardApplication`이고, 각 앱의 컨테이너는 자기 어댑터만 만들어 넘긴다. 앱은 그 위의 매니저(`drafts`·`manuscript`·`cards`·`novel`·`studio`)의 동사만 부르고, 유즈케이스는 `IUseCase<Request, Result>` 한 형태(`execute(request)`)를 구현한다.
 
 | 앱 | 워크스페이스 | 실행 이름 |
 |---|---|---|
 | VSCode 확장 | `apps/vscode` (`storyboard-vscode`) | 확장 ID `maroomir.storyboard-vscode` |
 | CLI | `apps/cli` (`@storyboard/cli`) | `storyboard` — 헤드라인 제품이자 레퍼런스 구현 |
-| 데스크톱 | `apps/desktop` (`@storyboard/desktop`) | Storyboard 앱(Electron) — 개발자가 아닌 작가용. 원고 중심 책상 + 실행 서랍, 설정집, 자동 버전 기록 |
 
 CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test.ts`가 확장의 `contributes.commands` 전 항목을 CLI 동사·에디터 전용·미구현 중 하나로 분류하도록 강제한다.
 
@@ -1164,7 +1163,7 @@ apps/vscode/src/extension.ts
 
 - `apps/vscode`: `extension.ts`의 fan-out, `infrastructure → presentation/bootstrap` 금지, 순환 금지,
   공유 패키지의 `vscode`·앱 import 금지.
-- `apps/cli`·`apps/desktop`: 레이어 방향과 순환 금지. 엔진의 파이프라인 조립 심볼
+- `apps/cli`: 레이어 방향과 순환 금지. 엔진의 파이프라인 조립 심볼
   (`scripts/architecture/runner.mjs`의 `refusePipelineAssembly`) import도 거부한다(생성 루프의 두 번째 사본 방지).
 - `packages/story-model`: 자체 레이어 방향 — `format` 은 자기만, `contracts` 는 `contracts`/`format` 만,
   이어서 `shared`·`domain`·`paths` 는 각각 자기보다 앞선 것만 import 한다. 순환도 막는다.

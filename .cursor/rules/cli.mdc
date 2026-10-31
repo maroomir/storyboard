@@ -28,8 +28,8 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
   repository yet — the ignore block is written first, so a fresh workspace is born tracked with
   nothing generated in reach of the first commit — but that first commit is still the user's.
 - **One writer per workspace.** A verb whose catalog entry says `writesWorkspace: true` takes
-  `.storyboard/cache/run.lock` for its duration and refuses (exit 1) while the desktop app, the
-  extension or another CLI holds it. Read-only verbs never wait on it. `apps/cli/test/runLock.test.ts`
+  `.storyboard/cache/run.lock` for its duration and refuses (exit 1) while the extension or another
+  CLI holds it. Read-only verbs never wait on it. `apps/cli/test/runLock.test.ts`
   fails when a verb is added without saying which kind it is.
 
 ## Command naming
@@ -108,7 +108,7 @@ redrawn in place in the `LiveArea` at the bottom of stderr (the logger writes ab
 the same log lines as before. Ctrl+C reaches a run through `PauseRequests`: a verb that can stop at
 a scene boundary calls `watch()` and passes it as `shouldPause`; without a watcher Ctrl+C still ends
 the process. Questions go through `container.prompter` (`IPrompter`), present only when a person
-can answer (a TTY or the TUI) — one-shot verbs never add a new question (the one exception: `novel generate` asks whether to continue an interrupted run or start over, and continues without asking when no one can answer; a continued run auto-approves every gate whatever mode the desktop or the extension saved it with, because nobody is there to answer), and `shouldConfirmPaidRuns`
+can answer (a TTY or the TUI) — one-shot verbs never add a new question (the one exception: `novel generate` asks whether to continue an interrupted run or start over, and continues without asking when no one can answer; a continued run auto-approves every gate whatever mode the extension saved it with, because nobody is there to answer), and `shouldConfirmPaidRuns`
 is the TUI's alone. A catalog entry with `rewritesDraft: true` gets a sentence diff of its draft on
 stderr after a successful run. The TUI's color preset is app-only state in `~/.storyboard/tui.json`.
 
