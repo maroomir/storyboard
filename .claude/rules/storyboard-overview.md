@@ -14,7 +14,6 @@ The apps share `packages/story-engine` and know nothing about each other. Only t
 |---|---|---|
 | `apps/vscode` | `storyboard-vscode` | The VSCode extension. Ships in the VSIX; its version is mirrored from the root manifest. |
 | `apps/cli` | `@storyboard/cli` | Command line app (`storyboard`). The headline product and reference implementation; other AI agents drive Storyboard through it. |
-| `apps/desktop` | `@storyboard/desktop` | Electron app for writers who are not developers: the manuscript desk with the run drawer, the story bible, automatic version history. Rules in `.claude/rules/desktop.md`. |
 | `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: use cases, repositories over the host ports, post-generation updaters, and both pipelines (`application/novel`, `pipeline/`). |
 | `packages/story-app` | `@storyboard/story-app` | The shared composition root: `StoryboardApplication` takes a host's six adapters and builds every repository, use case and the novel pipeline once. It exposes one manager per domain — `drafts`, `manuscript`, `cards`, `novel`, `project`, `workspace`, `studio`, `notes` — and the apps speak only to those. |
 | `packages/story-model` | `@storyboard/story-model` | Everything the other packages agree on, with no I/O: the workspace file format (`format/`: schemas, codecs, path conventions, the shared round-trip fixtures), the AI contracts and catalogs (`contracts/`), the RPC and card contracts (`shared/`), pure policies and file records (`domain/`) and project path rules (`paths/`). Its `/contracts` entry is the one browser-safe entry. |
@@ -89,9 +88,8 @@ What each check actually enforces, so a green run is not read as more than it is
   The inner layers left for the engine, so nothing here validates them any more.
 - `apps/cli` enforces its own ordered layer direction and rejects cycles, and additionally fails
   if it imports the engine's pipeline assembly symbols (`refusePipelineAssembly` in
-  `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. The
-  desktop applies the same rule. All three apps fail when they construct an engine class
-  (`refuseEngineConstruction`); the desktop's `UsageLedgerRecorder` is the one listed exception.
+  `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. Both
+  apps fail when they construct an engine class (`refuseEngineConstruction`).
 - `packages/story-model` — its own layer direction: `format` may import only itself, `contracts`
   only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; plus
   no cycles.

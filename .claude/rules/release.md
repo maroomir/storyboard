@@ -1,11 +1,11 @@
 # Release (versioned cuts)
 
-When preparing a Storyboard release (version bump, changelog, the extension/CLI/desktop artifacts, tag):
+When preparing a Storyboard release (version bump, changelog, the extension/CLI artifacts, tag):
 
 1. Follow the **`prepare-release`** skill (`.claude/skills/prepare-release/SKILL.md`).
 2. Match the repo-root **`RELEASE.md`** for the version commit contents, tag shape (`v` + semver), and GitHub Release workflow.
 
-The version lives in the **root `package.json`**; `npm run version:sync` mirrors it into `apps/vscode`, `apps/cli`, `apps/desktop` and the version the CLI prints, and `node scripts/sync-version.mjs --check` is what the release workflow enforces. Run `npm install` afterwards so the root `package-lock.json` follows. One `v*` tag ships every app: the VSIX, the CLI tarball, and the desktop installers with their update feed. **`CHANGELOG.md`** and **`CHANGELOG.en.md`** stay the source of the release notes — update both in the same change.
+The version lives in the **root `package.json`**; `npm run version:sync` mirrors it into `apps/vscode`, `apps/cli` and the version the CLI prints, and `node scripts/sync-version.mjs --check` is what the release workflow enforces. Run `npm install` afterwards so the root `package-lock.json` follows. One `v*` tag ships every app: the VSIX and the CLI tarball. **`CHANGELOG.md`** and **`CHANGELOG.en.md`** stay the source of the release notes — update both in the same change.
 
 ## Build verification test (BVT)
 
@@ -17,7 +17,7 @@ in `bvt/`, and each step is also its own script:
 - `bvt:contracts` — **diff contracts** (`scripts/bvt/diffContracts.mjs`): a change that has a
   mandatory companion must carry it in the same range — source ↔ both changelogs, a prompt
   resource ↔ its generated module, a params file ↔ its sibling schema and its coding-standards row,
-  the config schema ↔ a settings test, `ko.ts` ↔ `en.ts`, `.claude/rules` ↔ `.cursor/rules`, a
+  the config schema ↔ a settings test, `.claude/rules` ↔ `.cursor/rules`, a
   root version bump ↔ its `## [version]` section. The range is the newest `v*` tag that is an
   ancestor of HEAD (not HEAD itself) up to HEAD; pass another base ref as the first argument.
   Adding a rule is a row in `diffContractRules` plus a case in `apps/cli/test/bvtDiffContracts.test.ts`.
@@ -49,18 +49,14 @@ in `bvt/`, and each step is also its own script:
   prefix, the installed `storyboard` prints the version and drives a mock work through
   `novel generate`, `draft show`, `scene create`, `status --json` (stdout must parse as a JSON
   result) and `manuscript export`; the VSIX is unzipped and its manifest version, `main`, webview
-  page and changelog checked and the bundle parsed. `bvt:smoke:desktop` builds the desktop app and
-  starts it with `STORYBOARD_DESKTOP_SMOKE=1` (`scripts/bvt/smokeDesktop.sh dev`); the release
-  workflow runs the same on the **packaged** app in the `desktop` job on macOS and Windows.
+  page and changelog checked and the bundle parsed.
 
-`npm run bvt` runs the four in that order; `bvt:smoke:desktop` is separate because it needs the
-Electron binary, which the `bvt` runner does not download.
+`npm run bvt` runs the four in that order.
 
 ## Preflight before the tag
 
 **An agent never creates a release tag without `npm run release:preflight` passing on that commit.**
 `scripts/release-preflight.sh` runs what the tag would set off, minus the upload: the tree must be
 committed and on `main`, the version synced and untagged, both changelogs carrying a dated,
-non-empty `## [<version>]` section; then lint, the tests, `npm run bvt` and the desktop smoke
-(`-- --package` adds the packaged app for this platform). A tag that fails on GitHub is then the
-exception; the Windows app smoke is the one check only the workflow can do.
+non-empty `## [<version>]` section; then lint, the tests and `npm run bvt`. A tag that fails on
+GitHub is then the exception.

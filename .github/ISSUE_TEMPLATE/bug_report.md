@@ -17,14 +17,14 @@ labels: bug
 
 ## Environment
 
-- App: CLI / VS Code extension / desktop
-- Version: `storyboard -v`, or the extension or desktop version
+- App: CLI / VS Code extension
+- Version: `storyboard -v`, or the extension version
 - OS:
 - Provider and model (if generation is involved):
 
 ## Output
 
-<!-- The command's stderr, the extension's Output panel, or the desktop log. Remove anything that looks like a key. -->
+<!-- The command's stderr, or the extension's Output panel. Remove anything that looks like a key. -->
 
 ```text
 ```

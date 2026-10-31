@@ -1,7 +1,7 @@
 # Release Guide
 
 This guide describes how to publish a Storyboard release to GitHub Releases. One tag ships every
-app: the VSCode extension, the CLI and the desktop app.
+app: the VSCode extension and the CLI.
 
 ## Prerequisites
 
@@ -29,12 +29,12 @@ node scripts/sync-version.mjs --check   # what the release workflow enforces
 Before tagging, run everything the tag would set off, in one command on the version commit:
 
 ```bash
-npm run release:preflight            # -- --package also packages and smokes this platform's desktop app
+npm run release:preflight
 ```
 
 It checks that the tree is committed and on `main`, that the version is synced and not yet tagged,
 and that both changelogs carry a dated, non-empty `## [<version>]` section; then it runs lint, the
-tests, `npm run bvt` and the desktop smoke, and ends with `Preflight passed for v<version>`. Nothing
+tests and `npm run bvt`, and ends with `Preflight passed for v<version>`. Nothing
 is tagged or uploaded. The pieces are also available one by one:
 
 ```bash
@@ -51,7 +51,7 @@ jobs. Its steps are also separate scripts:
 - `npm run bvt:contracts` — diff contracts between the previous tag and HEAD: a change must carry
   its mandatory companion (source ↔ both changelogs, a prompt resource ↔ its generated module, a
   params file ↔ its schema and its coding-standards row, the config schema ↔ a settings test,
-  desktop `ko.ts` ↔ `en.ts`, `.claude/rules` ↔ `.cursor/rules`, a version bump ↔ its changelog
+  `.claude/rules` ↔ `.cursor/rules`, a version bump ↔ its changelog
   section). `node scripts/bvt/checkDiffContracts.mjs v0.12.1` checks another range.
 - `npm run bvt:impact` — the impact map (`bvt/impactMap.json`): the changed files pick the areas
   they touch, and the checks of those areas run — focused tests plus what `verify` does not run,
@@ -68,9 +68,7 @@ jobs. Its steps are also separate scripts:
 - `npm run bvt:smoke` — the artifact smoke: `scripts/package-release.sh` packages the VSIX, the
   CLI tarball and `install.sh` into a scratch directory, then `scripts/bvt/smoke.sh` installs the
   tarball with the real `install.sh`, drives a mock work with the installed `storyboard` and checks
-  the VSIX contents. `npm run bvt:smoke:desktop` builds the desktop app and starts it with
-  `STORYBOARD_DESKTOP_SMOKE=1`, which exits 0 once the first screen has rendered; the workflow runs
-  the same against the packaged app on each platform.
+  the VSIX contents.
 
 Reproduce the artifacts (the workflow runs the same script):
 
@@ -83,22 +81,12 @@ dependencies (the source manifest's `@storyboard/*` workspace entries are inline
 would make `npm install` in an unpacked tarball fail). `package-tarballs.sh` ships that manifest at
 the tarball root, never the source one.
 
-The desktop installers are built by the workflow on macOS and Windows runners. On your own machine
-you can build the ones for your platform (unsigned unless the signing variables below are set):
-
-```bash
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:mac --workspace @storyboard/desktop   # on macOS (arm64)
-npm run package:win --workspace @storyboard/desktop                                  # on Windows
-```
-
-Run the release scenario in `apps/desktop/DESKTOP_QA.md` on both platforms before tagging.
-
 ## Version commit
 
 The version commit should include at least:
 
 - `package.json` (the version) and `package-lock.json`
-- `apps/vscode/package.json`, `apps/cli/package.json`, `apps/desktop/package.json`
+- `apps/vscode/package.json`, `apps/cli/package.json`
 - `apps/cli/src/index.ts` (the printed version)
 - `CHANGELOG.md`, `CHANGELOG.en.md`
 
@@ -125,10 +113,6 @@ be synced to it — the workflow checks both and refuses otherwise.
 
 Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 
-Installers go from the platform job to the release directly, never through `actions/upload-artifact`.
-Artifact storage counts against the account's shared quota and release assets do not, so routing
-~600 MB per release through it would fill the quota and block unrelated repositories too.
-
 1. `verify` (ubuntu, Node 20) installs with `npm ci`, checks the tag matches the root version and
    that every app is synced to it, runs lint and tests from the repository root, then opens the
    release as a **draft** with no assets.
@@ -136,81 +120,13 @@ Artifact storage counts against the account's shared quota and release assets do
    under *Local verification*: the diff contracts, the impact map, the golden workspaces, then
    packages the VSIX and the CLI tarball and smokes them. A failure here leaves the draft release
    empty.
-3. `desktop` builds the installers on `macos-latest` and `windows-latest` (Node 22):
-   `storyboard-desktop-<version>-mac-arm64.dmg` and `.zip`, `storyboard-desktop-<version>-win-x64-setup.exe`,
-   their `.blockmap` files and the update feed `latest-mac.yml` / `latest.yml`. Signing is used when
-   its secrets exist (below); otherwise the job warns and ships unsigned installers. The packaged
-   app is then started in smoke mode and must render its first screen and exit 0 before each job
-   uploads its own installers straight to the draft release.
-4. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
-   downloads the desktop installers back from the draft, copies `scripts/install.sh` alongside and
-   creates `SHA256SUMS` over everything.
-5. Builds the release notes from the `## [<version>]` section of `CHANGELOG.md`
+3. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
+   copies `scripts/install.sh` alongside and creates `SHA256SUMS` over everything.
+4. Builds the release notes from the `## [<version>]` section of `CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
-6. Uploads the remaining assets and takes the release out of draft, so a run that dies partway
-   never leaves a half-built release visible. The desktop app's auto-update reads this release
-   (the `latest*.yml` feed), so a draft that never leaves draft never reaches installed apps.
-
-### Desktop signing secrets
-
-| Secret | For |
-|---|---|
-| `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD` | Developer ID Application certificate (.p12, base64) and its password |
-| `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER` | App Store Connect API key for notarization |
-| `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD` | Windows code-signing certificate (.pfx, base64) and its password |
-
-An unsigned macOS app opens only after right-click → Open and cannot auto-update; an unsigned
-Windows installer shows a SmartScreen warning. Both still work.
-
-#### Issuing the macOS secrets
-
-Everything below needs an [Apple Developer Program](https://developer.apple.com/programs/)
-membership (paid yearly; an individual account is enough). The certificate and notarization
-themselves cost nothing beyond that. `gh secret set` writes to this repository; run it from the
-repo root.
-
-1. **Developer ID Application certificate** (`MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`).
-   1. Keychain Access → Certificate Assistant → *Request a Certificate From a Certificate
-      Authority…*, saved to disk. This creates the private key in the login keychain.
-   2. developer.apple.com → Certificates → **+** → *Developer ID Application*, upload the request,
-      download the `.cer` and double-click it into the login keychain.
-   3. In Keychain Access, expand the certificate so its private key shows, select **both**, then
-      File → *Export Items…* as `.p12` with a password of your choice.
-   4. Register the file base64-encoded and its password:
-
-      ```bash
-      base64 -i developer-id.p12 | gh secret set MAC_CSC_LINK
-      gh secret set MAC_CSC_KEY_PASSWORD   # the .p12 password, when prompted
-      ```
-
-2. **App Store Connect API key for notarization** (`APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`,
-   `APPLE_API_ISSUER`). Without these three the app is signed but not notarized, and Gatekeeper may
-   still block the first launch.
-   1. appstoreconnect.apple.com → Users and Access → Integrations → *App Store Connect API* →
-      *Team Keys* → **+**, role **Developer**. Download the `AuthKey_<KEY_ID>.p8` once — Apple does
-      not offer it again.
-   2. The **Key ID** and **Issuer ID** are on the same page.
-   3. Register the `.p8` as-is (not base64; the workflow writes it back to a file) with the two ids:
-
-      ```bash
-      gh secret set APPLE_API_KEY_P8 < AuthKey_<KEY_ID>.p8
-      gh secret set APPLE_API_KEY_ID
-      gh secret set APPLE_API_ISSUER
-      ```
-
-3. **Check**: on the next tag the `desktop` job's *Configure signing* step no longer warns
-   `MAC_CSC_LINK is not set`. To verify locally, export the same variables in a shell
-   (`CSC_LINK` may be a path to the `.p12`), run `npm run package:mac --workspace @storyboard/desktop`
-   and inspect the result:
-
-   ```bash
-   codesign -dv --verbose=2 apps/desktop/release/mac-arm64/Storyboard.app
-   spctl -a -vv apps/desktop/release/mac-arm64/Storyboard.app   # "source=Notarized Developer ID"
-   ```
-
-The certificate expires after five years and the membership every year; a lapsed membership stops
-new builds from being signed and notarized but leaves the already shipped ones working.
+5. Uploads the assets and takes the release out of draft, so a run that dies partway never leaves
+   a half-built release visible.
 
 ## One public repository
 
@@ -224,9 +140,6 @@ no mirror; the former `webfic/storyboard` is gone, and a release is published on
 ## How users install
 
 - **Extension** — download the `.vsix` and install it from VS Code.
-- **Desktop** — download the `.dmg` (Apple silicon `arm64` or Intel `x64`) or the Windows
-  `-setup.exe` from the release and install it. Later releases arrive through the app's own update
-  banner.
 - **CLI** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
   The script resolves the latest release, verifies the checksum, unpacks the CLI into
   `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node

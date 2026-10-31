@@ -49,7 +49,7 @@ npm run build
 
 ## 4. Package
 
-One tag ships three apps. Reproduce the extension and CLI artifacts locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers everything. The desktop installers (`storyboard-desktop-<version>-mac-*.dmg/.zip`, `-win-x64-setup.exe`, and the `latest*.yml` update feed) are built by the release workflow on macOS and Windows runners; locally you can only check your own platform with `npm run desktop:package`. Run the release scenario in `apps/desktop/DESKTOP_QA.md` on both platforms before tagging.
+One tag ships both apps. Reproduce the extension and CLI artifacts locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers everything.
 
 Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publisher metadata are confirmed.
 
@@ -58,10 +58,10 @@ Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publish
 Everything the tag would set off on GitHub, run here first; only the upload is left to the workflow:
 
 ```bash
-npm run release:preflight                # add -- --package to also package and smoke this platform's desktop app
+npm run release:preflight
 ```
 
-It refuses an uncommitted tree, a branch other than `main`, an unsynced version, a tag that already exists and a missing or empty `## [<version>] - YYYY-MM-DD` section in either changelog, then runs lint, the tests, `npm run bvt` and the desktop smoke. **Do not tag until it prints `Preflight passed`.** Fix what it reports, commit, and run it again.
+It refuses an uncommitted tree, a branch other than `main`, an unsynced version, a tag that already exists and a missing or empty `## [<version>] - YYYY-MM-DD` section in either changelog, then runs lint, the tests and `npm run bvt`. **Do not tag until it prints `Preflight passed`.** Fix what it reports, commit, and run it again.
 
 ## 6. Tag (after maintainer confirmation)
 

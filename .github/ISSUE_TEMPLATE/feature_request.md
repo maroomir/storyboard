@@ -16,5 +16,4 @@ labels: enhancement
 
 - [ ] CLI
 - [ ] VS Code extension
-- [ ] Desktop
-- [ ] All three (engine)
+- [ ] Both (engine)

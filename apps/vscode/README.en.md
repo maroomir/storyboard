@@ -83,7 +83,7 @@ Beyond the settings, five things can be edited as files: prompt wording, the cra
 the prompt variant rules, what the composition presets build and the order of the pipeline stages. Put
 `prompts/<name>.md`, `craftContract.json`, `promptVariants.json`, `compositionPresets.json` or
 `pipelines/{scene,novel}.yaml` under `~/.storyboard/` (every
-work) or a work's `.storyboard/` (that work only, taking precedence) and all three apps generate on top
+work) or a work's `.storyboard/` (that work only, taking precedence) and both apps generate on top
 of them. The bundled originals live in `packages/story-ai/src/ai/prompts/resources/` and each
 package's `*.params.json`; CLI `storyboard params show` lists the tuning values in force with their origin.
 

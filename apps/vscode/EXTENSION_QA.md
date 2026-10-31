@@ -283,7 +283,7 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `ai.prov
    - 설정 패널(**`Storyboard: Open Settings`**, 사이드바 뷰의 톱니바퀴)의 API 키 칸.
    - 터미널에서 **`storyboard setup`** 또는 `echo "$KEY" | storyboard apikey set <provider>` (CLI).
 
-   어느 경로든 키는 **`~/.storyboard/secrets.json`(0600)** 한 곳에만 저장되고 CLI·데스크톱 앱과 공유된다.
+   어느 경로든 키는 **`~/.storyboard/secrets.json`(0600)** 한 곳에만 저장되고 CLI와 공유된다.
    `config.json`에는 들어가지 않는다. `mock`·`ollama`는 키가 없다.
 
 2. **기본 provider를 그 provider로 맞추기** (`ai.provider.default`) — 아래 중 편한 방법 하나.

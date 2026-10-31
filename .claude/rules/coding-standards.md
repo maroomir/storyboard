@@ -13,8 +13,7 @@ for schema-first types and the error-class template. Generic readability and ver
   lives in exactly one layer, and a layer imports only itself and layers to its left.
 - The engine's object graph is built once, for every app, by `StoryboardApplication` in
   `packages/story-app`. Each app keeps one thin root of its own — `createCliContainer()` (cli),
-  `createDesktopContainer()` (desktop), `PlatformModule.initialize()` (vscode) — that builds only
-  its host adapters and hands them in. Do not construct engine use cases anywhere else — and do not
+  `PlatformModule.initialize()` (vscode) — that builds only its host adapters and hands them in. Do not construct engine use cases anywhere else — and do not
   construct ones no command or handler calls.
 - A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
   contract. Inside a package, organize by role — `story-ai`'s `ai/` (services) and `ports/`
@@ -214,10 +213,9 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
   `model ← ai ← engine ← app`, `engine ← node`, `engine ← sim`, `ai ← config`.
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
-- App-specific bans are build failures: the CLI and the desktop must not import the engine's
-  pipeline assembly symbols (`refusePipelineAssembly` in `scripts/architecture/runner.mjs` owns the
-  list), and no app may construct an engine class (`refuseEngineConstruction`, with a per-app list of
-  host-side exceptions).
+- App-specific bans are build failures: the CLI must not import the engine's pipeline assembly
+  symbols (`refusePipelineAssembly` in `scripts/architecture/runner.mjs` owns the list), and no app
+  may construct an engine class (`refuseEngineConstruction`).
 - When a utility is needed in a second app or package (atomic write, hashing, a logger contract),
   promote the existing one into a shared package instead of re-implementing it locally.
 
