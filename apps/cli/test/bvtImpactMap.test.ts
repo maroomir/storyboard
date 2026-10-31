@@ -51,7 +51,7 @@ describe('impact map', () => {
       .filter((run) => run.includes('-- test/'))
       .flatMap((run) => {
         const workspace = /--workspace (\S+)/.exec(run)?.[1];
-        const folder = workspace === 'storyboard-vscode' ? 'apps/vscode' : workspace === '@storyboard/cli' ? 'apps/cli' : 'apps/desktop';
+        const folder = workspace === 'storyboard-vscode' ? 'apps/vscode' : 'apps/cli';
         return run.split(' -- ')[1]!.split(' ').map((target) => join(repoRoot, folder, target));
       });
 

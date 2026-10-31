@@ -11,23 +11,20 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run build --workspace storyboard-vscode && npm run build --workspace @storyboard/cli && npm run build --workspace @storyboard/desktop",
+    "build": "npm run build --workspace storyboard-vscode && npm run build --workspace @storyboard/cli",
     "compile": "npm run compile --workspace storyboard-vscode",
     "check:architecture": "node scripts/architecture/check-workspace.mjs",
     "metrics": "node scripts/metrics/measureStructure.mjs",
-    "lint": "npm run check:architecture && npm run lint --workspace @storyboard/story-model && npm run lint --workspace @storyboard/story-engine && npm run lint --workspace @storyboard/story-ai && npm run lint --workspace @storyboard/story-app && npm run lint --workspace @storyboard/story-config && npm run lint --workspace @storyboard/story-node && npm run lint --workspace @storyboard/story-sim && npm run lint --workspace storyboard-vscode && npm run lint --workspace @storyboard/cli && npm run lint --workspace @storyboard/desktop",
-    "test": "npm run test --workspace storyboard-vscode && npm run test --workspace @storyboard/cli && npm run test --workspace @storyboard/desktop",
+    "lint": "npm run check:architecture && npm run lint --workspace @storyboard/story-model && npm run lint --workspace @storyboard/story-engine && npm run lint --workspace @storyboard/story-ai && npm run lint --workspace @storyboard/story-app && npm run lint --workspace @storyboard/story-config && npm run lint --workspace @storyboard/story-node && npm run lint --workspace @storyboard/story-sim && npm run lint --workspace storyboard-vscode && npm run lint --workspace @storyboard/cli",
+    "test": "npm run test --workspace storyboard-vscode && npm run test --workspace @storyboard/cli",
     "package:vsix": "npm run package:vsix --workspace storyboard-vscode",
     "cli:build": "npm run build --workspace @storyboard/cli",
-    "desktop:dev": "npm run dev --workspace @storyboard/desktop",
-    "desktop:package": "npm run package --workspace @storyboard/desktop",
     "version:sync": "node scripts/sync-version.mjs",
     "release:preflight": "scripts/release-preflight.sh",
     "bvt": "npm run bvt:contracts && npm run bvt:impact && npm run bvt:golden && npm run bvt:smoke",
     "bvt:contracts": "node scripts/bvt/checkDiffContracts.mjs",
     "bvt:impact": "node scripts/bvt/runImpactMap.mjs",
     "bvt:golden": "npm run cli:build && node scripts/bvt/runGolden.mjs",
-    "bvt:smoke": "scripts/bvt/smokeRelease.sh",
-    "bvt:smoke:desktop": "npm run build --workspace @storyboard/desktop && scripts/bvt/smokeDesktop.sh dev"
+    "bvt:smoke": "scripts/bvt/smokeRelease.sh"
   }
 }

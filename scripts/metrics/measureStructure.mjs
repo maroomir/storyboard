@@ -12,7 +12,6 @@ const ts = require('typescript');
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SOURCE_ROOTS = [
   'apps/cli/src',
-  'apps/desktop/src',
   'apps/vscode/src',
   'apps/vscode/webview-ui/src',
   'packages/story-model/src',

@@ -4,8 +4,7 @@
 #   scripts/package-release.sh <version> [out-dir]     (out-dir defaults to ./release)
 #
 # The release workflow runs it twice — once in the `bvt` job, whose smoke installs and runs what it
-# made, and once in `publish`, which uploads — so both see the same bytes from the same steps. The
-# desktop installers are not here: they are built on their own platforms.
+# made, and once in `publish`, which uploads — so both see the same bytes from the same steps.
 set -euo pipefail
 
 version="${1:?usage: package-release.sh <version> [out-dir]}"
