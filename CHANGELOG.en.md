@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-11-01
+
 ### Changed (breaking)
 
 - **The desktop app is no longer part of Storyboard.** Storyboard is now two apps: the CLI and the VS Code extension.
