@@ -69,13 +69,4 @@ describe('refuseEngineConstruction', () => {
 
     expect(reports).toEqual([]);
   });
-
-  it('allows the host-side classes an app lists', () => {
-    const reports: string[] = reportsFor(
-      "import { UsageLedgerRecorder } from '@storyboard/story-engine';\nnew UsageLedgerRecorder(fs);\n",
-      refuseEngineConstruction('Desktop', ['UsageLedgerRecorder']),
-    );
-
-    expect(reports).toEqual([]);
-  });
 });

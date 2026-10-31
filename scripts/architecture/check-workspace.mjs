@@ -13,8 +13,7 @@ import {
 } from './runner.mjs';
 
 // The rules here belong to the repository, not to one app: a package that imports `vscode` breaks
-// the CLI and the desktop just as much as the extension, and an owned literal may be repeated from
-// any workspace. Each app's own `scripts/check-architecture.mjs` keeps only its own layer rules.
+// the CLI just as much as the extension, and an owned literal may be repeated from any workspace. Each app's own `scripts/check-architecture.mjs` keeps only its own layer rules.
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PACKAGES_ROOT = path.join(REPO_ROOT, 'packages');
@@ -164,7 +163,6 @@ const OWNED_LITERAL_ROOTS = [
   path.join(REPO_ROOT, 'apps', 'vscode', 'webview-ui', 'src'),
   ...SHARED_PACKAGES.map((name) => path.join(PACKAGES_ROOT, name, 'src')),
   path.join(REPO_ROOT, 'apps', 'cli', 'src'),
-  path.join(REPO_ROOT, 'apps', 'desktop', 'src'),
 ];
 
 function checkOwnedLiterals(failures) {

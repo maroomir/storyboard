@@ -174,7 +174,6 @@
       ],
       "checks": [
         "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/parameters.test.ts test/resourceOverrides.test.ts test/runGate.test.ts test/runLock.test.ts",
-        "npm run test --workspace @storyboard/desktop -- test/desktopApp.test.ts",
         "npm run bvt:golden"
       ]
     },
@@ -185,7 +184,6 @@
       ],
       "checks": [
         "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/dispatch.test.ts",
-        "npm run test --workspace @storyboard/desktop -- test/desktopApp.test.ts",
         "npm run bvt:golden"
       ]
     },
@@ -242,17 +240,6 @@
       ]
     },
     {
-      "id": "desktop",
-      "paths": [
-        "apps/desktop/**"
-      ],
-      "checks": [
-        "npm run lint --workspace @storyboard/desktop",
-        "npm run test --workspace @storyboard/desktop",
-        "npm run build --workspace @storyboard/desktop"
-      ]
-    },
-    {
       "id": "architecture-scripts",
       "paths": [
         "scripts/architecture/**"
@@ -261,7 +248,6 @@
         "npm run check:architecture",
         "npm run check:architecture --workspace storyboard-vscode",
         "npm run check:architecture --workspace @storyboard/cli",
-        "npm run check:architecture --workspace @storyboard/desktop",
         "npm run check:architecture --workspace @storyboard/story-model",
         "npm run check:architecture --workspace @storyboard/story-engine"
       ]

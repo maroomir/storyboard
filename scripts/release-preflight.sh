@@ -3,24 +3,19 @@
 # GitHub is the exception, not the way we find out. Only the upload is left to the workflow.
 #
 #   npm run release:preflight              on the version commit, before `git tag`
-#   npm run release:preflight -- --package also package the desktop app for this platform and smoke it
 #
 # Steps: the tree is committed and on main; the version is synced and not yet tagged; both
 # changelogs carry a dated, non-empty section for it; lint; tests; the BVT (diff contracts, impact
-# map, golden workspaces, CLI/VSIX smoke); the built desktop app in smoke mode; and with --package
-# the packaged app too. The Windows app can only be smoked on Windows, which the workflow does.
+# map, golden workspaces, CLI/VSIX smoke).
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-with_package=0
-for arg in "$@"; do
-  case "$arg" in
-    --package) with_package=1 ;;
-    *) echo "usage: release-preflight.sh [--package]" >&2; exit 2 ;;
-  esac
-done
+if [ "$#" -gt 0 ]; then
+  echo "usage: release-preflight.sh" >&2
+  exit 2
+fi
 
 version="$(node -p "require('./package.json').version")"
 tag="v$version"
@@ -73,29 +68,5 @@ npm test
 
 step "Build verification test"
 npm run bvt
-
-step "Desktop smoke (built app)"
-if [ ! -f node_modules/electron/path.txt ]; then
-  echo "Electron binary is not installed; downloading it once."
-  node node_modules/electron/install.js
-fi
-npm run bvt:smoke:desktop
-
-if [ "$with_package" -eq 1 ]; then
-  step "Desktop smoke (packaged app)"
-  case "$(uname -s)" in
-    Darwin)
-      CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:mac --workspace @storyboard/desktop
-      scripts/bvt/smokeDesktop.sh mac
-      ;;
-    MINGW*|MSYS*|CYGWIN*)
-      npm run package:win --workspace @storyboard/desktop
-      scripts/bvt/smokeDesktop.sh win
-      ;;
-    *)
-      echo "No desktop installer is built for $(uname -s); skipped."
-      ;;
-  esac
-fi
 
 printf '\nPreflight passed for %s. Tag it:\n  git tag %s\n  git push origin main %s\n' "$tag" "$tag" "$tag"

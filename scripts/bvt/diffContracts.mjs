@@ -14,27 +14,6 @@ function versionOf(manifestText) {
   return JSON.parse(manifestText).version;
 }
 
-const koMessagesFile = 'apps/desktop/src/shared/i18n/ko.ts';
-
-// The message table is one `'key': 'text',` pair per entry, so comments and formatting around it
-// are not a change a translator has to follow.
-function readMessagePairs(tableText) {
-  const pairs = new Map();
-  for (const match of (tableText ?? '').matchAll(/'([^']+)':\s*'((?:[^'\\]|\\.)*)'/g)) {
-    pairs.set(match[1], match[2]);
-  }
-  return pairs;
-}
-
-function haveMessagesChanged(baseText, headText) {
-  const basePairs = readMessagePairs(baseText);
-  const headPairs = readMessagePairs(headText);
-  if (basePairs.size !== headPairs.size) {
-    return true;
-  }
-  return [...headPairs].some(([key, text]) => basePairs.get(key) !== text);
-}
-
 function listMissing(expected, changed) {
   return expected.filter((file) => !changed.includes(file));
 }
@@ -97,16 +76,6 @@ export const diffContractRules = [
         ? { ok: true }
         : { ok: false, detail: `${tests.join(', ')} 중 어느 것도 바뀌지 않았습니다` };
     },
-  },
-  {
-    id: 'desktop-i18n',
-    title: '데스크톱 한국어 문자열이 바뀌면 영어 문자열이 함께 바뀐다',
-    trigger: ({ changed, readHead, readBase }) =>
-      changed.includes(koMessagesFile) && haveMessagesChanged(readBase(koMessagesFile), readHead(koMessagesFile)),
-    check: ({ changed }) =>
-      changed.includes('apps/desktop/src/shared/i18n/en.ts')
-        ? { ok: true }
-        : { ok: false, detail: 'apps/desktop/src/shared/i18n/en.ts 가 바뀌지 않았습니다' },
   },
   {
     id: 'rules-mirror',
