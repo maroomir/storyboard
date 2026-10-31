@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunGate } from '@storyboard/story-app';
+import { acquireWorkspaceRunLock, type AcquireWorkspaceRunLockResult } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
@@ -36,10 +37,13 @@ describe('RunGate', () => {
   it('refuses while another app holds the workspace and names that holder', async () => {
     const fileSystem = new NodeFileSystem();
     const root = NodeUri.file(workspace);
-    const extension = new RunGate({ fileSystem, owner: 'vscode' });
     const cli = new RunGate({ fileSystem, owner: 'cli' });
 
-    const acquired = await extension.acquire(root, '장편 생성');
+    const acquired: AcquireWorkspaceRunLockResult = await acquireWorkspaceRunLock({
+      fileSystem,
+      workspaceRoot: root,
+      holder: { owner: 'vscode', label: '장편 생성', pid: 1, hostname: 'elsewhere' },
+    });
     expect(acquired.ok).toBe(true);
 
     const held = await cli.hold(root, 'storyboard draft generate', async () => 'ran');
