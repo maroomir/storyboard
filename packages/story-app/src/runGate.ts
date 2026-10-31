@@ -25,7 +25,7 @@ export type WorkspaceHoldResult<T> =
 export class RunGate {
   public constructor(private readonly deps: RunGateDependencies) {}
 
-  public acquire(workspaceRoot: StoryUri, label: string): Promise<AcquireWorkspaceRunLockResult> {
+  private acquire(workspaceRoot: StoryUri, label: string): Promise<AcquireWorkspaceRunLockResult> {
     return acquireWorkspaceRunLock({
       fileSystem: this.deps.fileSystem,
       workspaceRoot,
