@@ -39,10 +39,6 @@ export const sceneDefaultStageIds: readonly SceneStageId[] = (
   .filter((definition) => definition.isOptIn !== true)
   .map((definition) => definition.id as SceneStageId);
 
-export function sceneStageLabel(id: SceneStageId): string {
-  return sceneStageCatalog.find((definition) => definition.id === id)?.label ?? id;
-}
-
 let currentScenePipelinePlan: readonly SceneStageId[] = sceneDefaultStageIds;
 
 export function overrideScenePipelinePlan(spec: PipelineSpec): readonly SceneStageId[] {
