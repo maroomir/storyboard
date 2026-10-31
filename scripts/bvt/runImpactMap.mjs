@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
-import { describeRange, listChangedFiles, repoRoot, resolveBaseRef } from './gitDiff.mjs';
+import { describeRange, listChangedFiles, listDeletedFiles, repoRoot, resolveBaseRef } from './gitDiff.mjs';
 import { formatImpactPlan, planImpact } from './impactMap.mjs';
 
 // Usage: node scripts/bvt/runImpactMap.mjs [<base-ref>] [--plan]
@@ -15,7 +15,7 @@ const isPlanOnly = args.includes('--plan');
 const baseRef = resolveBaseRef(args.find((arg) => !arg.startsWith('--')));
 const impactMap = JSON.parse(fs.readFileSync(path.join(repoRoot, 'bvt/impactMap.json'), 'utf8'));
 const changed = listChangedFiles(baseRef);
-const plan = planImpact(changed, impactMap);
+const plan = planImpact(changed, impactMap, listDeletedFiles(baseRef));
 
 console.log(formatImpactPlan(describeRange(baseRef), changed.length, plan));
 

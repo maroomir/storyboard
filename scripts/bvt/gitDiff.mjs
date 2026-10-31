@@ -38,6 +38,11 @@ export function listChangedFiles(baseRef) {
   return output === '' ? [] : output.split('\n');
 }
 
+export function listDeletedFiles(baseRef) {
+  const output = git(['diff', '--name-only', '--diff-filter=D', `${baseRef}..HEAD`]);
+  return output === '' ? [] : output.split('\n');
+}
+
 export function readFileAt(ref, filePath) {
   try {
     return execFileSync('git', ['show', `${ref}:${filePath}`], { cwd: repoRoot, encoding: 'utf8' });
