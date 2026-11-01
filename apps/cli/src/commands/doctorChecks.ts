@@ -11,6 +11,7 @@ import type {
 } from '@storyboard/story-app';
 import {
   backgroundCardRelativePath,
+  computeInterviewContractHash,
   findUnknownBeatCast,
   flattenChapterPlan,
   formatBackgroundFactConflict,
@@ -22,10 +23,13 @@ import {
   parseSceneRenameJournal,
   parseSceneStem,
   readChapterPlanFile,
+  readInterviewAxesFile,
   readMissingGitignoreEntries,
   requiresApiKey,
   resolveThreadPaths,
   type AiProviderId,
+  type InterviewAxesFile,
+  type InterviewCardCoverage,
   type ModelMeasurement,
   type NarratorCard,
   type SceneCard,
@@ -638,6 +642,7 @@ export class DoctorChecks {
       ...(await this.narration(survey.census.cards)),
       ...(await this.beatCast(survey.census.cards)),
       ...(await this.cachedBackgroundConflicts()),
+      ...(await this.interviews(paths)),
     ];
   }
 
@@ -713,6 +718,45 @@ export class DoctorChecks {
             label: '비트 출연',
             detail: `인물 카드의 id·이름·별칭과 맞지 않는 출연이 있습니다 (${unknown.join(', ')}). 이름으로 바뀌지 않고 그대로 프롬프트에 실립니다.`,
             fix: 'storyboard card list character',
+          },
+        ];
+  }
+
+  private async interviews(paths: StoryboardProjectPaths): Promise<DoctorCheck[]> {
+    const root: StoryUri = this.container.workspaceRoot;
+    const coverage: InterviewCardCoverage[] = await this.container.interviews.describeCoverage({
+      workspaceRoot: root,
+    });
+    const undecided: InterviewCardCoverage[] = coverage.filter(
+      (entry) => entry.hasWorkingModel && entry.openAxes.length > 0,
+    );
+    const checks: DoctorCheck[] = undecided.map((entry) => ({
+      status: 'info' as const,
+      label: '인터뷰',
+      detail: `${entry.name}(${entry.cardId}): 다음 씬 ${entry.upcomingSceneStems.join(', ')}에 답이 없는 축 — ${entry.openAxes.map((axis) => axis.axisLabel).join(' · ')}`,
+      fix: `storyboard card interview ${entry.cardId}`,
+    }));
+
+    if (!existsSync(paths.interviewAxes.fsPath)) {
+      return checks;
+    }
+
+    const axes: InterviewAxesFile = await readInterviewAxesFile(paths.interviewAxes, this.container.fileSystem);
+    const project: StoryboardProject = await this.container.project.read(root);
+    const contractHash: string = computeInterviewContractHash(project.setting);
+    const staleKinds: string[] = (['character', 'background'] as const)
+      .filter((kind) => axes[kind] !== undefined && axes[kind]?.contractHash !== contractHash)
+      .map((kind) => (kind === 'character' ? '인물' : '배경'));
+
+    return staleKinds.length === 0
+      ? checks
+      : [
+          ...checks,
+          {
+            status: 'warn',
+            label: '인터뷰 축',
+            detail: `${staleKinds.join('·')} 축 어휘를 뽑은 뒤 작품 계약(장르·독자층·컨셉)이 바뀌었습니다. 어휘는 그대로 쓰이고 있습니다.`,
+            fix: 'storyboard card interview <id> --reset-axes (표와 작업 모델도 비워집니다)',
           },
         ];
   }

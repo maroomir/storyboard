@@ -1,5 +1,5 @@
 import type { WorkspaceNextStep, WorkspaceStatus } from '@storyboard/story-app';
-import { contractFieldLabels } from '@storyboard/story-model';
+import { contractFieldLabels, type InterviewCardCoverage } from '@storyboard/story-model';
 
 export const nextStepCommands: Readonly<Record<WorkspaceNextStep, string | undefined>> = {
   'fill-contract': 'project set',
@@ -44,6 +44,32 @@ export function describeDrafts({ drafts }: WorkspaceStatus): string {
   ];
 
   return `${drafts.ready + drafts.stale}${notes.length > 0 ? ` (${notes.join(', ')})` : ''}`;
+}
+
+const interviewHintCardLimit: number = 3;
+
+export function describeInterviewHint(status: WorkspaceStatus): string | undefined {
+  const suggestions: readonly InterviewCardCoverage[] = status.interviews;
+  const [first] = suggestions;
+  if (first === undefined) {
+    return undefined;
+  }
+
+  const named: string = suggestions
+    .slice(0, interviewHintCardLimit)
+    .map((coverage) => {
+      const openLabels: string[] = coverage.openAxes.map((axis) => axis.axisLabel);
+      return openLabels.length === 0
+        ? coverage.name
+        : `${coverage.name}(${openLabels.slice(0, 2).join('·')}${openLabels.length > 2 ? ' 외' : ''})`;
+    })
+    .join(', ');
+  const rest: string = suggestions.length > interviewHintCardLimit ? ` 외 ${suggestions.length - interviewHintCardLimit}` : '';
+  const reason: string = suggestions.some((coverage) => coverage.hasWorkingModel)
+    ? '다음 씬에 답이 없는 축이 있습니다'
+    : '다음 씬의 인물·장소를 아직 인터뷰하지 않았습니다';
+
+  return `${named}${rest} — ${reason} · storyboard card interview ${first.cardId}`;
 }
 
 export function describeManuscript({ manuscript }: WorkspaceStatus): string {
