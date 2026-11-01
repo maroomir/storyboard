@@ -19,6 +19,7 @@ const kindLabels: Record<CardCollectProposal['kind'], string> = {
   alias: '다른 이름',
   tag: '태그',
   relation: '관계',
+  relationSpeech: '상대별 말투',
   arc: '아크',
   trait: '특성',
   recentDialogue: '최근 대사',
@@ -26,6 +27,8 @@ const kindLabels: Record<CardCollectProposal['kind'], string> = {
   voiceLine: '화법',
   desireLine: '욕망',
   sense: '감각',
+  layoutLine: '배치',
+  ruleLine: '규칙',
   scalar: '값',
   characterId: '등장인물',
 };
@@ -48,6 +51,12 @@ function proposalDiff(proposal: CardCollectProposal): {
     case 'relation':
       return {
         after: `${proposal.target} · ${proposal.type}`,
+        before:
+          proposal.before === undefined ? undefined : `${proposal.target} · ${proposal.before}`,
+      };
+    case 'relationSpeech':
+      return {
+        after: `${proposal.target} · ${proposal.speech}`,
         before:
           proposal.before === undefined ? undefined : `${proposal.target} · ${proposal.before}`,
       };
@@ -249,8 +258,11 @@ export function CollectPanel({
       'voiceLine',
       'desireLine',
       'relation',
+      'relationSpeech',
       'arc',
       'sense',
+      'layoutLine',
+      'ruleLine',
       'scalar',
       'characterId',
       'recentDialogue',

@@ -56,6 +56,7 @@ type CharacterListProposalKind =
 
 type CharacterListProposal = Extract<CardCollectProposal, { kind: CharacterListProposalKind }>;
 type RelationProposal = Extract<CardCollectProposal, { kind: 'relation' }>;
+type RelationSpeechProposal = Extract<CardCollectProposal, { kind: 'relationSpeech' }>;
 type ArcProposal = Extract<CardCollectProposal, { kind: 'arc' }>;
 
 const characterListFieldByKind: Readonly<Record<CharacterListProposalKind, CharacterListField>> = {
@@ -117,6 +118,9 @@ class CharacterCardEdit {
       case 'relation':
         this.upsertRelation(proposal);
         break;
+      case 'relationSpeech':
+        this.upsertRelationSpeech(proposal);
+        break;
       case 'arc':
         this.upsertArc(proposal);
         break;
@@ -145,15 +149,32 @@ class CharacterCardEdit {
   }
 
   private upsertRelation(proposal: RelationProposal): void {
-    const relation: CharacterRelation = { target: proposal.target, type: proposal.type };
-    const index: number = this.relations.findIndex(
-      (existing) => existing.target === proposal.target,
-    );
+    const index: number = this.findRelationIndex(proposal.target);
+    const existingSpeech: string | undefined = this.relations[index]?.speech;
+    const relation: CharacterRelation = {
+      target: proposal.target,
+      type: proposal.type,
+      ...(existingSpeech === undefined ? {} : { speech: existingSpeech }),
+    };
     if (index >= 0) {
       this.relations[index] = relation;
     } else {
       this.relations.push(relation);
     }
+  }
+
+  private upsertRelationSpeech(proposal: RelationSpeechProposal): void {
+    const index: number = this.findRelationIndex(proposal.target);
+    const existing: CharacterRelation | undefined = this.relations[index];
+    if (existing !== undefined) {
+      this.relations[index] = { ...existing, speech: proposal.speech };
+    } else if (proposal.type !== undefined) {
+      this.relations.push({ target: proposal.target, type: proposal.type, speech: proposal.speech });
+    }
+  }
+
+  private findRelationIndex(target: string): number {
+    return this.relations.findIndex((existing) => existing.target === target);
   }
 
   private upsertArc(proposal: ArcProposal): void {
@@ -186,47 +207,84 @@ function applyToCharacter(
   return edit.toCard();
 }
 
+type BackgroundListField = 'description' | 'senses' | 'layout' | 'rules' | 'aliases' | 'tags';
+
+type BackgroundListProposalKind =
+  | 'descriptionLine'
+  | 'sense'
+  | 'layoutLine'
+  | 'ruleLine'
+  | 'alias'
+  | 'tag';
+
+type BackgroundListProposal = Extract<CardCollectProposal, { kind: BackgroundListProposalKind }>;
+
+const backgroundListFieldByKind: Readonly<Record<BackgroundListProposalKind, BackgroundListField>> =
+  {
+    descriptionLine: 'description',
+    sense: 'senses',
+    layoutLine: 'layout',
+    ruleLine: 'rules',
+    alias: 'aliases',
+    tag: 'tags',
+  };
+
+const optionalBackgroundListFields: readonly Exclude<BackgroundListField, 'description'>[] = [
+  'senses',
+  'layout',
+  'rules',
+  'aliases',
+  'tags',
+];
+
+function isBackgroundListProposal(
+  proposal: CardCollectProposal,
+): proposal is BackgroundListProposal {
+  return proposal.kind in backgroundListFieldByKind;
+}
+
 function applyToBackground(
   card: BackgroundCard,
   accepted: readonly CardCollectProposal[],
 ): BackgroundCard {
-  let description: string[] = [...(card.description ?? [])];
-  let senses: string[] = [...(card.senses ?? [])];
+  const lists: Record<BackgroundListField, string[]> = {
+    description: [...(card.description ?? [])],
+    senses: [...(card.senses ?? [])],
+    layout: [...(card.layout ?? [])],
+    rules: [...(card.rules ?? [])],
+    aliases: [...(card.aliases ?? [])],
+    tags: [...(card.tags ?? [])],
+  };
   let characterIds: string[] = [...(card.characterIds ?? [])];
   let time: string | undefined = card.time;
   let weather: string | undefined = card.weather;
-  let aliases: string[] = [...(card.aliases ?? [])];
-  let tags: string[] = [...(card.tags ?? [])];
 
   for (const proposal of accepted) {
-    if (proposal.kind === 'descriptionLine') {
-      description = addUniqueCardListText(description, proposal.value);
-    } else if (proposal.kind === 'sense') {
-      senses = addUniqueCardListText(senses, proposal.value);
+    if (isBackgroundListProposal(proposal)) {
+      const field: BackgroundListField = backgroundListFieldByKind[proposal.kind];
+      lists[field] = addUniqueCardListText(lists[field], proposal.value);
     } else if (proposal.kind === 'characterId') {
       characterIds = addUnique(characterIds, proposal.value);
+    } else if (proposal.kind === 'scalar' && proposal.field === 'time') {
+      time = proposal.after;
     } else if (proposal.kind === 'scalar') {
-      if (proposal.field === 'time') {
-        time = proposal.after;
-      } else {
-        weather = proposal.after;
-      }
-    } else if (proposal.kind === 'alias') {
-      aliases = addUniqueCardListText(aliases, proposal.value);
-    } else if (proposal.kind === 'tag') {
-      tags = addUniqueCardListText(tags, proposal.value);
+      weather = proposal.after;
     }
   }
 
+  const filledLists: Partial<Pick<BackgroundCard, BackgroundListField>> = Object.fromEntries(
+    optionalBackgroundListFields
+      .filter((field): boolean => lists[field].length > 0)
+      .map((field): [BackgroundListField, string[]] => [field, lists[field]]),
+  );
+
   return {
     ...card,
-    description,
+    description: lists.description,
     characterIds,
-    ...(senses.length > 0 ? { senses } : {}),
+    ...filledLists,
     ...(time ? { time } : {}),
     ...(weather ? { weather } : {}),
-    ...(aliases.length > 0 ? { aliases } : {}),
-    ...(tags.length > 0 ? { tags } : {}),
   };
 }
 
@@ -263,6 +321,13 @@ function shouldProposeCharacterChange(card: CharacterCard, proposal: CardCollect
       );
       return current?.type !== proposal.type;
     }
+    case 'relationSpeech': {
+      const current: CharacterRelation | undefined = (card.relations ?? []).find(
+        (relation) => relation.target === proposal.target,
+      );
+      const canCreateRelation: boolean = current === undefined && proposal.type !== undefined;
+      return canCreateRelation || (current !== undefined && current.speech !== proposal.speech);
+    }
     case 'arc': {
       const current: CharacterArc | undefined = (card.arc ?? []).find(
         (entry) => entry.sceneRef === proposal.sceneRef,
@@ -287,6 +352,10 @@ function shouldProposeBackgroundChange(
       return isNewListText(card.description, proposal.value);
     case 'sense':
       return isNewListText(card.senses, proposal.value);
+    case 'layoutLine':
+      return isNewListText(card.layout, proposal.value);
+    case 'ruleLine':
+      return isNewListText(card.rules, proposal.value);
     case 'characterId':
       return isNewListValue(card.characterIds, proposal.value);
     case 'scalar':

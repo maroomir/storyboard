@@ -76,6 +76,32 @@ describe('applyCardCollectProposals (character)', () => {
 
     expect(result.relations).toEqual([{ target: 'jihun', type: '소꿉친구' }]);
   });
+
+  it('keeps a relation speech when the relation type changes', () => {
+    const spoken: CharacterCard = {
+      ...elia,
+      relations: [{ target: 'jihun', type: 'friend', speech: '반말' }],
+    };
+
+    const result = applyCardCollectProposals(spoken, [
+      proposal({ kind: 'relation', target: 'jihun', type: '소꿉친구' }),
+    ]) as CharacterCard;
+
+    expect(result.relations).toEqual([{ target: 'jihun', type: '소꿉친구', speech: '반말' }]);
+  });
+
+  it('sets the speech of an existing relation and creates a relation only when given a type', () => {
+    const result = applyCardCollectProposals(elia, [
+      proposal({ kind: 'relationSpeech', target: 'jihun', speech: "반말, '바보'라고 부름" }),
+      proposal({ kind: 'relationSpeech', target: 'mina', speech: '존댓말', type: 'rival' }),
+      proposal({ kind: 'relationSpeech', target: 'teacher', speech: '존댓말' }),
+    ]) as CharacterCard;
+
+    expect(result.relations).toEqual([
+      { target: 'jihun', type: 'friend', speech: "반말, '바보'라고 부름" },
+      { target: 'mina', type: 'rival', speech: '존댓말' },
+    ]);
+  });
 });
 
 describe('applyCardCollectProposals (background)', () => {
@@ -99,6 +125,20 @@ describe('applyCardCollectProposals (background)', () => {
     expect(result.aliases).toEqual(['구도서관']);
     expect(result.tags).toEqual(['비밀']);
   });
+
+  it('adds layout and rule lines without repeating one that is already there', () => {
+    const withLayout: LocationBackgroundCard = { ...library, layout: ['출입문은 정문 하나'] };
+
+    const result = applyCardCollectProposals(withLayout, [
+      proposal({ kind: 'layoutLine', value: '출입문은  정문 하나.' }),
+      proposal({ kind: 'layoutLine', value: '2층 열람실 창으로 정문이 보인다' }),
+      proposal({ kind: 'ruleLine', value: '밤 10시에 문을 닫는다' }),
+    ]) as LocationBackgroundCard;
+
+    expect(result.layout).toEqual(['출입문은 정문 하나', '2층 열람실 창으로 정문이 보인다']);
+    expect(result.rules).toEqual(['밤 10시에 문을 닫는다']);
+    expect(applyCardCollectProposals(library, [])).not.toHaveProperty('layout');
+  });
 });
 
 describe('shouldProposeCardCollect', () => {
@@ -118,6 +158,36 @@ describe('shouldProposeCardCollect', () => {
     expect(
       applyCardCollectProposals(elia, [proposal({ kind: 'trait', value: '용감함!' })]),
     ).toMatchObject({ traits: ['용감함'] });
+  });
+
+  it('proposes a relation speech only when it changes or can create the relation', () => {
+    const spoken: CharacterCard = {
+      ...elia,
+      relations: [{ target: 'jihun', type: 'friend', speech: '반말' }],
+    };
+
+    expect(
+      shouldProposeCardCollect(spoken, proposal({ kind: 'relationSpeech', target: 'jihun', speech: '반말' })),
+    ).toBe(false);
+    expect(
+      shouldProposeCardCollect(spoken, proposal({ kind: 'relationSpeech', target: 'jihun', speech: '존댓말' })),
+    ).toBe(true);
+    expect(
+      shouldProposeCardCollect(spoken, proposal({ kind: 'relationSpeech', target: 'mina', speech: '존댓말' })),
+    ).toBe(false);
+    expect(
+      shouldProposeCardCollect(
+        spoken,
+        proposal({ kind: 'relationSpeech', target: 'mina', speech: '존댓말', type: 'rival' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('proposes layout and rule lines that the background does not have yet', () => {
+    const withRules: LocationBackgroundCard = { ...library, rules: ['밤 10시에 문을 닫는다'] };
+
+    expect(shouldProposeCardCollect(withRules, proposal({ kind: 'ruleLine', value: '밤 10시에 문을 닫는다!' }))).toBe(false);
+    expect(shouldProposeCardCollect(withRules, proposal({ kind: 'layoutLine', value: '뒷문이 있다' }))).toBe(true);
   });
 
   it('proposes new keys and changed values but not unchanged ones', () => {
