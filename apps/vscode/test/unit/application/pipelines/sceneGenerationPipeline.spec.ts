@@ -217,6 +217,29 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     expect(input.narrativeSource).not.toContain("[갈등]")
   })
 
+  it("hands each character's speech to others to the skeleton", async () => {
+    const ai = createRecordingAiService()
+    const manjae: CharacterCard = {
+      ...eliaCard,
+      id: "manjae",
+      name: "조만재",
+      relations: [{ target: "elia", type: "소꿉친구", speech: "반말, '엘리트'라고만 부름" }]
+    }
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([manjae, eliaCard], "조만재가 엘리아를 부른다."),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const input = ai.draftSceneSkeleton.mock.calls[0]?.[0] as {
+      speechToOthers?: ReadonlyMap<string, readonly string[]>
+    }
+    expect(input.speechToOthers?.get("조만재")).toEqual(["엘리아에게: 반말, '엘리트'라고만 부름"])
+    expect(input.speechToOthers?.has("엘리아")).toBe(false)
+  })
+
   it("gives the skeleton a third of the scene target so expansion is not a 15x job", async () => {
     const ai = createRecordingAiService()
 
