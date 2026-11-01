@@ -10,6 +10,7 @@ import {
   validateGenerationContract,
   type CanonDiffResult,
   type ContractFieldKey,
+  type InterviewCardCoverage,
   type SceneListItem,
   type StoryboardProject,
   type StoryboardProjectPaths,
@@ -19,6 +20,7 @@ import {
 import type { CardManager } from '#app/managers/cardManager';
 import type { DraftManager, DraftReading } from '#app/managers/draftManager';
 import type { ProjectManager } from '#app/managers/projectManager';
+import type { InterviewManager } from '#app/managers/interviewManager';
 
 export type WorkspaceNextStep =
   | 'fill-contract'
@@ -73,6 +75,7 @@ export interface WorkspaceStatus {
   readonly canon: { readonly pendingFacts: number };
   readonly manuscript: WorkspaceManuscriptStatus;
   readonly nextStep: WorkspaceNextStep;
+  readonly interviews: readonly InterviewCardCoverage[];
 }
 
 export interface DescribeWorkspaceStatusInput {
@@ -81,6 +84,7 @@ export interface DescribeWorkspaceStatusInput {
   readonly drafts: DraftManager;
   readonly cards: CardManager;
   readonly project: ProjectManager;
+  readonly interviews?: InterviewManager;
 }
 
 async function describeOutline(
@@ -153,7 +157,7 @@ async function countCards(
 export async function describeWorkspaceStatus(
   input: DescribeWorkspaceStatusInput,
 ): Promise<WorkspaceStatus> {
-  const { workspaceRoot, fileSystem, drafts, cards, project: projects } = input;
+  const { workspaceRoot, fileSystem, drafts, cards, project: projects, interviews } = input;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
 
   const project: StoryboardProject = await projects.read(workspaceRoot);
@@ -173,6 +177,7 @@ export async function describeWorkspaceStatus(
     drafts: draftCounts,
     canon: { pendingFacts },
     manuscript,
+    interviews: await suggestInterviews(interviews, workspaceRoot, draftCounts),
     nextStep: chooseNextStep({
       hasMissingContract: missingContract.length > 0,
       hasChapterPlan: outline.hasChapterPlan,
@@ -181,6 +186,25 @@ export async function describeWorkspaceStatus(
       manuscript,
     }),
   };
+}
+
+async function suggestInterviews(
+  interviews: InterviewManager | undefined,
+  workspaceRoot: StoryUri,
+  draftCounts: WorkspaceDraftCounts,
+): Promise<InterviewCardCoverage[]> {
+  const hasDraftsToWrite: boolean = draftCounts.missing + draftCounts.stale > 0;
+  if (interviews === undefined || !hasDraftsToWrite) {
+    return [];
+  }
+
+  try {
+    return (await interviews.describeCoverage({ workspaceRoot })).filter(
+      (coverage) => !coverage.hasWorkingModel || coverage.openAxes.length > 0,
+    );
+  } catch {
+    return [];
+  }
 }
 
 function countByStatus(scenes: readonly SceneListItem[], status: SceneListItem['status']): number {

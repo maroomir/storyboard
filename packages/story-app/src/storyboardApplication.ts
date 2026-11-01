@@ -78,6 +78,9 @@ import {
   type INarratorCardRepository,
   type INovelRunStateRepository,
   type ISceneSidebarRepository,
+  InterviewSessionUseCase,
+  DescribeInterviewCoverageUseCase,
+  InterviewRepository,
 } from '@storyboard/story-engine';
 import { type WorkspaceRunLockOwner } from '@storyboard/story-model';
 import {
@@ -90,6 +93,7 @@ import { CardManager } from '#app/managers/cardManager';
 import { DraftManager } from '#app/managers/draftManager';
 import { ManuscriptManager } from '#app/managers/manuscriptManager';
 import { NoteManager } from '#app/managers/noteManager';
+import { InterviewManager } from '#app/managers/interviewManager';
 import { ProjectManager } from '#app/managers/projectManager';
 import { WorkspaceManager } from '#app/managers/workspaceManager';
 import { NovelManager } from '#app/managers/novelManager';
@@ -154,6 +158,8 @@ interface EngineGraph {
   readonly generateStoryStateUseCase: GenerateStoryStateUseCase;
   readonly novelPipeline: NovelPipeline;
   readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
+  readonly interviewSessionUseCase: InterviewSessionUseCase;
+  readonly describeInterviewCoverageUseCase: DescribeInterviewCoverageUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
@@ -182,6 +188,7 @@ export class StoryboardApplication {
   public readonly novel: NovelManager;
   public readonly studio: StudioManager;
   public readonly notes: NoteManager;
+  public readonly interviews: InterviewManager;
   public readonly project: ProjectManager;
   public readonly workspace: WorkspaceManager;
   public readonly runGate: RunGate;
@@ -206,6 +213,7 @@ export class StoryboardApplication {
     this.novel = new NovelManager(services);
     this.studio = new StudioManager(services);
     this.notes = new NoteManager(services);
+    this.interviews = new InterviewManager(services);
     this.project = new ProjectManager(services);
     this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
     this.resourceRoots = dependencies.resourceRoots ?? [];
@@ -247,6 +255,7 @@ export class StoryboardApplication {
       drafts: this.drafts,
       cards: this.cards,
       project: this.project,
+      interviews: this.interviews,
     });
   }
 
@@ -354,6 +363,8 @@ function buildServices(
       summarizeChaptersUseCase,
     }),
     planNoteAbsorbUseCase: new PlanNoteAbsorbUseCase(host, ai, repositories),
+    interviewSessionUseCase: new InterviewSessionUseCase(host, ai, repositories),
+    describeInterviewCoverageUseCase: new DescribeInterviewCoverageUseCase(host, repositories),
     promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(repositories),
     promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(repositories),
     promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase(host, repositories),
@@ -413,6 +424,7 @@ function buildWorkspaceRepositories(
     storyFeatures: new StoryFeatureRepository(fileSystem),
     noteAbsorb: new NoteAbsorbRepository(fileSystem),
     noteSources: new NoteSourceProvider(host, { fetch }),
+    interviews: new InterviewRepository(fileSystem),
   };
 }
 
