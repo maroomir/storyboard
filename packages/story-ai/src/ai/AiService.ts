@@ -46,6 +46,12 @@ import {
   type InlineCompletionContext,
 } from '#ai/ai/DraftAiService';
 import { SceneAiService } from '#ai/ai/SceneAiService';
+import { InterviewAiService } from '#ai/ai/InterviewAiService';
+import type { InterviewAxesInput } from '#ai/ai/prompts/interviewAxes';
+import type { InterviewDistillDraft, InterviewDistillInput } from '#ai/ai/prompts/interviewDistill';
+import type { InterviewQuestionDraft, InterviewQuestionInput } from '#ai/ai/prompts/interviewQuestion';
+import type { InterviewUpdateDraft, InterviewUpdateInput } from '#ai/ai/prompts/interviewUpdate';
+import type { InterviewAxis } from '@storyboard/story-model';
 import {
   StudioAgentService,
   type StudioAgentRunInput,
@@ -104,6 +110,7 @@ export class StoryboardAiService {
   private readonly draftAiService: DraftAiService;
   private readonly gateway: AiTextGateway;
   private readonly sceneAiService: SceneAiService;
+  private readonly interviewAiService: InterviewAiService;
   private readonly studioAgentService: StudioAgentService;
 
   public constructor(
@@ -114,6 +121,7 @@ export class StoryboardAiService {
     this.cardAiService = new CardAiService(this.gateway);
     this.draftAiService = new DraftAiService(this.gateway);
     this.sceneAiService = new SceneAiService(this.gateway);
+    this.interviewAiService = new InterviewAiService(this.gateway);
     this.studioAgentService = new StudioAgentService(this.gateway);
   }
 
@@ -492,6 +500,34 @@ export class StoryboardAiService {
       maxTokens: options.maxTokens ?? config.maxTokens,
       reasoningEffort: options.reasoningEffort ?? config.reasoningEffort,
     });
+  }
+
+  public proposeInterviewAxes(
+    input: InterviewAxesInput,
+    options: GenerateTextOptions = {},
+  ): Promise<InterviewAxis[]> {
+    return this.interviewAiService.proposeInterviewAxes(input, options);
+  }
+
+  public askInterviewQuestion(
+    input: InterviewQuestionInput,
+    options: GenerateTextOptions = {},
+  ): Promise<InterviewQuestionDraft | undefined> {
+    return this.interviewAiService.askInterviewQuestion(input, options);
+  }
+
+  public updateInterviewModel(
+    input: InterviewUpdateInput,
+    options: GenerateTextOptions = {},
+  ): Promise<InterviewUpdateDraft | undefined> {
+    return this.interviewAiService.updateInterviewModel(input, options);
+  }
+
+  public distillInterview(
+    input: InterviewDistillInput,
+    options: GenerateTextOptions = {},
+  ): Promise<InterviewDistillDraft> {
+    return this.interviewAiService.distillInterview(input, options);
   }
 
   public async *generateTextStream(
