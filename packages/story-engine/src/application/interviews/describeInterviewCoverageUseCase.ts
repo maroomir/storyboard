@@ -9,6 +9,7 @@ import {
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
 import {
+  getStoryboardProjectPaths,
   scenePath,
   type BibleSubjectKind,
   type InterviewAxesFile,
@@ -110,17 +111,28 @@ export class DescribeInterviewCoverageUseCase {
     request: DescribeInterviewCoverageRequest,
     tuning: InterviewTuning,
   ): Promise<SceneFile[]> {
+    const hasScenes: boolean = await this.host.fileSystem.exists(
+      getStoryboardProjectPaths(request.workspaceRoot).sceneDirectory,
+    );
+    if (!hasScenes) {
+      return [];
+    }
+
     const listed: SceneListItem[] = await this.repositories.sceneSidebar.list(request.workspaceRoot);
     const chosen: SceneListItem[] = chooseUpcomingScenes(listed, tuning.upcomingScenes, request.sceneStems);
     const scenes: SceneFile[] = [];
 
     for (const item of chosen) {
-      scenes.push(
-        await this.repositories.scenes.read(
-          scenePath(request.workspaceRoot, item.stem),
-          `${item.stem}.card`,
-        ),
-      );
+      try {
+        scenes.push(
+          await this.repositories.scenes.read(
+            scenePath(request.workspaceRoot, item.stem),
+            `${item.stem}.card`,
+          ),
+        );
+      } catch {
+        continue;
+      }
     }
 
     return scenes;

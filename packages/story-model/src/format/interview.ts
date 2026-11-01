@@ -158,6 +158,7 @@ export interface InterviewQuestion {
   readonly sessionId: string;
   readonly axisId: string;
   readonly axisLabel: string;
+  readonly values: readonly InterviewAxisValue[];
   readonly source: InterviewQuestionSource;
   readonly situation: string;
   readonly question: string;
