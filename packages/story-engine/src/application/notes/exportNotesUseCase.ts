@@ -198,6 +198,8 @@ export function renderBackgroundNote(card: BackgroundCard, nameOf: (id: string) 
     '',
     ...section('소개', card.description),
     ...section('감각', card.senses),
+    ...section('배치', card.layout),
+    ...section('규칙', card.rules),
     ...section('속한 인물', card.characterIds.map((id) => wikiLink(nameOf(id)))),
   ].join('\n');
 }

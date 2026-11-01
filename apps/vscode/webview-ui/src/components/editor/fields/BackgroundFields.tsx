@@ -46,6 +46,16 @@ export function BackgroundFields({
         values={card.senses ?? []}
         onChange={(senses) => updateCard({ ...card, senses })}
       />
+      <ListField
+        label="Layout"
+        values={card.layout ?? []}
+        onChange={(layout) => updateCard({ ...card, layout })}
+      />
+      <ListField
+        label="Rules"
+        values={card.rules ?? []}
+        onChange={(rules) => updateCard({ ...card, rules })}
+      />
       {card.type === 'location' ? (
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Location Kind</span>
