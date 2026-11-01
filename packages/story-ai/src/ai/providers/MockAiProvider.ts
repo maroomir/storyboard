@@ -121,7 +121,99 @@ function createMockOutlineCharacters(): string {
   });
 }
 
+function extractMockValueIds(prompt: string): string[] {
+  const block: string = prompt.split('[값]')[1]?.split(/\n\n|\n[a-z0-9-]+: /)[0] ?? '';
+
+  return block
+    .split('\n')
+    .map((line) => /^- ([a-z0-9-]+):/.exec(line.trim())?.[1])
+    .filter((id): id is string => id !== undefined);
+}
+
+function isMockBackgroundPrompt(prompt: string): boolean {
+  return prompt.includes('[카드 종류]\n배경') || prompt.startsWith('[장소]');
+}
+
+function createMockInterviewAxes(prompt: string): string {
+  const axes: readonly { id: string; label: string; values: { id: string; label: string }[] }[] =
+    isMockBackgroundPrompt(prompt)
+      ? [
+          {
+            id: 'exits',
+            label: '드나드는 길',
+            values: [
+              { id: 'single-door', label: '정문 하나' },
+              { id: 'back-door', label: '뒷문 있음' },
+              { id: 'window', label: '창으로 드나듦' },
+            ],
+          },
+          {
+            id: 'watchers',
+            label: '늘 있는 사람',
+            values: [
+              { id: 'owner', label: '주인이 지킨다' },
+              { id: 'nobody', label: '아무도 없다' },
+              { id: 'crowd', label: '손님이 붐빈다' },
+            ],
+          },
+        ]
+      : [
+          {
+            id: 'pressure-defense',
+            label: '압박 아래 방어',
+            values: [
+              { id: 'counter', label: '역공' },
+              { id: 'withhold', label: '침묵' },
+              { id: 'deflect', label: '비탈' },
+            ],
+          },
+          {
+            id: 'affection',
+            label: '호감 표출',
+            values: [
+              { id: 'direct', label: '직접' },
+              { id: 'indirect', label: '우회' },
+              { id: 'deny', label: '부정' },
+            ],
+          },
+        ];
+
+  return JSON.stringify({ axes });
+}
+
+function createMockInterviewQuestion(prompt: string): string {
+  const valueIds: string[] = extractMockValueIds(prompt);
+  const axisId: string = /^([a-z0-9-]+): /m.exec(prompt.split('[열린 축]')[1] ?? '')?.[1] ?? '';
+
+  return JSON.stringify({
+    axisId,
+    question: '[Mock AI] 이 상황에서 어떻게 하는가?',
+    options: valueIds.slice(0, 3).map((valueId) => ({ valueId, text: `[Mock AI] ${valueId} 반응` })),
+  });
+}
+
+function createMockInterviewUpdate(prompt: string): string {
+  const [firstValueId] = extractMockValueIds(prompt);
+
+  return JSON.stringify({
+    summary: '[Mock AI] 몰릴 때 먼저 참고, 밀리면 되묻는 쪽으로 기울인다.',
+    ...(firstValueId === undefined ? {} : { classification: { valueId: firstValueId } }),
+  });
+}
+
+function createMockInterviewDistill(prompt: string): string {
+  return JSON.stringify(
+    isMockBackgroundPrompt(prompt)
+      ? { layout: ['[Mock AI] 출입구는 정문 하나다'], rules: ['[Mock AI] 밤에는 주인이 카운터를 지킨다'] }
+      : { traits: ['[Mock AI] 몰릴 때 먼저 참고, 밀리면 되묻는 쪽으로 기울인다'], voice: [], relationSpeech: [] },
+  );
+}
+
 const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuilder>>> = {
+  interviewAxes: createMockInterviewAxes,
+  interviewQuestion: createMockInterviewQuestion,
+  interviewUpdate: createMockInterviewUpdate,
+  interviewDistill: createMockInterviewDistill,
   situationExtraction: (promptSummary: string): string =>
     JSON.stringify([
       {
