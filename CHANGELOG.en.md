@@ -13,8 +13,11 @@ after the first public release.
 ### Added
 
 - **Background cards have `layout` and `rules`.** Write a place's fixed facts, such as its entrances, areas and what can be seen or heard from where, one line each under `layout`, and what always holds there ("at night the owner never leaves the counter") under `rules`. The skeleton receives them as [layout] and [rules of this place] to keep movement and sight lines consistent, and the expansion receives them as background facts. The extension's card editor shows both on the Edit tab. Works that leave them empty keep their drafts and background memory current.
+- **Card candidates can propose speech to others and a background's layout and rules.** The new candidate kinds `relationSpeech`, `layoutLine` and `ruleLine` are applied by `card promote` and the extension's collect panel. The upcoming character and background interview fills cards through this path.
 
 ### Fixed
+
+- **A card candidate that changes a relation's type keeps its speech.** Applying a relation candidate used to drop that relation's `speech`.
 
 - **The skeleton receives each character's address rules and speech to others.** A card's `relations[].speech` reached only the dialogue polish, not the skeleton, so the skeleton mixed up catchphrase address terms regardless of who was addressed (a character who calls Eunha only "elite" called her "commoner"). The skeleton prompt now carries a [speech to others] block per character, and a persona keeps the address rules written in the description verbatim, with the other character's name.
 - **A character's persona is no longer written from another character's point of view.** The persona prompt carried the scene's focal character and relation stage, so in a first-person work a non-focal character's persona came out as the narrator's monologue. A persona now receives only the work's genre, style constraints and prohibitions. Because the prompt changed, saved persona memory is rebuilt on the next generation.

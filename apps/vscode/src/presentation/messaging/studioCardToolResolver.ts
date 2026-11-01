@@ -154,6 +154,8 @@ function describeCollectProposal(proposal: CardCollectProposal): string {
       return `- 속성 ${proposal.key}: ${proposal.value}${sources}`;
     case 'relation':
       return `- 관계 ${proposal.target}: ${proposal.type}${sources}`;
+    case 'relationSpeech':
+      return `- 말투 ${proposal.target}: ${proposal.speech}${sources}`;
     case 'arc':
       return `- 아크 ${proposal.sceneRef}: ${proposal.summary}${sources}`;
     case 'scalar':
