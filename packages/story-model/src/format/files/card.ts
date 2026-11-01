@@ -234,6 +234,8 @@ function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
     ...(card.time === undefined ? {} : { time: card.time }),
     ...(card.weather === undefined ? {} : { weather: card.weather }),
     ...(card.senses === undefined ? {} : { senses: card.senses }),
+    ...(card.layout === undefined ? {} : { layout: card.layout }),
+    ...(card.rules === undefined ? {} : { rules: card.rules }),
   };
   if (card.type === 'location') {
     return { type: 'location', ...base, locationKind: card.locationKind };

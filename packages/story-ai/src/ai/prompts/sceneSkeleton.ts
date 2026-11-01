@@ -41,6 +41,8 @@ export const SceneSkeletonPrompt: PromptModule<
   config: promptTuning('sceneSkeleton'),
   build(input: SceneSkeletonInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     const style: StyleDirective | undefined = input.style;
+    const hasLayout: boolean = (input.background.layout ?? []).length > 0;
+    const hasRules: boolean = (input.background.rules ?? []).length > 0;
 
     return renderPrompt('sceneSkeleton', variant, {
       view: {
@@ -52,6 +54,11 @@ export const SceneSkeletonPrompt: PromptModule<
         priorSkeleton: input.priorSkeleton,
         nextBeat: input.nextBeat,
         backgroundDescription: joinCardText(input.background.description),
+        hasPlaceFacts: hasLayout || hasRules,
+        hasLayout,
+        layout: input.background.layout ?? [],
+        hasRules,
+        rules: input.background.rules ?? [],
         hasBackgroundConflicts: (input.backgroundConflicts ?? []).length > 0,
         backgroundConflicts: input.backgroundConflicts ?? [],
         hasPersonas: input.personas.size > 0,

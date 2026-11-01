@@ -27,7 +27,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 - **Card `id`**: `^[a-z0-9][a-z0-9-]*$` only (ASCII). Human-readable names go in `name`. Keeps filenames and refs portable—see `cardIdPattern` / `cardSchema` in [`packages/story-model/src/format/files/card.ts`](packages/story-model/src/format/card.ts).
 - **Source of truth for edits**: `TextDocument`; webview/form changes serialize to YAML and replace document text (full replace is acceptable until diff sync is needed).
 - **Codec**: keep `parseCard` / `serializeCard` in [`packages/story-model/src/format/files/card.ts`](packages/story-model/src/format/files/card.ts) testable with round-trip tests.
-- **List-form text fields**: character `voice`/`description`/`desire` and background `description`/`senses` are `string[]` (one bullet per item), not prose. Background `time`/`weather` are scalar strings. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `packages/story-model/src/format/files/card.ts`) wherever a field is fed to prompts/hashes.
+- **List-form text fields**: character `voice`/`description`/`desire` and background `description`/`senses`/`layout`/`rules` are `string[]` (one bullet per item), not prose. Background `time`/`weather` are scalar strings. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `packages/story-model/src/format/files/card.ts`) wherever a field is fed to prompts/hashes.
 
 ## Scenes (`scene/*.card`)
 

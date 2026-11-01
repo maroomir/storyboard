@@ -135,6 +135,28 @@ describe('card file codec', () => {
     }
   });
 
+  it('round-trips background layout and rules through serialize and parse', () => {
+    const card: StoryboardCard = {
+      type: 'location',
+      id: 'tavern',
+      name: '미감',
+      locationKind: 'place',
+      description: [],
+      characterIds: [],
+      tags: [],
+      layout: ['뒷문은 주방을 지나야 한다'],
+      rules: ['밤에는 주인이 카운터를 떠나지 않는다'],
+    };
+
+    const reparsed = parseCard(serializeCard(card));
+
+    expect(reparsed).toMatchObject({
+      layout: ['뒷문은 주방을 지나야 한다'],
+      rules: ['밤에는 주인이 카운터를 떠나지 않는다'],
+    });
+    expect(serializeCard(card).indexOf('layout:')).toBeGreaterThan(serializeCard(card).indexOf('tags:'));
+  });
+
   it('preserves AI-managed fields through serialize and parse', () => {
     const card: StoryboardCard = {
       type: 'character',

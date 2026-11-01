@@ -295,6 +295,10 @@ weather: 맑음
 senses:
   - 멀리서 울리는 등교 종소리
   - 갓 자른 잔디 냄새
+layout:
+  - 정문은 큰길 쪽 하나뿐이고, 왼쪽 담을 따라 가면 쪽문이 있다
+rules:
+  - 8시 30분이 지나면 정문을 닫고 쪽문으로만 들어온다
 description:
   - 주인공이 처음 등교하는 고등학교 정문. ...
 ```
@@ -307,7 +311,7 @@ description:
 - 우측: 탭으로 구성된 편집 영역
   - **`편집` 탭**: 사용자가 수기로 작성하는 필드만 단일 목록형으로 모은다.
     - 캐릭터: `name`·`aliases`·`role`·`voice`·`catchphrases`·`desire`·`description`·`tags`·`profile` (`id`는 읽기 전용)
-    - 배경: `name`·`aliases`·`description`·`tags`·`time`·`weather`·`senses`·`locationKind`(location 한정) (`id`는 읽기 전용)
+    - 배경: `name`·`aliases`·`description`·`tags`·`time`·`weather`·`senses`·`layout`·`rules`·`locationKind`(location 한정) (`id`는 읽기 전용). `layout`(출입구·구역·시선)과 `rules`(이 장소에서 늘 참인 것)는 장소의 확정 사실이라 뼈대에 [배치]·[이 장소의 규칙]으로, 살붙임에 배경 사실로 들어간다
   - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
   - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)

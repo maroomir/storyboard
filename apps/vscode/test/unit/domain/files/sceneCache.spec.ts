@@ -175,6 +175,15 @@ describe("scene cache codec", () => {
     expect(computeSceneInputHash({ ...input, characters: [sampleCharacter] })).toBe(baseHash)
   })
 
+  it("changes the hash when the background gains layout or rules and keeps it when they are empty", () => {
+    const input = { sceneBody: "같은 입력", characters: [sampleCharacter], background: sampleBackground, format: "novel" } as const
+    const baseHash = computeSceneInputHash(input)
+
+    expect(computeSceneInputHash({ ...input, background: { ...sampleBackground, layout: [], rules: [] } })).toBe(baseHash)
+    expect(computeSceneInputHash({ ...input, background: { ...sampleBackground, layout: ["뒷문 있음"] } })).not.toBe(baseHash)
+    expect(computeSceneInputHash({ ...input, background: { ...sampleBackground, rules: ["밤엔 닫힘"] } })).not.toBe(baseHash)
+  })
+
   it("changes the hash when bible facts are injected", () => {
     const withoutFacts = computeSceneInputHash({
       sceneBody: "같은 입력",

@@ -8,7 +8,7 @@ import type { AiTaskName } from '#model/contracts/ai';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { formatCardAttributes, joinCardText } from '#model/format/card';
+import { backgroundPlaceFacts, formatCardAttributes, joinCardText } from '#model/format/card';
 import { aiProviderIds } from '#model/contracts/providerCatalog';
 import { aiTaskCatalog } from '#model/contracts/ai';
 import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
@@ -240,6 +240,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
           weather: input.background.weather ?? '',
           senses: joinCardText(input.background.senses),
           characterIds: input.background.characterIds ?? [],
+          ...backgroundPlaceFacts(input.background),
         }
       : undefined,
     format: input.format,

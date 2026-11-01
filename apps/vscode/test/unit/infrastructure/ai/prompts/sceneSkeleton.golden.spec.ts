@@ -15,7 +15,12 @@ describe("SceneSkeletonPrompt golden", () => {
     catchphrases: new Map([["하나", ["뭐 별거는 아닌데"]]]),
     characterKnowledge: new Map([["준", ["하나가 편지를 받았다"]]]),
     speechToOthers: new Map([["하나", ["준에게: 반말, '선배'라고만 부름"]]]),
-    background: { ...emptyBackground, description: ["비 내리는 부두", "낡은 창고"] },
+    background: {
+      ...emptyBackground,
+      description: ["비 내리는 부두", "낡은 창고"],
+      layout: ["창고 출입문은 바다 쪽 하나"],
+      rules: ["밤에는 경비가 부두 끝 초소에 있다"]
+    },
     previousContext: "둘은 어제 다퉜다.",
     endState: "준이 문을 닫고 나간다.",
     grounding: { incident: "편지가 도착했다", place: "부두 창고" },
