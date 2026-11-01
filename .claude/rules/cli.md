@@ -154,6 +154,21 @@ and the instance list in `apps/cli/src/commands/index.ts` is where those specs a
 배경 카드의 상충(`.storyboard/cache/background-conflicts.json`, 카드가 그 뒤 바뀌었으면 보지 않음)을
 경고로 보고한다. doctor 자신은 AI를 부르지 않는다.
 
+## Interview verbs
+
+`card interview <id>` is the one interview verb for characters and backgrounds alike (the card id
+decides which). It is interactive only: without `container.prompter` it fails with exit 1, so an
+agent never enters it. It takes no run lock — it writes only the interview cache and the candidate
+file, and `card promote` is the verb that writes cards. The loop is the terminal's: `start` → repeat
+`next` → `choose` (the options plus 직접 쓰기 / 건너뛰기 / 여기까지) → `answer` → on a written
+answer, one `choose` to confirm the value the engine read (or rename it) → `finish`. Every step is a
+manager verb on `container.interviews` and the session state is in the engine's cache file, so
+Ctrl+C loses nothing. `--scenes` narrows the beats (stems, or `3..5` by order) and is passed with
+every step; `--limit` caps the answers; `--reset-axes` empties the axis vocabulary and every working
+model. `status` adds an `인터뷰` line from `WorkspaceStatus.interviews` (`describeInterviewHint`),
+`doctor` lists cards with undecided axes as info and warns when the contract changed after the
+axes were drawn; `card promote --dry-run` labels interview candidates `인터뷰에서`.
+
 ## Note import (`apps/cli/src/commands/notes.ts`)
 
 `notes absorb <path|url>` reads an Obsidian folder or note (every note under it, in name order) or a

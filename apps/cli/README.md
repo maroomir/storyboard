@@ -86,6 +86,7 @@ storyboard scene list             # scene cards in number order, each with its d
 storyboard draft show 01-intro    # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
 storyboard card show hana         # one card, found by id
+storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal or tui only)
 ```
 
 `status --json` carries the same counts plus `data.next` (`step`, `command`, `reason`), so an agent
@@ -151,6 +152,29 @@ the same inputs on `project set` — keys you leave out keep their current value
 ```bash
 storyboard project set --target-words 320000 --from contract.json
 ```
+
+### 인물·배경 인터뷰
+
+`card interview <id>` asks the writer, one situation at a time, how a character (or a place) acts in
+the scenes that have no draft yet. Each question comes from a beat of an upcoming scene; the three
+options are what that character would plausibly do, each standing for a different value of an axis
+the work's genre and contract defined once (for a romance: how affection shows, how distance is
+kept; for a thriller: what the character does under pressure, how they lie). Picking one is a vote;
+writing your own answer counts double and can become a new value. When one value of an axis reaches
+the threshold, the session's end distils it into a card candidate — a conditional tendency such as
+"몰릴 때 먼저 참고, 밀리면 되묻는다" — that `card promote` applies next to the draft and note
+candidates. The chosen lines themselves never reach a prompt: the choice records, the axis
+vocabulary and the working model stay under `.storyboard/cache/interviews/`, and only what is
+distilled goes to the card.
+
+A background is interviewed through the same verb (`card interview tavern`): the writer then plays
+the place — where someone slips out, who notices, what carries from the kitchen — and the answers
+distil into its `layout` and `rules`. `--scenes 3..5` narrows the questions to those scenes,
+`--limit 5` ends the session after five answers, and `--reset-axes` throws away the axis vocabulary
+(and every card's votes) when the contract has changed. `status` names the cards whose upcoming
+scenes still have unanswered axes; `doctor` repeats it and warns when the contract moved under the
+vocabulary. The verb needs a terminal (or the tui) because it asks; the lock is not taken, so an
+interview can run while a generation is going.
 
 ### 시점과 구성
 
