@@ -200,6 +200,66 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     kind: 'chars',
     bounds: { min: 200, max: 8000 },
   },
+  {
+    id: 'generation.interview.optionCount',
+    label: '인터뷰 선택지 수',
+    kind: 'count',
+    bounds: { min: 2, max: 4 },
+  },
+  {
+    id: 'generation.interview.explorationOptions',
+    label: '인터뷰 탐색 안 수',
+    kind: 'count',
+    bounds: { min: 0, max: 1 },
+  },
+  {
+    id: 'generation.interview.offBeatQuestionsPerSession',
+    label: '세션당 사건 밖 질문 수',
+    kind: 'count',
+    bounds: { min: 0, max: 6 },
+  },
+  {
+    id: 'generation.interview.maxQuestionsPerSession',
+    label: '세션당 질문 상한',
+    kind: 'count',
+    bounds: { min: 1, max: 30 },
+  },
+  {
+    id: 'generation.interview.upcomingScenes',
+    label: '인터뷰가 보는 다음 씬 수',
+    kind: 'count',
+    bounds: { min: 1, max: 10 },
+  },
+  {
+    id: 'generation.interview.axesPerCardType',
+    label: '카드 종류당 축 상한',
+    kind: 'count',
+    bounds: { min: 3, max: 20 },
+  },
+  {
+    id: 'generation.interview.chosenWeight',
+    label: '고른 답의 표',
+    kind: 'count',
+    bounds: { min: 1, max: 5 },
+  },
+  {
+    id: 'generation.interview.writtenWeight',
+    label: '직접 쓴 답의 표',
+    kind: 'count',
+    bounds: { min: 1, max: 5 },
+  },
+  {
+    id: 'generation.interview.distillMinimumWeight',
+    label: '특성으로 증류하는 최소 표',
+    kind: 'count',
+    bounds: { min: 1, max: 6 },
+  },
+  {
+    id: 'generation.interview.rebuildAfterWrittenStreak',
+    label: '요약을 다시 쓰는 연속 직접 답 수',
+    kind: 'count',
+    bounds: { min: 1, max: 5 },
+  },
   ...weightParameters,
 ];
 
