@@ -70,7 +70,11 @@ export type AiTaskName =
   | 'noteSynthesis'
   | 'noteCardConsolidation'
   | 'studioAgent'
-  | 'studioValidation';
+  | 'studioValidation'
+  | 'interviewAxes'
+  | 'interviewQuestion'
+  | 'interviewUpdate'
+  | 'interviewDistill';
 
 export interface AiTaskCatalogEntry {
   readonly name: AiTaskName;
@@ -120,6 +124,10 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'noteCardConsolidation', label: '노트 카드 목록·별칭 정리' },
   { name: 'studioAgent', label: 'Studio 대화' },
   { name: 'studioValidation', label: 'Studio 정합성 검사' },
+  { name: 'interviewAxes', label: '인터뷰 축 설계' },
+  { name: 'interviewQuestion', label: '인터뷰 질문' },
+  { name: 'interviewUpdate', label: '인터뷰 답 반영' },
+  { name: 'interviewDistill', label: '인터뷰 증류' },
 ];
 
 export const aiTaskNames: readonly [ AiTaskName, ...AiTaskName[], ] = aiTaskCatalog.map((task) => task.name) as unknown as readonly [

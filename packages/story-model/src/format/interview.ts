@@ -152,3 +152,64 @@ export const interviewWorkingModelSchema: z.ZodType<InterviewWorkingModel> = z.o
 });
 
 export const emptyInterviewAxesFile: InterviewAxesFile = { version: 1 };
+
+export interface InterviewQuestion {
+  readonly id: string;
+  readonly sessionId: string;
+  readonly axisId: string;
+  readonly axisLabel: string;
+  readonly source: InterviewQuestionSource;
+  readonly situation: string;
+  readonly question: string;
+  readonly options: readonly InterviewOption[];
+}
+
+export interface InterviewOpenAxis {
+  readonly axisId: string;
+  readonly axisLabel: string;
+  readonly beatSituations: readonly InterviewBeatSituation[];
+}
+
+export interface InterviewBeatSituation {
+  readonly sceneStem: string;
+  readonly beatIndex: number;
+  readonly text: string;
+  readonly cast: readonly string[];
+  readonly place?: string;
+  readonly time?: string;
+}
+
+export interface InterviewCardCoverage {
+  readonly cardId: string;
+  readonly cardType: BibleSubjectKind;
+  readonly name: string;
+  readonly hasWorkingModel: boolean;
+  readonly openAxes: readonly InterviewOpenAxis[];
+  readonly upcomingSceneStems: readonly string[];
+}
+
+export interface InterviewClassification {
+  readonly valueId: string;
+  readonly valueLabel: string;
+  readonly isNewValue: boolean;
+}
+
+export type InterviewAnswerInput =
+  | { readonly kind: 'chosen'; readonly index: number }
+  | { readonly kind: 'written'; readonly text: string }
+  | { readonly kind: 'skipped' };
+
+export interface InterviewAnswerOutcome {
+  readonly classification?: InterviewClassification;
+  readonly isRebuilt: boolean;
+  readonly answeredCount: number;
+}
+
+export interface InterviewSessionSummary {
+  readonly sessionId: string;
+  readonly cardId: string;
+  readonly answered: number;
+  readonly skipped: number;
+  readonly candidateCount: number;
+  readonly undecidedAxisLabels: readonly string[];
+}

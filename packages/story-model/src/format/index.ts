@@ -36,6 +36,7 @@ export * from '#model/format/files/bible';
 export * from '#model/format/files/card';
 export * from '#model/format/files/readWriteFileSystem';
 export * from '#model/format/files/cardMemory';
+export * from '#model/format/files/interview';
 export * from '#model/format/files/draft';
 export * from '#model/format/files/outline';
 export * from '#model/format/files/scene';
