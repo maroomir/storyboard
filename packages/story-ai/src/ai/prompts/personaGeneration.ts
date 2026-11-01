@@ -2,7 +2,7 @@ import type { Character } from '@storyboard/story-model';
 import {
   formatCardAttributes,
   joinCardText,
-  voiceStyleLines,
+  personaStyleLines,
   type StyleDirective,
 } from '@storyboard/story-model';
 import { renderPrompt } from '#ai/ai/prompts/promptResource';
@@ -28,7 +28,7 @@ export const PersonaGenerationPrompt: PromptModule<
         attributes: formatCardAttributes(character.attributes),
         hasTraits: Boolean(character.traits && character.traits.length > 0),
         traits: character.traits?.slice(0, 10).join(', '),
-        styleLines: voiceStyleLines(style),
+        styleLines: personaStyleLines(style),
       },
     });
   },

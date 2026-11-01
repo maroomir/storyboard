@@ -4,6 +4,7 @@ import {
   buildStyleDirective,
   describeNarration,
   narrativeStyleLines,
+  personaStyleLines,
   proseConventionLines,
   voiceStyleLines,
   resolveNarration,
@@ -152,9 +153,19 @@ describe("style lines", () => {
     expect(lines.some((line) => line.includes("목표 분량"))).toBe(false)
   })
 
+  it("personaStyleLines keeps only the work-wide tone: genre, style constraints, prohibitions", () => {
+    const lines = personaStyleLines(directive)
+    expect(lines).toEqual([
+      "장르·톤: 로맨스",
+      "문체 제약: 간결체",
+      "작품 금지 규칙 — 어떤 장면에서도 위반하지 마라: 무근거 부활 금지"
+    ])
+  })
+
   it("returns empty arrays for an undefined directive", () => {
     expect(narrativeStyleLines(undefined)).toEqual([])
     expect(voiceStyleLines(undefined)).toEqual([])
+    expect(personaStyleLines(undefined)).toEqual([])
   })
 })
 
@@ -179,6 +190,19 @@ describe("prompt injection", () => {
     const persona = PersonaGenerationPrompt.build(character, "generic", directive)
     expect(persona.system).toContain("장르·톤: 허세 코미디")
     expect(persona.system).not.toContain("서술 시점:")
+  })
+
+  it("persona generation leaves out the scene's focal character and relation stage", () => {
+    const sceneDirective: StyleDirective = {
+      ...directive,
+      narration: { ...resolveNarration({ pov: "first" }), focal: "조만재" },
+      relationStage: "냉전"
+    }
+    const persona = PersonaGenerationPrompt.build({ ...character, id: "eunha", name: "정은하" }, "generic", sceneDirective)
+    expect(persona.system).not.toContain("이 장면의 시점 인물:")
+    expect(persona.system).not.toContain("조만재")
+    expect(persona.system).not.toContain("관계 단계")
+    expect(persona.system).toContain("이 인물의 1인칭으로 쓴다")
   })
 
   it("dialogue polish reflects tone but not narrative pov", () => {

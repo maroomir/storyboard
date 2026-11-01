@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A character's persona is no longer written from another character's point of view.** The persona prompt carried the scene's focal character and relation stage, so in a first-person work a non-focal character's persona came out as the narrator's monologue. A persona now receives only the work's genre, style constraints and prohibitions. Because the prompt changed, saved persona memory is rebuilt on the next generation.
+
 ## [0.14.1] - 2026-11-01
 
 ### Changed (breaking)

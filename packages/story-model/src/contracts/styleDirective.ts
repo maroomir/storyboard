@@ -239,6 +239,16 @@ export function proseConventionLines(tense: NarrativeTense = 'past'): readonly s
   ];
 }
 
+export function personaStyleLines(directive: StyleDirective | undefined): string[] {
+  if (!directive) {
+    return [];
+  }
+
+  return [genreLine(directive), styleConstraintLine(directive), prohibitionLine(directive)].filter(
+    (line): line is string => Boolean(line),
+  );
+}
+
 export function voiceStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
     return [];
