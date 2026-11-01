@@ -9,7 +9,9 @@ import {
   describeBeatSituation,
   isAxisDecided,
   listOpenAxes,
+  otherPlaceTokens,
   unseenValueIds,
+  type BeatSituationOptions,
 } from '#engine/application/interviews/interviewCoverage';
 import {
   resolveInterviewTuning,
@@ -108,6 +110,7 @@ export interface InterviewConfirmRequest extends InterviewSessionRequest {
 interface InterviewContext {
   readonly card: StoryboardCard;
   readonly cardType: BibleSubjectKind;
+  readonly situationOptions: BeatSituationOptions;
   readonly project: StoryboardProject;
   readonly scenes: readonly SceneFile[];
   readonly axes: readonly InterviewAxis[];
@@ -277,7 +280,7 @@ export class InterviewSessionUseCase {
       ),
     );
 
-    return collectBeatSituations(context.card, context.scenes).find(
+    return collectBeatSituations(context.card, context.scenes, context.situationOptions).find(
       (situation) => !askedBeats.has(`${situation.sceneStem}#${situation.beatIndex}`),
     );
   }
@@ -741,7 +744,7 @@ export class InterviewSessionUseCase {
   }
 
   private describeCoverage(context: InterviewContext): InterviewCardCoverage {
-    const situations: InterviewBeatSituation[] = collectBeatSituations(context.card, context.scenes);
+    const situations: InterviewBeatSituation[] = collectBeatSituations(context.card, context.scenes, context.situationOptions);
 
     return {
       cardId: context.card.id,
@@ -800,8 +803,29 @@ export class InterviewSessionUseCase {
       attribution,
     );
     const model: InterviewWorkingModel = await this.ensureWorkingModel(workspaceRoot, card, cardType, sessionId);
+    const situationOptions: BeatSituationOptions =
+      cardType === 'background'
+        ? { otherPlaceTokens: otherPlaceTokens(card, await this.loadBackgrounds(workspaceRoot)) }
+        : {};
 
-    return { card, cardType, project, scenes, axes, model, tuning, ai, attribution };
+    return { card, cardType, situationOptions, project, scenes, axes, model, tuning, ai, attribution };
+  }
+
+  private async loadBackgrounds(workspaceRoot: StoryUri): Promise<StoryboardCard[]> {
+    const cards: StoryboardCard[] = [];
+
+    for (const summary of await this.repositories.cardSidebar.list(workspaceRoot, 'background')) {
+      const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
+        workspaceRoot,
+        'background',
+        summary.id,
+      );
+      if (card !== undefined) {
+        cards.push(card);
+      }
+    }
+
+    return cards;
   }
 
   private async loadUpcomingScenes(
