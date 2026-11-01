@@ -88,6 +88,7 @@ export interface InterviewSessionRequest {
   readonly workspaceRoot: StoryUri;
   readonly cardId: string;
   readonly sessionId: string;
+  readonly sceneStems?: readonly string[];
 }
 
 export interface InterviewAnswerRequest extends InterviewSessionRequest {
@@ -724,11 +725,14 @@ export class InterviewSessionUseCase {
   }
 
   private toQuestion(record: InterviewRecord, axes: readonly InterviewAxis[]): InterviewQuestion {
+    const axis: InterviewAxis | undefined = axes.find((candidate) => candidate.id === record.axisId);
+
     return {
       id: record.id,
       sessionId: record.sessionId,
       axisId: record.axisId,
-      axisLabel: axes.find((axis) => axis.id === record.axisId)?.label ?? record.axisId,
+      axisLabel: axis?.label ?? record.axisId,
+      values: axis?.values ?? [],
       source: record.source,
       situation: record.situation,
       question: record.question,
@@ -767,7 +771,7 @@ export class InterviewSessionUseCase {
       throw new Error(`카드 ${request.cardId} 를 찾을 수 없습니다.`);
     }
 
-    return this.loadContext(request.workspaceRoot, card, undefined, request.sessionId);
+    return this.loadContext(request.workspaceRoot, card, request.sceneStems, request.sessionId);
   }
 
   private async loadContext(
