@@ -29,6 +29,7 @@ export {
   type NovelRunSpending,
 } from '#app/managers/novelManager';
 export { NoteManager, type NoteManagerDependencies } from '#app/managers/noteManager';
+export { InterviewManager, type InterviewManagerDependencies } from '#app/managers/interviewManager';
 export { ProjectManager, type ProjectManagerDependencies } from '#app/managers/projectManager';
 export {
   WorkspaceManager,

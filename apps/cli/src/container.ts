@@ -48,6 +48,7 @@ export interface CliContainer extends Pick<
   | 'novel'
   | 'studio'
   | 'notes'
+  | 'interviews'
   | 'project'
   | 'workspace'
   | 'runGate'
@@ -189,6 +190,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     novel: application.novel,
     studio: application.studio,
     notes: application.notes,
+    interviews: application.interviews,
     project: application.project,
     workspace: application.workspace,
     runGate: application.runGate,
