@@ -512,6 +512,8 @@ function changeLabel(proposal: CardCollectProposal): string {
       return `속성 · ${proposal.key}`;
     case 'relation':
       return `관계 · ${proposal.target}`;
+    case 'relationSpeech':
+      return `말투 · ${proposal.target}`;
     case 'arc':
       return `아크 · ${proposal.sceneRef}`;
     case 'scalar':

@@ -14,6 +14,8 @@ function keyedChangeValue(change: CardCollectProposal): string | undefined {
       return change.value;
     case 'relation':
       return change.type;
+    case 'relationSpeech':
+      return change.speech;
     case 'arc':
       return change.summary;
     case 'scalar':
@@ -27,6 +29,7 @@ function noteChangeIdentity(change: CardCollectProposal): string {
   switch (change.kind) {
     case 'attribute':
     case 'relation':
+    case 'relationSpeech':
     case 'arc':
     case 'scalar':
       return `${change.id}\u0000${keyedChangeValue(change)}`;

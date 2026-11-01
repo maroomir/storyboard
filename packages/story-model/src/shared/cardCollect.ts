@@ -23,6 +23,15 @@ export type CardCollectProposal =
       before?: string;
     }
   | {
+      kind: 'relationSpeech';
+      target: string;
+      speech: string;
+      id: string;
+      sourceScenes: string[];
+      type?: string;
+      before?: string;
+    }
+  | {
       kind: 'arc';
       summary: string;
       sceneRef: string;
@@ -39,6 +48,8 @@ export type CardCollectProposal =
   | { kind: 'voiceLine'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'desireLine'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'sense'; value: string; id: string; sourceScenes: string[] }
+  | { kind: 'layoutLine'; value: string; id: string; sourceScenes: string[] }
+  | { kind: 'ruleLine'; value: string; id: string; sourceScenes: string[] }
   | {
       kind: 'scalar';
       field: 'time' | 'weather';
@@ -68,6 +79,14 @@ export const cardCollectProposalSchema: z.ZodType<CardCollectProposal> = z.discr
     }),
     z.object({
       ...proposalBaseFields,
+      kind: z.literal('relationSpeech'),
+      target: z.string().min(1),
+      speech: z.string().min(1),
+      type: z.string().min(1).optional(),
+      before: z.string().optional(),
+    }),
+    z.object({
+      ...proposalBaseFields,
       kind: z.literal('arc'),
       stage: z.string().min(1).optional(),
       summary: z.string().min(1),
@@ -90,6 +109,8 @@ export const cardCollectProposalSchema: z.ZodType<CardCollectProposal> = z.discr
     z.object({ ...proposalBaseFields, kind: z.literal('voiceLine'), value: z.string().min(1) }),
     z.object({ ...proposalBaseFields, kind: z.literal('desireLine'), value: z.string().min(1) }),
     z.object({ ...proposalBaseFields, kind: z.literal('sense'), value: z.string().min(1) }),
+    z.object({ ...proposalBaseFields, kind: z.literal('layoutLine'), value: z.string().min(1) }),
+    z.object({ ...proposalBaseFields, kind: z.literal('ruleLine'), value: z.string().min(1) }),
     z.object({
       ...proposalBaseFields,
       kind: z.literal('scalar'),
@@ -111,6 +132,8 @@ export function cardCollectProposalId(proposal: CardCollectProposalDraft): strin
       return `attribute:${proposal.key}`;
     case 'relation':
       return `relation:${proposal.target}`;
+    case 'relationSpeech':
+      return `relationSpeech:${proposal.target}`;
     case 'arc':
       return `arc:${proposal.sceneRef}`;
     case 'scalar':
