@@ -126,6 +126,8 @@ interface BackgroundCardFields {
   time?: string;
   weather?: string;
   senses?: string[];
+  layout?: string[];
+  rules?: string[];
 }
 
 export type LocationKind = 'place' | 'affiliation';
@@ -176,6 +178,8 @@ const backgroundBaseShape = {
   time: z.string().trim().min(1).optional(),
   weather: z.string().trim().min(1).optional(),
   senses: stringListSchema.optional(),
+  layout: stringListSchema.optional(),
+  rules: stringListSchema.optional(),
 } satisfies z.ZodRawShape;
 
 const locationBackgroundShape = {
@@ -211,6 +215,15 @@ export function isBackgroundCard(card: StoryboardCard): card is BackgroundCard {
 
 export function joinCardText(value: readonly string[] | undefined): string {
   return (value ?? []).join('\n');
+}
+
+export function backgroundPlaceFacts(
+  card: Pick<BackgroundCard, 'layout' | 'rules'>,
+): { readonly layout?: string; readonly rules?: string } {
+  return {
+    ...((card.layout ?? []).length > 0 ? { layout: joinCardText(card.layout) } : {}),
+    ...((card.rules ?? []).length > 0 ? { rules: joinCardText(card.rules) } : {}),
+  };
 }
 
 export function splitCardTextToList(value: string): string[] {

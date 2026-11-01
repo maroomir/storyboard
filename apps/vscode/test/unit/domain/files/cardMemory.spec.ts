@@ -122,4 +122,12 @@ describe("background memory codec", () => {
     expect(withWeather).not.toBe(baseHash)
     expect(withSenses).not.toBe(baseHash)
   })
+
+  it("changes the background hash for layout or rules and keeps it when they are empty", () => {
+    const baseHash = computeBackgroundCardHash(schoolCard)
+
+    expect(computeBackgroundCardHash({ ...schoolCard, layout: [], rules: [] })).toBe(baseHash)
+    expect(computeBackgroundCardHash({ ...schoolCard, layout: ["정문 하나"] })).not.toBe(baseHash)
+    expect(computeBackgroundCardHash({ ...schoolCard, rules: ["8시 반에 닫힌다"] })).not.toBe(baseHash)
+  })
 })

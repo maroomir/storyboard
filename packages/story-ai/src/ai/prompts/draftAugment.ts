@@ -90,6 +90,8 @@ export function formatAugmentCards(
     const lines: string[] = [header];
     appendCardLine(lines, '묘사', joinCardText(background.description));
     appendCardLine(lines, '감각', joinCardText(background.senses));
+    appendCardLine(lines, '배치', joinCardText(background.layout));
+    appendCardLine(lines, '규칙', joinCardText(background.rules));
     blocks.push(lines.join('\n'));
   }
 

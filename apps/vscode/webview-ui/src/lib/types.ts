@@ -96,6 +96,8 @@ export interface StoryboardCard {
   readonly time?: string;
   readonly weather?: string;
   readonly senses?: readonly string[];
+  readonly layout?: readonly string[];
+  readonly rules?: readonly string[];
   readonly characterIds?: readonly string[];
   readonly attributes?: Record<string, CardAttributeValue>;
   readonly tags?: readonly string[];

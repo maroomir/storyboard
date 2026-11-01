@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Background cards have `layout` and `rules`.** Write a place's fixed facts, such as its entrances, areas and what can be seen or heard from where, one line each under `layout`, and what always holds there ("at night the owner never leaves the counter") under `rules`. The skeleton receives them as [layout] and [rules of this place] to keep movement and sight lines consistent, and the expansion receives them as background facts. The extension's card editor shows both on the Edit tab. Works that leave them empty keep their drafts and background memory current.
+
 ### Fixed
 
 - **The skeleton receives each character's address rules and speech to others.** A card's `relations[].speech` reached only the dialogue polish, not the skeleton, so the skeleton mixed up catchphrase address terms regardless of who was addressed (a character who calls Eunha only "elite" called her "commoner"). The skeleton prompt now carries a [speech to others] block per character, and a persona keeps the address rules written in the description verbatim, with the other character's name.

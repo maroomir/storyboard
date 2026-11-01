@@ -49,6 +49,8 @@ export function backgroundFactLines(background: Background): string[] {
     ...(header.length > 0 ? [header] : []),
     ...(background.description ?? []),
     ...(background.senses ?? []),
+    ...(background.layout ?? []),
+    ...(background.rules ?? []),
   ].filter((line) => line.trim().length > 0);
 }
 

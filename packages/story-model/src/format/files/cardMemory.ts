@@ -2,7 +2,12 @@ import type { StoryUri } from '#model/format/storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { cardIdPattern, formatCardAttributes, joinCardText } from '#model/format/card';
+import {
+  backgroundPlaceFacts,
+  cardIdPattern,
+  formatCardAttributes,
+  joinCardText,
+} from '#model/format/card';
 import type { BackgroundCard, CharacterCard } from '#model/format/card';
 import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 export interface PersonaMemoryRecord {
@@ -76,6 +81,7 @@ export function computeBackgroundCardHash(card: BackgroundCard): string {
     weather: card.weather ?? '',
     senses: joinCardText(card.senses),
     tags: card.tags ?? [],
+    ...backgroundPlaceFacts(card),
   };
   return digestCard(digestSource);
 }
