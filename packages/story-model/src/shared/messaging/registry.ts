@@ -99,6 +99,17 @@ import {
 } from '#model/shared/messaging/studio';
 import { usageReadRequestPayloadSchema, usageReadResponsePayloadSchema } from '#model/shared/messaging/usage';
 import {
+  interviewsAnswerRequestPayloadSchema,
+  interviewsAnswerResponsePayloadSchema,
+  interviewsConfirmRequestPayloadSchema,
+  interviewsConfirmResponsePayloadSchema,
+  interviewsFinishResponsePayloadSchema,
+  interviewsNextResponsePayloadSchema,
+  interviewsSessionRequestPayloadSchema,
+  interviewsStartRequestPayloadSchema,
+  interviewsStartResponsePayloadSchema,
+} from '#model/shared/messaging/interviews';
+import {
   workspaceRunCommandRequestPayloadSchema,
   workspaceRunCommandResponsePayloadSchema,
 } from '#model/shared/messaging/commands';
@@ -150,6 +161,11 @@ export const storyboardRequestPayloadSchemas = {
   'studio.session.load': studioSessionLoadRequestPayloadSchema,
   'usage.read': usageReadRequestPayloadSchema,
   'workspace.runCommand': workspaceRunCommandRequestPayloadSchema,
+  'interviews.start': interviewsStartRequestPayloadSchema,
+  'interviews.next': interviewsSessionRequestPayloadSchema,
+  'interviews.answer': interviewsAnswerRequestPayloadSchema,
+  'interviews.confirm': interviewsConfirmRequestPayloadSchema,
+  'interviews.finish': interviewsSessionRequestPayloadSchema,
 } satisfies Readonly<Record<string, z.ZodType>>;
 
 export const storyboardResponsePayloadSchemas = {
@@ -198,6 +214,11 @@ export const storyboardResponsePayloadSchemas = {
   'studio.session.latest': studioSessionLatestResponsePayloadSchema,
   'studio.session.load': studioSessionLoadResponsePayloadSchema,
   'usage.read': usageReadResponsePayloadSchema,
+  'interviews.start': interviewsStartResponsePayloadSchema,
+  'interviews.next': interviewsNextResponsePayloadSchema,
+  'interviews.answer': interviewsAnswerResponsePayloadSchema,
+  'interviews.confirm': interviewsConfirmResponsePayloadSchema,
+  'interviews.finish': interviewsFinishResponsePayloadSchema,
   'workspace.runCommand': workspaceRunCommandResponsePayloadSchema,
 } satisfies Readonly<Record<string, z.ZodType>>;
 
