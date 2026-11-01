@@ -29,6 +29,9 @@ interface StoryboardRelativePaths {
   readonly noteSynopsisCandidate: string;
   readonly noteExtractionResponses: string;
   readonly studioSessionDirectory: string;
+  readonly interviewCacheDirectory: string;
+  readonly interviewAxes: string;
+  readonly interviewCandidates: string;
   readonly bibleDirectory: string;
   readonly bibleCanon: string;
   readonly outlineDirectory: string;
@@ -82,6 +85,9 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   noteSynopsisCandidate: '.storyboard/cache/notes/synopsis.candidate.md',
   noteExtractionResponses: '.storyboard/cache/notes/responses.json',
   studioSessionDirectory: '.storyboard/cache/studio-sessions',
+  interviewCacheDirectory: '.storyboard/cache/interviews',
+  interviewAxes: '.storyboard/cache/interviews/axes.json',
+  interviewCandidates: '.storyboard/cache/interviews/candidates.json',
   bibleDirectory: '.storyboard/bible',
   bibleCanon: '.storyboard/bible/canon.yaml',
   outlineDirectory: '.storyboard/outline',
@@ -142,6 +148,10 @@ export function threadMemoryRelativePath(threadId: string, leafRelativePath: str
     : leafRelativePath;
 
   return `${STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory}/${threadId}/${leaf}`;
+}
+
+export function interviewWorkingModelRelativePath(cardId: string): string {
+  return `${STORYBOARD_RELATIVE_PATHS.interviewCacheDirectory}/${cardId}.json`;
 }
 
 export function characterCardRelativePath(id: string): string {

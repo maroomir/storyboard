@@ -49,6 +49,9 @@ export interface StoryboardProjectPaths {
   readonly noteSource: StoryUri;
   readonly notePlan: StoryUri;
   readonly noteCandidates: StoryUri;
+  readonly interviewCacheDirectory: StoryUri;
+  readonly interviewAxes: StoryUri;
+  readonly interviewCandidates: StoryUri;
   readonly noteSynopsisCandidate: StoryUri;
   readonly noteExtractionResponses: StoryUri;
   readonly studioSessionDirectory: StoryUri;
@@ -111,6 +114,9 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
     notePlan: resolve(STORYBOARD_RELATIVE_PATHS.notePlan),
     noteCandidates: resolve(STORYBOARD_RELATIVE_PATHS.noteCandidates),
+    interviewCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.interviewCacheDirectory),
+    interviewAxes: resolve(STORYBOARD_RELATIVE_PATHS.interviewAxes),
+    interviewCandidates: resolve(STORYBOARD_RELATIVE_PATHS.interviewCandidates),
     noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
     noteExtractionResponses: resolve(STORYBOARD_RELATIVE_PATHS.noteExtractionResponses),
     studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
