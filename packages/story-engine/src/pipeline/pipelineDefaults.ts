@@ -43,6 +43,19 @@ export interface PipelineDefaultsVoiceSamples {
   maximumLength: number;
 }
 
+export interface PipelineDefaultsInterview {
+  optionCount: number;
+  explorationOptions: number;
+  offBeatQuestionsPerSession: number;
+  maxQuestionsPerSession: number;
+  upcomingScenes: number;
+  axesPerCardType: number;
+  chosenWeight: number;
+  writtenWeight: number;
+  distillMinimumWeight: number;
+  rebuildAfterWrittenStreak: number;
+}
+
 export interface PipelineDefaults {
   section: PipelineDefaultsSection;
   skeleton: PipelineDefaultsSkeleton;
@@ -53,6 +66,7 @@ export interface PipelineDefaults {
   actors: PipelineDefaultsActors;
   padding: { paragraphRatio: number; paragraphMinimumLength: number };
   voiceSamples: PipelineDefaultsVoiceSamples;
+  interview: PipelineDefaultsInterview;
   context: { condensedMaxChars: number; maxSceneBreakNewlines: number };
   violationWeights: ViolationWeights;
 }
@@ -103,6 +117,18 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     limit: positiveInt,
     minimumLength: positiveInt,
     maximumLength: positiveInt,
+  }),
+  interview: z.object({
+    optionCount: positiveInt,
+    explorationOptions: z.number().int().nonnegative(),
+    offBeatQuestionsPerSession: z.number().int().nonnegative(),
+    maxQuestionsPerSession: positiveInt,
+    upcomingScenes: positiveInt,
+    axesPerCardType: positiveInt,
+    chosenWeight: positiveInt,
+    writtenWeight: positiveInt,
+    distillMinimumWeight: positiveInt,
+    rebuildAfterWrittenStreak: positiveInt,
   }),
   context: z.object({
     condensedMaxChars: positiveInt,

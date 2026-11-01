@@ -14,6 +14,7 @@ import type {
 } from '#engine/application/drafts/draftRepositories';
 import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
 import type { INoteSourceProvider } from '#engine/application/notes/noteSource';
+import type { IInterviewRepository } from '#engine/application/interviews/interviewRepository';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,
@@ -82,4 +83,5 @@ export interface WorkspaceRepositories {
   readonly storyFeatures: IStoryFeatureRepository;
   readonly noteAbsorb: INoteAbsorbRepository;
   readonly noteSources: INoteSourceProvider;
+  readonly interviews: IInterviewRepository;
 }

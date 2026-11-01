@@ -6,6 +6,7 @@ import {
   findRepeatedDialogueRun,
   findRepeatedDialogueRunBetween,
   pipelineDefaults,
+  resolveInterviewTuning,
   resolveSceneGenerationTuning,
   runSceneGenerationPipeline,
   selectRepresentativeDialogue,
@@ -73,13 +74,19 @@ describe("resolveSceneGenerationTuning", () => {
 
     walk(pipelineDefaults, "")
 
-    const expected = leaves.filter((leaf) => leaf !== "context.maxSceneBreakNewlines")
+    const interviewLeaves = leaves.filter((leaf) => leaf.startsWith("interview."))
+    const expected = leaves.filter(
+      (leaf) => leaf !== "context.maxSceneBreakNewlines" && !leaf.startsWith("interview.")
+    )
     const exposed =
       Object.keys(defaults).length -
       1 +
       Object.keys(defaults.violationWeights).length
 
     expect(exposed).toBe(expected.length)
+    expect(Object.keys(resolveInterviewTuning(undefined)).sort()).toEqual(
+      interviewLeaves.map((leaf) => leaf.slice("interview.".length)).sort()
+    )
   })
 
   it("keeps the violation scale keyed by the section violation kinds", () => {
