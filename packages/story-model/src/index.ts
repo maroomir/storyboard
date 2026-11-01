@@ -62,6 +62,7 @@ export * from '#model/shared/cardCollect';
 export * from '#model/shared/disposableHandle';
 export * from '#model/shared/jsonRepair';
 export * from '#model/shared/noteAbsorb';
+export * from '#model/shared/interview';
 export * from '#model/shared/novelRun';
 export * from '#model/shared/slop';
 export * from '#model/shared/slopPhrases';
