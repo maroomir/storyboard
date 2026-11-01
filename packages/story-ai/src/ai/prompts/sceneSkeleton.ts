@@ -10,6 +10,7 @@ import {
 } from '@storyboard/story-model';
 import { personaCatchphraseView } from '#ai/ai/prompts/characterCatchphrases';
 import { personaKnowledgeView } from '#ai/ai/prompts/characterKnowledge';
+import { personaSpeechView } from '#ai/ai/prompts/characterSpeech';
 import { renderPrompt } from '#ai/ai/prompts/promptResource';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from '#ai/ai/prompts/types';
 import { promptTuning } from '#ai/ai/prompts/promptTuning';
@@ -20,6 +21,7 @@ export interface SceneSkeletonInput {
   readonly personas: ReadonlyMap<string, string>;
   readonly catchphrases?: ReadonlyMap<string, readonly string[]>;
   readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
+  readonly speechToOthers?: ReadonlyMap<string, readonly string[]>;
   readonly background: Background;
   readonly backgroundConflicts?: readonly string[];
   readonly previousContext?: string;
@@ -58,6 +60,7 @@ export const SceneSkeletonPrompt: PromptModule<
           persona,
           ...personaCatchphraseView(name, input.catchphrases),
           ...personaKnowledgeView(name, input.characterKnowledge),
+          ...personaSpeechView(name, input.speechToOthers),
         })),
         previousContext: input.previousContext,
         narrativeSource: input.narrativeSource,

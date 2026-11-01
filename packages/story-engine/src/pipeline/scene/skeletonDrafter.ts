@@ -1,3 +1,4 @@
+import { characterSpeechToOthers } from '#engine/pipeline/scene/characterVoices';
 import { castNameOf, type SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import {
   beatText,
@@ -153,6 +154,7 @@ export class SkeletonDrafter {
       personas: run.personasUsed,
       catchphrases: characterCatchphrases(run.context.characters),
       characterKnowledge: run.input.characterKnowledge,
+      speechToOthers: characterSpeechToOthers(run.context.characters),
       background: run.background,
       backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),
       previousContext: buildSkeletonContext(run.condensedPreviousContext, run.input.canonFactLines),
