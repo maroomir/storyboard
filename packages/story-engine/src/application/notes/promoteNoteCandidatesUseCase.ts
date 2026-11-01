@@ -3,6 +3,7 @@ import type {
   CardCollectProposal,
   MergedNoteCardCandidate,
   NoteCandidateFile,
+  NoteCandidateSource,
   StoryboardCard,
   StoryUri,
 } from '@storyboard/story-model';
@@ -39,6 +40,31 @@ export type DiscardNoteCandidatesResult =
   | { readonly kind: 'discarded'; readonly cardIds: readonly string[] }
   | { readonly kind: 'change_not_found' };
 
+type CandidateOrigin = 'notes' | 'interviews';
+
+const interviewSourcePrefix: string = 'interview/';
+
+interface CandidateFiles {
+  readonly notes: NoteCandidateFile;
+  readonly interviews: NoteCandidateFile;
+}
+
+function mergedSources(files: CandidateFiles): NoteCandidateSource[] {
+  return [
+    ...files.notes.sources,
+    ...files.interviews.sources.map((source) => ({
+      ...source,
+      id: `${interviewSourcePrefix}${source.id}`,
+    })),
+  ];
+}
+
+function splitRef(ref: string): { readonly origin: CandidateOrigin; readonly ref: string } {
+  return ref.startsWith(interviewSourcePrefix)
+    ? { origin: 'interviews', ref: ref.slice(interviewSourcePrefix.length) }
+    : { origin: 'notes', ref };
+}
+
 export class PromoteNoteCandidatesUseCase {
   public constructor(
     private readonly host: HostAdapters,
@@ -46,16 +72,16 @@ export class PromoteNoteCandidatesUseCase {
   ) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareNoteCandidatePromotionResult> {
-    const file: NoteCandidateFile = await this.loadFile(workspaceRoot);
+    const sources: NoteCandidateSource[] = mergedSources(await this.loadFiles(workspaceRoot));
 
-    if (file.sources.length === 0) {
+    if (sources.length === 0) {
       return { kind: 'no_candidates' };
     }
 
     const candidates: MergedNoteCardCandidate[] = [];
     const heldCards: MergedNoteCardCandidate[] = [];
 
-    for (const candidate of mergeNoteCandidateSources(file.sources)) {
+    for (const candidate of mergeNoteCandidateSources(sources)) {
       const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
         workspaceRoot,
         candidate.cardType,
@@ -83,7 +109,7 @@ export class PromoteNoteCandidatesUseCase {
     candidates: readonly MergedNoteCardCandidate[],
   ): Promise<PromoteNoteCandidatesResult> {
     const updatedCardIds: string[] = [];
-    let file: NoteCandidateFile = await this.loadFile(workspaceRoot);
+    let files: CandidateFiles = await this.loadFiles(workspaceRoot);
 
     for (const candidate of candidates) {
       const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
@@ -101,10 +127,13 @@ export class PromoteNoteCandidatesUseCase {
         applyCardCollectProposals(card, candidate.changes),
       );
       updatedCardIds.push(candidate.cardId);
-      file = keepNoteCandidateConflicts(file, candidate);
+      files = {
+        notes: keepNoteCandidateConflicts(files.notes, candidate),
+        interviews: keepNoteCandidateConflicts(files.interviews, candidate),
+      };
     }
 
-    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, file);
+    await this.saveFiles(workspaceRoot, files);
 
     return { updatedCardIds };
   }
@@ -113,21 +142,18 @@ export class PromoteNoteCandidatesUseCase {
     workspaceRoot: StoryUri,
     request: DiscardNoteCandidatesRequest,
   ): Promise<DiscardNoteCandidatesResult> {
-    const file: NoteCandidateFile = await this.loadFile(workspaceRoot);
-    const next: NoteCandidateFile | undefined =
-      request.kind === 'cards'
-        ? removeNoteCandidateCards(file, request.cardIds)
-        : removeNoteCandidateChange(file, request.cardId, request.ref);
+    const files: CandidateFiles = await this.loadFiles(workspaceRoot);
+    const next: CandidateFiles | undefined = this.discardFrom(files, request);
 
     if (next === undefined) {
       return { kind: 'change_not_found' };
     }
 
-    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, next);
+    await this.saveFiles(workspaceRoot, next);
 
-    const before: string[] = mergeNoteCandidateSources(file.sources).map((card) => card.cardId);
+    const before: string[] = mergeNoteCandidateSources(mergedSources(files)).map((card) => card.cardId);
     const remaining: Set<string> = new Set(
-      mergeNoteCandidateSources(next.sources).map((card) => card.cardId),
+      mergeNoteCandidateSources(mergedSources(next)).map((card) => card.cardId),
     );
 
     return {
@@ -139,7 +165,28 @@ export class PromoteNoteCandidatesUseCase {
     };
   }
 
-  private async loadFile(workspaceRoot: StoryUri): Promise<NoteCandidateFile> {
+  private discardFrom(
+    files: CandidateFiles,
+    request: DiscardNoteCandidatesRequest,
+  ): CandidateFiles | undefined {
+    if (request.kind === 'cards') {
+      return {
+        notes: removeNoteCandidateCards(files.notes, request.cardIds),
+        interviews: removeNoteCandidateCards(files.interviews, request.cardIds),
+      };
+    }
+
+    const { origin, ref } = splitRef(request.ref);
+    const next: NoteCandidateFile | undefined = removeNoteCandidateChange(
+      files[origin],
+      request.cardId,
+      ref,
+    );
+
+    return next === undefined ? undefined : { ...files, [origin]: next };
+  }
+
+  private async loadFiles(workspaceRoot: StoryUri): Promise<CandidateFiles> {
     const loaded: NoteCandidateLoad =
       await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
 
@@ -149,6 +196,14 @@ export class PromoteNoteCandidatesUseCase {
       );
     }
 
-    return loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile;
+    return {
+      notes: loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile,
+      interviews: await this.repositories.interviews.loadCandidates(workspaceRoot),
+    };
+  }
+
+  private async saveFiles(workspaceRoot: StoryUri, files: CandidateFiles): Promise<void> {
+    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, files.notes);
+    await this.repositories.interviews.saveCandidates(workspaceRoot, files.interviews);
   }
 }

@@ -45,6 +45,18 @@
     "minimumLength": 12,
     "maximumLength": 60
   },
+  "interview": {
+    "optionCount": 3,
+    "explorationOptions": 1,
+    "offBeatQuestionsPerSession": 2,
+    "maxQuestionsPerSession": 12,
+    "upcomingScenes": 3,
+    "axesPerCardType": 12,
+    "chosenWeight": 1,
+    "writtenWeight": 2,
+    "distillMinimumWeight": 2,
+    "rebuildAfterWrittenStreak": 2
+  },
   "context": {
     "condensedMaxChars": 1200,
     "maxSceneBreakNewlines": 10
