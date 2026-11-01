@@ -48,6 +48,8 @@ import {
   type InterviewBeatSituation,
   type InterviewCardCoverage,
   type InterviewClassification,
+  type InterviewConfirmation,
+  type InterviewOpening,
   type InterviewOption,
   type InterviewQuestion,
   type InterviewRecord,
@@ -71,15 +73,7 @@ export interface InterviewStartRequest {
   readonly shouldResetAxes?: boolean;
 }
 
-export interface InterviewOpening {
-  readonly sessionId: string;
-  readonly cardId: string;
-  readonly cardType: BibleSubjectKind;
-  readonly name: string;
-  readonly coverage: InterviewCardCoverage;
-  readonly isContractStale: boolean;
-  readonly maxQuestions: number;
-}
+export type { InterviewConfirmation, InterviewOpening };
 
 export type InterviewStartResult =
   | { readonly ok: true; readonly opening: InterviewOpening }
@@ -97,10 +91,6 @@ export interface InterviewAnswerRequest extends InterviewSessionRequest {
   readonly questionId: string;
   readonly answer: InterviewAnswerInput;
 }
-
-export type InterviewConfirmation =
-  | { readonly kind: 'value'; readonly valueId: string }
-  | { readonly kind: 'newValue'; readonly id: string; readonly label: string };
 
 export interface InterviewConfirmRequest extends InterviewSessionRequest {
   readonly questionId: string;

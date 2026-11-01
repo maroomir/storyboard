@@ -9,6 +9,7 @@ export * from '#model/shared/messaging/secrets';
 export * from '#model/shared/messaging/project';
 export * from '#model/shared/messaging/studio';
 export * from '#model/shared/messaging/usage';
+export * from '#model/shared/messaging/interviews';
 export * from '#model/shared/messaging/registry';
 export * from '#model/shared/messaging/envelope';
 export * from '#model/shared/messaging/initialData';
