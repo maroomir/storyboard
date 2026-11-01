@@ -3,6 +3,7 @@ import {
   chooseUpcomingScenes,
   collectBeatSituations,
   listOpenAxes,
+  otherPlaceTokens,
 } from '#engine/application/interviews/interviewCoverage';
 import {
   resolveInterviewTuning,
@@ -18,7 +19,6 @@ import {
   type InterviewWorkingModel,
   type SceneFile,
   type SceneListItem,
-  type SidebarCardSummary,
   type StoryboardCard,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -44,45 +44,59 @@ export class DescribeInterviewCoverageUseCase {
     }
 
     const axesFile: InterviewAxesFile = await this.repositories.interviews.loadAxes(request.workspaceRoot);
+    const cards: StoryboardCard[] = await this.loadCards(request.workspaceRoot);
+    const backgrounds: StoryboardCard[] = cards.filter((card) => card.type !== 'character');
+
     const coverage: InterviewCardCoverage[] = [];
 
-    for (const cardType of ['character', 'background'] as const) {
-      for (const summary of await this.repositories.cardSidebar.list(request.workspaceRoot, cardType)) {
-        const entry: InterviewCardCoverage | undefined = await this.describeCard(
-          request.workspaceRoot,
-          cardType,
-          summary,
-          scenes,
-          axesFile,
-          tuning,
-        );
-        if (entry !== undefined) {
-          coverage.push(entry);
-        }
+    for (const card of cards) {
+      const entry: InterviewCardCoverage | undefined = await this.describeCard(
+        request.workspaceRoot,
+        card,
+        scenes,
+        axesFile,
+        tuning,
+        card.type === 'character' ? new Set<string>() : otherPlaceTokens(card, backgrounds),
+      );
+      if (entry !== undefined) {
+        coverage.push(entry);
       }
     }
 
     return coverage;
   }
 
+  private async loadCards(workspaceRoot: StoryUri): Promise<StoryboardCard[]> {
+    const cards: StoryboardCard[] = [];
+
+    for (const cardType of ['character', 'background'] as const) {
+      for (const summary of await this.repositories.cardSidebar.list(workspaceRoot, cardType)) {
+        const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
+          workspaceRoot,
+          cardType,
+          summary.id,
+        );
+        if (card !== undefined) {
+          cards.push(card);
+        }
+      }
+    }
+
+    return cards;
+  }
+
   private async describeCard(
     workspaceRoot: StoryUri,
-    cardType: BibleSubjectKind,
-    summary: SidebarCardSummary,
+    card: StoryboardCard,
     scenes: readonly SceneFile[],
     axesFile: InterviewAxesFile,
     tuning: InterviewTuning,
+    placeTokensOfOthers: ReadonlySet<string>,
   ): Promise<InterviewCardCoverage | undefined> {
-    const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
-      workspaceRoot,
-      cardType,
-      summary.id,
-    );
-    if (card === undefined) {
-      return undefined;
-    }
-
-    const situations: InterviewBeatSituation[] = collectBeatSituations(card, scenes);
+    const cardType: BibleSubjectKind = card.type === 'character' ? 'character' : 'background';
+    const situations: InterviewBeatSituation[] = collectBeatSituations(card, scenes, {
+      otherPlaceTokens: placeTokensOfOthers,
+    });
     if (situations.length === 0) {
       return undefined;
     }

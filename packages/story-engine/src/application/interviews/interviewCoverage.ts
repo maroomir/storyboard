@@ -27,9 +27,35 @@ export function chooseUpcomingScenes(
   return (undrafted.length > 0 ? undrafted : ordered).slice(0, limit);
 }
 
-function cardTokens(card: StoryboardCard): Set<string> {
+export function cardTokens(card: StoryboardCard): Set<string> {
   return new Set(
     [card.id, card.name, ...(card.aliases ?? [])].map((token) => normalizeCardListText(token)),
+  );
+}
+
+export function otherPlaceTokens(
+  card: StoryboardCard,
+  backgrounds: readonly StoryboardCard[],
+): Set<string> {
+  return new Set(
+    backgrounds
+      .filter((other) => other.id !== card.id)
+      .flatMap((other) => [...cardTokens(other)]),
+  );
+}
+
+export interface BeatSituationOptions {
+  readonly otherPlaceTokens?: ReadonlySet<string>;
+}
+
+function isPlaceClaimedByAnother(
+  beat: SceneBeat,
+  options: BeatSituationOptions,
+): boolean {
+  return (
+    typeof beat !== 'string' &&
+    beat.place !== undefined &&
+    (options.otherPlaceTokens?.has(normalizeCardListText(beat.place)) ?? false)
   );
 }
 
@@ -50,9 +76,30 @@ function sceneMentionsCard(scene: SceneFile, card: StoryboardCard): boolean {
     : scene.card.location === card.id;
 }
 
+function isBeatInvolved(
+  beat: SceneBeat,
+  card: StoryboardCard,
+  tokens: Set<string>,
+  isSceneWide: boolean,
+  options: BeatSituationOptions,
+): boolean {
+  if (beatMentionsCard(beat, card, tokens)) {
+    return true;
+  }
+
+  if (card.type === 'character') {
+    const hasCoordinates: boolean =
+      typeof beat !== 'string' && (beat.cast !== undefined || beat.place !== undefined);
+    return !hasCoordinates && isSceneWide;
+  }
+
+  return isSceneWide && !isPlaceClaimedByAnother(beat, options);
+}
+
 export function collectBeatSituations(
   card: StoryboardCard,
   scenes: readonly SceneFile[],
+  options: BeatSituationOptions = {},
 ): InterviewBeatSituation[] {
   const tokens: Set<string> = cardTokens(card);
 
@@ -61,10 +108,7 @@ export function collectBeatSituations(
     const isSceneWide: boolean = sceneMentionsCard(scene, card);
 
     return beats.flatMap((beat, index): InterviewBeatSituation[] => {
-      const hasCoordinates: boolean = typeof beat !== 'string' && (beat.cast !== undefined || beat.place !== undefined);
-      const isInvolved: boolean = hasCoordinates
-        ? beatMentionsCard(beat, card, tokens)
-        : isSceneWide;
+      const isInvolved: boolean = isBeatInvolved(beat, card, tokens, isSceneWide, options);
 
       return isInvolved
         ? [

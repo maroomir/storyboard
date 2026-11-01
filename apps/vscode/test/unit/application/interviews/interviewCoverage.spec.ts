@@ -6,6 +6,7 @@ import {
   describeBeatSituation,
   isAxisDecided,
   listOpenAxes,
+  otherPlaceTokens,
   unseenValueIds,
 } from '@storyboard/story-engine';
 import type {
@@ -62,7 +63,25 @@ describe('collectBeatSituations', () => {
   it('matches a background by the beat place or alias and by the scene location for bare beats', () => {
     const situations = collectBeatSituations(tavern, [night]);
 
-    expect(situations.map((situation) => situation.beatIndex)).toEqual([0, 1, 3]);
+    expect(situations.map((situation) => situation.beatIndex)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('counts a free-form place for the scene location unless another background claims it', () => {
+    const home: LocationBackgroundCard = { ...tavern, id: 'home', name: '만재네 집', aliases: [] };
+    const scene01: SceneFile = scene('01-home', {
+      location: 'home',
+      beats: [
+        { text: '거실에서 다툰다', cast: ['하나'], place: '집 거실' },
+        { text: '술집으로 간다', cast: ['하나'], place: '미감' },
+      ],
+    });
+
+    expect(collectBeatSituations(home, [scene01]).map((situation) => situation.beatIndex)).toEqual([0, 1]);
+    expect(
+      collectBeatSituations(home, [scene01], { otherPlaceTokens: otherPlaceTokens(home, [home, tavern]) }).map(
+        (situation) => situation.beatIndex,
+      ),
+    ).toEqual([0]);
   });
 
   it('describes a situation with its coordinates', () => {
