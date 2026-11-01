@@ -38,9 +38,23 @@ import type {
   NarratorCard,
   SceneBeat,
   LocationKind,
+  InterviewAnswerInput,
+  InterviewAnswerOutcome,
+  InterviewClassification,
+  InterviewConfirmation,
+  InterviewOpening,
+  InterviewQuestion,
+  InterviewSessionSummary,
 } from '@storyboard/story-model/contracts';
 
 export type {
+  InterviewAnswerInput,
+  InterviewAnswerOutcome,
+  InterviewClassification,
+  InterviewConfirmation,
+  InterviewOpening,
+  InterviewQuestion,
+  InterviewSessionSummary,
   CharacterArc,
   SceneGrounding,
   NarratorSummary,
