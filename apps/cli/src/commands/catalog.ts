@@ -246,6 +246,16 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
   { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
   {
+    name: 'scenes',
+    valueLabel: '<범위>',
+    summary: 'card interview: 질문을 뽑을 씬 (stem 을 쉼표로, 또는 3..5 처럼 번호 범위; 기본은 초안 없는 다음 씬들)',
+  },
+  { name: 'limit', valueLabel: '<n>', summary: 'card interview: 이 세션에서 답할 질문 수 상한' },
+  {
+    name: 'reset-axes',
+    summary: 'card interview: 축 어휘와 모든 카드의 표·작업 모델을 비우고 다시 뽑습니다 (카드는 그대로)',
+  },
+  {
     name: 'change',
     valueLabel: '<ref>',
     summary: 'card discard: 버릴 노트 후보 하나 (card promote 가 보여 준 [ref])',

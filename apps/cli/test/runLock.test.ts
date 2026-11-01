@@ -174,6 +174,7 @@ describe('CLI verbs and the run lock', () => {
       'draft show',
       'card list',
       'card show',
+      'card interview',
       'card recommend',
       'canon diff',
       'draft check',

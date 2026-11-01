@@ -3,6 +3,7 @@ import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import {
   describeDrafts,
+  describeInterviewHint,
   describeManuscript,
   describeMissingContract,
   describeNextStep,
@@ -25,6 +26,7 @@ export class StatusCommand implements ICommandHandler {
     const status: WorkspaceStatus = await container.describeWorkspace();
     const command: string | undefined = nextStepCommands[status.nextStep];
     const reason: string = describeNextStep(status);
+    const interviewHint: string | undefined = describeInterviewHint(status);
 
     return success(
       [
@@ -40,6 +42,7 @@ export class StatusCommand implements ICommandHandler {
         command === undefined
           ? `다음      ${reason}`
           : `다음      storyboard ${command} — ${reason}`,
+        ...(interviewHint === undefined ? [] : [`인터뷰    ${interviewHint}`]),
       ].join('\n'),
       { ...status, next: { step: status.nextStep, command: command ?? null, reason } },
     );

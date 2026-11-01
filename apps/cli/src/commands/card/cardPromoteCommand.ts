@@ -26,7 +26,7 @@ export class CardPromoteCommand implements ICommandHandler {
     writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card promote',
-    summary: '초안과 노트에서 나온 카드 후보를 반영합니다',
+    summary: '초안·노트·인터뷰에서 나온 카드 후보를 반영합니다',
     flags: ['dry-run'],
   };
 
@@ -97,6 +97,16 @@ function collectPromotionCandidates(
   };
 }
 
+function describeCandidateOrigin(candidate: MergedNoteCardCandidate): string {
+  const isInterview = (location: string): boolean => location.startsWith('interview:');
+
+  if (candidate.locations.every(isInterview)) {
+    return '인터뷰에서';
+  }
+
+  return candidate.locations.some(isInterview) ? '노트·인터뷰에서' : '노트에서';
+}
+
 function describePromotionPreview({
   draftItems,
   noteCandidates,
@@ -109,7 +119,7 @@ function describePromotionPreview({
       ...(draftItems.length > 0 ? [`  초안에서  ${draftItems.length}건`] : []),
       ...noteCandidates.map(
         (candidate) =>
-          `  노트에서  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건 ← ${candidate.locations.join(', ')}`,
+          `  ${describeCandidateOrigin(candidate)}  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건 ← ${candidate.locations.join(', ')}`,
       ),
       ...conflictLines,
     ].join('\n'),
