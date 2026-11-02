@@ -114,16 +114,17 @@ describe('card interview', () => {
   });
 
   it('asks one question at a time, stops on 여기까지, and leaves candidates for card promote', async () => {
-    const prompter: ScriptedPrompter = scriptedPrompter(['[Mock AI] withhold', '[Mock AI] withhold', '여기까지']);
+    const prompter: ScriptedPrompter = scriptedPrompter(['[Mock AI] withhold', '[Mock AI] indirect', '[Mock AI] withhold', '여기까지']);
 
     const outcome = await run('card interview', args(['card', 'interview'], {}, ['hana']), prompter);
 
     expect(outcome.ok).toBe(true);
-    expect(outcome.message).toContain('답 2, 카드 후보 1건');
+    expect(outcome.message).toContain('답 3, 카드 후보 1건');
     expect(prompter.titles).toEqual([
       '1번째 · 압박 아래 방어 (01-night · 사건 1)',
-      '2번째 · 압박 아래 방어 (01-night · 사건 2)',
-      '3번째 · 호감 표출 (01-night · 사건 3)',
+      '2번째 · 호감 표출 (01-night · 사건 1)',
+      '3번째 · 압박 아래 방어 (01-night · 사건 2)',
+      '4번째 · 호감 표출 (01-night · 사건 2)',
     ]);
     expect(prompter.announced[0]).toBe('┌  하나 인터뷰');
     expect(prompter.announced.at(-1)).toBe('   storyboard card promote 로 반영할 수 있습니다');
