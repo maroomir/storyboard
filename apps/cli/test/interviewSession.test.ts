@@ -162,7 +162,7 @@ describe('interview session (mock provider)', () => {
     expect(started).toMatchObject({ ok: false, kind: 'card-not-found' });
   });
 
-  it('asks the speech to a present relation first, then one beat and axis at a time, deciding an axis at the threshold', async () => {
+  it('asks the speech to a present relation first, then rotates beats one axis at a time, deciding an axis at the threshold', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
 
@@ -187,16 +187,16 @@ describe('interview session (mock provider)', () => {
 
     await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'chosen', index: 1 } });
     const second: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
-    expect(second?.axisId).toBe('affection');
+    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
+    expect(second?.axisId).toBe('pressure-defense');
+    expect(second?.options.filter((option) => option.isExploration).map((option) => option.valueId)).toEqual([
+      'counter',
+    ]);
 
     await app.interviews.answer({ ...request, questionId: second?.id ?? '', answer: { kind: 'chosen', index: 1 } });
     const third: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
-    expect(third?.axisId).toBe('pressure-defense');
-    expect(third?.options.filter((option) => option.isExploration).map((option) => option.valueId)).toEqual([
-      'counter',
-    ]);
+    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '02-dawn', beatIndex: 0 });
+    expect(third?.axisId).toBe('affection');
 
     await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'chosen', index: 1 } });
     const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/hana.json');
@@ -204,7 +204,7 @@ describe('interview session (mock provider)', () => {
     expect(model.summary).toContain('[Mock AI]');
 
     const fourth: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(fourth?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
+    expect(fourth?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
     expect(fourth?.axisId).toBe('affection');
   });
 
@@ -302,13 +302,13 @@ describe('interview session (mock provider)', () => {
     await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'chosen', index: 0 } });
 
     const second: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(second?.axisId).toBe('watchers');
-    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
+    expect(second?.axisId).toBe('exits');
+    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
     await app.interviews.answer({ ...request, questionId: second?.id ?? '', answer: { kind: 'chosen', index: 0 } });
 
     const third: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(third?.axisId).toBe('exits');
-    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
+    expect(third?.axisId).toBe('watchers');
+    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
     await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'chosen', index: 0 } });
 
     const summary = await app.interviews.finish(request);
