@@ -327,16 +327,25 @@ export class InterviewSessionUseCase {
       ),
     );
 
+    const askedPerBeat: Map<string, number> = new Map<string, number>();
+    for (const pair of askedPairs) {
+      const beatKey: string = pair.slice(0, pair.lastIndexOf('#'));
+      askedPerBeat.set(beatKey, (askedPerBeat.get(beatKey) ?? 0) + 1);
+    }
+
+    let leastAsked: BeatToAsk | undefined;
+    let leastAskedCount: number = Number.POSITIVE_INFINITY;
     for (const situation of collectBeatSituations(context.card, context.scenes, context.situationOptions)) {
-      const axes: InterviewAxis[] = openAxes.filter(
-        (axis) => !askedPairs.has(`${situation.sceneStem}#${situation.beatIndex}#${axis.id}`),
-      );
-      if (axes.length > 0) {
-        return { situation, axes };
+      const beatKey: string = `${situation.sceneStem}#${situation.beatIndex}`;
+      const axes: InterviewAxis[] = openAxes.filter((axis) => !askedPairs.has(`${beatKey}#${axis.id}`));
+      const askedCount: number = askedPerBeat.get(beatKey) ?? 0;
+      if (axes.length > 0 && askedCount < leastAskedCount) {
+        leastAsked = { situation, axes };
+        leastAskedCount = askedCount;
       }
     }
 
-    return undefined;
+    return leastAsked;
   }
 
   private pickRelationTarget(context: InterviewContext): string | undefined {
