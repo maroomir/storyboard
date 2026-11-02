@@ -44,9 +44,11 @@ export type InterviewPanelProps = {
 };
 
 function describeSource(question: InterviewQuestion): string {
-  return question.source.kind === 'beat'
-    ? `${question.source.sceneStem} · 사건 ${question.source.beatIndex + 1}`
-    : '사건 밖';
+  if (question.source.kind === 'beat') {
+    return `${question.source.sceneStem} · 사건 ${question.source.beatIndex + 1}`;
+  }
+
+  return question.source.kind === 'relation' ? '상대별 말투' : '사건 밖';
 }
 
 function errorMessage(error: unknown, fallback: string): string {

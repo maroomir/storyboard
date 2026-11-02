@@ -181,7 +181,9 @@ export class CardInterviewCommand implements ICommandHandler {
     const sourceLabel: string =
       question.source.kind === 'beat'
         ? `${question.source.sceneStem} · 사건 ${question.source.beatIndex + 1}`
-        : '사건 밖';
+        : question.source.kind === 'relation'
+          ? '상대별 말투'
+          : '사건 밖';
 
     return handle.prompter.choose({
       title: `${ordinal}번째 · ${question.axisLabel} (${sourceLabel})`,

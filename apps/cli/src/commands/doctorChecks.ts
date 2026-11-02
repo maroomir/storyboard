@@ -643,6 +643,7 @@ export class DoctorChecks {
       ...(await this.beatCast(survey.census.cards)),
       ...(await this.cachedBackgroundConflicts()),
       ...(await this.interviews(paths)),
+      ...(await this.addressCatchphrases()),
     ];
   }
 
@@ -720,6 +721,42 @@ export class DoctorChecks {
             fix: 'storyboard card list character',
           },
         ];
+  }
+
+  private async addressCatchphrases(): Promise<DoctorCheck[]> {
+    const root: StoryUri = this.container.workspaceRoot;
+    const readings: CardReading[] = [];
+    for (const summary of await this.container.cards.list(root, 'character')) {
+      const reading: CardReading | undefined = await this.container.cards.read(root, summary.id);
+      if (reading?.card.type === 'character') {
+        readings.push(reading);
+      }
+    }
+
+    const checks: DoctorCheck[] = [];
+    for (const { card } of readings) {
+      if (card.type !== 'character') {
+        continue;
+      }
+      const speeches: string = (card.relations ?? []).map((relation) => relation.speech ?? '').join(' ');
+      for (const catchphrase of card.catchphrases ?? []) {
+        const addressed: CardReading | undefined = readings.find(
+          (other) =>
+            other.card.id !== card.id &&
+            [other.card.name, ...(other.card.aliases ?? []), ...(other.card.tags ?? [])].includes(catchphrase),
+        );
+        if (addressed !== undefined && !speeches.includes(catchphrase)) {
+          checks.push({
+            status: 'warn',
+            label: '호칭 입버릇',
+            detail: `${card.name}의 입버릇 «${catchphrase}»는 ${addressed.card.name}을(를) 가리키는 호칭으로 보이는데, 어느 relations[].speech 에도 없습니다. 뼈대가 다른 상대에게도 쓸 수 있습니다.`,
+            fix: `storyboard card interview ${card.id} (첫 질문이 상대별 호칭을 묻습니다) 또는 카드의 relations[].speech 에 «${catchphrase}»를 적으세요`,
+          });
+        }
+      }
+    }
+
+    return checks;
   }
 
   private async interviews(paths: StoryboardProjectPaths): Promise<DoctorCheck[]> {
