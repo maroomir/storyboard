@@ -26,6 +26,12 @@ import {
   type InterviewQuestionInput,
 } from '#ai/ai/prompts/interviewQuestion';
 import {
+  InterviewRelationSpeechPrompt,
+  coerceInterviewRelationSpeech,
+  type InterviewRelationSpeechQuestion,
+  type InterviewRelationSpeechInput,
+} from '#ai/ai/prompts/interviewRelationSpeech';
+import {
   InterviewUpdatePrompt,
   coerceInterviewUpdate,
   type InterviewUpdateDraft,
@@ -94,6 +100,24 @@ export class InterviewAiService {
     );
 
     return coerceInterviewDistill(parseJsonObject(response.text), input.relationTargets);
+  }
+
+  public async askRelationSpeech(
+    input: InterviewRelationSpeechInput,
+    options: GenerateTextOptions = {},
+  ): Promise<InterviewRelationSpeechQuestion | undefined> {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
+      'interviewRelationSpeech',
+      options,
+    );
+    const response: AiGenerateResponse = await this.generateWithDefaults(
+      'interviewRelationSpeech',
+      InterviewRelationSpeechPrompt.build(input, variant),
+      InterviewRelationSpeechPrompt.config,
+      options,
+    );
+
+    return coerceInterviewRelationSpeech(parseJsonObject(response.text));
   }
 
   private async generateWithDefaults(

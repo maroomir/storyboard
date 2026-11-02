@@ -209,8 +209,22 @@ function createMockInterviewDistill(prompt: string): string {
   );
 }
 
+function createMockInterviewRelationSpeech(prompt: string): string {
+  const target: string = /^\[상대\]\n(.+?) \(/m.exec(prompt)?.[1] ?? '상대';
+
+  return JSON.stringify({
+    question: `[Mock AI] ${target}를 무엇이라 부르는가?`,
+    options: [
+      { text: `[Mock AI] '${target}'라 부르고 반말` },
+      { text: `[Mock AI] 이름 뒤에 씨를 붙여 존댓말` },
+      { text: `[Mock AI] 별칭으로만 부르고 반말` },
+    ],
+  });
+}
+
 const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuilder>>> = {
   interviewAxes: createMockInterviewAxes,
+  interviewRelationSpeech: createMockInterviewRelationSpeech,
   interviewQuestion: createMockInterviewQuestion,
   interviewUpdate: createMockInterviewUpdate,
   interviewDistill: createMockInterviewDistill,

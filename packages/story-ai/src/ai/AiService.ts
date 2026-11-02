@@ -51,6 +51,10 @@ import type { InterviewAxesInput } from '#ai/ai/prompts/interviewAxes';
 import type { InterviewDistillDraft, InterviewDistillInput } from '#ai/ai/prompts/interviewDistill';
 import type { InterviewQuestionDraft, InterviewQuestionInput } from '#ai/ai/prompts/interviewQuestion';
 import type { InterviewUpdateDraft, InterviewUpdateInput } from '#ai/ai/prompts/interviewUpdate';
+import type {
+  InterviewRelationSpeechQuestion,
+  InterviewRelationSpeechInput,
+} from '#ai/ai/prompts/interviewRelationSpeech';
 import type { InterviewAxis } from '@storyboard/story-model';
 import {
   StudioAgentService,
@@ -521,6 +525,13 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<InterviewUpdateDraft | undefined> {
     return this.interviewAiService.updateInterviewModel(input, options);
+  }
+
+  public askRelationSpeech(
+    input: InterviewRelationSpeechInput,
+    options: GenerateTextOptions = {},
+  ): Promise<InterviewRelationSpeechQuestion | undefined> {
+    return this.interviewAiService.askRelationSpeech(input, options);
   }
 
   public distillInterview(

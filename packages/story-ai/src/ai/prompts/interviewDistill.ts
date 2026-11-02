@@ -10,7 +10,8 @@ export interface InterviewDistillInput {
   readonly cardText: string;
   readonly summary: string;
   readonly tallies: readonly string[];
-  readonly chosen: readonly string[];
+  readonly choices: readonly string[];
+  readonly written: readonly string[];
   readonly relationTargets: readonly string[];
   readonly minimumWeight: number;
 }
@@ -43,8 +44,10 @@ export const InterviewDistillPrompt: PromptModule<
         cardText: input.cardText,
         summary: input.summary,
         tallies: input.tallies,
-        hasChosen: input.chosen.length > 0,
-        chosen: input.chosen,
+        hasChoices: input.choices.length > 0,
+        choices: input.choices,
+        hasWritten: input.written.length > 0,
+        written: input.written,
         hasRelationTargets: input.relationTargets.length > 0,
         relationTargets: input.relationTargets,
         minimumWeight: input.minimumWeight,
