@@ -74,7 +74,8 @@ export type AiTaskName =
   | 'interviewAxes'
   | 'interviewQuestion'
   | 'interviewUpdate'
-  | 'interviewDistill';
+  | 'interviewDistill'
+  | 'interviewRelationSpeech';
 
 export interface AiTaskCatalogEntry {
   readonly name: AiTaskName;
@@ -128,6 +129,7 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'interviewQuestion', label: '인터뷰 질문' },
   { name: 'interviewUpdate', label: '인터뷰 답 반영' },
   { name: 'interviewDistill', label: '인터뷰 증류' },
+  { name: 'interviewRelationSpeech', label: '인터뷰 호칭·말투' },
 ];
 
 export const aiTaskNames: readonly [ AiTaskName, ...AiTaskName[], ] = aiTaskCatalog.map((task) => task.name) as unknown as readonly [

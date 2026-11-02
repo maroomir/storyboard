@@ -27,7 +27,10 @@ export interface InterviewAxesFile {
 
 export type InterviewQuestionSource =
   | { readonly kind: 'beat'; readonly sceneStem: string; readonly beatIndex: number }
-  | { readonly kind: 'offBeat' };
+  | { readonly kind: 'offBeat' }
+  | { readonly kind: 'relation'; readonly target: string };
+
+export const relationSpeechAxisId: string = 'relation-speech';
 
 export interface InterviewOption {
   readonly valueId: string;
@@ -106,6 +109,7 @@ const interviewQuestionSourceSchema: z.ZodType<InterviewQuestionSource> = z.disc
       beatIndex: z.number().int().nonnegative(),
     }),
     z.object({ kind: z.literal('offBeat') }),
+    z.object({ kind: z.literal('relation'), target: idSchema }),
   ],
 );
 
