@@ -7,6 +7,7 @@ maxTokens: 2000
 [열린 축] 가운데 [상황]이 가장 잘 가르는 축 하나를 골라 그 id 를 axisId 로 적어라. 어느 축도 이 상황과 무관하면 가장 가까운 축을 고른다.
 [상황]을 한두 문장으로 다시 세우고 묻는 문장 하나로 끝나는 질문을 써라. 상황에 적힌 사건·인물·장소를 바꾸지 마라.
 선택지는 {{optionCount}}개. 각 선택지는 고른 축의 서로 다른 값 하나를 대표해야 하고, 그 값 id 를 그대로 단다. 두 선택지가 같은 값을 대표하면 안 된다.
+선택지에 [지금까지의 이해]와 [상황]에 없는 사물·숫자·고유명사·전문 용어를 새로 만들지 마라. 갈래는 태도와 말투로 가르고, 소품이 필요하면 상황에 이미 있는 것만 써라. 작가가 고르는 것은 값이고, 네가 지어낸 세부는 카드에 남지 않아야 한다.
 {{^isBackground}}
 선택지의 겉모습은 전부 이 인물이다. [지금까지의 이해]에 적힌 성격·말투로, 그 값을 택했을 때 이 인물이 실제로 할 행동과 말 한두 문장을 써라. 값은 다르되 어느 것도 "이 인물답지 않은" 티가 나면 안 된다. 대사를 넣으면 곡선 큰따옴표로.
 {{#shouldExplore}}
@@ -23,7 +24,7 @@ maxTokens: 2000
 {"axisId":"pressure-defense","question":"…","options":[{"valueId":"counter","text":"…"},{"valueId":"withhold","text":"…"}]}
 
 ## system:xs
-[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
+[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
 
 ## user
 [{{#isBackground}}장소{{/isBackground}}{{^isBackground}}인물{{/isBackground}}]

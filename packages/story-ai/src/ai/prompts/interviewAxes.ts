@@ -12,7 +12,7 @@ export interface InterviewAxesInput {
   readonly synopsis?: string;
   readonly prohibitions: readonly string[];
   readonly existingAxes: readonly InterviewAxis[];
-  readonly beats: readonly string[];
+  readonly scenes: readonly string[];
   readonly maxAxes: number;
 }
 
@@ -42,8 +42,8 @@ export const InterviewAxesPrompt: PromptModule<[input: InterviewAxesInput, varia
           label: axis.label,
           values: axis.values.map((value) => value.label).join(' / '),
         })),
-        hasBeats: input.beats.length > 0,
-        beats: input.beats,
+        hasScenes: input.scenes.length > 0,
+        scenes: input.scenes,
         maxAxes: input.maxAxes,
       },
     });

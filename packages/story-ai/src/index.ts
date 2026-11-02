@@ -34,6 +34,7 @@ export * from '#ai/ai/prompts/interviewAxes';
 export * from '#ai/ai/prompts/interviewQuestion';
 export * from '#ai/ai/prompts/interviewUpdate';
 export * from '#ai/ai/prompts/interviewDistill';
+export * from '#ai/ai/prompts/interviewRelationSpeech';
 export * from '#ai/ai/prompts/noteCardConsolidation';
 export * from '#ai/ai/prompts/noteSynthesis';
 export * from '#ai/ai/prompts/outlineCharacters';
