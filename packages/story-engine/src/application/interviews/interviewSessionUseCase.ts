@@ -23,6 +23,7 @@ import type {
   InterviewDistillDraft,
   InterviewQuestionAxis,
   InterviewQuestionDraft,
+  InterviewRelationSpeechQuestion,
   InterviewUpdateDraft,
   StoryboardAiService,
 } from '@storyboard/story-ai';
@@ -44,6 +45,7 @@ import {
   type InterviewAnswerOutcome,
   type InterviewAxesFile,
   type InterviewAxis,
+  relationSpeechAxisId,
   type InterviewAxisSet,
   type InterviewBeatSituation,
   type InterviewCardCoverage,
@@ -97,6 +99,11 @@ export interface InterviewConfirmRequest extends InterviewSessionRequest {
   readonly confirmation: InterviewConfirmation;
 }
 
+interface BeatToAsk {
+  readonly situation: InterviewBeatSituation;
+  readonly axes: readonly InterviewAxis[];
+}
+
 interface InterviewContext {
   readonly card: StoryboardCard;
   readonly cardType: BibleSubjectKind;
@@ -146,6 +153,46 @@ function withValue(
       ? axis
       : { ...axis, values: [...axis.values, value] },
   );
+}
+
+function describeRecordChoice(record: InterviewRecord, axes: readonly InterviewAxis[]): string | undefined {
+  const axis: InterviewAxis | undefined = axes.find((candidate) => candidate.id === record.axisId);
+  const answer: InterviewAnswer | undefined = record.answer;
+
+  if (answer === undefined || answer.kind === 'skipped' || axis === undefined) {
+    return undefined;
+  }
+
+  const valueId: string =
+    answer.kind === 'chosen' ? (record.options[answer.index]?.valueId ?? '') : answer.valueId;
+  const label: string = axis.values.find((value) => value.id === valueId)?.label ?? valueId;
+
+  return `${record.situation} → ${axis.label}: ${label}`;
+}
+
+function writtenAnswers(records: readonly InterviewRecord[], axes: readonly InterviewAxis[]): string[] {
+  return records.flatMap((record): string[] => {
+    const answer: InterviewAnswer | undefined = record.answer;
+    const axis: InterviewAxis | undefined = axes.find((candidate) => candidate.id === record.axisId);
+    return answer?.kind === 'written' && axis !== undefined
+      ? [`${record.situation} → ${axis.label}: ${answer.text}`]
+      : [];
+  });
+}
+
+function describeSceneKind(scene: SceneFile): string {
+  const parts: string[] = [
+    scene.card.title ?? scene.stem,
+    scene.card.grounding?.incident ?? scene.card.purpose,
+    scene.card.relationStage === undefined ? undefined : `관계: ${scene.card.relationStage}`,
+    scene.card.mood === undefined ? undefined : `분위기: ${scene.card.mood}`,
+  ].filter((part): part is string => part !== undefined && part.trim().length > 0);
+
+  return parts.join(' — ');
+}
+
+function isRelationRecord(record: InterviewRecord): boolean {
+  return record.source.kind === 'relation';
 }
 
 function describeRecordAnswer(record: InterviewRecord, axes: readonly InterviewAxis[]): string | undefined {
@@ -232,10 +279,15 @@ export class InterviewSessionUseCase {
       return undefined;
     }
 
+    const relationTarget: string | undefined = this.pickRelationTarget(context);
+    if (relationTarget !== undefined) {
+      return this.askRelationSpeech(request, context, relationTarget);
+    }
+
     const openAxes: readonly InterviewAxis[] = context.axes.filter(
       (axis) => !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight),
     );
-    const nextBeat: InterviewBeatSituation | undefined = this.pickNextBeat(context);
+    const nextBeat: BeatToAsk | undefined = this.pickNextBeat(context, openAxes);
     const offBeatCount: number = sessionRecords.filter(
       (record) => record.source.kind === 'offBeat',
     ).length;
@@ -246,15 +298,15 @@ export class InterviewSessionUseCase {
 
     const draft: InterviewQuestionDraft | undefined = await this.draftQuestion(
       context,
-      openAxes,
-      nextBeat,
+      nextBeat === undefined ? openAxes : nextBeat.axes,
+      nextBeat?.situation,
     );
     if (draft === undefined) {
       this.host.logger.warn('인터뷰 질문을 만들지 못해 이 세션을 여기서 닫습니다.');
       return undefined;
     }
 
-    const record: InterviewRecord = this.toRecord(request.sessionId, context, draft, nextBeat);
+    const record: InterviewRecord = this.toRecord(request.sessionId, context, draft, nextBeat?.situation);
     await this.saveModel(request.workspaceRoot, {
       ...model,
       records: [...model.records, record],
@@ -263,16 +315,105 @@ export class InterviewSessionUseCase {
     return this.toQuestion(record, context.axes);
   }
 
-  private pickNextBeat(context: InterviewContext): InterviewBeatSituation | undefined {
-    const askedBeats: Set<string> = new Set(
+  private pickNextBeat(
+    context: InterviewContext,
+    openAxes: readonly InterviewAxis[],
+  ): BeatToAsk | undefined {
+    const askedPairs: Set<string> = new Set(
       context.model.records.flatMap((record) =>
-        record.source.kind === 'beat' ? [`${record.source.sceneStem}#${record.source.beatIndex}`] : [],
+        record.source.kind === 'beat'
+          ? [`${record.source.sceneStem}#${record.source.beatIndex}#${record.axisId}`]
+          : [],
       ),
     );
 
-    return collectBeatSituations(context.card, context.scenes, context.situationOptions).find(
-      (situation) => !askedBeats.has(`${situation.sceneStem}#${situation.beatIndex}`),
+    for (const situation of collectBeatSituations(context.card, context.scenes, context.situationOptions)) {
+      const axes: InterviewAxis[] = openAxes.filter(
+        (axis) => !askedPairs.has(`${situation.sceneStem}#${situation.beatIndex}#${axis.id}`),
+      );
+      if (axes.length > 0) {
+        return { situation, axes };
+      }
+    }
+
+    return undefined;
+  }
+
+  private pickRelationTarget(context: InterviewContext): string | undefined {
+    if (context.card.type !== 'character') {
+      return undefined;
+    }
+
+    const asked: Set<string> = new Set(
+      context.model.records.flatMap((record) =>
+        record.source.kind === 'relation' ? [record.source.target] : [],
+      ),
     );
+    const present: Set<string> = new Set(
+      context.scenes.flatMap((scene) => [
+        ...(scene.card.characters ?? []),
+        ...(scene.card.beats ?? []).flatMap((beat) => (typeof beat === 'string' ? [] : (beat.cast ?? []))),
+      ]),
+    );
+
+    return (context.card.relations ?? [])
+      .map((relation) => relation.target)
+      .find((target) => !asked.has(target) && present.has(target));
+  }
+
+  private async askRelationSpeech(
+    request: InterviewSessionRequest,
+    context: InterviewContext,
+    target: string,
+  ): Promise<InterviewQuestion | undefined> {
+    const targetCard: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
+      request.workspaceRoot,
+      'character',
+      target,
+    );
+    const currentSpeech: string | undefined =
+      context.card.type === 'character'
+        ? (context.card.relations ?? []).find((relation) => relation.target === target)?.speech
+        : undefined;
+    const draft: InterviewRelationSpeechQuestion | undefined = await context.ai.askRelationSpeech(
+      {
+        name: context.card.name,
+        catchphrases: context.card.type === 'character' ? (context.card.catchphrases ?? []) : [],
+        targetId: target,
+        targetName: targetCard?.name ?? target,
+        targetAliases: targetCard?.aliases ?? [],
+        ...(currentSpeech === undefined ? {} : { currentSpeech }),
+        scenes: context.scenes.map(describeSceneKind),
+        optionCount: context.tuning.optionCount,
+      },
+      { attribution: context.attribution },
+    );
+    if (draft === undefined) {
+      this.host.logger.warn(`${targetCard?.name ?? target}에 대한 호칭 질문을 만들지 못해 건너뜁니다.`);
+      return undefined;
+    }
+
+    const record: InterviewRecord = {
+      id: `${request.sessionId}-${context.model.records.length + 1}`,
+      sessionId: request.sessionId,
+      askedAt: this.now().toISOString(),
+      source: { kind: 'relation', target },
+      axisId: relationSpeechAxisId,
+      situation: `${targetCard?.name ?? target}에게`,
+      question: draft.question,
+      options: draft.options.map((text, index) => ({
+        valueId: `speech-${index + 1}`,
+        text,
+        isExploration: false,
+      })),
+      isConfirmed: false,
+    };
+    await this.saveModel(request.workspaceRoot, {
+      ...context.model,
+      records: [...context.model.records, record],
+    });
+
+    return this.toQuestion(record, context.axes);
   }
 
   private draftQuestion(
@@ -339,6 +480,11 @@ export class InterviewSessionUseCase {
   public async answer(request: InterviewAnswerRequest): Promise<InterviewAnswerOutcome> {
     const context: InterviewContext = await this.requireContext(request);
     const record: InterviewRecord = this.requireRecord(context.model, request.questionId);
+
+    if (isRelationRecord(record)) {
+      return this.answerRelation(request, context, record, request.answer);
+    }
+
     const axis: InterviewAxis = this.requireAxis(context.axes, record.axisId);
 
     if (request.answer.kind === 'skipped') {
@@ -412,14 +558,18 @@ export class InterviewSessionUseCase {
       undecidedAxisLabels: this.undecidedAxisLabels(context, sessionRecords),
     };
 
-    if (decidedLines.length === 0) {
+    const relationDrafts: CardCollectProposalDraft[] = this.relationSpeechProposals(context);
+    if (decidedLines.length === 0 && relationDrafts.length === 0) {
       return { ...summary, candidateCount: 0 };
     }
 
+    const distilled: InterviewDistillDraft | undefined =
+      decidedLines.length === 0 ? undefined : await this.distill(context, decidedLines);
     const changes: CardCollectProposal[] = this.toProposals(
-      await this.distill(context, decidedLines),
+      distilled,
+      relationDrafts,
       context.card,
-      sessionRecords,
+      model.records,
     );
     if (changes.length > 0) {
       await this.writeCandidates(request, context, changes);
@@ -471,9 +621,10 @@ export class InterviewSessionUseCase {
         cardText: serializeCard(context.card),
         summary: context.model.summary,
         tallies: decidedLines,
-        chosen: context.model.records
-          .map((record) => describeRecordAnswer(record, context.axes))
+        choices: context.model.records
+          .map((record) => describeRecordChoice(record, context.axes))
           .filter((line): line is string => line !== undefined),
+        written: writtenAnswers(context.model.records, context.axes),
         relationTargets,
         minimumWeight: context.tuning.distillMinimumWeight,
       },
@@ -499,12 +650,59 @@ export class InterviewSessionUseCase {
       addNoteCandidateSource(
         await this.repositories.interviews.loadCandidates(request.workspaceRoot),
         {
-          location: `interview:${context.card.id}:${request.sessionId}`,
+          location: `interview:${context.card.id}`,
           absorbedAt: this.now().toISOString(),
           candidates: [candidate],
         },
         false,
       ),
+    );
+  }
+
+  private async answerRelation(
+    request: InterviewAnswerRequest,
+    context: InterviewContext,
+    record: InterviewRecord,
+    input: InterviewAnswerInput,
+  ): Promise<InterviewAnswerOutcome> {
+    const answer: InterviewAnswer =
+      input.kind === 'written'
+        ? { kind: 'written', text: input.text, valueId: 'written', isNewValue: false }
+        : input.kind === 'chosen'
+          ? { kind: 'chosen', index: input.index }
+          : { kind: 'skipped' };
+    if (answer.kind === 'chosen' && record.options[answer.index] === undefined) {
+      throw new Error(`선택지 ${answer.index + 1} 은 없습니다.`);
+    }
+
+    await this.saveModel(
+      request.workspaceRoot,
+      this.replaceRecord(context.model, { ...record, answer, isConfirmed: true }),
+    );
+
+    return {
+      isRebuilt: false,
+      answeredCount: this.countAnswered(context.model, request.sessionId) + (answer.kind === 'skipped' ? 0 : 1),
+    };
+  }
+
+  private relationSpeechProposals(context: InterviewContext): CardCollectProposalDraft[] {
+    const latestByTarget: Map<string, string> = new Map<string, string>();
+
+    for (const record of context.model.records) {
+      const answer: InterviewAnswer | undefined = record.answer;
+      if (record.source.kind !== 'relation' || answer === undefined || answer.kind === 'skipped') {
+        continue;
+      }
+      const speech: string | undefined =
+        answer.kind === 'written' ? answer.text : record.options[answer.index]?.text;
+      if (speech !== undefined) {
+        latestByTarget.set(record.source.target, speech);
+      }
+    }
+
+    return [...latestByTarget].map(
+      ([target, speech]): CardCollectProposalDraft => ({ kind: 'relationSpeech', target, speech }),
     );
   }
 
@@ -672,7 +870,8 @@ export class InterviewSessionUseCase {
   }
 
   private toProposals(
-    distilled: InterviewDistillDraft,
+    distilled: InterviewDistillDraft | undefined,
+    relationDrafts: readonly CardCollectProposalDraft[],
     card: StoryboardCard,
     sessionRecords: readonly InterviewRecord[],
   ): CardCollectProposal[] {
@@ -683,9 +882,11 @@ export class InterviewSessionUseCase {
         ),
       ),
     ];
-    const drafts: CardCollectProposalDraft[] =
-      card.type === 'character'
+    const drafts: CardCollectProposalDraft[] = distilled === undefined
+      ? [...relationDrafts]
+      : card.type === 'character'
         ? [
+            ...relationDrafts,
             ...distilled.traits.map((value): CardCollectProposalDraft => ({ kind: 'trait', value })),
             ...distilled.voice.map((value): CardCollectProposalDraft => ({ kind: 'voiceLine', value })),
             ...distilled.desire.map((value): CardCollectProposalDraft => ({ kind: 'desireLine', value })),
@@ -719,12 +920,15 @@ export class InterviewSessionUseCase {
 
   private toQuestion(record: InterviewRecord, axes: readonly InterviewAxis[]): InterviewQuestion {
     const axis: InterviewAxis | undefined = axes.find((candidate) => candidate.id === record.axisId);
+    const axisLabel: string = isRelationRecord(record)
+      ? `호칭과 말투 · ${record.situation}`
+      : (axis?.label ?? record.axisId);
 
     return {
       id: record.id,
       sessionId: record.sessionId,
       axisId: record.axisId,
-      axisLabel: axis?.label ?? record.axisId,
+      axisLabel,
       values: axis?.values ?? [],
       source: record.source,
       situation: record.situation,
@@ -861,9 +1065,7 @@ export class InterviewSessionUseCase {
         synopsis: synopsis === undefined ? undefined : [synopsis.logline, synopsis.tone].filter(Boolean).join(' / '),
         prohibitions: project.setting?.prohibitions ?? [],
         existingAxes: [],
-        beats: scenes.flatMap((scene) =>
-          (scene.card.beats ?? []).map((beat) => (typeof beat === 'string' ? beat : beat.text)),
-        ),
+        scenes: scenes.map(describeSceneKind),
         maxAxes: tuning.axesPerCardType,
       },
       { attribution },

@@ -48,8 +48,8 @@
   "interview": {
     "optionCount": 3,
     "explorationOptions": 1,
-    "offBeatQuestionsPerSession": 2,
-    "maxQuestionsPerSession": 12,
+    "offBeatQuestionsPerSession": 4,
+    "maxQuestionsPerSession": 20,
     "upcomingScenes": 3,
     "axesPerCardType": 12,
     "chosenWeight": 1,
