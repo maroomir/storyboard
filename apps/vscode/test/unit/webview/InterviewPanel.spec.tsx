@@ -56,8 +56,27 @@ async function respond(postMessage: ReturnType<typeof vi.fn>, method: string, pa
   })
 }
 
+async function reject(postMessage: ReturnType<typeof vi.fn>, method: string, message: string): Promise<void> {
+  const request = await waitFor(() => {
+    const pending = postMessage.mock.calls.map((call) => call[0]).find((candidate) => candidate.method === method && !candidate.answered)
+    if (pending === undefined) {
+      throw new Error(`no pending ${method} request`)
+    }
+    return pending
+  })
+  request.answered = true
+  await act(async () => {
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "response", id: request.id, ok: false, error: { message } } }))
+    await Promise.resolve()
+  })
+}
+
 function methodsCalled(postMessage: ReturnType<typeof vi.fn>): string[] {
   return postMessage.mock.calls.map((call) => call[0].method)
+}
+
+function requestsFor(postMessage: ReturnType<typeof vi.fn>, method: string): unknown[] {
+  return postMessage.mock.calls.map((call) => call[0]).filter((message) => message.method === method).map((message) => message.payload)
 }
 
 describe("InterviewPanel", () => {
@@ -95,6 +114,60 @@ describe("InterviewPanel", () => {
     expect(screen.getByText(/아직 정해지지 않은 축: 호감 표출/)).toBeTruthy()
     expect(methodsCalled(postMessage)).toEqual(["interviews.start", "interviews.next", "interviews.answer", "interviews.next", "interviews.finish"])
     expect(statuses.at(-1)).toContain("카드 후보 2건")
+  })
+
+  it("warns when the contract changed after the axes were drawn and can redraw them", async () => {
+    const postMessage = vi.fn()
+    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
+    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
+    await respond(postMessage, "interviews.start", { opening: { ...opening, isContractStale: true } })
+
+    expect(await screen.findByText(/작품 계약\(장르·독자층·컨셉\)이 바뀌었습니다/)).toBeTruthy()
+    expect(methodsCalled(postMessage)).toEqual(["interviews.start"])
+
+    fireEvent.click(screen.getByRole("button", { name: "축 다시 뽑기" }))
+    expect(requestsFor(postMessage, "interviews.start")).toEqual([
+      { uri: "file:///ws/character/hana.card" },
+      { uri: "file:///ws/character/hana.card", shouldResetAxes: true }
+    ])
+    await respond(postMessage, "interviews.start", { opening: { ...opening, isContractStale: true } })
+    await respond(postMessage, "interviews.next", { question })
+
+    expect(await screen.findByText("하나의 첫 반응은?")).toBeTruthy()
+  })
+
+  it("offers to redraw the axes before a session starts", async () => {
+    const postMessage = vi.fn()
+    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
+    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "축 다시 뽑고 시작" }))
+
+    expect(requestsFor(postMessage, "interviews.start")).toEqual([{ uri: "file:///ws/character/hana.card", shouldResetAxes: true }])
+  })
+
+  it("clears an answer error once the retry succeeds", async () => {
+    const postMessage = vi.fn()
+    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
+    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
+    await respond(postMessage, "interviews.start", { opening })
+    await respond(postMessage, "interviews.next", { question })
+    await screen.findByText("하나의 첫 반응은?")
+
+    fireEvent.click(screen.getByText("잔을 내려놓고 침묵한다"))
+    await reject(postMessage, "interviews.answer", "작업 모델을 쓰지 못했습니다")
+    expect(await screen.findByText("작업 모델을 쓰지 못했습니다")).toBeTruthy()
+
+    fireEvent.click(screen.getByText("잔을 내려놓고 침묵한다"))
+    await respond(postMessage, "interviews.answer", { outcome: { isRebuilt: false, answeredCount: 1 } })
+    await respond(postMessage, "interviews.next", { question: { ...question, id: "q2" } })
+
+    expect(await screen.findByText(/1\/12 답/)).toBeTruthy()
+    expect(screen.queryByText("작업 모델을 쓰지 못했습니다")).toBeNull()
   })
 
   it("asks the writer to confirm how a written answer was read and sends the rename", async () => {
