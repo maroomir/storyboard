@@ -172,8 +172,10 @@ is asked again. `finish` distils the whole card and replaces the card's one inte
 no answer distils nothing and leaves the candidates as they are. `--scenes` narrows the beats (stems, or `3..5` by
 order) and is passed with every step; `--limit` caps the answers; `--reset-axes` empties the axis
 vocabulary and every working model. `status` adds an `인터뷰` line from `WorkspaceStatus.interviews` (`describeInterviewHint`),
-`doctor` lists cards with undecided axes as info and warns when the contract changed after the
-axes were drawn; `card promote --dry-run` labels interview candidates `인터뷰에서`.
+`doctor` lists cards with undecided axes as info, warns when the contract changed after the
+axes were drawn, and fails on a working-model file it cannot read, naming the file and going on with
+the other checks (`status` keeps a warning line for the same file); `card promote --dry-run` labels
+interview candidates `인터뷰에서`.
 
 ## Note import (`apps/cli/src/commands/notes.ts`)
 

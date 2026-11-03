@@ -764,15 +764,30 @@ export class DoctorChecks {
     const coverage: InterviewCardCoverage[] = await this.container.interviews.describeCoverage({
       workspaceRoot: root,
     });
+    const unreadable: DoctorCheck[] = coverage.flatMap((entry) =>
+      entry.unreadableWorkingModel === undefined
+        ? []
+        : [
+            {
+              status: 'fail' as const,
+              label: '인터뷰 작업 모델',
+              detail: `${entry.unreadableWorkingModel.relativePath}: ${entry.unreadableWorkingModel.message}`,
+              fix: `파일을 고치거나 지우세요. 지우면 ${entry.name} 인터뷰는 처음부터 다시 시작합니다`,
+            },
+          ],
+    );
     const undecided: InterviewCardCoverage[] = coverage.filter(
       (entry) => entry.hasWorkingModel && entry.openAxes.length > 0,
     );
-    const checks: DoctorCheck[] = undecided.map((entry) => ({
-      status: 'info' as const,
-      label: '인터뷰',
-      detail: `${entry.name}(${entry.cardId}): 다음 씬 ${entry.upcomingSceneStems.join(', ')}에 답이 없는 축 — ${entry.openAxes.map((axis) => axis.axisLabel).join(' · ')}`,
-      fix: `storyboard card interview ${entry.cardId}`,
-    }));
+    const checks: DoctorCheck[] = [
+      ...unreadable,
+      ...undecided.map((entry) => ({
+        status: 'info' as const,
+        label: '인터뷰',
+        detail: `${entry.name}(${entry.cardId}): 다음 씬 ${entry.upcomingSceneStems.join(', ')}에 답이 없는 축 — ${entry.openAxes.map((axis) => axis.axisLabel).join(' · ')}`,
+        fix: `storyboard card interview ${entry.cardId}`,
+      })),
+    ];
 
     if (!existsSync(paths.interviewAxes.fsPath)) {
       return checks;

@@ -184,6 +184,11 @@ export interface InterviewBeatSituation {
   readonly time?: string;
 }
 
+export interface InterviewUnreadableWorkingModel {
+  readonly relativePath: string;
+  readonly message: string;
+}
+
 export interface InterviewCardCoverage {
   readonly cardId: string;
   readonly cardType: BibleSubjectKind;
@@ -191,6 +196,7 @@ export interface InterviewCardCoverage {
   readonly hasWorkingModel: boolean;
   readonly openAxes: readonly InterviewOpenAxis[];
   readonly upcomingSceneStems: readonly string[];
+  readonly unreadableWorkingModel?: InterviewUnreadableWorkingModel;
 }
 
 export interface InterviewClassification {
@@ -269,6 +275,9 @@ export const interviewCardCoverageSchema: z.ZodType<InterviewCardCoverage> = z.o
   hasWorkingModel: z.boolean(),
   openAxes: z.array(interviewOpenAxisSchema),
   upcomingSceneStems: z.array(z.string()),
+  unreadableWorkingModel: z
+    .object({ relativePath: z.string(), message: z.string() })
+    .optional(),
 });
 
 export const interviewOpeningSchema: z.ZodType<InterviewOpening> = z.object({

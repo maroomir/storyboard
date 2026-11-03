@@ -48,8 +48,21 @@ export function describeDrafts({ drafts }: WorkspaceStatus): string {
 
 const interviewHintCardLimit: number = 3;
 
+export function describeInterviewWarning(status: WorkspaceStatus): string | undefined {
+  const unreadablePaths: string[] = status.interviews.flatMap((coverage) =>
+    coverage.unreadableWorkingModel === undefined ? [] : [coverage.unreadableWorkingModel.relativePath],
+  );
+  if (unreadablePaths.length === 0) {
+    return undefined;
+  }
+
+  return `경고: ${unreadablePaths.join(', ')} 을(를) 읽을 수 없습니다 — storyboard doctor 로 확인하고 고치거나 지우세요`;
+}
+
 export function describeInterviewHint(status: WorkspaceStatus): string | undefined {
-  const suggestions: readonly InterviewCardCoverage[] = status.interviews;
+  const suggestions: readonly InterviewCardCoverage[] = status.interviews.filter(
+    (coverage) => coverage.unreadableWorkingModel === undefined,
+  );
   const [first] = suggestions;
   if (first === undefined) {
     return undefined;
