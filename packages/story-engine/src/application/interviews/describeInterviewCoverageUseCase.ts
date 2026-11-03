@@ -11,11 +11,13 @@ import {
 } from '#engine/application/interviews/interviewTuning';
 import {
   getStoryboardProjectPaths,
+  interviewWorkingModelRelativePath,
   scenePath,
   type BibleSubjectKind,
   type InterviewAxesFile,
   type InterviewBeatSituation,
   type InterviewCardCoverage,
+  type InterviewUnreadableWorkingModel,
   type InterviewWorkingModel,
   type SceneFile,
   type SceneListItem,
@@ -26,6 +28,11 @@ import {
 export interface DescribeInterviewCoverageRequest {
   readonly workspaceRoot: StoryUri;
   readonly sceneStems?: readonly string[];
+}
+
+interface LoadedWorkingModel {
+  readonly model?: InterviewWorkingModel;
+  readonly unreadable?: InterviewUnreadableWorkingModel;
 }
 
 export class DescribeInterviewCoverageUseCase {
@@ -101,10 +108,8 @@ export class DescribeInterviewCoverageUseCase {
       return undefined;
     }
 
-    const model: InterviewWorkingModel | undefined = await this.repositories.interviews.loadWorkingModel(
-      workspaceRoot,
-      card.id,
-    );
+    const loaded: LoadedWorkingModel = await this.loadWorkingModel(workspaceRoot, card.id);
+    const model: InterviewWorkingModel | undefined = loaded.model;
 
     return {
       cardId: card.id,
@@ -118,7 +123,21 @@ export class DescribeInterviewCoverageUseCase {
         situations,
       ),
       upcomingSceneStems: [...new Set(situations.map((situation) => situation.sceneStem))],
+      ...(loaded.unreadable === undefined ? {} : { unreadableWorkingModel: loaded.unreadable }),
     };
+  }
+
+  private async loadWorkingModel(workspaceRoot: StoryUri, cardId: string): Promise<LoadedWorkingModel> {
+    try {
+      return { model: await this.repositories.interviews.loadWorkingModel(workspaceRoot, cardId) };
+    } catch (error) {
+      return {
+        unreadable: {
+          relativePath: interviewWorkingModelRelativePath(cardId),
+          message: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
   }
 
   private async loadUpcomingScenes(
