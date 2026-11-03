@@ -74,6 +74,34 @@ describe('card file codec', () => {
     }
   });
 
+  it('keeps the top-level key order of the card text it rewrites', () => {
+    const handWritten: string = [
+      'type: character',
+      'id: manjae',
+      'name: 조만재',
+      'catchphrases:',
+      '  - 엘리트',
+      'role: main',
+      'traits:',
+      '  - 허세',
+      '',
+    ].join('\n');
+    const card: StoryboardCard = { ...parseCard(handWritten), aliases: ['만재'] } as StoryboardCard;
+
+    const rewritten: string = serializeCard(card, { keyOrderOf: handWritten });
+
+    expect(rewritten.split('\n').filter((line) => /^[a-z]/.test(line))).toEqual([
+      'type: character',
+      'id: manjae',
+      'name: 조만재',
+      'catchphrases:',
+      'role: main',
+      'traits:',
+      'aliases:',
+    ]);
+    expect(serializeCard(card)).toBe(serializeCard(parseCard(rewritten)));
+  });
+
   it('round-trips background aliases through serialize and parse', () => {
     const card: StoryboardCard = {
       type: 'location',

@@ -285,10 +285,33 @@ describe('interview session (mock provider)', () => {
     }
     expect(prepared.candidates[0]?.locations).toEqual(['interview:hana']);
 
+    write('character/hana.card', [
+      'type: character',
+      'id: hana',
+      'name: 하나',
+      'relations:',
+      '  - target: jun',
+      '    type: 소꿉친구',
+      '    speech: 반말',
+      'role: main',
+      'aliases:',
+      '  - 등대 아이',
+      'traits:',
+      '  - 똑 부러진다',
+    ]);
     await app.notes.promoteCandidates(app.workspaceRoot, prepared.candidates);
     const card: string = readFileSync(join(workspace, 'character/hana.card'), 'utf8');
     expect(card).toContain('[Mock AI] 몰릴 때 먼저 참고');
     expect(card).toContain("speech: '''등대 아이''라 부르고 반말");
+    expect(card.split('\n').filter((line) => /^[a-z]/.test(line))).toEqual([
+      'type: character',
+      'id: hana',
+      'name: 하나',
+      'relations:',
+      'role: main',
+      'aliases:',
+      'traits:',
+    ]);
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
   });
 
