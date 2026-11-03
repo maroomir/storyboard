@@ -165,9 +165,11 @@ answer, one `choose` to confirm the value the engine read (or rename it) → `fi
 manager verb on `container.interviews` and the session state is in the engine's cache file, so
 Ctrl+C loses nothing. A character session opens with one question per relation present in the
 upcoming scenes (what the character calls them, which speech level) whose answer is kept verbatim as
-a `relationSpeech` candidate; the axis questions follow, one beat × axis pair at most once. `finish`
-distils the whole card and replaces the card's one interview source (`interview:<cardId>`), so
-repeated sessions never duplicate candidates. `--scenes` narrows the beats (stems, or `3..5` by
+a `relationSpeech` candidate; the axis questions follow, one beat × axis pair at most once, and a
+question left unanswered (Esc, a closed tab) is forgotten when the next session starts, so its beat
+is asked again. `finish` distils the whole card and replaces the card's one interview source
+(`interview:<cardId>`), so repeated sessions never duplicate candidates; a session that ends with
+no answer distils nothing and leaves the candidates as they are. `--scenes` narrows the beats (stems, or `3..5` by
 order) and is passed with every step; `--limit` caps the answers; `--reset-axes` empties the axis
 vocabulary and every working model. `status` adds an `인터뷰` line from `WorkspaceStatus.interviews` (`describeInterviewHint`),
 `doctor` lists cards with undecided axes as info and warns when the contract changed after the

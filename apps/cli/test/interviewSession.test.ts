@@ -357,6 +357,29 @@ describe('interview session (mock provider)', () => {
     expect(readJson<NoteCandidateFile>('.storyboard/cache/interviews/candidates.json')).toEqual(before);
   });
 
+  it('asks the same beat again in the next session when the question was left unanswered', async () => {
+    const first = await startSession('tavern');
+    const cancelled: InterviewQuestion | undefined = await first.container.interviews.next({
+      workspaceRoot: first.container.workspaceRoot,
+      cardId: 'tavern',
+      sessionId: first.sessionId,
+    });
+    expect(cancelled?.source.kind).toBe('beat');
+
+    await waitForNextSessionId();
+    const second = await startSession('tavern');
+    const asked: InterviewQuestion | undefined = await second.container.interviews.next({
+      workspaceRoot: second.container.workspaceRoot,
+      cardId: 'tavern',
+      sessionId: second.sessionId,
+    });
+
+    expect(asked?.sessionId).toBe(second.sessionId);
+    expect(asked?.source).toEqual(cancelled?.source);
+    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/tavern.json');
+    expect(model.records.map((record) => record.id)).toEqual([asked?.id]);
+  });
+
   it('interviews a background through the same verbs and proposes layout and rules', async () => {
     const { container: app, sessionId } = await startSession('tavern');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'tavern', sessionId };
