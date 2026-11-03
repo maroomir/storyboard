@@ -256,6 +256,18 @@ export const flagCatalog: readonly FlagSpec[] = [
     summary: 'card interview: 축 어휘와 모든 카드의 표·작업 모델을 비우고 다시 뽑습니다 (카드는 그대로)',
   },
   {
+    name: 'step',
+    summary: 'card interview: 한 단계만 돌고 질문을 JSON 으로 내고 끝냅니다 (--json 필요, 에이전트가 작가에게 질문을 전할 때)',
+  },
+  { name: 'session', valueLabel: '<id>', summary: 'card interview --step: 이을 세션 (생략하면 그 카드의 열린 세션)' },
+  { name: 'answer', valueLabel: '<n>', summary: 'card interview --step: 작가가 고른 선택지 번호' },
+  { name: 'write', valueLabel: '<text>', summary: 'card interview --step: 작가가 직접 쓴 답' },
+  { name: 'skip', summary: 'card interview --step: 이 질문을 건너뜁니다' },
+  { name: 'confirm', valueLabel: '<n>', summary: 'card interview --step: 직접 쓴 답을 읽은 값 확인 (1 = 맞다)' },
+  { name: 'rename', valueLabel: '<name>', summary: 'card interview --step: 직접 쓴 답에 새 값 이름을 붙입니다' },
+  { name: 'finish', summary: 'card interview --step: 세션을 끝내고 카드 후보로 증류합니다' },
+  { name: 'abandon', summary: 'card interview --step: 증류 없이 세션을 닫습니다 (답한 표는 남음)' },
+  {
     name: 'change',
     valueLabel: '<ref>',
     summary: 'card discard: 버릴 노트 후보 하나 (card promote 가 보여 준 [ref])',

@@ -86,7 +86,7 @@ storyboard scene list             # scene cards in number order, each with its d
 storyboard draft show 01-intro    # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
 storyboard card show hana         # one card, found by id
-storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal or tui only)
+storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal, tui, or --step --json)
 ```
 
 `status --json` carries the same counts plus `data.next` (`step`, `command`, `reason`), so an agent
@@ -175,8 +175,25 @@ distil into its `layout` and `rules`. `--scenes 3..5` narrows the questions to t
 `--limit 5` ends the session after five answers, and `--reset-axes` throws away the axis vocabulary
 (and every card's votes) when the contract has changed. `status` names the cards whose upcoming
 scenes still have unanswered axes; `doctor` repeats it and warns when the contract moved under the
-vocabulary. The verb needs a terminal (or the tui) because it asks; the lock is not taken, so an
-interview can run while a generation is going.
+vocabulary. The verb asks at a terminal (or in the tui); the lock is not taken, so an interview can
+run while a generation is going.
+
+An agent that works with the writer runs the same interview one step per call and shows each
+question to the writer itself:
+
+```bash
+storyboard card interview hana --step --json                 # opens a session: data.state "question"
+storyboard card interview hana --step --json --answer 2      # the option the writer picked
+storyboard card interview hana --step --json --write "웃어 버린다"   # or what the writer wrote
+storyboard card interview hana --step --json --confirm 1     # after a written answer: 1 keeps the reading
+storyboard card interview hana --step --json --finish        # distil; then storyboard card promote
+```
+
+Every call prints `data.state` — `question` (`question.options` numbered from 1, `allowsText`),
+`confirm` (`options`, or `--rename "<name>"` for a new value), `finished` or `abandoned` — and the
+open session is continued without `--session`. `--skip` passes over a question, `--abandon` closes
+the session without distilling, and `--limit`/`--scenes` go with every call. The answers must be the
+writer's own choices: an agent passes only the number the writer picked or the words they wrote.
 
 ### 시점과 구성
 

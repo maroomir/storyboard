@@ -1,5 +1,14 @@
 import type { ChoiceOption, IPrompter } from '@/adapters/prompter';
 import { flagBoolean, flagString } from '@/cliArguments';
+import {
+  formatConfirmTitle,
+  formatKeepLabel,
+  formatQuestionTitle,
+  listOtherValues,
+  newValueNamePrompt,
+  writtenAnswerPrompt,
+} from '@/commands/card/interviewQuestionLabels';
+import { InterviewStepRunner } from '@/commands/card/interviewStepRunner';
 import type { CommandSpec } from '@/commands/catalog';
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
@@ -14,6 +23,7 @@ import type {
 import type {
   InterviewAnswerInput,
   InterviewAnswerOutcome,
+  InterviewClassification,
   InterviewQuestion,
   InterviewSessionSummary,
   SceneListItem,
@@ -73,11 +83,16 @@ export class CardInterviewCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card interview',
     group: '카드와 정전',
-    usage: 'card interview <id>',
+    usage: 'card interview <id> [--step --json [--answer <n> | --write <text> | --skip | --confirm <n> | --rename <name> | --finish | --abandon]]',
     summary:
-      '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지 고르게 해, 선택의 패턴을 카드 후보로 증류합니다 (대화형 화면에서만)',
-    flags: ['scenes', 'limit', 'reset-axes'],
-    examples: ['storyboard card interview hana', 'storyboard card interview tavern --scenes 3..5'],
+      '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지 고르게 해, 선택의 패턴을 카드 후보로 증류합니다 (대화형 화면, 또는 --step --json 으로 한 단계씩)',
+    flags: ['scenes', 'limit', 'reset-axes', 'step', 'session', 'answer', 'write', 'skip', 'confirm', 'rename', 'finish', 'abandon'],
+    examples: [
+      'storyboard card interview hana',
+      'storyboard card interview tavern --scenes 3..5',
+      'storyboard card interview hana --step --json',
+      'storyboard card interview hana --step --json --answer 2',
+    ],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
@@ -86,10 +101,14 @@ export class CardInterviewCommand implements ICommandHandler {
       return failure('카드 id 를 지정해 주세요: storyboard card interview <id>');
     }
 
+    if (flagBoolean(args.flags, 'step')) {
+      return this.runStep(container, cardId, args.flags);
+    }
+
     const prompter: IPrompter | undefined = container.prompter;
     if (prompter === undefined) {
       return failure(
-        '인터뷰는 대화형 화면에서만 할 수 있습니다. 터미널에서 storyboard tui 를 열거나 같은 명령을 터미널에서 직접 실행하세요.',
+        '인터뷰는 대화형 화면에서 하거나, 에이전트라면 --step --json 으로 한 단계씩 돌려 질문을 작가에게 전하세요.',
       );
     }
 
@@ -131,6 +150,22 @@ export class CardInterviewCommand implements ICommandHandler {
       `${started.opening.name} 인터뷰를 마쳤습니다 (답 ${answered}, 카드 후보 ${summary.candidateCount}건).`,
       summary,
     );
+  }
+
+  private async runStep(
+    container: CliContainer,
+    cardId: string,
+    flags: Readonly<Record<string, string | boolean>>,
+  ): Promise<CommandOutcome> {
+    if (!flagBoolean(flags, 'json')) {
+      return failure('--step 은 --json 과 함께 씁니다: storyboard card interview <id> --step --json');
+    }
+
+    return new InterviewStepRunner(container).run({
+      cardId,
+      sceneStems: await this.resolveSceneStems(container, flagString(flags, 'scenes')),
+      flags,
+    });
   }
 
   private async askUntilDone(handle: InterviewSessionHandle): Promise<number> {
@@ -178,15 +213,8 @@ export class CardInterviewCommand implements ICommandHandler {
       { label: '건너뛰기', value: { kind: 'skipped' } },
       { label: '여기까지', value: { kind: 'stop' } },
     ];
-    const sourceLabel: string =
-      question.source.kind === 'beat'
-        ? `${question.source.sceneStem} · 사건 ${question.source.beatIndex + 1}`
-        : question.source.kind === 'relation'
-          ? '상대별 말투'
-          : '사건 밖';
-
     return handle.prompter.choose({
-      title: `${ordinal}번째 · ${question.axisLabel} (${sourceLabel})`,
+      title: formatQuestionTitle(question, ordinal),
       details: [question.situation, '', question.question],
       options,
     });
@@ -194,7 +222,7 @@ export class CardInterviewCommand implements ICommandHandler {
 
   private async askWrittenAnswer(prompter: IPrompter): Promise<InterviewAnswerInput | undefined> {
     const text: string | undefined = await prompter.askText({
-      title: '이 인물이라면 어떻게 하나요? 행동이나 말 한두 문장',
+      title: writtenAnswerPrompt,
     });
 
     return text === undefined ? undefined : text.trim().length === 0 ? { kind: 'skipped' } : { kind: 'written', text: text.trim() };
@@ -215,19 +243,18 @@ export class CardInterviewCommand implements ICommandHandler {
       handle.prompter.announce('◇  직접 쓴 답이 이어져 지금까지의 이해를 처음부터 다시 썼습니다.');
     }
     if (outcome.classification !== undefined) {
-      await this.confirmClassification(handle, question, outcome.classification.valueLabel);
+      await this.confirmClassification(handle, question, outcome.classification);
     }
   }
 
   private async confirmClassification(
     handle: InterviewSessionHandle,
     question: InterviewQuestion,
-    valueLabel: string,
+    { valueId, valueLabel }: InterviewClassification,
   ): Promise<void> {
     const options: ChoiceOption<ConfirmChoice>[] = [
-      { label: `맞다 — ${valueLabel}`, value: { kind: 'keep' } },
-      ...question.values
-        .filter((value) => value.label !== valueLabel)
+      { label: formatKeepLabel(valueLabel), value: { kind: 'keep' } },
+      ...listOtherValues(question, valueId)
         .map((value): ChoiceOption<ConfirmChoice> => ({
           label: value.label,
           value: { kind: 'value', valueId: value.id },
@@ -235,7 +262,7 @@ export class CardInterviewCommand implements ICommandHandler {
       { label: '새 값으로 이름 붙이기', value: { kind: 'rename' } },
     ];
     const choice: ConfirmChoice | undefined = await handle.prompter.choose({
-      title: `이 답을 「${valueLabel}」로 읽었습니다. 맞나요?`,
+      title: formatConfirmTitle(valueLabel),
       details: [],
       options,
     });
@@ -268,7 +295,7 @@ export class CardInterviewCommand implements ICommandHandler {
     }
 
     const label: string | undefined = await prompter.askText({
-      title: '새 값의 이름 (두세 낱말)',
+      title: newValueNamePrompt,
     });
     const trimmed: string = label?.trim() ?? '';
 

@@ -163,8 +163,8 @@ and the instance list in `apps/cli/src/commands/index.ts` is where those specs a
 ## Interview verbs
 
 `card interview <id>` is the one interview verb for characters and backgrounds alike (the card id
-decides which). It is interactive only: without `container.prompter` it fails with exit 1, so an
-agent never enters it. It takes no run lock — it writes only the interview cache and the candidate
+decides which). Without `container.prompter` it runs only as `--step --json`, one step per call,
+so an agent can relay each question to the writer (below); otherwise it fails with exit 1. It takes no run lock — it writes only the interview cache and the candidate
 file, and `card promote` is the verb that writes cards. The loop is the terminal's: `start` → repeat
 `next` → `choose` (the options plus 직접 쓰기 / 건너뛰기 / 여기까지) → `answer` → on a written
 answer, one `choose` to confirm the value the engine read (or rename it) → `finish`. Every step is a
@@ -182,6 +182,21 @@ vocabulary and every working model. `status` adds an `인터뷰` line from `Work
 axes were drawn, and fails on a working-model file it cannot read, naming the file and going on with
 the other checks (`status` keeps a warning line for the same file); `card promote --dry-run` labels
 interview candidates `인터뷰에서`.
+
+`--step --json` is the agent's form of the same loop, in `InterviewStepRunner`
+(`commands/card/interviewStepRunner.ts`). One call does one step and prints a `state`: `question`
+(the options numbered from 1, `allowsText`), `confirm` (after a written answer, option 1 keeps what
+the engine read), `finished` (the summary) or `abandoned`. A call carries at most one of
+`--answer <n>`, `--write <text>`, `--skip`, `--confirm <n>`, `--rename <name>`, `--finish`,
+`--abandon`; with none it shows the step that is waiting, or opens a session when none is.
+`--session <id>` must name the open session, and leaving it out continues the card's open one
+(`interviews.findOpenSession`: the card's last record is unanswered or a written answer not yet
+confirmed). Continuing never calls `start`, which would forget the waiting question. `--limit` and
+`--scenes` are passed with every call; reaching the limit or running out of questions finishes the
+session. `finish` and `abandon` close the session in the working model (the unanswered question
+dropped, every answer marked confirmed), so a closed session is never found open again. The answers
+are the writer's: the workspace `AGENTS.md` tells an agent to pass only what the writer chose or
+wrote.
 
 ## Note import (`apps/cli/src/commands/notes.ts`)
 
