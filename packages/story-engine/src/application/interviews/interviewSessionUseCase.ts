@@ -568,7 +568,9 @@ export class InterviewSessionUseCase {
     };
 
     const relationDrafts: CardCollectProposalDraft[] = this.relationSpeechProposals(context);
-    if (decidedLines.length === 0 && relationDrafts.length === 0) {
+    const hasNothingNewToDistill: boolean =
+      answered === 0 || (decidedLines.length === 0 && relationDrafts.length === 0);
+    if (hasNothingNewToDistill) {
       return { ...summary, candidateCount: 0 };
     }
 

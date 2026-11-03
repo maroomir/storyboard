@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { InterviewQuestion, InterviewWorkingModel, NoteCandidateFile } from '@storyboard/story-model';
+import type { InterviewQuestion, InterviewWorkingModel, NoteCandidateFile, UsageRecord } from '@storyboard/story-model';
 import type { InterviewStartResult, PrepareNoteCandidatePromotionResult } from '@storyboard/story-engine';
 
 import type { ParsedArguments } from '@/cliArguments';
@@ -114,6 +114,11 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true });
   rmSync(workspace, { recursive: true, force: true });
 });
+
+async function waitForNextSessionId(): Promise<void> {
+  const millisecondsUntilNextSecond: number = 1000 - (Date.now() % 1000) + 5;
+  await new Promise((resolve) => setTimeout(resolve, millisecondsUntilNextSecond));
+}
 
 async function startSession(cardId: string): Promise<{ container: CliContainer; sessionId: string }> {
   const app: CliContainer = container();
@@ -313,6 +318,43 @@ describe('interview session (mock provider)', () => {
       'traits:',
     ]);
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
+  });
+
+  it('calls no distill and keeps the candidates when a session ends without an answer', async () => {
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    for (let i = 0; i < 4; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
+    }
+    await app.interviews.finish(request);
+    const before: NoteCandidateFile = readJson('.storyboard/cache/interviews/candidates.json');
+    expect(before.sources).toHaveLength(1);
+
+    const records: UsageRecord[] = [];
+    const recording: CliContainer = createCliContainer({
+      workspacePath: workspace,
+      logger: silentLogger,
+      canPrompt: false,
+      version: '0.0.0',
+      usageSink: { record: async (_root, usage) => void records.push(usage) },
+    });
+    for (let i = 0; i < 2; i += 1) {
+      await waitForNextSessionId();
+      const started: InterviewStartResult = await recording.interviews.start({ workspaceRoot: recording.workspaceRoot, cardId: 'hana' });
+      if (!started.ok) {
+        throw new Error(started.message);
+      }
+      const summary = await recording.interviews.finish({
+        workspaceRoot: recording.workspaceRoot,
+        cardId: 'hana',
+        sessionId: started.opening.sessionId,
+      });
+      expect(summary).toMatchObject({ answered: 0, candidateCount: 0 });
+    }
+
+    expect(records.filter((record) => record.taskName === 'interviewDistill')).toHaveLength(0);
+    expect(readJson<NoteCandidateFile>('.storyboard/cache/interviews/candidates.json')).toEqual(before);
   });
 
   it('interviews a background through the same verbs and proposes layout and rules', async () => {
