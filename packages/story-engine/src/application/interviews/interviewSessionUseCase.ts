@@ -91,6 +91,24 @@ export interface InterviewSessionRequest {
   readonly sceneStems?: readonly string[];
 }
 
+export interface InterviewResumeRequest {
+  readonly workspaceRoot: StoryUri;
+  readonly cardId: string;
+  readonly card?: StoryboardCard;
+  readonly sceneStems?: readonly string[];
+}
+
+export type InterviewOpenSessionStep =
+  | { readonly kind: 'answer' }
+  | { readonly kind: 'confirm'; readonly classification: InterviewClassification };
+
+export interface InterviewOpenSession {
+  readonly opening: InterviewOpening;
+  readonly question: InterviewQuestion;
+  readonly step: InterviewOpenSessionStep;
+  readonly answeredCount: number;
+}
+
 export interface InterviewAnswerRequest extends InterviewSessionRequest {
   readonly questionId: string;
   readonly answer: InterviewAnswerInput;
@@ -120,6 +138,31 @@ interface InterviewContext {
 }
 
 const emptyTallies: InterviewTallies = {};
+
+const sessionIdTimestampDigits: number = 17;
+
+function closeSessionRecords(model: InterviewWorkingModel, sessionId: string): InterviewWorkingModel {
+  return {
+    ...model,
+    records: model.records.flatMap((record): InterviewRecord[] => {
+      if (record.sessionId !== sessionId) {
+        return [record];
+      }
+
+      return record.answer === undefined ? [] : [{ ...record, isConfirmed: true }];
+    }),
+  };
+}
+
+function isAwaitingConfirmation(record: InterviewRecord): boolean {
+  return record.answer?.kind === 'written' && !record.isConfirmed;
+}
+
+function countSessionAnswers(model: InterviewWorkingModel, sessionId: string): number {
+  return model.records.filter(
+    (record) => record.sessionId === sessionId && record.answer !== undefined && record.answer.kind !== 'skipped',
+  ).length;
+}
 
 function cardTypeOf(card: StoryboardCard): BibleSubjectKind {
   return card.type === 'character' ? 'character' : 'background';
@@ -238,29 +281,87 @@ export class InterviewSessionUseCase {
         await this.repositories.interviews.deleteWorkingModels(request.workspaceRoot);
       }
 
-      const sessionId: string = this.now().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+      const sessionId: string = this.now().toISOString().replace(/[-:.TZ]/g, '').slice(0, sessionIdTimestampDigits);
       const context: InterviewContext = await this.forgetUnansweredQuestions(
         request.workspaceRoot,
         await this.loadContext(request.workspaceRoot, card, request.sceneStems, sessionId),
       );
-      const isContractStale: boolean = await this.isContractStale(request.workspaceRoot, context);
 
-      return {
-        ok: true,
-        opening: {
-          sessionId,
-          cardId: card.id,
-          cardType: context.cardType,
-          name: card.name,
-          coverage: this.describeCoverage(context),
-          isContractStale,
-          maxQuestions: context.tuning.maxQuestionsPerSession,
-        },
-      };
+      return { ok: true, opening: await this.describeOpening(request.workspaceRoot, sessionId, context) };
     } catch (error) {
       this.host.logger.error('Interview start failed', error);
       return failedResult(error);
     }
+  }
+
+  public async findOpenSession(request: InterviewResumeRequest): Promise<InterviewOpenSession | undefined> {
+    const card: StoryboardCard | undefined = await this.resolveCard(request);
+    const latest: InterviewRecord | undefined =
+      card === undefined ? undefined : (await this.loadSavedModel(request.workspaceRoot, card.id))?.records.at(-1);
+    const isOpen: boolean = latest !== undefined && (latest.answer === undefined || isAwaitingConfirmation(latest));
+    if (card === undefined || latest === undefined || !isOpen) {
+      return undefined;
+    }
+
+    const context: InterviewContext = await this.loadContext(
+      request.workspaceRoot,
+      card,
+      request.sceneStems,
+      latest.sessionId,
+    );
+
+    return {
+      opening: await this.describeOpening(request.workspaceRoot, latest.sessionId, context),
+      question: this.toQuestion(latest, context.axes),
+      step: this.describeOpenStep(latest, context.axes),
+      answeredCount: countSessionAnswers(context.model, latest.sessionId),
+    };
+  }
+
+  public async abandon(request: InterviewSessionRequest): Promise<void> {
+    const card: StoryboardCard | undefined = await this.resolveCard(request);
+    const model: InterviewWorkingModel | undefined =
+      card === undefined ? undefined : await this.loadSavedModel(request.workspaceRoot, card.id);
+    if (model === undefined) {
+      return;
+    }
+
+    await this.saveModel(request.workspaceRoot, closeSessionRecords(model, request.sessionId));
+  }
+
+  private loadSavedModel(workspaceRoot: StoryUri, cardId: string): Promise<InterviewWorkingModel | undefined> {
+    return this.repositories.interviews.loadWorkingModel(workspaceRoot, cardId);
+  }
+
+  private describeOpenStep(record: InterviewRecord, axes: readonly InterviewAxis[]): InterviewOpenSessionStep {
+    const answer: InterviewAnswer | undefined = record.answer;
+    if (answer === undefined || answer.kind !== 'written') {
+      return { kind: 'answer' };
+    }
+
+    const axis: InterviewAxis | undefined = axes.find((candidate) => candidate.id === record.axisId);
+    const label: string = axis?.values.find((value) => value.id === answer.valueId)?.label ?? answer.valueId;
+
+    return {
+      kind: 'confirm',
+      classification: { valueId: answer.valueId, valueLabel: label, isNewValue: answer.isNewValue },
+    };
+  }
+
+  private async describeOpening(
+    workspaceRoot: StoryUri,
+    sessionId: string,
+    context: InterviewContext,
+  ): Promise<InterviewOpening> {
+    return {
+      sessionId,
+      cardId: context.card.id,
+      cardType: context.cardType,
+      name: context.card.name,
+      coverage: this.describeCoverage(context),
+      isContractStale: await this.isContractStale(workspaceRoot, context),
+      maxQuestions: context.tuning.maxQuestionsPerSession,
+    };
   }
 
   private async forgetUnansweredQuestions(
@@ -560,7 +661,7 @@ export class InterviewSessionUseCase {
         answer: {
           ...answer,
           valueId: confirmed.id,
-          isNewValue: confirmation.kind === 'newValue',
+          isNewValue: confirmed.id === answer.valueId ? answer.isNewValue : confirmation.kind === 'newValue',
         },
         isConfirmed: true,
       }),
@@ -569,7 +670,7 @@ export class InterviewSessionUseCase {
   }
 
   public async finish(request: InterviewSessionRequest): Promise<InterviewSessionSummary> {
-    const context: InterviewContext = await this.requireContext(request);
+    const context: InterviewContext = await this.closeSession(request, await this.requireContext(request));
     const { model } = context;
     const sessionRecords: readonly InterviewRecord[] = model.records.filter(
       (record) => record.sessionId === request.sessionId && record.answer !== undefined,
@@ -605,6 +706,13 @@ export class InterviewSessionUseCase {
     await this.saveModel(request.workspaceRoot, { ...model, distilledThrough: model.records.length });
 
     return { ...summary, candidateCount: changes.length };
+  }
+
+  private async closeSession(request: InterviewSessionRequest, context: InterviewContext): Promise<InterviewContext> {
+    const model: InterviewWorkingModel = closeSessionRecords(context.model, request.sessionId);
+    await this.saveModel(request.workspaceRoot, model);
+
+    return { ...context, model };
   }
 
   private decidedTallyLines(context: InterviewContext): string[] {
