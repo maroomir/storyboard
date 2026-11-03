@@ -56,15 +56,48 @@ export function parseCard(rawCard: string): StoryboardCard {
   }
 }
 
-export function serializeCard(card: StoryboardCard): string {
+export interface SerializeCardOptions {
+  readonly keyOrderOf?: string;
+}
+
+export function serializeCard(card: StoryboardCard, options: SerializeCardOptions = {}): string {
   const parsedCard: StoryboardCard = cardSchema.parse(card);
   const normalizedCard: StoryboardCard = normalizeCardForSerialization(parsedCard);
+  const orderedCard: StoryboardCard =
+    options.keyOrderOf === undefined
+      ? normalizedCard
+      : withTopLevelKeyOrderOf(normalizedCard, options.keyOrderOf);
 
-  return yaml.dump(normalizedCard, {
+  return yaml.dump(orderedCard, {
     lineWidth: -1,
     noRefs: true,
     sortKeys: false,
   });
+}
+
+function withTopLevelKeyOrderOf(card: StoryboardCard, existingCardText: string): StoryboardCard {
+  const cardEntries: Record<string, unknown> = { ...card };
+  const reordered: Record<string, unknown> = {};
+
+  for (const key of topLevelKeysOf(existingCardText)) {
+    if (key in cardEntries) {
+      reordered[key] = cardEntries[key];
+    }
+  }
+  for (const [key, value] of Object.entries(cardEntries)) {
+    if (!(key in reordered)) {
+      reordered[key] = value;
+    }
+  }
+
+  return reordered as unknown as StoryboardCard;
+}
+
+function topLevelKeysOf(cardText: string): readonly string[] {
+  const loaded: unknown = yaml.load(cardText);
+  const isMapping: boolean = typeof loaded === 'object' && loaded !== null && !Array.isArray(loaded);
+
+  return isMapping ? Object.keys(loaded as Record<string, unknown>) : [];
 }
 
 export function parseNarratorCard(rawCard: string): NarratorCard {

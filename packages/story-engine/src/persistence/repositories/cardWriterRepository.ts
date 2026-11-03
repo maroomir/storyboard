@@ -28,7 +28,10 @@ export class CardWriterRepository implements ICardWriterRepository {
 
   public async write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
     const cardUri: StoryUri = this.cardUri(workspaceRoot, card.type, card.id);
-    await this.fileSystem.writeFile(cardUri, new TextEncoder().encode(serializeCard(card)));
+    await this.fileSystem.writeFile(
+      cardUri,
+      new TextEncoder().encode(await this.serializeKeepingKeyOrder(cardUri, card)),
+    );
 
     if (card.type === 'character') {
       const imageUri: StoryUri = characterProfilePath(workspaceRoot, card.id);
@@ -38,6 +41,17 @@ export class CardWriterRepository implements ICardWriterRepository {
     }
 
     return cardUri;
+  }
+
+  private async serializeKeepingKeyOrder(cardUri: StoryUri, card: StoryboardCard): Promise<string> {
+    const hasExistingCard: boolean = await this.fileSystem.exists(cardUri);
+    if (!hasExistingCard) {
+      return serializeCard(card);
+    }
+
+    const existingText: string = new TextDecoder().decode(await this.fileSystem.readFile(cardUri));
+
+    return serializeCard(card, { keyOrderOf: existingText });
   }
 
   private cardUri(workspaceRoot: StoryUri, cardType: StoryboardCard['type'], id: string): StoryUri {
