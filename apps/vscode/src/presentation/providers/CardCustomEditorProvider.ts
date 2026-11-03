@@ -174,7 +174,7 @@ async function postCardChanged(
   });
 }
 
-class CardEditorRpc {
+export class CardEditorRpc {
   public constructor(
     private readonly document: vscode.TextDocument,
     private readonly dependencies: CardCustomEditorDependencies,
@@ -198,8 +198,9 @@ class CardEditorRpc {
     };
   }
 
-  private interviewCardId(): string {
-    return parseCard(this.document.getText()).id;
+  private interviewCard(): { readonly cardId: string; readonly card: StoryboardCard } {
+    const card: StoryboardCard = parseCard(this.document.getText());
+    return { cardId: card.id, card };
   }
 
   private readonly startInterview = async (
@@ -207,7 +208,7 @@ class CardEditorRpc {
   ): Promise<StoryboardResponsePayload<'interviews.start'>> => {
     const started: InterviewStartResult = await this.dependencies.interviews.start({
       workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      cardId: this.interviewCardId(),
+      ...this.interviewCard(),
       ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
       ...(payload.shouldResetAxes === true ? { shouldResetAxes: true } : {}),
     });
@@ -223,7 +224,7 @@ class CardEditorRpc {
   ): Promise<StoryboardResponsePayload<'interviews.next'>> => {
     const question: InterviewQuestion | undefined = await this.dependencies.interviews.next({
       workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      cardId: this.interviewCardId(),
+      ...this.interviewCard(),
       sessionId: payload.sessionId,
       ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
     });
@@ -236,7 +237,7 @@ class CardEditorRpc {
   ): Promise<StoryboardResponsePayload<'interviews.answer'>> => ({
     outcome: await this.dependencies.interviews.answer({
       workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      cardId: this.interviewCardId(),
+      ...this.interviewCard(),
       sessionId: payload.sessionId,
       ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
       questionId: payload.questionId,
@@ -249,7 +250,7 @@ class CardEditorRpc {
   ): Promise<StoryboardResponsePayload<'interviews.confirm'>> => {
     await this.dependencies.interviews.confirm({
       workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      cardId: this.interviewCardId(),
+      ...this.interviewCard(),
       sessionId: payload.sessionId,
       ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
       questionId: payload.questionId,
@@ -264,7 +265,7 @@ class CardEditorRpc {
   ): Promise<StoryboardResponsePayload<'interviews.finish'>> => ({
     summary: await this.dependencies.interviews.finish({
       workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      cardId: this.interviewCardId(),
+      ...this.interviewCard(),
       sessionId: payload.sessionId,
       ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
     }),
