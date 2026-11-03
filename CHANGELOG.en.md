@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-03
+
 ### Added
 
 - **`card interview <id> --step --json` lets an agent relay the interview to the writer.** Each call runs one step and prints the question (numbered options) or the confirmation of a written answer as JSON. The option the writer picked goes back with `--answer`, a written answer with `--write`, the confirmation with `--confirm` or `--rename`, a pass with `--skip`; `--finish` distils into card candidates as before and `--abandon` closes without distilling. The open session is continued without `--session`. A new work's `AGENTS.md` says to pass only the writer's own answers.
