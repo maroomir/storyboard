@@ -237,11 +237,9 @@ export class InterviewSessionUseCase {
       }
 
       const sessionId: string = this.now().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-      const context: InterviewContext = await this.loadContext(
+      const context: InterviewContext = await this.forgetUnansweredQuestions(
         request.workspaceRoot,
-        card,
-        request.sceneStems,
-        sessionId,
+        await this.loadContext(request.workspaceRoot, card, request.sceneStems, sessionId),
       );
       const isContractStale: boolean = await this.isContractStale(request.workspaceRoot, context);
 
@@ -261,6 +259,23 @@ export class InterviewSessionUseCase {
       this.host.logger.error('Interview start failed', error);
       return failedResult(error);
     }
+  }
+
+  private async forgetUnansweredQuestions(
+    workspaceRoot: StoryUri,
+    context: InterviewContext,
+  ): Promise<InterviewContext> {
+    const answeredRecords: InterviewRecord[] = context.model.records.filter(
+      (record) => record.answer !== undefined,
+    );
+    if (answeredRecords.length === context.model.records.length) {
+      return context;
+    }
+
+    const model: InterviewWorkingModel = { ...context.model, records: answeredRecords };
+    await this.saveModel(workspaceRoot, model);
+
+    return { ...context, model };
   }
 
   public async next(request: InterviewSessionRequest): Promise<InterviewQuestion | undefined> {
