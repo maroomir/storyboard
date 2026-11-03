@@ -86,6 +86,6 @@ describe('interview cache schemas', () => {
   });
 
   it('keeps one working model file per card under the interview cache', () => {
-    expect(interviewWorkingModelRelativePath('hana')).toBe('.storyboard/cache/interviews/hana.json');
+    expect(interviewWorkingModelRelativePath('hana')).toBe('.storyboard/cache/interviews/cards/hana.json');
   });
 });

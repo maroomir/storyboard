@@ -153,7 +153,7 @@ describe('interview session (mock provider)', () => {
     expect(started.opening.coverage.openAxes[0]?.beatSituations).toHaveLength(3);
     expect(started.opening.coverage.upcomingSceneStems).toEqual(['01-night', '02-dawn']);
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/axes.json'))).toBe(true);
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/hana.json'))).toBe(true);
+    expect(existsSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'))).toBe(true);
   });
 
   it('refuses a card that does not exist', async () => {
@@ -204,7 +204,7 @@ describe('interview session (mock provider)', () => {
     expect(third?.axisId).toBe('affection');
 
     await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'chosen', index: 1 } });
-    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/hana.json');
+    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/cards/hana.json');
     expect(model.tallies).toEqual({ 'pressure-defense': { withhold: 2 }, affection: { indirect: 1 } });
     expect(model.summary).toContain('[Mock AI]');
 
@@ -233,7 +233,7 @@ describe('interview session (mock provider)', () => {
       questionId: first?.id ?? '',
       confirmation: { kind: 'newValue', id: 'laugh-off', label: '웃음으로 넘기기' },
     });
-    const afterConfirm: InterviewWorkingModel = readJson('.storyboard/cache/interviews/hana.json');
+    const afterConfirm: InterviewWorkingModel = readJson('.storyboard/cache/interviews/cards/hana.json');
     expect(afterConfirm.tallies).toEqual({ 'pressure-defense': { counter: 0, 'laugh-off': 2 } });
     expect(afterConfirm.records[1]?.answer).toEqual({
       kind: 'written',
@@ -253,7 +253,7 @@ describe('interview session (mock provider)', () => {
       answer: { kind: 'written', text: '고개를 돌린다' },
     });
     expect(secondWritten.isRebuilt).toBe(true);
-    expect(readJson<InterviewWorkingModel>('.storyboard/cache/interviews/hana.json').writtenStreak).toBe(0);
+    expect(readJson<InterviewWorkingModel>('.storyboard/cache/interviews/cards/hana.json').writtenStreak).toBe(0);
   });
 
   it('distills decided axes and the chosen speech into one interview source that card promote applies', async () => {
@@ -376,8 +376,25 @@ describe('interview session (mock provider)', () => {
 
     expect(asked?.sessionId).toBe(second.sessionId);
     expect(asked?.source).toEqual(cancelled?.source);
-    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/tavern.json');
+    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/cards/tavern.json');
     expect(model.records.map((record) => record.id)).toEqual([asked?.id]);
+  });
+
+  it.each(['candidates', 'axes'])('interviews a card whose id is %s without touching the shared files', async (cardId) => {
+    write(`character/${cardId}.card`, ['type: character', `id: ${cardId}`, 'name: 이름이 겹치는 이', 'role: supporting']);
+    write('scene/03-noon.card', ['type: scene', 'id: 03-noon', 'characters:', `  - ${cardId}`, 'beats:', '  - text: 이름이 겹치는 이가 문을 두드린다', '    cast: [이름이 겹치는 이]']);
+    const { container: app, sessionId } = await startSession(cardId);
+    const request = { workspaceRoot: app.workspaceRoot, cardId, sessionId };
+
+    const question: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 0 } });
+    const summary = await app.interviews.finish(request);
+
+    expect(summary).toMatchObject({ cardId, answered: 1 });
+    expect(existsSync(join(workspace, `.storyboard/cache/interviews/cards/${cardId}.json`))).toBe(true);
+    expect(readJson<InterviewWorkingModel>(`.storyboard/cache/interviews/cards/${cardId}.json`).cardId).toBe(cardId);
+    expect(readJson<{ version: number; character: unknown }>('.storyboard/cache/interviews/axes.json').character).toBeDefined();
+    expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
   });
 
   it('interviews a background through the same verbs and proposes layout and rules', async () => {

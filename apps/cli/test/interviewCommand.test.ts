@@ -149,7 +149,7 @@ describe('card interview', () => {
       '이 답을 「역공」로 읽었습니다. 맞나요?',
     ]);
     const model = JSON.parse(
-      readFileSync(join(workspace, '.storyboard/cache/interviews/hana.json'), 'utf8'),
+      readFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), 'utf8'),
     ) as { records: { answer: { valueId: string; isNewValue: boolean } }[]; tallies: Record<string, Record<string, number>> };
     expect(model.records[0]?.answer).toMatchObject({ valueId: 'custom-4', isNewValue: true });
     expect(model.tallies['pressure-defense']).toEqual({ counter: 0, 'custom-4': 2 });
@@ -170,18 +170,18 @@ describe('card interview', () => {
 
   it('reports an unreadable working model file in doctor and status without stopping the other checks', async () => {
     await run('card interview', args(['card', 'interview'], { limit: '1' }, ['hana']), scriptedPrompter(['[Mock AI] withhold']));
-    writeFileSync(join(workspace, '.storyboard/cache/interviews/hana.json'), '{"version": 1, "records": [');
+    writeFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), '{"version": 1, "records": [');
 
     const doctor = await run('doctor', args(['doctor']));
     expect(doctor.ok).toBe(false);
-    expect(doctor.message).toContain('인터뷰 작업 모델: .storyboard/cache/interviews/hana.json: 인터뷰 작업 모델 JSON 을 읽을 수 없습니다.');
+    expect(doctor.message).toContain('인터뷰 작업 모델: .storyboard/cache/interviews/cards/hana.json: 인터뷰 작업 모델 JSON 을 읽을 수 없습니다.');
     expect(doctor.message).toContain('지우면 하나 인터뷰는 처음부터 다시 시작합니다');
     expect(doctor.message).toContain('워크스페이스:');
     expect(doctor.message).toContain('Node:');
 
     const status = await run('status', args(['status']));
     expect(status.ok).toBe(true);
-    expect(status.message).toContain('인터뷰    경고: .storyboard/cache/interviews/hana.json 을(를) 읽을 수 없습니다 — storyboard doctor');
+    expect(status.message).toContain('인터뷰    경고: .storyboard/cache/interviews/cards/hana.json 을(를) 읽을 수 없습니다 — storyboard doctor');
     expect(status.message).not.toContain('하나 — 다음 씬의 인물·장소를 아직 인터뷰하지 않았습니다');
   });
 
