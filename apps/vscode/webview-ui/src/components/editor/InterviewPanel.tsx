@@ -24,6 +24,7 @@ const optionClass: string =
 type Phase =
   | { readonly kind: 'idle' }
   | { readonly kind: 'starting' }
+  | { readonly kind: 'stale'; readonly opening: InterviewOpening }
   | { readonly kind: 'asking'; readonly opening: InterviewOpening }
   | { readonly kind: 'question'; readonly opening: InterviewOpening; readonly question: InterviewQuestion }
   | { readonly kind: 'writing'; readonly opening: InterviewOpening; readonly question: InterviewQuestion }
@@ -35,6 +36,13 @@ type Phase =
     }
   | { readonly kind: 'finishing'; readonly opening: InterviewOpening }
   | { readonly kind: 'finished'; readonly summary: InterviewSessionSummary };
+
+interface StartOptions {
+  readonly shouldResetAxes: boolean;
+}
+
+const staleContractNotice: string =
+  '축 어휘를 뽑은 뒤 작품 계약(장르·독자층·컨셉)이 바뀌었습니다. 어휘는 그대로 쓰이고 있습니다. 축을 다시 뽑으면 표와 작업 모델도 비워집니다.';
 
 export type InterviewPanelProps = {
   readonly card: StoryboardCard;
@@ -94,6 +102,7 @@ export function InterviewPanel({
         sessionId: opening.sessionId,
       })
         .then((result) => {
+          setError(undefined);
           setPhase({ kind: 'finished', summary: result.summary });
           onStatusChange?.(
             result.summary.candidateCount > 0
@@ -121,6 +130,7 @@ export function InterviewPanel({
         sessionId: opening.sessionId,
       })
         .then((result) => {
+          setError(undefined);
           if (result.question === null) {
             finish(opening);
             return;
@@ -136,26 +146,37 @@ export function InterviewPanel({
     [vscodeApi, documentUri, fail, finish],
   );
 
-  const start: () => void = useCallback((): void => {
-    if (!vscodeApi) {
-      setError('VS Code API를 사용할 수 없습니다.');
-      return;
-    }
+  const start: (options?: StartOptions) => void = useCallback(
+    (options?: StartOptions): void => {
+      if (!vscodeApi) {
+        setError('VS Code API를 사용할 수 없습니다.');
+        return;
+      }
 
-    setError(undefined);
-    setAnswered(0);
-    setPhase({ kind: 'starting' });
-    onStatusChange?.('인터뷰를 준비하는 중입니다…');
+      const shouldResetAxes: boolean = options?.shouldResetAxes === true;
+      setError(undefined);
+      setAnswered(0);
+      setPhase({ kind: 'starting' });
+      onStatusChange?.(shouldResetAxes ? '축 어휘를 다시 뽑는 중입니다…' : '인터뷰를 준비하는 중입니다…');
 
-    void callRpc<{ readonly opening: InterviewOpening }>(vscodeApi, 'interviews.start', {
-      uri: documentUri,
-    })
-      .then((result) => askNext(result.opening))
-      .catch((startError: unknown) => {
-        fail(startError, '인터뷰를 시작하지 못했습니다.');
-        setPhase({ kind: 'idle' });
-      });
-  }, [vscodeApi, documentUri, onStatusChange, askNext, fail]);
+      void callRpc<{ readonly opening: InterviewOpening }>(vscodeApi, 'interviews.start', {
+        uri: documentUri,
+        ...(shouldResetAxes ? { shouldResetAxes: true } : {}),
+      })
+        .then((result) => {
+          if (result.opening.isContractStale && !shouldResetAxes) {
+            setPhase({ kind: 'stale', opening: result.opening });
+            return;
+          }
+          askNext(result.opening);
+        })
+        .catch((startError: unknown) => {
+          fail(startError, '인터뷰를 시작하지 못했습니다.');
+          setPhase({ kind: 'idle' });
+        });
+    },
+    [vscodeApi, documentUri, onStatusChange, askNext, fail],
+  );
 
   const submit: (
     opening: InterviewOpening,
@@ -175,6 +196,7 @@ export function InterviewPanel({
         answer,
       })
         .then((result) => {
+          setError(undefined);
           if (answer.kind !== 'skipped') {
             setAnswered((count) => count + 1);
           }
@@ -214,7 +236,10 @@ export function InterviewPanel({
         questionId: question.id,
         confirmation,
       })
-        .then(() => askNext(opening))
+        .then(() => {
+          setError(undefined);
+          askNext(opening);
+        })
         .catch((confirmError: unknown) => {
           fail(confirmError, '값을 고치지 못했습니다.');
           askNext(opening);
@@ -236,9 +261,14 @@ export function InterviewPanel({
       <div className={panelClass}>
         {header}
         {error ? <p className="m-0 text-sm text-sb-fg-error">{error}</p> : null}
-        <Button variant="primary" disabled={!vscodeApi || phase.kind === 'starting'} onClick={start}>
-          {phase.kind === 'starting' ? '준비 중…' : '인터뷰 시작'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" disabled={!vscodeApi || phase.kind === 'starting'} onClick={() => start()}>
+            {phase.kind === 'starting' ? '준비 중…' : '인터뷰 시작'}
+          </Button>
+          <Button disabled={!vscodeApi || phase.kind === 'starting'} onClick={() => start({ shouldResetAxes: true })}>
+            축 다시 뽑고 시작
+          </Button>
+        </div>
       </div>
     );
   }
@@ -260,13 +290,28 @@ export function InterviewPanel({
             후보는 명령 팔레트의 «Storyboard: Promote Card Candidates»로 반영합니다.
           </p>
         ) : null}
-        <Button onClick={start}>다시 인터뷰</Button>
+        <Button onClick={() => start()}>다시 인터뷰</Button>
       </div>
     );
   }
 
   const { opening } = phase;
   const progress: string = `${answered}/${opening.maxQuestions} 답 · 열린 축 ${opening.coverage.openAxes.length}`;
+
+  if (phase.kind === 'stale') {
+    return (
+      <div className={panelClass}>
+        {header}
+        <p className="m-0 text-sm text-sb-fg-muted">⚠ {staleContractNotice}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" onClick={() => start({ shouldResetAxes: true })}>
+            축 다시 뽑기
+          </Button>
+          <Button onClick={() => askNext(opening)}>그대로 계속</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (phase.kind === 'asking' || phase.kind === 'finishing') {
     return (
