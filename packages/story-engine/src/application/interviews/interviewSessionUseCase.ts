@@ -71,6 +71,7 @@ import {
 export interface InterviewStartRequest {
   readonly workspaceRoot: StoryUri;
   readonly cardId: string;
+  readonly card?: StoryboardCard;
   readonly sceneStems?: readonly string[];
   readonly shouldResetAxes?: boolean;
 }
@@ -85,6 +86,7 @@ export type InterviewStartResult =
 export interface InterviewSessionRequest {
   readonly workspaceRoot: StoryUri;
   readonly cardId: string;
+  readonly card?: StoryboardCard;
   readonly sessionId: string;
   readonly sceneStems?: readonly string[];
 }
@@ -222,7 +224,7 @@ export class InterviewSessionUseCase {
 
   public async start(request: InterviewStartRequest): Promise<InterviewStartResult> {
     try {
-      const card: StoryboardCard | undefined = await this.loadCard(request.workspaceRoot, request.cardId);
+      const card: StoryboardCard | undefined = await this.resolveCard(request);
       if (card === undefined) {
         return {
           ok: false,
@@ -981,15 +983,21 @@ export class InterviewSessionUseCase {
     };
   }
 
-  private async loadCard(workspaceRoot: StoryUri, cardId: string): Promise<StoryboardCard | undefined> {
+  private async resolveCard(
+    request: Pick<InterviewSessionRequest, 'workspaceRoot' | 'cardId' | 'card'>,
+  ): Promise<StoryboardCard | undefined> {
+    if (request.card !== undefined) {
+      return request.card;
+    }
+
     return (
-      (await this.repositories.noteAbsorb.loadCard(workspaceRoot, 'character', cardId)) ??
-      (await this.repositories.noteAbsorb.loadCard(workspaceRoot, 'background', cardId))
+      (await this.repositories.noteAbsorb.loadCard(request.workspaceRoot, 'character', request.cardId)) ??
+      (await this.repositories.noteAbsorb.loadCard(request.workspaceRoot, 'background', request.cardId))
     );
   }
 
   private async requireContext(request: InterviewSessionRequest): Promise<InterviewContext> {
-    const card: StoryboardCard | undefined = await this.loadCard(request.workspaceRoot, request.cardId);
+    const card: StoryboardCard | undefined = await this.resolveCard(request);
     if (card === undefined) {
       throw new Error(`카드 ${request.cardId} 를 찾을 수 없습니다.`);
     }
