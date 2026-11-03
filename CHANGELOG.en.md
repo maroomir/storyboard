@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-03
+
 ### Added
 
 - **The VS Code card editor has an «인터뷰» (interview) tab.** On a character or background card it runs the same interview as the CLI's `card interview` with option buttons. A written answer can confirm or correct the value the engine read, or name a new one; the end shows the candidate count, and `Promote Card Candidates` applies them.
@@ -21,6 +23,7 @@ after the first public release.
 ### Fixed
 
 - **A card candidate that changes a relation's type keeps its speech.** Applying a relation candidate used to drop that relation's `speech`.
+- **`card promote` keeps the key order of a hand-written card.** Applying candidates used to re-sort a card's top-level keys into the fixed order (moving the `catchphrases` block, for example), so untouched lines showed up in the diff. The existing key order is now kept and only keys the card lacked are appended. The content is unchanged.
 - **The skeleton receives each character's address rules and speech to others.** A card's `relations[].speech` reached only the dialogue polish, not the skeleton, so the skeleton mixed up catchphrase address terms regardless of who was addressed (a character who calls Eunha only "elite" called her "commoner"). The skeleton prompt now carries a [speech to others] block per character, and a persona keeps the address rules written in the description verbatim, with the other character's name.
 - **A character's persona is no longer written from another character's point of view.** The persona prompt carried the scene's focal character and relation stage, so in a first-person work a non-focal character's persona came out as the narrator's monologue. A persona now receives only the work's genre, style constraints and prohibitions. Because the prompt changed, saved persona memory is rebuilt on the next generation.
 
