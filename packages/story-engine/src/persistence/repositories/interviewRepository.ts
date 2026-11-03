@@ -52,7 +52,7 @@ export class InterviewRepository implements IInterviewRepository {
     model: InterviewWorkingModel,
   ): Promise<void> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.interviewCacheDirectory);
+    await this.fileSystem.createDirectory(paths.interviewWorkingModelDirectory);
     await writeInterviewWorkingModelFile(
       this.workingModelUri(workspaceRoot, model.cardId),
       this.fileSystem,
@@ -63,15 +63,13 @@ export class InterviewRepository implements IInterviewRepository {
   public async deleteWorkingModels(workspaceRoot: StoryUri): Promise<void> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
 
-    if (!(await this.fileSystem.exists(paths.interviewCacheDirectory))) {
+    if (!(await this.fileSystem.exists(paths.interviewWorkingModelDirectory))) {
       return;
     }
 
-    for (const [name] of await this.fileSystem.readDirectory(paths.interviewCacheDirectory)) {
-      const isWorkingModel: boolean =
-        name.endsWith('.json') && name !== 'axes.json' && name !== 'candidates.json';
-      if (isWorkingModel) {
-        await this.fileSystem.delete(joinStoryPath(paths.interviewCacheDirectory, name));
+    for (const [name] of await this.fileSystem.readDirectory(paths.interviewWorkingModelDirectory)) {
+      if (name.endsWith('.json')) {
+        await this.fileSystem.delete(joinStoryPath(paths.interviewWorkingModelDirectory, name));
       }
     }
   }

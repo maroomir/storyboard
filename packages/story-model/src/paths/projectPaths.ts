@@ -50,6 +50,7 @@ export interface StoryboardProjectPaths {
   readonly notePlan: StoryUri;
   readonly noteCandidates: StoryUri;
   readonly interviewCacheDirectory: StoryUri;
+  readonly interviewWorkingModelDirectory: StoryUri;
   readonly interviewAxes: StoryUri;
   readonly interviewCandidates: StoryUri;
   readonly noteSynopsisCandidate: StoryUri;
@@ -83,6 +84,20 @@ function resolveWorkspacePath(workspaceRoot: StoryUri, relativePath: string): St
   return joinStoryPath(workspaceRoot, ...relativePath.split('/'));
 }
 
+type InterviewProjectPaths = Pick<
+  StoryboardProjectPaths,
+  'interviewCacheDirectory' | 'interviewWorkingModelDirectory' | 'interviewAxes' | 'interviewCandidates'
+>;
+
+function resolveInterviewPaths(resolve: (relativePath: string) => StoryUri): InterviewProjectPaths {
+  return {
+    interviewCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.interviewCacheDirectory),
+    interviewWorkingModelDirectory: resolve(STORYBOARD_RELATIVE_PATHS.interviewWorkingModelDirectory),
+    interviewAxes: resolve(STORYBOARD_RELATIVE_PATHS.interviewAxes),
+    interviewCandidates: resolve(STORYBOARD_RELATIVE_PATHS.interviewCandidates),
+  };
+}
+
 export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardProjectPaths {
   const resolve = (relativePath: string): StoryUri =>
     resolveWorkspacePath(workspaceRoot, relativePath);
@@ -114,9 +129,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
     notePlan: resolve(STORYBOARD_RELATIVE_PATHS.notePlan),
     noteCandidates: resolve(STORYBOARD_RELATIVE_PATHS.noteCandidates),
-    interviewCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.interviewCacheDirectory),
-    interviewAxes: resolve(STORYBOARD_RELATIVE_PATHS.interviewAxes),
-    interviewCandidates: resolve(STORYBOARD_RELATIVE_PATHS.interviewCandidates),
+    ...resolveInterviewPaths(resolve),
     noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
     noteExtractionResponses: resolve(STORYBOARD_RELATIVE_PATHS.noteExtractionResponses),
     studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
