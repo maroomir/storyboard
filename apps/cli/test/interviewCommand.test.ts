@@ -110,7 +110,7 @@ describe('card interview', () => {
     const outcome = await run('card interview', args(['card', 'interview'], {}, ['hana']));
 
     expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('대화형 화면에서만');
+    expect(outcome.message).toContain('--step --json');
   });
 
   it('asks one question at a time, stops on 여기까지, and leaves candidates for card promote', async () => {

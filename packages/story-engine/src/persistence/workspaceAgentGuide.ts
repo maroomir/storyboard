@@ -56,6 +56,9 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
   \`storyboard card promote\`, \`storyboard canon promote\`, \`storyboard draft augment\`,
   \`storyboard scene complete\`)은 먼저 \`--dry-run\`으로 제안을 보고 결정하라.
 - 터미널이 아닌 곳에서 진행 로그가 필요하면 \`--verbose\`.
+- 인물·배경 인터뷰는 \`storyboard card interview <id> --step --json\`으로 한 단계씩 돌린다. 질문과
+  선택지를 작가에게 그대로 보여 주고 **작가가 고른 번호나 쓴 문장만** \`--answer\`·\`--write\`로 넘긴다.
+  답을 지어내거나 대신 고르지 마라.
 
 ## 사람에게 물어볼 것
 
