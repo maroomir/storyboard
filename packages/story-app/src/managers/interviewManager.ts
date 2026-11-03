@@ -3,6 +3,8 @@ import type {
   DescribeInterviewCoverageUseCase,
   InterviewAnswerRequest,
   InterviewConfirmRequest,
+  InterviewOpenSession,
+  InterviewResumeRequest,
   InterviewSessionRequest,
   InterviewSessionUseCase,
   InterviewStartRequest,
@@ -25,6 +27,14 @@ export class InterviewManager {
 
   public start(request: InterviewStartRequest): Promise<InterviewStartResult> {
     return this.deps.interviewSessionUseCase.start(request);
+  }
+
+  public findOpenSession(request: InterviewResumeRequest): Promise<InterviewOpenSession | undefined> {
+    return this.deps.interviewSessionUseCase.findOpenSession(request);
+  }
+
+  public abandon(request: InterviewSessionRequest): Promise<void> {
+    return this.deps.interviewSessionUseCase.abandon(request);
   }
 
   public next(request: InterviewSessionRequest): Promise<InterviewQuestion | undefined> {
