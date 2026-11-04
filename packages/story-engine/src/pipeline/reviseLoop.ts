@@ -1,3 +1,4 @@
+import { curlDialogueQuotes } from '#engine/pipeline/dialogueQuotes';
 import {
   AiProviderError,
   buildRevisionInstructions,
@@ -593,10 +594,13 @@ export class ReviseLoop {
     return true;
   }
 
-  private requestSectionRevision(plan: SectionRevisionPlan, originalText: string): Promise<string> {
+  private async requestSectionRevision(
+    plan: SectionRevisionPlan,
+    originalText: string,
+  ): Promise<string> {
     const { aiService, registry, attribution, loopContext } = this.options;
 
-    return aiService.reviseDraft(
+    const revised: string = await aiService.reviseDraft(
       {
         body: originalText,
         format: loopContext.format,
@@ -607,6 +611,8 @@ export class ReviseLoop {
       },
       { providerId: registry.getTaskProvider('draftRevision'), attribution },
     );
+
+    return curlDialogueQuotes(revised);
   }
 
   private validateSectionCandidate(

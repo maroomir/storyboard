@@ -25,10 +25,6 @@ export function buildSkeletonContext(
   return sections.length > 0 ? sections.join('\n\n') : undefined;
 }
 
-export function curlDialogueQuotes(text: string): string {
-  return text.replace(/"([^"\n]+)"/g, '“$1”');
-}
-
 export function missingBeatsViolation(missing: readonly string[]): SectionViolation[] {
   if (missing.length === 0) {
     return [];

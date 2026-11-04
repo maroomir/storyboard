@@ -1,9 +1,9 @@
+import { curlDialogueQuotes } from '#engine/pipeline/dialogueQuotes';
 import { characterSpeechToOthers } from '#engine/pipeline/scene/characterVoices';
 import { castNameOf, type SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import {
   beatText,
   buildSkeletonContext,
-  curlDialogueQuotes,
   missingBeatsViolation,
   skeletonTargetLength,
   skeletonWarningLabel,
