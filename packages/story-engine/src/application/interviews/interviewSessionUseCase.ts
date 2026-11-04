@@ -135,6 +135,7 @@ interface InterviewContext {
   readonly tuning: InterviewTuning;
   readonly ai: StoryboardAiService;
   readonly attribution: UsageAttribution;
+  readonly relationTargetNames: ReadonlyMap<string, string>;
 }
 
 const emptyTallies: InterviewTallies = {};
@@ -238,6 +239,46 @@ function describeSceneKind(scene: SceneFile): string {
 
 function isRelationRecord(record: InterviewRecord): boolean {
   return record.source.kind === 'relation';
+}
+
+function collectAnsweredRelationSpeech(model: InterviewWorkingModel): Map<string, string> {
+  const latestByTarget: Map<string, string> = new Map<string, string>();
+
+  for (const record of model.records) {
+    const answer: InterviewAnswer | undefined = record.answer;
+    if (record.source.kind !== 'relation' || answer === undefined || answer.kind === 'skipped') {
+      continue;
+    }
+    const speech: string | undefined =
+      answer.kind === 'written' ? answer.text : record.options[answer.index]?.text;
+    if (speech !== undefined) {
+      latestByTarget.set(record.source.target, speech);
+    }
+  }
+
+  return latestByTarget;
+}
+
+function describeRelationSpeech(context: InterviewContext): string[] {
+  if (context.card.type !== 'character') {
+    return [];
+  }
+
+  const speechByTarget: Map<string, string> = new Map<string, string>();
+  for (const relation of context.card.relations ?? []) {
+    const speech: string = relation.speech?.trim() ?? '';
+    if (speech.length > 0) {
+      speechByTarget.set(relation.target, speech);
+    }
+  }
+  for (const [target, speech] of collectAnsweredRelationSpeech(context.model)) {
+    speechByTarget.set(target, speech);
+  }
+
+  return [...speechByTarget].map(
+    ([target, speech]): string =>
+      `${context.card.name} → ${context.relationTargetNames.get(target) ?? target}: ${speech}`,
+  );
 }
 
 function describeRecordAnswer(record: InterviewRecord, axes: readonly InterviewAxis[]): string | undefined {
@@ -558,6 +599,7 @@ export class InterviewSessionUseCase {
         name: context.card.name,
         genre: context.project.setting?.genre,
         summary: model.summary,
+        relationSpeech: describeRelationSpeech(context),
         axes: askedAxes.map(
           (axis): InterviewQuestionAxis => ({
             ...axis,
@@ -823,21 +865,7 @@ export class InterviewSessionUseCase {
   }
 
   private relationSpeechProposals(context: InterviewContext): CardCollectProposalDraft[] {
-    const latestByTarget: Map<string, string> = new Map<string, string>();
-
-    for (const record of context.model.records) {
-      const answer: InterviewAnswer | undefined = record.answer;
-      if (record.source.kind !== 'relation' || answer === undefined || answer.kind === 'skipped') {
-        continue;
-      }
-      const speech: string | undefined =
-        answer.kind === 'written' ? answer.text : record.options[answer.index]?.text;
-      if (speech !== undefined) {
-        latestByTarget.set(record.source.target, speech);
-      }
-    }
-
-    return [...latestByTarget].map(
+    return [...collectAnsweredRelationSpeech(context.model)].map(
       ([target, speech]): CardCollectProposalDraft => ({ kind: 'relationSpeech', target, speech }),
     );
   }
@@ -860,6 +888,7 @@ export class InterviewSessionUseCase {
         cardType: context.cardType,
         name: context.card.name,
         summary: context.model.summary,
+        relationSpeech: describeRelationSpeech(context),
         axis,
         situation: record.situation,
         question: record.question,
@@ -892,6 +921,7 @@ export class InterviewSessionUseCase {
         cardType: context.cardType,
         name: context.card.name,
         summary: context.model.summary,
+        relationSpeech: describeRelationSpeech(context),
         axis,
         situation: record.situation,
         question: record.question,
@@ -953,6 +983,7 @@ export class InterviewSessionUseCase {
         cardType: context.cardType,
         name: context.card.name,
         summary: model.summary,
+        relationSpeech: describeRelationSpeech(context),
         axis: this.requireAxis(axes, record.axisId),
         situation: record.situation,
         question: record.question,
@@ -1144,7 +1175,45 @@ export class InterviewSessionUseCase {
         ? { otherPlaceTokens: otherPlaceTokens(card, await this.loadBackgrounds(workspaceRoot)) }
         : {};
 
-    return { card, cardType, situationOptions, project, scenes, axes, model, tuning, ai, attribution };
+    const relationTargetNames: ReadonlyMap<string, string> = await this.loadRelationTargetNames(
+      workspaceRoot,
+      card,
+    );
+
+    return {
+      card,
+      cardType,
+      situationOptions,
+      project,
+      scenes,
+      axes,
+      model,
+      tuning,
+      ai,
+      attribution,
+      relationTargetNames,
+    };
+  }
+
+  private async loadRelationTargetNames(
+    workspaceRoot: StoryUri,
+    card: StoryboardCard,
+  ): Promise<ReadonlyMap<string, string>> {
+    const names: Map<string, string> = new Map<string, string>();
+    if (card.type !== 'character') {
+      return names;
+    }
+
+    for (const relation of card.relations ?? []) {
+      const target: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
+        workspaceRoot,
+        'character',
+        relation.target,
+      );
+      names.set(relation.target, target?.name ?? relation.target);
+    }
+
+    return names;
   }
 
   private async loadBackgrounds(workspaceRoot: StoryUri): Promise<StoryboardCard[]> {

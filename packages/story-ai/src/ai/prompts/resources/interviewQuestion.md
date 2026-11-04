@@ -10,6 +10,9 @@ maxTokens: 2000
 선택지에 [지금까지의 이해]와 [상황]에 없는 사물·숫자·고유명사·전문 용어를 새로 만들지 마라. 갈래는 태도와 말투로 가르고, 소품이 필요하면 상황에 이미 있는 것만 써라. 작가가 고르는 것은 값이고, 네가 지어낸 세부는 카드에 남지 않아야 한다.
 {{^isBackground}}
 선택지의 겉모습은 전부 이 인물이다. [지금까지의 이해]에 적힌 성격·말투로, 그 값을 택했을 때 이 인물이 실제로 할 행동과 말 한두 문장을 써라. 값은 다르되 어느 것도 "이 인물답지 않은" 티가 나면 안 된다. 대사를 넣으면 곡선 큰따옴표로.
+{{#hasRelationSpeech}}
+[상대별 호칭·말투]는 작가가 정한 것이고 [지금까지의 이해]보다 앞선다. 선택지에서 이 인물이 상대를 부르는 말과 존댓말·반말은 거기 적힌 대로 쓴다. 입버릇 가운데 사람을 부르는 말은 거기 적힌 상대에게만 쓰고, 이 인물 자신을 가리키거나 다른 상대를 부르는 데 쓰지 마라. 거기 없는 호칭이나 낮춤말을 새로 지어내지 마라.
+{{/hasRelationSpeech}}
 {{#shouldExplore}}
 값 뒤에 (아직 안 본 값)이 붙은 것이 있으면 그중 하나를 반드시 선택지에 넣어라. 그것은 탐색 안이다. 작가가 아직 이 인물에게서 보지 않았다고 믿는 태도이지만, 말투와 몸짓은 역시 이 인물로 써서 다른 선택지와 구별되지 않게 하라.
 {{/shouldExplore}}
@@ -24,7 +27,7 @@ maxTokens: 2000
 {"axisId":"pressure-defense","question":"…","options":[{"valueId":"counter","text":"…"},{"valueId":"withhold","text":"…"}]}
 
 ## system:xs
-[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
+[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}{{#hasRelationSpeech}}호칭과 존댓말·반말은 [상대별 호칭·말투]대로, 호칭 입버릇은 적힌 상대에게만 쓰고 자칭으로 쓰지 않음. {{/hasRelationSpeech}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
 
 ## user
 [{{#isBackground}}장소{{/isBackground}}{{^isBackground}}인물{{/isBackground}}]
@@ -35,6 +38,13 @@ maxTokens: 2000
 
 [지금까지의 이해]
 {{summary}}
+{{#hasRelationSpeech}}
+
+[상대별 호칭·말투]
+{{/hasRelationSpeech}}
+{{#relationSpeech}}
+- {{.}}
+{{/relationSpeech}}
 
 [열린 축]
 {{#axes}}

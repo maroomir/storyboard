@@ -2,10 +2,11 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { InterviewQuestion, InterviewWorkingModel, NoteCandidateFile, UsageRecord } from '@storyboard/story-model';
 import type { InterviewStartResult, PrepareNoteCandidatePromotionResult } from '@storyboard/story-engine';
+import { MockAiProvider } from '@storyboard/story-ai';
 
 import type { ParsedArguments } from '@/cliArguments';
 import { findCommand } from '@/commands/index';
@@ -106,6 +107,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   if (previousHome === undefined) {
     delete process.env.STORYBOARD_HOME;
   } else {
@@ -118,6 +120,35 @@ afterEach(() => {
 async function waitForNextSessionId(): Promise<void> {
   const millisecondsUntilNextSecond: number = 1000 - (Date.now() % 1000) + 5;
   await new Promise((resolve) => setTimeout(resolve, millisecondsUntilNextSecond));
+}
+
+interface CapturedPrompt {
+  readonly taskName: string;
+  readonly prompt: string;
+}
+
+function captureUserPrompts(): CapturedPrompt[] {
+  const captured: CapturedPrompt[] = [];
+  const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+  vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(function (
+    this: MockAiProvider,
+    request: Parameters<MockAiProvider['generate']>[0],
+  ) {
+    captured.push({
+      taskName: request.taskName ?? '',
+      prompt: request.messages
+        .filter((message) => message.role === 'user')
+        .map((message) => message.content)
+        .join('\n'),
+    });
+    return generate.call(this, request);
+  });
+
+  return captured;
+}
+
+function promptsOf(captured: readonly CapturedPrompt[], taskName: string): string[] {
+  return captured.filter((entry) => entry.taskName === taskName).map((entry) => entry.prompt);
 }
 
 async function startSession(cardId: string): Promise<{ container: CliContainer; sessionId: string }> {
@@ -211,6 +242,43 @@ describe('interview session (mock provider)', () => {
     const fourth: InterviewQuestion | undefined = await app.interviews.next(request);
     expect(fourth?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
     expect(fourth?.axisId).toBe('affection');
+  });
+
+  it('hands the speech the writer chose toward each partner to the question and update prompts', async () => {
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({
+      ...request,
+      questionId: speech?.id ?? '',
+      answer: { kind: 'written', text: "'등대지기'라 부르며 반말" },
+    });
+    const first: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'chosen', index: 0 } });
+    const second: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: second?.id ?? '', answer: { kind: 'written', text: '웃어 버린다' } });
+
+    const block: string = "[상대별 호칭·말투]\n- 하나 → 준: '등대지기'라 부르며 반말";
+    expect(promptsOf(captured, 'interviewQuestion')).toHaveLength(2);
+    expect(promptsOf(captured, 'interviewQuestion').every((prompt) => prompt.includes(block))).toBe(true);
+    expect(promptsOf(captured, 'interviewUpdate')).toHaveLength(2);
+    expect(promptsOf(captured, 'interviewUpdate').every((prompt) => prompt.includes(block))).toBe(true);
+    expect(promptsOf(captured, 'interviewRelationSpeech')[0]).not.toContain('[상대별 호칭·말투]');
+  });
+
+  it('hands the card speech to the question prompt when the speech question was skipped', async () => {
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    await app.interviews.next(request);
+
+    expect(promptsOf(captured, 'interviewQuestion')).toHaveLength(1);
+    expect(promptsOf(captured, 'interviewQuestion')[0]).toContain('[상대별 호칭·말투]\n- 하나 → 준: 반말');
   });
 
   it('classifies a written answer, lets the writer rename it to a new value, and rebuilds after a streak', async () => {

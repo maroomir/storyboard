@@ -19,6 +19,7 @@ after the first public release.
 - **One AI call running out of time no longer fails a whole novel run.** When a call to a provider that runs a program does not finish within its time limit, the same call is sent once more, and only a second time-out is a failure. Usage limits, cancellations and other failures are not sent again.
 - **A novel run cancelled in the middle of a chapter continues with that chapter's remaining scenes.** The cancelled chapter used to be recorded as finished, so continuing skipped its unwritten scenes and moved on to the next chapter (the extension notification's «취소» button takes this path).
 - **`novel generate` puts the scenes the final review rewrote into the manuscript.** The `manuscript/` assembled before the rewrite used to stay, so the final manuscript carried the unrevised text. When a rewrite changed a draft, the manuscript is assembled again.
+- **Interview questions no longer turn the writer's form of address around.** Question drafting and answer updates now receive the card's per-partner speech and this interview's "what to call them" answers as `[상대별 호칭·말투]` ("character → partner: …"). Options address each partner that way and never use an address catchphrase as a self-title or toward someone else, and the summary states who calls whom what in a sentence of its own.
 
 ## [0.15.1] - 2026-11-03
 
