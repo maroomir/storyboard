@@ -267,6 +267,17 @@ describe("ReviseDraftUseCase", () => {
     expect(writeDraftFileMock).toHaveBeenCalledTimes(1)
   })
 
+  it("curls straight dialogue quotes a revision wrote", async () => {
+    checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
+    reviseDraftMock.mockResolvedValueOnce('인물은 창가에서 "잠깐만." 하고 숨을 골랐다.')
+
+    await runReviseDraftWorkflow(baseOptions({ maxIterations: 3 }))
+
+    const written: string = JSON.stringify(writeDraftFileMock.mock.calls[0])
+    expect(written).toContain("“잠깐만.”")
+    expect(written).not.toContain('\\"잠깐만.\\"')
+  })
+
   it("passes character cards to both critique and revision", async () => {
     critiqueDraftMock.mockResolvedValueOnce([highCritique]).mockResolvedValue([])
 

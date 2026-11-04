@@ -1,5 +1,6 @@
 import { castNameOf, type SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
+import { curlDialogueQuotes } from '#engine/pipeline/dialogueQuotes';
 import { weighViolations } from '#engine/pipeline/scene/skeletonChecks';
 import { countSceneBreakLines, restoreSceneBreaks } from '#engine/pipeline/sceneBreakPlan';
 import { sectionPlaces, sectionSceneCoordinates } from '#engine/pipeline/sceneCoordinates';
@@ -359,7 +360,7 @@ export class ExpandSectionStage implements ISceneStage {
     options: GenerateTextOptions,
     retry: SectionRetryHint,
   ): Promise<string> {
-    return run.aiService.expandSceneSection(
+    const expanded: string = await run.aiService.expandSceneSection(
       {
         skeleton: run.polishedText,
         section: request.section,
@@ -373,6 +374,8 @@ export class ExpandSectionStage implements ISceneStage {
       },
       options,
     );
+
+    return curlDialogueQuotes(expanded);
   }
 
   private validateSection(

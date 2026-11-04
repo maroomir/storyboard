@@ -14,6 +14,7 @@ export * from '#engine/pipeline/scene/sceneGenerationPipeline';
 export * from '#engine/pipeline/scene/sceneGenerationRun';
 export * from '#engine/pipeline/scene/sceneStage';
 export * from '#engine/pipeline/scene/skeletonChecks';
+export * from '#engine/pipeline/dialogueQuotes';
 export * from '#engine/pipeline/scene/skeletonDrafter';
 export * from '#engine/pipeline/sceneGenerationPolicies';
 export * from '#engine/pipeline/sceneGenerationStages';
