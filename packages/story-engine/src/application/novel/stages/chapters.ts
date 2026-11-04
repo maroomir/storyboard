@@ -9,7 +9,11 @@ import type { NovelPipelineResult } from '#engine/application/novel/novelPipelin
 import type { NovelRun } from '#engine/application/novel/novelRun';
 import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 
-type ChapterDraftsOutcome = 'finished' | 'paused' | { readonly limitReached: string };
+type ChapterDraftsOutcome =
+  | 'finished'
+  | 'paused'
+  | 'cancelled'
+  | { readonly limitReached: string };
 
 export class ChaptersStage implements INovelStage {
   public readonly id: NovelStageName = 'chapters';
@@ -70,6 +74,9 @@ export class ChaptersStage implements INovelStage {
     );
 
     const draftsOutcome: ChapterDraftsOutcome = await this.draftAndRevise(run, group);
+    if (draftsOutcome === 'cancelled') {
+      return await run.cancel();
+    }
     if (draftsOutcome === 'paused') {
       return await run.pause();
     }
@@ -115,7 +122,7 @@ export class ChaptersStage implements INovelStage {
 
     for (const stem of group.stems) {
       if (options.shouldCancel()) {
-        return 'finished';
+        return 'cancelled';
       }
 
       if (options.shouldPause?.()) {
@@ -133,7 +140,7 @@ export class ChaptersStage implements INovelStage {
 
       if (!draftResult.ok) {
         if (draftResult.kind === 'cancelled') {
-          return 'finished';
+          return 'cancelled';
         }
         if (draftResult.reason === 'usage-limit') {
           return { limitReached: draftResult.message };
