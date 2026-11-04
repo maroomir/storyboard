@@ -7,7 +7,7 @@ import type {
   UsageRecord,
   AiTaskName,
 } from '@storyboard/story-model';
-import { projectUsageAttribution } from '@storyboard/story-model';
+import { AiProviderError, projectUsageAttribution } from '@storyboard/story-model';
 import { isAttributed } from '#ai/ai/aiResponseCoercion';
 import { selectPromptVariant } from '#ai/ai/prompts/promptVariants';
 import type { PromptVariantId } from '#ai/ai/prompts/types';
@@ -17,6 +17,12 @@ import type {
   StoryboardAiServiceOptions,
 } from '#ai/ai/aiServiceTypes';
 import type { TaskAiConfigResolved } from '#ai/ports/ConfigBridge';
+
+const timedOutCallAttemptLimit: number = 2;
+
+function isTimedOutCall(error: unknown): boolean {
+  return error instanceof AiProviderError && error.code === 'cli-timeout';
+}
 
 export class AiTextGateway {
   public constructor(
@@ -29,21 +35,10 @@ export class AiTextGateway {
     messages: readonly AiMessage[],
     options: GenerateTextOptions,
   ): Promise<AiGenerateResponse> {
-    const response: AiGenerateResponse = options.providerId
-      ? await this.registry.generateWithProvider(options.providerId, {
-          taskName,
-          messages,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
-          reasoningEffort: options.reasoningEffort,
-        })
-      : await this.registry.generate({
-          taskName,
-          messages,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
-          reasoningEffort: options.reasoningEffort,
-        });
+    const response: AiGenerateResponse = await this.retryTimedOutCall(
+      () => this.requestGeneration(taskName, messages, options),
+      timedOutCallAttemptLimit,
+    );
 
     this.emitUsageIfNeeded(taskName, response, options.attribution);
     return response;
@@ -86,6 +81,44 @@ export class AiTextGateway {
       maxTokens: options.maxTokens,
       ...(override === undefined ? {} : { override }),
     });
+  }
+
+  private requestGeneration(
+    taskName: AiTaskName,
+    messages: readonly AiMessage[],
+    options: GenerateTextOptions,
+  ): Promise<AiGenerateResponse> {
+    return options.providerId
+      ? this.registry.generateWithProvider(options.providerId, {
+          taskName,
+          messages,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens,
+          reasoningEffort: options.reasoningEffort,
+        })
+      : this.registry.generate({
+          taskName,
+          messages,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens,
+          reasoningEffort: options.reasoningEffort,
+        });
+  }
+
+  private async retryTimedOutCall(
+    send: () => Promise<AiGenerateResponse>,
+    attemptsLeft: number,
+  ): Promise<AiGenerateResponse> {
+    try {
+      return await send();
+    } catch (error) {
+      const canRetry: boolean = attemptsLeft > 1 && isTimedOutCall(error);
+      if (!canRetry) {
+        throw error;
+      }
+
+      return await this.retryTimedOutCall(send, attemptsLeft - 1);
+    }
   }
 
   private emitUsageIfNeeded(

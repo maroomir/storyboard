@@ -16,6 +16,7 @@ after the first public release.
 - **Terminal `card interview` refuses `--limit abc` and `--limit 0`.** It used to end the session without asking anything (`--step` already refused them).
 - **A new value named for a written answer no longer takes an id another value of the axis has.** The terminal and the VS Code interview tab numbered it by the value count, so a clash with an existing `custom-N` dropped the new name.
 - **Beat, scene-grounding and scene-structure proposals now reach the work's usage ledger.** The three calls tried to write their usage under the scene card file instead of the work, failed, and the failure was swallowed, so their cost never reached the ledger.
+- **One AI call running out of time no longer fails a whole novel run.** When a call to a provider that runs a program does not finish within its time limit, the same call is sent once more, and only a second time-out is a failure. Usage limits, cancellations and other failures are not sent again.
 - **A novel run cancelled in the middle of a chapter continues with that chapter's remaining scenes.** The cancelled chapter used to be recorded as finished, so continuing skipped its unwritten scenes and moved on to the next chapter (the extension notification's «취소» button takes this path).
 - **`novel generate` puts the scenes the final review rewrote into the manuscript.** The `manuscript/` assembled before the rewrite used to stay, so the final manuscript carried the unrevised text. When a rewrite changed a draft, the manuscript is assembled again.
 
