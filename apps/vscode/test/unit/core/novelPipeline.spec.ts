@@ -486,6 +486,40 @@ describe('NovelPipeline', () => {
     expect(harness.persistedStates.at(-1)).toMatchObject({ status: 'paused', nextChapterIndex: 0 });
   });
 
+  it('cancels before the next scene without advancing past the unfinished chapter', async () => {
+    const harness = createHarness({
+      shouldCancel: (): boolean => generateDraftMock.mock.calls.length >= 1,
+    });
+
+    const result = await new NovelPipeline(
+      harness.dependencies.host,
+      harness.dependencies.ai,
+      harness.dependencies.repositories,
+      harness.dependencies.collaborators,
+    ).run(harness.options);
+
+    expect(result.outcome).toBe('cancelled');
+    expect(generateDraftMock).toHaveBeenCalledTimes(1);
+    expect(summarizeChaptersMock).not.toHaveBeenCalled();
+    expect(harness.persistedStates.at(-1)).toMatchObject({ status: 'paused', nextChapterIndex: 0 });
+  });
+
+  it('keeps the chapter when its draft generation was cancelled', async () => {
+    generateDraftMock.mockResolvedValueOnce({ ok: false, kind: 'cancelled' } as never);
+    const harness = createHarness();
+
+    const result = await new NovelPipeline(
+      harness.dependencies.host,
+      harness.dependencies.ai,
+      harness.dependencies.repositories,
+      harness.dependencies.collaborators,
+    ).run(harness.options);
+
+    expect(result.outcome).toBe('cancelled');
+    expect(summarizeChaptersMock).not.toHaveBeenCalled();
+    expect(harness.persistedStates.at(-1)).toMatchObject({ status: 'paused', nextChapterIndex: 0 });
+  });
+
   it('pauses between chapters with the finished chapter recorded', async () => {
     const harness = createHarness({
       shouldPause: (): boolean => generateDraftMock.mock.calls.length >= 2,
