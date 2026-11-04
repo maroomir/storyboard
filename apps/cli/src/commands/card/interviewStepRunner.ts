@@ -5,6 +5,7 @@ import {
   formatQuestionTitle,
   listOtherValues,
 } from '@/commands/card/interviewQuestionLabels';
+import { invalidLimitMessage, parsePositiveInteger } from '@/commands/card/interviewFlags';
 import type { CommandOutcome } from '@/commands/outcome';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
@@ -15,6 +16,7 @@ import type {
   InterviewSessionRequest,
   InterviewStartResult,
 } from '@storyboard/story-engine';
+import { createCustomValueId } from '@storyboard/story-model';
 import type {
   InterviewAnswerInput,
   InterviewAnswerOutcome,
@@ -58,14 +60,7 @@ const actionFlagNames: readonly string[] = [
   'finish',
   'abandon',
 ];
-const positiveIntegerPattern: RegExp = /^[1-9]\d*$/;
 const keepChoiceIndex: number = 1;
-
-function parsePositiveInteger(text: string | undefined): number | undefined {
-  return text !== undefined && positiveIntegerPattern.test(text.trim())
-    ? Number.parseInt(text.trim(), 10)
-    : undefined;
-}
 
 function parseAction(flags: Readonly<Record<string, string | boolean>>): StepAction | string {
   const given: string[] = actionFlagNames.filter(
@@ -129,16 +124,6 @@ function confirmOptions(
   ];
 }
 
-function unusedCustomValueId(values: readonly InterviewAxisValue[]): string {
-  const taken: Set<string> = new Set(values.map((value) => value.id));
-  let suffix: number = values.length + 1;
-  while (taken.has(`custom-${suffix}`)) {
-    suffix += 1;
-  }
-
-  return `custom-${suffix}`;
-}
-
 function describeFinished(summary: InterviewSessionSummary): string {
   return summary.candidateCount > 0
     ? `인터뷰를 마쳤습니다 (답 ${summary.answered}, 카드 후보 ${summary.candidateCount}건). storyboard card promote 로 반영할 수 있습니다.`
@@ -156,7 +141,7 @@ export class InterviewStepRunner {
       return failure(action);
     }
     if (limitText !== undefined && limit === undefined) {
-      return failure('--limit 에는 1 이상의 정수를 주세요.');
+      return failure(invalidLimitMessage);
     }
 
     const open: InterviewOpenSession | undefined = await this.container.interviews.findOpenSession({
@@ -307,7 +292,7 @@ export class InterviewStepRunner {
     action: Extract<StepAction, { readonly kind: 'confirm' | 'rename' }>,
   ): InterviewConfirmation | undefined {
     if (action.kind === 'rename') {
-      return { kind: 'newValue', id: unusedCustomValueId(question.values), label: action.label };
+      return { kind: 'newValue', id: createCustomValueId(question.values), label: action.label };
     }
     if (action.choice === keepChoiceIndex) {
       return { kind: 'value', valueId: classification.valueId };

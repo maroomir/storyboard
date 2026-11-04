@@ -155,6 +155,57 @@ describe('card interview', () => {
     expect(model.tallies['pressure-defense']).toEqual({ counter: 0, 'custom-4': 2 });
   });
 
+  it.each(['abc', '0'])('refuses --limit %s before asking anything', async (limit: string) => {
+    const prompter: ScriptedPrompter = scriptedPrompter(['[Mock AI] withhold']);
+
+    const outcome = await run('card interview', args(['card', 'interview'], { limit }, ['hana']), prompter);
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('--limit 에는 1 이상의 정수');
+    expect(prompter.titles).toEqual([]);
+    expect(existsSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'))).toBe(false);
+  });
+
+  it('records 맞다 as a confirmation, so a session cut off afterwards does not wait on it', async () => {
+    const prompter: ScriptedPrompter = scriptedPrompter(['직접 쓰기', '맞다'], ['웃어 버린다']);
+    const cutOff: IPrompter = {
+      ...prompter,
+      choose: async <T>(request: ChoiceRequest<T>): Promise<T | undefined> => {
+        if (prompter.titles.length === 2) {
+          throw new Error('terminal closed');
+        }
+        return prompter.choose(request);
+      },
+    };
+
+    await expect(run('card interview', args(['card', 'interview'], {}, ['hana']), cutOff)).rejects.toThrow('terminal closed');
+
+    const model = JSON.parse(
+      readFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), 'utf8'),
+    ) as { records: { answer?: { kind: string; valueId?: string }; isConfirmed: boolean }[] };
+    expect(model.records[0]).toMatchObject({ answer: { kind: 'written', valueId: 'counter' }, isConfirmed: true });
+  });
+
+  it('gives a new value an id no other value of the axis has', async () => {
+    const axesPath: string = join(workspace, '.storyboard/cache/interviews/axes.json');
+    await run('card interview', args(['card', 'interview'], { limit: '1' }, ['hana']), scriptedPrompter(['[Mock AI] withhold']));
+    const axes = JSON.parse(readFileSync(axesPath, 'utf8')) as {
+      character: { axes: { id: string; values: { id: string; label: string }[] }[] };
+    };
+    const pressure = axes.character.axes.find((axis) => axis.id === 'pressure-defense');
+    pressure?.values.splice(0, 1, { id: 'custom-4', label: '먼저 쓴 새 값' });
+    writeFileSync(axesPath, JSON.stringify(axes));
+    const prompter: ScriptedPrompter = scriptedPrompter(['직접 쓰기', '새 값으로'], ['웃어 버린다', '웃음으로 넘기기']);
+
+    await run('card interview', args(['card', 'interview'], { limit: '1' }, ['hana']), prompter);
+
+    const model = JSON.parse(
+      readFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), 'utf8'),
+    ) as { records: { answer?: { kind: string; valueId?: string } }[] };
+    const written = model.records.find((record) => record.answer?.kind === 'written');
+    expect(written?.answer?.valueId).toBe('custom-5');
+  });
+
   it('shows the interview hint in status and a doctor note once a card has open axes', async () => {
     const before = await run('status', args(['status']));
     expect(before.message).toContain('인터뷰    하나 — 다음 씬의 인물·장소를 아직 인터뷰하지 않았습니다 · storyboard card interview hana');

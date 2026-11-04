@@ -10,6 +10,12 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Choosing «맞다» when confirming an interview answer now records the confirmation.** The terminal and the VS Code interview tab sent nothing for it, so a session cut off afterwards made `--step` ask to confirm the same answer again.
+- **Terminal `card interview` refuses `--limit abc` and `--limit 0`.** It used to end the session without asking anything (`--step` already refused them).
+- **A new value named for a written answer no longer takes an id another value of the axis has.** The terminal and the VS Code interview tab numbered it by the value count, so a clash with an existing `custom-N` dropped the new name.
+
 ## [0.15.1] - 2026-11-03
 
 ### Added

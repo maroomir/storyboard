@@ -1,5 +1,6 @@
 import type { ChoiceOption, IPrompter } from '@/adapters/prompter';
 import { flagBoolean, flagString } from '@/cliArguments';
+import { invalidLimitMessage, parsePositiveInteger } from '@/commands/card/interviewFlags';
 import {
   formatConfirmTitle,
   formatKeepLabel,
@@ -20,6 +21,7 @@ import type {
   InterviewSessionRequest,
   InterviewStartResult,
 } from '@storyboard/story-engine';
+import { createCustomValueId } from '@storyboard/story-model';
 import type {
   InterviewAnswerInput,
   InterviewAnswerOutcome,
@@ -112,6 +114,12 @@ export class CardInterviewCommand implements ICommandHandler {
       );
     }
 
+    const limitText: string | undefined = flagString(args.flags, 'limit');
+    const limit: number | undefined = parsePositiveInteger(limitText);
+    if (limitText !== undefined && limit === undefined) {
+      return failure(invalidLimitMessage);
+    }
+
     const sceneStems: readonly string[] | undefined = await this.resolveSceneStems(
       container,
       flagString(args.flags, 'scenes'),
@@ -130,14 +138,13 @@ export class CardInterviewCommand implements ICommandHandler {
       prompter.announce(line);
     }
 
-    const limitText: string | undefined = flagString(args.flags, 'limit');
     const handle: InterviewSessionHandle = {
       container,
       prompter,
       cardId,
       sessionId: started.opening.sessionId,
       sceneStems,
-      limit: limitText === undefined ? undefined : Number.parseInt(limitText, 10),
+      limit,
     };
     const answered: number = await this.askUntilDone(handle);
     const summary: InterviewSessionSummary = await container.interviews.finish(sessionRequest(handle));
@@ -269,6 +276,7 @@ export class CardInterviewCommand implements ICommandHandler {
     const confirmation: InterviewConfirmation | undefined = await this.toConfirmation(
       handle.prompter,
       question,
+      valueId,
       choice,
     );
     if (confirmation === undefined) {
@@ -285,13 +293,14 @@ export class CardInterviewCommand implements ICommandHandler {
   private async toConfirmation(
     prompter: IPrompter,
     question: InterviewQuestion,
+    readValueId: string,
     choice: ConfirmChoice | undefined,
   ): Promise<InterviewConfirmation | undefined> {
-    if (choice === undefined || choice.kind === 'keep') {
+    if (choice === undefined) {
       return undefined;
     }
-    if (choice.kind === 'value') {
-      return { kind: 'value', valueId: choice.valueId };
+    if (choice.kind !== 'rename') {
+      return { kind: 'value', valueId: choice.kind === 'keep' ? readValueId : choice.valueId };
     }
 
     const label: string | undefined = await prompter.askText({
@@ -301,7 +310,7 @@ export class CardInterviewCommand implements ICommandHandler {
 
     return trimmed.length === 0
       ? undefined
-      : { kind: 'newValue', id: `custom-${question.values.length + 1}`, label: trimmed };
+      : { kind: 'newValue', id: createCustomValueId(question.values), label: trimmed };
   }
 
   private async resolveSceneStems(
