@@ -163,7 +163,7 @@ export class SceneGroundingResolver {
     const { scene } = target;
 
     try {
-      return await ai.gateway.createService(target.sceneUri).proposeSceneGrounding(
+      return await ai.gateway.createService(target.workspaceRoot).proposeSceneGrounding(
         {
           sceneBody: scene.body,
           missingFields,

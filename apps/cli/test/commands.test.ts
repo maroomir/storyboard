@@ -1592,6 +1592,39 @@ describe('spend that belongs to no scene', () => {
   });
 });
 
+describe('spend of the calls that prepare a scene', () => {
+  it('charges the grounding and beat proposals to the work, not the scene file', async () => {
+    await run('scene create', args(['scene', 'create'], { name: 'night market' }));
+    const roots: { readonly taskName: string; readonly root: string }[] = [];
+    const recording = createCliContainer({
+      workspacePath: workspace,
+      logger: silentLogger,
+      canPrompt: false,
+      version: '0.0.0',
+      usageSink: {
+        record: async (root, usage) =>
+          void roots.push({ taskName: usage.taskName, root: (root as { fsPath: string }).fsPath }),
+      },
+    });
+
+    await findCommand('draft generate')!.execute({
+      container: recording,
+      args: args(['draft', 'generate'], {}, ['01-night-market']),
+    });
+    await findCommand('scene plot')!.execute({
+      container: recording,
+      args: args(['scene', 'plot'], { force: true }, ['01-night-market']),
+    });
+
+    const setupCalls = roots.filter((call) => ['sceneGrounding', 'sceneBeats'].includes(call.taskName));
+    expect(new Set(setupCalls.map((call) => call.taskName))).toEqual(
+      new Set(['sceneGrounding', 'sceneBeats']),
+    );
+    const workspaceRootPath: string = (recording.workspaceRoot as { fsPath: string }).fsPath;
+    expect(setupCalls.map((call) => call.root)).toEqual(setupCalls.map(() => workspaceRootPath));
+  });
+});
+
 describe('novel generate again', () => {
   const runStateFile = (): string => join(workspace, STORYBOARD_RELATIVE_PATHS.novelRunState);
 

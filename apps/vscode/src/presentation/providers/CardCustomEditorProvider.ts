@@ -320,7 +320,8 @@ export class CardEditorRpc {
     const { aiGateway } = this.dependencies;
     const fileName: string = this.document.uri.path.split('/').pop() ?? '';
     const sceneStem: string = parseSceneFileName(fileName)?.stem ?? card.id;
-    return await aiGateway.createService(this.document.uri).proposeSceneStructure(
+    const workspaceRoot: vscode.Uri = getDocumentWorkspaceRoot(this.document);
+    return await aiGateway.createService(workspaceRoot).proposeSceneStructure(
       {
         sceneSummary: summary,
         missingFields,

@@ -389,7 +389,11 @@ export class SceneGenerationInputsLoader {
 
     return request.skipSceneBeats
       ? grounded.scene
-      : await this.beatsResolver.resolve(sceneUri, grounded.scene, builtContext.characters);
+      : await this.beatsResolver.resolve(
+          { workspaceRoot: paths.workspaceRoot, sceneUri },
+          grounded.scene,
+          builtContext.characters,
+        );
   }
 
   private async resolveSceneThreadSetup(

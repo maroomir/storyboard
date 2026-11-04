@@ -74,7 +74,7 @@ export class GenerateSceneBeatsUseCase {
 
     let beats: SceneBeat[];
     try {
-      beats = await this.beatsResolver.propose(request.sceneUri, scene, context.characters);
+      beats = await this.beatsResolver.propose(request.workspaceRoot, scene, context.characters);
     } catch (error) {
       this.host.logger.error('Failed to propose scene beats', error);
       return {
