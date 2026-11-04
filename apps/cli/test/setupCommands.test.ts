@@ -760,6 +760,56 @@ describe('storyboard doctor beat cast', () => {
   });
 });
 
+describe('storyboard doctor outline addresses', () => {
+  function checksOf(outcome: { data?: unknown }): { label: string; detail: string }[] {
+    return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
+  }
+
+  function writeWorkspaceWithScenePlace(groundingPlace: string, beatPlace: string): void {
+    mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
+    mkdirSync(join(workspace, 'scene'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'project.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        id: 'p1',
+        name: '테스트',
+        format: 'novel',
+        language: 'ko',
+        createdAt: new Date().toISOString(),
+        editor: { scenePrefixDigits: 2 },
+      }),
+    );
+    writeFileSync(
+      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+      'version: 1.0.0\nacts:\n  - id: act-1\n    title: 1막\n    chapters:\n      - id: chapter-1\n        title: 1장\n        summary: 3동 704호에 새 세입자가 든다. 불은 7동에서 났다.\n        scenes:\n          - id: s1\n            title: 첫 씬\n',
+    );
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      `type: scene\nid: 01-first\ngrounding:\n  place: ${groundingPlace}\nbeats:\n  - text: 문을 연다.\n    place: ${beatPlace}\n`,
+    );
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
+  }
+
+  it('warns when a scene card names a building the chapter outline gives another unit', async () => {
+    writeWorkspaceWithScenePlace('7동 704호 거실', '7동 704호 현관');
+
+    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
+      (entry) => entry.label === '아웃라인 장소',
+    );
+
+    expect(check?.detail).toContain('01-first: 7동 704호 (아웃라인 3동 704호)');
+  });
+
+  it('stays quiet when the scene card keeps the outline address', async () => {
+    writeWorkspaceWithScenePlace('3동 704호 거실', '7동 화재 현장');
+
+    const checks = checksOf(await new DoctorCommand().execute({ container: container(), args: args() }));
+
+    expect(checks.some((entry) => entry.label === '아웃라인 장소')).toBe(false);
+  });
+});
+
 describe('storyboard doctor background conflicts', () => {
   const sofa = '손님은 거실 소파에서 잔다';
   const room = '손님에게 자기 방이 있다';

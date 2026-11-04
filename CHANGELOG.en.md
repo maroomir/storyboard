@@ -22,6 +22,7 @@ after the first public release.
 - **Interview questions no longer turn the writer's form of address around.** Question drafting and answer updates now receive the card's per-partner speech and this interview's "what to call them" answers as `[상대별 호칭·말투]` ("character → partner: …"). Options address each partner that way and never use an address catchphrase as a self-title or toward someone else, and the summary states who calls whom what in a sentence of its own.
 - **Review rewrites and section expansion no longer mix in straight quotes.** As with skeletons, a `"…"` line of dialogue that closes on one line in a rewrite or expansion response is turned into curly double quotes, so a rewritten scene no longer mixes quote shapes.
 - **Section expansion no longer opens a section with the coordinate's clock time.** The prompt now tells the model to establish the time through light, sound and movement instead of reading the scene coordinate's clock time aloud at the start of every section.
+- **`doctor` warns when a scene card and the outline disagree on a building and unit.** When a scene card's place (`grounding.place` or a beat's `place`) puts a unit its chapter in `chapters.yaml` names in a different building (`3동 704호` against `7동 704호`), doctor reports an `아웃라인 장소` warning. Drafts and reviews follow the card, so nothing caught a seed that moved the place.
 
 ## [0.15.1] - 2026-11-03
 
