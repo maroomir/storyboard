@@ -8,11 +8,11 @@ export class AssembleStage implements INovelStage {
   public readonly id: NovelStageName = 'assemble';
 
   public async run(run: NovelRun): Promise<NovelPipelineResult | undefined> {
-    await run.runStageOnce('assemble', '원고 조립 중…', () => this.assemble(run));
+    await run.runStageOnce('assemble', '원고 조립 중…', () => this.assembleManuscript(run));
     return undefined;
   }
 
-  private async assemble(run: NovelRun): Promise<void> {
+  public async assembleManuscript(run: NovelRun): Promise<void> {
     const assemblyResult: AssembleManuscriptResult =
       await run.services.collaborators.assembleManuscriptUseCase.execute({
         workspaceRoot: run.options.workspaceUri,

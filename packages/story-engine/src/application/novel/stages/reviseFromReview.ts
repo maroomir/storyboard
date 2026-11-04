@@ -9,6 +9,7 @@ import type {
   ReviewStageResult,
   ReviewTarget,
 } from '#engine/application/novel/novelPipelineContract';
+import { AssembleStage } from '#engine/application/novel/stages/assemble';
 import { VolumeReviewer } from '#engine/application/novel/stages/volumeReviewer';
 
 export class ReviseFromReviewStage implements INovelStage {
@@ -45,6 +46,7 @@ export class ReviseFromReviewStage implements INovelStage {
 
     options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
     const revisedStems: string[] = await this.reviseTargets(run, targets);
+    await this.reassembleRevisedManuscript(run, revisedStems);
     run.completed.add('revise-from-review');
     await run.persist({});
 
@@ -56,6 +58,19 @@ export class ReviseFromReviewStage implements INovelStage {
     await reviewer.review(revisedStems);
 
     return undefined;
+  }
+
+  private async reassembleRevisedManuscript(
+    run: NovelRun,
+    revisedStems: readonly string[],
+  ): Promise<void> {
+    const isManuscriptAssembled: boolean = run.completed.has('assemble');
+    if (revisedStems.length === 0 || !isManuscriptAssembled) {
+      return;
+    }
+
+    run.options.onProgress('assemble', '재작성분으로 원고를 다시 조립하는 중…');
+    await new AssembleStage().assembleManuscript(run);
   }
 
   private async reviseTargets(run: NovelRun, targets: readonly ReviewTarget[]): Promise<string[]> {
