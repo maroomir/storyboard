@@ -29,11 +29,16 @@ export interface SceneBeatCastCard {
   readonly aliases?: readonly string[];
 }
 
+export interface SceneBeatsTarget {
+  readonly workspaceRoot: StoryUri;
+  readonly sceneUri: StoryUri;
+}
+
 export class SceneBeatsResolver {
   public constructor(private readonly dependencies: SceneBeatsResolverDependencies) {}
 
   public async resolve(
-    sceneUri: StoryUri,
+    target: SceneBeatsTarget,
     scene: SceneFile,
     characters: readonly SceneBeatCastCard[],
   ): Promise<SceneFile> {
@@ -45,7 +50,7 @@ export class SceneBeatsResolver {
 
     let beats: SceneBeat[];
     try {
-      beats = await this.propose(sceneUri, scene, characters);
+      beats = await this.propose(target.workspaceRoot, scene, characters);
     } catch (error) {
       host.logger.warn(`씬 비트를 전개하지 못했습니다: ${String(error)}`);
       return scene;
@@ -57,7 +62,7 @@ export class SceneBeatsResolver {
     }
 
     try {
-      await repositories.scenes.writeBeats(sceneUri, beats);
+      await repositories.scenes.writeBeats(target.sceneUri, beats);
     } catch (error) {
       host.logger.warn(`씬 비트를 저장하지 못했습니다: ${String(error)}`);
     }
@@ -66,7 +71,7 @@ export class SceneBeatsResolver {
   }
 
   public async propose(
-    sceneUri: StoryUri,
+    workspaceRoot: StoryUri,
     scene: SceneFile,
     characters: readonly SceneBeatCastCard[],
   ): Promise<SceneBeat[]> {
@@ -82,7 +87,7 @@ export class SceneBeatsResolver {
     );
 
     const proposals: ExpandedSceneBeat[] = await ai.gateway
-      .createService(sceneUri)
+      .createService(workspaceRoot)
       .proposeSceneBeats(
         {
           sceneBody: renderSceneCardBody({ ...scene.card, beats: undefined }),
