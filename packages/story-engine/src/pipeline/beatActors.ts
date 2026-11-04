@@ -207,6 +207,23 @@ export function shouldNoteScore(score: number): boolean {
   return score <= NOTE_SCORE_LIMIT;
 }
 
+export function actorKnowledge(input: {
+  readonly name: string;
+  readonly ledgerKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
+  readonly previousContext: string | undefined;
+}): readonly string[] {
+  const hasLedgerKnowledge: boolean = [...(input.ledgerKnowledge?.values() ?? [])].some(
+    (lines) => lines.length > 0,
+  );
+  if (hasLedgerKnowledge) {
+    return input.ledgerKnowledge?.get(input.name) ?? [];
+  }
+
+  return input.previousContext === undefined || input.previousContext.trim().length === 0
+    ? []
+    : [`앞 장면까지의 줄거리(누가 무엇을 봤는지는 기록이 없다): ${input.previousContext.trim()}`];
+}
+
 export function beatRetryReasons(input: {
   readonly verdict: SceneBeatVerdict | undefined;
   readonly catchphraseOveruse: readonly string[];
@@ -225,6 +242,9 @@ export function beatRetryReasons(input: {
     ...(verdict !== undefined && !verdict.isBeatCovered ? [`지시 누락: ${verdict.beatMissing}`] : []),
     ...(verdict !== undefined && verdict.earlyMaterial.length > 0
       ? [`다음 대목 소재를 미리 씀: ${verdict.earlyMaterial}`]
+      : []),
+    ...(verdict !== undefined && verdict.repeats.length > 0
+      ? [`직전 대목을 되풀이함: ${verdict.repeats}`]
       : []),
     ...input.catchphraseOveruse,
   ];

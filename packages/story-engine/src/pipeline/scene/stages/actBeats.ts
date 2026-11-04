@@ -1,6 +1,7 @@
 import {
   addBeatNote,
   assembleActedSkeleton,
+  actorKnowledge,
   beatRetryReasons,
   findBeatCatchphraseOveruse,
   findOverlongLines,
@@ -152,7 +153,11 @@ class BeatActingSession {
       name,
       persona: run.personasUsed.get(name) ?? '',
       catchphrases: this.catchphrases.get(name) ?? [],
-      knowledge: run.input.characterKnowledge?.get(name) ?? [],
+      knowledge: actorKnowledge({
+        name,
+        ledgerKnowledge: run.input.characterKnowledge,
+        previousContext: run.condensedPreviousContext,
+      }),
       speechToOthers: this.speechToOthers.get(name) ?? [],
       relationChanges: run.input.characterRelations?.get(name) ?? [],
       notes: liveBeatNotes(this.notes.get(name) ?? [], beat.number),
