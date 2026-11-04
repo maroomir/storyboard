@@ -4,6 +4,7 @@ import type { CharacterCard } from "@storyboard/story-model"
 import {
   addBeatNote,
   assembleActedSkeleton,
+  actorKnowledge,
   beatRetryReasons,
   countCatchphrase,
   findBeatCatchphraseOveruse,
@@ -110,6 +111,22 @@ describe("beat notes", () => {
   })
 })
 
+describe("actorKnowledge", () => {
+  it("keeps to the ledger's witnessed lines when the ledger has any", () => {
+    const ledgerKnowledge = new Map([["조만재", ["은하가 이사를 왔다"]], ["정은하", []]])
+
+    expect(actorKnowledge({ name: "정은하", ledgerKnowledge, previousContext: "앞 장면" })).toEqual([])
+    expect(actorKnowledge({ name: "조만재", ledgerKnowledge, previousContext: "앞 장면" })).toEqual(["은하가 이사를 왔다"])
+  })
+
+  it("falls back to the previous context when the ledger gives nobody anything", () => {
+    expect(actorKnowledge({ name: "조만재", ledgerKnowledge: undefined, previousContext: " 한서라는 이름을 썼다 " })).toEqual([
+      "앞 장면까지의 줄거리(누가 무엇을 봤는지는 기록이 없다): 한서라는 이름을 썼다"
+    ])
+    expect(actorKnowledge({ name: "조만재", ledgerKnowledge: new Map(), previousContext: undefined })).toEqual([])
+  })
+})
+
 describe("beatRetryReasons", () => {
   it("collects low scores with their avoid line, a missed beat, early material and the catchphrase count", () => {
     expect(
@@ -133,6 +150,21 @@ describe("beatRetryReasons", () => {
       "입버릇 2회"
     ])
     expect(beatRetryReasons({ verdict: undefined, catchphraseOveruse: [] })).toEqual([])
+  })
+
+  it("sends a passage back when the judge found it repeating the previous one", () => {
+    expect(
+      beatRetryReasons({
+        verdict: {
+          scores: [{ name: "조만재", score: 4, reason: "", avoid: "" }],
+          isBeatCovered: true,
+          beatMissing: "",
+          earlyMaterial: "",
+          repeats: "창밖을 본다"
+        },
+        catchphraseOveruse: []
+      })
+    ).toEqual(["직전 대목을 되풀이함: 창밖을 본다"])
   })
 })
 
