@@ -53,7 +53,9 @@ same way against the drafts they were written from, and `storyboard manuscript s
 the ones that no longer match. `storyboard init --repair` restores the directories, `.gitignore` and any missing agent guide
 (`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one) and seals a
 pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
-stale. `doctor` also counts the scenes without beats (fix: `scene plot --all`), and it warns
+stale. `doctor` also counts the scenes without beats (fix: `scene plot --all`), warns when a scene
+card's place points at a unit its chapter's outline puts in another building (`3동 704호` against
+`7동 704호`), and it warns
 when the configured model cannot reach the largest scene target — measured, not guessed, and silent
 for combinations that were never measured.
 

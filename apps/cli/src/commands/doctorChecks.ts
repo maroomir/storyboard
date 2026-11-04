@@ -12,12 +12,14 @@ import type {
 import {
   backgroundCardRelativePath,
   computeInterviewContractHash,
+  findOutlineAddressConflicts,
   findUnknownBeatCast,
   flattenChapterPlan,
   formatBackgroundFactConflict,
   formatSceneOrderRanges,
   getStoryboardProjectPaths,
   isHiddenProvider,
+  listChapterTextsBySceneOrder,
   mainThreadId,
   parseSceneFileName,
   parseSceneRenameJournal,
@@ -641,6 +643,7 @@ export class DoctorChecks {
       ...runChecks(workspaceRepositoryChecks),
       ...(await this.narration(survey.census.cards)),
       ...(await this.beatCast(survey.census.cards)),
+      ...(await this.outlineAddresses(survey.census.cards)),
       ...(await this.cachedBackgroundConflicts()),
       ...(await this.interviews(paths)),
       ...(await this.addressCatchphrases()),
@@ -719,6 +722,48 @@ export class DoctorChecks {
             label: '비트 출연',
             detail: `인물 카드의 id·이름·별칭과 맞지 않는 출연이 있습니다 (${unknown.join(', ')}). 이름으로 바뀌지 않고 그대로 프롬프트에 실립니다.`,
             fix: 'storyboard card list character',
+          },
+        ];
+  }
+
+  private async outlineAddresses(
+    sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
+  ): Promise<DoctorCheck[]> {
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
+    const chapterTexts: readonly string[] = await readChapterPlanFile(
+      paths.outlineChapters,
+      this.container.fileSystem,
+    )
+      .then(listChapterTextsBySceneOrder)
+      .catch((): string[] => []);
+    if (chapterTexts.length === 0) {
+      return [];
+    }
+
+    const conflicts: string[] = sceneCards.flatMap(({ fileName, card }): string[] => {
+      const order: number | undefined = parseSceneStem(card.id)?.order;
+      const chapterText: string | undefined =
+        order === undefined ? undefined : chapterTexts[order - 1];
+      const cardPlaces: string[] = [
+        card.grounding?.place ?? '',
+        ...(card.beats ?? []).map((beat) => (typeof beat === 'string' ? '' : (beat.place ?? ''))),
+      ];
+      return chapterText === undefined
+        ? []
+        : findOutlineAddressConflicts(cardPlaces, chapterText).map(
+            (conflict) =>
+              `${fileName.replace(/\.card$/, '')}: ${conflict.cardAddress} (아웃라인 ${conflict.outlineAddress})`,
+          );
+    });
+
+    return conflicts.length === 0
+      ? []
+      : [
+          {
+            status: 'warn',
+            label: '아웃라인 장소',
+            detail: `씬 카드의 장소가 그 장의 아웃라인과 다른 동·호를 가리킵니다 (${conflicts.join(', ')}). 초안과 검수가 카드 쪽을 따릅니다.`,
+            fix: 'storyboard scene show <stem>',
           },
         ];
   }
