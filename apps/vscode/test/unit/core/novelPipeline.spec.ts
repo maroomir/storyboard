@@ -39,6 +39,7 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
   instructions: [] as string[],
 }));
 const recordRevisionEntryMock = vi.fn(async () => undefined);
+const assembleManuscriptMock = vi.fn(async () => ({ ok: true, kind: 'assembled' }));
 const summarizeChaptersMock = vi.fn();
 const checkContinuityMock = vi.fn(async () => [] as unknown[]);
 const critiqueDraftMock = vi.fn(async () => [] as unknown[]);
@@ -243,7 +244,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     }),
     collaborators: {
       assembleManuscriptUseCase: {
-        execute: async (): Promise<unknown> => ({ ok: true, kind: 'assembled' }),
+        execute: (): unknown => assembleManuscriptMock(),
       } as never,
       generateDraftUseCase: {
         execute: (...args: unknown[]): unknown => generateDraftMock(...args),
@@ -306,6 +307,7 @@ describe('NovelPipeline', () => {
     generateDraftMock.mockClear();
     runReviseDraftWorkflowMock.mockClear();
     recordRevisionEntryMock.mockClear();
+    assembleManuscriptMock.mockClear();
     summarizeChaptersMock.mockClear();
     checkContinuityMock.mockClear();
     critiqueDraftMock.mockClear();
@@ -753,6 +755,49 @@ describe('NovelPipeline', () => {
 
       expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview * 2);
       expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain('재작성한 씬: 02-s2');
+    });
+
+    it('assembles the manuscript again from the rewritten drafts', async () => {
+      checkContinuityMock.mockResolvedValueOnce([highContinuityIssue]);
+      runReviseDraftWorkflowMock.mockResolvedValue({
+        passed: true,
+        revisionCount: 1,
+        remainingBlocking: 0,
+        cancelled: false,
+        instructions: [],
+      });
+      const harness = createHarness();
+
+      await new NovelPipeline(
+        harness.dependencies.host,
+        harness.dependencies.ai,
+        harness.dependencies.repositories,
+        harness.dependencies.collaborators,
+      ).run(harness.options);
+
+      expect(assembleManuscriptMock).toHaveBeenCalledTimes(2);
+      expect(harness.progressStages.slice(-4, -1)).toEqual(['revise-from-review', 'assemble', 'review']);
+    });
+
+    it('keeps the first assembly when the rewrite changed no draft', async () => {
+      checkContinuityMock.mockResolvedValueOnce([highContinuityIssue]);
+      runReviseDraftWorkflowMock.mockResolvedValue({
+        passed: true,
+        revisionCount: 0,
+        remainingBlocking: 1,
+        cancelled: false,
+        instructions: [],
+      });
+      const harness = createHarness();
+
+      await new NovelPipeline(
+        harness.dependencies.host,
+        harness.dependencies.ai,
+        harness.dependencies.repositories,
+        harness.dependencies.collaborators,
+      ).run(harness.options);
+
+      expect(assembleManuscriptMock).toHaveBeenCalledTimes(1);
     });
 
     it('skips the rewrite entirely when the review found no high issues', async () => {
