@@ -32,6 +32,18 @@ export type InterviewQuestionSource =
 
 export const relationSpeechAxisId: string = 'relation-speech';
 
+const customValueIdPrefix: string = 'custom-';
+
+export function createCustomValueId(values: readonly InterviewAxisValue[]): string {
+  const takenIds: Set<string> = new Set(values.map((value) => value.id));
+  let suffix: number = values.length + 1;
+  while (takenIds.has(`${customValueIdPrefix}${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${customValueIdPrefix}${suffix}`;
+}
+
 export interface InterviewOption {
   readonly valueId: string;
   readonly text: string;

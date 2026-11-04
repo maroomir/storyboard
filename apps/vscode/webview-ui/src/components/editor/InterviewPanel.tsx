@@ -4,6 +4,7 @@ import { Button } from '@webview/components/ui/Button';
 import { SectionHeader } from '@webview/components/ui/SectionHeader';
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { callRpc } from '@webview/lib/rpcClient';
+import { createCustomValueId } from '@storyboard/story-model/contracts';
 import type {
   InterviewAnswerInput,
   InterviewAnswerOutcome,
@@ -336,7 +337,13 @@ export function InterviewPanel({
           이 답을 「{classification?.valueLabel}」로 읽었습니다. 맞나요?
         </p>
         <div className="flex flex-col gap-2">
-          <button type="button" className={optionClass} onClick={() => confirm(opening, question, undefined)}>
+          <button type="button" className={optionClass} onClick={() =>
+              confirm(
+                opening,
+                question,
+                classification === undefined ? undefined : { kind: 'value', valueId: classification.valueId },
+              )
+            }>
             맞다 — {classification?.valueLabel}
           </button>
           {question.values
@@ -363,7 +370,7 @@ export function InterviewPanel({
               onClick={() =>
                 confirm(opening, question, {
                   kind: 'newValue',
-                  id: `custom-${question.values.length + 1}`,
+                  id: createCustomValueId(question.values),
                   label: newValueLabel.trim(),
                 })
               }

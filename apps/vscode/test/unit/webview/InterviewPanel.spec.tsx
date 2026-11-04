@@ -194,4 +194,37 @@ describe("InterviewPanel", () => {
     const confirmRequest = postMessage.mock.calls.map((call) => call[0]).find((message) => message.method === "interviews.confirm")
     expect(confirmRequest.payload).toMatchObject({ questionId: "q1", confirmation: { kind: "newValue", id: "custom-3", label: "웃음으로 넘기기" } })
   })
+
+  it("sends 맞다 as a confirmation of the value it read and names a new value with an id the axis lacks", async () => {
+    const postMessage = vi.fn()
+    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
+    const crowded: InterviewQuestion = { ...question, values: [{ id: "custom-3", label: "먼저 쓴 새 값" }, ...question.values] }
+    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
+    await respond(postMessage, "interviews.start", { opening })
+    for (const confirmChoice of ["keep", "rename"]) {
+      await respond(postMessage, "interviews.next", { question: crowded })
+      await screen.findByText("하나의 첫 반응은?")
+      fireEvent.click(screen.getByRole("button", { name: "직접 쓰기" }))
+      fireEvent.change(screen.getByPlaceholderText(/이 인물이라면/), { target: { value: "웃어 버린다" } })
+      fireEvent.click(screen.getByRole("button", { name: "이렇게 한다" }))
+      await respond(postMessage, "interviews.answer", {
+        outcome: { isRebuilt: false, answeredCount: 1, classification: { valueId: "counter", valueLabel: "역공", isNewValue: false } }
+      })
+      await screen.findByText(/「역공」로 읽었습니다/)
+      if (confirmChoice === "keep") {
+        fireEvent.click(screen.getByRole("button", { name: "맞다 — 역공" }))
+      } else {
+        fireEvent.change(screen.getByPlaceholderText(/새 값의 이름/), { target: { value: "웃음으로 넘기기" } })
+        fireEvent.click(screen.getByRole("button", { name: "새 값으로" }))
+      }
+      await respond(postMessage, "interviews.confirm", {})
+    }
+
+    expect(requestsFor(postMessage, "interviews.confirm")).toMatchObject([
+      { questionId: "q1", confirmation: { kind: "value", valueId: "counter" } },
+      { questionId: "q1", confirmation: { kind: "newValue", id: "custom-4", label: "웃음으로 넘기기" } }
+    ])
+  })
 })
