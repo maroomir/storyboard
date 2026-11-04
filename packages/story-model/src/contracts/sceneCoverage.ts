@@ -2,11 +2,12 @@ import { z } from 'zod';
 
 import { parseJsonArray } from '#model/contracts/aiResponseParser';
 
-export type CoverageStatus = 'missing' | 'out-of-order';
+export type CoverageStatus = 'missing' | 'out-of-order' | 'reversed';
 
 export const coverageStatuses: readonly [CoverageStatus, ...CoverageStatus[]] = [
   'missing',
   'out-of-order',
+  'reversed',
 ];
 
 export interface SceneCoverageIssue {

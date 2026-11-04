@@ -5,6 +5,7 @@ import {
   beatText,
   buildSkeletonContext,
   missingBeatsViolation,
+  reversedBeatsViolation,
   skeletonTargetLength,
   skeletonWarningLabel,
   thinDialogueReasons,
@@ -38,6 +39,7 @@ import { validateSceneSkeleton, type SectionViolation } from '#engine/pipeline/s
 import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/story-ai';
 import {
   formatBackgroundFactConflict,
+  type CoverageStatus,
   type SceneBeat,
   type SceneCoverageIssue,
 } from '@storyboard/story-model';
@@ -78,6 +80,11 @@ interface CheckedSkeleton {
   readonly text: string;
   readonly violations: readonly SectionViolation[];
   readonly missingBeats: readonly string[];
+}
+
+interface SkeletonCoverageGaps {
+  readonly missingBeats: readonly string[];
+  readonly reversedBeats: readonly string[];
 }
 
 function keepSegmentMarkers(
@@ -293,11 +300,17 @@ export class SkeletonDrafter {
     const { tuning, breakPlan } = this.run;
     const rawResponse: string = await this.run.aiService.draftSceneSkeleton(input, options);
     const skeleton: string = keepSegmentMarkers(curlDialogueQuotes(rawResponse), segmentNumbers);
-    const missingBeats: string[] = await this.findMissingBeats(coverageBeats, skeleton, options);
+    const coverage: SkeletonCoverageGaps = await this.findCoverageGaps(
+      coverageBeats,
+      skeleton,
+      options,
+    );
+    const missingBeats: readonly string[] = coverage.missingBeats;
     const violations: SectionViolation[] = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
       ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
       ...missingBeatsViolation(missingBeats),
+      ...reversedBeatsViolation(coverage.reversedBeats),
     ];
 
     return { text: skeleton, violations, missingBeats };
@@ -328,8 +341,17 @@ export class SkeletonDrafter {
     skeleton: string,
     options: GenerateTextOptions,
   ): Promise<string[]> {
+    const coverage: SkeletonCoverageGaps = await this.findCoverageGaps(beats, skeleton, options);
+    return [...coverage.missingBeats];
+  }
+
+  private async findCoverageGaps(
+    beats: readonly string[],
+    skeleton: string,
+    options: GenerateTextOptions,
+  ): Promise<SkeletonCoverageGaps> {
     if (beats.length === 0) {
-      return [];
+      return { missingBeats: [], reversedBeats: [] };
     }
 
     const issues: SceneCoverageIssue[] = await this.run.aiService.checkSceneCoverage(
@@ -337,10 +359,13 @@ export class SkeletonDrafter {
       skeleton,
       options,
     );
-    return issues
-      .filter((issue) => issue.status === 'missing')
-      .map((issue) => beats[issue.index - 1])
-      .filter((beat): beat is string => beat !== undefined);
+    const beatsWithStatus = (status: CoverageStatus): string[] =>
+      issues
+        .filter((issue) => issue.status === status)
+        .map((issue) => beats[issue.index - 1])
+        .filter((beat): beat is string => beat !== undefined);
+
+    return { missingBeats: beatsWithStatus('missing'), reversedBeats: beatsWithStatus('reversed') };
   }
 
   public adopt(skeletonText: string): void {

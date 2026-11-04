@@ -689,6 +689,26 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»"))).toHaveLength(1)
   })
 
+  it("redrafts a skeleton that reversed a beat, naming the beat, and warns when it stays reversed", async () => {
+    const ai = createRecordingAiService()
+    ai.checkSceneCoverage
+      .mockResolvedValueOnce([{ index: 2, status: "reversed", note: "" }])
+      .mockResolvedValueOnce([{ index: 2, status: "reversed", note: "" }])
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)
+    const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
+    expect(retry.retryReasons.join(" ")).toContain("사건 «설거지를 한다»이 뼈대에서 거꾸로 벌어집니다")
+    expect(retry.retryReasons.join(" ")).not.toContain("뼈대에 없습니다")
+    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»이 뼈대에서 거꾸로"))).toHaveLength(1)
+  })
+
   it("drops a missing-beat warning when the beat turns up elsewhere in the whole skeleton (#118)", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton
