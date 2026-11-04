@@ -58,6 +58,7 @@ describe('interview prompts golden', () => {
           name: '하나',
           genre: '학원 로맨스',
           summary: '하나는 몰릴 때 먼저 참는다.',
+          relationSpeech: ["하나 → 준: '선배'라 부르고 존댓말"],
           axes: [{ ...axis, unseenValueIds: ['deflect'] }],
           situation: '01-night: 준이 하나를 심문한다 (출연: 하나, 준 / 장소: 미감)',
           isOffBeat: false,
@@ -74,6 +75,7 @@ describe('interview prompts golden', () => {
           cardType: 'background',
           name: '미감',
           summary: '항구 뒷골목의 술집',
+          relationSpeech: [],
           axes: [{ id: 'exits', label: '드나드는 길', values: [{ id: 'single-door', label: '정문 하나' }, { id: 'back-door', label: '뒷문 있음' }], unseenValueIds: [] }],
           situation: '드나드는 길이 드러나는 상황을 하나 세워 물어라.',
           isOffBeat: true,
@@ -91,6 +93,7 @@ describe('interview prompts golden', () => {
       cardType: 'character' as const,
       name: '하나',
       summary: '하나는 몰릴 때 먼저 참는다.',
+      relationSpeech: [] as readonly string[],
       axis,
       situation: '준이 하나를 심문한다',
       question: '하나의 첫 반응은?',
@@ -100,7 +103,12 @@ describe('interview prompts golden', () => {
       ],
     };
 
-    expect(InterviewUpdatePrompt.build({ ...base, answer: '잔을 내려놓고 침묵한다', isWritten: false }, variant)).toMatchSnapshot();
+    expect(
+      InterviewUpdatePrompt.build(
+        { ...base, relationSpeech: ["하나 → 준: '선배'라 부르고 존댓말"], answer: '잔을 내려놓고 침묵한다', isWritten: false },
+        variant,
+      ),
+    ).toMatchSnapshot();
     expect(InterviewUpdatePrompt.build({ ...base, answer: '웃어 버린다', isWritten: true }, variant)).toMatchSnapshot();
     expect(
       InterviewUpdatePrompt.build(

@@ -13,6 +13,9 @@ maxTokens: 2500
 {{#isWritten}}
 작가가 선택지를 모두 거부하고 직접 썼다. 그 답이 [값] 중 어느 것에 드는지 판정하라. 어느 값에도 들지 않으면 새 값을 하나 만들어 id(영문 소문자·하이픈)와 라벨(두세 낱말)을 달아라. 직접 쓴 답은 고른 답보다 무겁다. 세 선택지가 전부 틀렸다는 뜻이므로 요약에서 그 상황의 묘사를 그 답에 맞게 바꿔라.
 {{/isWritten}}
+{{#hasRelationSpeech}}
+[상대별 호칭·말투]는 작가가 정한 호칭과 말투다. 요약에 호칭을 담을 때는 "하나를 '선배'라 부르고 존댓말을 쓴다"처럼 이 인물이 누구를 무엇이라 부르는지 주어와 목적어를 그 표대로 고정한 문장으로 따로 적고, 성격 묘사 문장에 섞지 마라. 사람을 부르는 입버릇을 이 인물의 자칭이나 다른 상대의 호칭으로 바꿔 읽지 마라.
+{{/hasRelationSpeech}}
 요약은 300~600자. 성격·말투·태도의 경향을 "X일 때 Y로 기울인다"처럼 조건을 붙여 쓰고, "항상"·"절대"·"무조건" 같은 절대 표현은 쓰지 마라. 사건의 현재 상태나 관계의 진행은 쓰지 말고, 이 {{#isBackground}}장소가 어떤 곳인지{{/isBackground}}{{^isBackground}}인물이 어떤 사람인지{{/isBackground}}만 담아라.
 설명 없이 JSON 하나만 출력하라:
 {{#isWritten}}
@@ -23,7 +26,7 @@ maxTokens: 2500
 {{/isWritten}}
 
 ## system:xs
-작가의 답 하나로 [지금까지의 이해]를 고쳐 써라(300~600자, 조건부 경향, 절대 표현 금지, 사건 상태 금지).{{#isRebuild}} 이번엔 [카드]와 [모든 기록]으로 처음부터.{{/isRebuild}}{{#isWritten}} 직접 쓴 답은 [값] 중 하나로 판정하거나 새 값(id·라벨)을 만들어라.{{/isWritten}} JSON 하나만: {"summary":"…"{{#isWritten}},"classification":{"valueId":"…"}|{"newValue":{"id":"…","label":"…"}}{{/isWritten}}}
+작가의 답 하나로 [지금까지의 이해]를 고쳐 써라(300~600자, 조건부 경향, 절대 표현 금지, 사건 상태 금지).{{#hasRelationSpeech}} 호칭은 [상대별 호칭·말투]대로 "누구를 무엇이라 부른다"로 따로 적고 자칭으로 바꾸지 마라.{{/hasRelationSpeech}}{{#isRebuild}} 이번엔 [카드]와 [모든 기록]으로 처음부터.{{/isRebuild}}{{#isWritten}} 직접 쓴 답은 [값] 중 하나로 판정하거나 새 값(id·라벨)을 만들어라.{{/isWritten}} JSON 하나만: {"summary":"…"{{#isWritten}},"classification":{"valueId":"…"}|{"newValue":{"id":"…","label":"…"}}{{/isWritten}}}
 
 ## user
 [{{#isBackground}}장소{{/isBackground}}{{^isBackground}}인물{{/isBackground}}]
@@ -36,6 +39,13 @@ maxTokens: 2500
 
 [지금까지의 이해]
 {{summary}}
+{{#hasRelationSpeech}}
+
+[상대별 호칭·말투]
+{{/hasRelationSpeech}}
+{{#relationSpeech}}
+- {{.}}
+{{/relationSpeech}}
 
 [축]
 {{axisLabel}}

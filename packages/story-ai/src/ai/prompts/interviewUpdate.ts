@@ -8,6 +8,7 @@ export interface InterviewUpdateInput {
   readonly cardType: BibleSubjectKind;
   readonly name: string;
   readonly summary: string;
+  readonly relationSpeech: readonly string[];
   readonly axis: InterviewAxis;
   readonly situation: string;
   readonly question: string;
@@ -41,6 +42,8 @@ export const InterviewUpdatePrompt: PromptModule<
         name: input.name,
         cardText: input.rebuild?.cardText,
         summary: input.summary,
+        hasRelationSpeech: input.relationSpeech.length > 0,
+        relationSpeech: input.relationSpeech,
         axisLabel: input.axis.label,
         values: input.axis.values.map((value) => ({ id: value.id, label: value.label })),
         situation: input.situation,
