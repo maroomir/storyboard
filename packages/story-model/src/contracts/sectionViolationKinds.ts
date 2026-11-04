@@ -10,7 +10,8 @@ export type SectionViolationKind =
   | 'dialogue-count'
   | 'scene-breaks'
   | 'runs-ahead'
-  | 'missing-beats';
+  | 'missing-beats'
+  | 'reversed-beats';
 
 export const sectionViolationKinds: readonly [SectionViolationKind, ...SectionViolationKind[]] = [
   'cast',
@@ -25,6 +26,7 @@ export const sectionViolationKinds: readonly [SectionViolationKind, ...SectionVi
   'scene-breaks',
   'runs-ahead',
   'missing-beats',
+  'reversed-beats',
 ];
 
 export type ViolationWeights = Readonly<Record<SectionViolationKind, number>>;

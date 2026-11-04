@@ -42,6 +42,23 @@ export function missingBeatsViolation(missing: readonly string[]): SectionViolat
   ];
 }
 
+export function reversedBeatsViolation(reversed: readonly string[]): SectionViolation[] {
+  if (reversed.length === 0) {
+    return [];
+  }
+
+  const listed: string = reversed
+    .slice(0, thinBeatListLimit)
+    .map((text) => `«${shortBeat(text)}»`)
+    .join('·');
+  return [
+    {
+      kind: 'reversed-beats',
+      detail: `사건 ${listed}${reversed.length > thinBeatListLimit ? ` 외 ${reversed.length - thinBeatListLimit}개` : ''}이 뼈대에서 거꾸로 벌어집니다. 누가 무엇을 하고 무엇이 드러나는지를 사건 목록대로 쓰세요`,
+    },
+  ];
+}
+
 export function shortBeat(text: string): string {
   return text.length > 24 ? `${text.slice(0, 24)}…` : text;
 }

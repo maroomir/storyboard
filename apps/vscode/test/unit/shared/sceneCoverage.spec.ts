@@ -16,6 +16,12 @@ describe("coerceSceneCoverage", () => {
     ])
   })
 
+  it("keeps a beat the draft plays the other way round", () => {
+    const issues = coerceSceneCoverage('[{"index":2,"status":"reversed","note":"털어놓는 쪽이 바뀜"}]', 3)
+
+    expect(issues).toEqual([{ index: 2, status: "reversed", note: "털어놓는 쪽이 바뀜" }])
+  })
+
   it("drops items whose index exceeds the beat count", () => {
     const issues = coerceSceneCoverage('[{"index":2,"status":"missing"},{"index":5,"status":"missing"}]', 3)
 

@@ -147,6 +147,7 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     'scene-breaks': positiveInt,
     'runs-ahead': positiveInt,
     'missing-beats': positiveInt,
+    'reversed-beats': positiveInt,
   }),
 });
 
