@@ -13,6 +13,7 @@ export interface InterviewQuestionInput {
   readonly axes: readonly InterviewQuestionAxis[];
   readonly situation: string;
   readonly presence?: InterviewQuestionPresence;
+  readonly actor?: InterviewQuestionActor;
   readonly isOffBeat: boolean;
   readonly priorAnswers: readonly string[];
   readonly optionCount: number;
@@ -22,6 +23,11 @@ export interface InterviewQuestionInput {
 export interface InterviewQuestionPresence {
   readonly presentNames: readonly string[];
   readonly precedingBeat?: string;
+}
+
+export interface InterviewQuestionActor {
+  readonly focalName?: string;
+  readonly isIndirect: boolean;
 }
 
 export interface InterviewQuestionAxis extends InterviewAxis {
@@ -63,6 +69,10 @@ export const InterviewQuestionPrompt: PromptModule<
         hasPresentNames: (input.presence?.presentNames.length ?? 0) > 0,
         presentNames: input.presence?.presentNames ?? [],
         precedingBeat: input.presence?.precedingBeat,
+        hasActor: input.actor !== undefined,
+        hasFocalName: input.actor?.focalName !== undefined,
+        focalName: input.actor?.focalName,
+        isIndirect: input.actor?.isIndirect ?? false,
         isOffBeat: input.isOffBeat,
         optionCount: input.optionCount,
         shouldExplore: input.shouldExplore,

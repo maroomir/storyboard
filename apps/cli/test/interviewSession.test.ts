@@ -313,6 +313,45 @@ describe('interview session (mock provider)', () => {
     );
   });
 
+  it('names the scene focus and marks a beat that does not name the character, keeping its action with its actor', async () => {
+    write('scene/02-dawn.card', [
+      'type: scene',
+      'id: 02-dawn',
+      'povCharacter: jun',
+      'characters:',
+      '  - hana',
+      '  - jun',
+      'beats:',
+      '  - 하나가 혼자 등대로 돌아온다',
+      '  - 동생과 아침을 먹으며 초코 우유 대신 흰 우유를 마신다',
+    ]);
+    const captured: CapturedPrompt[] = captureUserPrompts();
+
+    for (const cardId of ['hana', 'jun']) {
+      const { container: app, sessionId } = await startSession(cardId);
+      const request = { workspaceRoot: app.workspaceRoot, cardId, sessionId };
+      for (let round: number = 0; round < 8; round += 1) {
+        const question: InterviewQuestion | undefined = await app.interviews.next(request);
+        if (question === undefined) {
+          break;
+        }
+        await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'skipped' } });
+      }
+    }
+
+    const prompts: string[] = promptsOf(captured, 'interviewQuestion');
+    const promptFor = (name: string, beat: string): string | undefined =>
+      prompts.find((prompt) => prompt.startsWith(`[인물]\n${name}\n`) && prompt.includes(`[상황]\n${beat}`));
+    const unnamedBeat: string = '02-dawn: 동생과 아침을 먹으며 초코 우유 대신 흰 우유를 마신다';
+    expect(promptFor('하나', unnamedBeat)).toContain(`[상황]\n${unnamedBeat}\n(이 비트에는 하나의 이름이 없다)`);
+    expect(promptFor('하나', unnamedBeat)).toContain('[초점 인물]\n준');
+    expect(promptFor('하나', '02-dawn: 하나가 혼자 등대로 돌아온다')).toContain('[초점 인물]\n준');
+    expect(promptFor('하나', '02-dawn: 하나가 혼자 등대로 돌아온다')).not.toContain('이름이 없다');
+    expect(promptFor('준', unnamedBeat)).toContain('[초점 인물]\n준');
+    expect(promptFor('준', unnamedBeat)).not.toContain('이름이 없다');
+    expect(promptFor('하나', '01-night: 준이 하나를 심문한다')).not.toContain('[초점 인물]');
+  });
+
   it('asks again when an option addresses a partner who is not at the beat', async () => {
     const captured: CapturedPrompt[] = captureUserPrompts();
     const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;

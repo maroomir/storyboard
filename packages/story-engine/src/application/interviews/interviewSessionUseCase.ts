@@ -15,6 +15,7 @@ import {
 } from '#engine/application/interviews/interviewCoverage';
 import {
   collectAbsentPartnerTerms,
+  describeBeatActor,
   describePresence,
   isOptionAddressingAbsentPartner,
   type InterviewPartner,
@@ -24,9 +25,11 @@ import {
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
 import { failedResult, type UseCaseFailure } from '#engine/application/useCase';
+import { SceneNarrationResolver } from '#engine/application/drafts/sceneNarrationResolver';
 import type {
   InterviewClassificationDraft,
   InterviewDistillDraft,
+  InterviewQuestionActor,
   InterviewQuestionAxis,
   InterviewQuestionDraft,
   InterviewQuestionInput,
@@ -66,12 +69,14 @@ import {
   type InterviewSessionSummary,
   type InterviewTallies,
   type InterviewWorkingModel,
+  type NarrationDirective,
   type NoteCardCandidate,
   type OutlineSynopsis,
   type SceneFile,
   type SceneListItem,
   type StoryboardCard,
   type StoryboardProject,
+  type StoryboardProjectPaths,
   type StoryUri,
   type UsageAttribution,
 } from '@storyboard/story-model';
@@ -133,6 +138,7 @@ interface BeatToAsk {
 }
 
 interface InterviewContext {
+  readonly workspaceRoot: StoryUri;
   readonly card: StoryboardCard;
   readonly cardType: BibleSubjectKind;
   readonly situationOptions: BeatSituationOptions;
@@ -622,7 +628,12 @@ export class InterviewSessionUseCase {
     openAxes: readonly InterviewAxis[],
     nextBeat: InterviewBeatSituation | undefined,
   ): Promise<InterviewQuestionDraft | undefined> {
-    const input: InterviewQuestionInput = this.buildQuestionInput(context, openAxes, nextBeat);
+    const input: InterviewQuestionInput = this.buildQuestionInput(
+      context,
+      openAxes,
+      nextBeat,
+      await this.describeActor(context, nextBeat),
+    );
     const absentTerms: string[] =
       nextBeat === undefined
         ? []
@@ -661,10 +672,45 @@ export class InterviewSessionUseCase {
     return draft;
   }
 
+  private async describeActor(
+    context: InterviewContext,
+    nextBeat: InterviewBeatSituation | undefined,
+  ): Promise<InterviewQuestionActor | undefined> {
+    if (nextBeat === undefined || context.cardType !== 'character') {
+      return undefined;
+    }
+
+    return describeBeatActor({
+      subject: context.card,
+      situation: nextBeat,
+      focalRef: await this.resolveSceneFocal(context, nextBeat.sceneStem),
+      characters: context.characters,
+    });
+  }
+
+  private async resolveSceneFocal(context: InterviewContext, sceneStem: string): Promise<string | undefined> {
+    const scene: SceneFile | undefined = context.scenes.find((candidate) => candidate.stem === sceneStem);
+    if (scene === undefined) {
+      return undefined;
+    }
+
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(context.workspaceRoot);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem);
+    const narration: NarrationDirective | undefined = await resolver.resolveNarration(
+      paths,
+      scene,
+      context.project,
+      await resolver.readChapterDefaults(paths, scene.order),
+    );
+
+    return narration?.focal;
+  }
+
   private buildQuestionInput(
     context: InterviewContext,
     openAxes: readonly InterviewAxis[],
     nextBeat: InterviewBeatSituation | undefined,
+    actor: InterviewQuestionActor | undefined,
   ): InterviewQuestionInput {
     const { model, tuning } = context;
     const firstOpenAxis: InterviewAxis = openAxes[0] as InterviewAxis;
@@ -689,6 +735,7 @@ export class InterviewSessionUseCase {
       ...(nextBeat === undefined
         ? {}
         : { presence: describePresence(nextBeat, context.scenes, context.characters) }),
+      ...(actor === undefined ? {} : { actor }),
       isOffBeat: nextBeat === undefined,
       priorAnswers: model.records
         .map((record) => describeRecordAnswer(record, context.axes))
@@ -1258,6 +1305,7 @@ export class InterviewSessionUseCase {
     );
 
     return {
+      workspaceRoot,
       card,
       cardType,
       situationOptions,

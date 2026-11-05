@@ -6,7 +6,7 @@ import {
   type SceneFile,
   type StoryboardCard,
 } from '@storyboard/story-model';
-import type { InterviewQuestionPresence } from '@storyboard/story-ai';
+import type { InterviewQuestionActor, InterviewQuestionPresence } from '@storyboard/story-ai';
 
 import { cardTokens } from '#engine/application/interviews/interviewCoverage';
 
@@ -60,6 +60,33 @@ export function describePresence(
   return precedingBeat === undefined
     ? { presentNames }
     : { presentNames, precedingBeat: sceneBeatText(precedingBeat) };
+}
+
+function isBeatNamingCard(situation: InterviewBeatSituation, card: StoryboardCard): boolean {
+  const normalizedText: string = normalizeCardListText(situation.text);
+  const namedTokens: string[] = [...cardTokens(card)].filter(
+    (token) => token.length >= shortestFlaggedTermLength,
+  );
+
+  return isCardPresent(card, situation) || namedTokens.some((token) => normalizedText.includes(token));
+}
+
+export function describeBeatActor(input: {
+  readonly subject: StoryboardCard;
+  readonly situation: InterviewBeatSituation;
+  readonly focalRef: string | undefined;
+  readonly characters: readonly StoryboardCard[];
+}): InterviewQuestionActor {
+  const { subject, situation, focalRef, characters } = input;
+  const focalCard: StoryboardCard | undefined =
+    focalRef === undefined ? undefined : findCardByRef(focalRef, characters);
+  const focalName: string | undefined = focalCard?.name ?? focalRef?.trim();
+  const isSubjectFocal: boolean = focalCard?.id === subject.id;
+  const isIndirect: boolean = !isSubjectFocal && !isBeatNamingCard(situation, subject);
+
+  return focalName === undefined || focalName.length === 0
+    ? { isIndirect }
+    : { focalName, isIndirect };
 }
 
 export function extractQuotedTerms(speech: string): string[] {

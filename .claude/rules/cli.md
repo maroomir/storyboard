@@ -171,7 +171,9 @@ a `relationSpeech` candidate; the axis questions follow, one beat × axis pair a
 question left unanswered (Esc, a closed tab) is forgotten when the next session starts, so its beat
 is asked again. Each beat question is told who is present (the beat's `cast`, or the beat before it when none is
 written), and when an option of a cast-written beat names or addresses a partner who is not there it
-is asked once more. `finish` distils the whole card and replaces the card's one interview source
+is asked once more. It is also told the scene's focal character (the resolved narration's `focal`) and
+whether the beat names the character at all, so an action stays with whoever does it and the
+question asks for the character's reaction instead. `finish` distils the whole card and replaces the card's one interview source
 (`interview:<cardId>`), so repeated sessions never duplicate candidates; a session that ends with
 no answer distils nothing and leaves the candidates as they are. `--scenes` narrows the beats (stems, or `3..5` by
 order) and is passed with every step; `--limit` caps the answers; `--reset-axes` empties the axis
