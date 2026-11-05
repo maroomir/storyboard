@@ -175,7 +175,9 @@ Ctrl+C loses nothing. A character session opens with one question per relation p
 upcoming scenes (what the character calls them, which speech level) whose answer is kept verbatim as
 a `relationSpeech` candidate; the axis questions follow, one beat × axis pair at most once, and a
 question left unanswered (Esc, a closed tab) is forgotten when the next session starts, so its beat
-is asked again. `finish` distils the whole card and replaces the card's one interview source
+is asked again. Each beat question is told who is present (the beat's `cast`, or the beat before it when none is
+written), and when an option of a cast-written beat names or addresses a partner who is not there it
+is asked once more. `finish` distils the whole card and replaces the card's one interview source
 (`interview:<cardId>`), so repeated sessions never duplicate candidates; a session that ends with
 no answer distils nothing and leaves the candidates as they are. `--scenes` narrows the beats (stems, or `3..5` by
 order) and is passed with every step; `--limit` caps the answers; `--reset-axes` empties the axis

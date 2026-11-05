@@ -12,6 +12,7 @@ after the first public release.
 
 ### Fixed
 
+- **Interview options no longer speak to a character who is not at the beat.** A question now receives the beat's `cast`, or the beat before it when no cast is written, so it knows when the character is alone, and a name that only owns a place («someone's room») is not read as that person being there. When an option of a cast-written beat uses the name, an alias or the agreed form of address of a partner who is absent, the question is asked once more (#172).
 - **Choosing «맞다» when confirming an interview answer now records the confirmation.** The terminal and the VS Code interview tab sent nothing for it, so a session cut off afterwards made `--step` ask to confirm the same answer again.
 - **Terminal `card interview` refuses `--limit abc` and `--limit 0`.** It used to end the session without asking anything (`--step` already refused them).
 - **A new value named for a written answer no longer takes an id another value of the axis has.** The terminal and the VS Code interview tab numbered it by the value count, so a clash with an existing `custom-N` dropped the new name.

@@ -281,6 +281,86 @@ describe('interview session (mock provider)', () => {
     expect(promptsOf(captured, 'interviewQuestion')[0]).toContain('[상대별 호칭·말투]\n- 하나 → 준: 반말');
   });
 
+  it('tells the question prompt who is present at the beat, or the beat before it when no cast is written', async () => {
+    write('scene/02-dawn.card', [
+      'type: scene',
+      'id: 02-dawn',
+      'characters:',
+      '  - hana',
+      'beats:',
+      '  - 하나가 혼자 등대로 돌아온다',
+      '  - 하나가 준의 방에서 편지를 찾는다',
+    ]);
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    for (let round: number = 0; round < 6; round += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      if (question === undefined) {
+        break;
+      }
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'skipped' } });
+    }
+
+    const prompts: string[] = promptsOf(captured, 'interviewQuestion');
+    const promptFor = (beat: string): string | undefined => prompts.find((prompt) => prompt.includes(`[상황]\n${beat}`));
+    expect(promptFor('01-night: 준이 하나를 심문한다')).toContain('[이 자리에 있는 사람]\n- 하나\n- 준\n');
+    expect(promptFor('01-night: 하나가 자리를 뜨려 한다')).toContain('[이 자리에 있는 사람]\n- 하나\n');
+    expect(promptFor('02-dawn: 하나가 혼자 등대로 돌아온다')).toContain('(비트에 출연이 적혀 있지 않다)');
+    expect(promptFor('02-dawn: 하나가 준의 방에서 편지를 찾는다')).toContain(
+      '(비트에 출연이 적혀 있지 않다)\n\n[앞 비트]\n하나가 혼자 등대로 돌아온다',
+    );
+  });
+
+  it('asks again when an option addresses a partner who is not at the beat', async () => {
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+    let isFirstAbsentBeatQuestion: boolean = true;
+    vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+      this: MockAiProvider,
+      request: Parameters<MockAiProvider['generate']>[0],
+    ) {
+      const response = await generate.call(this, request);
+      const prompt: string = request.messages.map((message) => message.content).join('\n');
+      const isAbsentBeat: boolean =
+        request.taskName === 'interviewQuestion' && prompt.includes('[상황]\n01-night: 하나가 자리를 뜨려 한다');
+      if (!isAbsentBeat || !isFirstAbsentBeatQuestion) {
+        return response;
+      }
+      isFirstAbsentBeatQuestion = false;
+      const draft = JSON.parse(response.text) as { options: { valueId: string; text: string }[] };
+      draft.options = draft.options.map((option, index) =>
+        index === 0 ? { ...option, text: '“등대지기, 어디 가?” 하고 돌아본다' } : option,
+      );
+      return { ...response, text: JSON.stringify(draft) };
+    });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({
+      ...request,
+      questionId: speech?.id ?? '',
+      answer: { kind: 'written', text: "'등대지기'라 부르며 반말" },
+    });
+
+    let absentBeatQuestion: InterviewQuestion | undefined;
+    for (let round: number = 0; round < 4 && absentBeatQuestion === undefined; round += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      if (question === undefined) {
+        break;
+      }
+      absentBeatQuestion = question.situation.includes('자리를 뜨려') ? question : undefined;
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'skipped' } });
+    }
+
+    const absentBeatPrompts: string[] = promptsOf(captured, 'interviewQuestion').filter((prompt) =>
+      prompt.includes('[상황]\n01-night: 하나가 자리를 뜨려 한다'),
+    );
+    expect(absentBeatPrompts).toHaveLength(2);
+    expect(absentBeatQuestion?.options.map((option) => option.text).join(' ')).not.toContain('등대지기');
+  });
+
   it('classifies a written answer, lets the writer rename it to a new value, and rebuilds after a streak', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
