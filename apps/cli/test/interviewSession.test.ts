@@ -540,6 +540,39 @@ describe('interview session (mock provider)', () => {
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
   });
 
+  it('keeps a candidate a session added after card promote was prepared', async () => {
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    for (let i = 0; i < 4; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
+    }
+    await app.interviews.finish(request);
+
+    const prepared: PrepareNoteCandidatePromotionResult = await app.notes.prepareCandidatePromotion(app.workspaceRoot);
+    expect(prepared.kind).toBe('ready');
+    if (prepared.kind !== 'ready') {
+      return;
+    }
+
+    const candidatesPath: string = '.storyboard/cache/interviews/candidates.json';
+    const finished: NoteCandidateFile = readJson(candidatesPath);
+    const [source] = finished.sources;
+    const [candidate] = source?.candidates ?? [];
+    const laterTrait = { kind: 'trait' as const, id: 'trait-later', value: '등대 불빛을 센다', sourceScenes: [] };
+    const laterSession: NoteCandidateFile = {
+      version: 2,
+      sources: [{ ...source!, id: 's2', candidates: [{ ...candidate!, changes: [...candidate!.changes, laterTrait] }] }],
+    };
+    write(candidatesPath, [JSON.stringify(laterSession, null, 2)]);
+
+    await app.notes.promoteCandidates(app.workspaceRoot, prepared.candidates);
+
+    const remaining: NoteCandidateFile = readJson(candidatesPath);
+    expect(remaining.sources.flatMap((kept) => kept.candidates.flatMap((card) => card.changes))).toEqual([laterTrait]);
+    expect(readFileSync(join(workspace, 'character/hana.card'), 'utf8')).not.toContain('등대 불빛을 센다');
+  });
+
   it('calls no distill and keeps the candidates when a session ends without an answer', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };

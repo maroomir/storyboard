@@ -11,10 +11,10 @@ import type {
 import {
   applyCardCollectProposals,
   emptyNoteCandidateFile,
-  keepNoteCandidateConflicts,
   mergeNoteCandidateSources,
   removeNoteCandidateCards,
   removeNoteCandidateChange,
+  removePromotedNoteCandidateChanges,
   shouldProposeCardCollect,
 } from '@storyboard/story-model';
 import type { NoteCandidateLoad } from '#engine/application/notes/noteAbsorbRepository';
@@ -47,6 +47,11 @@ const interviewSourcePrefix: string = 'interview/';
 interface CandidateFiles {
   readonly notes: NoteCandidateFile;
   readonly interviews: NoteCandidateFile;
+}
+
+interface PromotedCard {
+  readonly candidate: MergedNoteCardCandidate;
+  readonly updatedCard: StoryboardCard;
 }
 
 function mergedSources(files: CandidateFiles): NoteCandidateSource[] {
@@ -108,8 +113,7 @@ export class PromoteNoteCandidatesUseCase {
     workspaceRoot: StoryUri,
     candidates: readonly MergedNoteCardCandidate[],
   ): Promise<PromoteNoteCandidatesResult> {
-    const updatedCardIds: string[] = [];
-    let files: CandidateFiles = await this.loadFiles(workspaceRoot);
+    const promotedCards: PromotedCard[] = [];
 
     for (const candidate of candidates) {
       const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
@@ -122,20 +126,30 @@ export class PromoteNoteCandidatesUseCase {
         continue;
       }
 
-      await this.repositories.cardWriter.write(
-        workspaceRoot,
-        applyCardCollectProposals(card, candidate.changes),
-      );
-      updatedCardIds.push(candidate.cardId);
-      files = {
-        notes: keepNoteCandidateConflicts(files.notes, candidate),
-        interviews: keepNoteCandidateConflicts(files.interviews, candidate),
-      };
+      const updatedCard: StoryboardCard = applyCardCollectProposals(card, candidate.changes);
+      await this.repositories.cardWriter.write(workspaceRoot, updatedCard);
+      promotedCards.push({ candidate, updatedCard });
     }
 
-    await this.saveFiles(workspaceRoot, files);
+    await this.removePromotedChangesFromLatestFiles(workspaceRoot, promotedCards);
 
-    return { updatedCardIds };
+    return { updatedCardIds: promotedCards.map((promoted) => promoted.candidate.cardId) };
+  }
+
+  private async removePromotedChangesFromLatestFiles(
+    workspaceRoot: StoryUri,
+    promotedCards: readonly PromotedCard[],
+  ): Promise<void> {
+    const latest: CandidateFiles = await this.loadFiles(workspaceRoot);
+    const remaining: CandidateFiles = promotedCards.reduce(
+      (files: CandidateFiles, { candidate, updatedCard }: PromotedCard): CandidateFiles => ({
+        notes: removePromotedNoteCandidateChanges(files.notes, candidate, updatedCard),
+        interviews: removePromotedNoteCandidateChanges(files.interviews, candidate, updatedCard),
+      }),
+      latest,
+    );
+
+    await this.saveFiles(workspaceRoot, remaining);
   }
 
   public async discard(
