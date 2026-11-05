@@ -791,6 +791,65 @@ describe('NovelPipeline', () => {
       expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain('재작성한 씬: 02-s2');
     });
 
+    it('rewrites again while the review still finds high issues, up to the revise iterations', async () => {
+      checkContinuityMock
+        .mockResolvedValueOnce([highContinuityIssue])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([highContinuityIssue])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([highContinuityIssue]);
+      runReviseDraftWorkflowMock.mockResolvedValue({
+        passed: true,
+        revisionCount: 1,
+        remainingBlocking: 0,
+        cancelled: false,
+        instructions: [],
+      });
+      const harness = createHarness({ reviseMaxIterations: 2 });
+
+      await new NovelPipeline(
+        harness.dependencies.host,
+        harness.dependencies.ai,
+        harness.dependencies.repositories,
+        harness.dependencies.collaborators,
+      ).run(harness.options);
+
+      const reviseFromReview = runReviseDraftWorkflowMock.mock.calls.filter(
+        (call) => (call[0] as { maxIterations: number }).maxIterations === 1,
+      );
+      expect(reviseFromReview).toHaveLength(2);
+      expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview * 3);
+      expect(assembleManuscriptMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('rewrites once when the revise iterations allow one round', async () => {
+      checkContinuityMock
+        .mockResolvedValueOnce([highContinuityIssue])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([highContinuityIssue]);
+      runReviseDraftWorkflowMock.mockResolvedValue({
+        passed: true,
+        revisionCount: 1,
+        remainingBlocking: 0,
+        cancelled: false,
+        instructions: [],
+      });
+      const harness = createHarness({ reviseMaxIterations: 1 });
+
+      await new NovelPipeline(
+        harness.dependencies.host,
+        harness.dependencies.ai,
+        harness.dependencies.repositories,
+        harness.dependencies.collaborators,
+      ).run(harness.options);
+
+      const reviseFromReview = runReviseDraftWorkflowMock.mock.calls.filter(
+        (call) => (call[0] as { seedIssues?: unknown }).seedIssues !== undefined,
+      );
+      expect(reviseFromReview).toHaveLength(1);
+      expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview * 2);
+    });
+
     it('assembles the manuscript again from the rewritten drafts', async () => {
       checkContinuityMock.mockResolvedValueOnce([highContinuityIssue]);
       runReviseDraftWorkflowMock.mockResolvedValue({

@@ -45,19 +45,43 @@ export class ReviseFromReviewStage implements INovelStage {
     }
 
     options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
-    const revisedStems: string[] = await this.reviseTargets(run, targets);
-    await this.reassembleRevisedManuscript(run, revisedStems);
-    run.completed.add('revise-from-review');
-    await run.persist({});
+    return await this.reviseUntilNoHighRemains(run, reviewer, targets);
+  }
 
-    if (options.shouldCancel()) {
-      return await run.cancel();
+  private async reviseUntilNoHighRemains(
+    run: NovelRun,
+    reviewer: VolumeReviewer,
+    firstTargets: readonly ReviewTarget[],
+  ): Promise<NovelPipelineResult | undefined> {
+    const { options } = run;
+    const revisedStems: Set<string> = new Set<string>();
+    let targets: readonly ReviewTarget[] = firstTargets;
+
+    for (let round: number = 1; ; round += 1) {
+      const revisedThisRound: string[] = await this.reviseTargets(run, targets);
+      revisedThisRound.forEach((stem) => revisedStems.add(stem));
+      await this.reassembleRevisedManuscript(run, revisedThisRound);
+      run.completed.add('revise-from-review');
+      await run.persist({});
+
+      if (options.shouldCancel()) {
+        return await run.cancel();
+      }
+
+      options.onProgress('review', '재작성분 재검사 중…');
+      const reReview: ReviewStageResult = await reviewer.review([...revisedStems]);
+      const isLastRound: boolean = round >= options.reviseMaxIterations;
+      const hasNoProgress: boolean = revisedThisRound.length === 0;
+      if (reReview.targets.length === 0 || isLastRound || hasNoProgress) {
+        return undefined;
+      }
+
+      targets = reReview.targets;
+      options.onProgress(
+        'revise-from-review',
+        `재검사에 high 가 남아 다시 재작성 중 (${round + 1}/${options.reviseMaxIterations})…`,
+      );
     }
-
-    options.onProgress('review', '재작성분 재검사 중…');
-    await reviewer.review(revisedStems);
-
-    return undefined;
   }
 
   private async reassembleRevisedManuscript(

@@ -80,7 +80,7 @@ Storyboard는 **소설을 "작품 계약 → outline → 씬 → 초안 → 원�
 - **`Storyboard: Generate Scene Seeds`** 는 `chapters.yaml`에서 `scene/NN-slug.txt`를 생성합니다.
   생성된 시드에는 목적, 갈등, 반전, 감정 변화, 회수할 복선, 필요 설정, 목표 분량이 들어갑니다.
 - **`Storyboard: Generate Novel`** 은 outline 생성, 씬 시드 생성, 장별 초안·검수·재작성, 원고 조립, 최종 검사, 검사 결과 재작성, 재검사, 장별 요약까지 이어서 실행합니다.
-  최종 검사는 전권을 한 번에 읽으므로 씬 단위 검사가 못 보는 장거리 모순을 찾습니다. high 이슈가 나오면 해당 씬만 1회 재작성한 뒤 전권을 한 번 더 검사해 `REVIEW.md`를 다시 씁니다.
+  최종 검사는 전권을 한 번에 읽으므로 씬 단위 검사가 못 보는 장거리 모순을 찾습니다. high 이슈가 나오면 해당 씬만 재작성한 뒤 전권을 다시 검사해 `REVIEW.md`를 다시 쓰고, high 가 남으면 `revise.loop.maxIterations` 회까지 되풀이합니다.
   중간에 취소하거나 실패하면 `.storyboard/cache/novel-run.json`에 진행 상태가 남고, 다시 실행하면 이어서 진행할 수 있습니다.
 - `chapters.yaml`을 수정하면 Scenes 사이드바가 해당 씬에 **outline** 배지를 표시해 outline보다 오래된 씬임을 알려 줍니다.
 
