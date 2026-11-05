@@ -12,10 +12,16 @@ export interface InterviewQuestionInput {
   readonly relationSpeech: readonly string[];
   readonly axes: readonly InterviewQuestionAxis[];
   readonly situation: string;
+  readonly presence?: InterviewQuestionPresence;
   readonly isOffBeat: boolean;
   readonly priorAnswers: readonly string[];
   readonly optionCount: number;
   readonly shouldExplore: boolean;
+}
+
+export interface InterviewQuestionPresence {
+  readonly presentNames: readonly string[];
+  readonly precedingBeat?: string;
 }
 
 export interface InterviewQuestionAxis extends InterviewAxis {
@@ -53,6 +59,10 @@ export const InterviewQuestionPrompt: PromptModule<
         hasPriorAnswers: input.priorAnswers.length > 0,
         priorAnswers: input.priorAnswers,
         situation: input.situation,
+        hasPresence: input.presence !== undefined,
+        hasPresentNames: (input.presence?.presentNames.length ?? 0) > 0,
+        presentNames: input.presence?.presentNames ?? [],
+        precedingBeat: input.presence?.precedingBeat,
         isOffBeat: input.isOffBeat,
         optionCount: input.optionCount,
         shouldExplore: input.shouldExplore,

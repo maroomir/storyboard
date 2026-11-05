@@ -14,6 +14,12 @@ import {
   type BeatSituationOptions,
 } from '#engine/application/interviews/interviewCoverage';
 import {
+  collectAbsentPartnerTerms,
+  describePresence,
+  isOptionAddressingAbsentPartner,
+  type InterviewPartner,
+} from '#engine/application/interviews/interviewPresence';
+import {
   resolveInterviewTuning,
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
@@ -23,6 +29,7 @@ import type {
   InterviewDistillDraft,
   InterviewQuestionAxis,
   InterviewQuestionDraft,
+  InterviewQuestionInput,
   InterviewRelationSpeechQuestion,
   InterviewUpdateDraft,
   StoryboardAiService,
@@ -40,6 +47,7 @@ import {
   type BibleSubjectKind,
   type CardCollectProposal,
   type CardCollectProposalDraft,
+  type CharacterRelation,
   type InterviewAnswer,
   type InterviewAnswerInput,
   type InterviewAnswerOutcome,
@@ -136,6 +144,7 @@ interface InterviewContext {
   readonly ai: StoryboardAiService;
   readonly attribution: UsageAttribution;
   readonly relationTargetNames: ReadonlyMap<string, string>;
+  readonly characters: readonly StoryboardCard[];
 }
 
 const emptyTallies: InterviewTallies = {};
@@ -259,12 +268,12 @@ function collectAnsweredRelationSpeech(model: InterviewWorkingModel): Map<string
   return latestByTarget;
 }
 
-function describeRelationSpeech(context: InterviewContext): string[] {
+function collectRelationSpeechByTarget(context: InterviewContext): Map<string, string> {
+  const speechByTarget: Map<string, string> = new Map<string, string>();
   if (context.card.type !== 'character') {
-    return [];
+    return speechByTarget;
   }
 
-  const speechByTarget: Map<string, string> = new Map<string, string>();
   for (const relation of context.card.relations ?? []) {
     const speech: string = relation.speech?.trim() ?? '';
     if (speech.length > 0) {
@@ -275,10 +284,34 @@ function describeRelationSpeech(context: InterviewContext): string[] {
     speechByTarget.set(target, speech);
   }
 
-  return [...speechByTarget].map(
+  return speechByTarget;
+}
+
+function describeRelationSpeech(context: InterviewContext): string[] {
+  return [...collectRelationSpeechByTarget(context)].map(
     ([target, speech]): string =>
       `${context.card.name} → ${context.relationTargetNames.get(target) ?? target}: ${speech}`,
   );
+}
+
+const minimumQuestionOptions: number = 2;
+
+function hasOptionAddressingAbsentPartner(
+  draft: InterviewQuestionDraft,
+  absentTerms: readonly string[],
+): boolean {
+  return draft.options.some((option) => isOptionAddressingAbsentPartner(option.text, absentTerms));
+}
+
+function listInterviewPartners(context: InterviewContext): InterviewPartner[] {
+  const speechByTarget: Map<string, string> = collectRelationSpeechByTarget(context);
+  const relations: readonly CharacterRelation[] =
+    context.card.type === 'character' ? (context.card.relations ?? []) : [];
+
+  return relations.flatMap((relation): InterviewPartner[] => {
+    const partner: StoryboardCard | undefined = context.characters.find((card) => card.id === relation.target);
+    return partner === undefined ? [] : [{ card: partner, speech: speechByTarget.get(relation.target) }];
+  });
 }
 
 function describeRecordAnswer(record: InterviewRecord, axes: readonly InterviewAxis[]): string | undefined {
@@ -584,42 +617,86 @@ export class InterviewSessionUseCase {
     return this.toQuestion(record, context.axes);
   }
 
-  private draftQuestion(
+  private async draftQuestion(
     context: InterviewContext,
     openAxes: readonly InterviewAxis[],
     nextBeat: InterviewBeatSituation | undefined,
   ): Promise<InterviewQuestionDraft | undefined> {
+    const input: InterviewQuestionInput = this.buildQuestionInput(context, openAxes, nextBeat);
+    const absentTerms: string[] =
+      nextBeat === undefined
+        ? []
+        : collectAbsentPartnerTerms({
+            subject: context.card,
+            situation: nextBeat,
+            partners: listInterviewPartners(context),
+          });
+    const draft: InterviewQuestionDraft | undefined = await context.ai.askInterviewQuestion(input, {
+      attribution: context.attribution,
+    });
+    if (draft === undefined || !hasOptionAddressingAbsentPartner(draft, absentTerms)) {
+      return draft;
+    }
+
+    const redrawn: InterviewQuestionDraft | undefined = await context.ai.askInterviewQuestion(input, {
+      attribution: context.attribution,
+    });
+    return this.keepOptionsForPresentPeople(redrawn ?? draft, absentTerms);
+  }
+
+  private keepOptionsForPresentPeople(
+    draft: InterviewQuestionDraft,
+    absentTerms: readonly string[],
+  ): InterviewQuestionDraft {
+    const kept: InterviewQuestionDraft['options'] = draft.options.filter(
+      (option) => !isOptionAddressingAbsentPartner(option.text, absentTerms),
+    );
+    if (kept.length >= minimumQuestionOptions) {
+      return { ...draft, options: kept };
+    }
+
+    this.host.logger.warn(
+      `인터뷰 선택지가 이 자리에 없는 사람(${absentTerms.join(', ')})을 부릅니다. 고르기 전에 확인하세요.`,
+    );
+    return draft;
+  }
+
+  private buildQuestionInput(
+    context: InterviewContext,
+    openAxes: readonly InterviewAxis[],
+    nextBeat: InterviewBeatSituation | undefined,
+  ): InterviewQuestionInput {
     const { model, tuning } = context;
     const firstOpenAxis: InterviewAxis = openAxes[0] as InterviewAxis;
     const askedAxes: readonly InterviewAxis[] = nextBeat === undefined ? [firstOpenAxis] : openAxes;
 
-    return context.ai.askInterviewQuestion(
-      {
-        cardType: context.cardType,
-        name: context.card.name,
-        genre: context.project.setting?.genre,
-        summary: model.summary,
-        relationSpeech: describeRelationSpeech(context),
-        axes: askedAxes.map(
-          (axis): InterviewQuestionAxis => ({
-            ...axis,
-            unseenValueIds: unseenValueIds(model.tallies, axis),
-          }),
-        ),
-        situation:
-          nextBeat === undefined
-            ? `${firstOpenAxis.label}이(가) 드러나는 상황을 하나 세워 물어라.`
-            : describeBeatSituation(nextBeat),
-        isOffBeat: nextBeat === undefined,
-        priorAnswers: model.records
-          .map((record) => describeRecordAnswer(record, context.axes))
-          .filter((line): line is string => line !== undefined)
-          .slice(-6),
-        optionCount: tuning.optionCount,
-        shouldExplore: tuning.explorationOptions > 0 && model.records.length > 0,
-      },
-      { attribution: context.attribution },
-    );
+    return {
+      cardType: context.cardType,
+      name: context.card.name,
+      genre: context.project.setting?.genre,
+      summary: model.summary,
+      relationSpeech: describeRelationSpeech(context),
+      axes: askedAxes.map(
+        (axis): InterviewQuestionAxis => ({
+          ...axis,
+          unseenValueIds: unseenValueIds(model.tallies, axis),
+        }),
+      ),
+      situation:
+        nextBeat === undefined
+          ? `${firstOpenAxis.label}이(가) 드러나는 상황을 하나 세워 물어라.`
+          : describeBeatSituation(nextBeat),
+      ...(nextBeat === undefined
+        ? {}
+        : { presence: describePresence(nextBeat, context.scenes, context.characters) }),
+      isOffBeat: nextBeat === undefined,
+      priorAnswers: model.records
+        .map((record) => describeRecordAnswer(record, context.axes))
+        .filter((line): line is string => line !== undefined)
+        .slice(-6),
+      optionCount: tuning.optionCount,
+      shouldExplore: tuning.explorationOptions > 0 && model.records.length > 0,
+    };
   }
 
   private toRecord(
@@ -1172,7 +1249,7 @@ export class InterviewSessionUseCase {
     const model: InterviewWorkingModel = await this.ensureWorkingModel(workspaceRoot, card, cardType, sessionId);
     const situationOptions: BeatSituationOptions =
       cardType === 'background'
-        ? { otherPlaceTokens: otherPlaceTokens(card, await this.loadBackgrounds(workspaceRoot)) }
+        ? { otherPlaceTokens: otherPlaceTokens(card, await this.loadCards(workspaceRoot, 'background')) }
         : {};
 
     const relationTargetNames: ReadonlyMap<string, string> = await this.loadRelationTargetNames(
@@ -1192,6 +1269,7 @@ export class InterviewSessionUseCase {
       ai,
       attribution,
       relationTargetNames,
+      characters: await this.loadCards(workspaceRoot, 'character'),
     };
   }
 
@@ -1216,13 +1294,13 @@ export class InterviewSessionUseCase {
     return names;
   }
 
-  private async loadBackgrounds(workspaceRoot: StoryUri): Promise<StoryboardCard[]> {
+  private async loadCards(workspaceRoot: StoryUri, kind: BibleSubjectKind): Promise<StoryboardCard[]> {
     const cards: StoryboardCard[] = [];
 
-    for (const summary of await this.repositories.cardSidebar.list(workspaceRoot, 'background')) {
+    for (const summary of await this.repositories.cardSidebar.list(workspaceRoot, kind)) {
       const card: StoryboardCard | undefined = await this.repositories.noteAbsorb.loadCard(
         workspaceRoot,
-        'background',
+        kind,
         summary.id,
       );
       if (card !== undefined) {

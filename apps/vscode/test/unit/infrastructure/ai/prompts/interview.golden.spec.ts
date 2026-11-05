@@ -61,6 +61,7 @@ describe('interview prompts golden', () => {
           relationSpeech: ["하나 → 준: '선배'라 부르고 존댓말"],
           axes: [{ ...axis, unseenValueIds: ['deflect'] }],
           situation: '01-night: 준이 하나를 심문한다 (출연: 하나, 준 / 장소: 미감)',
+          presence: { presentNames: ['하나', '준'] },
           isOffBeat: false,
           priorAnswers: ['01-night: 하나가 자리를 뜨려 한다 → 압박 아래 방어: 침묵 — 잔만 본다'],
           optionCount: 3,
@@ -81,6 +82,24 @@ describe('interview prompts golden', () => {
           isOffBeat: true,
           priorAnswers: [],
           optionCount: 2,
+          shouldExplore: false,
+        },
+        variant,
+      ),
+    ).toMatchSnapshot();
+    expect(
+      InterviewQuestionPrompt.build(
+        {
+          cardType: 'character',
+          name: '하나',
+          summary: '하나는 몰릴 때 먼저 참는다.',
+          relationSpeech: [],
+          axes: [{ ...axis, unseenValueIds: [] }],
+          situation: '02-dawn: 하나가 준의 방에서 편지를 찾는다',
+          presence: { presentNames: [], precedingBeat: '하나가 혼자 등대로 돌아온다' },
+          isOffBeat: false,
+          priorAnswers: [],
+          optionCount: 3,
           shouldExplore: false,
         },
         variant,
