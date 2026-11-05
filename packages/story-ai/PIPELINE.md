@@ -34,7 +34,7 @@
 | ④ | `chapters` 장별 초안·검수 | 2층 전체 + 되먹임 루프 | 씬 카드 하나씩 | `draft/NNN-*.md`, 3층의 기억 갱신, 검수 기록 |
 | ⑤ | `assemble` 원고 조립 | 없음 (코드) | `draft/*.md` 번호순 | `manuscript.md` |
 | ⑥ | `review` 원고 최종 검사 | `continuityCheck`, `draftCritique` (장 창마다) | 조립 원고 + 장 요약 + 캐넌 | `review.md`, high 지적을 씬별로 묶은 목록 |
-| ⑦ | `revise-from-review` 재작성 | `draftRevision` (되먹임 루프 1회전) | ⑥의 지적을 씨앗 이슈로 | 해당 씬의 `draft/*.md` 덮어씀, 바뀐 초안이 있으면 ⑤를 다시, 그 뒤 ⑥을 한 번 더 |
+| ⑦ | `revise-from-review` 재작성 | `draftRevision` (되먹임 루프 1회전) | ⑥의 지적을 씨앗 이슈로 | 해당 씬의 `draft/*.md` 덮어씀, 바뀐 초안이 있으면 ⑤를 다시, 그 뒤 ⑥을 한 번 더; ⑥에 high 가 남으면 `revise.loop.maxIterations` 회까지 되풀이 |
 | ⑧ | `summaries` 장별 요약 | `chapterSummary` (장마다) | 장의 씬 초안들 | `.storyboard/memory/chapter-summaries.md` |
 
 알아 둘 점:
