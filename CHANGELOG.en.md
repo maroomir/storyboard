@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-11-05
+
 ### Fixed
 
 - **Interview options no longer speak to a character who is not at the beat.** A question now receives the beat's `cast`, or the beat before it when no cast is written, so it knows when the character is alone, and a name that only owns a place («someone's room») is not read as that person being there. When an option of a cast-written beat uses the name, an alias or the agreed form of address of a partner who is absent, the question is asked once more (#172).
@@ -17,7 +19,7 @@ after the first public release.
 - **Terminal `card interview` refuses `--limit abc` and `--limit 0`.** It used to end the session without asking anything (`--step` already refused them).
 - **A new value named for a written answer no longer takes an id another value of the axis has.** The terminal and the VS Code interview tab numbered it by the value count, so a clash with an existing `custom-N` dropped the new name.
 - **Beat, scene-grounding and scene-structure proposals now reach the work's usage ledger.** The three calls tried to write their usage under the scene card file instead of the work, failed, and the failure was swallowed, so their cost never reached the ledger.
-- **One AI call running out of time no longer fails a whole novel run.** When a call to a provider that runs a program does not finish within its time limit, the same call is sent once more, and only a second time-out is a failure. Usage limits, cancellations and other failures are not sent again.
+- **One AI call running out of time no longer fails a whole novel run.** When a call to some providers does not finish within its time limit, the same call is sent once more, and only a second time-out is a failure. Usage limits, cancellations and other failures are not sent again.
 - **A novel run cancelled in the middle of a chapter continues with that chapter's remaining scenes.** The cancelled chapter used to be recorded as finished, so continuing skipped its unwritten scenes and moved on to the next chapter (the extension notification's «취소» button takes this path).
 - **`novel generate` puts the scenes the final review rewrote into the manuscript.** The `manuscript/` assembled before the rewrite used to stay, so the final manuscript carried the unrevised text. When a rewrite changed a draft, the manuscript is assembled again.
 - **Interview questions no longer turn the writer's form of address around.** Question drafting and answer updates now receive the card's per-partner speech and this interview's "what to call them" answers as `[상대별 호칭·말투]` ("character → partner: …"). Options address each partner that way and never use an address catchphrase as a self-title or toward someone else, and the summary states who calls whom what in a sentence of its own.
