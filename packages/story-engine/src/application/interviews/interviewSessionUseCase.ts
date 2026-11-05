@@ -69,6 +69,7 @@ import {
   type InterviewSessionSummary,
   type InterviewTallies,
   type InterviewWorkingModel,
+  NarrationError,
   type NarrationDirective,
   type NoteCardCandidate,
   type OutlineSynopsis,
@@ -696,14 +697,27 @@ export class InterviewSessionUseCase {
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(context.workspaceRoot);
     const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem);
-    const narration: NarrationDirective | undefined = await resolver.resolveNarration(
-      paths,
-      scene,
-      context.project,
-      await resolver.readChapterDefaults(paths, scene.order),
-    );
+    try {
+      const narration: NarrationDirective | undefined = await resolver.resolveNarration(
+        paths,
+        scene,
+        context.project,
+        await resolver.readChapterDefaults(paths, scene.order),
+      );
 
-    return narration?.focal;
+      return narration?.focal;
+    } catch (error) {
+      return this.askWithoutFocalWhenNarratorIsMissing(error, sceneStem);
+    }
+  }
+
+  private askWithoutFocalWhenNarratorIsMissing(error: unknown, sceneStem: string): undefined {
+    if (!(error instanceof NarrationError)) {
+      throw error;
+    }
+
+    this.host.logger.warn(`${sceneStem}: ${error.message} 초점 인물 없이 묻습니다.`);
+    return undefined;
   }
 
   private buildQuestionInput(

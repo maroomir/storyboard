@@ -352,6 +352,39 @@ describe('interview session (mock provider)', () => {
     expect(promptFor('하나', '01-night: 준이 하나를 심문한다')).not.toContain('[초점 인물]');
   });
 
+  it('asks without a focal character and warns when the scene points at a narrator card that does not exist', async () => {
+    write('scene/02-dawn.card', [
+      'type: scene',
+      'id: 02-dawn',
+      'narrator: ghost',
+      'characters:',
+      '  - hana',
+      'beats:',
+      '  - 하나가 혼자 등대로 돌아온다',
+    ]);
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const warn = vi.spyOn(silentLogger, 'warn');
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    for (let round: number = 0; round < 8; round += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      if (question === undefined) {
+        break;
+      }
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'skipped' } });
+    }
+
+    const brokenBeatPrompt: string | undefined = promptsOf(captured, 'interviewQuestion').find((prompt) =>
+      prompt.includes('[상황]\n02-dawn: 하나가 혼자 등대로 돌아온다'),
+    );
+    expect(brokenBeatPrompt).toBeDefined();
+    expect(brokenBeatPrompt).not.toContain('[초점 인물]');
+    expect(warn.mock.calls.map(([message]) => String(message))).toContainEqual(
+      expect.stringMatching(/^02-dawn: 서술자 'ghost'를 찾을 수 없습니다.* 초점 인물 없이 묻습니다\.$/),
+    );
+  });
+
   it('asks again when an option addresses a partner who is not at the beat', async () => {
     const captured: CapturedPrompt[] = captureUserPrompts();
     const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
