@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { hostname } from 'node:os';
 
 import type { StoryboardProjectPaths, StoryUri } from '@storyboard/story-model';
 import {
@@ -47,6 +48,21 @@ async function writeLockFile(
   await fileSystem.writeFile(lockUri, new TextEncoder().encode(serializeWorkspaceRunLock(record)));
 }
 
+const errorCodeOfProcessWithoutPermission: string = 'EPERM';
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === errorCodeOfProcessWithoutPermission;
+  }
+}
+
+function isHolderGoneFromThisMachine(record: WorkspaceRunLockRecord): boolean {
+  return record.hostname === hostname() && !isProcessAlive(record.pid);
+}
+
 export async function readWorkspaceRunLock(
   options: WorkspaceRunLockOptions,
 ): Promise<WorkspaceRunLockRecord | undefined> {
@@ -57,7 +73,12 @@ export async function readWorkspaceRunLock(
     lockUri,
   );
 
-  return record === undefined || isWorkspaceRunLockStale(record, now()) ? undefined : record;
+  const hasNoLiveHolder: boolean =
+    record === undefined ||
+    isWorkspaceRunLockStale(record, now()) ||
+    isHolderGoneFromThisMachine(record);
+
+  return hasNoLiveHolder ? undefined : record;
 }
 
 export async function acquireWorkspaceRunLock(

@@ -1,5 +1,5 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { acquireWorkspaceRunLock, readWorkspaceRunLock } from '@storyboard/story-engine';
@@ -38,8 +38,8 @@ function lockFile(): string {
   return join(workspace, STORYBOARD_RELATIVE_PATHS.runLock);
 }
 
-function plantLock(heartbeatAt: Date): void {
-  const record = createWorkspaceRunLockRecord(extensionHolder, 'extension-token', heartbeatAt);
+function plantLock(heartbeatAt: Date, holder: WorkspaceRunLockHolder = extensionHolder): void {
+  const record = createWorkspaceRunLockRecord(holder, 'extension-token', heartbeatAt);
   writeFileSync(lockFile(), serializeWorkspaceRunLock(record));
 }
 
@@ -103,6 +103,21 @@ describe('workspace run lock', () => {
 
     expect(await readWorkspaceRunLock(lockOptions(() => later))).toBeUndefined();
     expect((await acquireWorkspaceRunLock(lockOptions(() => later))).ok).toBe(true);
+  });
+
+  it('takes over at once a lock whose holder process on this machine is gone', async () => {
+    const noSuchPid: number = 2 ** 22 + 12345;
+    plantLock(new Date(), { ...extensionHolder, pid: noSuchPid, hostname: hostname() });
+
+    expect(await readWorkspaceRunLock(lockOptions())).toBeUndefined();
+    expect((await acquireWorkspaceRunLock(lockOptions())).ok).toBe(true);
+  });
+
+  it('keeps a fresh lock whose holder process on this machine is still running', async () => {
+    plantLock(new Date(), { ...extensionHolder, pid: process.pid, hostname: hostname() });
+
+    expect((await readWorkspaceRunLock(lockOptions()))?.pid).toBe(process.pid);
+    expect((await acquireWorkspaceRunLock(lockOptions())).ok).toBe(false);
   });
 
   it('ignores a lock file it cannot read instead of blocking forever', async () => {
