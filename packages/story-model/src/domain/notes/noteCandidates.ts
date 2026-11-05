@@ -1,4 +1,5 @@
-import { normalizeCardListText } from '#model/domain/cardCollect';
+import { normalizeCardListText, shouldProposeCardCollect } from '#model/domain/cardCollect';
+import type { StoryboardCard } from '#model/format/card';
 import type { CardCollectProposal } from '#model/shared/cardCollect';
 import type {
   NoteCandidateFile,
@@ -234,13 +235,20 @@ function mapCardChanges(
   );
 }
 
-export function keepNoteCandidateConflicts(
+export function removePromotedNoteCandidateChanges(
   file: NoteCandidateFile,
-  card: MergedNoteCardCandidate,
+  promoted: MergedNoteCardCandidate,
+  updatedCard: StoryboardCard,
 ): NoteCandidateFile {
-  const conflictKeys: Set<string> = new Set(card.conflicts.map((conflict) => conflict.key));
+  const conflictKeys: Set<string> = new Set(promoted.conflicts.map((conflict) => conflict.key));
+  const promotedIdentities: Set<string> = new Set(promoted.changes.map(noteChangeIdentity));
 
-  return mapCardChanges(file, card.cardId, (change) => conflictKeys.has(change.id));
+  return mapCardChanges(file, promoted.cardId, (change) => {
+    const isHeldConflict: boolean = conflictKeys.has(change.id);
+    const isPromoted: boolean = promotedIdentities.has(noteChangeIdentity(change));
+    const isAlreadyOnCard: boolean = !shouldProposeCardCollect(updatedCard, change);
+    return isHeldConflict || !(isPromoted || isAlreadyOnCard);
+  });
 }
 
 export function removeNoteCandidateCards(
