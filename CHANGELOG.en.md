@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-11-05
+
 ### Fixed
 
 - **Interview questions no longer hand another character's beat action to the character being interviewed.** A question now receives the scene's focal character (the narrator card's `focal`, else the scene card's `povCharacter`) as `[초점 인물]`, and a beat that carries none of the character's name, aliases or cast is marked as not naming them. The action stays with the sentence's subject (the focal character when no subject is written); when someone else acts, the question asks how the character reacts on seeing or hearing it, or on learning of it later, and it no longer sets up a time or place the beat does not have. A scene that points at a narrator card that does not exist gets a warning and a question without a focal character (#174).
