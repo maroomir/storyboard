@@ -227,6 +227,7 @@ export class CardEditorRpc {
       ...this.interviewCard(),
       sessionId: payload.sessionId,
       ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
+      ...(payload.shouldAskKnown === true ? { shouldAskKnown: true } : {}),
     });
 
     return { question: question ?? null };

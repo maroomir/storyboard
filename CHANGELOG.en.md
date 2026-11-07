@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **An interview no longer asks what the card already says.** A partner the card's `relations[].speech` already covers gets no speech question (`--ask-known`, or «적힌 호칭도 다시 묻기» in the VS Code interview tab, asks again). A session opened on a new or changed card reads the card against the axes once (`interviewCardAnswers`, one paid call); an axis the card already answers is closed — not asked, not distilled, and not counted as open by the `status` and `doctor` interview hints. The distill is handed the card's lines field by field and no longer proposes a paraphrase of one (#177).
+
 ## [0.15.3] - 2026-11-05
 
 ### Fixed

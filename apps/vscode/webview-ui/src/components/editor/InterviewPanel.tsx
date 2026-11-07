@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@webview/components/ui/Button';
 import { SectionHeader } from '@webview/components/ui/SectionHeader';
@@ -39,7 +39,8 @@ type Phase =
   | { readonly kind: 'finished'; readonly summary: InterviewSessionSummary };
 
 interface StartOptions {
-  readonly shouldResetAxes: boolean;
+  readonly shouldResetAxes?: boolean;
+  readonly shouldAskKnown?: boolean;
 }
 
 const staleContractNotice: string =
@@ -75,6 +76,7 @@ export function InterviewPanel({
   const [writtenText, setWrittenText] = useState<string>('');
   const [newValueLabel, setNewValueLabel] = useState<string>('');
   const [error, setError] = useState<string | undefined>();
+  const shouldAskKnownRef: React.MutableRefObject<boolean> = useRef<boolean>(false);
 
   useEffect(() => {
     setPhase({ kind: 'idle' });
@@ -129,6 +131,7 @@ export function InterviewPanel({
       void callRpc<{ readonly question: InterviewQuestion | null }>(vscodeApi, 'interviews.next', {
         uri: documentUri,
         sessionId: opening.sessionId,
+        ...(shouldAskKnownRef.current ? { shouldAskKnown: true } : {}),
       })
         .then((result) => {
           setError(undefined);
@@ -157,6 +160,7 @@ export function InterviewPanel({
       const shouldResetAxes: boolean = options?.shouldResetAxes === true;
       setError(undefined);
       setAnswered(0);
+      shouldAskKnownRef.current = options?.shouldAskKnown === true;
       setPhase({ kind: 'starting' });
       onStatusChange?.(shouldResetAxes ? '축 어휘를 다시 뽑는 중입니다…' : '인터뷰를 준비하는 중입니다…');
 
@@ -268,6 +272,9 @@ export function InterviewPanel({
           </Button>
           <Button disabled={!vscodeApi || phase.kind === 'starting'} onClick={() => start({ shouldResetAxes: true })}>
             축 다시 뽑고 시작
+          </Button>
+          <Button disabled={!vscodeApi || phase.kind === 'starting'} onClick={() => start({ shouldAskKnown: true })}>
+            적힌 호칭도 다시 묻기
           </Button>
         </div>
       </div>
