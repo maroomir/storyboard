@@ -14,6 +14,11 @@ import {
   type InterviewAxesInput,
 } from '#ai/ai/prompts/interviewAxes';
 import {
+  InterviewCardAnswersPrompt,
+  coerceInterviewCardAnswers,
+  type InterviewCardAnswersInput,
+} from '#ai/ai/prompts/interviewCardAnswers';
+import {
   InterviewDistillPrompt,
   coerceInterviewDistill,
   type InterviewDistillDraft,
@@ -55,6 +60,21 @@ export class InterviewAiService {
     );
 
     return coerceInterviewAxes(parseJsonObject(response.text));
+  }
+
+  public async findCardAnswers(
+    input: InterviewCardAnswersInput,
+    options: GenerateTextOptions = {},
+  ): Promise<Record<string, string>> {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('interviewCardAnswers', options);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
+      'interviewCardAnswers',
+      InterviewCardAnswersPrompt.build(input, variant),
+      InterviewCardAnswersPrompt.config,
+      options,
+    );
+
+    return coerceInterviewCardAnswers(parseJsonObject(response.text), input.axes);
   }
 
   public async askInterviewQuestion(

@@ -48,6 +48,7 @@ import {
 import { SceneAiService } from '#ai/ai/SceneAiService';
 import { InterviewAiService } from '#ai/ai/InterviewAiService';
 import type { InterviewAxesInput } from '#ai/ai/prompts/interviewAxes';
+import type { InterviewCardAnswersInput } from '#ai/ai/prompts/interviewCardAnswers';
 import type { InterviewDistillDraft, InterviewDistillInput } from '#ai/ai/prompts/interviewDistill';
 import type { InterviewQuestionDraft, InterviewQuestionInput } from '#ai/ai/prompts/interviewQuestion';
 import type { InterviewUpdateDraft, InterviewUpdateInput } from '#ai/ai/prompts/interviewUpdate';
@@ -511,6 +512,13 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<InterviewAxis[]> {
     return this.interviewAiService.proposeInterviewAxes(input, options);
+  }
+
+  public findInterviewCardAnswers(
+    input: InterviewCardAnswersInput,
+    options: GenerateTextOptions = {},
+  ): Promise<Record<string, string>> {
+    return this.interviewAiService.findCardAnswers(input, options);
   }
 
   public askInterviewQuestion(

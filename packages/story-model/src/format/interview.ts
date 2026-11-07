@@ -75,6 +75,11 @@ export interface InterviewRecord {
 
 export type InterviewTallies = Readonly<Record<string, Readonly<Record<string, number>>>>;
 
+export interface InterviewCardAnswers {
+  readonly cardHash: string;
+  readonly valueIdByAxis: Readonly<Record<string, string>>;
+}
+
 export interface InterviewWorkingModel {
   readonly version: 1;
   readonly cardId: string;
@@ -85,6 +90,7 @@ export interface InterviewWorkingModel {
   readonly records: readonly InterviewRecord[];
   readonly writtenStreak: number;
   readonly distilledThrough: number;
+  readonly cardAnswers?: InterviewCardAnswers;
 }
 
 const idSchema: z.ZodString = z.string().trim().min(1);
@@ -165,6 +171,9 @@ export const interviewWorkingModelSchema: z.ZodType<InterviewWorkingModel> = z.o
   records: z.array(interviewRecordSchema),
   writtenStreak: z.number().int().nonnegative(),
   distilledThrough: z.number().int().nonnegative(),
+  cardAnswers: z
+    .object({ cardHash: idSchema, valueIdByAxis: z.record(z.string(), idSchema) })
+    .optional(),
 });
 
 export const emptyInterviewAxesFile: InterviewAxesFile = { version: 1 };

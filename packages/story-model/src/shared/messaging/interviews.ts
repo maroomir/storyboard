@@ -32,6 +32,7 @@ export interface InterviewsSessionRequestPayload {
   uri: string;
   sessionId: string;
   sceneStems?: string[];
+  shouldAskKnown?: boolean;
 }
 
 export const interviewsSessionRequestPayloadSchema: z.ZodType<InterviewsSessionRequestPayload> =
@@ -39,6 +40,7 @@ export const interviewsSessionRequestPayloadSchema: z.ZodType<InterviewsSessionR
     uri: uriStringSchema,
     sessionId: z.string().trim().min(1),
     sceneStems: z.array(z.string().trim().min(1)).optional(),
+    shouldAskKnown: z.boolean().optional(),
   });
 
 export interface InterviewsAnswerRequestPayload extends InterviewsSessionRequestPayload {

@@ -228,6 +228,7 @@ const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuil
   interviewQuestion: createMockInterviewQuestion,
   interviewUpdate: createMockInterviewUpdate,
   interviewDistill: createMockInterviewDistill,
+  interviewCardAnswers: (): string => JSON.stringify({ answers: [] }),
   situationExtraction: (promptSummary: string): string =>
     JSON.stringify([
       {
