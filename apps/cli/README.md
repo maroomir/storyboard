@@ -168,7 +168,8 @@ that answer goes to the card's `relations[].speech` as it is. When one value of 
 the threshold, the session's end distils it into a card candidate — a conditional tendency such as
 "몰릴 때 먼저 참고, 밀리면 되묻는다" — that `card promote` applies next to the draft and note
 candidates. The chosen lines themselves never reach a prompt: the choice records, the axis
-vocabulary and the working model stay under `.storyboard/cache/interviews/`, and only what is
+vocabulary and the working model stay in the interview sessions of the cache database
+(`.storyboard/cache/storyboard.db`), and only what is
 distilled goes to the card.
 
 A background is interviewed through the same verb (`card interview tavern`): the writer then plays

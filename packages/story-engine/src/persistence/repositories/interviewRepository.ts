@@ -1,109 +1,164 @@
 import {
   emptyInterviewAxesFile,
-  emptyNoteCandidateFile,
-  getStoryboardProjectPaths,
-  interviewWorkingModelRelativePath,
-  joinStoryPath,
-  noteCandidateFileSchema,
-  readInterviewAxesFile,
-  readInterviewWorkingModelFile,
-  writeInterviewAxesFile,
-  writeInterviewWorkingModelFile,
+  interviewAxesFileSchema,
+  interviewWorkingModelSchema,
+  parseInterviewAxesFile,
+  parseInterviewWorkingModel,
+  replacePendingStatements,
   type InterviewAxesFile,
   type InterviewWorkingModel,
-  type NoteCandidateFile,
-  type StoryboardProjectPaths,
+  type Statement,
   type StoryUri,
 } from '@storyboard/story-model';
 
 import type { IInterviewRepository } from '#engine/application/interviews/interviewRepository';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import { SessionStore, type SessionRecord } from '#engine/persistence/cache/sessionStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
+
+export interface InterviewRepositoryDependencies {
+  readonly caches: WorkspaceCaches;
+  readonly cards: WorkspaceCards;
+}
+
+interface InterviewSessionData {
+  readonly workingModel?: unknown;
+  readonly pendingStatements?: readonly Statement[];
+}
+
+const axesSessionId: string = 'interview-axes';
+
+export function describeInterviewSessionLocation(cardId: string): string {
+  return `캐시 DB 의 ${cardId} 인터뷰 세션`;
+}
+
+function interviewSessionId(elementId: string): string {
+  return `interview:${elementId}`;
+}
+
+function sessionDataOf(record: SessionRecord | undefined): InterviewSessionData {
+  const data: unknown = record?.data;
+  return typeof data === 'object' && data !== null ? (data as InterviewSessionData) : {};
+}
 
 export class InterviewRepository implements IInterviewRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly dependencies: InterviewRepositoryDependencies,
+    private readonly now: () => Date = (): Date => new Date(),
+  ) {}
 
   public async loadAxes(workspaceRoot: StoryUri): Promise<InterviewAxesFile> {
-    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).interviewAxes;
+    const record: SessionRecord | undefined = (await this.store(workspaceRoot)).find(axesSessionId);
 
-    return (await this.fileSystem.exists(uri))
-      ? await readInterviewAxesFile(uri, this.fileSystem)
-      : emptyInterviewAxesFile;
+    return record === undefined
+      ? emptyInterviewAxesFile
+      : parseInterviewAxesFile(JSON.stringify(record.data));
   }
 
   public async saveAxes(workspaceRoot: StoryUri, file: InterviewAxesFile): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.interviewCacheDirectory);
-    await writeInterviewAxesFile(paths.interviewAxes, this.fileSystem, file);
+    const store: SessionStore = await this.store(workspaceRoot);
+    store.save({
+      id: axesSessionId,
+      kind: 'interview',
+      openedAt: store.find(axesSessionId)?.openedAt ?? this.now().toISOString(),
+      data: interviewAxesFileSchema.parse(file),
+      pendingCount: 0,
+    });
   }
 
   public async loadWorkingModel(
     workspaceRoot: StoryUri,
     cardId: string,
   ): Promise<InterviewWorkingModel | undefined> {
-    const uri: StoryUri = this.workingModelUri(workspaceRoot, cardId);
+    const elementId: string | undefined = await this.resolveElementId(workspaceRoot, cardId);
+    if (elementId === undefined) {
+      return undefined;
+    }
 
-    return (await this.fileSystem.exists(uri))
-      ? await readInterviewWorkingModelFile(uri, this.fileSystem)
-      : undefined;
+    const model: unknown = sessionDataOf(
+      (await this.store(workspaceRoot)).find(interviewSessionId(elementId)),
+    ).workingModel;
+    return model === undefined ? undefined : parseInterviewWorkingModel(JSON.stringify(model));
   }
 
   public async saveWorkingModel(
     workspaceRoot: StoryUri,
     model: InterviewWorkingModel,
   ): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.interviewWorkingModelDirectory);
-    await writeInterviewWorkingModelFile(
-      this.workingModelUri(workspaceRoot, model.cardId),
-      this.fileSystem,
-      model,
-    );
+    await this.updateCardSession(workspaceRoot, model.cardId, (data, record) => ({
+      data: { ...data, workingModel: interviewWorkingModelSchema.parse(model) },
+      pendingCount: record?.pendingCount ?? 0,
+    }));
   }
 
   public async deleteWorkingModels(workspaceRoot: StoryUri): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const store: SessionStore = await this.store(workspaceRoot);
 
-    if (!(await this.fileSystem.exists(paths.interviewWorkingModelDirectory))) {
-      return;
-    }
-
-    for (const [name] of await this.fileSystem.readDirectory(paths.interviewWorkingModelDirectory)) {
-      if (name.endsWith('.json')) {
-        await this.fileSystem.delete(joinStoryPath(paths.interviewWorkingModelDirectory, name));
+    for (const record of store.listByKind('interview')) {
+      if (record.elementId === undefined) {
+        continue;
       }
+
+      const { workingModel: _workingModel, ...rest } = sessionDataOf(record);
+      store.update(record.id, { data: rest, pendingCount: record.pendingCount });
     }
   }
 
-  public async loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateFile> {
-    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).interviewCandidates;
+  public async savePendingStatements(
+    workspaceRoot: StoryUri,
+    cardId: string,
+    statements: readonly Statement[],
+  ): Promise<void> {
+    await this.updateCardSession(workspaceRoot, cardId, (data) => ({
+      data: replacePendingStatements(data, statements),
+      pendingCount: statements.length,
+    }));
+  }
 
-    if (!(await this.fileSystem.exists(uri))) {
-      return emptyNoteCandidateFile;
+  private async updateCardSession(
+    workspaceRoot: StoryUri,
+    cardId: string,
+    change: (
+      data: InterviewSessionData,
+      record: SessionRecord | undefined,
+    ) => { readonly data: unknown; readonly pendingCount: number },
+  ): Promise<void> {
+    const elementId: string | undefined = await this.resolveElementId(workspaceRoot, cardId);
+    if (elementId === undefined) {
+      throw new Error(`인터뷰할 카드가 없습니다: ${cardId}`);
     }
 
-    return noteCandidateFileSchema.parse(
-      JSON.parse(new TextDecoder().decode(await this.fileSystem.readFile(uri))),
+    const store: SessionStore = await this.store(workspaceRoot);
+    const id: string = interviewSessionId(elementId);
+    const record: SessionRecord | undefined = store.find(id);
+    const changed: { readonly data: unknown; readonly pendingCount: number } = change(
+      sessionDataOf(record),
+      record,
     );
+
+    store.save({
+      id,
+      kind: 'interview',
+      elementId,
+      openedAt: record?.openedAt ?? this.now().toISOString(),
+      data: changed.data,
+      pendingCount: changed.pendingCount,
+    });
   }
 
-  public async saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+  private async resolveElementId(
+    workspaceRoot: StoryUri,
+    cardId: string,
+  ): Promise<string | undefined> {
+    const roster: CardRoster = await this.dependencies.cards.loadRoster(workspaceRoot, [
+      'character',
+      'background',
+    ]);
 
-    if (file.sources.length === 0) {
-      if (await this.fileSystem.exists(paths.interviewCandidates)) {
-        await this.fileSystem.delete(paths.interviewCandidates);
-      }
-      return;
-    }
-
-    await this.fileSystem.createDirectory(paths.interviewCacheDirectory);
-    await this.fileSystem.writeFile(
-      paths.interviewCandidates,
-      new TextEncoder().encode(`${JSON.stringify(file, null, 2)}\n`),
-    );
+    return roster.lookup.idOf('character', cardId) ?? roster.lookup.idOf('background', cardId);
   }
 
-  private workingModelUri(workspaceRoot: StoryUri, cardId: string): StoryUri {
-    return joinStoryPath(workspaceRoot, interviewWorkingModelRelativePath(cardId));
+  private async store(workspaceRoot: StoryUri): Promise<SessionStore> {
+    return new SessionStore(await this.dependencies.caches.open(workspaceRoot));
   }
 }

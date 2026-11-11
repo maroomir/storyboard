@@ -1,11 +1,16 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { InterviewQuestion, InterviewWorkingModel, NoteCandidateFile, UsageRecord } from '@storyboard/story-model';
-import type { InterviewStartResult, PrepareNoteCandidatePromotionResult } from '@storyboard/story-engine';
+import type { InterviewQuestion, InterviewWorkingModel, UsageRecord } from '@storyboard/story-model';
+import {
+  readInterviewAxes,
+  readInterviewPending,
+  readInterviewWorkingModel,
+} from './fixtures/interviewSessions';
+import type { InterviewStartResult } from '@storyboard/story-engine';
 import { MockAiProvider } from '@storyboard/story-ai';
 
 import type { ParsedArguments } from '@/cliArguments';
@@ -51,10 +56,6 @@ async function write(relativePath: string, lines: readonly string[]): Promise<vo
   }
 
   writeFileSync(join(workspace, relativePath), text);
-}
-
-function readJson<T>(relativePath: string): T {
-  return JSON.parse(readFileSync(join(workspace, relativePath), 'utf8')) as T;
 }
 
 beforeEach(async () => {
@@ -196,8 +197,8 @@ describe('interview session (mock provider)', () => {
     ]);
     expect(started.opening.coverage.openAxes[0]?.beatSituations).toHaveLength(3);
     expect(started.opening.coverage.upcomingSceneStems).toEqual(['001-night', '002-dawn']);
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/axes.json'))).toBe(true);
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'))).toBe(true);
+    expect((await readInterviewAxes(workspace)).character).toBeDefined();
+    expect(await readInterviewWorkingModel(workspace, 'hana')).toBeDefined();
   });
 
   it('refuses a card that does not exist', async () => {
@@ -248,7 +249,7 @@ describe('interview session (mock provider)', () => {
     expect(third?.axisId).toBe('affection');
 
     await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'chosen', index: 1 } });
-    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/cards/hana.json');
+    const model: InterviewWorkingModel = (await readInterviewWorkingModel(workspace, 'hana'))!;
     expect(model.tallies).toEqual({ 'pressure-defense': { withhold: 2 }, affection: { indirect: 1 } });
     expect(model.summary).toContain('[Mock AI]');
 
@@ -470,7 +471,7 @@ describe('interview session (mock provider)', () => {
       questionId: first?.id ?? '',
       confirmation: { kind: 'newValue', id: 'laugh-off', label: '웃음으로 넘기기' },
     });
-    const afterConfirm: InterviewWorkingModel = readJson('.storyboard/cache/interviews/cards/hana.json');
+    const afterConfirm: InterviewWorkingModel = (await readInterviewWorkingModel(workspace, 'hana'))!;
     expect(afterConfirm.tallies).toEqual({ 'pressure-defense': { counter: 0, 'laugh-off': 2 } });
     expect(afterConfirm.records[1]?.answer).toEqual({
       kind: 'written',
@@ -478,10 +479,8 @@ describe('interview session (mock provider)', () => {
       valueId: 'laugh-off',
       isNewValue: true,
     });
-    const axes = readJson<{ character: { axes: { id: string; values: { id: string }[] }[] } }>(
-      '.storyboard/cache/interviews/axes.json',
-    );
-    expect(axes.character.axes[0]?.values.map((value) => value.id)).toContain('laugh-off');
+    const axes = await readInterviewAxes(workspace);
+    expect(axes.character?.axes[0]?.values.map((value) => value.id)).toContain('laugh-off');
 
     const second: InterviewQuestion | undefined = await app.interviews.next(request);
     const secondWritten = await app.interviews.answer({
@@ -490,10 +489,10 @@ describe('interview session (mock provider)', () => {
       answer: { kind: 'written', text: '고개를 돌린다' },
     });
     expect(secondWritten.isRebuilt).toBe(true);
-    expect(readJson<InterviewWorkingModel>('.storyboard/cache/interviews/cards/hana.json').writtenStreak).toBe(0);
+    expect((await readInterviewWorkingModel(workspace, 'hana'))!.writtenStreak).toBe(0);
   });
 
-  it('distills decided axes and the chosen speech into one interview source that card promote applies', async () => {
+  it('distills decided axes and the chosen speech into pending lines that card apply writes', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
 
@@ -510,76 +509,22 @@ describe('interview session (mock provider)', () => {
     expect(summary).toMatchObject({ cardId: 'hana', answered: 4, skipped: 1, candidateCount: 2 });
     expect(summary.undecidedAxisLabels).toEqual(['호감 표출']);
 
-    const candidates: NoteCandidateFile = readJson('.storyboard/cache/interviews/candidates.json');
-    expect(candidates.sources).toHaveLength(1);
-    expect(candidates.sources[0]?.location).toBe('interview:hana');
-    expect(candidates.sources[0]?.candidates[0]?.changes.map((change) => change.kind)).toEqual(['relationSpeech', 'trait']);
-    expect(candidates.sources[0]?.candidates[0]?.changes[0]).toMatchObject({ target: 'jun', speech: "'등대 아이'라 부르고 반말" });
+    const pending = await readInterviewPending(workspace, 'hana');
+    expect(pending.map((line) => line.facet).sort()).toEqual(['speech', 'traits']);
+    expect(pending.find((line) => line.facet === 'speech')).toMatchObject({
+      value: "'등대 아이'라 부르고 반말",
+      source: { origin: 'interview', session: sessionId },
+    });
 
     const again = await startSession('hana');
     await again.container.interviews.finish({ workspaceRoot: again.container.workspaceRoot, cardId: 'hana', sessionId: again.sessionId });
-    expect(readJson<NoteCandidateFile>('.storyboard/cache/interviews/candidates.json').sources).toHaveLength(1);
+    expect(await readInterviewPending(workspace, 'hana')).toEqual(pending);
 
-    const prepared: PrepareNoteCandidatePromotionResult = await app.notes.prepareCandidatePromotion(app.workspaceRoot);
-    expect(prepared.kind).toBe('ready');
-    if (prepared.kind !== 'ready') {
-      return;
-    }
-    expect(prepared.candidates[0]?.locations).toEqual(['interview:hana']);
-
-    write('character/hana.card', [
-      'type: character',
-      'id: hana',
-      'name: 하나',
-      'relations:',
-      '  - target: jun',
-      '    type: 소꿉친구',
-      '    speech: 반말',
-      'role: main',
-      'aliases:',
-      '  - 등대 아이',
-      'traits:',
-      '  - 똑 부러진다',
-    ]);
-    await app.notes.promoteCandidates(app.workspaceRoot, prepared.candidates);
+    expect(await app.cards.applyPending(app.workspaceRoot, 'hana')).toMatchObject({ ok: true });
     const card = await readCardFromBundles(workspace, 'hana');
     expect(card?.type === 'character' ? card.traits?.join('\n') : undefined).toContain('[Mock AI] 몰릴 때 먼저 참고');
     expect(card?.type === 'character' ? card.relations?.[0]?.speech : undefined).toBe("'등대 아이'라 부르고 반말");
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
-  });
-
-  it('keeps a candidate a session added after card promote was prepared', async () => {
-    const { container: app, sessionId } = await startSession('hana');
-    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
-    for (let i = 0; i < 4; i += 1) {
-      const question: InterviewQuestion | undefined = await app.interviews.next(request);
-      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
-    }
-    await app.interviews.finish(request);
-
-    const prepared: PrepareNoteCandidatePromotionResult = await app.notes.prepareCandidatePromotion(app.workspaceRoot);
-    expect(prepared.kind).toBe('ready');
-    if (prepared.kind !== 'ready') {
-      return;
-    }
-
-    const candidatesPath: string = '.storyboard/cache/interviews/candidates.json';
-    const finished: NoteCandidateFile = readJson(candidatesPath);
-    const [source] = finished.sources;
-    const [candidate] = source?.candidates ?? [];
-    const laterTrait = { kind: 'trait' as const, id: 'trait-later', value: '등대 불빛을 센다', sourceScenes: [] };
-    const laterSession: NoteCandidateFile = {
-      version: 2,
-      sources: [{ ...source!, id: 's2', candidates: [{ ...candidate!, changes: [...candidate!.changes, laterTrait] }] }],
-    };
-    write(candidatesPath, [JSON.stringify(laterSession, null, 2)]);
-
-    await app.notes.promoteCandidates(app.workspaceRoot, prepared.candidates);
-
-    const remaining: NoteCandidateFile = readJson(candidatesPath);
-    expect(remaining.sources.flatMap((kept) => kept.candidates.flatMap((card) => card.changes))).toEqual([laterTrait]);
-    const hana = await readCardFromBundles(workspace, 'hana');
-    expect(hana?.type === 'character' ? hana.traits ?? [] : []).not.toContain('등대 불빛을 센다');
+    expect(await readInterviewPending(workspace, 'hana')).toEqual([]);
   });
 
   it('calls no distill and keeps the candidates when a session ends without an answer', async () => {
@@ -590,8 +535,8 @@ describe('interview session (mock provider)', () => {
       await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
     }
     await app.interviews.finish(request);
-    const before: NoteCandidateFile = readJson('.storyboard/cache/interviews/candidates.json');
-    expect(before.sources).toHaveLength(1);
+    const before = await readInterviewPending(workspace, 'hana');
+    expect(before.length).toBeGreaterThan(0);
 
     const records: UsageRecord[] = [];
     const recording: CliContainer = createCliContainer({
@@ -616,7 +561,7 @@ describe('interview session (mock provider)', () => {
     }
 
     expect(records.filter((record) => record.taskName === 'interviewDistill')).toHaveLength(0);
-    expect(readJson<NoteCandidateFile>('.storyboard/cache/interviews/candidates.json')).toEqual(before);
+    expect(await readInterviewPending(workspace, 'hana')).toEqual(before);
   });
 
   it('asks the same beat again in the next session when the question was left unanswered', async () => {
@@ -638,7 +583,7 @@ describe('interview session (mock provider)', () => {
 
     expect(asked?.sessionId).toBe(second.sessionId);
     expect(asked?.source).toEqual(cancelled?.source);
-    const model: InterviewWorkingModel = readJson('.storyboard/cache/interviews/cards/tavern.json');
+    const model: InterviewWorkingModel = (await readInterviewWorkingModel(workspace, 'tavern'))!;
     expect(model.records.map((record) => record.id)).toEqual([asked?.id]);
   });
 
@@ -653,10 +598,8 @@ describe('interview session (mock provider)', () => {
     const summary = await app.interviews.finish(request);
 
     expect(summary).toMatchObject({ cardId, answered: 1 });
-    expect(existsSync(join(workspace, `.storyboard/cache/interviews/cards/${cardId}.json`))).toBe(true);
-    expect(readJson<InterviewWorkingModel>(`.storyboard/cache/interviews/cards/${cardId}.json`).cardId).toBe(cardId);
-    expect(readJson<{ version: number; character: unknown }>('.storyboard/cache/interviews/axes.json').character).toBeDefined();
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
+    expect((await readInterviewWorkingModel(workspace, cardId))?.cardId).toBe(cardId);
+    expect((await readInterviewAxes(workspace)).character).toBeDefined();
   });
 
   it('interviews a background through the same verbs and proposes layout and rules', async () => {
@@ -680,10 +623,9 @@ describe('interview session (mock provider)', () => {
 
     const summary = await app.interviews.finish(request);
     expect(summary.candidateCount).toBe(2);
-    const candidates: NoteCandidateFile = readJson('.storyboard/cache/interviews/candidates.json');
-    expect(candidates.sources[0]?.candidates[0]?.changes.map((change) => change.kind)).toEqual([
-      'layoutLine',
-      'ruleLine',
+    expect((await readInterviewPending(workspace, 'tavern')).map((line) => line.facet)).toEqual([
+      'layout',
+      'rules',
     ]);
   });
 

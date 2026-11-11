@@ -212,12 +212,11 @@ export class PromoteNoteCandidatesUseCase {
 
     return {
       notes: loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile,
-      interviews: await this.repositories.interviews.loadCandidates(workspaceRoot),
+      interviews: emptyNoteCandidateFile,
     };
   }
 
   private async saveFiles(workspaceRoot: StoryUri, files: CandidateFiles): Promise<void> {
     await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, files.notes);
-    await this.repositories.interviews.saveCandidates(workspaceRoot, files.interviews);
   }
 }

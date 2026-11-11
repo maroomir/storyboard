@@ -11,6 +11,14 @@ import type { ChoiceRequest, IPrompter, TextRequest } from '@/adapters/prompter'
 
 import { isLegacyCardPath, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
 import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
+import {
+  readInterviewAxes,
+  readInterviewPending,
+  readInterviewWorkingModel,
+  writeInterviewAxes,
+  writeUnreadableInterviewModel,
+} from './fixtures/interviewSessions';
+import type { InterviewAxesFile } from '@storyboard/story-model';
 
 let home: string;
 let workspace: string;
@@ -142,14 +150,8 @@ describe('card interview', () => {
     ]);
     expect(prompter.announced[0]).toBe('┌  하나 인터뷰');
     expect(prompter.announced.at(-1)).toBe('   storyboard card promote 로 반영할 수 있습니다');
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(true);
-
-    const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-    expect(preview.message).toContain('인터뷰에서  hana (하나) 변경 1건');
-
-    const promoted = await run('card promote', args(['card', 'promote']));
-    expect(promoted.ok).toBe(true);
-    expect(await readCardYaml(workspace, 'hana')).toContain('[Mock AI] 몰릴 때');
+    const pending = await readInterviewPending(workspace, 'hana');
+    expect(pending.map((line) => line.value).join('\n')).toContain('[Mock AI] 몰릴 때');
   });
 
   it('lets the writer rename a written answer to a new value and honours --limit', async () => {
@@ -162,9 +164,7 @@ describe('card interview', () => {
       '1번째 · 압박 아래 방어 (001-night · 사건 1)',
       '이 답을 「역공」로 읽었습니다. 맞나요?',
     ]);
-    const model = JSON.parse(
-      readFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), 'utf8'),
-    ) as { records: { answer: { valueId: string; isNewValue: boolean } }[]; tallies: Record<string, Record<string, number>> };
+    const model = (await readInterviewWorkingModel(workspace, 'hana')) as unknown as { records: { answer: { valueId: string; isNewValue: boolean } }[]; tallies: Record<string, Record<string, number>> };
     expect(model.records[0]?.answer).toMatchObject({ valueId: 'custom-4', isNewValue: true });
     expect(model.tallies['pressure-defense']).toEqual({ counter: 0, 'custom-4': 2 });
   });
@@ -177,7 +177,7 @@ describe('card interview', () => {
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('--limit 에는 1 이상의 정수');
     expect(prompter.titles).toEqual([]);
-    expect(existsSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'))).toBe(false);
+    expect(await readInterviewWorkingModel(workspace, 'hana')).toBeUndefined();
   });
 
   it('records 맞다 as a confirmation, so a session cut off afterwards does not wait on it', async () => {
@@ -194,28 +194,23 @@ describe('card interview', () => {
 
     await expect(run('card interview', args(['card', 'interview'], {}, ['hana']), cutOff)).rejects.toThrow('terminal closed');
 
-    const model = JSON.parse(
-      readFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), 'utf8'),
-    ) as { records: { answer?: { kind: string; valueId?: string }; isConfirmed: boolean }[] };
+    const model = (await readInterviewWorkingModel(workspace, 'hana')) as unknown as { records: { answer?: { kind: string; valueId?: string }; isConfirmed: boolean }[] };
     expect(model.records[0]).toMatchObject({ answer: { kind: 'written', valueId: 'counter' }, isConfirmed: true });
   });
 
   it('gives a new value an id no other value of the axis has', async () => {
-    const axesPath: string = join(workspace, '.storyboard/cache/interviews/axes.json');
     await run('card interview', args(['card', 'interview'], { limit: '1' }, ['hana']), scriptedPrompter(['[Mock AI] withhold']));
-    const axes = JSON.parse(readFileSync(axesPath, 'utf8')) as {
+    const axes = JSON.parse(JSON.stringify(await readInterviewAxes(workspace))) as {
       character: { axes: { id: string; values: { id: string; label: string }[] }[] };
     };
     const pressure = axes.character.axes.find((axis) => axis.id === 'pressure-defense');
     pressure?.values.splice(0, 1, { id: 'custom-4', label: '먼저 쓴 새 값' });
-    writeFileSync(axesPath, JSON.stringify(axes));
+    await writeInterviewAxes(workspace, axes as unknown as InterviewAxesFile);
     const prompter: ScriptedPrompter = scriptedPrompter(['직접 쓰기', '새 값으로'], ['웃어 버린다', '웃음으로 넘기기']);
 
     await run('card interview', args(['card', 'interview'], { limit: '1' }, ['hana']), prompter);
 
-    const model = JSON.parse(
-      readFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), 'utf8'),
-    ) as { records: { answer?: { kind: string; valueId?: string } }[] };
+    const model = (await readInterviewWorkingModel(workspace, 'hana')) as unknown as { records: { answer?: { kind: string; valueId?: string } }[] };
     const written = model.records.find((record) => record.answer?.kind === 'written');
     expect(written?.answer?.valueId).toBe('custom-5');
   });
@@ -235,18 +230,18 @@ describe('card interview', () => {
 
   it('reports an unreadable working model file in doctor and status without stopping the other checks', async () => {
     await run('card interview', args(['card', 'interview'], { limit: '1' }, ['hana']), scriptedPrompter(['[Mock AI] withhold']));
-    writeFileSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'), '{"version": 1, "records": [');
+    await writeUnreadableInterviewModel(workspace, 'hana');
 
     const doctor = await run('doctor', args(['doctor']));
     expect(doctor.ok).toBe(false);
-    expect(doctor.message).toContain('인터뷰 작업 모델: .storyboard/cache/interviews/cards/hana.json: 인터뷰 작업 모델 JSON 을 읽을 수 없습니다.');
+    expect(doctor.message).toContain('인터뷰 작업 모델: 캐시 DB 의 hana 인터뷰 세션: 인터뷰 작업 모델 스키마가 올바르지 않습니다.');
     expect(doctor.message).toContain('지우면 하나 인터뷰는 처음부터 다시 시작합니다');
     expect(doctor.message).toContain('워크스페이스:');
     expect(doctor.message).toContain('Node:');
 
     const status = await run('status', args(['status']));
     expect(status.ok).toBe(true);
-    expect(status.message).toContain('인터뷰    경고: .storyboard/cache/interviews/cards/hana.json 을(를) 읽을 수 없습니다 — storyboard doctor');
+    expect(status.message).toContain('인터뷰    경고: 캐시 DB 의 hana 인터뷰 세션 을(를) 읽을 수 없습니다 — storyboard doctor');
     expect(status.message).not.toContain('하나 — 다음 씬의 인물·장소를 아직 인터뷰하지 않았습니다');
   });
 

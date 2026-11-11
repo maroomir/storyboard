@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   emptyInterviewAxesFile,
   interviewAxesFileSchema,
-  interviewWorkingModelRelativePath,
   interviewWorkingModelSchema,
   type InterviewAxesFile,
   type InterviewWorkingModel,
@@ -83,9 +82,5 @@ describe('interview cache schemas', () => {
         records: [{ ...workingModel.records[0], answer: { kind: 'guessed' } }],
       }).success,
     ).toBe(false);
-  });
-
-  it('keeps one working model file per card under the interview cache', () => {
-    expect(interviewWorkingModelRelativePath('hana')).toBe('.storyboard/cache/interviews/cards/hana.json');
   });
 });

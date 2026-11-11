@@ -1,3 +1,4 @@
+import { describeInterviewSessionLocation } from '#engine/persistence/repositories/interviewRepository';
 import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
   chooseUpcomingScenes,
@@ -11,7 +12,6 @@ import {
 } from '#engine/application/interviews/interviewTuning';
 import {
   getStoryboardProjectPaths,
-  interviewWorkingModelRelativePath,
   scenePath,
   type BibleSubjectKind,
   type InterviewAxesFile,
@@ -133,7 +133,7 @@ export class DescribeInterviewCoverageUseCase {
     } catch (error) {
       return {
         unreadable: {
-          relativePath: interviewWorkingModelRelativePath(cardId),
+          relativePath: describeInterviewSessionLocation(cardId),
           message: error instanceof Error ? error.message : String(error),
         },
       };

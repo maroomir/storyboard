@@ -24,7 +24,6 @@ import {
   mainThreadId,
   parseSceneFileName,
   parseSceneStem,
-  readInterviewAxesFile,
   readMissingGitignoreEntries,
   requiresApiKey,
   type AiProviderId,
@@ -582,7 +581,7 @@ export class DoctorChecks {
       ...(await this.beatCast(survey.census.cards)),
       ...(await this.outlineAddresses(survey.census.cards)),
       ...(await this.cachedBackgroundConflicts()),
-      ...(await this.interviews(paths)),
+      ...(await this.interviews()),
       ...(await this.addressCatchphrases()),
     ];
   }
@@ -739,7 +738,7 @@ export class DoctorChecks {
     return checks;
   }
 
-  private async interviews(paths: StoryboardProjectPaths): Promise<DoctorCheck[]> {
+  private async interviews(): Promise<DoctorCheck[]> {
     const root: StoryUri = this.container.workspaceRoot;
     const coverage: InterviewCardCoverage[] = await this.container.interviews.describeCoverage({
       workspaceRoot: root,
@@ -769,11 +768,11 @@ export class DoctorChecks {
       })),
     ];
 
-    if (!existsSync(paths.interviewAxes.fsPath)) {
+    const axes: InterviewAxesFile = await this.container.interviews.readAxes(root);
+    if (axes.character === undefined && axes.background === undefined) {
       return checks;
     }
 
-    const axes: InterviewAxesFile = await readInterviewAxesFile(paths.interviewAxes, this.container.fileSystem);
     const project: StoryboardProject = await this.container.project.read(root);
     const contractHash: string = computeInterviewContractHash(project.setting);
     const staleKinds: string[] = (['character', 'background'] as const)

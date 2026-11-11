@@ -161,6 +161,12 @@ export class SessionStore {
     );
   }
 
+  public listByKind(kind: SessionKind): readonly SessionRecord[] {
+    return toSessionRecords(
+      this.database.all('SELECT * FROM sessions WHERE kind = ? ORDER BY opened_at, id', [kind]),
+    );
+  }
+
   public listWithPending(): readonly SessionRecord[] {
     return toSessionRecords(
       this.database.all('SELECT * FROM sessions WHERE pending_count > 0 ORDER BY opened_at, id'),
