@@ -6,10 +6,7 @@ import {
   draftPath,
   type Draft,
 } from '@storyboard/story-model';
-import {
-  DraftHistoryArchiver,
-  type DraftArchivePolicy,
-} from '#engine/application/drafts/draftHistoryArchiver';
+import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 
 import type { IUseCase } from '#engine/application/useCase';
 
@@ -17,7 +14,6 @@ export interface SaveDraftEditRequest {
   readonly workspaceRoot: StoryUri;
   readonly sceneStem: string;
   readonly body: string;
-  readonly archive?: DraftArchivePolicy;
 }
 
 export type SaveDraftEditResult =
@@ -47,11 +43,10 @@ export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, Save
       return { ok: true, kind: 'unchanged' };
     }
 
-    const archivedAs: string | undefined = this.archiver.shouldArchive(
-      request.archive ?? 'per-setting',
-    )
-      ? await this.archiver.archive(request.workspaceRoot, request.sceneStem)
-      : undefined;
+    const archivedAs: string | undefined = await this.archiver.archive(
+      request.workspaceRoot,
+      request.sceneStem,
+    );
 
     await this.host.fileSystem.writeFile(
       draftUri,

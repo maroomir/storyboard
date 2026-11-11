@@ -103,14 +103,6 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     group: '생성',
   },
   {
-    key: 'editor.draft.keepHistory',
-    label: '이전 초안 보관',
-    description: '초안을 덮어쓰기 전에 이전 판을 캐시(.storyboard/cache/revisions/)에 씬마다 최근 10판까지 남깁니다.',
-    kind: 'boolean',
-    defaultValue: false,
-    group: '생성',
-  },
-  {
     key: 'generation.sceneBreak.enabled',
     label: '장면 전환 구분자 삽입',
     description: '초안 생성 시 장면 사이에 구분자를 넣습니다.',

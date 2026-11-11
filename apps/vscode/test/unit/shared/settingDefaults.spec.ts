@@ -13,7 +13,6 @@ const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | numbe
   "generation.beats.charsPerBeat": (bridge) => bridge.getCharsPerBeat(),
   "generation.section.outputLimit": (bridge) => bridge.getSectionOutputLimit(),
   "generation.beats.minimum": (bridge) => bridge.getMinBeats(),
-  "editor.draft.keepHistory": (bridge) => bridge.isKeepDraftHistoryEnabled(),
   "generation.sceneBreak.enabled": (bridge) => bridge.getDraftSceneBreakSeparator() !== undefined,
   "generation.sceneBreak.separator": (bridge) => bridge.getDraftSceneBreakSeparator(),
   "generation.context.condense": (bridge) => bridge.isAiContextCondenseEnabled(),

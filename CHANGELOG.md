@@ -11,6 +11,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 변경 (호환성 주의)
 
+- **초안 판본을 언제나 남깁니다.** 설정 `editor.draft.keepHistory` 가 없어지고, 생성·재생성·손질(`draft edit`·`augment`·`condense`·`expand`)·스튜디오의 초안 적용이 덮어쓰기 전에 늘 이전 판을 캐시(`.storyboard/cache/revisions/<씬 uuid>/`)에 씬마다 최근 10판까지 남깁니다. `config.json` 에 남은 옛 키는 모르는 키로 경고됩니다.
 - **확장의 카드 삭제가 번들과 참조를 함께 정리합니다.** 사이드바의 🗑 가 `card.yaml` 파일 하나만 지우던 것을, 먼저 지울 것을 미리 보고(엔진 `cards.remove` 의 미리보기) «세라를 삭제할까요?» 팝업에 폴더, 가리키는 곳의 수와 목록, 그 카드만 알던 상태 줄을 보인 뒤 «삭제하고 함께 정리»를 누르면 CLI 의 `card remove --force` 와 같이 번들을 지우고 참조를 걷어 냅니다. 지운 줄은 세션 기록에 남습니다.
 - **카드의 제안을 스튜디오에서 받거나 버립니다.** 인물·배경 카드를 연 스튜디오 위에 «이 카드에 제안 n건이 기다려요» 띠가 생겨, 인터뷰·노트 흡수·스튜디오가 남긴 제안을 섹션별 줄로 보여 주고 «적용»(CLI `card apply` 와 같음)·«버림»(`card discard`)을 받습니다. 스튜디오의 카드 수정 제안은 바뀔 줄을 섹션별로 보여 주는 카드 스냅숏과 «적용»·«버림» 버튼을 답니다(전의 «승인»·«거절»). 명령 «Promote Card Candidates»(`storyboard.cards.promoteCandidates`)는 없어졌습니다.
 - **확장의 «+» 가 스튜디오를 엽니다.** Characters·Backgrounds·Scenes 뷰의 «+»(Create Character·Create Background·New Scene)가 이름·ID 입력창 대신 스튜디오를 «어떤 캐릭터를 만드시겠어요?»로 열고, 설명을 한 번 적으면 CLI 의 `card create`·`scene create` 와 같은 엔진 동사가 번들을 만들어 설명으로 채운 뒤 뷰어를 엽니다. 인물·배경은 설명에서 이름과 slug 를 읽고(읽지 못하면 «새 인물»·«새 배경», 겹치면 번호), 만든 뒤 스튜디오가 인터뷰 화면으로 넘어갑니다. 스튜디오의 `/update`(카드 업데이트)도 같은 길로 카드를 만듭니다.

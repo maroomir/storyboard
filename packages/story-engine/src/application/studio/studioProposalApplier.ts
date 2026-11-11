@@ -273,7 +273,7 @@ export class StudioProposalApplier {
     }
 
     try {
-      await this.dependencies.revisions.archiveWhenHistoryIsKept(workspaceRoot, entity.key);
+      await this.dependencies.revisions.archive(workspaceRoot, entity.key);
     } catch (error) {
       this.dependencies.logger.warn(`이전 초안을 판본으로 남기지 못했습니다: ${String(error)}`);
     }

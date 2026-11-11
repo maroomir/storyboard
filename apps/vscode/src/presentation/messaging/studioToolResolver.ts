@@ -29,7 +29,7 @@ export interface StudioInvokeResolverDependencies {
 export interface StudioDocumentManagers {
   readonly drafts: Pick<
     DraftManager,
-    'readSceneContext' | 'readSceneNarrative' | 'archiveDraftWhenHistoryIsKept' | 'readScene'
+    'readSceneContext' | 'readSceneNarrative' | 'archiveDraft' | 'readScene'
   >;
   readonly project: Pick<ProjectManager, 'read'>;
 }
