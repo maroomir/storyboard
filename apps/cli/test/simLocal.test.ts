@@ -14,6 +14,7 @@ import { chooseCostAxis } from '@storyboard/story-sim';
 
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
+import { writeTrackScene } from './fixtures/trackScenes';
 
 let home: string;
 let workspace: string;
@@ -218,11 +219,8 @@ describe('the judge runs on the measured machine', () => {
     const genre = join(track, 'track', 'chain', 'thriller');
     mkdirSync(join(genre, 'scene'), { recursive: true });
     mkdirSync(join(genre, 'floor'), { recursive: true });
-    writeFileSync(
-      join(genre, 'scene', '01-a.card'),
-      'type: scene\nid: 01-a\ntitle: 첫 씬\ntargetWordCount: 300\nsummary: 문을 연다.\n',
-    );
-    writeFileSync(join(genre, 'floor', '01-a.md'), '망가진 원고. 문. 문. 문.');
+    writeTrackScene(genre, { stem: '001-a', title: '첫 씬', targetWordCount: 300 });
+    writeFileSync(join(genre, 'floor', '001-a.md'), '망가진 원고. 문. 문. 문.');
     writeFileSync(
       join(track, 'sim.config.json'),
       JSON.stringify({ ollama: { baseUrl, contextTokens: 32768 } }),

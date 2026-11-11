@@ -9,6 +9,7 @@ import { parseSimConfig, readSimConfig, simConfigFileName } from '@storyboard/st
 import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
+import { writeTrackScene } from './fixtures/trackScenes';
 
 let home: string;
 let track: string;
@@ -42,11 +43,8 @@ beforeEach(() => {
   const genre = join(track, 'track', 'chain', 'thriller');
   mkdirSync(join(genre, 'scene'), { recursive: true });
   mkdirSync(join(genre, 'floor'), { recursive: true });
-  writeFileSync(
-    join(genre, 'scene', '01-a.card'),
-    'type: scene\nid: 01-a\ntitle: 첫 씬\ntargetWordCount: 3000\nsummary: 문을 연다.\n',
-  );
-  writeFileSync(join(genre, 'floor', '01-a.md'), '망가진 원고');
+  writeTrackScene(genre, { stem: '001-a', title: '첫 씬', targetWordCount: 3000 });
+  writeFileSync(join(genre, 'floor', '001-a.md'), '망가진 원고');
 });
 
 afterEach(() => {

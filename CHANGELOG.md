@@ -11,6 +11,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 변경 (호환성 주의)
 
+- **측정 트랙도 번들 형식입니다.** `sim` 이 트랙의 씬을 `scene/NNN-slug.card/` 번들에서 읽습니다(목표 분량은 `card.yaml` 의 `targetWordCount`, 목적은 `statements.yaml` 의 `purpose` 진술). 훼손 원고는 `floor/NNN-slug.md`, 인물 이름은 `character/<slug>.card/card.yaml` 에서 읽습니다. 0.15 형식의 트랙은 다시 만들어야 합니다.
 - **확장의 «씬 기반 카드 구성»이 번들에 씁니다.** 고른 변경만 CLI 의 `card build` 와 같은 엔진 동사로 `statements.yaml` 에 쓰고(출처 `studio`), 미리보기는 지금 카드와 제안된 카드를 같은 꼴로 견줍니다. 전에는 옛 카드 YAML 을 `card.yaml` 에 통째로 써서 번들을 깨뜨렸습니다. 스튜디오의 카드 제안 «diff 보기»도 `card.yaml` 대신 스튜디오가 본 카드를 견줍니다. 인물 호버에서 «최근 대사»가 빠졌습니다(카드가 더는 갖지 않음).
 - **초안 판본을 언제나 남깁니다.** 설정 `editor.draft.keepHistory` 가 없어지고, 생성·재생성·손질(`draft edit`·`augment`·`condense`·`expand`)·스튜디오의 초안 적용이 덮어쓰기 전에 늘 이전 판을 캐시(`.storyboard/cache/revisions/<씬 uuid>/`)에 씬마다 최근 10판까지 남깁니다. `config.json` 에 남은 옛 키는 모르는 키로 경고됩니다.
 - **확장의 카드 삭제가 번들과 참조를 함께 정리합니다.** 사이드바의 🗑 가 `card.yaml` 파일 하나만 지우던 것을, 먼저 지울 것을 미리 보고(엔진 `cards.remove` 의 미리보기) «세라를 삭제할까요?» 팝업에 폴더, 가리키는 곳의 수와 목록, 그 카드만 알던 상태 줄을 보인 뒤 «삭제하고 함께 정리»를 누르면 CLI 의 `card remove --force` 와 같이 번들을 지우고 참조를 걷어 냅니다. 지운 줄은 세션 기록에 남습니다.
