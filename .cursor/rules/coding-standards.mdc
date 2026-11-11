@@ -22,8 +22,9 @@ for schema-first types and the error-class template. Generic readability and ver
   construct ones no command or handler calls.
 - A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
   contract. Inside a package, organize by role — `story-ai`'s `ai/` (services) and `ports/`
-  (host adapters) split is the model. `story-model` keeps one folder per origin: `format/` (file
-  format), `contracts/` (AI contracts), `shared/` (app-to-app contracts), `domain/` (pure policies),
+  (host adapters) split is the model. `story-model` keeps one folder per origin: `element/`
+  (element kinds, statement facets and the statement schema), `format/` (file format), `contracts/`
+  (AI contracts), `shared/` (app-to-app contracts), `domain/` (pure policies),
   `paths/` (path rules), each importing only the ones before it.
 - Packages ship TypeScript source (no build); every app must resolve `@storyboard/*` identically in
   tsconfig `paths`, esbuild `alias`, and vitest `alias` — keep all three in sync when adding a

@@ -10,11 +10,8 @@ import { cardIdPattern, type CharacterRole, type StoryboardCard } from '#model/f
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
 import { sceneFileNamePattern, type SceneCard, type SceneFile } from '#model/format/scene';
 
-import {
-  addUniqueCardListText,
-  normalizeCardListText,
-  shouldProposeCardCollect,
-} from '#model/domain/cardCollect';
+import { addUniqueCardListText, shouldProposeCardCollect } from '#model/domain/cardCollect';
+import { normalizeCardListText } from '#model/element/statementText';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

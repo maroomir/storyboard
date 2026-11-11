@@ -1,0 +1,70 @@
+import type { ElementDefinition } from '#model/element/facet';
+
+export type CharacterFacetId = 'traits' | 'catchphrases' | 'desire' | 'relation' | 'speech' | 'arc';
+
+export const characterElement: ElementDefinition<CharacterFacetId> = {
+  kind: 'character',
+  sections: ['personality', 'voice', 'relations', 'arc', 'description', 'facts'],
+  facets: [
+    {
+      id: 'traits',
+      label: '성격',
+      shape: 'list',
+      kinds: ['character'],
+      section: 'personality',
+      key: 'forbidden',
+      about: 'forbidden',
+      consumers: ['profile', 'interview'],
+    },
+    {
+      id: 'catchphrases',
+      label: '입버릇',
+      shape: 'list',
+      kinds: ['character'],
+      section: 'voice',
+      key: 'forbidden',
+      about: 'forbidden',
+      consumers: ['profile', 'catchphraseLimit'],
+    },
+    {
+      id: 'desire',
+      label: '욕망',
+      shape: 'list',
+      kinds: ['character'],
+      section: 'personality',
+      key: 'forbidden',
+      about: 'forbidden',
+      consumers: ['profile', 'interview'],
+    },
+    {
+      id: 'relation',
+      label: '관계',
+      shape: 'perTarget',
+      kinds: ['character'],
+      section: 'relations',
+      key: 'forbidden',
+      about: 'required',
+      consumers: ['profile'],
+    },
+    {
+      id: 'speech',
+      label: '상대별 말투',
+      shape: 'perTarget',
+      kinds: ['character'],
+      section: 'relations',
+      key: 'forbidden',
+      about: 'required',
+      consumers: ['profile', 'interview', 'dialoguePolish'],
+    },
+    {
+      id: 'arc',
+      label: '변화',
+      shape: 'scalar',
+      kinds: ['character'],
+      section: 'arc',
+      key: 'forbidden',
+      about: 'forbidden',
+      consumers: ['profile'],
+    },
+  ],
+};

@@ -1,4 +1,5 @@
-import { normalizeCardListText, shouldProposeCardCollect } from '#model/domain/cardCollect';
+import { shouldProposeCardCollect } from '#model/domain/cardCollect';
+import { normalizeCardListText } from '#model/element/statementText';
 import type { StoryboardCard } from '#model/format/card';
 import type { CardCollectProposal } from '#model/shared/cardCollect';
 import type {
