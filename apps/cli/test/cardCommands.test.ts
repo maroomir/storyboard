@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -162,5 +162,54 @@ describe('init --repair and copied uuids', () => {
     const idOf = (folder: string): string | undefined =>
       /^id: (.+)$/m.exec(readFileSync(join(folder, 'card.yaml'), 'utf8'))?.[1];
     expect(idOf(copy)).not.toBe(idOf(original));
+  });
+});
+
+describe('doctor on bundles', () => {
+  interface Check {
+    readonly status: string;
+    readonly label: string;
+    readonly detail: string;
+  }
+
+  async function checks(): Promise<readonly Check[]> {
+    const outcome = await run('doctor', args(['doctor']));
+    return (outcome.data as { checks: Check[] }).checks;
+  }
+
+  it('fails on a copied uuid until init --repair gives the copy its own', async () => {
+    cpSync(join(workspace, 'character', 'sera.card'), join(workspace, 'character', 'sera-copy.card'), {
+      recursive: true,
+    });
+    const copyCard: string = join(workspace, 'character', 'sera-copy.card', 'card.yaml');
+    writeFileSync(copyCard, readFileSync(copyCard, 'utf8').replace('slug: sera', 'slug: sera-copy'));
+
+    expect((await checks()).find((check) => check.label === '복사된 uuid')?.status).toBe('fail');
+    await run('init', args(['init'], { repair: true }));
+    expect((await checks()).some((check) => check.label === '복사된 uuid')).toBe(false);
+  });
+
+  it('warns about a file no bundle knows and a folder out of structure order', async () => {
+    writeFileSync(join(workspace, 'character', 'elia.card', 'notes.txt'), '메모\n');
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-rooftop\ntitle: 옥상\n');
+    renameSync(join(workspace, 'scene', '001-rooftop.card'), join(workspace, 'scene', '007-rooftop.card'));
+
+    const found: readonly Check[] = await checks();
+    expect(found.find((check) => check.label === '번들의 모르는 파일')?.detail).toContain('notes.txt');
+    expect(found.find((check) => check.label === '씬 번호')?.detail).toContain('007-rooftop.card');
+
+    await run('init', args(['init'], { repair: true }));
+    expect(existsSync(join(workspace, 'scene', '001-rooftop.card'))).toBe(true);
+    expect((await checks()).some((check) => check.label === '씬 번호')).toBe(false);
+  });
+
+  it('notes a background no scene uses and an alias two backgrounds share', async () => {
+    writeCardBundleFromYaml(workspace, 'type: location\nid: market\nname: 야시장\naliases:\n  - 시장\n');
+    writeCardBundleFromYaml(workspace, 'type: location\nid: harbor\nname: 항구\naliases:\n  - 시장\n');
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-night\ntitle: 밤\nbeats:\n  - text: 걷는다\n    place: market\n');
+
+    const found: readonly Check[] = await checks();
+    expect(found.find((check) => check.label === '쓰이지 않는 배경')?.detail).toContain('harbor');
+    expect(found.find((check) => check.label === '겹치는 별칭')?.detail).toContain('«시장»');
   });
 });

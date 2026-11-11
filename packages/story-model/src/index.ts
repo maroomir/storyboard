@@ -58,7 +58,6 @@ export * from '#model/domain/notes/noteChunks';
 export * from '#model/domain/notes/noteMarkdown';
 export * from '#model/domain/notes/notionBlocks';
 export * from '#model/domain/novelRunPlan';
-export * from '#model/domain/outlineAddressConflicts';
 export * from '#model/domain/sceneNumbering';
 export * from '#model/domain/cardRemoval';
 export * from '#model/domain/sessionPending';

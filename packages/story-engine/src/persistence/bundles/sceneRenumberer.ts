@@ -4,6 +4,7 @@ import {
   joinStoryPath,
   mainThreadId,
   parseDraft,
+  listMisnumberedScenes,
   planSceneRenames,
   serializeDraft,
   STORYBOARD_FILE_EXTENSIONS,
@@ -119,6 +120,15 @@ export class SceneRenumberer {
       stemsById(roster),
       stemsById(await this.dependencies.scenes.loadRoster(workspaceRoot)),
     );
+  }
+
+  public async listMisnumbered(workspaceRoot: StoryUri): Promise<readonly string[]> {
+    const roster: SceneRoster = await this.dependencies.scenes.loadRoster(workspaceRoot);
+
+    return listMisnumberedScenes(
+      roster.structure,
+      await this.listBundlesOnDisk(workspaceRoot, roster),
+    ).map((bundle) => bundle.directoryName);
   }
 
   public async findUnfinished(workspaceRoot: StoryUri): Promise<SceneRenameJournal | undefined> {

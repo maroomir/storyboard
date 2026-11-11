@@ -9,18 +9,18 @@ import type {
   CardReading,
   ResourceOverrideReport,
 } from '@storyboard/story-app';
-import type { SceneRenameJournal } from '@storyboard/story-engine';
+import type {
+  BundleWarning,
+  SceneRenameJournal,
+  WorkspaceBundleAudit,
+} from '@storyboard/story-engine';
 import {
   backgroundCardRelativePath,
   computeInterviewContractHash,
-  findOutlineAddressConflicts,
-  findUnknownBeatCast,
-  flattenChapterPlan,
   formatBackgroundFactConflict,
   formatSceneOrderRanges,
   getStoryboardProjectPaths,
   isHiddenProvider,
-  listChapterTextsBySceneOrder,
   mainThreadId,
   parseSceneFileName,
   parseSceneStem,
@@ -32,7 +32,6 @@ import {
   type ModelMeasurement,
   type NarratorCard,
   type SceneCard,
-  type SidebarCardSummary,
   type StoryboardProject,
   type StoryboardProjectPaths,
   type StoryUri,
@@ -100,7 +99,6 @@ interface NarrationSurvey {
   readonly missingNarrators: readonly string[];
   readonly unknownThreads: readonly string[];
   readonly focallessNarrators: readonly NarratorCard[];
-  readonly narrationlessScenes: readonly string[];
 }
 
 type NarrationCheck = (survey: NarrationSurvey) => DoctorCheck[];
@@ -211,25 +209,11 @@ function checkFocallessNarrators({ focallessNarrators }: NarrationSurvey): Docto
     : [];
 }
 
-function checkNarrationlessScenes({ narrationlessScenes }: NarrationSurvey): DoctorCheck[] {
-  return narrationlessScenes.length > 0
-    ? [
-        {
-          status: 'warn',
-          label: '시점',
-          detail: `povCharacter 가 있는 씬 ${narrationlessScenes.length}개에 시점이 없습니다 (예: ${narrationlessScenes[0]}). 작품 계약의 pov 도 서술자도 없으면 시점 지시 없이 생성돼 3인칭으로 흐릅니다.`,
-          fix: 'storyboard project set --pov first',
-        },
-      ]
-    : [];
-}
-
 const narrationChecks: readonly NarrationCheck[] = [
   checkNarrators,
   checkMissingNarrators,
   checkUnknownThreads,
   checkFocallessNarrators,
-  checkNarrationlessScenes,
 ];
 
 function checkMissingDirectories({ missingDirectories }: WorkspaceSurvey): DoctorCheck[] {
@@ -324,6 +308,30 @@ function checkSceneCount({ scenes, drafts }: WorkspaceSurvey): DoctorCheck[] {
       ...(scenes.length > 0
         ? {}
         : { fix: 'storyboard scene seed  또는  storyboard scene create --name <이름>' }),
+    },
+  ];
+}
+
+const bundleWarningLabels: Readonly<Record<BundleWarning['kind'], string>> = {
+  'copied-id': '복사된 uuid',
+  'unknown-entry': '번들의 모르는 파일',
+  'changed-outside-engine': '엔진 밖 변경',
+  'slug-mismatch': '번들 slug',
+  unreadable: '읽지 못한 번들',
+};
+
+function describeBundleWarning(warning: BundleWarning): DoctorCheck[] {
+  if (warning.kind === 'unreadable') {
+    return [];
+  }
+
+  const isCopiedId: boolean = warning.kind === 'copied-id';
+  return [
+    {
+      status: isCopiedId ? 'fail' : 'warn',
+      label: bundleWarningLabels[warning.kind],
+      detail: warning.message,
+      ...(isCopiedId ? { fix: 'storyboard init --repair' } : {}),
     },
   ];
 }
@@ -446,39 +454,13 @@ export class DoctorChecks {
     const project: StoryboardProject | undefined = await this.container.project
       .read(this.container.workspaceRoot)
       .catch(() => undefined);
-    const narrationlessScenes: string[] = await this.findNarrationlessScenes(sceneCards, project);
 
     return {
       narrators,
       missingNarrators: findMissingNarrators(sceneCards, project, narrators),
       unknownThreads: findUnknownThreads(sceneCards, project),
       focallessNarrators: findFocallessNarrators(narrators),
-      narrationlessScenes,
     };
-  }
-
-  private async findNarrationlessScenes(
-    sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
-    project: StoryboardProject | undefined,
-  ): Promise<string[]> {
-    if (project?.setting?.pov !== undefined || project?.setting?.narration?.defaultNarrator) {
-      return [];
-    }
-
-    const chapterNarrators: (string | undefined)[] = await this.container.novel
-      .readChapterPlan(this.container.workspaceRoot)
-      .then((plan) =>
-        plan === undefined ? [] : flattenChapterPlan(plan).map((placement) => placement.chapterNarrator),
-      )
-      .catch(() => [] as (string | undefined)[]);
-
-    return sceneCards
-      .filter(({ card }) => card.povCharacter !== undefined && card.narrator === undefined)
-      .filter(({ card }) => {
-        const order: number | undefined = parseSceneStem(card.id)?.order;
-        return order === undefined || chapterNarrators[order - 1] === undefined;
-      })
-      .map(({ card }) => card.id);
   }
 
   private async storyState(): Promise<DoctorCheck[]> {
@@ -578,8 +560,7 @@ export class DoctorChecks {
       ...(await this.chapterSummaries()),
       ...runChecks(workspaceRepositoryChecks),
       ...(await this.narration(survey.census.cards)),
-      ...(await this.beatCast(survey.census.cards)),
-      ...(await this.outlineAddresses(survey.census.cards)),
+      ...(await this.bundles()),
       ...(await this.cachedBackgroundConflicts()),
       ...(await this.interviews()),
       ...(await this.addressCatchphrases()),
@@ -620,86 +601,38 @@ export class DoctorChecks {
     };
   }
 
-  private async beatCast(
-    sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
-  ): Promise<DoctorCheck[]> {
-    const hasCast: boolean = sceneCards.some(({ card }) =>
-      (card.beats ?? []).some((beat) => typeof beat !== 'string' && (beat.cast?.length ?? 0) > 0),
-    );
-    if (!hasCast) {
-      return [];
-    }
-
-    const summaries: SidebarCardSummary[] = await this.container.cards.list(
+  private async bundles(): Promise<DoctorCheck[]> {
+    const audit: WorkspaceBundleAudit = await this.container.workspace.auditBundles(
       this.container.workspaceRoot,
-      'character',
-    );
-    const characters: { id: string; name: string; aliases: readonly string[] }[] = [];
-    for (const summary of summaries) {
-      const reading: CardReading | undefined = await this.container.cards.read(
-        this.container.workspaceRoot,
-        summary.id,
-      );
-      const aliases: string[] =
-        reading?.card.type === 'character' ? (reading.card.aliases ?? []) : [];
-      characters.push({ id: summary.id, name: summary.name, aliases });
-    }
-
-    const unknown: string[] = sceneCards.flatMap(({ fileName, card }) =>
-      findUnknownBeatCast(card.beats, characters).map(
-        ({ beat, ref }) => `${fileName.replace(/\.card$/, '')} 비트 ${beat}: ${ref}`,
-      ),
     );
 
-    return unknown.length === 0
-      ? []
-      : [
-          {
-            status: 'warn',
-            label: '비트 출연',
-            detail: `인물 카드의 id·이름·별칭과 맞지 않는 출연이 있습니다 (${unknown.join(', ')}). 이름으로 바뀌지 않고 그대로 프롬프트에 실립니다.`,
-            fix: 'storyboard card list character',
-          },
-        ];
-  }
-
-  private async outlineAddresses(
-    sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
-  ): Promise<DoctorCheck[]> {
-    const chapterTexts: readonly string[] = await this.container.novel
-      .readChapterPlan(this.container.workspaceRoot)
-      .then((plan) => (plan === undefined ? [] : listChapterTextsBySceneOrder(plan)))
-      .catch((): string[] => []);
-    if (chapterTexts.length === 0) {
-      return [];
-    }
-
-    const conflicts: string[] = sceneCards.flatMap(({ fileName, card }): string[] => {
-      const order: number | undefined = parseSceneStem(card.id)?.order;
-      const chapterText: string | undefined =
-        order === undefined ? undefined : chapterTexts[order - 1];
-      const cardPlaces: string[] = [
-        card.grounding?.place ?? '',
-        ...(card.beats ?? []).map((beat) => (typeof beat === 'string' ? '' : (beat.place ?? ''))),
-      ];
-      return chapterText === undefined
+    return [
+      ...audit.warnings.flatMap(describeBundleWarning),
+      ...(audit.misnumberedScenes.length === 0
         ? []
-        : findOutlineAddressConflicts(cardPlaces, chapterText).map(
-            (conflict) =>
-              `${fileName.replace(/\.card$/, '')}: ${conflict.cardAddress} (아웃라인 ${conflict.outlineAddress})`,
-          );
-    });
-
-    return conflicts.length === 0
-      ? []
-      : [
-          {
-            status: 'warn',
-            label: '아웃라인 장소',
-            detail: `씬 카드의 장소가 그 장의 아웃라인과 다른 동·호를 가리킵니다 (${conflicts.join(', ')}). 초안과 검수가 카드 쪽을 따릅니다.`,
-            fix: 'storyboard scene show <stem>',
-          },
-        ];
+        : [
+            {
+              status: 'warn' as const,
+              label: '씬 번호',
+              detail: `폴더 번호가 구조 순서와 다릅니다: ${audit.misnumberedScenes.join(', ')}`,
+              fix: 'storyboard init --repair',
+            },
+          ]),
+      ...(audit.unusedBackgrounds.length === 0
+        ? []
+        : [
+            {
+              status: 'info' as const,
+              label: '쓰이지 않는 배경',
+              detail: `어느 씬의 장소도 아닌 배경 카드: ${audit.unusedBackgrounds.join(', ')}`,
+            },
+          ]),
+      ...audit.sharedAliases.map((shared) => ({
+        status: 'info' as const,
+        label: '겹치는 별칭',
+        detail: `배경 ${shared.slugs.join(', ')} 가 «${shared.alias}» 를 함께 씁니다. 노트 흡수와 생성이 어느 쪽인지 헷갈릴 수 있습니다.`,
+      })),
+    ];
   }
 
   private async addressCatchphrases(): Promise<DoctorCheck[]> {

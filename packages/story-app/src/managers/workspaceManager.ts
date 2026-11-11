@@ -13,6 +13,8 @@ import {
   type WorkspaceScenes,
   type ChapterSummaryLedger,
   SceneRenumberer,
+  WorkspaceBundleAuditor,
+  type WorkspaceBundleAudit,
   type SceneRenameJournal,
   type WorkspaceCaches,
 } from '@storyboard/story-engine';
@@ -64,6 +66,7 @@ export class WorkspaceManager {
       workspaceRoot,
     );
     const reassignedPaths: readonly string[] = await this.deps.cards.reassignCopiedIds(workspaceRoot);
+    await this.createSceneRenumberer().renumber(workspaceRoot);
     const addedAgentGuides: string[] = await initializer.writeAgentGuidesIfMissing(paths);
     const project: StoryboardProject | undefined = await this.readProject(paths).catch(
       () => undefined,
@@ -74,6 +77,15 @@ export class WorkspaceManager {
         : await this.createStoryMemoryAuditor(paths, project).seal();
 
     return { addedAgentGuides, sealedSceneOrders, hasResumedSceneRenumbering, reassignedPaths };
+  }
+
+  public auditBundles(workspaceRoot: StoryUri): Promise<WorkspaceBundleAudit> {
+    return new WorkspaceBundleAuditor({
+      fileSystem: this.deps.fileSystem,
+      caches: this.deps.caches,
+      cards: this.deps.cards,
+      scenes: this.deps.scenes,
+    }).audit(workspaceRoot);
   }
 
   public findUnfinishedSceneRenumbering(
