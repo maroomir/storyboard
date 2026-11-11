@@ -8,6 +8,8 @@ import type {
   ReviewManuscriptRequest,
   ReviewManuscriptResult,
   ReviewManuscriptUseCase,
+  RevisionPlanRecorder,
+  StoredRevisionPlan,
   SummarizeChaptersRequest,
   SummarizeChaptersResult,
   SummarizeChaptersUseCase,
@@ -19,6 +21,7 @@ export interface ManuscriptManagerDependencies {
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
+  readonly revisionPlanRecorder: RevisionPlanRecorder;
 }
 
 export class ManuscriptManager {
@@ -30,6 +33,10 @@ export class ManuscriptManager {
 
   public review(request: ReviewManuscriptRequest): Promise<ReviewManuscriptResult> {
     return this.deps.reviewManuscriptUseCase.execute(request);
+  }
+
+  public readRevisionPlan(workspaceRoot: StoryUri): Promise<StoredRevisionPlan | undefined> {
+    return this.deps.revisionPlanRecorder.readLatest(workspaceRoot);
   }
 
   public summarizeChapters(request: SummarizeChaptersRequest): Promise<SummarizeChaptersResult> {

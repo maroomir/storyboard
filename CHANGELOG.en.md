@@ -17,6 +17,7 @@ after the first public release.
 - **The usage ledger moved into the cache database.** The usage of each call is kept in the `usage` table of the cache database rather than in `.storyboard/cache/usage.json`, and the CLI records it as well as the extension.
 - **The progress of a novel run moved into the cache database.** What an interrupted novel generation resumes from is the `runs` table of the cache database rather than `.storyboard/cache/novel-run.json`.
 - **Check records moved into the cache database.** The fact-sheet fields the model left empty (`grounding-gaps.json`) and the conflicts found on background cards (`background-conflicts.json`) now share the `findings` table of the cache database; the rule that an unchanged input is not asked again stays.
+- **The revision plan is no longer committed.** The per-scene review record (`.storyboard/outline/revision-plan.yaml`) moved down into the `revision_plans` table of the cache database; clearing the cache means running the review again.
 
 ### Internal
 

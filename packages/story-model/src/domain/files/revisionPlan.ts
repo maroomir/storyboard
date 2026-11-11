@@ -1,5 +1,3 @@
-import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
-import type { StoryUri } from '#model/format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 import { z } from 'zod';
@@ -107,7 +105,7 @@ export function parseRevisionPlan(rawPlan: string): RevisionPlan {
   } catch (error) {
     throw new RevisionPlanParseError(
       'invalid-yaml',
-      'revision-plan.yaml을 파싱할 수 없습니다.',
+      '수정 계획을 파싱할 수 없습니다.',
       error,
     );
   }
@@ -118,27 +116,11 @@ export function parseRevisionPlan(rawPlan: string): RevisionPlan {
     if (error instanceof ZodError) {
       throw new RevisionPlanParseError(
         'invalid-revision-plan-schema',
-        'revision-plan.yaml 스키마가 올바르지 않습니다.',
+        '수정 계획의 스키마가 올바르지 않습니다.',
         error,
       );
     }
 
     throw error;
   }
-}
-
-export async function readRevisionPlanFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-): Promise<RevisionPlan> {
-  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
-  return parseRevisionPlan(new TextDecoder().decode(bytes));
-}
-
-export async function writeRevisionPlanFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-  plan: RevisionPlan,
-): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeRevisionPlan(plan)));
 }

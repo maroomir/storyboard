@@ -19,7 +19,12 @@ import {
   type StudioChatRequest,
 } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
-import { StudioFollowUpRepository } from '@storyboard/story-engine';
+import {
+  RevisionPlanRecorder,
+  StudioFollowUpRepository,
+  WorkspaceCaches,
+} from '@storyboard/story-engine';
+import { NodeSqlDatabaseHost } from '@storyboard/story-node';
 import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { StudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
@@ -32,6 +37,17 @@ import {
   defaultHarnessModel,
   resolveHarnessProviderId,
 } from './harnessProvider';
+
+function createStudioContext(): StudioContextRepository {
+  const caches: WorkspaceCaches = new WorkspaceCaches({
+    host: new NodeSqlDatabaseHost(),
+    fileSystem: vscodeFileSystem,
+  });
+  return new StudioContextRepository(
+    vscodeFileSystem,
+    new RevisionPlanRecorder({ fileSystem: vscodeFileSystem, caches }),
+  );
+}
 
 const workspace = process.env.STUDIO_WS ?? process.env.SCENE_WS ?? '';
 const providerId = resolveHarnessProviderId(
@@ -326,7 +342,7 @@ test('studio chat against a real workspace', async () => {
 
   try {
     for (const scenario of selected) {
-      const context = await new StudioContextRepository(vscodeFileSystem).readEntityContext(
+      const context = await createStudioContext().readEntityContext(
         root,
         scenario.entity,
         scenario.sceneFocus,
@@ -351,7 +367,7 @@ test('studio chat against a real workspace', async () => {
         hasSelection: false,
         isValidationEnabled: true,
         resolveLookup: (requests) =>
-          new StudioContextRepository(vscodeFileSystem).resolveLookups(root, requests),
+          createStudioContext().resolveLookups(root, requests),
         ...(context.patchTarget === 'draft' &&
         context.baseline !== undefined &&
         context.targetUri !== undefined
@@ -368,7 +384,7 @@ test('studio chat against a real workspace', async () => {
             }
           : {}),
         resolveFollowUps: (followUps) =>
-          new StudioContextRepository(vscodeFileSystem).resolveFollowUps(root, followUps),
+          createStudioContext().resolveFollowUps(root, followUps),
         createTurnId: () => `${scenario.name}-${Math.random().toString(36).slice(2, 8)}`,
         onStage: (stage) => console.log(`  [${stage}]`),
       };

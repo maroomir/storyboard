@@ -1,4 +1,5 @@
 import { stubFileSystem } from "../../stubs/fileSystem"
+import { createMemoryRevisionPlans } from "../../stubs/caches"
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -32,7 +33,7 @@ afterEach((): void => {
 
 describe("studio entity path safety", () => {
   it("refuses an entity key that could escape the workspace", async () => {
-    const context = await new StudioContextRepository(stubFileSystem).readEntityContext(workspaceRoot, {
+    const context = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans()).readEntityContext(workspaceRoot, {
       kind: "character",
       key: "../../escape"
     })
@@ -43,13 +44,13 @@ describe("studio entity path safety", () => {
 
   it("refuses a scene key with a path separator", async () => {
     expect(
-      await new StudioContextRepository(stubFileSystem).readEntityContext(workspaceRoot, { kind: "scene", key: "a/b" })
+      await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans()).readEntityContext(workspaceRoot, { kind: "scene", key: "a/b" })
     ).toBeUndefined()
     expect(readPaths).toEqual([])
   })
 
   it("drops a lookup whose key is not a card id", async () => {
-    const text = await new StudioContextRepository(stubFileSystem).resolveLookups(workspaceRoot, [
+    const text = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans()).resolveLookups(workspaceRoot, [
       { kind: "draft", key: "../../outside/notes" },
       { kind: "character", key: "jiho" }
     ])
@@ -60,7 +61,7 @@ describe("studio entity path safety", () => {
   })
 
   it("drops a follow-up whose key is not a card id", async () => {
-    const followUps = await new StudioContextRepository(stubFileSystem).resolveFollowUps(workspaceRoot, [
+    const followUps = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans()).resolveFollowUps(workspaceRoot, [
       { kind: "scene", key: "../../x", reason: "r", instruction: "i" },
       { kind: "character", key: "jiho", reason: "r", instruction: "i" }
     ])

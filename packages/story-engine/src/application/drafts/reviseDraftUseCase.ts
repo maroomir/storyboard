@@ -412,7 +412,7 @@ export class ReviseDraftUseCase {
     rounds: readonly ReviseRound[],
   ): Promise<void> {
     try {
-      await new RevisionPlanRecorder(this.host.fileSystem).recordRounds(paths, sceneStem, rounds);
+      await new RevisionPlanRecorder(this.host).recordRounds(paths, sceneStem, rounds);
     } catch (error) {
       this.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
     }

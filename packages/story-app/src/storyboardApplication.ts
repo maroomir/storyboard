@@ -45,6 +45,7 @@ import {
   RecommendCardsUseCase,
   RenameCardUseCase,
   ReviewManuscriptUseCase,
+  RevisionPlanRecorder,
   ReviseAfterGenerateGate,
   DraftHistoryArchiver,
   ReviseDraftUseCase,
@@ -175,6 +176,7 @@ interface EngineGraph {
   readonly renameCardUseCase: RenameCardUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
+  readonly revisionPlanRecorder: RevisionPlanRecorder;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly draftHistoryArchiver: DraftHistoryArchiver;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
@@ -335,6 +337,7 @@ function buildServices(
     options.postGenerationUpdates === false ? {} : { postGenerationUpdates },
   );
   const reviseDraftUseCase: ReviseDraftUseCase = new ReviseDraftUseCase(host, ai, repositories);
+  const revisionPlanRecorder: RevisionPlanRecorder = new RevisionPlanRecorder(host);
   const reviseAfterGenerateGate: ReviseAfterGenerateGate = new ReviseAfterGenerateGate(host, {
     reviseDraftUseCase,
   });
@@ -396,13 +399,14 @@ function buildServices(
     renameCardUseCase: new RenameCardUseCase(host),
     renameSceneUseCase: new RenameSceneUseCase(host),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase(host, ai, repositories),
+    revisionPlanRecorder,
     reviseAfterGenerateGate,
     draftHistoryArchiver: new DraftHistoryArchiver(host),
     reviseDraftUseCase,
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
     studioChatUseCase: new StudioChatUseCase(host, ai),
-    studioContextRepository: new StudioContextRepository(fileSystem),
+    studioContextRepository: new StudioContextRepository(fileSystem, revisionPlanRecorder),
     studioSessionRepository: new StudioSessionRepository(fileSystem),
     studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
     cardCollectRepository: new CardCollectRepository(fileSystem),

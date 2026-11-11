@@ -162,7 +162,7 @@ export class ChaptersStage implements INovelStage {
           shouldCancel: options.shouldCancel,
         });
 
-      await new RevisionPlanRecorder(run.services.host.fileSystem).recordEntry(paths, {
+      await new RevisionPlanRecorder(run.services.host).recordEntry(paths.workspaceRoot, {
         sceneStem: stem,
         checkedAt: new Date().toISOString(),
         revisionCount: reviseResult.revisionCount,

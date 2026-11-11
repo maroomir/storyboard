@@ -1,4 +1,5 @@
 import * as vscode from "vscode"
+import { createMemoryRevisionPlans } from "../../../stubs/caches"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
@@ -111,7 +112,7 @@ function bridgeWith(): FakeWebview {
         archiveDraftWhenHistoryIsKept: (root, stem): Promise<string | undefined> =>
           new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
       },
-      studio: { context: new StudioContextRepository(vscodeFileSystem) },
+      studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans()) },
       logger: harnessLogger,
       getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot,
       createFollowUpId: (): string => "follow-1"
