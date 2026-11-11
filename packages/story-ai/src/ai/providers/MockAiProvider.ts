@@ -72,17 +72,6 @@ function createMockStoryCompletion(): string {
   });
 }
 
-function createMockSceneStructure(): string {
-  return JSON.stringify({
-    purpose: '모의 목적',
-    conflict: '모의 갈등',
-    twist: '모의 반전',
-    emotionalShift: '모의 감정 변화',
-    foreshadowing: ['모의 복선'],
-    neededCanon: ['모의 설정'],
-  });
-}
-
 function createMockChapterPlan(): string {
   return JSON.stringify({
     acts: [
@@ -265,7 +254,6 @@ const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuil
   noteSynthesis: (): string => JSON.stringify({ setting: {}, synopsis: {} }),
   noteCardConsolidation: (): string => JSON.stringify({ cards: [] }),
   sceneBeats: (): string => JSON.stringify(['모의 비트 하나', '모의 비트 둘', '모의 비트 셋']),
-  sceneStructure: createMockSceneStructure,
   outlineSynopsis: (): string =>
     JSON.stringify({
       logline: '모의 로그라인',

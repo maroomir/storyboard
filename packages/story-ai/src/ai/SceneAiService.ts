@@ -3,8 +3,6 @@ import type {
   Background,
   Character,
   ProjectFormat,
-  SceneStructureFieldKey,
-SceneStructureProposal,
 } from '@storyboard/story-model';
 import type { GenerateTextOptions } from '#ai/ai/aiServiceTypes';
 import {
@@ -60,13 +58,11 @@ import {
   type BackgroundFactConflict,
   sceneGroundingLines,
   type SceneGrounding,
-isSceneStructureListField,
 } from '@storyboard/story-model';
 import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
 } from '#ai/ai/prompts/sceneSectionExpansion';
-import { SceneStructurePrompt } from '#ai/ai/prompts/sceneStructure';
 import { SituationExtractionPrompt } from '#ai/ai/prompts/situationExtraction';
 import type { PromptArtifact, PromptVariantId } from '#ai/ai/prompts/types';
 
@@ -117,36 +113,6 @@ export class SceneAiService {
     });
 
     return coerceExpandedSceneBeats(response.text);
-  }
-
-  public async proposeSceneStructure(
-    input: {
-      readonly sceneSummary: string;
-      readonly missingFields: readonly SceneStructureFieldKey[];
-      readonly knownFields: readonly string[];
-    },
-    options: GenerateTextOptions = {},
-  ): Promise<SceneStructureProposal> {
-    if (input.missingFields.length === 0 || input.sceneSummary.trim().length === 0) {
-      return {};
-    }
-
-    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneStructure', options);
-    const prompt: PromptArtifact = SceneStructurePrompt.build(
-      {
-        sceneSummary: input.sceneSummary,
-        missingFields: input.missingFields,
-        knownFields: input.knownFields,
-      },
-      variant,
-    );
-    const response: AiGenerateResponse = await this.gateway.generate('sceneStructure', toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? SceneStructurePrompt.config.temperature,
-      maxTokens: options.maxTokens ?? SceneStructurePrompt.config.maxTokens,
-    });
-
-    return toSceneStructureProposal(parseJsonObject(response.text), input.missingFields);
   }
 
   public async createCharacterPersona(
@@ -343,40 +309,5 @@ export class SceneAiService {
 
     return response.text.trim();
   }
-}
-
-function toSceneStructureProposal(
-  parsed: Record<string, unknown> | null,
-  requestedFields: readonly SceneStructureFieldKey[],
-): SceneStructureProposal {
-  if (!parsed) {
-    return {};
-  }
-
-  const proposal: Record<string, string | string[]> = {};
-
-  for (const key of requestedFields) {
-    const value: unknown = parsed[key];
-
-    if (isSceneStructureListField(key)) {
-      if (Array.isArray(value)) {
-        const items: string[] = value
-          .filter((item): item is string => typeof item === 'string')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0);
-
-        if (items.length > 0) {
-          proposal[key] = items;
-        }
-      }
-      continue;
-    }
-
-    if (typeof value === 'string' && value.trim().length > 0) {
-      proposal[key] = value.trim();
-    }
-  }
-
-  return proposal;
 }
 

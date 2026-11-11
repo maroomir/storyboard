@@ -53,6 +53,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 내부
 
+- **부르는 곳이 없어진 AI 작업 `sceneStructure`(씬 구조화)를 지웠습니다.** 카드 편집기의 «Summary에서 구조화»가 없어진 뒤 남아 있던 프롬프트 리소스·서비스 메서드·작업 이름입니다. 설정 파일에 `tasks.sceneStructure` 가 남아 있으면 읽지 않는 키로 경고만 합니다.
 - **스튜디오 중심 설계의 토대를 놓았습니다.** 요소 네 종류(인물·배경·씬·서술자)의 진술 어휘(진술 facet 21개와 섹션, 상태 어휘)와 진술 스키마, 작가 줄을 덮지 않는 병합 규칙, 종류별 머리말을 `story-model` 의 새 층 `element/` 에 두었습니다. 번들 폴더 경로(`<종류>/<slug>.card/`, 씬은 구조 순서에서 나온 세 자리 번호 `NNN-slug`), `.storyboard/structure.yaml`(줄기와 작품 전체의 씬 순서), 씬 번호 파생과 개명 계획, slug·번호를 uuid 로 푸는 규칙, 번들 파일 코덱과 왕복 fixture 를 더했습니다. 영구층으로 캐시 DB `.storyboard/cache/storyboard.db`(아홉 표와 schema_version, 두 앱이 함께 쓰는 WebAssembly SQLite), 번들 단위 저장소(엔진 밖에서 바뀐 카드는 경고하고 읽고, 복사된 uuid 의 폴더에는 쓰지 않음), 기억·비트·상태 파일과 구조 순서로 잇는 줄기 원장, 씬 uuid 아래 최근 10판의 초안 판본을 더했습니다. 아직 엔진과 두 앱은 옛 파일을 읽고 씁니다.
 - **씬 끼우기·옮기기·지우기를 엔진에 더했습니다.** 매니저 동사 `drafts.moveScene`(다른 씬 뒤로, 그 씬의 장으로)·`drafts.removeScene`(번들·초안·판본·씬 캐시를 지움)과 `drafts.createScene` 의 `after` 가 구조 파일을 고치고 뒤 씬들의 번호를 저널로 다시 매깁니다. CLI 에서는 `scene create --after`·`scene move`·`scene remove` 입니다.
 - **스튜디오 «만들기»와 «고치기»를 엔진 동사로 올렸습니다.** `studio.edit`(지시 하나로 고치고 바로 쓰거나, `shouldPropose` 면 세션에 제안만 남기고 고치기 전후를 돌려줌)과 `studio.create`(빈 카드·씬을 만든 뒤 설명으로 채움), 확장이 쓰던 제안 미리보기·적용(`studio.prepareProposal`·`applyProposal`)이 엔진에 있어 CLI 도 같은 길을 씁니다.

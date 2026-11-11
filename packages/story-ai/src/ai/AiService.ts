@@ -167,15 +167,6 @@ export class StoryboardAiService {
     return this.sceneAiService.proposeSceneBeats(input, options);
   }
 
-  public async proposeSceneStructure(
-    input: Parameters<SceneAiService['proposeSceneStructure']>[0],
-    options: GenerateTextOptions = {},
-  ): Promise<
-    ReturnType<SceneAiService['proposeSceneStructure']> extends Promise<infer T> ? T : never
-  > {
-    return this.sceneAiService.proposeSceneStructure(input, options);
-  }
-
   public async createCharacterPersona(
     character: Character,
     options: GenerateTextOptions = {},
