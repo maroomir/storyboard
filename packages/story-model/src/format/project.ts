@@ -2,7 +2,49 @@ import { z } from 'zod';
 
 import { craftContractOverrideSchema, type CraftContractOverride } from '#model/format/craftContract';
 
-export const storyboardProjectVersion: string = '1.0.0';
+export const storyboardProjectVersion: string = '2.0.0';
+
+export const legacyProjectVersion: string = '1.0.0';
+
+export type ProjectVersionErrorCode = 'legacy-format' | 'unknown-version';
+
+export class ProjectVersionError extends Error {
+  public constructor(
+    public readonly code: ProjectVersionErrorCode,
+    public readonly version: unknown,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ProjectVersionError';
+  }
+}
+
+function readVersionField(rawProject: unknown): unknown {
+  return typeof rawProject === 'object' && rawProject !== null && 'version' in rawProject
+    ? rawProject.version
+    : undefined;
+}
+
+export function assertSupportedProjectVersion(rawProject: unknown): void {
+  const version: unknown = readVersionField(rawProject);
+  if (version === storyboardProjectVersion) {
+    return;
+  }
+
+  if (version === legacyProjectVersion) {
+    throw new ProjectVersionError(
+      'legacy-format',
+      version,
+      '이 작품은 0.15 형식입니다(project.json version 1.0.0). 0.16 은 0.15 작품을 열지 않습니다. 0.15.x 로 계속 쓰세요.',
+    );
+  }
+
+  throw new ProjectVersionError(
+    'unknown-version',
+    version,
+    `project.json 의 형식 버전(${String(version)})을 알 수 없습니다. 이 Storyboard 는 ${storyboardProjectVersion} 작품만 엽니다.`,
+  );
+}
 
 export type ProjectFormat = 'novel' | 'screenplay' | 'play' | 'essay' | 'poem';
 

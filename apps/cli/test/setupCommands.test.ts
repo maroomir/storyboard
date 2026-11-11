@@ -174,7 +174,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
       JSON.stringify({
-        version: '1.0.0',
+        version: '2.0.0',
         id: 'p1',
         name: '테스트',
         format: 'novel',
@@ -297,7 +297,7 @@ describe('storyboard doctor chapter summaries', () => {
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
       JSON.stringify({
-        version: '1.0.0',
+        version: '2.0.0',
         id: 'p1',
         name: '테스트',
         format: 'novel',
@@ -720,7 +720,7 @@ describe('storyboard doctor beat cast', () => {
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
       JSON.stringify({
-        version: '1.0.0',
+        version: '2.0.0',
         id: 'p1',
         name: '테스트',
         format: 'novel',
@@ -771,7 +771,7 @@ describe('storyboard doctor outline addresses', () => {
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
       JSON.stringify({
-        version: '1.0.0',
+        version: '2.0.0',
         id: 'p1',
         name: '테스트',
         format: 'novel',
@@ -824,7 +824,7 @@ describe('storyboard doctor background conflicts', () => {
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
       JSON.stringify({
-        version: '1.0.0',
+        version: '2.0.0',
         id: 'p1',
         name: '테스트',
         format: 'novel',

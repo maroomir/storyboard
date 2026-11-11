@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { ProjectFormat, StoryboardProject } from '@storyboard/story-model';
-import { storyboardProjectSchema, storyboardProjectVersion } from '@storyboard/story-model';
+import {
+  assertSupportedProjectVersion,
+  storyboardProjectSchema,
+  storyboardProjectVersion,
+} from '@storyboard/story-model';
 
 export interface CreateProjectJsonInput {
   readonly name: string;
@@ -24,7 +28,10 @@ export function createDefaultProjectJson(input: CreateProjectJsonInput): Storybo
 }
 
 export function parseProjectJson(rawProjectJson: string): StoryboardProject {
-  return storyboardProjectSchema.parse(JSON.parse(rawProjectJson));
+  const rawProject: unknown = JSON.parse(rawProjectJson);
+  assertSupportedProjectVersion(rawProject);
+
+  return storyboardProjectSchema.parse(rawProject);
 }
 
 export function serializeProjectJson(project: StoryboardProject): string {

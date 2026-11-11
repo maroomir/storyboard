@@ -10,7 +10,7 @@ import { createTestAi, createTestHost, createTestRepositories } from "@storyboar
 function project(): ReturnType<typeof parseProjectJson> {
   return parseProjectJson(
     JSON.stringify({
-      version: "1.0.0",
+      version: "2.0.0",
       id: "00000000-0000-4000-8000-000000000001",
       name: "테스트",
       format: "novel",
@@ -32,7 +32,7 @@ describe("GenerateOutlineUseCase", () => {
       loadProject: vi.fn(async () =>
         parseProjectJson(
           JSON.stringify({
-            version: "1.0.0",
+            version: "2.0.0",
             id: "00000000-0000-4000-8000-000000000001",
             name: "테스트",
             format: "novel",

@@ -50,7 +50,7 @@ describe('persistence repositories', () => {
       uri,
       new TextEncoder().encode(
         JSON.stringify({
-          version: '1.0.0',
+          version: '2.0.0',
           id: 'project-id',
           name: 'Project',
           format: 'novel',
