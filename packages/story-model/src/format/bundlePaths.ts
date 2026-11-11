@@ -101,7 +101,9 @@ export function parseNumberedSceneStem(stem: string): NumberedSceneStem | undefi
 
   const sceneNumber: number = Number(numberText);
 
-  return isSceneNumberInRange(sceneNumber) && isSceneSlug(slug) ? { number: sceneNumber, slug } : undefined;
+  return isSceneNumberInRange(sceneNumber) && isSceneSlug(slug)
+    ? { number: sceneNumber, slug }
+    : undefined;
 }
 
 function requireSlug(kind: ElementKind, slug: string): string {
@@ -113,7 +115,10 @@ function requireSlug(kind: ElementKind, slug: string): string {
   return slug;
 }
 
-export function formatBundleDirectoryName(kind: ElementKind, parts: BundleDirectoryNameParts): string {
+export function formatBundleDirectoryName(
+  kind: ElementKind,
+  parts: BundleDirectoryNameParts,
+): string {
   const slug: string = requireSlug(kind, parts.slug);
   const stem: string =
     kind === 'scene' ? formatNumberedSceneStem(parts.sceneNumber ?? 0, slug) : slug;
@@ -167,5 +172,8 @@ export function isKnownBundleEntry(kind: ElementKind, entryName: string): boolea
   const isMemoryDirectory: boolean =
     entryName === bundleMemoryDirectoryName && elementKindsWithMemory.includes(kind);
 
-  return isMemoryDirectory || bundleFileRolesByKind[kind].some((role) => bundleFileNames[role] === entryName);
+  return (
+    isMemoryDirectory ||
+    bundleFileRolesByKind[kind].some((role) => bundleFileNames[role] === entryName)
+  );
 }

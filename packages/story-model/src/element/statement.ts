@@ -92,7 +92,9 @@ function qualifierIssue(
     return `이 facet 은 ${name} 가 있어야 합니다.`;
   }
 
-  return rule === 'forbidden' && value !== undefined ? `이 facet 은 ${name} 를 받지 않습니다.` : undefined;
+  return rule === 'forbidden' && value !== undefined
+    ? `이 facet 은 ${name} 를 받지 않습니다.`
+    : undefined;
 }
 
 function listStatementRuleIssues(statement: Statement): readonly string[] {
@@ -119,7 +121,9 @@ export const statementSchema: z.ZodType<Statement> = z
     }
   });
 
-export const statementListSchema: z.ZodType<readonly Statement[]> = z.array(statementSchema).readonly();
+export const statementListSchema: z.ZodType<readonly Statement[]> = z
+  .array(statementSchema)
+  .readonly();
 
 export const storyStateStatementSchema: z.ZodType<StoryStateStatement> = z
   .object({

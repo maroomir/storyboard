@@ -59,7 +59,9 @@ function findDuplicate(values: readonly string[]): string | undefined {
 function listStructureIssues(structure: StoryStructure): readonly string[] {
   const threadIds: readonly string[] = structure.threads.map((thread) => thread.id);
   const duplicateThread: string | undefined = findDuplicate(threadIds);
-  const duplicateScene: string | undefined = findDuplicate(structure.scenes.map((entry) => entry.scene));
+  const duplicateScene: string | undefined = findDuplicate(
+    structure.scenes.map((entry) => entry.scene),
+  );
   const unknownSceneThreads: readonly string[] = structure.scenes
     .map((entry) => entry.thread)
     .filter((threadId) => !threadIds.includes(threadId));
@@ -98,7 +100,11 @@ function loadStructureYaml(text: string, fileName: string): unknown {
   try {
     return yaml.load(text);
   } catch (error) {
-    throw new StructureParseError('invalid-yaml', `${fileName} 의 YAML 을 읽을 수 없습니다.`, error);
+    throw new StructureParseError(
+      'invalid-yaml',
+      `${fileName} 의 YAML 을 읽을 수 없습니다.`,
+      error,
+    );
   }
 }
 

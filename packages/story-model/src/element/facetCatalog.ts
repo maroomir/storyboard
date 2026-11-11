@@ -26,17 +26,23 @@ export function isStatementFacetId(value: string): value is StatementFacetId {
   return statementFacetCatalog.some((row) => row.id === value);
 }
 
-const statementFacetRowsById: Record<StatementFacetId, StatementFacetRow<StatementFacetId>> =
-  Object.fromEntries(statementFacetCatalog.map((row) => [row.id, row])) as Record<
-    StatementFacetId,
-    StatementFacetRow<StatementFacetId>
-  >;
+const statementFacetRowsById: Record<
+  StatementFacetId,
+  StatementFacetRow<StatementFacetId>
+> = Object.fromEntries(statementFacetCatalog.map((row) => [row.id, row])) as Record<
+  StatementFacetId,
+  StatementFacetRow<StatementFacetId>
+>;
 
-export function getStatementFacetRow(facetId: StatementFacetId): StatementFacetRow<StatementFacetId> {
+export function getStatementFacetRow(
+  facetId: StatementFacetId,
+): StatementFacetRow<StatementFacetId> {
   return statementFacetRowsById[facetId];
 }
 
-export function listStatementFacetsOf(kind: ElementKind): readonly StatementFacetRow<StatementFacetId>[] {
+export function listStatementFacetsOf(
+  kind: ElementKind,
+): readonly StatementFacetRow<StatementFacetId>[] {
   return statementFacetCatalog.filter((row) => row.kinds.includes(kind));
 }
 

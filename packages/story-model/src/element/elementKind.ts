@@ -1,6 +1,11 @@
 export type ElementKind = 'character' | 'background' | 'scene' | 'narrator';
 
-export const elementKinds: readonly ElementKind[] = ['character', 'background', 'scene', 'narrator'];
+export const elementKinds: readonly ElementKind[] = [
+  'character',
+  'background',
+  'scene',
+  'narrator',
+];
 
 export const elementKindLabels: Record<ElementKind, string> = {
   character: '인물',

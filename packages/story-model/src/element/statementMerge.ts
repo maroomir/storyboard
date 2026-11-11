@@ -28,11 +28,17 @@ function isSameLine(left: Statement, right: Statement): boolean {
   return isSameSlot(left, right) && isSameStatementText(left.value, right.value);
 }
 
-function isSameList(left: readonly string[] | undefined, right: readonly string[] | undefined): boolean {
+function isSameList(
+  left: readonly string[] | undefined,
+  right: readonly string[] | undefined,
+): boolean {
   const leftItems: readonly string[] = [...(left ?? [])].sort();
   const rightItems: readonly string[] = [...(right ?? [])].sort();
 
-  return leftItems.length === rightItems.length && leftItems.every((item, index) => item === rightItems[index]);
+  return (
+    leftItems.length === rightItems.length &&
+    leftItems.every((item, index) => item === rightItems[index])
+  );
 }
 
 function hasSameContent(left: Statement, right: Statement): boolean {
@@ -54,7 +60,10 @@ function findMatchingLineIndex(statements: readonly Statement[], incoming: State
   return statements.findIndex(isMatching);
 }
 
-function decideOutcome(existing: Statement | undefined, incoming: Statement): StatementMergeOutcome {
+function decideOutcome(
+  existing: Statement | undefined,
+  incoming: Statement,
+): StatementMergeOutcome {
   if (existing === undefined) {
     return 'added';
   }
