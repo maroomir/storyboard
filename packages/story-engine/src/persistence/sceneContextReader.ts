@@ -29,6 +29,7 @@ import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSy
 import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import { CardFactReader } from '#engine/persistence/bundles/cardFactReader';
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 
 const summaryContextBudget: number = 8000;
 const previousDraftTailLength: number = 1000;
@@ -172,6 +173,7 @@ export class SceneContextReader {
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
     private readonly scenes: WorkspaceScenes,
+    private readonly summaries: ChapterSummaryLedger,
   ) {}
 
   public async build(paths: SceneContextWorkspacePaths, scene: SceneFile): Promise<SceneContext> {
@@ -273,19 +275,17 @@ export class SceneContextReader {
   }
 
   private async readRollingSummary(paths: SceneContextWorkspacePaths): Promise<string | undefined> {
-    if (!paths.chapterSummaries) {
+    if (paths.threadId === undefined) {
       return undefined;
     }
 
-    try {
-      const content: string = new TextDecoder().decode(
-        await this.fileSystem.readFile(paths.chapterSummaries),
-      );
-      const fresh: string | undefined = dropStaleChapters(content.trim());
-      return fresh === undefined ? undefined : boundSummary(fresh);
-    } catch {
-      return undefined;
-    }
+    const content: string | undefined = await this.summaries.readMarkdown(
+      paths.workspaceRoot,
+      paths.threadId,
+    );
+    const fresh: string | undefined =
+      content === undefined ? undefined : dropStaleChapters(content.trim());
+    return fresh === undefined ? undefined : boundSummary(fresh);
   }
 
   private async readPreviousDraftTail(

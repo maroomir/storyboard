@@ -7,6 +7,7 @@ import {
   formatChapterSummaryStaleWarning,
   mergeChapterSummary,
   parseChapterSummariesMarkdown,
+  type ChapterSummary,
 } from '@storyboard/story-model';
 import { createTestAi, createTestHost, createTestRepositories } from '@storyboard/story-engine/testing';
 
@@ -48,12 +49,12 @@ describe('chapter summaries markdown', () => {
 describe('SummarizeChaptersUseCase', () => {
   const workspaceUri = { fsPath: '/workspace' } as never;
 
-  function createUseCase(existingMarkdown?: string): {
+  function createUseCase(existing: readonly ChapterSummary[] = []): {
     readonly useCase: SummarizeChaptersUseCase;
-    readonly saved: string[];
+    readonly saved: (readonly ChapterSummary[])[];
     readonly summarized: string[];
   } {
-    const saved: string[] = [];
+    const saved: (readonly ChapterSummary[])[] = [];
     const summarized: string[] = [];
 
     const aiGateway = {
@@ -87,10 +88,9 @@ describe('SummarizeChaptersUseCase', () => {
         },
         projectName: '작품',
       }),
-      readChapterSummaries: async (): Promise<string | undefined> => existingMarkdown,
-      saveChapterSummaries: async (_root: unknown, markdown: string): Promise<unknown> => {
-        saved.push(markdown);
-        return workspaceUri;
+      readChapterSummaries: async (): Promise<readonly ChapterSummary[]> => existing,
+      saveChapterSummaries: async (_root: unknown, summaries: readonly ChapterSummary[]): Promise<void> => {
+        saved.push(summaries);
       },
     } as never;
 
@@ -107,30 +107,26 @@ describe('SummarizeChaptersUseCase', () => {
   });
 
   it('summarizes only the named chapter and merges it into the existing file', async () => {
-    const existing = buildChapterSummariesMarkdown('작품', [
+    const { useCase, saved, summarized } = createUseCase([
       { chapterTitle: '1장', summary: '먼저 쓴 요약' },
     ]);
-    const { useCase, saved, summarized } = createUseCase(existing);
 
     const result = await useCase.execute({ workspaceRoot: workspaceUri, chapterIndex: 1 });
 
     expect(result).toMatchObject({ ok: true, summaryCount: 2 });
     expect(summarized).toEqual(['2장']);
-    expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toMatchObject([
+    expect(saved[0]).toMatchObject([
       { chapterTitle: '1장', summary: '먼저 쓴 요약' },
       { chapterTitle: '2장', summary: '2장 요약', isStale: false },
     ]);
   });
 
   it('rewrites a chapter it already summarized rather than appending a duplicate', async () => {
-    const existing = buildChapterSummariesMarkdown('작품', [
-      { chapterTitle: '1장', summary: '재생성 전 요약' },
-    ]);
-    const { useCase, saved } = createUseCase(existing);
+    const { useCase, saved } = createUseCase([{ chapterTitle: '1장', summary: '재생성 전 요약' }]);
 
     await useCase.execute({ workspaceRoot: workspaceUri, chapterIndex: 0 });
 
-    expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toMatchObject([
+    expect(saved[0]).toMatchObject([
       { chapterTitle: '1장', summary: '1장 요약', isStale: false },
     ]);
   });

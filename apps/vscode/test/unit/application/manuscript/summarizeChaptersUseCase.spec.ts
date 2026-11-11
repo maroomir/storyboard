@@ -33,9 +33,8 @@ function repository(hasChapterPlan: boolean): IChapterSummaryRepository {
       plan,
       draftsByOrder: new Map([[1, { stem: "01-opening", body: "본문" }]])
     })),
-    saveChapterSummaries: vi.fn(async () =>
-      vscode.Uri.file("/workspace/manuscript/CHAPTER_SUMMARIES.md")
-    )
+    readChapterSummaries: vi.fn(async () => []),
+    saveChapterSummaries: vi.fn(async () => undefined)
   }
 }
 
@@ -71,7 +70,7 @@ describe("SummarizeChaptersUseCase", () => {
     expect(onProgress).toHaveBeenCalledWith(1, 1)
     expect(storage.saveChapterSummaries).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringContaining("요약")
+      [expect.objectContaining({ summary: "요약" })]
     )
   })
 })

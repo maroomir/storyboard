@@ -5,11 +5,8 @@ interface StoryboardRelativePaths {
   readonly structure: string;
   readonly cacheDatabase: string;
   readonly cacheDirectory: string;
-  readonly memoryDirectory: string;
-  readonly threadMemoryDirectory: string;
   readonly sceneRenameJournal: string;
   readonly sceneCacheDirectory: string;
-  readonly chapterSummaries: string;
   readonly revisionRoundsDirectory: string;
   readonly cardCacheDirectory: string;
   readonly noteCacheDirectory: string;
@@ -28,7 +25,6 @@ interface StoryboardRelativePaths {
   readonly outlineChapters: string;
   readonly pendingChapterPlan: string;
   readonly characterDirectory: string;
-  readonly characterProfileDirectory: string;
   readonly backgroundDirectory: string;
   readonly narratorDirectory: string;
   readonly sceneDirectory: string;
@@ -48,12 +44,9 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   structure: '.storyboard/structure.yaml',
   cacheDatabase: '.storyboard/cache/storyboard.db',
   cacheDirectory: '.storyboard/cache',
-  memoryDirectory: '.storyboard/memory',
-  threadMemoryDirectory: '.storyboard/memory/threads',
   sceneRenameJournal: '.storyboard/cache/scene-rename.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
   revisionRoundsDirectory: '.storyboard/cache/revisions',
-  chapterSummaries: '.storyboard/memory/summaries.md',
   cardCacheDirectory: '.storyboard/cache/cards',
   noteCacheDirectory: '.storyboard/cache/notes',
   noteSource: '.storyboard/cache/notes/source.json',
@@ -71,7 +64,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   outlineChapters: '.storyboard/outline/chapters.yaml',
   pendingChapterPlan: '.storyboard/cache/outline/pending-chapters.yaml',
   characterDirectory: 'character',
-  characterProfileDirectory: 'character/profile',
   backgroundDirectory: 'background',
   narratorDirectory: 'narrator',
   sceneDirectory: 'scene',
@@ -114,14 +106,6 @@ export const STORYBOARD_GLOBS: StoryboardGlobs = {
   draftMarkdown: `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/**/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
   anyDraftMarkdown: `**/${STORYBOARD_RELATIVE_PATHS.draftDirectory}/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
 };
-
-export function threadMemoryRelativePath(threadId: string, leafRelativePath: string): string {
-  const leaf: string = leafRelativePath.startsWith(`${STORYBOARD_RELATIVE_PATHS.memoryDirectory}/`)
-    ? leafRelativePath.slice(STORYBOARD_RELATIVE_PATHS.memoryDirectory.length + 1)
-    : leafRelativePath;
-
-  return `${STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory}/${threadId}/${leaf}`;
-}
 
 export function interviewWorkingModelRelativePath(cardId: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.interviewWorkingModelDirectory}/${cardId}.json`;

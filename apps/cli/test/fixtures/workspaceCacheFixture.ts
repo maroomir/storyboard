@@ -1,4 +1,6 @@
 import {
+  ChapterOutlineStore,
+  ChapterSummaryLedger,
   WorkspaceCaches,
   WorkspaceCards,
   WorkspaceRunLocks,
@@ -6,7 +8,9 @@ import {
 } from '@storyboard/story-engine';
 import {
   createWorkspaceRunLockRecord,
+  mainThreadId,
   NodeUri,
+  type ChapterSummary,
   type WorkspaceRunLockHolder,
   type WorkspaceRunLockRecord,
 } from '@storyboard/story-model';
@@ -67,4 +71,25 @@ export function createWorkspaceScenes(caches: WorkspaceCaches): WorkspaceScenes 
     caches,
     cards: createWorkspaceCards(caches),
   });
+}
+
+export function createChapterSummaryLedger(caches: WorkspaceCaches): ChapterSummaryLedger {
+  const fileSystem: NodeFileSystem = new NodeFileSystem();
+  return new ChapterSummaryLedger({
+    fileSystem,
+    caches,
+    chapters: new ChapterOutlineStore({ fileSystem, scenes: createWorkspaceScenes(caches) }),
+  });
+}
+
+export async function writeChapterSummaries(
+  workspace: string,
+  summaries: readonly ChapterSummary[],
+): Promise<void> {
+  const caches: WorkspaceCaches = createWorkspaceCaches();
+  try {
+    await createChapterSummaryLedger(caches).write(NodeUri.file(workspace), mainThreadId, summaries);
+  } finally {
+    await caches.closeAll();
+  }
 }

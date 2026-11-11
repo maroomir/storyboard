@@ -1,3 +1,4 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
   backgroundCardPath,
@@ -145,6 +146,7 @@ export class StudioContextRepository {
     private readonly revisionPlans: RevisionPlanRecorder,
     private readonly cards: WorkspaceCards,
     private readonly scenes: WorkspaceScenes,
+    private readonly summaries: ChapterSummaryLedger,
   ) {}
 
   public async readEntityContext(
@@ -434,7 +436,7 @@ export class StudioContextRepository {
     scene: SceneFile,
   ): Promise<StudioStageCard[]> {
     try {
-      const context: SceneContext = await new SceneContextReader(this.fileSystem, this.cards, this.scenes).build(
+      const context: SceneContext = await new SceneContextReader(this.fileSystem, this.cards, this.scenes, this.summaries).build(
         sceneContextPaths(paths),
         scene,
       );

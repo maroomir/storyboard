@@ -29,6 +29,7 @@ import {
   ManuscriptAssemblyRepository,
   CardFactReader,
   ChapterOutlineStore,
+  ChapterSummaryLedger,
   NarratorCardRepository,
   NoteAbsorbRepository,
   NoteSourceProvider,
@@ -134,6 +135,7 @@ interface EngineGraph {
   readonly caches: WorkspaceCaches;
   readonly cards: WorkspaceCards;
   readonly scenes: WorkspaceScenes;
+  readonly summaries: ChapterSummaryLedger;
   readonly runLocks: WorkspaceRunLocks;
   readonly usageLedger: UsageLedgerRecorder;
   readonly usageMeter: UsageMeter;
@@ -228,6 +230,7 @@ export class StoryboardApplication {
       fileSystem: services.fileSystem,
       cards: services.cards,
       scenes: services.scenes,
+      summaries: services.summaries,
       configBridge: services.configBridge,
       resourceRoots: this.resourceRoots,
       runGate: this.runGate,
@@ -295,6 +298,11 @@ function buildServices(
   const runLocks: WorkspaceRunLocks = new WorkspaceRunLocks({ caches });
   const cards: WorkspaceCards = new WorkspaceCards({ fileSystem, caches });
   const scenes: WorkspaceScenes = new WorkspaceScenes({ fileSystem, caches, cards });
+  const summaries: ChapterSummaryLedger = new ChapterSummaryLedger({
+    fileSystem,
+    caches,
+    chapters: new ChapterOutlineStore({ fileSystem, scenes }),
+  });
   const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder({ caches });
   const usageMeter: UsageMeter = new UsageMeter();
   const usageSink: IUsageSink = usageMeter.wrap(
@@ -312,6 +320,7 @@ function buildServices(
     caches,
     cards,
     scenes,
+    summaries,
   };
   const ai: AiServices = { gateway: aiGateway, providerRegistry: aiProviderRegistry, usageSink };
   const repositories: WorkspaceRepositories = buildWorkspaceRepositories(
@@ -349,6 +358,7 @@ function buildServices(
     caches,
     cards,
     scenes,
+    summaries,
     runLocks,
     usageLedger,
     usageMeter,
@@ -402,7 +412,13 @@ function buildServices(
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
     studioChatUseCase: new StudioChatUseCase(host, ai),
-    studioContextRepository: new StudioContextRepository(fileSystem, revisionPlanRecorder, cards, scenes),
+    studioContextRepository: new StudioContextRepository(
+      fileSystem,
+      revisionPlanRecorder,
+      cards,
+      scenes,
+      summaries,
+    ),
     studioSessionRepository: new StudioSessionRepository(fileSystem),
     studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
     cardCollectRepository: new CardCollectRepository(fileSystem, cards),
@@ -423,6 +439,7 @@ function buildWorkspaceRepositories(
     fileSystem,
     cardFacts,
     chapters,
+    host.summaries,
   );
 
   return {
@@ -436,7 +453,7 @@ function buildWorkspaceRepositories(
     outline,
     novelOutline: outline,
     novelRunState: new NovelRunStateRepository(fileSystem, host.caches),
-    novelReviews: new NovelReviewRepository(fileSystem, cardFacts),
+    novelReviews: new NovelReviewRepository(fileSystem, cardFacts, host.summaries),
     manuscriptAssembly,
     chapterSummaries: manuscriptAssembly,
     manuscriptExport: manuscriptAssembly,

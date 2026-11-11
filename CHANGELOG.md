@@ -26,6 +26,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **이야기 상태 원장이 씬 번들의 `state.yaml` 이 됐습니다.** `.storyboard/memory/storyState.md`(와 줄기별 사본)가 없어지고, 씬마다 그 씬에서 확정된 항목(`event`·`relationShift`·`reveal`·`motif`)과 입력 해시(`inputHash`), 앞 씬을 다시 써서 낡았다는 표시(`stale`)가 `scene/NNN-slug.card/state.yaml` 에 있습니다. 줄기의 원장은 그 줄기에 속한 씬들을 `structure.yaml` 순서로 이은 것이고, 씬을 다른 줄기로 옮기면 그 상태도 따라갑니다. 항목을 아는 인물은 이름 대신 인물 uuid(`knownBy`)로 적힙니다. doctor 의 «태그를 읽지 못한 원장 줄» 검사는 없어졌습니다(상태 파일은 스키마로 읽습니다).
 - **페르소나·배경 기억과 씬 대사가 번들로 들어갔습니다.** `.storyboard/memory/personas/`·`backgrounds/`·`dialogue/`(와 줄기별 사본) 대신 인물·배경 번들의 `memory/<줄기>.yaml`(`persona`, `cardHash`, 어느 씬까지의 기억인지 `throughScene`)과 씬 번들의 `dialogue.json` 에 있습니다. 노트 흡수의 예시 대사는 `.storyboard/memory/voiceSeeds.json` 이 아니라 인물 번들 `memory/main.yaml` 의 `voiceSample`(출처 `note:<위치>`)로 쌓입니다. 0.8 이전 작품의 기억 폴더를 옮기던 일은 없어졌습니다.
 - **`chapters.yaml` 에서 씬 계획이 빠졌습니다.** 장은 제목·요약·분량·서술자·줄기와 소속 씬의 uuid 목록만 가지고, 씬의 계획(목적·갈등·인물·장소 …)은 씬 번들의 설계 진술에, 순서는 `structure.yaml` 에 있습니다. `outline generate` 가 만든 씬 계획은 `scene seed`(또는 장편 생성의 시드 단계)가 씬을 만들 때까지 캐시(`.storyboard/cache/outline/pending-chapters.yaml`)에서 기다리고, 시드가 끝나면 장에 씬 uuid 가 적힙니다.
+- **장별 요약을 커밋하지 않습니다.** `.storyboard/memory/summaries.md`(와 줄기별 사본)가 캐시 DB 의 `chapter_summaries` 표로 내려갔습니다. 초안이 바뀌어 낡은 요약은 표시하는 대신 지워지고, 확장의 «Summarize Chapters» 는 요약을 파일 대신 새 편집기 창으로 보여 줍니다. 이로써 `.storyboard/memory/` 폴더는 쓰이지 않고, `init` 이 그 폴더와 `character/profile/` 을 만들지 않으며, 0.8 이전 작품의 기억을 옮기던 일도 없어졌습니다.
 
 ### 내부
 

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -6,14 +6,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RunGate, WorkspaceManager } from '@storyboard/story-app';
 import { ConfigBridge } from '@storyboard/story-ai';
 import type { WorkspaceCaches } from '@storyboard/story-engine';
-import { NodeUri, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
+import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
-import {
-  createWorkspaceCaches,
-  createWorkspaceRunLocks,
-  plantRunLock,
-} from './fixtures/workspaceCacheFixture';
+import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 
 let directory: string;
 let warnings: string[];
@@ -44,58 +40,12 @@ beforeEach(() => {
   caches = createWorkspaceCaches();
 });
 
-function writeLegacySummaries(): void {
-  mkdirSync(join(directory, 'manuscript'), { recursive: true });
-  writeFileSync(join(directory, 'manuscript', 'SUMMARY.md'), '옛 장 요약\n');
-}
-
-async function holdRunLockFromAnotherApp(): Promise<void> {
-  await plantRunLock(
-    caches,
-    directory,
-    { owner: 'vscode', label: '소설 생성', pid: 1, hostname: 'elsewhere' },
-    new Date(),
-  );
-}
-
 afterEach(async () => {
   await caches.closeAll();
   rmSync(directory, { recursive: true, force: true });
 });
 
 describe('WorkspaceManager', () => {
-  it('moves legacy memory into place when a work is prepared', async () => {
-    writeLegacySummaries();
-
-    const report = await createManager().prepare(NodeUri.file(directory));
-
-    expect(readFileSync(join(directory, STORYBOARD_RELATIVE_PATHS.chapterSummaries), 'utf8')).toBe(
-      '옛 장 요약\n',
-    );
-    expect(report.problems).toEqual([]);
-  });
-
-  it('leaves legacy memory in place while another app holds the run lock', async () => {
-    writeLegacySummaries();
-    await holdRunLockFromAnotherApp();
-
-    const report = await createManager().prepare(NodeUri.file(directory));
-
-    expect(readFileSync(join(directory, 'manuscript', 'SUMMARY.md'), 'utf8')).toBe('옛 장 요약\n');
-    expect(existsSync(join(directory, STORYBOARD_RELATIVE_PATHS.chapterSummaries))).toBe(false);
-    expect(report.problems).toEqual([]);
-  });
-
-  it('warns and still loads the resources when moving legacy memory fails', async () => {
-    mkdirSync(join(directory, 'manuscript', 'SUMMARY.md'), { recursive: true });
-
-    const report = await createManager().prepare(NodeUri.file(directory));
-
-    expect(report.problems).toEqual([]);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('옛 AI 기억을');
-  });
-
   it('repairs the layout without sealing when project.json cannot be read', async () => {
     mkdirSync(join(directory, '.storyboard'), { recursive: true });
     writeFileSync(join(directory, '.storyboard', 'project.json'), '{ broken');

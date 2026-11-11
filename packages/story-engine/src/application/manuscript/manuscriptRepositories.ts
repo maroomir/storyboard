@@ -57,6 +57,6 @@ export interface IManuscriptReviewRepository {
 export interface IChapterSummaryRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadAssemblySource(workspaceRoot: StoryUri): Promise<ManuscriptAssemblySource>;
-  readChapterSummaries(workspaceRoot: StoryUri): Promise<string | undefined>;
-  saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
+  readChapterSummaries(workspaceRoot: StoryUri): Promise<ChapterSummary[]>;
+  saveChapterSummaries(workspaceRoot: StoryUri, summaries: readonly ChapterSummary[]): Promise<void>;
 }

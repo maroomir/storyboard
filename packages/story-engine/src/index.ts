@@ -74,6 +74,7 @@ export * from '#engine/persistence/bundles/bundleContentHash';
 export * from '#engine/persistence/bundles/bundleFileAccess';
 export * from '#engine/persistence/bundles/cardFactReader';
 export * from '#engine/persistence/bundles/chapterOutlineStore';
+export * from '#engine/persistence/cache/chapterSummaryLedger';
 export * from '#engine/persistence/bundles/elementBundleRepository';
 export * from '#engine/persistence/bundles/elementMemoryRepository';
 export * from '#engine/persistence/bundles/sceneBundleFiles';

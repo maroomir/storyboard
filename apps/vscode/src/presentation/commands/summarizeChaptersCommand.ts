@@ -46,9 +46,10 @@ export class SummarizeChaptersCommand implements IExtensionCommand {
       return;
     }
 
-    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
-      chapterSummaries.summaryUri,
-    );
+    const document: vscode.TextDocument = await vscode.workspace.openTextDocument({
+      content: chapterSummaries.markdown,
+      language: 'markdown',
+    });
     await vscode.window.showTextDocument(document);
     await vscode.window.showInformationMessage(
       `장 ${chapterSummaries.summaryCount}개를 요약했습니다.`,

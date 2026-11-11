@@ -519,13 +519,7 @@ export class DoctorChecks {
     return [{ status: 'ok', label: '이야기 상태', detail: '원장이 지금의 카드·씬과 맞습니다.' }];
   }
 
-  private async chapterSummaries(
-    paths: ReturnType<typeof getStoryboardProjectPaths>,
-  ): Promise<DoctorCheck[]> {
-    if (!existsSync(paths.chapterSummaries.fsPath)) {
-      return [];
-    }
-
+  private async chapterSummaries(): Promise<DoctorCheck[]> {
     const { audit } = await this.container.workspace.auditChapterMemory(
       this.container.workspaceRoot,
     );
@@ -583,7 +577,7 @@ export class DoctorChecks {
       ...runChecks(workspaceLayoutChecks),
       ...this.sceneLengthReach(survey.census.largestSceneTarget),
       ...(await this.storyState()),
-      ...(await this.chapterSummaries(paths)),
+      ...(await this.chapterSummaries()),
       ...runChecks(workspaceRepositoryChecks),
       ...(await this.narration(survey.census.cards)),
       ...(await this.beatCast(survey.census.cards)),

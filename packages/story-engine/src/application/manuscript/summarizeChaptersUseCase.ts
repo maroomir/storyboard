@@ -14,7 +14,6 @@ import {
   auditChapterSummaries,
   buildChapterSummariesMarkdown,
   mergeChapterSummary,
-  parseChapterSummariesMarkdown,
   type ChapterSummary,
   assembleManuscript,
   computeDraftBodyHash,
@@ -37,7 +36,7 @@ export type SummarizeChaptersResult =
       readonly kind: 'summarized';
       readonly ok: true;
       readonly summaryCount: number;
-      readonly summaryUri: StoryUri;
+      readonly markdown: string;
     };
 
 export type SummarizeChaptersRequest = SummarizeChaptersOptions & {
@@ -102,12 +101,14 @@ export class SummarizeChaptersUseCase implements IUseCase<
       return { kind: 'cancelled', ok: false };
     }
 
-    const summaryUri: StoryUri = await this.repositories.chapterSummaries.saveChapterSummaries(
-      workspaceRoot,
-      buildChapterSummariesMarkdown(source.projectName, summaries),
-    );
+    await this.repositories.chapterSummaries.saveChapterSummaries(workspaceRoot, summaries);
 
-    return { kind: 'summarized', ok: true, summaryCount: summaries.length, summaryUri };
+    return {
+      kind: 'summarized',
+      ok: true,
+      summaryCount: summaries.length,
+      markdown: buildChapterSummariesMarkdown(source.projectName, summaries),
+    };
   }
 
   private async summarizeTargetedChapters(
@@ -164,8 +165,6 @@ export class SummarizeChaptersUseCase implements IUseCase<
   }
 
   private async readExisting(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
-    const markdown: string | undefined =
-      await this.repositories.chapterSummaries.readChapterSummaries(workspaceRoot);
-    return markdown === undefined ? [] : parseChapterSummariesMarkdown(markdown);
+    return await this.repositories.chapterSummaries.readChapterSummaries(workspaceRoot);
   }
 }
