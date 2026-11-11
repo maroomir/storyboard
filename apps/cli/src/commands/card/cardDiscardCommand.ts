@@ -11,7 +11,7 @@ export class CardDiscardCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card discard',
     writesWorkspace: true,
-    group: '카드와 정전',
+    group: '카드',
     usage: 'card discard <id> [--change <ref>]',
     summary:
       '승격하지 않은 카드 후보를 버립니다 (id 를 여럿 줄 수 있고, 없으면 전부 · --change 는 그 카드의 노트 후보 하나만)',

@@ -11,7 +11,7 @@ export class CardRenameCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card rename',
     writesWorkspace: true,
-    group: '카드와 정전',
+    group: '카드',
     usage: `card rename <${cardCategories.join('|')}> <id> --to <id>`,
     summary: '카드 id 를 바꾸고 참조를 함께 고칩니다',
     flags: ['to'],

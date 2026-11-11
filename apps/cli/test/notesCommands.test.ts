@@ -306,16 +306,7 @@ describe('notes absorb', () => {
       JSON.parse(readFileSync(join(workspace, '.storyboard', 'memory', 'voiceSeeds.json'), 'utf8')),
     ).toEqual({ characters: { hana: ['만조엔 문이 열려. 난 봤어.'] } });
     expect(outcome.message).toContain('노트의 예시 대사를 말투 표본으로 두었습니다');
-
-    expect(outcome.message).toContain('노트의 설정 사실 1건을 정전 후보로 두었습니다');
-    const bibleCache = readdirSync(join(workspace, '.storyboard', 'cache', 'bible'));
-    expect(bibleCache.filter((name) => name.startsWith('notes-'))).toHaveLength(1);
-    const diff = await run('canon diff', args(['canon', 'diff']));
-    expect(diff.data).toEqual([
-      expect.objectContaining({ subject: { kind: 'character', id: 'hana' }, key: 'origin', value: '등대지기 집안에서 자랐다', status: 'candidate' }),
-    ]);
-    const canonPath = join(workspace, '.storyboard', 'bible', 'canon.yaml');
-    expect(existsSync(canonPath) && readFileSync(canonPath, 'utf8').includes('등대지기 집안')).toBe(false);
+    expect(existsSync(join(workspace, '.storyboard', 'bible'))).toBe(false);
   });
 
   it('exports cards, scenes and the synopsis as a Markdown folder with ids and wiki links', async () => {

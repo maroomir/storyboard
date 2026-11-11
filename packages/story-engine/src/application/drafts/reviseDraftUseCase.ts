@@ -261,6 +261,7 @@ async function prepareReviseDraftContext(
   const factLines: string[] = await loadReviseFactLines(
     fs,
     cards,
+    scenes,
     paths,
     sources,
     sceneCacheRepository,
@@ -282,7 +283,7 @@ async function loadReviseSceneSources(
   sceneStem: string,
 ): Promise<ReviseSceneSources> {
   const scene: SceneFile = await scenes.readByUri(scenePath(paths.workspaceRoot, sceneStem));
-  const context: SceneContext = await new SceneContextReader(fs, cards).build(
+  const context: SceneContext = await new SceneContextReader(fs, cards, scenes).build(
     sceneContextPaths(paths),
     scene,
   );
@@ -302,13 +303,14 @@ async function loadReviseSceneSources(
 async function loadReviseFactLines(
   fs: IFileSystem,
   cards: WorkspaceCards,
+  scenes: WorkspaceScenes,
   paths: StoryboardProjectPaths,
   sources: ReviseSceneSources,
   sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<string[]> {
   const { scene, context } = sources;
   const { threadPaths, previousSceneOrder, narration } = sources.reviseNarration;
-  const narrative: NarrativeContext = await new SceneContextReader(fs, cards).buildNarrative(
+  const narrative: NarrativeContext = await new SceneContextReader(fs, cards, scenes).buildNarrative(
     sceneContextPaths(threadPaths),
     context,
     {

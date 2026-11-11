@@ -37,7 +37,6 @@ import type {
   ICardRecommendationRepository,
   ICardWriterRepository,
 } from '#engine/application/cards/cardRepositories';
-import type { IBibleCandidateRepository } from '#engine/application/project/bibleRepositories';
 import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
@@ -81,7 +80,6 @@ export interface WorkspaceRepositories {
   readonly cardRecommendations: ICardRecommendationRepository;
   readonly cardSidebar: ICardSidebarRepository;
   readonly narratorCards: INarratorCardRepository;
-  readonly bibleCandidates: IBibleCandidateRepository;
   readonly storyFeatures: IStoryFeatureRepository;
   readonly noteAbsorb: INoteAbsorbRepository;
   readonly noteSources: INoteSourceProvider;

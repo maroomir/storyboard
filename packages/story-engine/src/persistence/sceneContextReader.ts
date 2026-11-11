@@ -1,12 +1,8 @@
 import {
-  createEmptyBible,
   extractDraftBody,
   formatBibleFactLines,
   formatStoryStateForPrompt,
   isStaleChapterSection,
-  parseSceneCard,
-  parseSceneFileName,
-  readBibleFile,
   readStoryState,
   resolveSceneBackground,
   resolveSceneCharacters,
@@ -25,13 +21,14 @@ import type {
   SceneContext,
   SceneContextWorkspacePaths,
   SceneFile,
-  SceneFileNameParts,
   StoryBible,
   StoryState,
   StoryUri,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
+import { CardFactReader } from '#engine/persistence/bundles/cardFactReader';
 
 const summaryContextBudget: number = 8000;
 const previousDraftTailLength: number = 1000;
@@ -174,6 +171,7 @@ export class SceneContextReader {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
+    private readonly scenes: WorkspaceScenes,
   ) {}
 
   public async build(paths: SceneContextWorkspacePaths, scene: SceneFile): Promise<SceneContext> {
@@ -324,15 +322,7 @@ export class SceneContextReader {
   }
 
   private async readSceneBible(paths: SceneContextWorkspacePaths): Promise<StoryBible> {
-    if (!paths.bibleCanon) {
-      return createEmptyBible();
-    }
-
-    try {
-      return await readBibleFile(paths.bibleCanon, this.fileSystem);
-    } catch {
-      return createEmptyBible();
-    }
+    return await this.factReader().readFacts(paths.workspaceRoot);
   }
 
   private async readStoryTimeline(
@@ -342,46 +332,18 @@ export class SceneContextReader {
     const usesRanges: boolean = bible.facts.some(
       (fact) => fact.validFrom !== undefined || fact.validUntil !== undefined,
     );
-
-    if (!usesRanges || !paths.sceneDirectory) {
+    if (!usesRanges) {
       return undefined;
     }
 
-    const sceneDirectory: StoryUri = paths.sceneDirectory;
-    const timeline: Map<number, number> = new Map<number, number>();
-    let entries: FileSystemDirectoryEntry[];
-
-    try {
-      entries = await this.fileSystem.readDirectory(sceneDirectory);
-    } catch {
-      return undefined;
-    }
-
-    await Promise.all(
-      entries.map(async ([fileName, entry]) => {
-        const parts: SceneFileNameParts | undefined =
-          entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
-
-        if (parts === undefined) {
-          return;
-        }
-
-        try {
-          const raw: string = new TextDecoder().decode(
-            await this.fileSystem.readFile(paths.joinPath(sceneDirectory, fileName)),
-          );
-          const storyTime: number | undefined = parseSceneCard(raw).storyTime;
-
-          if (storyTime !== undefined) {
-            timeline.set(parts.order, storyTime);
-          }
-        } catch {
-          return;
-        }
-      }),
+    const timeline: ReadonlyMap<number, number> = await this.factReader().readStoryTimeline(
+      paths.workspaceRoot,
     );
-
     return timeline.size > 0 ? timeline : undefined;
+  }
+
+  private factReader(): CardFactReader {
+    return new CardFactReader({ cards: this.cards, scenes: this.scenes });
   }
 
   private async readSceneStoryLedger(

@@ -9,7 +9,7 @@
 ## 1) 도움말
 
 `storyboard --help`는 처음 할 일 여섯 단계와 명령 묶음만 보여 줍니다. 묶음은 명사를 따르며
-(시작하기 · 기획 · 씬 · 초안 · 카드와 정전 · 노트 · 원고 · 측정) 같은 명사가 두 묶음에 나뉘지
+(시작하기 · 기획 · 씬 · 초안 · 카드 · 노트 · 원고 · 측정) 같은 명사가 두 묶음에 나뉘지
 않습니다.
 
 ![storyboard --help](docs/screenshots/01-help.png)
@@ -21,7 +21,7 @@
 
 ## 2) 작품 현황과 다음 명령
 
-`storyboard status`는 계약·아웃라인·카드·씬·초안·정전 후보·원고를 한 번에 보여 주고, 마지막
+`storyboard status`는 계약·아웃라인·카드·씬·초안·원고를 한 번에 보여 주고, 마지막
 줄에 다음에 실행할 명령을 적습니다. `--json`이면 같은 내용이 `data.next`로 나갑니다.
 
 ![storyboard status](docs/screenshots/03-status.png)

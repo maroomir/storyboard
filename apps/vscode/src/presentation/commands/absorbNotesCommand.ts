@@ -233,7 +233,7 @@ function describePlan(plan: NoteAbsorbPlan): string[] {
     `새 카드 ${newCards.length}장${newCards.length > 0 ? `: ${newCards.map((card) => card.card.name).join(', ')}` : ''}`,
     `기존 카드에 대한 후보 ${changedCards.length}장${changedCards.length > 0 ? `: ${changedCards.map((card) => card.card.name).join(', ')}` : ''}`,
     `씬 ${plan.scenes.length}개${plan.skippedScenes.length > 0 ? ` (건너뜀 ${plan.skippedScenes.length}개)` : ''}`,
-    `시놉시스 ${plan.synopsis === undefined ? '없음' : '있음'} · 정전 후보 ${plan.canonCandidates.length}건`,
+    `시놉시스 ${plan.synopsis === undefined ? '없음' : '있음'}`,
     ...(plan.unclassifiedNotes.length > 0
       ? [
           `분류 못한 노트 ${plan.unclassifiedNotes.length}장: ${plan.unclassifiedNotes.map((note) => note.title).join(', ')}`,
@@ -249,11 +249,6 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     ...(outcome.pendingCandidateCards.length > 0
       ? [
           `기존 카드 ${outcome.pendingCandidateCards.length}장의 후보는 Promote Card Candidates 로 반영하세요.`,
-        ]
-      : []),
-    ...(outcome.canonCandidates > 0
-      ? [
-          `정전 후보 ${outcome.canonCandidates}건은 Promote Bible Candidates to Canon 으로 확정하세요.`,
         ]
       : []),
     ...(outcome.synopsis === 'written' ? ['시놉시스를 썼습니다.'] : []),

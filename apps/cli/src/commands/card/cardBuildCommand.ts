@@ -10,7 +10,7 @@ export class CardBuildCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card build',
     writesWorkspace: true,
-    group: '카드와 정전',
+    group: '카드',
     usage: 'card build',
     summary: '씬만 읽어 카드를 만듭니다 (--dry-run 은 제안만)',
     flags: ['dry-run'],

@@ -19,7 +19,7 @@ export class StatusCommand implements ICommandHandler {
     group: '시작하기',
     usage: 'status',
     summary:
-      '작품 현황(계약·아웃라인·카드·씬·초안·정전 후보·원고)과 다음에 실행할 명령을 보여 줍니다',
+      '작품 현황(계약·아웃라인·카드·씬·초안·원고)과 다음에 실행할 명령을 보여 줍니다',
     examples: ['storyboard status', 'storyboard status --json | jq -r .data.next.command'],
   };
 
@@ -38,7 +38,6 @@ export class StatusCommand implements ICommandHandler {
         `카드      인물 ${status.cards.characters} · 배경 ${status.cards.backgrounds} · 서술자 ${status.cards.narrators}`,
         `씬        ${status.scenes.total}`,
         `초안      ${describeDrafts(status)}`,
-        `정전      미승격 후보 ${status.canon.pendingFacts}건`,
         `원고      ${describeManuscript(status)}`,
         '',
         command === undefined

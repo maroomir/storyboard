@@ -84,7 +84,7 @@ function describeSummary(summary: InterviewSessionSummary): string[] {
 export class CardInterviewCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card interview',
-    group: '카드와 정전',
+    group: '카드',
     usage: 'card interview <id> [--step --json [--answer <n> | --write <text> | --skip | --confirm <n> | --rename <name> | --finish | --abandon]]',
     summary:
       '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지 고르게 해, 선택의 패턴을 카드 후보로 증류합니다 (대화형 화면, 또는 --step --json 으로 한 단계씩)',

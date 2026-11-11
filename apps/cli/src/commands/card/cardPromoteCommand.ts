@@ -21,7 +21,7 @@ export class CardPromoteCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card promote',
     writesWorkspace: true,
-    group: '카드와 정전',
+    group: '카드',
     usage: 'card promote',
     summary: '노트·인터뷰에서 나온 카드 후보를 반영합니다',
     flags: ['dry-run'],

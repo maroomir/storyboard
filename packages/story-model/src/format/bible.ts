@@ -1,15 +1,8 @@
-import { z } from 'zod';
-
 import { resolveSceneOrder } from '#model/format/scene';
 
 export const storyBibleVersion: string = '1.0.0';
 
 export type BibleFactStatus = 'canon' | 'candidate';
-
-export const bibleFactStatuses: readonly [BibleFactStatus, ...BibleFactStatus[]] = [
-  'canon',
-  'candidate',
-];
 
 export type BibleSubjectKind = 'character' | 'background';
 
@@ -22,26 +15,6 @@ export interface BibleFactSubject {
   kind: BibleSubjectKind;
   id: string;
 }
-
-export const bibleFactSubjectSchema: z.ZodType<BibleFactSubject> = z.object({
-  kind: z.enum(bibleSubjectKinds),
-  id: z.string().trim().min(1),
-});
-
-const sceneReferenceSchema: z.ZodType<string | number> = z.union([
-  z.string().trim().min(1),
-  z.number().int().positive(),
-]);
-
-type RevealFrom = string | number | { scene: string | number; knownBy?: string[] };
-
-const revealFromSchema: z.ZodType<RevealFrom> = z.union([
-  sceneReferenceSchema,
-  z.object({
-    scene: sceneReferenceSchema,
-    knownBy: z.array(z.string().trim().min(1)).optional(),
-  }),
-]);
 
 export interface BibleFact {
   id: string;
@@ -56,42 +29,10 @@ export interface BibleFact {
   keywords?: string[];
 }
 
-export const bibleFactSchema: z.ZodType<BibleFact> = z
-  .object({
-    id: z.string().trim().min(1),
-    subject: bibleFactSubjectSchema,
-    key: z.string().trim().min(1),
-    value: z.string().trim().min(1),
-    status: z.enum(bibleFactStatuses).default('canon'),
-    sourceScene: z.string().trim().min(1).optional(),
-    validFrom: sceneReferenceSchema.optional(),
-    validUntil: sceneReferenceSchema.optional(),
-    revealFrom: revealFromSchema.optional(),
-    keywords: z.array(z.string().trim().min(1)).optional(),
-  })
-  .superRefine((fact, refinement) => {
-    for (const field of ['validFrom', 'validUntil', 'revealFrom'] as const) {
-      const bound: string | number | undefined =
-        field === 'revealFrom' ? revealFromScene(fact) : fact[field];
-      if (typeof bound === 'string' && resolveSceneOrder(bound) === undefined) {
-        refinement.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [field],
-          message: `${field} 은(는) 장면 순번이나 NN-slug 형식이어야 합니다.`,
-        });
-      }
-    }
-  });
-
 export interface StoryBible {
   version: string;
   facts: BibleFact[];
 }
-
-export const storyBibleSchema: z.ZodType<StoryBible> = z.object({
-  version: z.literal(storyBibleVersion),
-  facts: z.array(bibleFactSchema).default([]),
-});
 
 export function revealFromScene(fact: BibleFact): string | number | undefined {
   const reveal: BibleFact['revealFrom'] = fact.revealFrom;
@@ -107,26 +48,6 @@ export function revealKnownBy(fact: BibleFact): readonly string[] | undefined {
   const reveal: BibleFact['revealFrom'] = fact.revealFrom;
 
   return typeof reveal === 'object' ? reveal.knownBy : undefined;
-}
-
-export function createEmptyBible(): StoryBible {
-  return { version: storyBibleVersion, facts: [] };
-}
-
-export function buildCandidateFact(
-  subject: BibleFactSubject,
-  key: string,
-  value: string,
-  sourceScene?: string,
-): BibleFact {
-  return {
-    id: `${subject.kind}:${subject.id}:${key}`,
-    subject,
-    key,
-    value,
-    status: 'candidate',
-    ...(sourceScene ? { sourceScene } : {}),
-  };
 }
 
 export function selectBibleFacts(

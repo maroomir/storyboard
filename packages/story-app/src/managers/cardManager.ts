@@ -9,13 +9,10 @@ import type {
   CreateCardUseCase,
   CreateCardRequest,
   CreateCardResult,
-  IBibleCandidateRepository,
   CreateNarratorCardResult,
   ICardSidebarRepository,
   INarratorCardRepository,
   IFileSystem,
-  PrepareBibleCandidatePromotionResult,
-  PromoteBibleCandidatesUseCase,
   RemoveNarratorCardResult,
   RecommendCardsRequest,
   RecommendCardsResult,
@@ -37,7 +34,6 @@ import {
   type BackgroundFactConflict,
   type CardCollectProposal,
   type NarratorCard,
-  type BibleFact,
   type SidebarCardSummary,
   type StoryboardCard,
   type StoryUri,
@@ -63,13 +59,11 @@ export interface CardManagerDependencies {
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameCardUseCase: RenameCardUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
-  readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly narratorCardRepository: INarratorCardRepository;
   readonly cardCollectRepository: CardCollectRepository;
-  readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly fileSystem: IFileSystem;
   readonly caches: WorkspaceCaches;
   readonly cards: WorkspaceCards;
@@ -77,11 +71,9 @@ export interface CardManagerDependencies {
 
 export class CardManager {
   public readonly sidebar: ICardSidebarRepository;
-  public readonly bibleCandidates: IBibleCandidateRepository;
 
   public constructor(private readonly deps: CardManagerDependencies) {
     this.sidebar = deps.cardSidebarRepository;
-    this.bibleCandidates = deps.bibleCandidateRepository;
   }
 
   public list(workspaceRoot: StoryUri, category: BibleSubjectKind): Promise<SidebarCardSummary[]> {
@@ -163,16 +155,6 @@ export class CardManager {
 
   public collectProposals(request: CollectCardProposalsRequest): Promise<CardCollectProposal[]> {
     return this.deps.collectCardProposalsUseCase.execute(request);
-  }
-
-  public prepareBiblePromotion(
-    workspaceRoot: StoryUri,
-  ): Promise<PrepareBibleCandidatePromotionResult> {
-    return this.deps.promoteBibleCandidatesUseCase.prepare(workspaceRoot);
-  }
-
-  public promoteBibleFacts(workspaceRoot: StoryUri, facts: readonly BibleFact[]): Promise<void> {
-    return this.deps.promoteBibleCandidatesUseCase.promote(workspaceRoot, facts);
   }
 
   public buildFromScenes(request: BuildStoryCardsRequest): Promise<BuildStoryCardsProposal> {

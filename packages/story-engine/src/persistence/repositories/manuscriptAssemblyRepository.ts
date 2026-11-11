@@ -2,7 +2,6 @@ import { ProjectRepository } from '#engine/persistence/repositories/projectRepos
 import {
   joinStoryPath,
   type StoryUri,
-  readBibleFile,
   readChapterPlanFile,
   getStoryboardProjectPaths,
   parseChapterSummariesMarkdown,
@@ -12,10 +11,10 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
   AssembledManuscript,
-  StoryBible,
   StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
+import type { CardFactReader } from '#engine/persistence/bundles/cardFactReader';
 import type {
   IChapterSummaryRepository,
   IManuscriptAssemblyRepository,
@@ -35,7 +34,10 @@ export class ManuscriptAssemblyRepository
     IManuscriptReviewRepository,
     IManuscriptExportRepository
 {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly facts: CardFactReader,
+  ) {}
 
   public async hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean> {
     return await this.fileSystem.exists(getStoryboardProjectPaths(workspaceRoot).outlineChapters);
@@ -85,7 +87,7 @@ export class ManuscriptAssemblyRepository
       new ProjectRepository(this.fileSystem).read(paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
       new DraftRepository(this.fileSystem).collectByOrder(paths, logger),
-      this.loadCanonFactLines(paths.bibleCanon),
+      this.facts.readFactLines(workspaceRoot),
       this.loadFreshChapterSummaries(workspaceRoot),
     ]);
 
@@ -158,14 +160,4 @@ export class ManuscriptAssemblyRepository
       : parseChapterSummariesMarkdown(markdown).filter((chapter) => chapter.isStale !== true);
   }
 
-  private async loadCanonFactLines(bibleCanonUri: StoryUri): Promise<string[]> {
-    if (!(await this.fileSystem.exists(bibleCanonUri))) {
-      return [];
-    }
-
-    const bible: StoryBible = await readBibleFile(bibleCanonUri, this.fileSystem);
-    return bible.facts
-      .filter((fact) => fact.status === 'canon')
-      .map((fact) => `${fact.subject.id} — ${fact.key}: ${fact.value}`);
-  }
 }

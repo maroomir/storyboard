@@ -68,7 +68,7 @@ terminal width, and a mistyped verb suggests the closest real ones. `-v` prints 
 ## Commands
 
 Every command on a work is `<noun> <verb> [target] [--options]`, two words. The noun is the kind of
-file it touches — `project`, `outline`, `narrator`, `scene`, `draft`, `card`, `canon`, `notes`,
+file it touches — `project`, `outline`, `narrator`, `scene`, `draft`, `card`, `notes`,
 `manuscript` — always singular, and the verb comes from one small vocabulary: `list` and `show` to
 look, `create` / `rename` / `remove` / `set` to change, `generate` / `revise` / `check` and the like
 for AI work, `diff` / `promote` for candidates. A kind is an argument, never part of the name:
@@ -78,7 +78,7 @@ session rather than a file of the work.
 
 `scene` is the scene card and `draft` is the prose written from it: `scene list|show|create|rename|
 seed|plot|complete` against `draft generate|revise|show|edit|augment|condense|expand|format|
-check`. `storyboard --help` groups the commands the same way: 시작하기, 기획, 씬, 초안, 카드와 정전,
+check`. `storyboard --help` groups the commands the same way: 시작하기, 기획, 씬, 초안, 카드,
 노트, 원고, 측정.
 
 ```bash
@@ -252,9 +252,7 @@ first and asks before writing; an agent passes `--yes`, and `--dry-run` stops at
 that already exist are never overwritten — what the notes add to them waits for `card promote`,
 and absorbing more notes adds to what is waiting rather than replacing it. Where two notes give one
 slot different values, `card promote` holds it back and `card discard <id> --change <ref>` keeps one.
-Setting facts the notes state about a character or a place (origin, history, the limits of a power,
-the rules of a place) are never written to the canon: they wait as candidates for `canon promote`,
-listed by `canon diff` beside the facts the drafts proposed. The other direction is `notes export
+The other direction is `notes export
 <folder>`: cards, scenes and the synopsis as a Markdown folder (`인물/`, `배경/`, `씬/`,
 `시놉시스.md`) with front matter ids and `[[wiki links]]`, for Obsidian or a Notion Markdown import;
 no AI is involved, and absorbing the folder again maps back to the same cards.

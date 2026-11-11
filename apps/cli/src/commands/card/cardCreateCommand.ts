@@ -20,7 +20,7 @@ export class CardCreateCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card create',
     writesWorkspace: true,
-    group: '카드와 정전',
+    group: '카드',
     usage: `card create <${cardCategories.join('|')}> --name <text>`,
     summary: '빈 인물·배경 카드를 만듭니다',
     flags: ['name', 'id'],

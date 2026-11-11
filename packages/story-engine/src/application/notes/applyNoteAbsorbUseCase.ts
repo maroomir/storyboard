@@ -8,7 +8,6 @@ import type {
   NoteCardCandidate,
 NoteCandidateFile,
 StoryboardProject,
-BibleFact,
 BibleSubjectKind,
   StoryboardCard,
 } from '@storyboard/story-model';
@@ -17,7 +16,6 @@ import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/applicat
 import {
   addNoteCandidateSource,
   applyCardCollectProposals,
-  buildCandidateFact,
   emptyNoteCandidateFile,
   mergeNoteCandidateSources,
   mergeNoteSynopsisCandidate,
@@ -44,7 +42,6 @@ export interface ApplyNoteAbsorbOutcome {
   readonly filledSettingKeys: readonly string[];
   readonly settingProposals: NoteSynthesisSetting;
   readonly seededCharacters: readonly string[];
-  readonly canonCandidates: number;
 }
 
 export type ApplyNoteAbsorbResult = ApplyNoteAbsorbOutcome | UseCaseFailure;
@@ -88,7 +85,6 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       if (seededCharacters.length > 0) {
         await this.repositories.noteAbsorb.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
       }
-      const canonCandidates: number = await this.applyCanonCandidates(request);
 
       return {
         ok: true as const,
@@ -97,22 +93,8 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
         synopsis,
         ...setting,
         seededCharacters,
-        canonCandidates,
       };
     });
-  }
-
-  private async applyCanonCandidates(request: ApplyNoteAbsorbRequest): Promise<number> {
-    const facts: BibleFact[] = request.plan.canonCandidates.map((candidate) =>
-      buildCandidateFact(candidate.subject, candidate.key, candidate.value),
-    );
-    await this.repositories.noteAbsorb.saveCanonCandidates(
-      request.workspaceRoot,
-      request.location,
-      facts,
-    );
-
-    return facts.length;
   }
 
   private async applyCards(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteCards> {

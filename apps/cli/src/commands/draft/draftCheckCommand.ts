@@ -12,7 +12,7 @@ export class DraftCheckCommand implements ICommandHandler {
     group: '초안',
     usage: `draft check <${draftCheckKinds.join('|')}> <stem>`,
     summary:
-      '초안을 검사합니다 — grammar 문법, continuity 정전과 어긋나는 곳, slop 상투 표현(AI 호출 없음). 문제가 있으면 종료 코드 1',
+      '초안을 검사합니다 — grammar 문법, continuity 카드의 사실과 어긋나는 곳, slop 상투 표현(AI 호출 없음). 문제가 있으면 종료 코드 1',
     examples: [
       'storyboard draft check slop 001-scene-1-1',
       'storyboard draft check continuity 001-scene-1-1 --json',
@@ -78,7 +78,7 @@ function describeDraftCheck(draftCheck: CheckDraftResult): CommandOutcome {
       };
     case 'continuity':
       if (!draftCheck.hasFacts) {
-        return success('대조할 정전 사실이 없습니다.', []);
+        return success('대조할 카드의 사실이 없습니다.', []);
       }
 
       return {

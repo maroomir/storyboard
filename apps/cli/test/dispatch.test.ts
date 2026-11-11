@@ -111,7 +111,6 @@ describe('dispatch', () => {
       ['scene seeds', 'scene seed'],
       ['scene beats', 'scene plot'],
       ['cards build', 'card build'],
-      ['bible promote', 'canon promote'],
       ['narrator add', 'narrator create'],
       ['manuscript summaries', 'manuscript summarize'],
     ];

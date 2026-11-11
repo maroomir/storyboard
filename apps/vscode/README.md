@@ -22,14 +22,13 @@ English README: [`README.en.md`](README.en.md)
 - 캐넌 공개 시점(`revealFrom`): 사실이 **참이 되는 시점**(`validFrom`)과 **밝혀지는 시점**을 분리해, 1화부터 참인 결말 반전이 초반 본문에 누설되지 않게 함
 - 씬 카드의 종료 지점(`endState`)·시점 인물(`povCharacter`): 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말나는 것과, 한 씬 안에서 여러 인물의 내면이 교차하는 것을 막음
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 인물·배경 카드나 씬·초안을 열고 자연어로 수정을 지시 → 에이전트가 모호하면 되묻고 → 정합성 검사를 거친 수정 제안을 diff로 확인 → 승인해야 반영. 대화는 대상별로 저장되어 이어집니다
-- 재생성 없이 카드 기반 보충: **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역) 명령으로 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
+- 재생성 없이 카드 기반 보충: **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역) 명령으로 갱신된 카드와 그 사실을 기존 초안에 녹이고, 적용 전 diff로 확인
 - 씬 사실 시트(grounding): 사건(씬 제목과 첫 비트)·장소(첫 비트의 장소나 배경 카드)·시점(첫 비트의 시간)·관계를 카드에서 파생해 대사 생성에 주입. 따로 저장하거나 AI에게 묻지 않음
 - 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
 - 고정 산문 규약: 서술은 과거형, 대사는 곡선 큰따옴표(`“ ”`). 한 작품 안에서 갈리면 안 되는 규약이라 계약이 아니라 세 생성 프롬프트에 고정으로 주입한다
 - 이전 초안 히스토리 보관(`editor.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
 - 장면 전환 구분자 삽입(`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
-- `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
-- 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
+- 씬의 인물·장소 카드에 적힌 사실(`fact` 진술) 주입과 초안 연속성 검사
 - **노트 흡수** (`Storyboard: Absorb Notes…`): Obsidian 폴더·노트, Notion 내보내기 zip, Notion 페이지 주소를 골라 읽고, 견적 → AI 정리 → 계획 확인 뒤 인물·배경·씬 카드와 시놉시스로 옮깁니다(CLI `notes absorb`와 같은 동작). 기존 카드에 대한 내용은 후보로 남고 `Promote Card Candidates`가 초안 후보와 함께 보여 줍니다.
 - 카드 에디터의 **인터뷰** 탭: 다가올 씬의 사건을 하나씩 내고 이 인물(또는 장소)이 어떻게 하는지 세 안 중에서 고르게 합니다. 고른 대사가 아니라 선택의 패턴이 표로 쌓이고, 문턱을 넘은 축만 카드 후보로 증류되어 `Promote Card Candidates`가 반영합니다(CLI `card interview`와 같은 엔진). 선택 기록은 `.storyboard/cache/interviews/`에만 남습니다.
 - 카드 에디터의 **수집** 탭: 카드가 등장하는 draft에서 LLM으로 항목을 추출해 git diff처럼 보여주고, 선택 수락 시 캐릭터/배경 카드에 추가(기존 값 보존)
@@ -39,7 +38,6 @@ English README: [`README.en.md`](README.en.md)
 - 씬별 검수·재작성 루프와 수정 계획 기록(캐시 DB)
 - `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`.storyboard/memory/summaries.md`), 복선 체크리스트(`FORESHADOWING.md`)
 - 최종 검사가 찾은 high 이슈를 해당 씬 초안에 되먹여 재작성하고 전권을 다시 검사(high 가 남으면 `revise.loop.maxIterations` 회까지 되풀이). 재작성한 씬은 `REVIEW.md`의 «재작성 결과»에 남음
-- 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
 - 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google Gemini, xAI Grok, Ollama AI provider 지원
@@ -53,7 +51,6 @@ English README: [`README.en.md`](README.en.md)
 
 ```text
 .storyboard/project.json
-.storyboard/bible/canon.yaml
 .storyboard/outline/   # 시놉시스·챕터/씬 계획·재작성 계획
 character/*.card
 background/*.card

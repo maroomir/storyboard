@@ -163,16 +163,8 @@
         "title": "%storyboard.draft.condense.title%"
       },
       {
-        "command": "storyboard.bible.promoteCandidates",
-        "title": "%storyboard.bible.promoteCandidates.title%"
-      },
-      {
         "command": "storyboard.cards.promoteCandidates",
         "title": "%storyboard.cards.promoteCandidates.title%"
-      },
-      {
-        "command": "storyboard.bible.canonDiff",
-        "title": "%storyboard.bible.canonDiff.title%"
       },
       {
         "command": "storyboard.draft.expand",

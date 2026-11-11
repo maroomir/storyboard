@@ -355,6 +355,7 @@ export class SceneGenerationInputsLoader {
       const context: SceneContext = await new SceneContextReader(
         this.dependencies.host.fileSystem,
         this.dependencies.host.cards,
+        this.dependencies.host.scenes,
       ).build(ctxPaths, rawScene);
       return { ok: true, context };
     } catch (error) {
@@ -460,7 +461,7 @@ export class SceneGenerationInputsLoader {
     narration: NarrationDirective | undefined,
     context: SceneContext,
   ): Promise<NarrativeContext> {
-    return await new SceneContextReader(this.dependencies.host.fileSystem, this.dependencies.host.cards).buildNarrative(
+    return await new SceneContextReader(this.dependencies.host.fileSystem, this.dependencies.host.cards, this.dependencies.host.scenes).buildNarrative(
       sceneContextPaths(thread.threadPaths),
       context,
       {

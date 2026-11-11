@@ -1,5 +1,4 @@
 import type {
-  BibleFact,
   OutlineSynopsis,
   SceneCard,
   StoryUri,
@@ -56,9 +55,4 @@ export interface INoteAbsorbRepository {
   ): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void>;
-  saveCanonCandidates(
-    workspaceRoot: StoryUri,
-    location: string,
-    facts: readonly BibleFact[],
-  ): Promise<void>;
 }

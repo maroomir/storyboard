@@ -14,7 +14,7 @@ export type CommandGroup =
   | '기획'
   | '씬'
   | '초안'
-  | '카드와 정전'
+  | '카드'
   | '노트'
   | '원고'
   | '측정';
@@ -71,7 +71,7 @@ export const commandGroups: readonly CommandGroup[] = [
   '기획',
   '씬',
   '초안',
-  '카드와 정전',
+  '카드',
   '노트',
   '원고',
   '측정',
@@ -82,7 +82,7 @@ export const commandGroupIds: Readonly<Record<CommandGroup, string>> = {
   기획: 'plan',
   씬: 'scene',
   초안: 'draft',
-  '카드와 정전': 'card',
+  카드: 'card',
   노트: 'notes',
   원고: 'manuscript',
   측정: 'sim',

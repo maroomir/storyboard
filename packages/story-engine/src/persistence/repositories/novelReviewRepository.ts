@@ -1,13 +1,11 @@
 import {
   joinStoryPath,
   type StoryUri,
-  readBibleFile,
   getStoryboardProjectPaths,
   parseChapterSummariesMarkdown,
   type ChapterSummary,
   type StoryboardProjectPaths,
   type ManuscriptDraftEntry,
-  type StoryBible,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
@@ -15,15 +13,19 @@ import type {
   NovelReviewSource,
 } from '#engine/application/novel/novelPipeline';
 import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
+import type { CardFactReader } from '#engine/persistence/bundles/cardFactReader';
 export class NovelReviewRepository implements INovelReviewRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly facts: CardFactReader,
+  ) {}
 
   public async loadReviewSource(workspaceRoot: StoryUri): Promise<NovelReviewSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const draftsByOrder: Map<number, ManuscriptDraftEntry> = await new DraftRepository(
       this.fileSystem,
     ).collectByOrder(paths, { warn: (): void => undefined });
-    const canonFactLines: string[] = await this.loadCanonFactLines(paths.bibleCanon);
+    const canonFactLines: string[] = await this.facts.readFactLines(workspaceRoot);
     const chapterSummaries: ChapterSummary[] = await this.loadFreshChapterSummaries(
       paths.chapterSummaries,
     );
@@ -49,14 +51,4 @@ export class NovelReviewRepository implements INovelReviewRepository {
     }
   }
 
-  private async loadCanonFactLines(bibleCanonUri: StoryUri): Promise<string[]> {
-    try {
-      const bible: StoryBible = await readBibleFile(bibleCanonUri, this.fileSystem);
-      return bible.facts
-        .filter((fact) => fact.status === 'canon')
-        .map((fact) => `${fact.subject.id} — ${fact.key}: ${fact.value}`);
-    } catch {
-      return [];
-    }
-  }
 }

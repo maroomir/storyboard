@@ -3,11 +3,9 @@ import {
   type IFileSystem,
 } from '@storyboard/story-engine';
 import {
-  diffCandidatesAgainstCanon,
   getStoryboardProjectPaths,
   joinStoryPath,
   validateGenerationContract,
-  type CanonDiffResult,
   type ContractFieldKey,
   type InterviewCardCoverage,
   type SceneListItem,
@@ -71,7 +69,6 @@ export interface WorkspaceStatus {
   };
   readonly scenes: { readonly total: number };
   readonly drafts: WorkspaceDraftCounts;
-  readonly canon: { readonly pendingFacts: number };
   readonly manuscript: WorkspaceManuscriptStatus;
   readonly nextStep: WorkspaceNextStep;
   readonly interviews: readonly InterviewCardCoverage[];
@@ -129,18 +126,6 @@ async function describeManuscript(
   };
 }
 
-async function countPendingCanonFacts(
-  cards: CardManager,
-  workspaceRoot: StoryUri,
-): Promise<number> {
-  const canonDiff: CanonDiffResult = diffCandidatesAgainstCanon(
-    await cards.bibleCandidates.loadCanon(workspaceRoot),
-    await cards.bibleCandidates.loadRecords(workspaceRoot),
-  );
-
-  return canonDiff.pending.length;
-}
-
 async function countCards(
   cards: CardManager,
   fileSystem: IFileSystem,
@@ -166,7 +151,6 @@ export async function describeWorkspaceStatus(
   const scenes: SceneListItem[] = await drafts.listScenes(workspaceRoot);
   const draftCounts: WorkspaceDraftCounts = await countDrafts(drafts, workspaceRoot, scenes);
   const manuscript: WorkspaceManuscriptStatus = await describeManuscript(fileSystem, paths, scenes);
-  const pendingFacts: number = await countPendingCanonFacts(cards, workspaceRoot);
 
   return {
     project: { name: project.name, missingContract },
@@ -174,7 +158,6 @@ export async function describeWorkspaceStatus(
     cards: await countCards(cards, fileSystem, workspaceRoot),
     scenes: { total: scenes.length },
     drafts: draftCounts,
-    canon: { pendingFacts },
     manuscript,
     interviews: await suggestInterviews(interviews, workspaceRoot, draftCounts),
     nextStep: chooseNextStep({

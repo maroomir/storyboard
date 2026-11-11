@@ -11,7 +11,7 @@ export class SceneRenameCommand implements ICommandHandler {
     writesWorkspace: true,
     group: '씬',
     usage: 'scene rename <stem> --to <stem>',
-    summary: '씬 이름·번호를 바꾸고 초안·기억·정전의 참조를 함께 옮깁니다',
+    summary: '씬 이름(slug)을 바꾸고 초안·기억의 참조를 함께 옮깁니다',
     flags: ['to'],
     examples: ['storyboard scene rename 003-night-market --to 003-moon-market'],
   };

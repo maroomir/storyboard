@@ -42,7 +42,6 @@ export interface StoryboardProjectPaths {
   readonly voiceSeeds: StoryUri;
   readonly personaMemoryDirectory: StoryUri;
   readonly backgroundMemoryDirectory: StoryUri;
-  readonly bibleCacheDirectory: StoryUri;
   readonly cardCacheDirectory: StoryUri;
   readonly noteCacheDirectory: StoryUri;
   readonly noteSource: StoryUri;
@@ -55,8 +54,6 @@ export interface StoryboardProjectPaths {
   readonly noteSynopsisCandidate: StoryUri;
   readonly noteExtractionResponses: StoryUri;
   readonly studioSessionDirectory: StoryUri;
-  readonly bibleDirectory: StoryUri;
-  readonly bibleCanon: StoryUri;
   readonly outlineDirectory: StoryUri;
   readonly outlineSynopsis: StoryUri;
   readonly outlineChapters: StoryUri;
@@ -115,7 +112,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     voiceSeeds: resolve(STORYBOARD_RELATIVE_PATHS.voiceSeeds),
     personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
     backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
-    bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
     noteCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.noteCacheDirectory),
     noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
@@ -125,8 +121,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
     noteExtractionResponses: resolve(STORYBOARD_RELATIVE_PATHS.noteExtractionResponses),
     studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
-    bibleDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleDirectory),
-    bibleCanon: resolve(STORYBOARD_RELATIVE_PATHS.bibleCanon),
     outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),
     outlineSynopsis: resolve(STORYBOARD_RELATIVE_PATHS.outlineSynopsis),
     outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),

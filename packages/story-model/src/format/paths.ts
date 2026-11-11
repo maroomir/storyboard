@@ -16,7 +16,6 @@ interface StoryboardRelativePaths {
   readonly voiceSeeds: string;
   readonly personaMemoryDirectory: string;
   readonly backgroundMemoryDirectory: string;
-  readonly bibleCacheDirectory: string;
   readonly cardCacheDirectory: string;
   readonly noteCacheDirectory: string;
   readonly noteSource: string;
@@ -29,8 +28,6 @@ interface StoryboardRelativePaths {
   readonly interviewWorkingModelDirectory: string;
   readonly interviewAxes: string;
   readonly interviewCandidates: string;
-  readonly bibleDirectory: string;
-  readonly bibleCanon: string;
   readonly outlineDirectory: string;
   readonly outlineSynopsis: string;
   readonly outlineChapters: string;
@@ -66,7 +63,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   voiceSeeds: '.storyboard/memory/voiceSeeds.json',
   personaMemoryDirectory: '.storyboard/memory/personas',
   backgroundMemoryDirectory: '.storyboard/memory/backgrounds',
-  bibleCacheDirectory: '.storyboard/cache/bible',
   cardCacheDirectory: '.storyboard/cache/cards',
   noteCacheDirectory: '.storyboard/cache/notes',
   noteSource: '.storyboard/cache/notes/source.json',
@@ -79,8 +75,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   interviewWorkingModelDirectory: '.storyboard/cache/interviews/cards',
   interviewAxes: '.storyboard/cache/interviews/axes.json',
   interviewCandidates: '.storyboard/cache/interviews/candidates.json',
-  bibleDirectory: '.storyboard/bible',
-  bibleCanon: '.storyboard/bible/canon.yaml',
   outlineDirectory: '.storyboard/outline',
   outlineSynopsis: '.storyboard/outline/synopsis.md',
   outlineChapters: '.storyboard/outline/chapters.yaml',

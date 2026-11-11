@@ -33,7 +33,6 @@ export * from '#model/format/foreignScript';
 export * from '#model/format/regExp';
 export * from '#model/format/slug';
 export * from '#model/format/unknownValues';
-export * from '#model/format/files/bible';
 export * from '#model/format/files/card';
 export * from '#model/format/files/readWriteFileSystem';
 export * from '#model/format/files/cardMemory';
