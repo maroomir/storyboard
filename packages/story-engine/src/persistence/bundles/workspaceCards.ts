@@ -4,6 +4,7 @@ import {
   bundleFileNames,
   bundleRelativePath,
   elementKindDirectories,
+  elementKinds,
   formatBundleDirectoryName,
   isBackgroundCard,
   joinStoryPath,
@@ -314,6 +315,45 @@ export class WorkspaceCards {
     );
 
     return joinStoryPath(workspaceRoot, ...renamed.path.split('/'));
+  }
+
+  public async reassignCopiedIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
+    const repository: ElementBundleRepository = await this.openRepository(workspaceRoot);
+    const listing: BundleListing = await repository.listBundles(elementKinds);
+    const reassigned: string[] = [];
+
+    for (const warning of listing.warnings.filter((item) => item.kind === 'copied-id')) {
+      const copies: readonly ElementBundle[] = await this.orderByAge(
+        workspaceRoot,
+        listing.bundles.filter((bundle) => warning.paths.includes(bundle.path)),
+      );
+      for (const copy of copies.slice(1)) {
+        await repository.writeBundle(copy.header.kind, {
+          directoryName: copy.path.split('/').at(-1) ?? copy.path,
+          header: { ...copy.header, id: randomUUID() },
+          statements: copy.statements,
+        });
+        reassigned.push(copy.path);
+      }
+    }
+
+    this.rosters.clear();
+    return reassigned;
+  }
+
+  private async orderByAge(
+    workspaceRoot: StoryUri,
+    bundles: readonly ElementBundle[],
+  ): Promise<readonly ElementBundle[]> {
+    const aged: { readonly bundle: ElementBundle; readonly modifiedAt: number }[] = [];
+    for (const bundle of bundles) {
+      const cardUri: StoryUri = joinStoryPath(workspaceRoot, ...bundle.path.split('/'), bundleFileNames.card);
+      aged.push({ bundle, modifiedAt: await this.dependencies.fileSystem.modifiedTime(cardUri) });
+    }
+
+    return aged
+      .sort((left, right) => left.modifiedAt - right.modifiedAt || left.bundle.path.localeCompare(right.bundle.path))
+      .map((item) => item.bundle);
   }
 
   public async findBundleBySlug(
