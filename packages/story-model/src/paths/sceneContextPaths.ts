@@ -4,6 +4,7 @@ import type { SceneContextWorkspacePaths } from '#model/format/sceneContext';
 
 export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspacePaths {
   return {
+    workspaceRoot: paths.workspaceRoot,
     characterDirectory: paths.characterDirectory,
     sceneDirectory: paths.sceneDirectory,
     backgroundDirectory: paths.backgroundDirectory,

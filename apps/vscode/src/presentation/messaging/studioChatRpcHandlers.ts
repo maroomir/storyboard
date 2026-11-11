@@ -22,7 +22,7 @@ import type {
 export interface StudioChatRpcHandlersDependencies {
   readonly studio: Pick<StudioManager, 'chat' | 'context'>;
   readonly aiGateway: AiGateway;
-  readonly cards: Pick<CardManager, 'collectProposals'>;
+  readonly cards: Pick<CardManager, 'collectProposals' | 'read'>;
   readonly logger: IStoryboardLogger;
   readonly toolDiagnostics: StudioToolDiagnostics;
   readonly documents: StudioDocumentManagers;

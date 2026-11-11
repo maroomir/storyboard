@@ -11,6 +11,7 @@ import { MockAiProvider } from '@storyboard/story-ai';
 import type { ParsedArguments } from '@/cliArguments';
 import { findCommand } from '@/commands/index';
 import { createCliContainer, type CliContainer } from '@/container';
+import { isLegacyCardPath, readCardFromBundles, writeCardBundleFromYaml } from './fixtures/cardBundles';
 
 let home: string;
 let workspace: string;
@@ -37,7 +38,13 @@ function args(path: string[], flags: Record<string, string | boolean> = {}): Par
 }
 
 function write(relativePath: string, lines: readonly string[]): void {
-  writeFileSync(join(workspace, relativePath), `${lines.join('\n')}\n`);
+  const text: string = `${lines.join('\n')}\n`;
+  if (isLegacyCardPath(relativePath)) {
+    writeCardBundleFromYaml(workspace, text);
+    return;
+  }
+
+  writeFileSync(join(workspace, relativePath), text);
 }
 
 function readJson<T>(relativePath: string): T {
@@ -525,18 +532,9 @@ describe('interview session (mock provider)', () => {
       '  - 똑 부러진다',
     ]);
     await app.notes.promoteCandidates(app.workspaceRoot, prepared.candidates);
-    const card: string = readFileSync(join(workspace, 'character/hana.card'), 'utf8');
-    expect(card).toContain('[Mock AI] 몰릴 때 먼저 참고');
-    expect(card).toContain("speech: '''등대 아이''라 부르고 반말");
-    expect(card.split('\n').filter((line) => /^[a-z]/.test(line))).toEqual([
-      'type: character',
-      'id: hana',
-      'name: 하나',
-      'relations:',
-      'role: main',
-      'aliases:',
-      'traits:',
-    ]);
+    const card = await readCardFromBundles(workspace, 'hana');
+    expect(card?.type === 'character' ? card.traits?.join('\n') : undefined).toContain('[Mock AI] 몰릴 때 먼저 참고');
+    expect(card?.type === 'character' ? card.relations?.[0]?.speech : undefined).toBe("'등대 아이'라 부르고 반말");
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/candidates.json'))).toBe(false);
   });
 
@@ -570,7 +568,8 @@ describe('interview session (mock provider)', () => {
 
     const remaining: NoteCandidateFile = readJson(candidatesPath);
     expect(remaining.sources.flatMap((kept) => kept.candidates.flatMap((card) => card.changes))).toEqual([laterTrait]);
-    expect(readFileSync(join(workspace, 'character/hana.card'), 'utf8')).not.toContain('등대 불빛을 센다');
+    const hana = await readCardFromBundles(workspace, 'hana');
+    expect(hana?.type === 'character' ? hana.traits ?? [] : []).not.toContain('등대 불빛을 센다');
   });
 
   it('calls no distill and keeps the candidates when a session ends without an answer', async () => {

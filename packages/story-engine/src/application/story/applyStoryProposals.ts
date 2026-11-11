@@ -1,10 +1,8 @@
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
-  backgroundCardPath,
-  characterCardPath,
   getStoryboardProjectPaths,
   joinStoryPath,
-  serializeCard,
+  type StatementSource,
   type StoryboardCard,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -22,6 +20,8 @@ export interface ApplyCompletedScenesResult {
   readonly skippedFileNames: readonly string[];
 }
 
+const studioSource: StatementSource = { origin: 'studio' };
+
 export class ApplyStoryProposals {
   public constructor(private readonly host: HostAdapters) {}
 
@@ -31,6 +31,7 @@ export class ApplyStoryProposals {
   ): Promise<ApplyStoryCardTargetsResult> {
     const writtenIds: string[] = [];
     const needsIdNames: string[] = [];
+    const cardsToWrite: StoryboardCard[] = [];
 
     for (const target of targets) {
       if (target.isNew && target.requiresIdConfirmation) {
@@ -42,14 +43,11 @@ export class ApplyStoryProposals {
         target,
         target.changes.map((change) => change.proposal),
       );
-      const uri: StoryUri =
-        card.type === 'character'
-          ? characterCardPath(workspaceRoot, card.id)
-          : backgroundCardPath(workspaceRoot, card.id);
-
-      await this.host.fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
+      cardsToWrite.push(card);
       writtenIds.push(card.id);
     }
+
+    await this.host.cards.writeCards(workspaceRoot, cardsToWrite, studioSource);
 
     return { writtenIds, needsIdNames };
   }

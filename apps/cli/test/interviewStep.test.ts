@@ -8,6 +8,8 @@ import type { InterviewWorkingModel } from '@storyboard/story-model';
 
 import { CommandDispatcher, type DispatchDependencies, type DispatchResult } from '@/commands/commandDispatcher';
 
+import { isLegacyCardPath, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+
 let home: string;
 let workspace: string;
 
@@ -60,7 +62,13 @@ async function step(...extra: string[]): Promise<{ readonly exitCode: number; re
 }
 
 function write(relativePath: string, lines: readonly string[]): void {
-  writeFileSync(join(workspace, relativePath), `${lines.join('\n')}\n`);
+  const text: string = `${lines.join('\n')}\n`;
+  if (isLegacyCardPath(relativePath)) {
+    writeCardBundleFromYaml(workspace, text);
+    return;
+  }
+
+  writeFileSync(join(workspace, relativePath), text);
 }
 
 function readModel(): InterviewWorkingModel {

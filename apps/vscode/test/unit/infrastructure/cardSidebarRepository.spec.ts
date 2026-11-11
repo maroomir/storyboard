@@ -1,22 +1,15 @@
-import { stubFileSystem } from "../../stubs/fileSystem"
 import * as vscode from "vscode"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
-import { CardSidebarRepository } from "@storyboard/story-engine"
+import { CardSidebarRepository, type WorkspaceCards } from "@storyboard/story-engine"
+
+import { stubCards } from "../../stubs/cards"
 
 describe("CardSidebarRepository", () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it("lists valid cards in the requested sidebar category", async () => {
-    vi.spyOn(vscode.workspace.fs, "readDirectory").mockResolvedValue([
-      ["elia.card", vscode.FileType.File]
-    ])
-    vi.spyOn(vscode.workspace.fs, "readFile").mockResolvedValue(
-      new TextEncoder().encode("type: character\nid: elia\nname: 엘리아\nrole: main\n")
+    const repository = new CardSidebarRepository(
+      stubCards({ characters: [{ type: "character", id: "elia", name: "엘리아", role: "main" }] })
     )
-    const repository = new CardSidebarRepository(stubFileSystem)
 
     const result = await repository.list(vscode.Uri.file("/workspace"), "character")
 
@@ -25,17 +18,18 @@ describe("CardSidebarRepository", () => {
     ])
   })
 
-  it("keeps invalid cards visible as error summaries", async () => {
-    vi.spyOn(vscode.workspace.fs, "readDirectory").mockResolvedValue([
-      ["broken.card", vscode.FileType.File]
-    ])
-    vi.spyOn(vscode.workspace.fs, "readFile").mockResolvedValue(new TextEncoder().encode("broken"))
-    const repository = new CardSidebarRepository(stubFileSystem)
+  it("keeps a card it cannot read visible as an error summary", async () => {
+    const unreadable = {
+      loadRoster: async () => {
+        throw new Error("background/broken.card/card.yaml: 스키마가 맞지 않습니다")
+      }
+    } as unknown as WorkspaceCards
+    const repository = new CardSidebarRepository(unreadable)
 
     const result = await repository.list(vscode.Uri.file("/workspace"), "background")
 
     expect(result[0]).toEqual(
-      expect.objectContaining({ error: expect.any(String), type: "location" })
+      expect.objectContaining({ error: expect.stringContaining("broken.card"), type: "location" })
     )
   })
 })

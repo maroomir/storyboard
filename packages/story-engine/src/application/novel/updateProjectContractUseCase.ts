@@ -64,6 +64,7 @@ export class UpdateProjectContractUseCase implements IUseCase<
         await new ProjectRepository(fileSystem).write(paths.projectJson, { ...project, setting });
         const createdNarrators: string[] = await new WorkspaceInitializer(
           fileSystem,
+          this.host.cards,
         ).writeNarratorCardsIfMissing(paths, request.narratorCards ?? []);
 
         return { ok: true, kind: 'updated', setting, createdNarrators };

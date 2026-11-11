@@ -65,6 +65,7 @@ import {
   UsageLedgerRecorder,
   UsageMeter,
   WorkspaceCaches,
+  WorkspaceCards,
   WorkspaceRunLocks,
   type IFileSystem,
   type ISqlDatabaseHost,
@@ -131,6 +132,7 @@ interface EngineGraph {
   readonly fileSystem: IFileSystem;
   readonly logger: IStoryboardLogger;
   readonly caches: WorkspaceCaches;
+  readonly cards: WorkspaceCards;
   readonly runLocks: WorkspaceRunLocks;
   readonly usageLedger: UsageLedgerRecorder;
   readonly usageMeter: UsageMeter;
@@ -224,6 +226,7 @@ export class StoryboardApplication {
     this.resourceRoots = dependencies.resourceRoots ?? [];
     this.workspace = new WorkspaceManager({
       fileSystem: services.fileSystem,
+      cards: services.cards,
       configBridge: services.configBridge,
       resourceRoots: this.resourceRoots,
       runGate: this.runGate,
@@ -289,6 +292,7 @@ function buildServices(
     fileSystem,
   });
   const runLocks: WorkspaceRunLocks = new WorkspaceRunLocks({ caches });
+  const cards: WorkspaceCards = new WorkspaceCards({ fileSystem, caches });
   const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder({ caches });
   const usageMeter: UsageMeter = new UsageMeter();
   const usageSink: IUsageSink = usageMeter.wrap(
@@ -304,6 +308,7 @@ function buildServices(
     secretStore,
     generator,
     caches,
+    cards,
   };
   const ai: AiServices = { gateway: aiGateway, providerRegistry: aiProviderRegistry, usageSink };
   const repositories: WorkspaceRepositories = buildWorkspaceRepositories(
@@ -339,6 +344,7 @@ function buildServices(
     fileSystem,
     logger,
     caches,
+    cards,
     runLocks,
     usageLedger,
     usageMeter,
@@ -393,10 +399,10 @@ function buildServices(
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
     studioChatUseCase: new StudioChatUseCase(host, ai),
-    studioContextRepository: new StudioContextRepository(fileSystem, revisionPlanRecorder),
+    studioContextRepository: new StudioContextRepository(fileSystem, revisionPlanRecorder, cards),
     studioSessionRepository: new StudioSessionRepository(fileSystem),
     studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
-    cardCollectRepository: new CardCollectRepository(fileSystem),
+    cardCollectRepository: new CardCollectRepository(fileSystem, cards),
     summarizeChaptersUseCase,
     updateProjectContractUseCase: new UpdateProjectContractUseCase(host),
   };
@@ -407,7 +413,7 @@ function buildWorkspaceRepositories(
   fetch: NoteHttpFetch,
 ): WorkspaceRepositories {
   const { fileSystem, workspaceLocator } = host;
-  const outline: OutlineRepository = new OutlineRepository(fileSystem);
+  const outline: OutlineRepository = new OutlineRepository(fileSystem, host.cards);
   const manuscriptAssembly: ManuscriptAssemblyRepository = new ManuscriptAssemblyRepository(
     fileSystem,
   );
@@ -429,14 +435,14 @@ function buildWorkspaceRepositories(
     chapterSummaries: manuscriptAssembly,
     manuscriptExport: manuscriptAssembly,
     manuscriptReview: manuscriptAssembly,
-    cardWriter: new CardWriterRepository(fileSystem),
-    cardCollect: new CardCollectRepository(fileSystem),
-    cardRecommendations: new CardRecommendationRepository(fileSystem),
-    cardSidebar: new CardSidebarRepository(fileSystem),
-    narratorCards: new NarratorCardRepository(fileSystem),
+    cardWriter: new CardWriterRepository(fileSystem, host.cards),
+    cardCollect: new CardCollectRepository(fileSystem, host.cards),
+    cardRecommendations: new CardRecommendationRepository(fileSystem, host.cards),
+    cardSidebar: new CardSidebarRepository(host.cards),
+    narratorCards: new NarratorCardRepository(host.cards),
     bibleCandidates: new BibleCandidateRepository(fileSystem),
-    storyFeatures: new StoryFeatureRepository(fileSystem),
-    noteAbsorb: new NoteAbsorbRepository(fileSystem),
+    storyFeatures: new StoryFeatureRepository(fileSystem, host.cards),
+    noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards),
     noteSources: new NoteSourceProvider(host, { fetch }),
     interviews: new InterviewRepository(fileSystem),
   };

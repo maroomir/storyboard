@@ -1,13 +1,10 @@
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   joinStoryPath,
   type StoryUri,
-  parseCard,
   parseDraft,
   readDraftFile,
   readSceneFile,
   getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
   type StoryboardProjectPaths,
   type SceneFile,
   type Draft,
@@ -15,6 +12,7 @@ import {
   type BibleSubjectKind,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
 import type {
   CardRecommendationInput,
@@ -22,7 +20,10 @@ import type {
 } from '#engine/application/cards/cardRepositories';
 
 export class CardRecommendationRepository implements ICardRecommendationRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async load(
     workspaceRoot: StoryUri,
@@ -111,28 +112,11 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
     workspaceRoot: StoryUri,
     category: BibleSubjectKind,
   ): Promise<string[]> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const directory: StoryUri =
-      category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const uris: StoryUri[] = await new WorkspaceFiles(this.fileSystem).listCardUris(directory);
-    const names: string[] = [];
+    const roster: CardRoster = await this.cards.loadRoster(workspaceRoot, [category]);
+    const cards: readonly StoryboardCard[] =
+      category === 'character' ? roster.characters : roster.backgrounds;
 
-    for (const uri of uris) {
-      if (isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? '')) {
-        continue;
-      }
-
-      try {
-        const card: StoryboardCard = parseCard(
-          new TextDecoder().decode(await this.fileSystem.readFile(uri)),
-        );
-        names.push(card.name, ...(card.aliases ?? []));
-      } catch {
-        continue;
-      }
-    }
-
-    return names;
+    return cards.flatMap((card) => [card.name, ...(card.aliases ?? [])]);
   }
 
   private async readDirectorySafely(directory: StoryUri): Promise<FileSystemDirectoryEntry[]> {

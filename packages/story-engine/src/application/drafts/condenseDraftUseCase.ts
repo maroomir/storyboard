@@ -141,11 +141,11 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
       const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(
         getStoryboardProjectPaths(workspaceRoot),
       );
-      const context: SceneContext = await new SceneContextReader(fileSystem).build(
+      const context: SceneContext = await new SceneContextReader(fileSystem, this.host.cards).build(
         contextPaths,
         scene,
       );
-      const narrative: NarrativeContext = await new SceneContextReader(fileSystem).buildNarrative(
+      const narrative: NarrativeContext = await new SceneContextReader(fileSystem, this.host.cards).buildNarrative(
         contextPaths,
         context,
       );

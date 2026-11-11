@@ -28,9 +28,11 @@ import type {
   StoryUri,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 export interface StoryStateAuditRequest {
   readonly fileSystem: IFileSystem;
+  readonly cards: WorkspaceCards;
   readonly paths: StoryboardProjectPaths;
   readonly format: ProjectFormat;
   readonly sceneBreakJoiner: string | undefined;
@@ -213,9 +215,10 @@ export class StoryMemoryAuditor {
       const sceneUri: StoryUri = joinStoryPath(paths.sceneDirectory, fileName);
       const scene: SceneFile = await readSceneFile(sceneUri, reads, fileName);
       const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-      const context: SceneContext = await new SceneContextReader(reads).build(ctxPaths, scene);
+      const context: SceneContext = await new SceneContextReader(reads, this.request.cards).build(ctxPaths, scene);
       const bibleFacts: readonly BibleFact[] = await new SceneContextReader(
         reads,
+        this.request.cards,
       ).resolveBibleFacts(ctxPaths, context);
 
       return computeSceneInputHash({

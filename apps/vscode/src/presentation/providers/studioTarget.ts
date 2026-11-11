@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 
 import {
-  isIgnoredSampleCardFileName,
-  parseCardIdFromFileName,
+  parseCardIdFromPath,
   parseSceneFileName,
   sceneStemPattern,
   draftPath,
@@ -164,11 +163,5 @@ function resolveCardTargetKind(
 }
 
 function resolveCardId(uri: vscode.Uri): string | undefined {
-  const fileName: string = uri.path.split('/').pop() ?? '';
-
-  if (isIgnoredSampleCardFileName(fileName)) {
-    return undefined;
-  }
-
-  return parseCardIdFromFileName(fileName);
+  return parseCardIdFromPath(uri);
 }

@@ -92,12 +92,12 @@ describe("isDirectSceneCardFile contract", () => {
 })
 describe("card file contracts", () => {
   const characterCases: PathContractCase[] = [
-    { label: "direct .card in character dir", filePath: "/workspace/story/character/seorin.card", expected: true },
-    { label: "profile image beside the card", filePath: "/workspace/story/character/profile/seorin.png", expected: false },
-    { label: "nested under a subdirectory", filePath: "/workspace/story/character/sub/seorin.card", expected: false },
-    { label: "wrong extension .md", filePath: "/workspace/story/character/seorin.md", expected: false },
-    { label: "sibling sharing the character prefix", filePath: "/workspace/story/characters/seorin.card", expected: false },
-    { label: "background card is not a character card", filePath: "/workspace/story/background/subway.card", expected: false }
+    { label: "card.yaml of a character bundle", filePath: "/workspace/story/character/seorin.card/card.yaml", expected: true },
+    { label: "profile image inside the bundle", filePath: "/workspace/story/character/seorin.card/profile.png", expected: false },
+    { label: "statements beside the header", filePath: "/workspace/story/character/seorin.card/statements.yaml", expected: false },
+    { label: "nested under a subdirectory", filePath: "/workspace/story/character/sub/seorin.card/card.yaml", expected: false },
+    { label: "sibling sharing the character prefix", filePath: "/workspace/story/characters/seorin.card/card.yaml", expected: false },
+    { label: "background card is not a character card", filePath: "/workspace/story/background/subway.card/card.yaml", expected: false }
   ]
 
   it.each(characterCases)("character: $label → $expected", ({ filePath, expected }) => {
@@ -105,9 +105,9 @@ describe("card file contracts", () => {
   })
 
   const backgroundCases: PathContractCase[] = [
-    { label: "direct .card in background dir", filePath: "/workspace/story/background/subway.card", expected: true },
-    { label: "nested under a subdirectory", filePath: "/workspace/story/background/sub/subway.card", expected: false },
-    { label: "character card is not a background card", filePath: "/workspace/story/character/seorin.card", expected: false }
+    { label: "card.yaml of a background bundle", filePath: "/workspace/story/background/subway.card/card.yaml", expected: true },
+    { label: "nested under a subdirectory", filePath: "/workspace/story/background/sub/subway.card/card.yaml", expected: false },
+    { label: "character card is not a background card", filePath: "/workspace/story/character/seorin.card/card.yaml", expected: false }
   ]
 
   it.each(backgroundCases)("background: $label → $expected", ({ filePath, expected }) => {

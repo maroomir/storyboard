@@ -38,6 +38,7 @@ import {
   type SceneBeat,
 } from '@storyboard/story-model';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import {
@@ -79,6 +80,7 @@ interface ReviseNarration {
 
 async function resolveReviseNarration(
   fs: IFileSystem,
+  cards: WorkspaceCards,
   paths: StoryboardProjectPaths,
   scene: Awaited<ReturnType<typeof readSceneFile>>,
   project: StoryboardProject | undefined,
@@ -91,7 +93,7 @@ async function resolveReviseNarration(
     };
   }
 
-  const resolver: SceneNarrationResolver = new SceneNarrationResolver(fs);
+  const resolver: SceneNarrationResolver = new SceneNarrationResolver(fs, cards);
   const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
     paths,
     scene.order,
@@ -241,13 +243,20 @@ interface ReviseSceneSources {
 
 async function prepareReviseDraftContext(
   fs: IFileSystem,
+  cards: WorkspaceCards,
   paths: StoryboardProjectPaths,
   draftUri: StoryUri,
   sceneStem: string,
   sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<ReviseDraftContext> {
-  const sources: ReviseSceneSources = await loadReviseSceneSources(fs, paths, sceneStem);
-  const factLines: string[] = await loadReviseFactLines(fs, paths, sources, sceneCacheRepository);
+  const sources: ReviseSceneSources = await loadReviseSceneSources(fs, cards, paths, sceneStem);
+  const factLines: string[] = await loadReviseFactLines(
+    fs,
+    cards,
+    paths,
+    sources,
+    sceneCacheRepository,
+  );
 
   const draft: Draft = parseDraft(await readDraftFile(draftUri, fs));
 
@@ -259,6 +268,7 @@ async function prepareReviseDraftContext(
 
 async function loadReviseSceneSources(
   fs: IFileSystem,
+  cards: WorkspaceCards,
   paths: StoryboardProjectPaths,
   sceneStem: string,
 ): Promise<ReviseSceneSources> {
@@ -268,25 +278,32 @@ async function loadReviseSceneSources(
     fs,
     sceneFileName,
   );
-  const context: SceneContext = await new SceneContextReader(fs).build(
+  const context: SceneContext = await new SceneContextReader(fs, cards).build(
     sceneContextPaths(paths),
     scene,
   );
   const project: StoryboardProject | undefined = await readProjectIfPresent(fs, paths.projectJson);
-  const reviseNarration: ReviseNarration = await resolveReviseNarration(fs, paths, scene, project);
+  const reviseNarration: ReviseNarration = await resolveReviseNarration(
+    fs,
+    cards,
+    paths,
+    scene,
+    project,
+  );
 
   return { scene, context, setting: project?.setting, reviseNarration };
 }
 
 async function loadReviseFactLines(
   fs: IFileSystem,
+  cards: WorkspaceCards,
   paths: StoryboardProjectPaths,
   sources: ReviseSceneSources,
   sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<string[]> {
   const { scene, context } = sources;
   const { threadPaths, previousSceneOrder, narration } = sources.reviseNarration;
-  const narrative: NarrativeContext = await new SceneContextReader(fs).buildNarrative(
+  const narrative: NarrativeContext = await new SceneContextReader(fs, cards).buildNarrative(
     sceneContextPaths(threadPaths),
     context,
     {
@@ -351,6 +368,7 @@ export class ReviseDraftUseCase {
     const aiService: StoryboardAiService = this.createUsageRecordingAiService(request.workspaceUri);
     const reviseContext: ReviseDraftContext = await prepareReviseDraftContext(
       this.host.fileSystem,
+      this.host.cards,
       paths,
       draftUri,
       sceneStem,

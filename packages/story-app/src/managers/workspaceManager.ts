@@ -10,6 +10,7 @@ import {
   type IStoryboardLogger,
   type MemoryMigrationResult,
   type StoryMemoryAudit,
+  type WorkspaceCards,
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import {
@@ -27,6 +28,7 @@ export interface WorkspaceManagerDependencies {
   readonly resourceRoots: readonly StoryUri[];
   readonly runGate: Pick<RunGate, 'describeHolder'>;
   readonly logger: IStoryboardLogger;
+  readonly cards: WorkspaceCards;
 }
 
 export interface WorkspaceRepairResult {
@@ -117,7 +119,7 @@ export class WorkspaceManager {
   }
 
   private createInitializer(): WorkspaceInitializer {
-    return new WorkspaceInitializer(this.deps.fileSystem);
+    return new WorkspaceInitializer(this.deps.fileSystem, this.deps.cards);
   }
 
   private readProject(paths: StoryboardProjectPaths): Promise<StoryboardProject> {
@@ -130,6 +132,7 @@ export class WorkspaceManager {
   ): StoryMemoryAuditor {
     return new StoryMemoryAuditor({
       fileSystem: this.deps.fileSystem,
+      cards: this.deps.cards,
       paths,
       format: project.format,
       sceneBreakJoiner: this.deps.configBridge.getDraftSceneBreakSeparator(),

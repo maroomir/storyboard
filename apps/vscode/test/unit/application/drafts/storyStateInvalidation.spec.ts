@@ -13,6 +13,8 @@ import {
   StoryMemoryAuditor,
 } from "../../../../../../packages/story-engine/src/application/drafts/storyMemoryAuditor"
 import { StoryStateRecorder, toStoryStateEntries } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
+import { legacyCards } from "../../../stubs/cards"
+import { joinStoryPath } from "@storyboard/story-model"
 
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>()
@@ -113,6 +115,11 @@ function ledger(entries: readonly { order: number; hash: string }[]): string {
 function auditRequest(fileSystem: IFileSystem, beforeSceneOrder?: number): never {
   return {
     fileSystem,
+    cards: legacyCards(fileSystem, {
+      characterDirectory: paths.characterDirectory,
+      backgroundDirectory: paths.backgroundDirectory,
+      joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments)
+    }),
     paths,
     format: "novel",
     sceneBreakJoiner: undefined,

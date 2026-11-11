@@ -58,11 +58,11 @@ describe("resolveActiveStudioFocus", () => {
 
   it("falls back to the active custom editor tab when no text editor is active", () => {
     vscode.window.tabGroups.activeTabGroup.activeTab = {
-      input: new TabInputCustom(Uri.file("/workspace/story/character/seorin.card"), "storyboard.card")
+      input: new TabInputCustom(Uri.file("/workspace/story/character/seorin.card/card.yaml"), "storyboard.card")
     }
 
     expect(resolveActiveStudioFocus()).toEqual({
-      uri: Uri.file("/workspace/story/character/seorin.card"),
+      uri: Uri.file("/workspace/story/character/seorin.card/card.yaml"),
       hasSelection: false
     })
   })
@@ -86,27 +86,27 @@ describe("computeStudioTarget", () => {
   it("reports no target outside a storyboard project", async () => {
     stubExistingFiles([])
 
-    const target = await computeStudioTarget(editorAt("/workspace/story/character/seorin.card"))
+    const target = await computeStudioTarget(editorAt("/workspace/story/character/seorin.card/card.yaml"))
 
     expect(target).toEqual({ kind: "none", hasSelection: false })
   })
 
   it("keys a character card target by its card id", async () => {
-    const target = await computeStudioTarget(editorAt("/workspace/story/character/seorin.card"))
+    const target = await computeStudioTarget(editorAt("/workspace/story/character/seorin.card/card.yaml"))
 
     expect(target.kind).toBe("character")
     expect(target.entity).toEqual({ kind: "character", key: "seorin" })
-    expect(target.cardUri).toBe(Uri.file("/workspace/story/character/seorin.card").toString())
+    expect(target.cardUri).toBe(Uri.file("/workspace/story/character/seorin.card/card.yaml").toString())
   })
 
   it("keys a background card target by its card id", async () => {
-    const target = await computeStudioTarget(editorAt("/workspace/story/background/subway.card"))
+    const target = await computeStudioTarget(editorAt("/workspace/story/background/subway.card/card.yaml"))
 
     expect(target.kind).toBe("background")
     expect(target.entity).toEqual({ kind: "background", key: "subway" })
   })
 
-  it("falls back to the project when the card file is the ignored sample", async () => {
+  it("falls back to the project for a card file that is not a bundle", async () => {
     const target = await computeStudioTarget(editorAt("/workspace/story/character/.sample.card"))
 
     expect(target.kind).toBe("project")

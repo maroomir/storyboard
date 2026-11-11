@@ -32,6 +32,7 @@ import { createCliContainer } from '@/container';
 
 import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 import { RunStore } from '@storyboard/story-engine';
+import { readCardYaml } from './fixtures/cardBundles';
 
 let home: string;
 let workspace: string;
@@ -256,7 +257,7 @@ describe('card create', () => {
     );
 
     expect(outcome.ok).toBe(true);
-    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain(
+    expect(await readCardYaml(workspace, 'seo-jina')).toContain(
       'name: 서진아',
     );
   });
@@ -424,7 +425,7 @@ describe('card build', () => {
     });
 
     expect(outcome.ok).toBe(true);
-    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain(
+    expect(await readCardYaml(workspace, 'seo-jina')).toContain(
       'name: 서진아',
     );
   });
@@ -1806,18 +1807,18 @@ describe('novel generate on an empty work', () => {
     const { outcome } = await generateRecording();
 
     expect(outcome.ok, outcome.message).toBe(true);
-    expect(readFileSync(join(workspace, 'character', 'hana.card'), 'utf8')).toContain('name: 하나');
-    expect(readFileSync(join(workspace, 'character', 'jun.card'), 'utf8')).toContain('name: 준');
+    expect(await readCardYaml(workspace, 'hana')).toContain('name: 하나');
+    expect(await readCardYaml(workspace, 'jun')).toContain('name: 준');
   });
 
   it('leaves a card that exists alone and asks only for the missing one', async () => {
     await setContract();
     await run('card create', args(['card', 'create'], { name: '한아', id: 'hana' }, ['character']));
-    const authored = readFileSync(join(workspace, 'character', 'hana.card'), 'utf8');
+    const authored = await readCardYaml(workspace, 'hana');
 
     await generateRecording();
 
-    expect(readFileSync(join(workspace, 'character', 'hana.card'), 'utf8')).toBe(authored);
+    expect(await readCardYaml(workspace, 'hana')).toBe(authored);
     expect(existsSync(join(workspace, 'character', 'jun.card'))).toBe(true);
   });
 

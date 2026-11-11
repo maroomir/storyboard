@@ -148,22 +148,6 @@ export function interviewWorkingModelRelativePath(cardId: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.interviewWorkingModelDirectory}/${cardId}.json`;
 }
 
-export function characterCardRelativePath(id: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/${id}${STORYBOARD_FILE_EXTENSIONS.card}`;
-}
-
-export function characterProfileRelativePath(id: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.characterProfileDirectory}/${id}${STORYBOARD_FILE_EXTENSIONS.profileImage}`;
-}
-
-export function backgroundCardRelativePath(id: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.backgroundDirectory}/${id}${STORYBOARD_FILE_EXTENSIONS.card}`;
-}
-
-export function narratorCardRelativePath(id: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.narratorDirectory}/${id}${STORYBOARD_FILE_EXTENSIONS.card}`;
-}
-
 export function sceneRelativePath(sceneStem: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${sceneStem}${STORYBOARD_FILE_EXTENSIONS.card}`;
 }
@@ -214,18 +198,6 @@ export function isDraftMarkdownRelativePath(relativePath: string): boolean {
 
 export function isDirectSceneCardRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.sceneDirectory, STORYBOARD_FILE_EXTENSIONS.card);
-}
-
-export function isDirectCharacterCardRelativePath(relativePath: string): boolean {
-  return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.characterDirectory, STORYBOARD_FILE_EXTENSIONS.card);
-}
-
-export function isDirectBackgroundCardRelativePath(relativePath: string): boolean {
-  return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.backgroundDirectory, STORYBOARD_FILE_EXTENSIONS.card);
-}
-
-export function isDirectNarratorCardRelativePath(relativePath: string): boolean {
-  return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.narratorDirectory, STORYBOARD_FILE_EXTENSIONS.card);
 }
 
 export function isLegacySceneTextRelativePath(relativePath: string): boolean {

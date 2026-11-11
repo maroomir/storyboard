@@ -6,8 +6,7 @@ import {
   parseDraft,
   serializeDraft,
   applyStudioPatch,
-  backgroundCardPath,
-  characterCardPath,
+  isSafeStudioEntityKey,
 } from '@storyboard/story-model';
 
 import { StudioContextRepository, hashBaseline } from '@storyboard/story-engine';
@@ -24,7 +23,6 @@ import type {
   StudioPatchResult,
   StudioProposalTurn,
 } from '@storyboard/story-model';
-import { cardExists } from '@/presentation/messaging/studioCardToolResolver';
 
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;
@@ -77,10 +75,7 @@ export class StudioProposalRpc {
         await this.archiveDraftBeforeApply(payload.entity, prepared);
 
         try {
-          await vscode.workspace.fs.writeFile(
-            prepared.targetUri,
-            new TextEncoder().encode(prepared.text),
-          );
+          await this.writePrepared(prepared);
         } catch (error) {
           return { status: 'failed', message: `저장하지 못했습니다: ${String(error)}` };
         }
@@ -90,6 +85,21 @@ export class StudioProposalRpc {
         return { status: 'applied', message: appliedMessage(prepared) };
       },
     };
+  }
+
+  private async writePrepared(
+    prepared: Extract<PreparedApply, { readonly ok: true }>,
+  ): Promise<void> {
+    const root: vscode.Uri | undefined = await this.deps.getProjectRoot();
+    if (prepared.patchTarget === 'entityCard' && root !== undefined) {
+      await this.deps.studio.context.applyEntityCardText(root, prepared.text);
+      return;
+    }
+
+    await vscode.workspace.fs.writeFile(
+      prepared.targetUri,
+      new TextEncoder().encode(prepared.text),
+    );
   }
 
   private async prepareApply(entity: StudioEntity, turn: StudioChatTurn): Promise<PreparedApply> {
@@ -116,7 +126,7 @@ export class StudioProposalRpc {
       return context;
     }
 
-    return await applyProposalPatch(root, proposal, context);
+    return await applyProposalPatch(this.deps.studio.context, root, proposal, context);
   }
 
   private async archiveDraftBeforeApply(
@@ -171,6 +181,7 @@ type PreparedApply =
       readonly ok: true;
       readonly targetUri: vscode.Uri;
       readonly targetFile: string;
+      readonly patchTarget: StudioEntityContext['patchTarget'];
       readonly text: string;
       readonly changedFields: readonly string[];
       readonly lengthDelta: number;
@@ -226,6 +237,7 @@ async function loadPatchableContext(
 }
 
 async function applyProposalPatch(
+  studioContext: StudioContextRepository,
   root: vscode.Uri,
   proposal: StudioProposalTurn,
   context: PatchableContext,
@@ -245,6 +257,7 @@ async function applyProposalPatch(
 
   if (context.patchTarget === 'sceneCard') {
     const brokenReference: string | undefined = await findBrokenSceneReference(
+      studioContext,
       root,
       proposal.patch,
     );
@@ -258,6 +271,7 @@ async function applyProposalPatch(
     ok: true,
     targetUri: context.targetUri,
     targetFile: context.targetFile,
+    patchTarget: context.patchTarget,
     text: isDraft ? rewriteDraftBody(context.baseline, patchOutcome.text) : patchOutcome.text,
     changedFields: patchOutcome.changedFields,
     lengthDelta: patchOutcome.text.trim().length - patchBaseline.trim().length,
@@ -265,6 +279,7 @@ async function applyProposalPatch(
 }
 
 async function findBrokenSceneReference(
+  studioContext: StudioContextRepository,
   root: vscode.Uri,
   patch: StudioProposalTurn['patch'],
 ): Promise<string | undefined> {
@@ -275,20 +290,32 @@ async function findBrokenSceneReference(
   for (const change of patch.changes) {
     if (change.field === 'characters' && Array.isArray(change.value)) {
       for (const id of change.value) {
-        if (typeof id !== 'string' || !(await cardExists(characterCardPath, root, id))) {
+        if (
+          typeof id !== 'string' ||
+          !(await hasStudioCard(studioContext, root, 'character', id))
+        ) {
           return `character/${String(id)}.card 가 없어 적용하지 않았어요. 카드를 먼저 만들어 주세요.`;
         }
       }
     }
 
     if (change.field === 'location' && typeof change.value === 'string') {
-      if (!(await cardExists(backgroundCardPath, root, change.value))) {
+      if (!(await hasStudioCard(studioContext, root, 'background', change.value))) {
         return `background/${change.value}.card 가 없어 적용하지 않았어요. 카드를 먼저 만들어 주세요.`;
       }
     }
   }
 
   return undefined;
+}
+
+async function hasStudioCard(
+  studioContext: StudioContextRepository,
+  root: vscode.Uri,
+  kind: 'character' | 'background',
+  id: string,
+): Promise<boolean> {
+  return isSafeStudioEntityKey(id) && (await studioContext.hasCard(root, kind, id));
 }
 
 function sceneFocusOf(targetFile: string): StudioSceneFocus {

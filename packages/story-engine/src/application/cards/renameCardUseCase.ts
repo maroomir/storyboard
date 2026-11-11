@@ -1,22 +1,7 @@
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters } from '#engine/application/engineServices';
-import {
-  cardIdPattern,
-  getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
-  joinStoryPath,
-  parseCard,
-  rewriteCardIdReferences,
-  serializeCard,
-  setCardId,
-  type BibleSubjectKind,
-  type StoryboardCard,
-  type StoryboardProjectPaths,
-  type StoryUri,
-} from '@storyboard/story-model';
+import { cardIdPattern, type BibleSubjectKind, type StoryUri } from '@storyboard/story-model';
 
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-
 export interface RenameCardRequest {
   readonly workspaceRoot: StoryUri;
   readonly category: BibleSubjectKind;
@@ -45,6 +30,8 @@ export interface ReferenceRewrite {
   readonly unreadableFiles: readonly string[];
 }
 
+const referencesFollowTheUuid: ReferenceRewrite = { rewrittenCount: 0, unreadableFiles: [] };
+
 export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCardResult> {
   public constructor(private readonly host: HostAdapters) {}
 
@@ -55,7 +42,7 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
   }
 
   private async rename(request: RenameCardRequest): Promise<RenameCardResult> {
-    const { fileSystem } = this.host;
+    const { cards } = this.host;
     const { workspaceRoot, category, fromId, toId } = request;
 
     if (!cardIdPattern.test(toId)) {
@@ -66,76 +53,22 @@ export class RenameCardUseCase implements IUseCase<RenameCardRequest, RenameCard
       };
     }
 
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const directory: StoryUri =
-      category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const fromUri: StoryUri = joinStoryPath(directory, `${fromId}.card`);
-    const toUri: StoryUri = joinStoryPath(directory, `${toId}.card`);
-
-    if (!(await fileSystem.exists(fromUri))) {
+    if (!(await cards.exists(workspaceRoot, category, fromId))) {
       return { ok: false, kind: 'missing', message: `카드가 없습니다: ${fromId}` };
     }
 
-    if (await fileSystem.exists(toUri)) {
+    if (await cards.exists(workspaceRoot, category, toId)) {
       return { ok: false, kind: 'exists', message: `이미 있습니다: ${toId}` };
     }
 
-    const renamed: StoryboardCard = setCardId(
-      parseCard(new TextDecoder().decode(await fileSystem.readFile(fromUri))),
+    await cards.rename(workspaceRoot, category, fromId, toId);
+
+    return {
+      ok: true,
+      kind: 'renamed',
+      fromId,
       toId,
-    );
-
-    await fileSystem.writeFile(toUri, new TextEncoder().encode(serializeCard(renamed)));
-    await fileSystem.delete(fromUri);
-
-    const references: ReferenceRewrite =
-      category === 'character'
-        ? await this.rewriteReferences(
-            [paths.characterDirectory, paths.backgroundDirectory],
-            toUri,
-            fromId,
-            toId,
-          )
-        : { rewrittenCount: 0, unreadableFiles: [] };
-
-    return { ok: true, kind: 'renamed', fromId, toId, ...references };
-  }
-
-  private async rewriteReferences(
-    directories: readonly StoryUri[],
-    renamedUri: StoryUri,
-    fromId: string,
-    toId: string,
-  ): Promise<ReferenceRewrite> {
-    const { fileSystem } = this.host;
-    const unreadableFiles: string[] = [];
-    let rewrittenCount: number = 0;
-
-    for (const directory of directories) {
-      for (const uri of await new WorkspaceFiles(fileSystem).listCardUris(directory)) {
-        const fileName: string = uri.path.split('/').at(-1) ?? '';
-
-        if (uri.path === renamedUri.path || isIgnoredSampleCardFileName(fileName)) {
-          continue;
-        }
-
-        const raw: string = new TextDecoder().decode(await fileSystem.readFile(uri));
-        let next: string;
-
-        try {
-          next = serializeCard(rewriteCardIdReferences(parseCard(raw), fromId, toId));
-        } catch {
-          unreadableFiles.push(uri.path);
-          continue;
-        }
-
-        if (next !== raw) {
-          await fileSystem.writeFile(uri, new TextEncoder().encode(next));
-          rewrittenCount += 1;
-        }
-      }
-    }
-
-    return { rewrittenCount, unreadableFiles };
+      ...referencesFollowTheUuid,
+    };
   }
 }

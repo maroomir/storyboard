@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { CommandRegistrar } from "@/bootstrap/commandRegistrar"
 import { RenameBackgroundCardCommand } from "@/presentation/commands/renameBackgroundCardCommand"
 import { RenameCharacterCardCommand } from "@/presentation/commands/renameCharacterCardCommand"
-import { commands, FileType, window, workspace, WorkspaceEdit, type WorkspaceFolder } from "../../../stubs/vscode"
+import { commands, FileType, window, workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 describe("renameCard command", () => {
   const workspaceRoot = vscode.Uri.file("/ws/project")
@@ -12,6 +12,8 @@ describe("renameCard command", () => {
   const projectJsonPath = vscode.Uri.joinPath(workspaceRoot, ".storyboard", "project.json").fsPath
 
   let characterRenameHandler: ((uri?: vscode.Uri) => Promise<void>) | undefined
+  const rename = vi.fn(async () => ({ ok: true as const, kind: "renamed" as const, fromId: "hero", toId: "protagonist", rewrittenCount: 0, unreadableFiles: [] }))
+  const commandsWithCards = (): (RenameCharacterCardCommand | RenameBackgroundCardCommand)[] => [new RenameCharacterCardCommand({ cards: { rename } }), new RenameBackgroundCardCommand({ cards: { rename } })]
 
   beforeEach(() => {
     characterRenameHandler = undefined
@@ -38,23 +40,17 @@ describe("renameCard command", () => {
     })
   })
 
-  it("uses workspace.applyEdit instead of fs.rename", async () => {
-    new CommandRegistrar().register([new RenameCharacterCardCommand(), new RenameBackgroundCardCommand()])
+  it("renames the bundle through the card manager", async () => {
+    rename.mockClear()
+    new CommandRegistrar().register(commandsWithCards())
 
-    const cardUri = vscode.Uri.file("/ws/project/character/hero.card")
+    const cardUri = vscode.Uri.file("/ws/project/character/hero.card/card.yaml")
 
     expect(characterRenameHandler).toBeDefined()
     await characterRenameHandler!(cardUri)
 
-    expect(workspace.applyEdit).toHaveBeenCalledOnce()
-    expect(workspace.fs.rename).not.toHaveBeenCalled()
-
-    const edit = vi.mocked(workspace.applyEdit).mock.calls[0]?.[0] as WorkspaceEdit
-    const renames = edit.getRenames()
-
-    expect(renames).toHaveLength(1)
-    expect(renames[0]?.oldUri.fsPath).toBe(cardUri.fsPath)
-    expect(renames[0]?.newUri.fsPath).toBe("/ws/project/character/protagonist.card")
+    expect(rename).toHaveBeenCalledWith({ workspaceRoot, category: "character", fromId: "hero", toId: "protagonist" })
+    expect(workspace.applyEdit).not.toHaveBeenCalled()
   })
 
   it("carries the card's studio sessions to the new id", async () => {
@@ -67,8 +63,8 @@ describe("renameCard command", () => {
       throw new Error("not found")
     }
 
-    new CommandRegistrar().register([new RenameCharacterCardCommand(), new RenameBackgroundCardCommand()])
-    await characterRenameHandler!(vscode.Uri.file("/ws/project/character/hero.card"))
+    new CommandRegistrar().register(commandsWithCards())
+    await characterRenameHandler!(vscode.Uri.file("/ws/project/character/hero.card/card.yaml"))
 
     expect(workspace.fs.rename).toHaveBeenCalledOnce()
 
@@ -79,8 +75,8 @@ describe("renameCard command", () => {
   })
 
   it("leaves fs.rename alone when the card has no studio sessions", async () => {
-    new CommandRegistrar().register([new RenameCharacterCardCommand(), new RenameBackgroundCardCommand()])
-    await characterRenameHandler!(vscode.Uri.file("/ws/project/character/hero.card"))
+    new CommandRegistrar().register(commandsWithCards())
+    await characterRenameHandler!(vscode.Uri.file("/ws/project/character/hero.card/card.yaml"))
 
     expect(workspace.fs.rename).not.toHaveBeenCalled()
   })

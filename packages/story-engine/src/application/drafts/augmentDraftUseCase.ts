@@ -147,13 +147,14 @@ export class AugmentDraftUseCase {
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
     let sceneContext: SceneContext;
     try {
-      sceneContext = await new SceneContextReader(this.host.fileSystem).build(contextPaths, scene);
+      sceneContext = await new SceneContextReader(this.host.fileSystem, this.host.cards).build(contextPaths, scene);
     } catch {
       return { message: '씬 컨텍스트를 구성하지 못했습니다.', ok: false };
     }
 
     const narrativeContext: NarrativeContext = await new SceneContextReader(
       this.host.fileSystem,
+      this.host.cards,
     ).buildNarrative(contextPaths, sceneContext);
 
     return {

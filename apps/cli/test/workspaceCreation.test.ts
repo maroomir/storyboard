@@ -3,25 +3,34 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { WorkspaceInitializer } from '@storyboard/story-engine';
+import { WorkspaceInitializer, type WorkspaceCaches } from '@storyboard/story-engine';
 import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
+import { createWorkspaceCaches, createWorkspaceCards } from './fixtures/workspaceCacheFixture';
+
 let directory: string;
+let caches: WorkspaceCaches;
 
 beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), 'storyboard-create-'));
+  caches = createWorkspaceCaches();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await caches.closeAll();
   rmSync(directory, { recursive: true, force: true });
 });
+
+function createInitializer(): WorkspaceInitializer {
+  return new WorkspaceInitializer(new NodeFileSystem(), createWorkspaceCards(caches));
+}
 
 describe('creating a workspace', () => {
   it('keeps a README the folder already has', async () => {
     writeFileSync(join(directory, 'README.md'), '# 내 메모\n');
 
-    await new WorkspaceInitializer(new NodeFileSystem()).createWorkspace({
+    await createInitializer().createWorkspace({
       workspaceRoot: NodeUri.file(directory),
       name: '작품',
     });
@@ -31,7 +40,7 @@ describe('creating a workspace', () => {
   });
 
   it('writes the workspace README when the folder has none', async () => {
-    await new WorkspaceInitializer(new NodeFileSystem()).createWorkspace({
+    await createInitializer().createWorkspace({
       workspaceRoot: NodeUri.file(directory),
       name: '작품',
     });

@@ -80,6 +80,7 @@ export * from '#engine/persistence/bundles/elementMemoryRepository';
 export * from '#engine/persistence/bundles/sceneBundleFiles';
 export * from '#engine/persistence/bundles/structureRepository';
 export * from '#engine/persistence/bundles/threadLedgerReader';
+export * from '#engine/persistence/bundles/workspaceCards';
 export * from '#engine/persistence/cache/cacheDatabase';
 export * from '#engine/persistence/cache/cacheDatabaseSchema';
 export * from '#engine/persistence/cache/chapterSummaryStore';

@@ -8,9 +8,12 @@ import {
   WorkspaceInitializer,
   type AiServices,
   type HostAdapters,
+  type WorkspaceCaches,
 } from '@storyboard/story-engine';
 import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
+
+import { createWorkspaceCaches, createWorkspaceCards } from './fixtures/workspaceCacheFixture';
 
 interface CondenseInput {
   readonly intent?: string;
@@ -20,6 +23,7 @@ interface CondenseInput {
 
 let directory: string;
 let condenseInputs: CondenseInput[];
+let caches: WorkspaceCaches;
 
 const body: string = '하나는 방파제 끝에 서서 편지를 다시 펼쳤다. 바람이 종이를 흔들었다. '.repeat(
   20,
@@ -28,6 +32,8 @@ const body: string = '하나는 방파제 끝에 서서 편지를 다시 펼쳤�
 function createUseCase(): CondenseDraftUseCase {
   const host = {
     fileSystem: new NodeFileSystem(),
+    caches,
+    cards: createWorkspaceCards(caches),
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() },
     configBridge: { getMaxCompressionPercent: () => 30 },
   } as unknown as HostAdapters;
@@ -49,7 +55,8 @@ function createUseCase(): CondenseDraftUseCase {
 beforeEach(async () => {
   directory = mkdtempSync(join(tmpdir(), 'storyboard-condense-'));
   condenseInputs = [];
-  await new WorkspaceInitializer(new NodeFileSystem()).createWorkspace({
+  caches = createWorkspaceCaches();
+  await new WorkspaceInitializer(new NodeFileSystem(), createWorkspaceCards(caches)).createWorkspace({
     workspaceRoot: NodeUri.file(directory),
     name: '작품',
   });
@@ -62,7 +69,8 @@ beforeEach(async () => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await caches.closeAll();
   rmSync(directory, { recursive: true, force: true });
 });
 

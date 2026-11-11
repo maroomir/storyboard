@@ -15,6 +15,7 @@ export interface ICardCollectRepository {
 export interface ICardWriterRepository {
   exists(workspaceRoot: StoryUri, cardType: StoryboardCard['type'], id: string): Promise<boolean>;
   write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri>;
+  writeAll(workspaceRoot: StoryUri, cards: readonly StoryboardCard[]): Promise<readonly StoryUri[]>;
 }
 
 export interface ICardRecommendationRepository {
