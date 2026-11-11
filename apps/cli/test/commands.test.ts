@@ -34,7 +34,7 @@ import { createCliContainer } from '@/container';
 import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
 import { JournalStore, RunStore } from '@storyboard/story-engine';
-import { readCardYaml } from './fixtures/cardBundles';
+import { readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
 import {
   listSceneStems,
   readSceneCardYaml,
@@ -461,6 +461,32 @@ describe('card build', () => {
     expect(existsSync(join(workspace, 'character', 'seo-jina.card'))).toBe(false);
   });
 
+  it('leaves the changes to an existing card as a proposal under --propose', async () => {
+    writeCardBundleFromYaml(workspace, 'type: character\nid: hana\nname: 하나\nrole: main\n');
+    const container = containerWith([
+      {
+        card: { type: 'character', id: 'hana', name: '하나', role: 'main', tags: [], traits: [] },
+        uriId: 'hana',
+        isNew: false,
+        requiresIdConfirmation: false,
+        changes: [{ proposal: { kind: 'trait', id: 'trait-1', value: '몰리면 먼저 웃는다', sourceScenes: [] } }],
+        sourceScenes: ['01-first'],
+      },
+    ]);
+
+    const outcome = await findCommand('card build')!.execute({
+      container,
+      args: args(['card', 'build'], { propose: true }),
+    });
+
+    expect(outcome.ok, outcome.message).toBe(true);
+    expect(outcome.message).toContain('있던 카드 hana 의 변경은 제안으로 남겼습니다');
+    expect(await readCardYaml(workspace, 'hana')).not.toContain('몰리면 먼저 웃는다');
+    const applied = await run('card apply', args(['card', 'apply'], {}, ['hana']));
+    expect(applied.ok, applied.message).toBe(true);
+    expect(await readCardYaml(workspace, 'hana')).toContain('몰리면 먼저 웃는다');
+  });
+
   it('reports a new card whose name yields no id rather than inventing one', async () => {
     const container = containerWith([
       {
@@ -480,6 +506,37 @@ describe('card build', () => {
 
     expect(outcome.message).toContain('방송실');
     expect(existsSync(join(workspace, 'background', 'new-card-2.card'))).toBe(false);
+  });
+});
+
+describe('manuscript review --show', () => {
+  it('reads the last revision plan without calling a model', async () => {
+    const none = await run('manuscript review', args(['manuscript', 'review'], { show: true }));
+    expect(none.message).toBe('수정 계획이 없습니다. storyboard manuscript review 로 검수하세요.');
+
+    const caches = createWorkspaceCaches();
+    const { RevisionPlanRecorder } = await import('@storyboard/story-engine');
+    const { NodeFileSystem } = await import('@storyboard/story-node');
+    await new RevisionPlanRecorder({ fileSystem: new NodeFileSystem(), caches }).replaceLatest(
+      NodeUri.file(workspace),
+      {
+        version: '1.0.0',
+        entries: [
+          {
+            sceneStem: '001-first',
+            checkedAt: '2026-11-01T00:00:00.000Z',
+            revisionCount: 2,
+            remainingBlocking: 1,
+            instructions: ['시점이 흔들린다'],
+          },
+        ],
+      },
+    );
+    await caches.closeAll();
+
+    const shown = await run('manuscript review', args(['manuscript', 'review'], { show: true }));
+    expect(shown.message).toContain('001-first  검수 2회 · 남은 막힘 1');
+    expect(shown.message).toContain('  - 시점이 흔들린다');
   });
 });
 
