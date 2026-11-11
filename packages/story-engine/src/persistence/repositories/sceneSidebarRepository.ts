@@ -7,6 +7,7 @@ import {
   type SceneListItem,
   type StoryboardProjectPaths,
   type StoryUri,
+  mainThreadId,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneSidebarRepository } from '#engine/application/cards/sceneSidebarRepository';
@@ -60,6 +61,8 @@ export class SceneSidebarRepository implements ISceneSidebarRepository {
       stem: file.stem,
       order: file.order,
       slug: file.slug,
+      id: entry.content.header.id,
+      thread: entry.entry?.thread ?? mainThreadId,
       title,
       sceneUri: sceneUri.toString(),
       draftUri: hasDraft ? draftUri.toString() : undefined,

@@ -36,6 +36,7 @@ export interface StudioCreateRequest {
   readonly attribution?: UsageAttribution;
   readonly whenSlugIsTaken?: CardIdCollisionPolicy;
   readonly isPreview?: boolean;
+  readonly after?: string;
 }
 
 export type StudioCreateResult =
@@ -87,6 +88,7 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
     const result: CreateSceneResult = await this.dependencies.createScene.execute({
       workspaceRoot: request.workspaceRoot,
       slug: request.slug,
+      ...(request.after === undefined ? {} : { after: request.after }),
     });
     if (result.ok) {
       return { ok: true, key: result.stem, uri: result.uri };
