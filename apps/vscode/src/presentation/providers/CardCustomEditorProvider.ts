@@ -42,7 +42,7 @@ import {
   type StoryboardWebviewBridge,
 } from '@/presentation/messaging/bridge';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
+import type { UsageLedgerRecorder } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
 
@@ -51,7 +51,7 @@ export interface CardCustomEditorDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly cards: Pick<CardManager, 'collectProposals' | 'loadCharacterRoster' | 'listNarrators'>;
   readonly interviews: Pick<InterviewManager, 'start' | 'next' | 'answer' | 'confirm' | 'finish'>;
-  readonly usageRecorder: UsageRecorder;
+  readonly usageRecorder: UsageLedgerRecorder;
   readonly logger: IStoryboardLogger;
 }
 

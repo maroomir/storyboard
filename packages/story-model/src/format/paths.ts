@@ -8,7 +8,6 @@ interface StoryboardRelativePaths {
   readonly cacheDirectory: string;
   readonly memoryDirectory: string;
   readonly threadMemoryDirectory: string;
-  readonly usageLedger: string;
   readonly novelRunState: string;
   readonly sceneRenameJournal: string;
   readonly sceneGroundingGaps: string;
@@ -66,7 +65,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   cacheDirectory: '.storyboard/cache',
   memoryDirectory: '.storyboard/memory',
   threadMemoryDirectory: '.storyboard/memory/threads',
-  usageLedger: '.storyboard/cache/usage.json',
   novelRunState: '.storyboard/cache/novel-run.json',
   sceneRenameJournal: '.storyboard/cache/scene-rename.json',
   sceneGroundingGaps: '.storyboard/cache/grounding-gaps.json',

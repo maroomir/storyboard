@@ -1,43 +1,25 @@
 import { randomUUID } from 'node:crypto';
 
 import type {
+  DisposableHandle,
+  StoryUri,
+  UsageLedgerEntry,
   UsageRecord,
   UsageSummaryByEntity,
-  StoryUri,
-  DisposableHandle,
-  StoryboardProjectPaths,
 } from '@storyboard/story-model';
 
-import {
-  appendLedgerEntryIfNew,
-  computeUsageSummaryFromEntries,
-  readUsageLedgerFromUri,
-  writeUsageLedgerToUri,
-  type UsageLedgerEntry,
-  type UsageLedgerFileSystem,
-  getStoryboardProjectPaths,
-} from '@storyboard/story-model';
+import type { IUsageSink } from '#engine/ports/usageSink';
+import { UsageStore } from '#engine/persistence/cache/usageStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 
-interface WorkspaceUsageCache {
-  entries: UsageLedgerEntry[];
-  summary: UsageSummaryByEntity;
+export interface UsageLedgerRecorderDependencies {
+  readonly caches: WorkspaceCaches;
 }
 
-export class UsageLedgerRecorder {
-  private readonly cacheByWorkspaceKey: Map<string, WorkspaceUsageCache> = new Map<
-    string,
-    WorkspaceUsageCache
-  >();
-  private readonly chainByWorkspaceKey: Map<string, Promise<void>> = new Map<
-    string,
-    Promise<void>
-  >();
+export class UsageLedgerRecorder implements IUsageSink {
   private readonly listeners: Set<() => void> = new Set<() => void>();
 
-  public constructor(
-    private readonly fileSystem: UsageLedgerFileSystem,
-    private readonly warn?: (message: string) => void,
-  ) {}
+  public constructor(private readonly dependencies: UsageLedgerRecorderDependencies) {}
 
   public onChange(listener: () => void): DisposableHandle {
     this.listeners.add(listener);
@@ -45,73 +27,32 @@ export class UsageLedgerRecorder {
   }
 
   public async record(workspaceRoot: StoryUri, record: UsageRecord): Promise<void> {
-    const key: string = workspaceRoot.fsPath;
-    const previous: Promise<void> = this.chainByWorkspaceKey.get(key) ?? Promise.resolve();
-    const next: Promise<void> = previous
-      .catch(() => undefined)
-      .then(() => this.recordSerialized(workspaceRoot, record));
-    this.chainByWorkspaceKey.set(key, next);
-
-    await next;
-  }
-
-  public async getSummary(workspaceRoot: StoryUri): Promise<UsageSummaryByEntity> {
-    const cache: WorkspaceUsageCache = await this.ensureLoaded(workspaceRoot);
-    return cache.summary;
-  }
-
-  protected clearListeners(): void {
-    this.listeners.clear();
-  }
-
-  private async recordSerialized(workspaceRoot: StoryUri, record: UsageRecord): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const cache: WorkspaceUsageCache = await this.ensureLoaded(workspaceRoot);
-
     const entry: UsageLedgerEntry = {
       ...stripRecordId(record),
       id: record.recordId ?? randomUUID(),
       recordedAt: new Date().toISOString(),
     };
 
-    const { entries, appended } = appendLedgerEntryIfNew(cache.entries, entry);
-
-    if (!appended) {
+    const isAppended: boolean = (await this.openStore(workspaceRoot)).append(entry);
+    if (!isAppended) {
       return;
     }
-
-    await this.fileSystem.createDirectory(paths.cacheDirectory);
-    await writeUsageLedgerToUri(this.fileSystem, paths.usageLedger, entries);
-
-    cache.entries = entries;
-    cache.summary = computeUsageSummaryFromEntries(entries);
 
     for (const listener of this.listeners) {
       listener();
     }
   }
 
-  private async ensureLoaded(workspaceRoot: StoryUri): Promise<WorkspaceUsageCache> {
-    const key: string = workspaceRoot.fsPath;
-    const existing: WorkspaceUsageCache | undefined = this.cacheByWorkspaceKey.get(key);
+  public async getSummary(workspaceRoot: StoryUri): Promise<UsageSummaryByEntity> {
+    return (await this.openStore(workspaceRoot)).summarize();
+  }
 
-    if (existing) {
-      return existing;
-    }
+  public dispose(): void {
+    this.listeners.clear();
+  }
 
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const loaded: UsageLedgerEntry[] = await readUsageLedgerFromUri(
-      this.fileSystem,
-      paths.usageLedger,
-      this.warn,
-    );
-    const cache: WorkspaceUsageCache = {
-      entries: [...loaded],
-      summary: computeUsageSummaryFromEntries(loaded),
-    };
-
-    this.cacheByWorkspaceKey.set(key, cache);
-    return cache;
+  private async openStore(workspaceRoot: StoryUri): Promise<UsageStore> {
+    return new UsageStore(await this.dependencies.caches.open(workspaceRoot));
   }
 }
 
