@@ -216,6 +216,14 @@ describe("applyStudioPatch for scene cards", () => {
     expect(result.ok ? result.text : "").toContain("닫히는 문")
   })
 
+  it("refuses the scene fields a 0.16 bundle no longer keeps", () => {
+    for (const field of ["mood", "relationStage"]) {
+      const result = applyStudioPatch(sceneCard, cardPatch([{ field, value: "긴장" }]), "sceneCard")
+
+      expect(result.ok).toBe(false)
+    }
+  })
+
   it("rewrites the cast list and the location", () => {
     const result = applyStudioPatch(
       sceneCard,
