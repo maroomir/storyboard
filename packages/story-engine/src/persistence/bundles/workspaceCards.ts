@@ -27,6 +27,7 @@ import {
   type StatementSource,
   type StoryboardCard,
   type StoryUri,
+  type Statement,
 } from '@storyboard/story-model';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
@@ -117,6 +118,11 @@ function createLookup(bundles: readonly ElementBundle[]): ElementSlugLookup {
     slugOf: (id) => slugById.get(id),
     idOf: (kind, slug) => idBySlug.get(`${kind}:${slug}`),
   };
+}
+
+interface PlannedCard {
+  readonly kind: 'character' | 'background';
+  readonly content: ElementBundleContent<ElementHeader>;
 }
 
 interface CachedRoster {
@@ -350,34 +356,57 @@ export class WorkspaceCards {
     return joinStoryPath(workspaceRoot, ...this.bundlePath(kind, slug).split('/'));
   }
 
+  public async planStatementChanges(
+    workspaceRoot: StoryUri,
+    card: StoryboardCard,
+    source: StatementSource,
+  ): Promise<readonly Statement[]> {
+    const roster: CardRoster = await this.loadRoster(workspaceRoot);
+    const current: ElementBundle | undefined = this.findBundle(roster, kindOfCard(card), card.id);
+    const planned: PlannedCard = this.planCard(card, {
+      roster,
+      lookup: roster.lookup,
+      newId: current?.header.id ?? randomUUID(),
+      source,
+    });
+    const currentLines: ReadonlySet<string> = new Set(
+      (current?.statements ?? []).map((statement) => JSON.stringify(statement)),
+    );
+
+    return planned.content.statements.filter(
+      (statement) => !currentLines.has(JSON.stringify(statement)),
+    );
+  }
+
   private async writePlannedCard(
     workspaceRoot: StoryUri,
     card: StoryboardCard,
     plan: CardWritePlan,
   ): Promise<StoryUri> {
+    const planned: PlannedCard = this.planCard(card, plan);
+    return await this.writePlanned(workspaceRoot, planned.kind, card.id, planned.content);
+  }
+
+  private planCard(card: StoryboardCard, plan: CardWritePlan): PlannedCard {
     const { roster, lookup, newId, source } = plan;
 
     if (isBackgroundCard(card)) {
       const current: BackgroundBundle | undefined = roster.bundles
         .filter(isBackgroundBundle)
         .find((bundle) => bundle.header.slug === card.id);
-      return await this.writePlanned(
-        workspaceRoot,
-        'background',
-        card.id,
-        planBackgroundBundle(card, { ...optionalCurrent(current), newId, lookup, source }),
-      );
+      return {
+        kind: 'background',
+        content: planBackgroundBundle(card, { ...optionalCurrent(current), newId, lookup, source }),
+      };
     }
 
     const current: CharacterBundle | undefined = roster.bundles
       .filter(isCharacterBundle)
       .find((bundle) => bundle.header.slug === card.id);
-    return await this.writePlanned(
-      workspaceRoot,
-      'character',
-      card.id,
-      planCharacterBundle(card, { ...optionalCurrent(current), newId, lookup, source }),
-    );
+    return {
+      kind: 'character',
+      content: planCharacterBundle(card, { ...optionalCurrent(current), newId, lookup, source }),
+    };
   }
 
   private memoryRepository(workspaceRoot: StoryUri): ElementMemoryRepository {

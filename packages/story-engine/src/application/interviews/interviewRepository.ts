@@ -1,7 +1,7 @@
 import type {
   InterviewAxesFile,
   InterviewWorkingModel,
-  NoteCandidateFile,
+  Statement,
   StoryUri,
 } from '@storyboard/story-model';
 
@@ -11,6 +11,9 @@ export interface IInterviewRepository {
   loadWorkingModel(workspaceRoot: StoryUri, cardId: string): Promise<InterviewWorkingModel | undefined>;
   saveWorkingModel(workspaceRoot: StoryUri, model: InterviewWorkingModel): Promise<void>;
   deleteWorkingModels(workspaceRoot: StoryUri): Promise<void>;
-  loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateFile>;
-  saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void>;
+  savePendingStatements(
+    workspaceRoot: StoryUri,
+    cardId: string,
+    statements: readonly Statement[],
+  ): Promise<void>;
 }

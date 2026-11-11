@@ -93,6 +93,8 @@ import {
   type INovelOutlineRepository,
   type ISceneSidebarRepository,
   InterviewSessionUseCase,
+  InterviewSessionProtocol,
+  type IInterviewRepository,
   DescribeInterviewCoverageUseCase,
   InterviewRepository,
 } from '@storyboard/story-engine';
@@ -177,7 +179,8 @@ interface EngineGraph {
   readonly generateStoryStateUseCase: GenerateStoryStateUseCase;
   readonly novelPipeline: NovelPipeline;
   readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
-  readonly interviewSessionUseCase: InterviewSessionUseCase;
+  readonly interviewSessionProtocol: InterviewSessionProtocol;
+  readonly interviewRepository: IInterviewRepository;
   readonly describeInterviewCoverageUseCase: DescribeInterviewCoverageUseCase;
   readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
@@ -425,7 +428,8 @@ function buildServices(
       summarizeChaptersUseCase,
     }),
     planNoteAbsorbUseCase: new PlanNoteAbsorbUseCase(host, ai, repositories),
-    interviewSessionUseCase: new InterviewSessionUseCase(host, ai, repositories),
+    interviewSessionProtocol: createInterviewProtocol(host, ai, repositories),
+    interviewRepository: repositories.interviews,
     describeInterviewCoverageUseCase: new DescribeInterviewCoverageUseCase(host, repositories),
     promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase(host, repositories),
     recommendCardsUseCase: new RecommendCardsUseCase(host, ai, repositories),
@@ -449,6 +453,23 @@ function buildServices(
     chapterSummaryRefresher,
     updateProjectContractUseCase: new UpdateProjectContractUseCase(host),
   };
+}
+
+function createInterviewProtocol(
+  host: HostAdapters,
+  ai: AiServices,
+  repositories: WorkspaceRepositories,
+): InterviewSessionProtocol {
+  const reactionStrategy: InterviewSessionUseCase = new InterviewSessionUseCase(
+    host,
+    ai,
+    repositories,
+  );
+
+  return new InterviewSessionProtocol({
+    cards: host.cards,
+    strategies: { character: reactionStrategy, background: reactionStrategy },
+  });
 }
 
 interface StudioServices {
@@ -563,7 +584,7 @@ function buildWorkspaceRepositories(
     storyFeatures: new StoryFeatureRepository(fileSystem, host.cards, host.scenes, cardFacts),
     noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards, host.scenes),
     noteSources: new NoteSourceProvider(host, { fetch }),
-    interviews: new InterviewRepository(fileSystem),
+    interviews: new InterviewRepository({ caches: host.caches, cards: host.cards }),
   };
 }
 

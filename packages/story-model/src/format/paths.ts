@@ -14,10 +14,6 @@ interface StoryboardRelativePaths {
   readonly noteCandidates: string;
   readonly noteSynopsisCandidate: string;
   readonly noteExtractionResponses: string;
-  readonly interviewCacheDirectory: string;
-  readonly interviewWorkingModelDirectory: string;
-  readonly interviewAxes: string;
-  readonly interviewCandidates: string;
   readonly outlineDirectory: string;
   readonly outlineSynopsis: string;
   readonly outlineChapters: string;
@@ -50,10 +46,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   noteCandidates: '.storyboard/cache/notes/candidates.json',
   noteSynopsisCandidate: '.storyboard/cache/notes/synopsis.candidate.md',
   noteExtractionResponses: '.storyboard/cache/notes/responses.json',
-  interviewCacheDirectory: '.storyboard/cache/interviews',
-  interviewWorkingModelDirectory: '.storyboard/cache/interviews/cards',
-  interviewAxes: '.storyboard/cache/interviews/axes.json',
-  interviewCandidates: '.storyboard/cache/interviews/candidates.json',
   outlineDirectory: '.storyboard/outline',
   outlineSynopsis: '.storyboard/outline/synopsis.md',
   outlineChapters: '.storyboard/outline/chapters.yaml',
@@ -100,10 +92,6 @@ export const STORYBOARD_GLOBS: StoryboardGlobs = {
   draftMarkdown: `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/**/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
   anyDraftMarkdown: `**/${STORYBOARD_RELATIVE_PATHS.draftDirectory}/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
 };
-
-export function interviewWorkingModelRelativePath(cardId: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.interviewWorkingModelDirectory}/${cardId}.json`;
-}
 
 export function sceneRelativePath(sceneStem: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${sceneStem}${STORYBOARD_FILE_EXTENSIONS.card}`;

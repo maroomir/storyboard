@@ -50,6 +50,8 @@ export * from '#engine/application/interviews/interviewRepository';
 export * from '#engine/application/interviews/interviewCoverage';
 export * from '#engine/application/interviews/interviewTuning';
 export * from '#engine/application/interviews/interviewSessionUseCase';
+export * from '#engine/application/interviews/questionStrategy';
+export * from '#engine/application/interviews/interviewSessionProtocol';
 export * from '#engine/application/interviews/describeInterviewCoverageUseCase';
 export * from '#engine/application/drafts/sceneNarrationResolver';
 export * from '#engine/application/drafts/sceneGenerationInputs';

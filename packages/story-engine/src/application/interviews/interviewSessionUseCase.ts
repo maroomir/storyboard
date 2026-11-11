@@ -1,4 +1,15 @@
 import type {
+  InterviewAnswerRequest,
+  InterviewConfirmRequest,
+  InterviewOpenSession,
+  InterviewOpenSessionStep,
+  InterviewResumeRequest,
+  InterviewSessionRequest,
+  InterviewStartRequest,
+  InterviewStartResult,
+  IQuestionStrategy,
+} from '#engine/application/interviews/questionStrategy';
+import type {
   AiServices,
   HostAdapters,
   WorkspaceRepositories,
@@ -24,7 +35,7 @@ import {
   resolveInterviewTuning,
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
-import { failedResult, type UseCaseFailure } from '#engine/application/useCase';
+import { failedResult } from '#engine/application/useCase';
 import { SceneNarrationResolver } from '#engine/application/drafts/sceneNarrationResolver';
 import type {
   InterviewClassificationDraft,
@@ -38,7 +49,7 @@ import type {
   StoryboardAiService,
 } from '@storyboard/story-ai';
 import {
-  addNoteCandidateSource,
+  applyCardCollectProposals,
   cardCollectProposalId,
   computeBackgroundCardHash,
   computeInterviewContractHash,
@@ -71,7 +82,7 @@ import {
   type InterviewWorkingModel,
   NarrationError,
   type NarrationDirective,
-  type NoteCardCandidate,
+  type Statement,
   type OutlineSynopsis,
   type SceneFile,
   type SceneListItem,
@@ -82,56 +93,16 @@ import {
   type UsageAttribution,
 } from '@storyboard/story-model';
 
-export interface InterviewStartRequest {
-  readonly workspaceRoot: StoryUri;
-  readonly cardId: string;
-  readonly card?: StoryboardCard;
-  readonly sceneStems?: readonly string[];
-  readonly shouldResetAxes?: boolean;
-}
-
-export type { InterviewConfirmation, InterviewOpening };
-
-export type InterviewStartResult =
-  | { readonly ok: true; readonly opening: InterviewOpening }
-  | { readonly ok: false; readonly kind: 'card-not-found'; readonly message: string }
-  | UseCaseFailure;
-
-export interface InterviewSessionRequest {
-  readonly workspaceRoot: StoryUri;
-  readonly cardId: string;
-  readonly card?: StoryboardCard;
-  readonly sessionId: string;
-  readonly sceneStems?: readonly string[];
-}
-
-export interface InterviewResumeRequest {
-  readonly workspaceRoot: StoryUri;
-  readonly cardId: string;
-  readonly card?: StoryboardCard;
-  readonly sceneStems?: readonly string[];
-}
-
-export type InterviewOpenSessionStep =
-  | { readonly kind: 'answer' }
-  | { readonly kind: 'confirm'; readonly classification: InterviewClassification };
-
-export interface InterviewOpenSession {
-  readonly opening: InterviewOpening;
-  readonly question: InterviewQuestion;
-  readonly step: InterviewOpenSessionStep;
-  readonly answeredCount: number;
-}
-
-export interface InterviewAnswerRequest extends InterviewSessionRequest {
-  readonly questionId: string;
-  readonly answer: InterviewAnswerInput;
-}
-
-export interface InterviewConfirmRequest extends InterviewSessionRequest {
-  readonly questionId: string;
-  readonly confirmation: InterviewConfirmation;
-}
+export type {
+  InterviewAnswerRequest,
+  InterviewConfirmRequest,
+  InterviewOpenSession,
+  InterviewOpenSessionStep,
+  InterviewResumeRequest,
+  InterviewSessionRequest,
+  InterviewStartRequest,
+  InterviewStartResult,
+} from '#engine/application/interviews/questionStrategy';
 
 interface BeatToAsk {
   readonly situation: InterviewBeatSituation;
@@ -338,7 +309,7 @@ function describeRecordAnswer(record: InterviewRecord, axes: readonly InterviewA
   return `${record.situation} → ${axis.label}: ${label} — ${text}`;
 }
 
-export class InterviewSessionUseCase {
+export class InterviewSessionUseCase implements IQuestionStrategy {
   public constructor(
     private readonly host: HostAdapters,
     private readonly aiServices: AiServices,
@@ -957,25 +928,17 @@ export class InterviewSessionUseCase {
     context: InterviewContext,
     changes: readonly CardCollectProposal[],
   ): Promise<void> {
-    const candidate: NoteCardCandidate = {
-      cardId: context.card.id,
-      cardType: context.cardType,
-      name: context.card.name,
-      sourceNotes: [],
-      changes: [...changes],
-    };
-
-    await this.repositories.interviews.saveCandidates(
+    const proposed: StoryboardCard = applyCardCollectProposals(context.card, changes);
+    const statements: readonly Statement[] = await this.host.cards.planStatementChanges(
       request.workspaceRoot,
-      addNoteCandidateSource(
-        await this.repositories.interviews.loadCandidates(request.workspaceRoot),
-        {
-          location: `interview:${context.card.id}`,
-          absorbedAt: this.now().toISOString(),
-          candidates: [candidate],
-        },
-        false,
-      ),
+      proposed,
+      { origin: 'interview', session: request.sessionId },
+    );
+
+    await this.repositories.interviews.savePendingStatements(
+      request.workspaceRoot,
+      context.card.id,
+      statements,
     );
   }
 
