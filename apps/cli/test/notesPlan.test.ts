@@ -168,7 +168,6 @@ describe('buildNoteAbsorbPlan', () => {
     synthesis: emptyNoteSynthesis,
     cards: [] as StoryboardCard[],
     scenes: [] as SceneFile[],
-    scenePrefixDigits: 2,
   };
 
   it('makes one card of a person described in two notes and resolves relations by name', () => {
@@ -522,11 +521,11 @@ describe('buildNoteAbsorbPlan', () => {
     });
 
     expect(plan.scenes.map((scene) => scene.fileName)).toEqual([
-      '04-scene.card',
-      '05-prologue-2.card',
+      '004-scene.card',
+      '005-prologue-2.card',
     ]);
     expect(plan.scenes[0]?.card).toMatchObject({
-      id: '04-scene',
+      id: '004-scene',
       title: '만조',
       characters: ['hana'],
       summary: '문이 열린다.',
@@ -647,7 +646,6 @@ describe('note card consolidation', () => {
   const baseInput = {
     synthesis: emptyNoteSynthesis,
     scenes: [] as SceneFile[],
-    scenePrefixDigits: 2,
   };
   const chunkByNoteId = new Map([
     ['a.md', 0],
@@ -1146,7 +1144,7 @@ describe('PlanNoteAbsorbUseCase', () => {
         warn: (message: string) => warnings.push(message),
         error: () => undefined,
       } as unknown as IStoryboardLogger }), createTestAi({ gateway: { createService: () => aiService } as unknown as AiGateway }), createTestRepositories({ storyFeatures: {
-        load: async () => ({ cards: [], scenes: [], project: { editor: { scenePrefixDigits: 2 } } }),
+        load: async () => ({ cards: [], scenes: [], project: { editor: {} } }),
       } as unknown as IStoryFeatureRepository, noteAbsorb: {
         loadCandidates: async () => ({ kind: 'none' }),
         savePlan: async () => undefined,
@@ -1301,8 +1299,7 @@ describe('note voice seeds (#105-14)', () => {
       synthesis: emptyNoteSynthesis,
       cards: [],
       scenes: [],
-      scenePrefixDigits: 2,
-    });
+      });
 
     expect(plan.voiceSeeds).toEqual({ hana: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'] });
   });

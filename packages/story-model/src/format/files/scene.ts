@@ -1,5 +1,3 @@
-import { joinStoryPath, type StoryUri } from '#model/format/storyUri';
-import { posix } from 'node:path';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
@@ -8,7 +6,6 @@ import {
   parseSceneFileName,
   renderSceneCardBody,
   sceneCardSchema,
-  sceneSummaryReference,
   toSceneFrontmatter,
   type SceneBeat,
   type SceneCard,
@@ -17,14 +14,10 @@ import {
 } from '#model/format/scene';
 
 export type SceneParseErrorCode =
+  | 'missing-scene'
   | 'invalid-scene-file-name'
   | 'invalid-scene-card-yaml'
-  | 'invalid-scene-card-schema'
-  | 'missing-scene-summary-file';
-
-export interface SceneFileSystem {
-  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
-}
+  | 'invalid-scene-card-schema';
 
 export class SceneParseError extends Error {
   public constructor(
@@ -102,47 +95,6 @@ export function parseSceneCard(rawScene: string): SceneCard {
     }
 
     throw error;
-  }
-}
-
-export async function readSceneFile(
-  uri: StoryUri,
-  fileSystem: SceneFileSystem,
-  fileName: string,
-): Promise<SceneFile> {
-  const fileNameParts: SceneFileNameParts = requireSceneFileNameParts(fileName);
-  const card: SceneCard = parseSceneCard(new TextDecoder().decode(await fileSystem.readFile(uri)));
-  const summaryText: string | undefined = await readSceneSummaryText(uri, fileSystem, card);
-
-  return toSceneFile(fileNameParts, card, summaryText);
-}
-
-export function sceneSummaryUri(sceneUri: StoryUri, summaryFileName: string): StoryUri {
-  return joinStoryPath(sceneUri.with({ path: posix.dirname(sceneUri.path) }), summaryFileName);
-}
-
-async function readSceneSummaryText(
-  sceneUri: StoryUri,
-  fileSystem: SceneFileSystem,
-  card: SceneCard,
-): Promise<string | undefined> {
-  const summaryFileName: string | undefined = sceneSummaryReference(card.summary);
-
-  if (summaryFileName === undefined) {
-    return undefined;
-  }
-
-  try {
-    const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(
-      sceneSummaryUri(sceneUri, summaryFileName),
-    );
-    return new TextDecoder().decode(bytes);
-  } catch (error) {
-    throw new SceneParseError(
-      'missing-scene-summary-file',
-      `summary 파일 ${summaryFileName} 을 읽을 수 없습니다.`,
-      error,
-    );
   }
 }
 

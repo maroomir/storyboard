@@ -12,8 +12,8 @@ export class DraftShowCommand implements ICommandHandler {
     usage: 'draft show <stem>',
     summary: '초안 본문을 출력합니다 (--json 이면 경로·분량·생성 정보도)',
     examples: [
-      'storyboard draft show 01-scene-1-1',
-      'storyboard draft show 01-scene-1-1 --json | jq -r .data.path',
+      'storyboard draft show 001-scene-1-1',
+      'storyboard draft show 001-scene-1-1 --json | jq -r .data.path',
     ],
   };
 

@@ -50,7 +50,7 @@ export class GenerateSceneBeatsUseCase {
   public async execute(request: GenerateSceneBeatsRequest): Promise<GenerateSceneBeatsResult> {
     let scene: SceneFile;
     try {
-      scene = await this.repositories.scenes.read(request.sceneUri, request.fileName);
+      scene = await this.repositories.scenes.read(request.sceneUri);
     } catch (error) {
       if (error instanceof SceneParseError) {
         return {

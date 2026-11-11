@@ -96,6 +96,11 @@ export class StudioProposalRpc {
       return;
     }
 
+    if (prepared.patchTarget === 'sceneCard' && root !== undefined) {
+      await this.deps.studio.context.applySceneCardText(root, prepared.entityKey, prepared.text);
+      return;
+    }
+
     await vscode.workspace.fs.writeFile(
       prepared.targetUri,
       new TextEncoder().encode(prepared.text),
@@ -182,6 +187,7 @@ type PreparedApply =
       readonly targetUri: vscode.Uri;
       readonly targetFile: string;
       readonly patchTarget: StudioEntityContext['patchTarget'];
+      readonly entityKey: string;
       readonly text: string;
       readonly changedFields: readonly string[];
       readonly lengthDelta: number;
@@ -198,6 +204,7 @@ interface PatchableContext {
   readonly targetUri: StoryUri;
   readonly targetFile: string;
   readonly patchTarget: StudioEntityContext['patchTarget'];
+  readonly entityKey: string;
   readonly baseline: string;
 }
 
@@ -232,6 +239,7 @@ async function loadPatchableContext(
     targetUri: entityContext.targetUri,
     targetFile: entityContext.targetFile,
     patchTarget: entityContext.patchTarget,
+    entityKey: entity.key,
     baseline: entityContext.baseline,
   };
 }
@@ -272,6 +280,7 @@ async function applyProposalPatch(
     targetUri: context.targetUri,
     targetFile: context.targetFile,
     patchTarget: context.patchTarget,
+    entityKey: context.entityKey,
     text: isDraft ? rewriteDraftBody(context.baseline, patchOutcome.text) : patchOutcome.text,
     changedFields: patchOutcome.changedFields,
     lengthDelta: patchOutcome.text.trim().length - patchBaseline.trim().length,

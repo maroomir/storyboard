@@ -4,7 +4,6 @@ import type { IFileSystem } from '@storyboard/story-engine';
 import { DraftRepository } from '@storyboard/story-engine';
 import { ProjectRepository } from '@storyboard/story-engine';
 import { SceneCacheRepository } from '@storyboard/story-engine';
-import { SceneRepository } from '@storyboard/story-engine';
 import { NodeUri, createDraft, parseDraft, parseSceneCache } from '@storyboard/story-model';
 
 class InMemoryFileSystem implements IFileSystem {
@@ -67,19 +66,9 @@ describe('persistence repositories', () => {
     });
   });
 
-  it('reads scenes and writes serialized drafts through repositories', async () => {
+  it('writes serialized drafts through the draft repository', async () => {
     const fileSystem = new InMemoryFileSystem();
-    const sceneUri = 'scene';
     const draftUri = 'draft';
-    await fileSystem.writeFile(
-      sceneUri,
-      new TextEncoder().encode('type: scene\nid: 01-opening\nsummary: Scene body\n'),
-    );
-
-    await expect(new SceneRepository(fileSystem).read(sceneUri, '01-opening.card')).resolves.toMatchObject({
-      stem: '01-opening',
-      body: 'Scene body\n',
-    });
 
     await new DraftRepository(fileSystem).write(
       draftUri,
@@ -89,24 +78,6 @@ describe('persistence repositories', () => {
     expect(parseDraft(new TextDecoder().decode(await fileSystem.readFile(draftUri))).body).toBe(
       'Draft body\n',
     );
-  });
-
-  it('leaves a scene card untouched when its beats would not change', async () => {
-    const fileSystem = new InMemoryFileSystem();
-    const writes: unknown[] = [];
-    const recordingFileSystem: IFileSystem = Object.assign(Object.create(fileSystem), {
-      writeFile: async (uri: unknown, content: Uint8Array) => {
-        writes.push(uri);
-        await fileSystem.writeFile(uri, content);
-      },
-    });
-    const repository = new SceneRepository(recordingFileSystem);
-    await fileSystem.writeFile('scene', new TextEncoder().encode('type: scene\nid: 01-opening\n'));
-
-    await repository.writeBeats('scene', ['비트 하나']);
-    await repository.writeBeats('scene', ['비트 하나']);
-
-    expect(writes).toHaveLength(1);
   });
 
   it('persists canonical scene cache data and creates its directory', async () => {

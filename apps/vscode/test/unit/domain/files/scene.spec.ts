@@ -11,12 +11,10 @@ import {
   findUnknownBeatCast,
   splitSceneNarrativeSource,
   isInlineSceneSummary,
-  NodeUri,
   parseScene,
   parseSceneFileName,
   parseSceneStem,
   renderSceneCardBody,
-  readSceneFile,
   resolveSceneOrder,
   sceneSummaryReference,
   serializeSceneCard,
@@ -300,17 +298,6 @@ describe("splitSceneNarrativeSource", () => {
 })
 
 describe("scene summary file and beats", () => {
-  const fileSystem = {
-    files: new Map<string, string>(),
-    async readFile(uri: NodeUri): Promise<Uint8Array> {
-      const content = this.files.get(uri.path)
-      if (content === undefined) {
-        throw new Error(`not found: ${uri.path}`)
-      }
-      return new TextEncoder().encode(content)
-    }
-  }
-
   it("keeps the summary reference and beats round-trippable in canonical order", () => {
     const rawScene = readFixtureScene("03-summary-file.card")
     const scene = parseScene(rawScene, "03-summary-file.card")
@@ -367,23 +354,6 @@ describe("scene summary file and beats", () => {
 
     expect(scene.body).toBe("")
     expect(scene.summaryText).toBeUndefined()
-  })
-
-  it("reads the summary file next to the card", async () => {
-    fileSystem.files.set("/ws/scene/03-summary-file.card", readFixtureScene("03-summary-file.card"))
-    fileSystem.files.set("/ws/scene/03-summary-file.summary.md", readFixtureScene("03-summary-file.summary.md"))
-
-    const scene = await readSceneFile(NodeUri.file("/ws/scene/03-summary-file.card"), fileSystem, "03-summary-file.card")
-
-    expect(scene.summaryText).toBe("샘플 캐릭터가 방송실에 들어와 낯선 사연 엽서를 발견한다.\n")
-  })
-
-  it("fails loudly when the referenced summary file is missing", async () => {
-    fileSystem.files.set("/ws/scene/05-lost.card", "type: scene\nid: 05-lost\nsummary: 05-lost.summary.md\n")
-
-    await expect(readSceneFile(NodeUri.file("/ws/scene/05-lost.card"), fileSystem, "05-lost.card")).rejects.toMatchObject({
-      code: "missing-scene-summary-file"
-    })
   })
 
   it("distinguishes a file reference from inline prose", () => {

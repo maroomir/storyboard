@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +13,12 @@ import {
 import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
-import { createWorkspaceCaches, createWorkspaceCards } from './fixtures/workspaceCacheFixture';
+import {
+  createWorkspaceCaches,
+  createWorkspaceCards,
+  createWorkspaceScenes,
+} from './fixtures/workspaceCacheFixture';
+import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 interface CondenseInput {
   readonly intent?: string;
@@ -34,6 +39,7 @@ function createUseCase(): CondenseDraftUseCase {
     fileSystem: new NodeFileSystem(),
     caches,
     cards: createWorkspaceCards(caches),
+    scenes: createWorkspaceScenes(caches),
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn() },
     configBridge: { getMaxCompressionPercent: () => 30 },
   } as unknown as HostAdapters;
@@ -60,10 +66,9 @@ beforeEach(async () => {
     workspaceRoot: NodeUri.file(directory),
     name: '작품',
   });
-  mkdirSync(join(directory, 'scene'), { recursive: true });
-  writeFileSync(
-    join(directory, 'scene', '01-pier.card'),
-    ['type: scene', 'id: 01-pier', 'title: 방파제', 'summary: 하나가 편지를 다시 읽는다.', ''].join(
+  await writeSceneBundleFromYaml(
+    directory,
+    ['type: scene', 'id: 001-pier', 'title: 방파제', 'summary: 하나가 편지를 다시 읽는다.', ''].join(
       '\n',
     ),
   );
@@ -78,7 +83,7 @@ describe('CondenseDraftUseCase', () => {
   it('reads the scene context itself', async () => {
     const result = await createUseCase().execute({
       workspaceRoot: NodeUri.file(directory),
-      sceneStem: '01-pier',
+      sceneStem: '001-pier',
       format: 'novel',
       body,
     });

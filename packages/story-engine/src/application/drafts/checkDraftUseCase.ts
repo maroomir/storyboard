@@ -5,7 +5,6 @@ import {
   analyzeSlop,
   formatBibleFactLines,
   getStoryboardProjectPaths,
-  readSceneFile,
   sceneContextPaths,
   scenePath,
   type NarrativeContext,
@@ -105,11 +104,7 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
   ): Promise<readonly string[]> {
     const { fileSystem } = this.host;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const scene: SceneFile = await readSceneFile(
-      scenePath(workspaceRoot, sceneStem),
-      fileSystem,
-      `${sceneStem}.card`,
-    );
+    const scene: SceneFile = await this.host.scenes.readByUri(scenePath(workspaceRoot, sceneStem));
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
     const context: SceneContext = await new SceneContextReader(fileSystem, this.host.cards).build(
       contextPaths,

@@ -1,4 +1,5 @@
 import { cardsFromFiles } from "../../stubs/cards"
+import { scenesFromFiles } from "../../stubs/scenes"
 
 let stubbedFiles: Record<string, string> = {}
 import { stubFileSystem } from "../../stubs/fileSystem"
@@ -58,7 +59,7 @@ describe("readStudioStage", () => {
   it("returns nothing for a target without a scene", async () => {
     stubWorkspace({})
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, { kind: "project", hasSelection: false })
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, { kind: "project", hasSelection: false })
 
     expect(stage).toBeUndefined()
   })
@@ -69,7 +70,7 @@ describe("readStudioStage", () => {
       "/workspace/draft/01-intro.md": draftText
     })
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
 
     expect(stage).toEqual(
       expect.objectContaining({
@@ -85,7 +86,7 @@ describe("readStudioStage", () => {
   it("leaves the draft facts empty when no draft exists", async () => {
     stubWorkspace({ "/workspace/scene/01-intro.card": sceneText })
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
 
     expect(stage?.draftUpdatedAt).toBeUndefined()
     expect(stage?.draftLength).toBeUndefined()
@@ -100,7 +101,7 @@ describe("readStudioStage", () => {
       ["2026-08-05-10-00-rev-01.md", "2026-08-06-09-00-rev-02.md"]
     )
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
 
     expect(stage?.draftRevision).toBe(3)
   })
@@ -111,7 +112,7 @@ describe("readStudioStage", () => {
       "/workspace/draft/01-intro.md": draftText
     })
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget)
 
     expect(stage?.draftRevision).toBeUndefined()
   })
@@ -133,12 +134,12 @@ describe("readStudioStage", () => {
 
     stubWorkspace({ "/workspace/scene/01-intro.card": sceneText })
     await revisionPlans.replaceLatest(workspaceRoot, plan(0))
-    expect((await new StudioContextRepository(stubFileSystem, revisionPlans, cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget))?.review).toBe("clean")
+    expect((await new StudioContextRepository(stubFileSystem, revisionPlans, cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget))?.review).toBe("clean")
 
     vi.restoreAllMocks()
     stubWorkspace({ "/workspace/scene/01-intro.card": sceneText })
     await revisionPlans.replaceLatest(workspaceRoot, plan(2))
-    expect((await new StudioContextRepository(stubFileSystem, revisionPlans, cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget))?.review).toBe("issues")
+    expect((await new StudioContextRepository(stubFileSystem, revisionPlans, cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, sceneTarget))?.review).toBe("issues")
   })
 })
 
@@ -190,7 +191,7 @@ describe("readStudioStage for card entities", () => {
       ["01-intro.card", "02-departure.card", ".sample.card"]
     )
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
       kind: "character",
       entity: { kind: "character", key: "seorin" },
       hasSelection: false
@@ -220,7 +221,7 @@ describe("readStudioStage for card entities", () => {
       ["01-intro.card"]
     )
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
       kind: "character",
       entity: { kind: "character", key: "seorin" },
       hasSelection: false
@@ -243,7 +244,7 @@ describe("readStudioStage for card entities", () => {
       ["01-intro.card"]
     )
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
       kind: "background",
       entity: { kind: "background", key: "subway" },
       hasSelection: false
@@ -262,7 +263,7 @@ describe("readStudioStage for card entities", () => {
   it("returns nothing when the card file is missing", async () => {
     stubCardWorkspace({}, [])
 
-    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
+    const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles)).readStage(workspaceRoot, {
       kind: "character",
       entity: { kind: "character", key: "ghost" },
       hasSelection: false

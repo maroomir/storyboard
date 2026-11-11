@@ -160,7 +160,7 @@ const project: StoryboardProject = {
   format: 'novel',
   language: 'ko',
   createdAt: new Date().toISOString(),
-  editor: { scenePrefixDigits: 2 },
+  editor: {},
 };
 
 const workspaceUri = vscode.Uri.file('/ws/project');
@@ -182,7 +182,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
 
   const dependencies: NovelRunDependencies = {
     host: createTestHost({
-      configBridge: { inspectScenePrefixDigits: (): undefined => undefined } as never,
+      configBridge: {} as never,
       logger: { error: () => undefined, info: () => undefined } as never,
       fileSystem: stubFileSystem,
     }),
@@ -394,7 +394,7 @@ describe('NovelPipeline', () => {
       const { sceneUri } = call[0] as { readonly sceneUri: vscode.Uri };
       return sceneUri.fsPath.split('/').at(-1);
     });
-    expect(draftedStems).toEqual(['01-s1.card', '02-s2.card', '03-s3.card']);
+    expect(draftedStems).toEqual(['001-s1.card', '002-s2.card', '003-s3.card']);
     expect(runReviseDraftWorkflowMock).toHaveBeenCalledTimes(3);
     expect(recordRevisionEntryMock).toHaveBeenCalledTimes(3);
   });

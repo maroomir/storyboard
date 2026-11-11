@@ -15,10 +15,9 @@ export interface ChapterGroup {
 
 export function groupChapterStems(
   plan: ChapterPlan,
-  digitCount: number,
   sceneStemsByOrder: ReadonlyMap<number, string> = new Map(),
 ): ChapterGroup[] {
-  const seeds: GeneratedSceneSeed[] = buildSceneSeeds(plan, digitCount);
+  const seeds: GeneratedSceneSeed[] = buildSceneSeeds(plan);
   const flat: FlatChapterScene[] = flattenChapterPlan(plan);
   const groups: ChapterStemGroup[] = [];
 

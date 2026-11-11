@@ -8,7 +8,6 @@ import {
   rewriteCardIdReferences,
   serializeCard,
   setCardId,
-  isIgnoredSampleCardFileName,
   characterProfilePath,
   getStoryboardProjectPaths,
   parseCardIdFromPath,
@@ -47,7 +46,7 @@ function isSameWorkspaceFolder(
 }
 
 function isValidCardFileName(fileName: string): boolean {
-  return !isIgnoredSampleCardFileName(fileName) && fileName.endsWith('.card');
+  return fileName.endsWith('.card');
 }
 
 export function parseCardRenameCandidate(
@@ -196,12 +195,6 @@ async function appendReferenceUpdateIfChanged(
   oldId: string,
   newId: string,
 ): Promise<void> {
-  const fileName: string = cardUri.path.split('/').at(-1) ?? '';
-
-  if (isIgnoredSampleCardFileName(fileName)) {
-    return;
-  }
-
   const cardBytes: Uint8Array<ArrayBufferLike> = await vscode.workspace.fs.readFile(cardUri);
   const cardText: string = new TextDecoder().decode(cardBytes);
   let card: StoryboardCard;

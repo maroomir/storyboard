@@ -1,37 +1,12 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  getStoryboardProjectPaths,
   isDirectBackgroundCardFile,
   isDirectCharacterCardFile,
   isDirectSceneCardFile,
   isDraftMarkdownFile,
-  isHiddenSceneFileName,
-  isIgnoredSampleCardFileName,
 } from "@storyboard/story-model"
 import { Uri, type WorkspaceFolder } from "../../../stubs/vscode"
-
-describe("pathConventions", () => {
-  it("uses hidden sample paths for initialized sample files", () => {
-    const paths = getStoryboardProjectPaths(Uri.file("/workspace/story") as never)
-
-    expect(paths.sampleCharacterCard.fsPath).toBe("/workspace/story/character/.sample.card")
-    expect(paths.sampleBackgroundCard.fsPath).toBe("/workspace/story/background/.sample.card")
-    expect(paths.sampleScene.fsPath).toBe("/workspace/story/scene/.sample.card")
-  })
-
-  it("identifies only the explicit ignored sample card file", () => {
-    expect(isIgnoredSampleCardFileName(".sample.card")).toBe(true)
-    expect(isIgnoredSampleCardFileName("sample.card")).toBe(false)
-    expect(isIgnoredSampleCardFileName(".draft.card")).toBe(false)
-  })
-
-  it("identifies hidden scene text files", () => {
-    expect(isHiddenSceneFileName(".sample.card")).toBe(true)
-    expect(isHiddenSceneFileName("01-prologue.card")).toBe(false)
-    expect(isHiddenSceneFileName(".sample.md")).toBe(false)
-  })
-})
 
 function workspaceFolderAt(rootPath: string): WorkspaceFolder {
   return { uri: Uri.file(rootPath) as never, name: "project", index: 0 }

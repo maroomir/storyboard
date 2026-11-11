@@ -6,6 +6,7 @@ import {
   isDirectCharacterCardRelativePath,
   narratorCardRelativePath,
   parseElementSlugFromCardPath,
+  sceneCardRelativePath,
 } from '#model/format/bundlePaths';
 import {
   STORYBOARD_RELATIVE_PATHS,
@@ -14,7 +15,6 @@ import {
   isDirectSceneCardRelativePath,
   isDraftMarkdownRelativePath,
   parseCardIdFromFileName,
-  sceneFileRelativePath,
   sceneRelativePath,
   threadMemoryRelativePath,
 } from '#model/format/paths';
@@ -23,8 +23,6 @@ import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from '#model/
 
 import type { StudioEntity } from '#model/shared/messaging/studio';
 
-export { isHiddenSceneFileName } from '#model/format/paths';
-export { isIgnoredSampleCardFileName } from '#model/format/sampleCard';
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: StoryUri;
@@ -64,12 +62,9 @@ export interface StoryboardProjectPaths {
   readonly outlineChapters: StoryUri;
   readonly characterDirectory: StoryUri;
   readonly characterProfileDirectory: StoryUri;
-  readonly sampleCharacterCard: StoryUri;
   readonly backgroundDirectory: StoryUri;
-  readonly sampleBackgroundCard: StoryUri;
   readonly narratorDirectory: StoryUri;
   readonly sceneDirectory: StoryUri;
-  readonly sampleScene: StoryUri;
   readonly draftDirectory: StoryUri;
   readonly draftHistoryDirectory: StoryUri;
   readonly manuscriptDirectory: StoryUri;
@@ -137,12 +132,9 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),
     characterDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterDirectory),
     characterProfileDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterProfileDirectory),
-    sampleCharacterCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleCharacterCard),
     backgroundDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
-    sampleBackgroundCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleBackgroundCard),
     narratorDirectory: resolve(STORYBOARD_RELATIVE_PATHS.narratorDirectory),
     sceneDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDirectory),
-    sampleScene: resolve(STORYBOARD_RELATIVE_PATHS.sampleScene),
     draftDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftDirectory),
     draftHistoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory),
     manuscriptDirectory: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory),
@@ -250,8 +242,8 @@ export function narratorCardPath(workspaceRoot: StoryUri, id: string): StoryUri 
   return resolveWorkspacePath(workspaceRoot, narratorCardRelativePath(id));
 }
 
-export function sceneFilePath(workspaceRoot: StoryUri, prefix: string, slug: string): StoryUri {
-  return resolveWorkspacePath(workspaceRoot, sceneFileRelativePath(prefix, slug));
+export function sceneCardPath(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
+  return resolveWorkspacePath(workspaceRoot, sceneCardRelativePath(sceneStem));
 }
 
 export function scenePath(workspaceRoot: StoryUri, sceneStem: string): StoryUri {

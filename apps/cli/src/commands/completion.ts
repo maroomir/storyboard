@@ -5,7 +5,6 @@ import {
   storyboardModelCatalog,
   compositionKindLabels,
   compositionKinds,
-  isIgnoredSampleCardFileName,
   narrativeTenseLabels,
   narrativeTenses,
   narratorKnowledgeLabels,
@@ -54,7 +53,7 @@ function listFiles(directory: string, extension: string): string[] {
   }
 
   return readdirSync(directory)
-    .filter((name) => name.endsWith(extension) && !isIgnoredSampleCardFileName(name))
+    .filter((name) => name.endsWith(extension))
     .map((name) => name.slice(0, -extension.length))
     .sort();
 }

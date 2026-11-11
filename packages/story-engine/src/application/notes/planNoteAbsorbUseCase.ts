@@ -289,7 +289,6 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       synthesis,
       cards: source.cards,
       scenes: source.scenes,
-      scenePrefixDigits: source.project.editor.scenePrefixDigits,
     });
   }
 

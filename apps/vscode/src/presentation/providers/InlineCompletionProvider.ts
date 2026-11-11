@@ -2,22 +2,14 @@ import type { DraftManager } from '@storyboard/story-app';
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
-import {
-  isDraftMarkdownFile,
-  sceneFilePath,
-  STORYBOARD_GLOBS,
-  parseDraft,
-  readSceneFile,
-} from '@storyboard/story-model';
+import { isDraftMarkdownFile, STORYBOARD_GLOBS, parseDraft } from '@storyboard/story-model';
 import type {
   BackgroundCard,
   CharacterCard,
   SceneContext,
   SceneFile,
   SceneFileNameParts,
-  StoryUri,
 } from '@storyboard/story-model';
-import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
@@ -34,7 +26,7 @@ const inlineMaxActiveCharacters: number = 3;
 export interface DraftInlineCompletionProviderDependencies {
   readonly aiGateway: AiGateway;
   readonly configBridge: ConfigBridge;
-  readonly drafts: Pick<DraftManager, 'readSceneContext'>;
+  readonly drafts: Pick<DraftManager, 'readSceneContext' | 'readScene'>;
 }
 
 interface InlineCompletionCacheValue {
@@ -205,9 +197,13 @@ export class DraftInlineCompletionProvider implements vscode.InlineCompletionIte
     }
 
     try {
-      const sceneUri: StoryUri = sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug);
-      const fileName: string = sceneUri.path.split('/').pop() ?? '';
-      const scene: SceneFile = await readSceneFile(sceneUri, vscodeFsAdapter, fileName);
+      const scene: SceneFile | undefined = await this.dependencies.drafts.readScene(
+        workspaceFolder.uri,
+        parts.stem,
+      );
+      if (scene === undefined) {
+        return {};
+      }
 
       const sceneContext: SceneContext = await this.dependencies.drafts.readSceneContext(
         workspaceFolder.uri,

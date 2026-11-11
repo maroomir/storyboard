@@ -29,7 +29,6 @@ import {
 import type {
   ConfigValueOrigin,
   DisposableHandle,
-  ScenePrefixDigitsInspectLike,
   StoryboardSettingDefinition,
 } from '@storyboard/story-model';
 
@@ -419,14 +418,6 @@ export class ConfigBridge {
 
   public isStudioValidationEnabled(): boolean {
     return this.readBooleanSetting('editor.studio.validation');
-  }
-
-  public getScenePrefixDigits(): number {
-    return this.readIntegerSetting('editor.scene.prefixDigits');
-  }
-
-  public inspectScenePrefixDigits(): ScenePrefixDigitsInspectLike | undefined {
-    return this.dependencies.getConfiguration().inspect?.<number>('editor.scene.prefixDigits');
   }
 
   public isAiContextCondenseEnabled(): boolean {

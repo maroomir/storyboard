@@ -13,6 +13,7 @@ import { commands, findCommand } from '@/commands/index';
 import { createCliContainer, type CliContainerOptions } from '@/container';
 
 import { readBundleText, writeCardBundleFromYaml } from './fixtures/cardBundles';
+import { readSceneCardYaml, writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 let home: string;
 let workspace: string;
@@ -42,12 +43,12 @@ function containerWith(overrides: Partial<CliContainerOptions> = {}) {
 async function generateScene(overrides: Partial<CliContainerOptions> = {}) {
   return await findCommand('draft generate')!.execute({
     container: containerWith(overrides),
-    args: args(['draft', 'generate'], { force: true }, ['01-opening']),
+    args: args(['draft', 'generate'], { force: true }, ['001-opening']),
   });
 }
 
 function draftBody(): string {
-  return readFileSync(join(workspace, 'draft', '01-opening.md'), 'utf8');
+  return readFileSync(join(workspace, 'draft', '001-opening.md'), 'utf8');
 }
 
 beforeEach(async () => {
@@ -70,9 +71,9 @@ beforeEach(async () => {
     workspace,
     'type: location\nid: gate\nname: 학교 정문\nlocationKind: place\ndescription:\n  - 아침의 교문.\n',
   );
-  writeFileSync(
-    join(workspace, 'scene', '01-opening.card'),
-    'type: scene\nid: 01-opening\ntitle: 시작\ncharacters:\n  - elia\nlocation: gate\nsummary: 엘리아가 문을 열고 들어온다. 비가 내린다.\n',
+  await writeSceneBundleFromYaml(
+    workspace,
+    'type: scene\nid: 001-opening\ntitle: 시작\ncharacters:\n  - elia\nlocation: gate\nsummary: 엘리아가 문을 열고 들어온다. 비가 내린다.\n',
   );
 });
 
@@ -163,11 +164,12 @@ describe('fixture mutation', () => {
   });
 
   it('rewrites the scene card, which is why a run needs a scratch copy', async () => {
-    const before = textOf('scene/01-opening.card');
+    const before = await readSceneCardYaml(workspace, '001-opening');
 
     await generateScene();
 
-    expect(textOf('scene/01-opening.card')).not.toBe(before);
-    expect(textOf('scene/01-opening.card')).toContain('beats:');
+    const after = await readSceneCardYaml(workspace, '001-opening');
+    expect(after).not.toBe(before);
+    expect(after).toContain('beats:');
   });
 });

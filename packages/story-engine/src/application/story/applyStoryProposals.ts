@@ -1,7 +1,7 @@
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
-  getStoryboardProjectPaths,
-  joinStoryPath,
+  parseSceneCard,
+  parseSceneFileName,
   type StatementSource,
   type StoryboardCard,
   type StoryUri,
@@ -56,22 +56,21 @@ export class ApplyStoryProposals {
     workspaceRoot: StoryUri,
     scenes: readonly CompletedStoryScene[],
   ): Promise<ApplyCompletedScenesResult> {
-    const { fileSystem } = this.host;
-    const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
     const writtenFileNames: string[] = [];
     const skippedFileNames: string[] = [];
 
-    await fileSystem.createDirectory(sceneDirectory);
-
     for (const scene of scenes) {
-      const uri: StoryUri = joinStoryPath(sceneDirectory, scene.fileName);
+      const slug: string | undefined = parseSceneFileName(scene.fileName)?.slug;
 
-      if (await fileSystem.exists(uri)) {
+      if (slug === undefined || (await this.host.scenes.find(workspaceRoot, slug)) !== undefined) {
         skippedFileNames.push(scene.fileName);
         continue;
       }
 
-      await fileSystem.writeFile(uri, new TextEncoder().encode(scene.content));
+      await this.host.scenes.writeCard(workspaceRoot, parseSceneCard(scene.content), {
+        source: studioSource,
+        slug,
+      });
       writtenFileNames.push(scene.fileName);
     }
 

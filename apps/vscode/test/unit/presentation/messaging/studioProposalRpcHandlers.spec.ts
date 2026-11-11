@@ -1,4 +1,5 @@
 import { cardsFromFiles } from "../../../stubs/cards"
+import { scenesFromFiles } from "../../../stubs/scenes"
 import * as vscode from "vscode"
 import { createMemoryRevisionPlans } from "../../../stubs/caches"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -13,7 +14,13 @@ import { vscodeFileSystem } from "@/infrastructure/vscode/vscodeFileSystem"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { StudioProposalRpc } from "@/presentation/messaging/studioProposalRpcHandlers"
 import type { ProposalReviewService } from "@/presentation/providers/proposalReviewService"
-import { parseCard, serializeCard, storyboardMessageProtocolVersion } from "@storyboard/story-model"
+import {
+  parseCard,
+  parseSceneCard,
+  serializeCard,
+  serializeSceneCard,
+  storyboardMessageProtocolVersion
+} from "@storyboard/story-model"
 import type { StudioChatTurn, StudioEntity } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
@@ -113,7 +120,7 @@ function bridgeWith(): FakeWebview {
         archiveDraftWhenHistoryIsKept: (root, stem): Promise<string | undefined> =>
           new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
       },
-      studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text))) },
+      studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text)), scenesFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text))) },
       logger: harnessLogger,
       getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot,
       createFollowUpId: (): string => "follow-1"
@@ -280,7 +287,7 @@ describe("studio proposal rpc handlers for scene cards", () => {
       summary: "갈등 정리",
       targetFile: "scene/01-intro.card",
       patch: { target: "card", changes: [{ field: "purpose", value: "인물 소개와 갈등 암시" }] },
-      baselineHash: hashBaseline(sceneText),
+      baselineHash: hashBaseline(serializeSceneCard(parseSceneCard(sceneText))),
       ...overrides
     })
 

@@ -41,9 +41,6 @@ export class InitCommand implements IExtensionCommand {
         workspaceRoot: workspaceFolder.uri,
         name: workspaceFolder.name,
       });
-      await this.writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
-      await this.writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
-      await this.writeFileIfMissing(paths.sampleScene, createSampleScene());
 
       this.dependencies.logger.info(
         `Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`,
@@ -72,53 +69,4 @@ export class InitCommand implements IExtensionCommand {
       '`.storyboard` 폴더가 이미 있지만 `project.json`은 없습니다. 안전을 위해 초기화를 중단합니다.',
     );
   }
-
-  private async writeFileIfMissing(uri: vscode.Uri, content: string): Promise<void> {
-    if (await uriExists(uri)) {
-      return;
-    }
-
-    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
-  }
-}
-
-function createSampleCharacterCard(): string {
-  return `type: character
-id: sample
-name: 샘플 캐릭터
-profile: profile/sample.png
-role: main
-attributes: {}
-tags:
-  - 샘플
-traits: []
-description:
-  - Storyboard 프로젝트를 시작하기 위한 샘플 캐릭터입니다.
-relations: []
-arc: []
-recentDialogues: []
-`;
-}
-
-function createSampleBackgroundCard(): string {
-  return `type: location
-id: sample
-name: 샘플 배경
-locationKind: place
-characterIds: []
-tags:
-  - 샘플
-description:
-  - Storyboard 프로젝트를 시작하기 위한 샘플 배경입니다.
-`;
-}
-
-function createSampleScene(): string {
-  return `type: scene
-id: 00-sample
-title: 샘플 씬
-summary: |-
-  Storyboard 프로젝트를 시작하기 위한 샘플 씬 카드입니다.
-  실제 작업에 반영할 씬은 \`storyboard.scene.create\` 명령으로 생성해 주세요.
-`;
 }

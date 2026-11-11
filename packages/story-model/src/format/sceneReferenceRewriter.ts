@@ -132,20 +132,6 @@ export function rewriteCharacterArcSceneRefs(
   };
 }
 
-export function rewriteSceneCardStemText(rawCard: string, rename: SceneRename): string {
-  const { from, to } = rename;
-  const escapedStem: string = from.stem.replace(/-/g, '\\-');
-  const fieldLine = (field: string, suffix: string): RegExp =>
-    new RegExp(
-      `^(${field}:[ \\t]*['"]?)${escapedStem}${suffix.replace(/\./g, '\\.')}(['"]?[ \\t]*)$`,
-      'm',
-    );
-
-  return rawCard
-    .replace(fieldLine('id', ''), `$1${to.stem}$2`)
-    .replace(fieldLine('summary', '.summary.md'), `$1${to.stem}.summary.md$2`);
-}
-
 interface SceneRenameJournal {
   fromStem: string;
   toStem: string;

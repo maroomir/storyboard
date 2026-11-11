@@ -1,19 +1,14 @@
-import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
-  getStoryboardProjectPaths,
-  parseSceneFileName,
-  resolveScenePrefixDigitCount,
-  sceneFilePath,
-  serializeSceneCard,
-  type StoryboardProject,
-  type StoryboardProjectPaths,
+  formatNumberedSceneStem,
+  type StatementSource,
   type StoryUri,
 } from '@storyboard/story-model';
 
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
+import type { SceneRoster, WrittenScene } from '#engine/persistence/bundles/workspaceScenes';
 
+const authorSource: StatementSource = { origin: 'author' };
 export interface CreateSceneRequest {
   readonly workspaceRoot: StoryUri;
   readonly slug?: string;
@@ -34,39 +29,21 @@ export class CreateSceneUseCase implements IUseCase<CreateSceneRequest, CreateSc
   }
 
   private async create(request: CreateSceneRequest): Promise<CreateSceneResult> {
-    const { fileSystem } = this.host;
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
-      paths.projectJson,
-    );
-    const existing: readonly string[] = await new WorkspaceFiles(fileSystem).listNames(
-      paths.sceneDirectory,
-    );
+    const { scenes } = this.host;
+    const roster: SceneRoster = await scenes.loadRoster(request.workspaceRoot);
+    const number: number = roster.structure.scenes.length + 1;
+    const slug: string = request.slug ?? `scene-${number}`;
 
-    const highestOrder: number = existing
-      .map((fileName) => parseSceneFileName(fileName)?.order)
-      .filter((order): order is number => order !== undefined)
-      .reduce((highest, order) => Math.max(highest, order), 0);
-    const order: number = highestOrder + 1;
-    const digitCount: number = resolveScenePrefixDigitCount(
-      project.editor.scenePrefixDigits,
-      undefined,
-    );
-    const prefix: string = String(order).padStart(digitCount, '0');
-    const slug: string = request.slug ?? `scene-${order}`;
-    const stem: string = `${prefix}-${slug}`;
-    const uri: StoryUri = sceneFilePath(request.workspaceRoot, prefix, slug);
-
-    if (await fileSystem.exists(uri)) {
-      return { ok: false, kind: 'exists', message: `이미 있습니다: ${stem}.card` };
+    if (roster.scenes.some((scene) => scene.slug === slug)) {
+      return { ok: false, kind: 'exists', message: `이미 있습니다: ${slug}` };
     }
 
-    await fileSystem.createDirectory(paths.sceneDirectory);
-    await fileSystem.writeFile(
-      uri,
-      new TextEncoder().encode(serializeSceneCard({ type: 'scene', id: stem })),
+    const written: WrittenScene = await scenes.writeCard(
+      request.workspaceRoot,
+      { type: 'scene', id: formatNumberedSceneStem(number, slug), title: slug },
+      { source: authorSource, slug },
     );
 
-    return { ok: true, kind: 'created', stem, uri };
+    return { ok: true, kind: 'created', stem: written.stem, uri: written.uri };
   }
 }

@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   buildNoteAbsorbPlan,
-  parseScene,
   coerceNoteExtraction,
   type NoteAbsorbPlan,
 } from '@storyboard/story-model';
@@ -25,6 +24,11 @@ import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
 import { readBundleText, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+import {
+  listScenesFromBundles,
+  readSceneCardYaml,
+  readSceneFromBundles,
+} from './fixtures/sceneBundles';
 
 const vault = join(__dirname, 'fixtures', 'notes', 'obsidianVault', '달의 문');
 
@@ -154,19 +158,13 @@ async function planFor(request: PlanNoteAbsorbRequest) {
       description: ['등대지기의 손녀.'],
       attributes: { age: '17' },
     }));
-  const sceneFiles = readdirSync(join(workspace, 'scene')).filter((name) =>
-    /^\d+-[a-z0-9-]+\.card$/.test(name),
-  );
 
   return buildNoteAbsorbPlan({
     notes: request.bundle.notes,
     extractions: [fixedExtraction],
     synthesis: fixedSynthesis,
     cards,
-    scenes: sceneFiles.map((name) =>
-      parseScene(readFileSync(join(workspace, 'scene', name), 'utf8'), name),
-    ),
-    scenePrefixDigits: 2,
+    scenes: [...(await listScenesFromBundles(workspace))],
   });
 }
 
@@ -264,7 +262,7 @@ describe('notes absorb', () => {
 
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toContain('인물  hana (하나) — 새 카드');
-    expect(outcome.message).toContain('씬    01-high-tide 만조 ← 달의 문/씬/1 만조.md');
+    expect(outcome.message).toContain('씬    001-high-tide 만조 ← 달의 문/씬/1 만조.md');
     expect(outcome.message).toContain('분류 못함  10 귀환');
     expect(outcome.message).toContain('작품 계약  장르: 해양 미스터리');
     expect(outcome.message).not.toContain('undefined');
@@ -287,13 +285,11 @@ describe('notes absorb', () => {
     expect(existsSync(join(workspace, 'character', 'hana.card', 'profile.png'))).toBe(true);
     expect(await readCardYaml(workspace, 'harbor')).toContain('name: 항구');
 
-    const scene = readFileSync(join(workspace, 'scene', '01-high-tide.card'), 'utf8');
-    expect(scene).toContain('location: harbor');
-    expect(scene).toContain('summary: 01-high-tide.summary.md');
-    expect(readFileSync(join(workspace, 'scene', '01-high-tide.summary.md'), 'utf8')).toBe(
+    expect(await readSceneCardYaml(workspace, '001-high-tide')).toContain('location: harbor');
+    expect((await readSceneFromBundles(workspace, '001-high-tide'))?.summaryText).toBe(
       '만조의 밤, 하나가 항구에서 문이 열리는 것을 본다.\n',
     );
-    expect(cardFiles('scene')).toContain('02-lighthouse-night.card');
+    expect(cardFiles('scene')).toContain('002-lighthouse-night.card');
     expect((await run('doctor', args(['doctor']))).message).not.toContain('인라인 summary');
 
     expect(
@@ -330,13 +326,13 @@ describe('notes absorb', () => {
 
     expect(outcome.ok).toBe(true);
     expect((outcome.data as { written: string[] }).written).toEqual(
-      expect.arrayContaining(['인물/하나.md', '인물/준.md', '배경/항구.md', '씬/01-high-tide.md', '시놉시스.md']),
+      expect.arrayContaining(['인물/하나.md', '인물/준.md', '배경/항구.md', '씬/001-high-tide.md', '시놉시스.md']),
     );
     const hana = readFileSync(join(target, '인물', '하나.md'), 'utf8');
     expect(hana).toContain('storyboard-id: hana');
     expect(hana).toContain('# 하나');
     expect(hana).toContain('- [[준]]: 소꿉친구');
-    const scene = readFileSync(join(target, '씬', '01-high-tide.md'), 'utf8');
+    const scene = readFileSync(join(target, '씬', '001-high-tide.md'), 'utf8');
     expect(scene).toContain('storyboard-type: scene');
     expect(scene).toContain('location: "[[항구]]"');
     expect(scene).toContain('- "[[하나]]"');

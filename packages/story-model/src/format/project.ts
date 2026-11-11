@@ -108,12 +108,10 @@ export const contractFieldLabels: Record<ContractFieldKey, string> = {
 };
 
 export interface ProjectEditor {
-  scenePrefixDigits: number;
   trackDraft?: boolean;
 }
 
 export const projectEditorSchema: z.ZodType<ProjectEditor> = z.object({
-  scenePrefixDigits: z.number().int().positive(),
   trackDraft: z.boolean().optional(),
 });
 

@@ -5,7 +5,6 @@ import {
   CardParseError,
   STORYBOARD_GLOBS,
   parseCard,
-  isIgnoredSampleCardFileName,
   escapeRegExp,
   extractErrorMessage,
 } from '@storyboard/story-model';
@@ -96,11 +95,6 @@ function firstLineLength(text: string): number {
   return newlineIndex === -1 ? text.length : newlineIndex;
 }
 
-function cardFileName(uri: vscode.Uri): string {
-  const segments: string[] = uri.path.split('/');
-  return segments[segments.length - 1] ?? '';
-}
-
 function createRange(span: CardDiagnosticSpan): vscode.Range {
   const RangeCtor: typeof vscode.Range | undefined = (
     vscode as unknown as { Range?: typeof vscode.Range }
@@ -120,10 +114,6 @@ class CardDiagnosticsController {
   public constructor(private readonly logger: IStoryboardLogger) {}
 
   public async validateUri(uri: vscode.Uri): Promise<void> {
-    if (isIgnoredSampleCardFileName(cardFileName(uri))) {
-      return;
-    }
-
     let text: string;
     try {
       const bytes: Uint8Array<ArrayBufferLike> = await vscode.workspace.fs.readFile(uri);

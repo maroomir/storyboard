@@ -20,6 +20,7 @@ import {
 } from '#model/shared/cardCollect';
 import type { NoteDocument, SkippedNote } from '#model/shared/noteAbsorb';
 import { slugify } from '#model/format/slug';
+import { formatNumberedSceneStem } from '#model/format/bundlePaths';
 import { normalizeEntityName } from '#model/format/entityName';
 
 export interface NoteCardPlan {
@@ -67,7 +68,6 @@ export interface NoteAbsorbPlanInput {
   readonly synthesis: NoteSynthesis;
   readonly cards: readonly StoryboardCard[];
   readonly scenes: readonly SceneFile[];
-  readonly scenePrefixDigits: number;
 }
 
 const slugPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
@@ -627,7 +627,7 @@ class NoteScenePlanner {
   private readonly warnings: string[] = [];
 
   public constructor(
-    private readonly input: NoteAbsorbPlanInput,
+    input: NoteAbsorbPlanInput,
     private readonly characters: CardNameIndex,
     private readonly backgrounds: CardNameIndex,
   ) {
@@ -676,7 +676,7 @@ class NoteScenePlanner {
       this.takenSlugs,
     );
 
-    return `${String(this.lastOrder + this.plans.length + 1).padStart(this.input.scenePrefixDigits, '0')}-${slug}`;
+    return formatNumberedSceneStem(this.lastOrder + this.plans.length + 1, slug);
   }
 
   private createSceneCard(scene: NoteExtractionScene, stem: string): SceneCard {

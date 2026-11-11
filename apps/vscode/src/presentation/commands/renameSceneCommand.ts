@@ -76,11 +76,7 @@ export class RenameSceneCommand implements IExtensionCommand {
     }
 
     void vscode.window.showInformationMessage(
-      `${sceneRename.fromStem} → ${sceneRename.toStem}: 파일 ${sceneRename.movedFiles.length}개를 옮기고 ${sceneRename.rewrittenFiles.length}개를 고쳤습니다.${
-        sceneRename.hasOrderChanged
-          ? ' 번호가 바뀌어 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
-          : ''
-      }`,
+      `${sceneRename.fromStem} → ${sceneRename.toStem}: 파일 ${sceneRename.movedFiles.length}개를 옮기고 ${sceneRename.rewrittenFiles.length}개를 고쳤습니다.`,
     );
   }
 
@@ -156,7 +152,7 @@ async function askForNewSceneStem(fromStem: string): Promise<string | undefined>
     ignoreFocusOut: true,
     validateInput: (value) =>
       parseSceneStem(value.trim()) === undefined
-        ? '`03-night-market` 처럼 번호-영문 소문자 형식이어야 합니다.'
+        ? '`003-night-market` 처럼 번호-영문 소문자 형식이어야 합니다.'
         : undefined,
   });
 }

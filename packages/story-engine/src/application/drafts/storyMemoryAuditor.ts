@@ -1,11 +1,9 @@
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
+  deriveSceneGrounding,
   auditStoryState,
   computeSceneInputHash,
   formatStoryStateStaleWarning,
-  joinStoryPath,
-  parseSceneFileName,
-  readSceneFile,
   readStoryState,
   resealStoryState,
   sceneContextPaths,
@@ -21,18 +19,19 @@ import type {
   SceneContext,
   SceneContextWorkspacePaths,
   SceneFile,
-  SceneFileNameParts,
   StoryboardProjectPaths,
   StoryState,
   StoryStateAudit,
   StoryUri,
 } from '@storyboard/story-model';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { SceneRoster, WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 
 export interface StoryStateAuditRequest {
   readonly fileSystem: IFileSystem;
   readonly cards: WorkspaceCards;
+  readonly scenes: WorkspaceScenes;
   readonly paths: StoryboardProjectPaths;
   readonly format: ProjectFormat;
   readonly sceneBreakJoiner: string | undefined;
@@ -166,7 +165,7 @@ export class StoryMemoryAuditor {
       return currentHashes;
     }
 
-    const sceneFileNames: Map<number, string> = await this.listSceneFileNamesByOrder(reads);
+    const sceneFileNames: Map<number, string> = await this.listSceneFileNamesByOrder();
 
     await Promise.all(
       orders.map(async (order) => {
@@ -185,24 +184,9 @@ export class StoryMemoryAuditor {
     return currentHashes;
   }
 
-  private async listSceneFileNamesByOrder(reads: IFileSystem): Promise<Map<number, string>> {
-    const byOrder: Map<number, string> = new Map<number, string>();
-
-    const entries: never[] | FileSystemDirectoryEntry[] = await reads
-      .readDirectory(this.request.paths.sceneDirectory)
-      .catch(() => []);
-    for (const [fileName, entry] of entries) {
-      if (entry.type !== 'file' || !fileName.endsWith('.card')) {
-        continue;
-      }
-
-      const parsed: SceneFileNameParts | undefined = parseSceneFileName(fileName);
-      if (parsed) {
-        byOrder.set(parsed.order, fileName);
-      }
-    }
-
-    return byOrder;
+  private async listSceneFileNamesByOrder(): Promise<Map<number, string>> {
+    const roster: SceneRoster = await this.request.scenes.loadRoster(this.request.paths.workspaceRoot);
+    return new Map(roster.scenes.map((scene) => [scene.order, scene.stem]));
   }
 
   private async computeCurrentSceneInputHash(
@@ -212,8 +196,10 @@ export class StoryMemoryAuditor {
     const { paths, format, sceneBreakJoiner } = this.request;
 
     try {
-      const sceneUri: StoryUri = joinStoryPath(paths.sceneDirectory, fileName);
-      const scene: SceneFile = await readSceneFile(sceneUri, reads, fileName);
+      const scene: SceneFile | undefined = await this.request.scenes.read(paths.workspaceRoot, fileName);
+      if (scene === undefined) {
+        return undefined;
+      }
       const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
       const context: SceneContext = await new SceneContextReader(reads, this.request.cards).build(ctxPaths, scene);
       const bibleFacts: readonly BibleFact[] = await new SceneContextReader(
@@ -228,7 +214,7 @@ export class StoryMemoryAuditor {
         format,
         bibleFacts,
         sceneBreakJoiner,
-        grounding: context.scene.frontmatter.grounding,
+        grounding: deriveSceneGrounding(context.scene, context.background),
         narration: sceneNarrationHashInput(context.scene),
       });
     } catch {

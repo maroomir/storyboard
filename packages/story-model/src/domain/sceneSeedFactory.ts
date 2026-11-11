@@ -3,6 +3,7 @@ import { serializeSceneCard } from '#model/format/files/scene';
 import type { ChapterPlan, FlatChapterScene, ScenePlan } from '#model/format/outline';
 import type { SceneCard } from '#model/format/scene';
 import { reserveUniqueSlug, slugify } from '#model/format/slug';
+import { formatNumberedSceneStem } from '#model/format/bundlePaths';
 
 export interface GeneratedSceneSeed {
   readonly stem: string;
@@ -10,15 +11,14 @@ export interface GeneratedSceneSeed {
   readonly content: string;
 }
 
-export function buildSceneSeeds(plan: ChapterPlan, digitCount: number): GeneratedSceneSeed[] {
+export function buildSceneSeeds(plan: ChapterPlan): GeneratedSceneSeed[] {
   const flatScenes: FlatChapterScene[] = flattenChapterPlan(plan);
   const usedSlugs: Set<string> = new Set<string>();
 
   return flatScenes.map((flatScene, index) => {
     const order: number = index + 1;
-    const prefix: string = String(order).padStart(digitCount, '0');
     const slug: string = reserveUniqueSlug(deriveSlug(flatScene.scene, order), usedSlugs);
-    const stem: string = `${prefix}-${slug}`;
+    const stem: string = formatNumberedSceneStem(order, slug);
 
     return {
       stem,

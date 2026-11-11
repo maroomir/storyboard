@@ -275,7 +275,7 @@ export class SceneGenerationInputsLoader {
   ): Promise<SceneAndProjectResult> {
     let scene: SceneFile;
     try {
-      scene = await this.dependencies.repositories.scenes.read(sceneUri, fileName);
+      scene = await this.dependencies.repositories.scenes.read(sceneUri);
     } catch (error) {
       if (error instanceof SceneParseError) {
         return inputsFailure(`씬 파일을 읽을 수 없습니다: ${error.message}`);
@@ -377,21 +377,17 @@ export class SceneGenerationInputsLoader {
     builtContext: SceneContext,
     request: SceneGenerationInputsRequest,
   ): Promise<SceneFile | undefined> {
-    const groundedScene: SceneFile = {
-      ...rawScene,
-      frontmatter: {
-        ...rawScene.frontmatter,
-        grounding: deriveSceneGrounding(rawScene, builtContext.background),
-      },
-    };
+    const groundedScene: SceneFile = withDerivedGrounding(rawScene, builtContext.background);
+    if (request.skipSceneBeats) {
+      return groundedScene;
+    }
 
-    return request.skipSceneBeats
-      ? groundedScene
-      : await this.beatsResolver.resolve(
-          { workspaceRoot: paths.workspaceRoot, sceneUri },
-          groundedScene,
-          builtContext.characters,
-        );
+    const beatScene: SceneFile = await this.beatsResolver.resolve(
+      { workspaceRoot: paths.workspaceRoot, sceneUri },
+      groundedScene,
+      builtContext.characters,
+    );
+    return withDerivedGrounding(beatScene, builtContext.background);
   }
 
   private async resolveSceneThreadSetup(
@@ -400,7 +396,7 @@ export class SceneGenerationInputsLoader {
     project: GenerationProject,
   ): Promise<SceneThreadSetup> {
     const { host } = this.dependencies;
-    const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(host.fileSystem, host.cards);
+    const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(host.fileSystem, host.cards, host.scenes);
     const chapterDefaults: ChapterNarrationDefaults = await narrationResolver.readChapterDefaults(
       paths,
       scene.order,
@@ -436,10 +432,11 @@ export class SceneGenerationInputsLoader {
     sceneBreakJoiner: string | undefined,
     beforeSceneOrder: number,
   ): Promise<readonly (string | undefined)[]> {
-    const { fileSystem, cards } = this.dependencies.host;
+    const { fileSystem, cards, scenes } = this.dependencies.host;
     const memoryAuditor: StoryMemoryAuditor = new StoryMemoryAuditor({
       fileSystem,
       cards,
+      scenes,
       paths: threadPaths,
       format: project.format,
       sceneBreakJoiner,
@@ -511,6 +508,16 @@ function assembleSceneContextBundle(
     threadPaths: thread.threadPaths,
     threadId: thread.threadId,
     narration,
+  };
+}
+
+function withDerivedGrounding(
+  scene: SceneFile,
+  background: SceneContext['background'],
+): SceneFile {
+  return {
+    ...scene,
+    frontmatter: { ...scene.frontmatter, grounding: deriveSceneGrounding(scene, background) },
   };
 }
 

@@ -2,7 +2,6 @@ import type { AiServices, HostAdapters } from '#engine/application/engineService
 import {
   formatBibleFactLines,
   getStoryboardProjectPaths,
-  readSceneFile,
   sceneContextPaths,
   scenePath,
   type NarrativeContext,
@@ -133,11 +132,7 @@ export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, Cond
     const { fileSystem } = this.host;
 
     try {
-      const scene: SceneFile = await readSceneFile(
-        scenePath(workspaceRoot, sceneStem),
-        fileSystem,
-        `${sceneStem}.card`,
-      );
+      const scene: SceneFile = await this.host.scenes.readByUri(scenePath(workspaceRoot, sceneStem));
       const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(
         getStoryboardProjectPaths(workspaceRoot),
       );

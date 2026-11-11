@@ -1,5 +1,1 @@
-export {
-  computeNextSceneOrderFromSceneFileNames,
-  formatSceneOrderPrefix,
-  validateSceneSlugInput,
-} from '@storyboard/story-model';
+export { validateSceneSlugInput } from '@storyboard/story-model';

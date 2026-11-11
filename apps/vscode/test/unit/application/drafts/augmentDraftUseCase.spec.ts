@@ -10,7 +10,6 @@ const buildNarrativeContextMock = vi.fn();
 vi.mock('@storyboard/story-model', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@storyboard/story-model')>()),
   SceneParseError: class SceneParseError extends Error {},
-  readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
   formatBibleFactLines: (): string[] => []
 }))
 vi.mock('../../../../../../packages/story-engine/src/persistence/sceneContextReader', () => ({
@@ -53,6 +52,7 @@ function createUseCase(): {
         fileSystem: stubFileSystem,
         logger: { error: vi.fn(), warn: vi.fn() } as never,
         configBridge: { isKeepDraftHistoryEnabled: () => false } as never,
+        scenes: { readByUri: (...args: unknown[]): unknown => readSceneFileMock(...args) } as never,
       }),
       createTestAi({ gateway: gateway as never }),
     ),

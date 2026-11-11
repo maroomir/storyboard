@@ -135,17 +135,6 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     group: '생성',
   },
   {
-    key: 'editor.scene.prefixDigits',
-    label: '씬 번호 자릿수',
-    description:
-      '새 씬 파일 이름의 번호 자릿수입니다. project.json의 값이 있으면 그쪽이 우선합니다.',
-    kind: 'integer',
-    defaultValue: 2,
-    minimum: 1,
-    maximum: 4,
-    group: '편집기',
-  },
-  {
     key: 'editor.studio.validation',
     label: 'Studio 제안 정합성 검사',
     description: 'Studio가 수정을 제안할 때마다 AI로 정합성을 한 번 더 확인합니다.',

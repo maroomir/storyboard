@@ -49,14 +49,11 @@ describe("CardRenameParticipant helpers", () => {
     })
   })
 
-  it("ignores sample cards, non-card files, and cross-directory renames", () => {
-    const sampleOld = vscode.Uri.file("/ws/project/character/.sample.card")
-    const sampleNew = vscode.Uri.file("/ws/project/character/new.card")
+  it("ignores non-card files and cross-directory renames", () => {
     const crossDirOld = vscode.Uri.file("/ws/project/character/hero.card")
     const crossDirNew = vscode.Uri.file("/ws/project/background/hero.card")
     const nonCard = vscode.Uri.file("/ws/project/character/readme.txt")
 
-    expect(parseCardRenameCandidate(sampleOld, sampleNew)).toBeUndefined()
     expect(parseCardRenameCandidate(crossDirOld, crossDirNew)).toBeUndefined()
     expect(parseCardRenameCandidate(nonCard, crossDirNew)).toBeUndefined()
   })

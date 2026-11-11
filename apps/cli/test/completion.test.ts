@@ -31,12 +31,9 @@ beforeEach(() => {
   cwd = mkdtempSync(join(tmpdir(), 'storyboard-complete-'));
   mkdirSync(join(cwd, '.storyboard'));
   writeFileSync(join(cwd, '.storyboard', 'project.json'), '{}');
-  mkdirSync(join(cwd, 'scene'));
-  writeFileSync(join(cwd, 'scene', '01-intro.card'), '');
-  writeFileSync(join(cwd, 'scene', '02-storm.card'), '');
-  mkdirSync(join(cwd, 'character'));
-  writeFileSync(join(cwd, 'character', 'seorin.card'), '');
-  writeFileSync(join(cwd, 'character', '.sample.card'), '');
+  mkdirSync(join(cwd, 'scene', '001-intro.card'), { recursive: true });
+  mkdirSync(join(cwd, 'scene', '002-storm.card'), { recursive: true });
+  mkdirSync(join(cwd, 'character', 'seorin.card'), { recursive: true });
 });
 
 afterEach(() => {
@@ -56,9 +53,9 @@ describe('computeCompletions', () => {
     expect(generate?.description).toContain('씬 초안');
   });
 
-  it('completes scene stems and card ids from the workspace, skipping the sample card', () => {
-    expect(texts(['draft', 'generate', ''])).toEqual(['01-intro', '02-storm']);
-    expect(texts(['draft', 'check', 'grammar', '02'])).toEqual(['02-storm']);
+  it('completes scene stems and card ids from the bundle folders of the workspace', () => {
+    expect(texts(['draft', 'generate', ''])).toEqual(['001-intro', '002-storm']);
+    expect(texts(['draft', 'check', 'grammar', '002'])).toEqual(['002-storm']);
     expect(texts(['card', 'rename', 'character', ''])).toEqual(['seorin']);
     expect(texts(['card', 'rename', 'background', ''])).toEqual([]);
   });
@@ -108,7 +105,7 @@ describe('computeCompletions', () => {
     const elsewhere = mkdtempSync(join(tmpdir(), 'storyboard-elsewhere-'));
 
     expect(texts(['--workspace', elsewhere, 'draft', 'generate', ''])).toEqual([]);
-    expect(texts(['draft', 'generate', '--workspace', cwd, ''])).toEqual(['01-intro', '02-storm']);
+    expect(texts(['draft', 'generate', '--workspace', cwd, ''])).toEqual(['001-intro', '002-storm']);
 
     rmSync(elsewhere, { recursive: true, force: true });
   });

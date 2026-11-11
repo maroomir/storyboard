@@ -44,7 +44,7 @@ export class ScenePlotCommand implements ICommandHandler {
     summary:
       '씬 카드의 사건 비트를 전개해 beats 필드에 씁니다 (--force 로 다시, --dry-run 은 제안만)',
     flags: ['all', 'force', 'dry-run'],
-    examples: ['storyboard scene plot 01-scene-1-1', 'storyboard scene plot --all --dry-run'],
+    examples: ['storyboard scene plot 001-scene-1-1', 'storyboard scene plot --all --dry-run'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
@@ -57,7 +57,7 @@ export class ScenePlotCommand implements ICommandHandler {
 
     const stem: string | undefined = sceneStemFrom(args);
     if (stem === undefined) {
-      return failure('씬 stem을 지정해 주세요. 예: storyboard scene plot 01-scene-1-1');
+      return failure('씬 stem을 지정해 주세요. 예: storyboard scene plot 001-scene-1-1');
     }
 
     const beatGeneration: GenerateSceneBeatsResult = await this.generateBeats(

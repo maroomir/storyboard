@@ -93,6 +93,19 @@ describe('element bundle repository', () => {
     await expect(bundles.readBundle('background', 'school.card')).rejects.toThrow(BundleFileError);
   });
 
+  it('lists the other bundles and names the one it cannot read', async () => {
+    const { workspace, bundles } = await openMagicBoy();
+    writeFileSync(join(workspace, 'character/elia.card/card.yaml'), 'kind: character\nid: [\n');
+
+    const listing = await bundles.listBundles(['character', 'background']);
+
+    expect(listing.bundles.map((bundle) => bundle.path)).not.toContain('character/elia.card');
+    expect(listing.bundles.length).toBeGreaterThan(0);
+    expect(listing.warnings).toContainEqual(
+      expect.objectContaining({ kind: 'unreadable', paths: ['character/elia.card/card.yaml'] }),
+    );
+  });
+
   it('fails when a bundle folder has no card.yaml', async () => {
     const { workspace, bundles } = await openMagicBoy();
     mkdirSync(join(workspace, 'character/sera.card'));

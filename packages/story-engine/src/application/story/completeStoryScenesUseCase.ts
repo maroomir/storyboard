@@ -3,7 +3,12 @@ import type { StoryUri, SceneCard, SceneFile, StoryboardCard, AiGenerateResponse
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
-import { sceneFileNamePattern, serializeSceneCard, parseJsonObject } from '@storyboard/story-model';
+import {
+  formatNumberedSceneStem,
+  sceneFileNamePattern,
+  serializeSceneCard,
+  parseJsonObject,
+} from '@storyboard/story-model';
 import type { StoryFeatureSource, StoryFileSnapshot } from '#engine/application/story/storyFeatureSource';
 import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureSource';
 import type { StoryboardAiService } from '@storyboard/story-ai';
@@ -173,7 +178,7 @@ class CompletedSceneBuilder {
   private readonly proposedSlugs: Set<string> = new Set<string>();
   private readonly maximumOrder: number;
 
-  public constructor(private readonly source: StoryFeatureSource) {
+  public constructor(source: StoryFeatureSource) {
     this.existingCharacterIds = new Set(
       source.cards.filter((card) => card.type === 'character').map((card) => card.id),
     );
@@ -187,11 +192,8 @@ class CompletedSceneBuilder {
   public build(candidate: CompletionScene, index: number): CompletedStoryScene {
     this.validateCandidate(candidate);
 
-    const prefix: string = String(this.maximumOrder + index + 1).padStart(
-      this.source.project.editor.scenePrefixDigits,
-      '0',
-    );
-    const fileName: string = `${prefix}-${candidate.slug}.card`;
+    const stem: string = formatNumberedSceneStem(this.maximumOrder + index + 1, candidate.slug);
+    const fileName: string = `${stem}.card`;
     if (!sceneFileNamePattern.test(fileName)) {
       throw new StoryFeatureSourceError(
         'invalid-scene-filename',
@@ -201,7 +203,7 @@ class CompletedSceneBuilder {
 
     return {
       fileName,
-      content: serializeSceneCard(createSceneCard(prefix, candidate)),
+      content: serializeSceneCard(createSceneCard(stem, candidate)),
       title: candidate.title,
       resolvedThreads: candidate.resolvedThreads,
       openThreads: candidate.openThreads,
@@ -233,10 +235,10 @@ class CompletedSceneBuilder {
   }
 }
 
-function createSceneCard(prefix: string, candidate: CompletionScene): SceneCard {
+function createSceneCard(stem: string, candidate: CompletionScene): SceneCard {
   return {
     type: 'scene',
-    id: `${prefix}-${candidate.slug}`,
+    id: stem,
     title: candidate.title,
     ...(candidate.characterIds.length > 0 ? { characters: candidate.characterIds } : {}),
     ...(candidate.locationId ? { location: candidate.locationId } : {}),

@@ -159,9 +159,7 @@ export class DescribeInterviewCoverageUseCase {
       try {
         scenes.push(
           await this.repositories.scenes.read(
-            scenePath(request.workspaceRoot, item.stem),
-            `${item.stem}.card`,
-          ),
+            scenePath(request.workspaceRoot, item.stem)),
         );
       } catch {
         continue;

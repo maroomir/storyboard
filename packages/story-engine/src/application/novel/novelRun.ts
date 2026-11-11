@@ -1,4 +1,4 @@
-import { getStoryboardProjectPaths, resolveScenePrefixDigitCount } from '@storyboard/story-model';
+import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import type {
   ChapterPlan,
   NovelRunState,
@@ -91,20 +91,13 @@ export class NovelRun {
     return this.loadedPlan;
   }
 
-  public scenePrefixDigitCount(): number {
-    return resolveScenePrefixDigitCount(
-      this.options.project.editor.scenePrefixDigits,
-      this.services.host.configBridge.inspectScenePrefixDigits(),
-    );
-  }
-
   public chapterGroups(): Promise<readonly ChapterGroup[]> {
     this.loadedGroups ??= this.chapterPlan().then(async (plan) => {
       const sceneStemsByOrder: ReadonlyMap<number, string> =
         await this.services.repositories.sceneSeeds.listSceneStemsByOrder(
           this.options.workspaceUri,
         );
-      return groupChapterStems(plan, this.scenePrefixDigitCount(), sceneStemsByOrder);
+      return groupChapterStems(plan, sceneStemsByOrder);
     });
     return this.loadedGroups;
   }

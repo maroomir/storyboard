@@ -1,12 +1,9 @@
 import {
   extractErrorMessage,
-  isHiddenSceneFileName,
   joinStoryPath,
   parseDraft,
-  parseSceneFileName,
   parseSceneStem,
   readDraftFile,
-  readSceneFile,
   writeDraftFile,
 } from '@storyboard/story-model';
 import type {
@@ -23,12 +20,6 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 
 const EXCERPT_LENGTH_LIMIT: number = 800;
-
-interface EarlierScene {
-  readonly fileName: string;
-  readonly stem: string;
-  readonly order: number;
-}
 
 function takeLeadingParagraphs(body: string): string | undefined {
   const paragraphs: string[] = body
@@ -96,28 +87,15 @@ export class DraftRepository implements IDraftRepository {
 
   public async findRecentBackgroundExcerpt(
     paths: StoryboardProjectPaths,
-    currentSceneStem: string,
+    currentScene: Pick<SceneFile, 'order'>,
+    scenes: readonly SceneFile[],
     backgroundId: string,
   ): Promise<string | undefined> {
-    const currentOrder: number | undefined = parseSceneFileName(`${currentSceneStem}.card`)?.order;
-    if (currentOrder === undefined) {
-      return undefined;
-    }
-
-    const earlierScenes: EarlierScene[] = await this.listEarlierScenes(paths, currentOrder);
+    const earlierScenes: readonly SceneFile[] = scenes
+      .filter((scene) => scene.order < currentScene.order && scene.frontmatter.location === backgroundId)
+      .sort((left, right) => right.order - left.order);
 
     for (const scene of earlierScenes) {
-      const sceneUri: StoryUri = joinStoryPath(paths.sceneDirectory, scene.fileName);
-
-      try {
-        const sceneFile: SceneFile = await readSceneFile(sceneUri, this.fileSystem, scene.fileName);
-        if (sceneFile.frontmatter.location !== backgroundId) {
-          continue;
-        }
-      } catch {
-        continue;
-      }
-
       const excerpt: string | undefined = await this.readDraftExcerpt(paths, scene.stem);
       if (excerpt) {
         return excerpt;
@@ -125,25 +103,6 @@ export class DraftRepository implements IDraftRepository {
     }
 
     return undefined;
-  }
-
-  private async listEarlierScenes(
-    paths: StoryboardProjectPaths,
-    currentOrder: number,
-  ): Promise<EarlierScene[]> {
-    const names: readonly string[] = await new WorkspaceFiles(this.fileSystem).listNames(
-      paths.sceneDirectory,
-      (name) => !isHiddenSceneFileName(name),
-    );
-
-    return names
-      .flatMap((name) => {
-        const parts: SceneFileNameParts | undefined = parseSceneFileName(name);
-        return parts && parts.order < currentOrder
-          ? [{ fileName: name, stem: parts.stem, order: parts.order }]
-          : [];
-      })
-      .sort((left, right) => right.order - left.order);
   }
 
   private async readDraftExcerpt(

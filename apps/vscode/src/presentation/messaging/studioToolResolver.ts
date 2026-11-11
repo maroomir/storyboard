@@ -13,16 +13,10 @@ import type {
   StoryboardProject,
   UsageAttribution,
 } from '@storyboard/story-model';
-import {
-  extractDraftBody,
-  formatBibleFactLines,
-  readSceneFile,
-  scenePath,
-} from '@storyboard/story-model';
+import { extractDraftBody, formatBibleFactLines } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 
 export interface StudioInvokeResolverDependencies {
@@ -35,7 +29,7 @@ export interface StudioInvokeResolverDependencies {
 export interface StudioDocumentManagers {
   readonly drafts: Pick<
     DraftManager,
-    'readSceneContext' | 'readSceneNarrative' | 'archiveDraftWhenHistoryIsKept'
+    'readSceneContext' | 'readSceneNarrative' | 'archiveDraftWhenHistoryIsKept' | 'readScene'
   >;
   readonly project: Pick<ProjectManager, 'read'>;
 }
@@ -102,11 +96,11 @@ export class StudioInvokeResolver {
     const { workspaceRoot, sceneStem } = this.input;
 
     try {
-      const scene: SceneFile = await readSceneFile(
-        scenePath(workspaceRoot, sceneStem),
-        vscodeFsAdapter,
-        `${sceneStem}.card`,
-      );
+      const scene: SceneFile | undefined = await drafts.readScene(workspaceRoot, sceneStem);
+      if (scene === undefined) {
+        return undefined;
+      }
+
       const sceneContext: SceneContext = await drafts.readSceneContext(workspaceRoot, scene);
       const narrative: NarrativeContext = await drafts.readSceneNarrative(
         workspaceRoot,

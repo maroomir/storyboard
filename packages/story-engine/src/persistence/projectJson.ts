@@ -10,7 +10,6 @@ export interface CreateProjectJsonInput {
   readonly name: string;
   readonly format?: ProjectFormat;
   readonly language?: string;
-  readonly scenePrefixDigits?: number;
 }
 
 export function createDefaultProjectJson(input: CreateProjectJsonInput): StoryboardProject {
@@ -21,9 +20,7 @@ export function createDefaultProjectJson(input: CreateProjectJsonInput): Storybo
     format: input.format ?? 'novel',
     language: input.language ?? 'ko',
     createdAt: new Date().toISOString(),
-    editor: {
-      scenePrefixDigits: input.scenePrefixDigits ?? 2,
-    },
+    editor: {},
   };
 }
 

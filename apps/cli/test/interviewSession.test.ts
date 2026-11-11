@@ -12,6 +12,7 @@ import type { ParsedArguments } from '@/cliArguments';
 import { findCommand } from '@/commands/index';
 import { createCliContainer, type CliContainer } from '@/container';
 import { isLegacyCardPath, readCardFromBundles, writeCardBundleFromYaml } from './fixtures/cardBundles';
+import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 let home: string;
 let workspace: string;
@@ -37,10 +38,15 @@ function args(path: string[], flags: Record<string, string | boolean> = {}): Par
   return { path, flags, positionals: [] };
 }
 
-function write(relativePath: string, lines: readonly string[]): void {
+async function write(relativePath: string, lines: readonly string[]): Promise<void> {
   const text: string = `${lines.join('\n')}\n`;
   if (isLegacyCardPath(relativePath)) {
     writeCardBundleFromYaml(workspace, text);
+    return;
+  }
+
+  if (/^scene\/[^/]+\.card$/.test(relativePath)) {
+    await writeSceneBundleFromYaml(workspace, text);
     return;
   }
 
@@ -87,9 +93,9 @@ beforeEach(async () => {
     'tags: []',
     'locationKind: place',
   ]);
-  write('scene/01-night.card', [
+  await write('scene/001-night.card', [
     'type: scene',
-    'id: 01-night',
+    'id: 001-night',
     'characters:',
     '  - hana',
     '  - jun',
@@ -103,9 +109,9 @@ beforeEach(async () => {
     '    cast: [등대 아이]',
     '    place: 술집',
   ]);
-  write('scene/02-dawn.card', [
+  await write('scene/002-dawn.card', [
     'type: scene',
-    'id: 02-dawn',
+    'id: 002-dawn',
     'characters:',
     '  - hana',
     'beats:',
@@ -189,7 +195,7 @@ describe('interview session (mock provider)', () => {
       'affection',
     ]);
     expect(started.opening.coverage.openAxes[0]?.beatSituations).toHaveLength(3);
-    expect(started.opening.coverage.upcomingSceneStems).toEqual(['01-night', '02-dawn']);
+    expect(started.opening.coverage.upcomingSceneStems).toEqual(['001-night', '002-dawn']);
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/axes.json'))).toBe(true);
     expect(existsSync(join(workspace, '.storyboard/cache/interviews/cards/hana.json'))).toBe(true);
   });
@@ -222,7 +228,7 @@ describe('interview session (mock provider)', () => {
 
     const first: InterviewQuestion | undefined = await app.interviews.next(request);
     expect(first?.axisId).toBe('pressure-defense');
-    expect(first?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
+    expect(first?.source).toEqual({ kind: 'beat', sceneStem: '001-night', beatIndex: 0 });
     expect(first?.options.map((option) => option.valueId)).toEqual(['counter', 'withhold', 'deflect']);
     expect(first?.options.every((option) => !option.isExploration)).toBe(true);
 
@@ -230,7 +236,7 @@ describe('interview session (mock provider)', () => {
 
     await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'chosen', index: 1 } });
     const second: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
+    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '001-night', beatIndex: 1 });
     expect(second?.axisId).toBe('pressure-defense');
     expect(second?.options.filter((option) => option.isExploration).map((option) => option.valueId)).toEqual([
       'counter',
@@ -238,7 +244,7 @@ describe('interview session (mock provider)', () => {
 
     await app.interviews.answer({ ...request, questionId: second?.id ?? '', answer: { kind: 'chosen', index: 1 } });
     const third: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '02-dawn', beatIndex: 0 });
+    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '002-dawn', beatIndex: 0 });
     expect(third?.axisId).toBe('affection');
 
     await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'chosen', index: 1 } });
@@ -247,7 +253,7 @@ describe('interview session (mock provider)', () => {
     expect(model.summary).toContain('[Mock AI]');
 
     const fourth: InterviewQuestion | undefined = await app.interviews.next(request);
-    expect(fourth?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
+    expect(fourth?.source).toEqual({ kind: 'beat', sceneStem: '001-night', beatIndex: 0 });
     expect(fourth?.axisId).toBe('affection');
   });
 
@@ -289,9 +295,9 @@ describe('interview session (mock provider)', () => {
   });
 
   it('tells the question prompt who is present at the beat, or the beat before it when no cast is written', async () => {
-    write('scene/02-dawn.card', [
+    await write('scene/002-dawn.card', [
       'type: scene',
-      'id: 02-dawn',
+      'id: 002-dawn',
       'characters:',
       '  - hana',
       'beats:',
@@ -312,19 +318,27 @@ describe('interview session (mock provider)', () => {
 
     const prompts: string[] = promptsOf(captured, 'interviewQuestion');
     const promptFor = (beat: string): string | undefined => prompts.find((prompt) => prompt.includes(`[상황]\n${beat}`));
-    expect(promptFor('01-night: 준이 하나를 심문한다')).toContain('[이 자리에 있는 사람]\n- 하나\n- 준\n');
-    expect(promptFor('01-night: 하나가 자리를 뜨려 한다')).toContain('[이 자리에 있는 사람]\n- 하나\n');
-    expect(promptFor('02-dawn: 하나가 혼자 등대로 돌아온다')).toContain('(비트에 출연이 적혀 있지 않다)');
-    expect(promptFor('02-dawn: 하나가 준의 방에서 편지를 찾는다')).toContain(
+    expect(promptFor('001-night: 준이 하나를 심문한다')).toContain('[이 자리에 있는 사람]\n- 하나\n- 준\n');
+    expect(promptFor('001-night: 하나가 자리를 뜨려 한다')).toContain('[이 자리에 있는 사람]\n- 하나\n');
+    expect(promptFor('002-dawn: 하나가 혼자 등대로 돌아온다')).toContain('(비트에 출연이 적혀 있지 않다)');
+    expect(promptFor('002-dawn: 하나가 준의 방에서 편지를 찾는다')).toContain(
       '(비트에 출연이 적혀 있지 않다)\n\n[앞 비트]\n하나가 혼자 등대로 돌아온다',
     );
   });
 
   it('names the scene focus and marks a beat that does not name the character, keeping its action with its actor', async () => {
-    write('scene/02-dawn.card', [
+    await write('narrator/jun-eyes.card', [
+      'type: narrator',
+      'id: jun-eyes',
+      'name: 준의 눈',
+      'person: third',
+      'knowledge: witnessed',
+      'focal: jun',
+    ]);
+    await write('scene/002-dawn.card', [
       'type: scene',
-      'id: 02-dawn',
-      'povCharacter: jun',
+      'id: 002-dawn',
+      'narrator: jun-eyes',
       'characters:',
       '  - hana',
       '  - jun',
@@ -349,20 +363,20 @@ describe('interview session (mock provider)', () => {
     const prompts: string[] = promptsOf(captured, 'interviewQuestion');
     const promptFor = (name: string, beat: string): string | undefined =>
       prompts.find((prompt) => prompt.startsWith(`[인물]\n${name}\n`) && prompt.includes(`[상황]\n${beat}`));
-    const unnamedBeat: string = '02-dawn: 동생과 아침을 먹으며 초코 우유 대신 흰 우유를 마신다';
+    const unnamedBeat: string = '002-dawn: 동생과 아침을 먹으며 초코 우유 대신 흰 우유를 마신다';
     expect(promptFor('하나', unnamedBeat)).toContain(`[상황]\n${unnamedBeat}\n(이 비트에는 하나의 이름이 없다)`);
     expect(promptFor('하나', unnamedBeat)).toContain('[초점 인물]\n준');
-    expect(promptFor('하나', '02-dawn: 하나가 혼자 등대로 돌아온다')).toContain('[초점 인물]\n준');
-    expect(promptFor('하나', '02-dawn: 하나가 혼자 등대로 돌아온다')).not.toContain('이름이 없다');
+    expect(promptFor('하나', '002-dawn: 하나가 혼자 등대로 돌아온다')).toContain('[초점 인물]\n준');
+    expect(promptFor('하나', '002-dawn: 하나가 혼자 등대로 돌아온다')).not.toContain('이름이 없다');
     expect(promptFor('준', unnamedBeat)).toContain('[초점 인물]\n준');
     expect(promptFor('준', unnamedBeat)).not.toContain('이름이 없다');
-    expect(promptFor('하나', '01-night: 준이 하나를 심문한다')).not.toContain('[초점 인물]');
+    expect(promptFor('하나', '001-night: 준이 하나를 심문한다')).not.toContain('[초점 인물]');
   });
 
-  it('asks without a focal character and warns when the scene points at a narrator card that does not exist', async () => {
-    write('scene/02-dawn.card', [
+  it('asks without a focal character when the scene names a narrator card that does not exist', async () => {
+    await write('scene/002-dawn.card', [
       'type: scene',
-      'id: 02-dawn',
+      'id: 002-dawn',
       'narrator: ghost',
       'characters:',
       '  - hana',
@@ -370,7 +384,6 @@ describe('interview session (mock provider)', () => {
       '  - 하나가 혼자 등대로 돌아온다',
     ]);
     const captured: CapturedPrompt[] = captureUserPrompts();
-    const warn = vi.spyOn(silentLogger, 'warn');
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
 
@@ -383,13 +396,10 @@ describe('interview session (mock provider)', () => {
     }
 
     const brokenBeatPrompt: string | undefined = promptsOf(captured, 'interviewQuestion').find((prompt) =>
-      prompt.includes('[상황]\n02-dawn: 하나가 혼자 등대로 돌아온다'),
+      prompt.includes('[상황]\n002-dawn: 하나가 혼자 등대로 돌아온다'),
     );
     expect(brokenBeatPrompt).toBeDefined();
     expect(brokenBeatPrompt).not.toContain('[초점 인물]');
-    expect(warn.mock.calls.map(([message]) => String(message))).toContainEqual(
-      expect.stringMatching(/^02-dawn: 서술자 'ghost'를 찾을 수 없습니다.* 초점 인물 없이 묻습니다\.$/),
-    );
   });
 
   it('asks again when an option addresses a partner who is not at the beat', async () => {
@@ -403,7 +413,7 @@ describe('interview session (mock provider)', () => {
       const response = await generate.call(this, request);
       const prompt: string = request.messages.map((message) => message.content).join('\n');
       const isAbsentBeat: boolean =
-        request.taskName === 'interviewQuestion' && prompt.includes('[상황]\n01-night: 하나가 자리를 뜨려 한다');
+        request.taskName === 'interviewQuestion' && prompt.includes('[상황]\n001-night: 하나가 자리를 뜨려 한다');
       if (!isAbsentBeat || !isFirstAbsentBeatQuestion) {
         return response;
       }
@@ -434,7 +444,7 @@ describe('interview session (mock provider)', () => {
     }
 
     const absentBeatPrompts: string[] = promptsOf(captured, 'interviewQuestion').filter((prompt) =>
-      prompt.includes('[상황]\n01-night: 하나가 자리를 뜨려 한다'),
+      prompt.includes('[상황]\n001-night: 하나가 자리를 뜨려 한다'),
     );
     expect(absentBeatPrompts).toHaveLength(2);
     expect(absentBeatQuestion?.options.map((option) => option.text).join(' ')).not.toContain('등대지기');
@@ -634,7 +644,7 @@ describe('interview session (mock provider)', () => {
 
   it.each(['candidates', 'axes'])('interviews a card whose id is %s without touching the shared files', async (cardId) => {
     write(`character/${cardId}.card`, ['type: character', `id: ${cardId}`, 'name: 이름이 겹치는 이', 'role: supporting']);
-    write('scene/03-noon.card', ['type: scene', 'id: 03-noon', 'characters:', `  - ${cardId}`, 'beats:', '  - text: 이름이 겹치는 이가 문을 두드린다', '    cast: [이름이 겹치는 이]']);
+    await write('scene/003-noon.card', ['type: scene', 'id: 003-noon', 'characters:', `  - ${cardId}`, 'beats:', '  - text: 이름이 겹치는 이가 문을 두드린다', '    cast: [이름이 겹치는 이]']);
     const { container: app, sessionId } = await startSession(cardId);
     const request = { workspaceRoot: app.workspaceRoot, cardId, sessionId };
 
@@ -655,17 +665,17 @@ describe('interview session (mock provider)', () => {
 
     const first: InterviewQuestion | undefined = await app.interviews.next(request);
     expect(first?.axisId).toBe('exits');
-    expect(first?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
+    expect(first?.source).toEqual({ kind: 'beat', sceneStem: '001-night', beatIndex: 0 });
     await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'chosen', index: 0 } });
 
     const second: InterviewQuestion | undefined = await app.interviews.next(request);
     expect(second?.axisId).toBe('exits');
-    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 1 });
+    expect(second?.source).toEqual({ kind: 'beat', sceneStem: '001-night', beatIndex: 1 });
     await app.interviews.answer({ ...request, questionId: second?.id ?? '', answer: { kind: 'chosen', index: 0 } });
 
     const third: InterviewQuestion | undefined = await app.interviews.next(request);
     expect(third?.axisId).toBe('watchers');
-    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '01-night', beatIndex: 0 });
+    expect(third?.source).toEqual({ kind: 'beat', sceneStem: '001-night', beatIndex: 0 });
     await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'chosen', index: 0 } });
 
     const summary = await app.interviews.finish(request);

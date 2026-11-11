@@ -1,52 +1,36 @@
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
-  joinStoryPath,
+  parseSceneCard,
   parseSceneFileName,
+  type GeneratedSceneSeed,
+  type StatementSource,
   type StoryUri,
-  getStoryboardProjectPaths,
 } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneSeedRepository } from '#engine/application/novel/novelPipeline';
-import type {
-  GeneratedSceneSeed,
-  SceneFileNameParts,
-  StoryboardProjectPaths,
-} from '@storyboard/story-model';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
+
+const seedSource: StatementSource = { origin: 'studio' };
 
 export class SceneSeedRepository implements ISceneSeedRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(private readonly scenes: WorkspaceScenes) {}
 
   public async saveSeeds(
     workspaceRoot: StoryUri,
     seeds: readonly GeneratedSceneSeed[],
   ): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.sceneDirectory);
-
     for (const seed of seeds) {
-      await this.fileSystem.writeFile(
-        joinStoryPath(paths.sceneDirectory, seed.fileName),
-        new TextEncoder().encode(seed.content),
-      );
+      const slug: string | undefined = parseSceneFileName(seed.fileName)?.slug;
+      await this.scenes.writeCard(workspaceRoot, parseSceneCard(seed.content), {
+        source: seedSource,
+        ...(slug === undefined ? {} : { slug }),
+      });
     }
   }
 
   public async listSceneStemsByOrder(
     workspaceRoot: StoryUri,
   ): Promise<ReadonlyMap<number, string>> {
-    const fileNames: readonly string[] = await new WorkspaceFiles(this.fileSystem).listNames(
-      getStoryboardProjectPaths(workspaceRoot).sceneDirectory,
-    );
-    const stemsByOrder: Map<number, string> = new Map<number, string>();
-
-    for (const fileName of [...fileNames].sort()) {
-      const parts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
-      if (parts !== undefined && !stemsByOrder.has(parts.order)) {
-        stemsByOrder.set(parts.order, parts.stem);
-      }
-    }
-
-    return stemsByOrder;
+    const { scenes } = await this.scenes.loadRoster(workspaceRoot);
+    return new Map(scenes.map((scene) => [scene.order, scene.stem]));
   }
 
   public async saveMissingSeeds(

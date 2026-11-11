@@ -1,6 +1,5 @@
 export * from '#model/format/storyUri';
 export * from '#model/format/nodeUri';
-export * from '#model/format/scenePrefixDigits';
 export * from '#model/format/Character';
 export * from '#model/format/Background';
 export * from '#model/format/emptyCard';
@@ -22,7 +21,6 @@ export * from '#model/format/pipelineSpec';
 export * from '#model/format/compositionPresets';
 export * from '#model/format/craftContract';
 export * from '#model/format/project';
-export * from '#model/format/sampleCard';
 export * from '#model/format/scene';
 export * from '#model/format/gitignore';
 export * from '#model/format/sceneNaming';
