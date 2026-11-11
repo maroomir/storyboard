@@ -1,81 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" style="background:#fffdf9;font-family:IBM Plex Sans KR, Apple SD Gothic Neo, system-ui, sans-serif" viewBox="0 0 1240 300" role="img" aria-label="씬 N 초안에서 이야기 상태 추출기가 씬 번들의 state.yaml을 갱신하고, 그 파일이 씬 N+1의 입력이 된다. 생성은 카드의 진술을 쓰지 않는다">
+<svg xmlns="http://www.w3.org/2000/svg" style="background:#fffdf9;font-family:IBM Plex Sans KR, Apple SD Gothic Neo, system-ui, sans-serif" viewBox="0 0 1240 270" role="img" aria-label="씬 N 생성은 씬 번들의 state.yaml, 인물·배경 번들의 memory 파일, 씬 번들의 dialogue.json 을 쓰고, 이 셋이 씬 N+1 의 입력이 된다. 카드의 진술은 생성이 쓰지 않고 사람이 apply 한 제안만 들어간다">
   <defs>
     <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#221f1a"/></marker>
   </defs>
   <g font-size="12" fill="#221f1a">
-    <rect x="20" y="110" width="150" height="70" rx="4" fill="#fffdf9" stroke="#221f1a" stroke-width="1.5"/>
-    <text x="95" y="140" font-weight="600" font-size="13" text-anchor="middle">씬 N 초안</text>
-    <text x="95" y="158" font-size="11" fill="#6b655a" text-anchor="middle">draft/NNN-*.md</text>
+    <rect x="20" y="80" width="150" height="70" rx="4" fill="#fffdf9" stroke="#221f1a" stroke-width="1.5"/>
+    <text x="95" y="110" font-weight="600" font-size="13" text-anchor="middle">씬 N 생성</text>
+    <text x="95" y="128" font-size="11" fill="#6b655a" text-anchor="middle">draft/NNN-*.md</text>
 
-    <!-- fan out -->
     <g stroke="#221f1a" stroke-width="1.5" fill="none">
-      <path d="M170 145 H 200 V 45 H 232" marker-end="url(#a3)"/>
-      <path d="M200 100 H 232" marker-end="url(#a3)"/>
-      <path d="M200 145 H 232" marker-end="url(#a3)"/>
-      <path d="M200 190 H 232" marker-end="url(#a3)"/>
-      <path d="M200 145 V 245 H 232" marker-end="url(#a3)"/>
+      <path d="M170 115 H 200 V 45 H 232" marker-end="url(#a3)"/>
+      <path d="M200 115 H 232" marker-end="url(#a3)"/>
+      <path d="M200 115 V 185 H 232" marker-end="url(#a3)"/>
     </g>
 
     <g>
       <rect x="236" y="22" width="330" height="46" rx="3" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="2"/>
-      <text x="246" y="40" font-weight="600" font-size="12">storyStateUpdate (0.2) · 동기, 저장 경로에서 기다림</text>
-      <text x="246" y="58" font-size="11" fill="#6b655a">새 사실 · 목격자(knownBy) → <tspan font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">state.yaml 항목</tspan></text>
+      <text x="246" y="40" font-weight="600" font-size="12">storyStateUpdate (0.2) · 저장 경로에서 기다림</text>
+      <text x="246" y="58" font-size="11" fill="#6b655a">확정된 사건·관계 변화·공개·모티프와 목격자(knownBy)</text>
     </g>
     <g>
-      <rect x="236" y="78" width="330" height="44" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
-      <text x="246" y="96" font-weight="600" font-size="12">카드에 쓰는 추출기는 없음 (0.16)</text>
-      <text x="246" y="113" font-size="11" fill="#6b655a">생성은 카드의 진술(statements)을 쓰지 않음</text>
+      <rect x="236" y="92" width="330" height="46" rx="3" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="1.5"/>
+      <text x="246" y="110" font-weight="600" font-size="12">페르소나·배경 기억 · 생성 중</text>
+      <text x="246" y="128" font-size="11" fill="#6b655a">카드가 바뀌면(cardHash) 다시 만들고, 어느 씬까지인지 남김</text>
     </g>
     <g>
-      <rect x="236" y="124" width="330" height="44" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
-      <text x="246" y="142" font-weight="600" font-size="12">—</text>
-      <text x="246" y="159" font-size="11" fill="#6b655a">정전·사실 후보 추출 없음</text>
-    </g>
-    <g>
-      <rect x="236" y="170" width="330" height="44" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
-      <text x="246" y="188" font-weight="600" font-size="12">—</text>
-      <text x="246" y="205" font-size="11" fill="#6b655a">카드 항목 후보 추출·검증 없음</text>
-    </g>
-    <g>
-      <rect x="236" y="216" width="330" height="52" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
-      <text x="246" y="234" font-weight="600" font-size="12">—</text>
-      <text x="246" y="251" font-size="11" fill="#6b655a">배경 카드에 인물·사실을 덧붙이는 추출 없음</text>
+      <rect x="236" y="162" width="330" height="46" rx="3" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="1.5"/>
+      <text x="246" y="180" font-weight="600" font-size="12">대사 기록 · 대사 다듬기 뒤</text>
+      <text x="246" y="198" font-size="11" fill="#6b655a">인물별 대사와 본문 해시</text>
     </g>
 
-    <!-- targets -->
     <g stroke="#221f1a" stroke-width="1.5" fill="none">
       <path d="M566 45 H 630" marker-end="url(#a3)"/>
-      <path d="M566 100 H 630" marker-end="url(#a3)"/>
-      <path d="M566 146 H 630" marker-end="url(#a3)"/>
-      <path d="M566 192 H 630" marker-end="url(#a3)"/>
-      <path d="M566 242 H 630" marker-end="url(#a3)"/>
+      <path d="M566 115 H 630" marker-end="url(#a3)"/>
+      <path d="M566 185 H 630" marker-end="url(#a3)"/>
     </g>
-    <g font-size="11">
+    <g font-size="11" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">
       <rect x="634" y="28" width="300" height="34" rx="3" fill="#ebf0dc" stroke="#6a7f2f"/>
-      <text x="644" y="49" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">scene/NNN-*.card/state.yaml</text>
-      <rect x="634" y="84" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
-      <text x="644" y="104">—</text>
-      <rect x="634" y="130" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
-      <text x="644" y="150" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">—</text>
-      <rect x="634" y="176" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
-      <text x="644" y="196" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace">—</text>
-      <rect x="634" y="226" width="300" height="32" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
-      <text x="644" y="246">—</text>
+      <text x="644" y="49">scene/NNN-*.card/state.yaml</text>
+      <rect x="634" y="98" width="300" height="34" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
+      <text x="644" y="119">&lt;종류&gt;/&lt;slug&gt;.card/memory/&lt;줄기&gt;.yaml</text>
+      <rect x="634" y="168" width="300" height="34" rx="3" fill="#fffdf9" stroke="#d9d3c6"/>
+      <text x="644" y="189">scene/NNN-*.card/dialogue.json</text>
     </g>
 
-    <!-- into next scene -->
     <g stroke="#6a7f2f" stroke-width="1.5" fill="none" stroke-dasharray="4 3">
-      <path d="M934 45 H 980 V 145"/>
-      <path d="M934 100 H 980"/>
-      <path d="M934 146 H 980"/>
-      <path d="M934 192 H 980"/>
-      <path d="M934 242 H 980 V 145"/>
-      <path d="M980 145 H 1030" marker-end="url(#a3)"/>
+      <path d="M934 45 H 980 V 115"/>
+      <path d="M934 115 H 1030" marker-end="url(#a3)"/>
+      <path d="M934 185 H 980 V 115"/>
     </g>
-    <rect x="1034" y="100" width="186" height="90" rx="4" fill="#f8e6dc" stroke="#b4532a" stroke-width="2"/>
-    <text x="1127" y="128" font-weight="600" font-size="13" text-anchor="middle">씬 N+1 의 입력</text>
-    <text x="1127" y="148" font-size="11" text-anchor="middle">원장은 바로 실리고,</text>
-    <text x="1127" y="164" font-size="11" text-anchor="middle">카드의 제안은 사람이 apply 해야</text>
-    <text x="1127" y="180" font-size="11" text-anchor="middle">카드에 들어감</text>
+    <rect x="1034" y="70" width="186" height="90" rx="4" fill="#f8e6dc" stroke="#b4532a" stroke-width="2"/>
+    <text x="1127" y="98" font-weight="600" font-size="13" text-anchor="middle">씬 N+1 의 입력</text>
+    <text x="1127" y="118" font-size="11" text-anchor="middle">원장·기억·대사는 바로 실리고,</text>
+    <text x="1127" y="134" font-size="11" text-anchor="middle">카드의 진술은 apply 한</text>
+    <text x="1127" y="150" font-size="11" text-anchor="middle">제안만 들어감</text>
+
+    <rect x="236" y="226" width="698" height="30" rx="3" fill="#f3edd8" stroke="#8a7a3c" stroke-width="1.5"/>
+    <text x="246" y="245" font-size="11" fill="#6b655a">생성은 카드의 statements.yaml 을 쓰지 않는다 — 인터뷰·노트 흡수·스튜디오의 제안은 card apply 로 사람이 받는다</text>
   </g>
 </svg>
