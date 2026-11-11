@@ -46,7 +46,7 @@ English README: [`README.en.md`](README.en.md)
 - `mock`, OpenAI, Claude, Google Gemini, xAI Grok, Ollama AI provider 지원
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 
-현재 구현은 수동 `scene/*.card → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
+현재 구현은 수동 `scene/*.card → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 캐시 DB(`.storyboard/cache/storyboard.db`)에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
 
 이야기 완결과 씬 기반 카드 구성은 수동 작업이며 자동 장편 파이프라인에 포함되지 않습니다. 두 기능 모두 검토 중 입력 씬·카드·디렉터리가 달라지면 적용을 중단하고 다시 제안해야 합니다. 선택 결과는 하나의 VS Code `WorkspaceEdit`로 적용하지만, 프로세스 크래시까지 보장하는 트랜잭션은 아닙니다.
 

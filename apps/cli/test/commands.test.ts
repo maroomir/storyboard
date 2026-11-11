@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 
 import {
   createDraft,
+  NodeUri,
   parseDraft,
   parseSceneStem,
   serializeDraft,
@@ -30,6 +31,7 @@ import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
 import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/runLockFixture';
+import { RunStore } from '@storyboard/story-engine';
 
 let home: string;
 let workspace: string;
@@ -1627,7 +1629,6 @@ describe('spend of the calls that prepare a scene', () => {
 });
 
 describe('novel generate again', () => {
-  const runStateFile = (): string => join(workspace, STORYBOARD_RELATIVE_PATHS.novelRunState);
 
   async function startNovel(): Promise<void> {
     await run(
@@ -1642,12 +1643,15 @@ describe('novel generate again', () => {
     await run('novel generate', args(['novel', 'generate']));
   }
 
-  function leaveRunCutOff(): void {
-    const state = JSON.parse(readFileSync(runStateFile(), 'utf8')) as Record<string, unknown>;
-    writeFileSync(
-      runStateFile(),
-      JSON.stringify({ ...state, status: 'running', completedStages: ['outline', 'seeds'] }),
-    );
+  async function leaveRunCutOff(): Promise<void> {
+    const caches = createWorkspaceCaches();
+    const runs = new RunStore(await caches.open(NodeUri.file(workspace)));
+    const state = runs.findLatestNovelRun();
+    expect(state).toBeDefined();
+    if (state !== undefined) {
+      runs.saveNovelRun({ ...state, status: 'running', completedStages: ['outline', 'seeds'] });
+    }
+    await caches.closeAll();
   }
 
   async function runAgain(answer?: 'resume' | 'restart') {
@@ -1689,7 +1693,7 @@ describe('novel generate again', () => {
   it('continues a run whose process died without asking an agent', async () => {
     await startNovel();
     const scenesBefore = sceneFiles();
-    leaveRunCutOff();
+    await leaveRunCutOff();
 
     const { tasks, questions } = await runAgain();
 
@@ -1701,7 +1705,7 @@ describe('novel generate again', () => {
 
   it('asks a person whether to continue', async () => {
     await startNovel();
-    leaveRunCutOff();
+    await leaveRunCutOff();
 
     const { tasks, questions } = await runAgain('resume');
 
@@ -1711,7 +1715,7 @@ describe('novel generate again', () => {
 
   it('treats a running state as cut off only when no app holds the lock', async () => {
     await startNovel();
-    leaveRunCutOff();
+    await leaveRunCutOff();
     const app = container();
     const lookup = () => app.novel.findResumableRun(app.workspaceRoot, { holdsRunLock: false });
 
@@ -1734,7 +1738,7 @@ describe('novel generate again', () => {
     const scenesBefore = sceneFiles();
     const firstScene = join(workspace, 'scene', scenesBefore[0] ?? '');
     writeFileSync(firstScene, `${readFileSync(firstScene, 'utf8')}# 작가 메모\n`);
-    leaveRunCutOff();
+    await leaveRunCutOff();
 
     const { tasks } = await runAgain('restart');
 
@@ -1757,7 +1761,7 @@ describe('novel generate again', () => {
     );
     const scenesBefore = sceneFiles();
     const draftsBefore = readdirSync(join(workspace, 'draft')).sort();
-    leaveRunCutOff();
+    await leaveRunCutOff();
 
     await runAgain('restart');
 

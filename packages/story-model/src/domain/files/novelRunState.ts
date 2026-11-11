@@ -1,4 +1,3 @@
-import type { StoryUri } from '#model/format/storyUri';
 import { z } from 'zod';
 
 import {
@@ -7,7 +6,6 @@ import {
   type NovelRunMode,
   type NovelStageName,
 } from '#model/shared/novelRun';
-import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 const novelRunStateVersion: string = '1.0.0';
 
@@ -52,20 +50,4 @@ export function parseNovelRunState(rawState: string): NovelRunState {
 
 export function serializeNovelRunState(state: NovelRunState): string {
   return `${JSON.stringify(novelRunStateSchema.parse(state), null, 2)}\n`;
-}
-
-export async function readNovelRunState(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-): Promise<NovelRunState> {
-  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
-  return parseNovelRunState(new TextDecoder().decode(bytes));
-}
-
-export async function writeNovelRunState(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-  state: NovelRunState,
-): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNovelRunState(state)));
 }

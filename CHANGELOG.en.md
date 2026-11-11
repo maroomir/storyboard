@@ -15,6 +15,7 @@ after the first public release.
 - **0.16 does not open 0.15 works.** A work's format version (`version` in `.storyboard/project.json`) is now `2.0.0`, and a `1.0.0` work is refused with a message that it is in the 0.15 format. Keep using 0.15.x for a 0.15 work; there is no conversion script.
 - **The run lock moved into the cache database.** The lock that keeps one writing app per work is now a table of `.storyboard/cache/storyboard.db` rather than the file `.storyboard/cache/run.lock`. The extension and the CLI open that database through the same WebAssembly SQLite.
 - **The usage ledger moved into the cache database.** The usage of each call is kept in the `usage` table of the cache database rather than in `.storyboard/cache/usage.json`, and the CLI records it as well as the extension.
+- **The progress of a novel run moved into the cache database.** What an interrupted novel generation resumes from is the `runs` table of the cache database rather than `.storyboard/cache/novel-run.json`.
 
 ### Internal
 
