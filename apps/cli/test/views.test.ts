@@ -100,6 +100,33 @@ describe('scene list', () => {
     expect(text.stdout).toContain('002\tep1\tstorm\t초안 없음');
   });
 
+  it('moves a removed scene\'s place in fact windows to the scenes beside it', async () => {
+    for (const name of ['opening', 'storm', 'harbor']) {
+      await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', name]);
+    }
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '하나', '--name', '하나', '--id', 'hana']);
+    const ids = Object.fromEntries(
+      (await runJson('scene', 'list')).data.scenes.map((scene: { slug: string; uuid: string }) => [scene.slug, scene.uuid]),
+    );
+    const statements: string = join(workspace, 'character', 'hana.card', 'statements.yaml');
+    writeFileSync(
+      statements,
+      [
+        `- {facet: fact, key: 비밀, value: 왕족이다, since: ${ids.storm}, revealFrom: ${ids.storm}, source: {origin: author}}`,
+        `- {facet: fact, key: 상처, value: 다리를 다쳤다, until: ${ids.storm}, source: {origin: author}}`,
+        '',
+      ].join('\n'),
+    );
+
+    const removed = await new CommandDispatcher(deps()).dispatch(['scene', 'remove', 'storm']);
+
+    expect(removed.exitCode, removed.stdout).toBe(0);
+    const written: string = readFileSync(statements, 'utf8');
+    expect(written).not.toContain(ids.storm);
+    expect(written).toContain(`since: ${ids.harbor}, revealFrom: ${ids.harbor}`);
+    expect(written).toContain(`until: ${ids.opening}`);
+  });
+
   it('moves, inserts and removes scenes, renumbering the rest', async () => {
     for (const name of ['opening', 'storm', 'harbor']) {
       await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', name]);

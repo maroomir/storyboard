@@ -56,12 +56,9 @@ class FailingFileSystem extends NodeFileSystem {
 }
 
 function hostOf(fileSystem: NodeFileSystem = new NodeFileSystem()): ReturnType<typeof createTestHost> {
-  const scenes: WorkspaceScenes = new WorkspaceScenes({
-    fileSystem,
-    caches,
-    cards: createWorkspaceCards(caches),
-  });
-  return createTestHost({ fileSystem, logger: silentLogger, caches, scenes });
+  const cards = createWorkspaceCards(caches);
+  const scenes: WorkspaceScenes = new WorkspaceScenes({ fileSystem, caches, cards });
+  return createTestHost({ fileSystem, logger: silentLogger, caches, scenes, cards });
 }
 
 function root(): NodeUri {
