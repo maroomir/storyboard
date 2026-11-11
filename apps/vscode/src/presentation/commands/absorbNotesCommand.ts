@@ -248,7 +248,7 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     `카드 ${outcome.createdCards.length}장과 씬 ${outcome.createdScenes.length}개를 만들었습니다.`,
     ...(outcome.pendingCandidateCards.length > 0
       ? [
-          `기존 카드 ${outcome.pendingCandidateCards.length}장의 후보는 Promote Card Candidates 로 반영하세요.`,
+          `기존 카드 ${outcome.pendingCandidateCards.length}장에 남은 제안은 그 카드를 열고 스튜디오의 «적용»으로 반영하세요.`,
         ]
       : []),
     ...(outcome.synopsis === 'written' ? ['시놉시스를 썼습니다.'] : []),

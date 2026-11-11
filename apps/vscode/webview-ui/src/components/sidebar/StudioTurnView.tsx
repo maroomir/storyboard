@@ -17,6 +17,10 @@ import type {
   StudioValidationVerdict,
 } from '@webview/lib/types';
 import { Button } from '@webview/components/ui/Button';
+import {
+  describeCardPatchSnapshot,
+  type CardPatchSnapshotLine,
+} from '@webview/lib/cardPatchSnapshot';
 
 export interface StudioProposalActions {
   readonly onPreview: (turn: StudioProposalTurn) => void;
@@ -147,6 +151,9 @@ function ProposalCard({
         <p className="m-0 whitespace-pre-wrap text-sm text-sb-fg-muted">{turn.message}</p>
       ) : null}
       <p className="m-0 text-xs text-sb-fg-muted">{patchScopeLabel(turn.patch)}</p>
+      {turn.patch.target === 'card' ? (
+        <CardSnapshot lines={describeCardPatchSnapshot(turn.patch.changes)} />
+      ) : null}
       <ValidationBadge validation={turn.validation} />
       {turn.status === 'pending' ? (
         <div className="flex flex-wrap gap-1.5">
@@ -154,9 +161,9 @@ function ProposalCard({
             <FileDiff className="mr-1 inline h-3.5 w-3.5" aria-hidden />
             diff 보기
           </Button>
-          <Button onClick={() => actions.onApply(turn)}>승인</Button>
+          <Button onClick={() => actions.onApply(turn)}>적용</Button>
           <Button variant="secondary" onClick={() => actions.onReject(turn)}>
-            거절
+            버림
           </Button>
         </div>
       ) : (
@@ -166,6 +173,30 @@ function ProposalCard({
         <FollowUpList followUps={turn.followUps} onOpen={onOpenFollowUp} />
       ) : null}
     </div>
+  );
+}
+
+function CardSnapshot({
+  lines,
+}: {
+  readonly lines: readonly CardPatchSnapshotLine[];
+}): React.ReactElement | null {
+  if (lines.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul
+      aria-label="적용하면 카드가 이렇게 됩니다"
+      className="m-0 flex list-none flex-col gap-0.5 rounded border border-sb-border bg-sb-bg-sidebar/60 p-2"
+    >
+      {lines.map((line, index) => (
+        <li key={`${line.label}-${index}`} className="text-xs text-sb-fg">
+          <span className="mr-1.5 text-sb-fg-muted">{line.label}</span>
+          {line.text}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -229,7 +260,7 @@ function ProposalStatusLine({ turn }: { readonly turn: StudioProposalTurn }): Re
     );
   }
 
-  return <p className="m-0 text-sm text-sb-fg-muted">거절함</p>;
+  return <p className="m-0 text-sm text-sb-fg-muted">버렸습니다</p>;
 }
 
 function patchScopeLabel(patch: StudioPatch): string {

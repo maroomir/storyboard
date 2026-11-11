@@ -52,7 +52,10 @@ import {
   buildCardView,
   characterCardPath,
   getElementDisplayName,
+  groupStatementsBySection,
+  type CardPendingChangeView,
   type CardView,
+  type CardViewLookup,
   type ElementKind,
   type BackgroundFactConflict,
   type CardCollectProposal,
@@ -212,6 +215,41 @@ export class CardManager {
       throw error;
     }
 
+    return {
+      ok: true,
+      view: buildCardView(reading.bundle, await this.loadNameLookup(workspaceRoot)),
+      bundlePath: reading.bundle.path,
+      warnings: reading.warnings.map((warning) => warning.message),
+    };
+  }
+
+  public async readPendingView(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<CardPendingResult<readonly CardPendingChangeView[]>> {
+    const pending: CardPendingResult<PendingCardChanges> = await this.listPending(
+      workspaceRoot,
+      slug,
+    );
+    const bundle: ElementBundle | undefined = await this.readBundle(workspaceRoot, slug);
+    if (!pending.ok || bundle === undefined) {
+      return pending.ok ? { ok: false, kind: 'missing', message: `카드를 찾을 수 없습니다: ${slug}` } : pending;
+    }
+
+    const lookup: CardViewLookup = await this.loadNameLookup(workspaceRoot);
+    return {
+      ok: true,
+      report: pending.report.changes.map((change) => ({
+        origin: change.origin,
+        summary: change.summary,
+        sections: groupStatementsBySection(bundle.header.kind, change.statements, lookup).filter(
+          (section) => section.lines.length > 0,
+        ),
+      })),
+    };
+  }
+
+  private async loadNameLookup(workspaceRoot: StoryUri): Promise<CardViewLookup> {
     const namesById: ReadonlyMap<string, string> = new Map(
       (await this.deps.cards.loadRoster(workspaceRoot)).bundles.map((bundle) => [
         bundle.header.id,
@@ -219,12 +257,7 @@ export class CardManager {
       ]),
     );
 
-    return {
-      ok: true,
-      view: buildCardView(reading.bundle, { nameOf: (elementId) => namesById.get(elementId) }),
-      bundlePath: reading.bundle.path,
-      warnings: reading.warnings.map((warning) => warning.message),
-    };
+    return { nameOf: (elementId) => namesById.get(elementId) };
   }
 
   public async slugOfElement(workspaceRoot: StoryUri, elementId: string): Promise<string | undefined> {

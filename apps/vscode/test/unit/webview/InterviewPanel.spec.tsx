@@ -110,10 +110,10 @@ describe("InterviewPanel", () => {
       summary: { sessionId: "s1", cardId: "hana", answered: 1, skipped: 0, candidateCount: 2, undecidedAxisLabels: ["호감 표출"] }
     })
 
-    expect(await screen.findByText(/카드 후보 2건/)).toBeTruthy()
+    expect(await screen.findByText(/읽은 줄 2건/)).toBeTruthy()
     expect(screen.getByText(/아직 정해지지 않은 축: 호감 표출/)).toBeTruthy()
     expect(methodsCalled(postMessage)).toEqual(["interviews.start", "interviews.next", "interviews.answer", "interviews.next", "interviews.finish"])
-    expect(statuses.at(-1)).toContain("카드 후보 2건")
+    expect(statuses.at(-1)).toContain("읽은 줄 2건")
   })
 
   it("warns when the contract changed after the axes were drawn and can redraw them", async () => {

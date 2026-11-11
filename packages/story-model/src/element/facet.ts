@@ -20,6 +20,21 @@ export type CardSectionId =
   | 'design'
   | 'foreshadowing';
 
+export const cardSectionIds: readonly [CardSectionId, ...CardSectionId[]] = [
+  'personality',
+  'voice',
+  'relations',
+  'arc',
+  'description',
+  'facts',
+  'atmosphere',
+  'senses',
+  'layout',
+  'rules',
+  'design',
+  'foreshadowing',
+];
+
 export const cardSectionLabels: Record<CardSectionId, string> = {
   personality: '성격',
   voice: '말투',

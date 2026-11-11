@@ -163,10 +163,6 @@
         "title": "%storyboard.draft.condense.title%"
       },
       {
-        "command": "storyboard.cards.promoteCandidates",
-        "title": "%storyboard.cards.promoteCandidates.title%"
-      },
-      {
         "command": "storyboard.draft.expand",
         "title": "%storyboard.draft.expand.title%"
       },

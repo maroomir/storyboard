@@ -50,7 +50,6 @@ export interface StoryboardCommandIds {
   readonly draftSlopCheck: string;
   readonly draftReviseLoop: string;
   readonly draftCondense: string;
-  readonly cardsPromoteCandidates: string;
   readonly draftExpand: string;
   readonly draftAugment: string;
   readonly draftAugmentSelection: string;
@@ -94,7 +93,6 @@ export const storyboardCommandIds: StoryboardCommandIds = {
   draftSlopCheck: 'storyboard.draft.slopCheck',
   draftReviseLoop: 'storyboard.draft.reviseLoop',
   draftCondense: 'storyboard.draft.condense',
-  cardsPromoteCandidates: 'storyboard.cards.promoteCandidates',
   draftExpand: 'storyboard.draft.expand',
   draftAugment: 'storyboard.draft.augment',
   draftAugmentSelection: 'storyboard.draft.augmentSelection',

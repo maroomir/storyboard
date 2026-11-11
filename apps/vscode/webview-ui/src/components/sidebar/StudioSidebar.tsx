@@ -52,6 +52,7 @@ import {
   type StudioToolEntry,
 } from '@webview/lib/studioTools';
 import { InterviewPanel } from '@webview/components/sidebar/InterviewPanel';
+import { PendingChangesBand } from '@webview/components/sidebar/PendingChangesBand';
 import { StudioSessionList } from '@webview/components/sidebar/StudioSessionList';
 import { StudioToolMenu } from '@webview/components/sidebar/StudioToolMenu';
 import {
@@ -389,6 +390,13 @@ export function StudioSidebar({
     setView('chat');
   };
 
+  const reloadSession = (): void => {
+    if (target.entity) {
+      latestRequestIdRef.current = post('studio.session.latest', { entity: target.entity });
+    }
+    setStageToken((token) => token + 1);
+  };
+
   const openHistory = (): void => {
     if (!target.entity) {
       return;
@@ -557,6 +565,14 @@ export function StudioSidebar({
         ) : (
           <>
             <StageCard target={target} stage={stage} />
+            {interviewCard === undefined ? null : (
+              <PendingChangesBand
+                slug={interviewCard.cardKey}
+                refreshKey={`${view}:${stageToken}`}
+                vscodeApi={vscodeApi}
+                onSettled={reloadSession}
+              />
+            )}
             <PendingFollowUpList
               followUps={pendingFollowUps}
               onPick={setDraft}
@@ -737,8 +753,8 @@ function StudioWelcome({ target }: { readonly target: StudioTarget }): React.Rea
 function StudioIntro(): React.ReactElement {
   return (
     <p className="m-0 text-xs leading-relaxed text-sb-fg-muted">
-      고치고 싶은 내용을 말로 적어 주세요. 모호하면 되묻고, 정해지면 수정안을 제안합니다. 적용은
-      승인해야 이뤄집니다.
+      고치고 싶은 내용을 말로 적어 주세요. 모호하면 되묻고, 정해지면 수정안을 제안합니다. 카드는
+      «적용»을 눌러야 바뀝니다.
     </p>
   );
 }
