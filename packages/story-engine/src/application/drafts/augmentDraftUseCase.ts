@@ -19,7 +19,6 @@ import {
   getStoryboardProjectPaths,
   joinUri,
   formatBibleFactLines,
-  readSceneFile,
   SceneParseError,
   archiveExistingDraft,
 } from '@storyboard/story-model';
@@ -125,11 +124,9 @@ export class AugmentDraftUseCase {
     sceneUri: StoryUri,
     workspaceRoot: StoryUri,
   ): Promise<AugmentContextResult> {
-    const fileName: string = sceneUri.path.split('/').pop() ?? '';
-
     let scene: SceneFile;
     try {
-      scene = await readSceneFile(sceneUri, this.host.fileSystem, fileName);
+      scene = await this.host.scenes.readByUri(sceneUri);
     } catch (error) {
       return error instanceof SceneParseError
         ? { message: `연결된 씬 파일을 읽을 수 없습니다: ${error.message}`, ok: false }

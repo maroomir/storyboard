@@ -1,23 +1,6 @@
-import { parseSceneFileName, sceneFileNamePattern, type SceneFileNameParts } from '#model/format/scene';
+import { sceneFileNamePattern } from '#model/format/scene';
 
 const sceneSlugInputPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
-
-export function computeNextSceneOrderFromSceneFileNames(fileNames: readonly string[]): number {
-  let maxOrder: number = 0;
-
-  for (const name of fileNames) {
-    const parts: SceneFileNameParts | undefined = parseSceneFileName(name);
-    if (parts) {
-      maxOrder = Math.max(maxOrder, parts.order);
-    }
-  }
-
-  return maxOrder + 1;
-}
-
-export function formatSceneOrderPrefix(order: number, digitCount: number): string {
-  return String(order).padStart(digitCount, '0');
-}
 
 export function validateSceneSlugInput(slug: string): string | undefined {
   const trimmed: string = slug.trim();

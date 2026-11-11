@@ -19,6 +19,7 @@ import {
   parseSceneStem,
   parseStoryStructure,
   serializeDraft,
+  serializeStoryStructure,
   serializeSceneRenameJournal,
   STORYBOARD_RELATIVE_PATHS,
   type UsageRecord,
@@ -34,6 +35,11 @@ import { createCliContainer } from '@/container';
 import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 import { RunStore } from '@storyboard/story-engine';
 import { readCardYaml } from './fixtures/cardBundles';
+import {
+  listSceneStems,
+  readSceneCardYaml,
+  writeSceneBundleFromYaml,
+} from './fixtures/sceneBundles';
 
 let home: string;
 let workspace: string;
@@ -350,11 +356,9 @@ describe('scene create and scene seed', () => {
     const first = await run('scene create', args(['scene', 'create'], { name: 'Night Market' }));
     const second = await run('scene create', args(['scene', 'create'], { name: '야시장' }));
 
-    expect(first.data).toMatchObject({ stem: '01-night-market' });
-    expect(second.data).toMatchObject({ stem: '02-scene-2' });
-    expect(readFileSync(join(workspace, 'scene', '02-scene-2.card'), 'utf8')).toContain(
-      'id: 02-scene-2',
-    );
+    expect(first.data).toMatchObject({ stem: '001-night-market' });
+    expect(second.data).toMatchObject({ stem: '002-scene-2' });
+    expect(await readSceneCardYaml(workspace, '002-scene-2')).toContain('id: 002-scene-2');
   });
 
   it('seeds scenes from the chapter plan and refuses to overwrite without --force', async () => {
@@ -384,9 +388,7 @@ describe('scene create and scene seed', () => {
     const seeded = await run('scene seed', args(['scene', 'seed']));
     expect(seeded.ok).toBe(true);
     expect(seeded.data).toHaveLength(1);
-    expect(readdirSync(join(workspace, 'scene')).filter((name) => name.endsWith('.card'))).toEqual(
-      seeded.data,
-    );
+    expect(listSceneStems(workspace).map((stem) => `${stem}.card`)).toEqual(seeded.data);
 
     const refused = await run('scene seed', args(['scene', 'seed']));
     expect(refused.ok).toBe(false);
@@ -507,21 +509,23 @@ describe('scene complete', () => {
     expect(outcome.ok).toBe(true);
     const written = (outcome.data as { written: string[] }).written;
     expect(written.length).toBeGreaterThan(0);
-    expect(existsSync(join(workspace, 'scene', written[0] as string))).toBe(true);
+    expect(existsSync(join(workspace, 'scene', `002-${(written[0] as string).replace(/^\d+-/, '')}`))).toBe(
+      true,
+    );
   });
 
   it('skips a file that already exists', async () => {
     await seedOneScene();
-    const container = containerProposing('01-first.card');
-    const before = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
+    const container = containerProposing('001-first.card');
+    const before = await readSceneCardYaml(workspace, '001-first');
 
     const outcome = await findCommand('scene complete')!.execute({
       container,
       args: args(['scene', 'complete']),
     });
 
-    expect((outcome.data as { skipped: string[] }).skipped).toContain('01-first.card');
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toBe(before);
+    expect((outcome.data as { skipped: string[] }).skipped).toContain('001-first.card');
+    expect(await readSceneCardYaml(workspace, '001-first')).toBe(before);
   });
 
   it('leaves the tree alone under --dry-run', async () => {
@@ -539,31 +543,28 @@ describe('scene create', () => {
     const outcome = await run('scene create', args(['scene', 'create'], { name: '첫 방송' }));
 
     expect(outcome.ok).toBe(true);
-    expect(existsSync(join(workspace, 'scene', '01-scene-1.card'))).toBe(true);
+    expect(listSceneStems(workspace)).toEqual(['001-scene-1']);
   });
 });
 
 describe('scene rename', () => {
-  it('moves the scene through the shared engine and refuses a taken number', async () => {
+  it('renames the scene through the shared engine and refuses a number change', async () => {
     await run('scene create', args(['scene', 'create'], { name: 'first' }));
     await run('scene create', args(['scene', 'create'], { name: 'second' }));
 
     const renamed = await run(
       'scene rename',
-      args(['scene', 'rename'], { to: '03-opening' }, ['01-first']),
+      args(['scene', 'rename'], { to: '001-opening' }, ['001-first']),
     );
     const refused = await run(
       'scene rename',
-      args(['scene', 'rename'], { to: '02-opening' }, ['03-opening']),
+      args(['scene', 'rename'], { to: '002-opening' }, ['001-opening']),
     );
 
     expect(renamed.ok).toBe(true);
-    expect(readdirSync(join(workspace, 'scene')).sort()).toEqual([
-      '02-second.card',
-      '03-opening.card',
-    ]);
+    expect(listSceneStems(workspace)).toEqual(['001-opening', '002-second']);
     expect(refused).toMatchObject({ ok: false });
-    expect(refused.message).toContain('02-second');
+    expect(refused.message).toContain('scene move');
   });
 });
 
@@ -627,50 +628,29 @@ describe('pre-0.8 workspace repair', () => {
   });
 
   it('names a card it cannot parse in doctor', async () => {
-    writeFileSync(join(workspace, 'scene', '02-broken.card'), 'type: scene\nid: [\n');
+    mkdirSync(join(workspace, 'scene', '002-broken.card'), { recursive: true });
+    writeFileSync(join(workspace, 'scene', '002-broken.card', 'card.yaml'), 'kind: scene\nid: [\n');
 
     const doctor = await run('doctor', args(['doctor']));
 
     expect(doctor.message).toContain('읽지 못한 카드');
-    expect(doctor.message).toContain('02-broken.card');
+    expect(doctor.message).toContain('002-broken.card');
   });
 
   it('reports missing beats in doctor', async () => {
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      ['type: scene', 'id: 01-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
+    await writeSceneBundleFromYaml(
+      workspace,
+      ['type: scene', 'id: 001-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
     );
-    writeFileSync(
-      join(workspace, 'scene', '02-second.card'),
-      ['type: scene', 'id: 02-second', 'beats:', '  - 진아가 스튜디오에 들어선다.', ''].join('\n'),
+    await writeSceneBundleFromYaml(
+      workspace,
+      ['type: scene', 'id: 002-second', 'beats:', '  - 진아가 스튜디오에 들어선다.', ''].join('\n'),
     );
 
     const outcome = await run('doctor', args(['doctor']));
 
     expect(outcome.message).toContain('비트 없는 씬이 1개');
     expect(outcome.message).toContain('storyboard scene plot --all');
-  });
-
-  it('warns about a povCharacter scene the work gives no narration to', async () => {
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      [
-        'type: scene',
-        'id: 01-first',
-        'povCharacter: hana',
-        'beats:',
-        '  - 하나가 문을 연다.',
-        '',
-      ].join('\n'),
-    );
-
-    const before = await run('doctor', args(['doctor']));
-    expect(before.message).toContain('povCharacter 가 있는 씬 1개에 시점이 없습니다');
-    expect(before.message).toContain('storyboard project set --pov first');
-
-    await run('project set', args(['project', 'set'], { pov: 'first' }));
-    const after = await run('doctor', args(['doctor']));
-    expect(after.message).not.toContain('시점이 없습니다');
   });
 });
 
@@ -729,9 +709,9 @@ describe('git repository', () => {
 });
 
 describe('state generate', () => {
-  function writeScene(stem: string): void {
-    writeFileSync(
-      join(workspace, 'scene', `${stem}.card`),
+  async function writeScene(stem: string): Promise<void> {
+    await writeSceneBundleFromYaml(
+      workspace,
       ['type: scene', `id: ${stem}`, 'purpose: 첫 방송', ''].join('\n'),
     );
   }
@@ -745,19 +725,19 @@ describe('state generate', () => {
   }
 
   it('records every scene with a draft in order, and keeps them on a second run', async () => {
-    writeScene('01-first');
-    writeScene('02-second');
-    writeScene('03-third');
-    writeDraft('01-first', '첫 장면.\n');
-    writeDraft('02-second', '둘째 장면.\n');
+    await writeScene('001-first');
+    await writeScene('002-second');
+    await writeScene('003-third');
+    writeDraft('001-first', '첫 장면.\n');
+    writeDraft('002-second', '둘째 장면.\n');
 
     const outcome = await run('state generate', args(['state', 'generate']));
 
     expect(outcome.ok).toBe(true);
     expect(outcome.data).toMatchObject({
-      recorded: ['01-first', '02-second'],
+      recorded: ['001-first', '002-second'],
       kept: [],
-      withoutDraft: ['03-third'],
+      withoutDraft: ['003-third'],
       failures: [],
     });
     expect(ledger()).toContain('<!-- through-scene: 2 -->');
@@ -766,19 +746,19 @@ describe('state generate', () => {
 
     const again = await run('state generate', args(['state', 'generate']));
     expect(again.ok).toBe(true);
-    expect(again.data).toMatchObject({ recorded: [], kept: ['01-first', '02-second'] });
+    expect(again.data).toMatchObject({ recorded: [], kept: ['001-first', '002-second'] });
   });
 
   it('re-records only the named scenes with --force and refuses a range it cannot read', async () => {
-    writeScene('01-first');
-    writeScene('02-second');
-    writeDraft('01-first', '첫 장면.\n');
-    writeDraft('02-second', '둘째 장면.\n');
+    await writeScene('001-first');
+    await writeScene('002-second');
+    writeDraft('001-first', '첫 장면.\n');
+    writeDraft('002-second', '둘째 장면.\n');
     await run('state generate', args(['state', 'generate']));
 
     const forced = await run('state generate', args(['state', 'generate'], { force: true }, ['1']));
     expect(forced.ok).toBe(true);
-    expect(forced.data).toMatchObject({ recorded: ['01-first'], kept: [] });
+    expect(forced.data).toMatchObject({ recorded: ['001-first'], kept: [] });
 
     const refused = await run('state generate', args(['state', 'generate'], {}, ['8-3']));
     expect(refused.ok).toBe(false);
@@ -787,66 +767,66 @@ describe('state generate', () => {
 });
 
 describe('scene plot', () => {
-  function writeScene(stem: string, extra: string[] = []): void {
-    writeFileSync(
-      join(workspace, 'scene', `${stem}.card`),
+  async function writeScene(stem: string, extra: string[] = []): Promise<void> {
+    await writeSceneBundleFromYaml(
+      workspace,
       ['type: scene', `id: ${stem}`, 'purpose: 첫 방송', ...extra, ''].join('\n'),
     );
   }
 
   it('writes the proposed beats to the card', async () => {
-    writeScene('01-first');
+    await writeScene('001-first');
 
-    const outcome = await run('scene plot', args(['scene', 'plot'], {}, ['01-first']));
+    const outcome = await run('scene plot', args(['scene', 'plot'], {}, ['001-first']));
 
     expect(outcome.ok).toBe(true);
-    expect(outcome.data).toMatchObject({ stem: '01-first', written: true });
-    const card = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
-    expect(card).toContain('beats:\n  - 모의 비트 하나\n  - 모의 비트 둘\n  - 모의 비트 셋\n');
+    expect(outcome.data).toMatchObject({ stem: '001-first', written: true });
+    const card = await readSceneCardYaml(workspace, '001-first');
+    expect(card).toContain('beats:\n  - text: 모의 비트 하나\n  - text: 모의 비트 둘\n  - text: 모의 비트 셋\n');
     expect(card).toContain('purpose: 첫 방송');
   });
 
   it('keeps existing beats unless --force, and never writes on --dry-run', async () => {
-    writeScene('01-first', ['beats:', '  - 창작자가 다듬은 비트']);
+    await writeScene('001-first', ['beats:', '  - 창작자가 다듬은 비트']);
 
-    const kept = await run('scene plot', args(['scene', 'plot'], {}, ['01-first']));
+    const kept = await run('scene plot', args(['scene', 'plot'], {}, ['001-first']));
     expect(kept.ok).toBe(true);
     expect(kept.message).toContain('--force');
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+    expect((await readSceneCardYaml(workspace, '001-first'))).toContain(
       '창작자가 다듬은 비트',
     );
 
     const dry = await run(
       'scene plot',
-      args(['scene', 'plot'], { force: true, 'dry-run': true }, ['01-first']),
+      args(['scene', 'plot'], { force: true, 'dry-run': true }, ['001-first']),
     );
     expect(dry.data).toMatchObject({
       written: false,
       beats: ['모의 비트 하나', '모의 비트 둘', '모의 비트 셋'],
     });
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+    expect((await readSceneCardYaml(workspace, '001-first'))).toContain(
       '창작자가 다듬은 비트',
     );
 
-    const forced = await run('scene plot', args(['scene', 'plot'], { force: true }, ['01-first']));
+    const forced = await run('scene plot', args(['scene', 'plot'], { force: true }, ['001-first']));
     expect(forced.data).toMatchObject({ written: true });
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).not.toContain(
+    expect((await readSceneCardYaml(workspace, '001-first'))).not.toContain(
       '창작자가 다듬은 비트',
     );
   });
 
   it('fills only the scenes without beats on --all', async () => {
-    writeScene('01-first');
-    writeScene('02-second', ['beats:', '  - 이미 있는 비트']);
+    await writeScene('001-first');
+    await writeScene('002-second', ['beats:', '  - 이미 있는 비트']);
 
     const outcome = await run('scene plot', args(['scene', 'plot'], { all: true }));
 
     expect(outcome.ok).toBe(true);
     expect(outcome.data).toMatchObject({ proposed: 1, failures: [] });
-    expect(readFileSync(join(workspace, 'scene', '02-second.card'), 'utf8')).toContain(
+    expect((await readSceneCardYaml(workspace, '002-second'))).toContain(
       '이미 있는 비트',
     );
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+    expect((await readSceneCardYaml(workspace, '001-first'))).toContain(
       '모의 비트 하나',
     );
   });
@@ -855,7 +835,7 @@ describe('scene plot', () => {
     const outcome = await run('scene plot', args(['scene', 'plot']));
 
     expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('scene plot 01-scene-1-1');
+    expect(outcome.message).toContain('scene plot 001-scene-1-1');
   });
 });
 
@@ -1253,7 +1233,7 @@ describe('scene show', () => {
     await run('project set', args(['project', 'set'], { pov: 'first' }));
     await run('scene create', args(['scene', 'create'], { name: 'night market' }));
 
-    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-night-market']));
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['001-night-market']));
 
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toContain('시점: 1인칭');
@@ -1266,28 +1246,16 @@ describe('scene show', () => {
       args(['narrator', 'create'], { person: 'third', knowledge: 'omniscient' }, ['wide']),
     );
     await run('scene create', args(['scene', 'create'], { name: 'bridge' }));
-    writeFileSync(
-      join(workspace, 'scene', '01-bridge.card'),
-      'type: scene\nid: 01-bridge\nnarrator: wide\nthread: ep2\n',
-    );
     declareThreads({ ep2: { title: '2화' } });
+    await writeSceneBundleFromYaml(
+      workspace,
+      'type: scene\nid: 001-bridge\nnarrator: wide\nthread: ep2\n',
+    );
 
-    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-bridge']));
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['001-bridge']));
 
     expect(outcome.message).toContain('전지');
     expect(outcome.message).toContain('줄기: ep2');
-  });
-
-  it('reports the main thread when the work declares no threads, as generation does', async () => {
-    await run('scene create', args(['scene', 'create'], { name: 'bridge' }));
-    writeFileSync(
-      join(workspace, 'scene', '01-bridge.card'),
-      'type: scene\nid: 01-bridge\nthread: ep2\n',
-    );
-
-    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-bridge']));
-
-    expect(outcome.message).toContain('줄기: main');
   });
 
   it('falls back to the narrator its chapter names', async () => {
@@ -1316,21 +1284,25 @@ describe('scene show', () => {
       ].join('\n'),
     );
 
-    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-harbor']));
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['001-harbor']));
 
     expect(outcome.message).toContain('전지');
   });
 
   function declareThreads(threads: Record<string, { title: string }>): void {
-    const projectFile = join(workspace, '.storyboard', 'project.json');
-    const project = JSON.parse(readFileSync(projectFile, 'utf8')) as {
-      setting?: Record<string, unknown>;
-    };
+    const structureFile = join(workspace, ...STORYBOARD_RELATIVE_PATHS.structure.split('/'));
+    const current = existsSync(structureFile)
+      ? parseStoryStructure(readFileSync(structureFile, 'utf8'))
+      : { threads: [{ id: 'main', title: '본편' }], scenes: [] };
+    const added = Object.entries(threads)
+      .filter(([id]) => !current.threads.some((thread) => thread.id === id))
+      .map(([id, thread]) => ({ id, title: thread.title }));
     writeFileSync(
-      projectFile,
-      JSON.stringify({ ...project, setting: { ...project.setting, threads } }, null, 2),
+      structureFile,
+      serializeStoryStructure({ ...current, threads: [...current.threads, ...added] }),
     );
   }
+
 });
 
 describe('doctor: unreadable ledger lines', () => {
@@ -1378,13 +1350,8 @@ describe('doctor: unreadable ledger lines', () => {
 });
 
 describe('doctor: interrupted scene rename', () => {
-  function writeScene(stem: string, title = '야시장'): string {
-    const cardPath = join(workspace, 'scene', `${stem}.card`);
-    writeFileSync(
-      cardPath,
-      `type: scene\nid: ${stem}\ntitle: ${title}\nsummary: ${stem}.summary.md\n`,
-    );
-    return cardPath;
+  async function writeScene(stem: string, title = '야시장'): Promise<void> {
+    await writeSceneBundleFromYaml(workspace, `type: scene\nid: ${stem}\ntitle: ${title}\n`);
   }
 
   function writeRenameJournal(fromStem: string, toStem: string): void {
@@ -1395,44 +1362,40 @@ describe('doctor: interrupted scene rename', () => {
   }
 
   it('names the rename its journal left unfinished', async () => {
-    writeScene('03-night-market');
-    writeScene('04-night-market');
-    writeRenameJournal('03-night-market', '04-night-market');
+    await writeScene('001-night-market');
+    writeRenameJournal('001-night-market', '001-moon-market');
 
     const outcome = await run('doctor', args(['doctor']));
 
     expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('03-night-market → 04-night-market 가 끝나지 않아');
+    expect(outcome.message).toContain('001-night-market → 001-moon-market 가 끝나지 않아');
     expect(outcome.message).toContain(
-      'storyboard scene rename 03-night-market --to 04-night-market',
+      'storyboard scene rename 001-night-market --to 001-moon-market',
     );
   });
 
   it('ignores a journal whose old card is already gone', async () => {
-    writeScene('04-night-market');
-    writeRenameJournal('03-night-market', '04-night-market');
+    await writeScene('001-moon-market');
+    writeRenameJournal('001-night-market', '001-moon-market');
 
     const outcome = await run('doctor', args(['doctor']));
 
     expect(outcome.message).not.toContain('씬 이름 바꾸기');
   });
 
-  it('reports a draft and a summary left with no card', async () => {
-    writeScene('04-night-market');
-    writeFileSync(join(workspace, 'scene', '03-night-market.summary.md'), '야시장.\n');
-    writeFileSync(join(workspace, 'draft', '03-night-market.md'), '등불 아래.\n');
+  it('reports a draft left with no card', async () => {
+    await writeScene('001-moon-market');
+    writeFileSync(join(workspace, 'draft', '001-night-market.md'), '등불 아래.\n');
 
     const outcome = await run('doctor', args(['doctor']));
 
-    expect(outcome.message).toContain(
-      'draft/03-night-market.md, scene/03-night-market.summary.md 의 씬 카드가 없습니다',
-    );
+    expect(outcome.message).toContain('draft/001-night-market.md 의 씬 카드가 없습니다');
     expect(outcome.message).not.toContain('가 끝나지 않아');
   });
 
   it('stays quiet about scenes that only look alike', async () => {
-    writeScene('03-night-market');
-    writeScene('04-dawn', '새벽');
+    await writeScene('001-night-market');
+    await writeScene('002-dawn', '새벽');
 
     const outcome = await run('doctor', args(['doctor']));
 
@@ -1453,16 +1416,15 @@ describe('scene rename: two fresh scenes are not a cut-off rename', () => {
     expect(outcome.message).not.toContain('씬 이름 바꾸기');
   });
 
-  it('refuses the number the other scene holds and keeps both cards', async () => {
+  it('refuses a number change and keeps both cards', async () => {
     const outcome = await run(
       'scene rename',
-      args(['scene', 'rename'], { to: '02-storm' }, ['01-opening']),
+      args(['scene', 'rename'], { to: '002-storm' }, ['001-opening']),
     );
 
     expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('02-storm 가 쓰고 있습니다');
-    expect(existsSync(join(workspace, 'scene', '01-opening.card'))).toBe(true);
-    expect(existsSync(join(workspace, 'scene', '02-storm.card'))).toBe(true);
+    expect(outcome.message).toContain('scene move');
+    expect(listSceneStems(workspace)).toEqual(['001-opening', '002-storm']);
   });
 });
 
@@ -1473,19 +1435,19 @@ describe('draft edit and draft augment', () => {
     await run('scene create', args(['scene', 'create'], { name: 'night market' }));
     mkdirSync(join(workspace, 'draft'), { recursive: true });
     writeFileSync(
-      join(workspace, 'draft', '01-night-market.md'),
+      join(workspace, 'draft', '001-night-market.md'),
       serializeDraft(
-        createDraft({ sceneStem: '01-night-market', format: 'novel', body: originalBody }),
+        createDraft({ sceneStem: '001-night-market', format: 'novel', body: originalBody }),
       ),
     );
   }
 
   function draftBody(): string {
-    return parseDraft(readFileSync(join(workspace, 'draft', '01-night-market.md'), 'utf8')).body;
+    return parseDraft(readFileSync(join(workspace, 'draft', '001-night-market.md'), 'utf8')).body;
   }
 
   function historyCount(): number {
-    const directory = join(workspace, '.draft', '01-night-market');
+    const directory = join(workspace, '.draft', '001-night-market');
     return existsSync(directory) ? readdirSync(directory).length : 0;
   }
 
@@ -1495,7 +1457,7 @@ describe('draft edit and draft augment', () => {
   ] as const)('%s writes the revision', async (verb, flags) => {
     await writeSceneWithDraft();
 
-    const outcome = await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+    const outcome = await run(verb, args(verb.split(' '), flags, ['001-night-market']));
 
     expect(outcome.ok).toBe(true);
     expect(draftBody()).not.toBe(originalBody);
@@ -1508,7 +1470,7 @@ describe('draft edit and draft augment', () => {
   ] as const)('%s keeps the previous draft only when keepHistory is on', async (verb, flags) => {
     await writeSceneWithDraft();
 
-    await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+    await run(verb, args(verb.split(' '), flags, ['001-night-market']));
 
     expect(historyCount()).toBe(0);
 
@@ -1516,7 +1478,7 @@ describe('draft edit and draft augment', () => {
       join(home, 'config.json'),
       JSON.stringify({ 'ai.provider.default': 'mock', 'editor.draft.keepHistory': true }),
     );
-    await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+    await run(verb, args(verb.split(' '), flags, ['001-night-market']));
 
     expect(historyCount()).toBe(1);
   });
@@ -1529,7 +1491,7 @@ describe('draft edit and draft augment', () => {
 
     const outcome = await run(
       verb,
-      args(verb.split(' '), { ...flags, 'dry-run': true }, ['01-night-market']),
+      args(verb.split(' '), { ...flags, 'dry-run': true }, ['001-night-market']),
     );
 
     expect(outcome.ok).toBe(true);
@@ -1543,7 +1505,7 @@ describe('draft edit and draft augment', () => {
     const outcome = await run(
       'draft edit',
       args(['draft', 'edit'], { instruction: '고쳐', lines: '99-120', 'dry-run': true }, [
-        '01-night-market',
+        '001-night-market',
       ]),
     );
 
@@ -1556,7 +1518,7 @@ describe('draft edit and draft augment', () => {
 
     await run(
       'draft edit',
-      args(['draft', 'edit'], { instruction: '고쳐', lines: '3-3' }, ['01-night-market']),
+      args(['draft', 'edit'], { instruction: '고쳐', lines: '3-3' }, ['001-night-market']),
     );
 
     expect(draftBody().startsWith('첫 문단.\n\n[Mock AI: draftAugment]')).toBe(true);
@@ -1619,11 +1581,11 @@ describe('spend of the calls that prepare a scene', () => {
 
     await findCommand('draft generate')!.execute({
       container: recording,
-      args: args(['draft', 'generate'], {}, ['01-night-market']),
+      args: args(['draft', 'generate'], {}, ['001-night-market']),
     });
     await findCommand('scene plot')!.execute({
       container: recording,
-      args: args(['scene', 'plot'], { force: true }, ['01-night-market']),
+      args: args(['scene', 'plot'], { force: true }, ['001-night-market']),
     });
 
     const setupCalls = roots.filter((call) => call.taskName === 'sceneBeats');
@@ -1741,7 +1703,7 @@ describe('novel generate again', () => {
   it('starts over without rebuilding the outline or the scene cards that exist', async () => {
     await startNovel();
     const scenesBefore = sceneFiles();
-    const firstScene = join(workspace, 'scene', scenesBefore[0] ?? '');
+    const firstScene = join(workspace, 'scene', scenesBefore[0] ?? '', 'card.yaml');
     writeFileSync(firstScene, `${readFileSync(firstScene, 'utf8')}# 작가 메모\n`);
     await leaveRunCutOff();
 

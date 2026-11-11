@@ -1,14 +1,10 @@
-import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
   buildSceneSeeds,
   getStoryboardProjectPaths,
   readChapterPlanFile,
-  resolveScenePrefixDigitCount,
   type ChapterPlan,
   type GeneratedSceneSeed,
-  type StoryboardProject,
   type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -48,25 +44,19 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
       return { ok: false, kind: 'missing_outline' };
     }
 
-    const project: StoryboardProject = await new ProjectRepository(fileSystem).read(
-      paths.projectJson,
-    );
     const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
-    const seeds: GeneratedSceneSeed[] = buildSceneSeeds(
-      plan,
-      resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined),
-    );
+    const seeds: GeneratedSceneSeed[] = buildSceneSeeds(plan);
 
     if (seeds.length === 0) {
       return { ok: true, kind: 'empty_plan' };
     }
 
-    const existing: readonly string[] = await new WorkspaceFiles(fileSystem).listNames(
-      paths.sceneDirectory,
-    );
+    const existingCount: number = (
+      await sceneSeedRepository.listSceneStemsByOrder(request.workspaceRoot)
+    ).size;
 
-    if (existing.length > 0 && !request.overwrite) {
-      return { ok: false, kind: 'existing_scenes', existingCount: existing.length };
+    if (existingCount > 0 && !request.overwrite) {
+      return { ok: false, kind: 'existing_scenes', existingCount };
     }
 
     await sceneSeedRepository.saveSeeds(request.workspaceRoot, seeds);

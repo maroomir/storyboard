@@ -1,4 +1,5 @@
 import { stubFileSystem } from "../../../stubs/fileSystem"
+import { stubScenes } from "../../../stubs/scenes"
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -215,6 +216,7 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftS
       fileSystem: overrides.fileSystem ?? { ...stubFileSystem, exists: uriExistsMock },
       generator: "storyboard@0.0.0-test",
       logger: overrides.logger ?? createLogger(),
+      scenes: stubScenes([fakeScene]),
       workspaceLocator: {
         folders: () => workspace.workspaceFolders ?? [],
         folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)

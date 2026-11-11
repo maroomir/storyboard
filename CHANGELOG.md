@@ -21,6 +21,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **인물·배경·서술자 카드가 번들 폴더가 됐습니다.** `character/<slug>.card/` 아래 `card.yaml`(머리말)과 `statements.yaml`(출처가 달린 진술)로 갈리고, 그림은 번들 안의 `profile.png` 입니다. 카드끼리의 참조(관계의 상대, 서술자의 초점)는 uuid 로 적혀 카드를 개명해도 고쳐 쓸 곳이 없습니다. 카드를 만들고·고치고·개명하는 동사와 노트 흡수·후보 승격·카드 빌드·스튜디오 적용이 이 번들에 쓰고, 생성은 번들을 읽어 지금과 같은 카드로 펼칩니다. 확장의 카드 편집기와 탐색기에서의 개명은 아직 이 꼴을 따르지 않습니다.
 - **줄기 목록이 `.storyboard/structure.yaml` 로 옮겨 갔습니다.** `project.json` 에는 구성(`setting.composition`)과 시점 같은 계약만 남고, 줄기 정의(id·제목·액자식의 `wraps`)는 구조 파일에 있습니다. 구성 프리셋과 `project set --composition` 이 구조 파일을 함께 고칩니다. 줄기가 기본 `main` 하나인 작품은 줄기 목록이 없는 것으로 읽힙니다.
 - **씬 사실 시트를 묻지 않고 파생합니다.** 생성 직전에 비어 있는 사건·장소·관계·시점을 AI 에게 제안받아 승인을 거쳐 씬 카드에 쓰던 일이 없어졌습니다. 사건은 씬 제목과 첫 비트, 장소는 첫 비트의 장소나 배경 카드 이름, 시점은 첫 비트의 시간에서 만들고 어디에도 저장하지 않습니다. 설정 `generation.grounding.autoApprove`, AI 작업 `sceneGrounding`, 확장의 사실 시트 승인 창, 비워 둔 칸의 판정 기록이 지워졌습니다.
+- **씬이 번들 폴더가 됐고, 번호는 구조 파일의 순서입니다.** 씬 하나가 `scene/NNN-slug.card/`(머리말 `card.yaml`, 설계 진술 `statements.yaml`, 비트 `beats.yaml`, 요약 `summary.md`)이고, 세 자리 번호는 `.storyboard/structure.yaml` 의 씬 순서에서 나옵니다. 씬의 줄기·서술자도 구조 파일에 있습니다. 비트의 출연과 장소는 카드 uuid 로 적히고, 어느 카드와도 맞지 않는 이름은 버려집니다. 초안은 그대로 `draft/NNN-slug.md` 입니다. 설정 `editor.scene.prefixDigits` 와 `project.json` 의 `editor.scenePrefixDigits` 가 없어졌고(번호는 늘 세 자리), 견본 카드 `.sample.card` 와 그 `.gitignore` 줄도 없어졌습니다. `scene rename` 은 이제 이름(slug)만 바꾸고 번호를 바꾸려 하면 거절합니다. 씬을 읽지 못하면 그 씬만 빼고 경고로 남깁니다. 확장의 씬 만들기와 시드 만들기는 CLI 와 같은 엔진 동사를 부릅니다.
 
 ### 내부
 

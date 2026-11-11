@@ -14,8 +14,8 @@ export class DraftCheckCommand implements ICommandHandler {
     summary:
       '초안을 검사합니다 — grammar 문법, continuity 정전과 어긋나는 곳, slop 상투 표현(AI 호출 없음). 문제가 있으면 종료 코드 1',
     examples: [
-      'storyboard draft check slop 01-scene-1-1',
-      'storyboard draft check continuity 01-scene-1-1 --json',
+      'storyboard draft check slop 001-scene-1-1',
+      'storyboard draft check continuity 001-scene-1-1 --json',
     ],
   };
 

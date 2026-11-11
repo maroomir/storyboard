@@ -50,23 +50,18 @@ const plan: ChapterPlan = {
 }
 
 describe("buildSceneSeeds", () => {
-  it("flattens scenes in act/chapter/scene order with sequential prefixes", () => {
-    const seeds = buildSceneSeeds(plan, 2)
+  it("flattens scenes in act/chapter/scene order with three-digit numbers", () => {
+    const seeds = buildSceneSeeds(plan)
 
     expect(seeds.map((seed) => seed.fileName)).toEqual([
-      "01-arrival.card",
-      "02-first-class.card",
-      "03-rumor.card"
+      "001-arrival.card",
+      "002-first-class.card",
+      "003-rumor.card"
     ])
   })
 
-  it("respects the configured prefix digit count", () => {
-    const seeds = buildSceneSeeds(plan, 3)
-    expect(seeds[0]?.fileName).toBe("001-arrival.card")
-  })
-
   it("produces valid scene cards with frontmatter view and seed body", () => {
-    const [first] = buildSceneSeeds(plan, 2)
+    const [first] = buildSceneSeeds(plan)
     const scene = parseScene(first.content, first.fileName)
 
     expect(scene.frontmatter.title).toBe("도착")
@@ -109,7 +104,7 @@ describe("buildSceneSeeds", () => {
       ]
     }
 
-    const [seed] = buildSceneSeeds(richPlan, 2)
+    const [seed] = buildSceneSeeds(richPlan)
     const scene = parseScene(seed.content, seed.fileName)
 
     expect(scene.body).toContain("[갈등]\n엘리아 대 지훈")
@@ -121,7 +116,7 @@ describe("buildSceneSeeds", () => {
   })
 
   it("omits optional frontmatter and sections when the plan lacks them", () => {
-    const seeds = buildSceneSeeds(plan, 2)
+    const seeds = buildSceneSeeds(plan)
     const rumor = parseScene(seeds[2].content, seeds[2].fileName)
 
     expect(rumor.frontmatter.characters).toBeUndefined()
@@ -131,7 +126,7 @@ describe("buildSceneSeeds", () => {
   })
 
   it("leaves summary empty so the plan sections survive as the narrative source", () => {
-    const [first] = buildSceneSeeds(plan, 2)
+    const [first] = buildSceneSeeds(plan)
     const scene = parseScene(first.content, first.fileName)
 
     expect(scene.frontmatter.summary).toBeUndefined()
@@ -159,7 +154,7 @@ describe("buildSceneSeeds", () => {
       ]
     }
 
-    const seeds = buildSceneSeeds(koreanPlan, 2)
-    expect(seeds.map((seed) => seed.fileName)).toEqual(["01-scene-1.card", "02-scene-2.card"])
+    const seeds = buildSceneSeeds(koreanPlan)
+    expect(seeds.map((seed) => seed.fileName)).toEqual(["001-scene-1.card", "002-scene-2.card"])
   })
 })

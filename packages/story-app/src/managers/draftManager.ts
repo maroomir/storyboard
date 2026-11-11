@@ -45,6 +45,8 @@ import type {
   SaveDraftEditResult,
   SaveDraftEditUseCase,
   WorkspaceCards,
+  WorkspaceScenes,
+  SceneRoster,
 } from '@storyboard/story-engine';
 import {
   ProjectRepository,
@@ -57,8 +59,6 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   parseDraft,
-  readSceneFile,
-  scenePath,
   type Draft,
   sceneContextPaths,
   type NarrativeContext,
@@ -108,6 +108,7 @@ export interface DraftManagerDependencies {
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly fileSystem: IFileSystem;
   readonly cards: WorkspaceCards;
+  readonly scenes: WorkspaceScenes;
 }
 
 export class DraftManager {
@@ -118,26 +119,18 @@ export class DraftManager {
   }
 
   public async listScenes(workspaceRoot: StoryUri): Promise<SceneListItem[]> {
-    const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
-
-    if (!(await this.deps.fileSystem.exists(sceneDirectory))) {
-      return [];
-    }
-
     return await this.scenes.list(workspaceRoot);
+  }
+
+  public async loadSceneRoster(workspaceRoot: StoryUri): Promise<SceneRoster> {
+    return await this.deps.scenes.loadRoster(workspaceRoot);
   }
 
   public async readScene(
     workspaceRoot: StoryUri,
-    sceneStem: string,
+    sceneReference: string,
   ): Promise<SceneFile | undefined> {
-    const uri: StoryUri = scenePath(workspaceRoot, sceneStem);
-
-    if (!(await this.deps.fileSystem.exists(uri))) {
-      return undefined;
-    }
-
-    return await readSceneFile(uri, this.deps.fileSystem, `${sceneStem}.card`);
+    return await this.deps.scenes.read(workspaceRoot, sceneReference);
   }
 
   public async readDraft(
@@ -272,7 +265,11 @@ export class DraftManager {
     scene: SceneFile,
   ): Promise<NarrationDirective | undefined> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.deps.fileSystem, this.deps.cards);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(
+      this.deps.fileSystem,
+      this.deps.cards,
+      this.deps.scenes,
+    );
     const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
       paths,
       scene.order,
@@ -291,7 +288,11 @@ export class DraftManager {
     scene: SceneFile,
   ): Promise<SceneThreadContext> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.deps.fileSystem, this.deps.cards);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(
+      this.deps.fileSystem,
+      this.deps.cards,
+      this.deps.scenes,
+    );
     const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
       paths,
       scene.order,

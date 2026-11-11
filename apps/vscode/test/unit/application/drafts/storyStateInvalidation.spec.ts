@@ -14,6 +14,7 @@ import {
 } from "../../../../../../packages/story-engine/src/application/drafts/storyMemoryAuditor"
 import { StoryStateRecorder, toStoryStateEntries } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
 import { legacyCards } from "../../../stubs/cards"
+import { legacyScenesUnder } from "../../../stubs/scenes"
 import { joinStoryPath } from "@storyboard/story-model"
 
 class MemoryWorkspace implements IFileSystem {
@@ -120,6 +121,7 @@ function auditRequest(fileSystem: IFileSystem, beforeSceneOrder?: number): never
       backgroundDirectory: paths.backgroundDirectory,
       joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments)
     }),
+    scenes: legacyScenesUnder(fileSystem, paths.workspaceRoot),
     paths,
     format: "novel",
     sceneBreakJoiner: undefined,

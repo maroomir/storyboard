@@ -9,6 +9,7 @@ import type { InterviewWorkingModel } from '@storyboard/story-model';
 import { CommandDispatcher, type DispatchDependencies, type DispatchResult } from '@/commands/commandDispatcher';
 
 import { isLegacyCardPath, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 let home: string;
 let workspace: string;
@@ -61,10 +62,15 @@ async function step(...extra: string[]): Promise<{ readonly exitCode: number; re
   return { exitCode: result.exitCode, report: JSON.parse(result.stdout) as StepReport };
 }
 
-function write(relativePath: string, lines: readonly string[]): void {
+async function write(relativePath: string, lines: readonly string[]): Promise<void> {
   const text: string = `${lines.join('\n')}\n`;
   if (isLegacyCardPath(relativePath)) {
     writeCardBundleFromYaml(workspace, text);
+    return;
+  }
+
+  if (/^scene\/[^/]+\.card$/.test(relativePath)) {
+    await writeSceneBundleFromYaml(workspace, text);
     return;
   }
 
@@ -84,9 +90,9 @@ beforeEach(async () => {
   writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   await dispatch(['init', '--title', '달의 문']);
   write('character/hana.card', ['type: character', 'id: hana', 'name: 하나', 'role: main']);
-  write('scene/01-night.card', [
+  await write('scene/001-night.card', [
     'type: scene',
-    'id: 01-night',
+    'id: 001-night',
     'characters:',
     '  - hana',
     'beats:',
@@ -121,7 +127,7 @@ describe('card interview --step', () => {
     expect(opened.exitCode).toBe(0);
     expect(opened.report.data).toMatchObject({ state: 'question', answered: 0, limit: 20 });
     expect(opened.report.data?.question).toMatchObject({
-      title: '1번째 · 압박 아래 방어 (01-night · 사건 1)',
+      title: '1번째 · 압박 아래 방어 (001-night · 사건 1)',
       allowsText: true,
     });
     expect(opened.report.data?.question?.options.map((option) => option.index)).toEqual([1, 2, 3]);
@@ -134,7 +140,7 @@ describe('card interview --step', () => {
 
     const second = await step('--session', sessionId, '--answer', '2');
     expect(second.report.data).toMatchObject({ state: 'question', session: sessionId, answered: 1 });
-    expect(second.report.data?.question?.title).toBe('2번째 · 압박 아래 방어 (01-night · 사건 2)');
+    expect(second.report.data?.question?.title).toBe('2번째 · 압박 아래 방어 (001-night · 사건 2)');
     expect(readModel().records[0]?.answer).toEqual({ kind: 'chosen', index: 1 });
 
     const finished = await step('--finish');

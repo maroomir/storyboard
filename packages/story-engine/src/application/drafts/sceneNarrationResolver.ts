@@ -1,10 +1,6 @@
 import {
   flattenChapterPlan,
-  isHiddenSceneFileName,
-  joinStoryPath,
   mainThreadId,
-  parseSceneCard,
-  parseSceneFileName,
   readChapterPlanFile,
   resolveNarration,
   resolveThreadPaths,
@@ -15,14 +11,14 @@ import type {
   NarrationDirective,
   ProjectSetting,
   SceneFile,
-  SceneFileNameParts,
   StoryboardProject,
   StoryboardProjectPaths,
   StoryThread,
 } from '@storyboard/story-model';
 import { NarratorCardRepository } from '#engine/persistence/repositories/narratorCardRepository';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 
 export interface ChapterNarrationDefaults {
   readonly narrator?: string;
@@ -35,11 +31,6 @@ export interface SceneThreadContext {
   readonly previousSceneOrder: number | undefined;
 }
 
-interface NumberedSceneFile {
-  readonly name: string;
-  readonly order: number;
-}
-
 function hasDeclaredThreads(project: StoryboardProject): boolean {
   const threads: Record<string, StoryThread> | undefined = project.setting?.threads;
   return threads !== undefined && Object.keys(threads).length > 0;
@@ -49,6 +40,7 @@ export class SceneNarrationResolver {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
+    private readonly scenes: WorkspaceScenes,
   ) {}
 
   public async readChapterDefaults(
@@ -132,46 +124,13 @@ export class SceneNarrationResolver {
     threadId: string,
     chapterThread: string | undefined,
   ): Promise<number | undefined> {
-    let entries: FileSystemDirectoryEntry[];
-    try {
-      entries = await this.fileSystem.readDirectory(paths.sceneDirectory);
-    } catch {
-      return undefined;
-    }
-
-    const earlierScenes: NumberedSceneFile[] = entries
-      .filter(([name, entry]) => entry.type === 'file' && !isHiddenSceneFileName(name))
-      .flatMap(([name]) => {
-        const parsed: SceneFileNameParts | undefined = parseSceneFileName(name);
-        return parsed && parsed.order < scene.order
-          ? [{ name, order: parsed.order } satisfies NumberedSceneFile]
-          : [];
-      })
+    const earlierScenes: readonly SceneFile[] = (await this.scenes.loadRoster(paths.workspaceRoot)).scenes
+      .filter((candidate) => candidate.order < scene.order)
       .sort((left, right) => right.order - left.order);
 
-    for (const candidate of earlierScenes) {
-      if ((await this.readSceneThreadId(paths, candidate.name, chapterThread)) === threadId) {
-        return candidate.order;
-      }
-    }
-
-    return undefined;
+    return earlierScenes.find(
+      (candidate) => (candidate.card.thread ?? chapterThread ?? mainThreadId) === threadId,
+    )?.order;
   }
 
-  private async readSceneThreadId(
-    paths: StoryboardProjectPaths,
-    fileName: string,
-    chapterThread: string | undefined,
-  ): Promise<string | undefined> {
-    try {
-      const bytes: Uint8Array = await this.fileSystem.readFile(
-        joinStoryPath(paths.sceneDirectory, fileName),
-      );
-      return (
-        parseSceneCard(new TextDecoder().decode(bytes)).thread ?? chapterThread ?? mainThreadId
-      );
-    } catch {
-      return undefined;
-    }
-  }
 }

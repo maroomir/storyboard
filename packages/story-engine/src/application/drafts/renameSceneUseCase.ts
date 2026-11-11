@@ -3,17 +3,14 @@ import type { HostAdapters } from '#engine/application/engineServices';
 import {
   parseBible,
   parseDraft,
-  parseSceneRenameJournal,
   parseStoryState,
-  parseSceneFileName,
   parseSceneStem,
   renumberStoryStateScene,
   rewriteBibleSceneReferences,
-  rewriteSceneCardStemText,
-  sceneSummaryFileName,
   serializeBible,
   serializeDraft,
   serializeSceneRenameJournal,
+  scenePath,
   serializeStoryState,
   type SceneRename,
   type StoryUri,
@@ -22,7 +19,6 @@ import {
   getStoryboardProjectPaths,
   joinUri,
   resolveThreadPaths,
-  scenePath,
   type StoryboardProjectPaths,
   type SceneFileNameParts,
   type StoryState,
@@ -46,13 +42,12 @@ export type RenameSceneResult =
       readonly kind: 'renamed';
       readonly fromStem: string;
       readonly toStem: string;
-      readonly hasOrderChanged: boolean;
       readonly movedFiles: readonly string[];
       readonly rewrittenFiles: readonly string[];
     }
   | {
       readonly ok: false;
-      readonly kind: 'invalid-stem' | 'missing' | 'order-taken';
+      readonly kind: 'invalid-stem' | 'missing' | 'order-changed';
       readonly message: string;
     }
   | UseCaseFailure;
@@ -86,7 +81,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       return {
         ok: false,
         kind: 'invalid-stem',
-        message: '씬 이름은 NN-slug 형식이어야 합니다 (예: 03-night-market).',
+        message: '씬 이름은 NNN-slug 형식이어야 합니다 (예: 003-night-market).',
       };
     }
 
@@ -94,9 +89,17 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       return { ok: false, kind: 'invalid-stem', message: '바꿀 이름이 지금 이름과 같습니다.' };
     }
 
+    if (from.order !== to.order) {
+      return {
+        ok: false,
+        kind: 'order-changed',
+        message: `이름 바꾸기는 번호를 그대로 둡니다. 순서를 바꾸려면 scene move 를 쓰세요 (${from.orderText}).`,
+      };
+    }
+
     const root: StoryUri = request.workspaceRoot;
 
-    if (!(await this.host.fileSystem.exists(scenePath(root, from.stem)))) {
+    if ((await this.host.scenes.find(root, from.stem)) === undefined) {
       return { ok: false, kind: 'missing', message: `씬이 없습니다: ${from.stem}` };
     }
 
@@ -111,16 +114,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
     const memoryScopes: readonly StoryboardProjectPaths[] = await this.listMemoryScopes(paths);
     const moves: PlannedWrite[] = await this.planMoves(paths, memoryScopes, rename);
-    const occupant: string | undefined = await this.findOrderOccupant(paths, rename, moves);
-
-    if (occupant !== undefined) {
-      return {
-        ok: false,
-        kind: 'order-taken',
-        message: `${to.order}번은 이미 ${occupant} 가 쓰고 있습니다. 그 씬을 먼저 옮겨 주세요.`,
-      };
-    }
-
     const rewrites: PlannedWrite[] = await this.planRewrites(paths, memoryScopes, rename);
 
     await this.applyPlannedWrites(paths, rename, moves, rewrites);
@@ -131,8 +124,10 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       kind: 'renamed',
       fromStem: from.stem,
       toStem: to.stem,
-      hasOrderChanged: from.order !== to.order,
-      movedFiles: moves.map((move) => relativePath(root, move.to)),
+      movedFiles: [
+        relativePath(root, scenePath(root, to.stem)),
+        ...moves.map((move) => relativePath(root, move.to)),
+      ],
       rewrittenFiles: rewrites.map((rewrite) => relativePath(root, rewrite.to)),
     };
   }
@@ -152,21 +147,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       )
       .sort((left, right) => left.sceneStem.localeCompare(right.sceneStem));
     await revisionPlans.replaceLatest(root, { ...plan, entries });
-  }
-
-  private async findOrderOccupant(
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-    moves: readonly PlannedWrite[],
-  ): Promise<string | undefined> {
-    const { from, to } = rename;
-    const isResuming: boolean = await this.isInterruptedRename(paths, rename, moves);
-
-    return await this.findSceneWithOrder(
-      paths,
-      to.order,
-      isResuming ? [from.stem, to.stem] : [from.stem],
-    );
   }
 
   private async applyPlannedWrites(
@@ -190,52 +170,9 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       }
     }
 
+    await this.host.scenes.renameSlug(paths.workspaceRoot, rename.from.stem, rename.to.slug);
     await this.deleteEmptyDirectories(paths, rename);
     await this.host.fileSystem.delete(paths.sceneRenameJournal);
-  }
-
-  private async isInterruptedRename(
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-    moves: readonly PlannedWrite[],
-  ): Promise<boolean> {
-    const journal: string | undefined = await this.readTextIfExists(paths.sceneRenameJournal);
-    const journaled: SceneRename | undefined =
-      journal === undefined ? undefined : parseSceneRenameJournal(journal);
-
-    if (
-      journaled?.from.stem !== rename.from.stem ||
-      journaled.to.stem !== rename.to.stem ||
-      !(await this.host.fileSystem.exists(scenePath(paths.workspaceRoot, rename.to.stem)))
-    ) {
-      return false;
-    }
-
-    for (const move of moves) {
-      const written: string | undefined = await this.readTextIfExists(move.to);
-
-      if (written !== undefined && written !== move.content) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  private async findSceneWithOrder(
-    paths: StoryboardProjectPaths,
-    order: number,
-    exceptStems: readonly string[],
-  ): Promise<string | undefined> {
-    for (const fileName of await this.listFileNames(paths.sceneDirectory)) {
-      const parts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
-
-      if (parts !== undefined && parts.order === order && !exceptStems.includes(parts.stem)) {
-        return parts.stem;
-      }
-    }
-
-    return undefined;
   }
 
   private async listMemoryScopes(
@@ -255,7 +192,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   ): Promise<PlannedWrite[]> {
     const moves: PlannedWrite[] = [];
 
-    await this.planSceneFileMoves(moves, paths, rename);
+    await this.planDraftMove(moves, paths, rename);
     await this.planDraftHistoryMoves(moves, paths, rename);
     await this.planCacheFileMoves(moves, paths, memoryScopes, rename);
     await this.planStudioSessionMoves(moves, paths, rename);
@@ -276,25 +213,15 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
   }
 
-  private async planSceneFileMoves(
+  private async planDraftMove(
     moves: PlannedWrite[],
     paths: StoryboardProjectPaths,
     rename: SceneRename,
   ): Promise<void> {
     const root: StoryUri = paths.workspaceRoot;
-    const { from, to } = rename;
 
-    await this.addMove(moves, scenePath(root, from.stem), scenePath(root, to.stem), (raw) =>
-      rewriteSceneCardStemText(raw, rename),
-    );
-    await this.addMove(
-      moves,
-      joinUri(paths.sceneDirectory, sceneSummaryFileName(from.stem)),
-      joinUri(paths.sceneDirectory, sceneSummaryFileName(to.stem)),
-      (raw) => raw,
-    );
-    await this.addMove(moves, draftPath(root, from.stem), draftPath(root, to.stem), (raw) =>
-      serializeDraft({ ...parseDraft(raw), sceneStem: to.stem }),
+    await this.addMove(moves, draftPath(root, rename.from.stem), draftPath(root, rename.to.stem), (raw) =>
+      serializeDraft({ ...parseDraft(raw), sceneStem: rename.to.stem }),
     );
   }
 

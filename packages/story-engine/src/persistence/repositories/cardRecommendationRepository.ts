@@ -3,7 +3,6 @@ import {
   type StoryUri,
   parseDraft,
   readDraftFile,
-  readSceneFile,
   getStoryboardProjectPaths,
   type StoryboardProjectPaths,
   type SceneFile,
@@ -13,6 +12,7 @@ import {
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
 import type {
   CardRecommendationInput,
@@ -23,6 +23,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
+    private readonly scenes: WorkspaceScenes,
   ) {}
 
   public async load(
@@ -31,7 +32,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
   ): Promise<CardRecommendationInput> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [sources, existingNames] = await Promise.all([
-      this.gatherSources(paths.sceneDirectory, paths.draftDirectory),
+      this.gatherSources(workspaceRoot, paths.draftDirectory),
       this.loadExistingCardNames(workspaceRoot, category),
     ]);
 
@@ -39,11 +40,11 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
   }
 
   private async gatherSources(
-    sceneDirectory: StoryUri,
+    workspaceRoot: StoryUri,
     draftDirectory: StoryUri,
   ): Promise<RecommendationSource[]> {
     const [sceneBodies, draftBodies] = await Promise.all([
-      this.readSceneBodies(sceneDirectory),
+      this.readSceneBodies(workspaceRoot),
       this.readDraftBodies(draftDirectory),
     ]);
     const stems: Set<string> = new Set<string>([...sceneBodies.keys(), ...draftBodies.keys()]);
@@ -62,28 +63,9 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
     return sources;
   }
 
-  private async readSceneBodies(sceneDirectory: StoryUri): Promise<Map<string, string>> {
-    const bodies: Map<string, string> = new Map<string, string>();
-    const entries: FileSystemDirectoryEntry[] = await this.readDirectorySafely(sceneDirectory);
-
-    for (const [name, fileType] of entries) {
-      if (fileType.type !== 'file' || !name.endsWith('.card') || name.startsWith('.')) {
-        continue;
-      }
-
-      try {
-        const scene: SceneFile = await readSceneFile(
-          joinStoryPath(sceneDirectory, name),
-          this.fileSystem,
-          name,
-        );
-        bodies.set(scene.stem, scene.body);
-      } catch {
-        continue;
-      }
-    }
-
-    return bodies;
+  private async readSceneBodies(workspaceRoot: StoryUri): Promise<Map<string, string>> {
+    const scenes: readonly SceneFile[] = (await this.scenes.loadRoster(workspaceRoot)).scenes;
+    return new Map(scenes.map((scene) => [scene.stem, scene.body]));
   }
 
   private async readDraftBodies(draftDirectory: StoryUri): Promise<Map<string, string>> {

@@ -39,7 +39,8 @@ export type BundleWarningKind =
   | 'unknown-entry'
   | 'changed-outside-engine'
   | 'slug-mismatch'
-  | 'copied-id';
+  | 'copied-id'
+  | 'unreadable';
 
 export interface BundleWarning {
   readonly kind: BundleWarningKind;
@@ -114,9 +115,18 @@ export class ElementBundleRepository {
 
   public async listBundles(kinds: readonly ElementKind[] = elementKinds): Promise<BundleListing> {
     const readings: BundleReading[] = [];
+    const unreadable: BundleWarning[] = [];
     for (const kind of kinds) {
       for (const directoryName of await this.listBundleDirectoryNames(kind)) {
-        readings.push(await this.readBundle(kind, directoryName));
+        const reading: BundleReading | BundleWarning = await this.readBundleOrWarning(
+          kind,
+          directoryName,
+        );
+        if ('bundle' in reading) {
+          readings.push(reading);
+        } else {
+          unreadable.push(reading);
+        }
       }
     }
 
@@ -125,10 +135,25 @@ export class ElementBundleRepository {
     return {
       bundles,
       warnings: [
+        ...unreadable,
         ...readings.flatMap((reading) => reading.warnings),
         ...findCopiedIdWarnings(bundles),
       ],
     };
+  }
+
+  private async readBundleOrWarning(
+    kind: ElementKind,
+    directoryName: string,
+  ): Promise<BundleReading | BundleWarning> {
+    try {
+      return await this.readBundle(kind, directoryName);
+    } catch (error) {
+      if (!(error instanceof BundleFileError)) {
+        throw error;
+      }
+      return { kind: 'unreadable', paths: [error.fileName], message: error.message };
+    }
   }
 
   public async readBundle(kind: ElementKind, directoryName: string): Promise<BundleReading> {

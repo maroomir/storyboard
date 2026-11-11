@@ -1,4 +1,3 @@
-import { sampleCardFileName } from '#model/format/sampleCard';
 
 interface StoryboardRelativePaths {
   readonly metadataDirectory: string;
@@ -37,12 +36,9 @@ interface StoryboardRelativePaths {
   readonly outlineChapters: string;
   readonly characterDirectory: string;
   readonly characterProfileDirectory: string;
-  readonly sampleCharacterCard: string;
   readonly backgroundDirectory: string;
-  readonly sampleBackgroundCard: string;
   readonly narratorDirectory: string;
   readonly sceneDirectory: string;
-  readonly sampleScene: string;
   readonly draftDirectory: string;
   readonly draftHistoryDirectory: string;
   readonly manuscriptDirectory: string;
@@ -90,12 +86,9 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   outlineChapters: '.storyboard/outline/chapters.yaml',
   characterDirectory: 'character',
   characterProfileDirectory: 'character/profile',
-  sampleCharacterCard: `character/${sampleCardFileName}`,
   backgroundDirectory: 'background',
-  sampleBackgroundCard: `background/${sampleCardFileName}`,
   narratorDirectory: 'narrator',
   sceneDirectory: 'scene',
-  sampleScene: `scene/${sampleCardFileName}`,
   draftDirectory: 'draft',
   draftHistoryDirectory: '.draft',
   manuscriptDirectory: 'manuscript',
@@ -152,20 +145,12 @@ export function sceneRelativePath(sceneStem: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${sceneStem}${STORYBOARD_FILE_EXTENSIONS.card}`;
 }
 
-export function sceneFileRelativePath(prefix: string, slug: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${prefix}-${slug}${STORYBOARD_FILE_EXTENSIONS.card}`;
-}
-
 export function draftRelativePath(sceneStem: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/${sceneStem}${STORYBOARD_FILE_EXTENSIONS.draft}`;
 }
 
 export function draftHistorySceneRelativeDirectory(sceneStem: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}`;
-}
-
-export function isHiddenSceneFileName(fileName: string): boolean {
-  return fileName.startsWith('.') && fileName.endsWith(STORYBOARD_FILE_EXTENSIONS.card);
 }
 
 export function parseCardIdFromFileName(fileName: string): string | undefined {

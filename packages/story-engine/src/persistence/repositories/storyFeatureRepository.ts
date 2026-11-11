@@ -3,11 +3,12 @@ import {
   bundleFileNames,
   joinStoryPath,
   type StoryUri,
-  parseScene,
   getStoryboardProjectPaths,
   extractErrorMessage,
 } from '@storyboard/story-model';
 import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { SceneRoster, WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
+import type { BundleWarning } from '#engine/persistence/bundles/elementBundleRepository';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { createHash } from 'node:crypto';
 
@@ -24,17 +25,26 @@ import type {
 } from '#engine/application/story/storyFeatureSource';
 import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureSource';
 import { parseProjectJson } from '#engine/persistence/projectJson';
+const sceneSnapshotFileNames: readonly string[] = [
+  bundleFileNames.card,
+  bundleFileNames.statements,
+  bundleFileNames.beats,
+  bundleFileNames.summary,
+];
+
 export class StoryFeatureRepository implements IStoryFeatureRepository {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
+    private readonly scenes: WorkspaceScenes,
   ) {}
 
   public async load(workspaceRoot: StoryUri): Promise<StoryFeatureSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const roster: CardRoster = await this.readRoster(workspaceRoot);
-    const sourceFiles: StorySourceFiles = await this.readSourceFiles(paths, roster);
-    const scenes: SceneFile[] = this.parseScenes(sourceFiles.sceneFiles);
+    const sceneRoster: SceneRoster = await this.readSceneRoster(workspaceRoot);
+    const sourceFiles: StorySourceFiles = await this.readSourceFiles(paths, roster, sceneRoster);
+    const scenes: SceneFile[] = [...sceneRoster.scenes];
     const cards: StoryboardCard[] = [...roster.characters, ...roster.backgrounds];
 
     const project: StoryboardProject = parseProjectJson(sourceFiles.projectText.text);
@@ -82,44 +92,34 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     }
   }
 
+  private async readSceneRoster(workspaceRoot: StoryUri): Promise<SceneRoster> {
+    const roster: SceneRoster = await this.scenes.loadRoster(workspaceRoot);
+    const unreadable: readonly BundleWarning[] = roster.warnings.filter(
+      (warning) => warning.kind === 'unreadable',
+    );
+    if (unreadable.length > 0) {
+      throw new StoryFeatureSourceError(
+        'invalid-scene',
+        `유효하지 않은 씬이 있습니다.\n${unreadable.map((warning) => warning.message).join('\n')}`,
+      );
+    }
+
+    return roster;
+  }
+
   private async readSourceFiles(
     paths: StoryboardProjectPaths,
     roster: CardRoster,
+    sceneRoster: SceneRoster,
   ): Promise<StorySourceFiles> {
     const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
       readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
-      readTextFiles(
-        this.fileSystem,
-        paths.sceneDirectory,
-        (name) => name.endsWith('.card') && !name.startsWith('.'),
-      ),
+      readSceneBundleFiles(this.fileSystem, paths, sceneRoster),
       readBundleFiles(this.fileSystem, paths.workspaceRoot, roster),
       readOptionalText(this.fileSystem, paths.bibleCanon),
     ]);
 
     return { projectText, sceneFiles, cardFiles, canonText };
-  }
-
-  private parseScenes(sceneFiles: readonly TextFile[]): SceneFile[] {
-    const invalidScenes: string[] = [];
-    const scenes: SceneFile[] = [];
-
-    for (const file of sceneFiles) {
-      try {
-        scenes.push(parseScene(file.text, file.name));
-      } catch (error) {
-        invalidScenes.push(`${file.name}: ${formatParseError(error)}`);
-      }
-    }
-
-    if (invalidScenes.length > 0) {
-      throw new StoryFeatureSourceError(
-        'invalid-scene',
-        `유효하지 않은 씬이 있습니다.\n${invalidScenes.join('\n')}`,
-      );
-    }
-
-    return scenes;
   }
 
   private async snapshotSources(
@@ -170,26 +170,19 @@ async function readOptionalText(fs: IFileSystem, uri: StoryUri): Promise<TextFil
   }
 }
 
-async function readTextFiles(
+async function readSceneBundleFiles(
   fs: IFileSystem,
-  directory: StoryUri,
-  include: (name: string) => boolean,
+  paths: StoryboardProjectPaths,
+  roster: SceneRoster,
 ): Promise<TextFile[]> {
-  let entries: readonly FileSystemDirectoryEntry[];
-  try {
-    entries = await fs.readDirectory(directory);
-  } catch {
-    throw new StoryFeatureSourceError(
-      'source-read-failed',
-      `씬 디렉터리를 읽을 수 없습니다: ${directory.fsPath}`,
-    );
-  }
+  const bundleFileUris: StoryUri[] = roster.entries.flatMap((entry) =>
+    sceneSnapshotFileNames.map((fileName) =>
+      joinStoryPath(paths.workspaceRoot, ...entry.path.split('/'), fileName),
+    ),
+  );
 
   return await Promise.all(
-    entries
-      .filter(([name, entry]) => entry.type === 'file' && include(name))
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([name]) => readTextFile(fs, joinStoryPath(directory, name))),
+    [paths.structure, ...bundleFileUris].map((uri) => readOptionalBundleFile(fs, uri)),
   );
 }
 

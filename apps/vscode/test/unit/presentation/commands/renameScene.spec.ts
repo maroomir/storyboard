@@ -52,7 +52,6 @@ describe("renameScene command", () => {
       kind: "renamed",
       fromStem: "03-night-market",
       toStem: "04-night-market",
-      hasOrderChanged: true,
       movedFiles: ["scene/04-night-market.card"],
       rewrittenFiles: [],
     })
@@ -70,12 +69,12 @@ describe("renameScene command", () => {
   })
 
   it("shows the engine's refusal", async () => {
-    renameScene.mockResolvedValue({ ok: false, kind: "order-taken", message: "4번은 이미 04-dawn 가 쓰고 있습니다." })
+    renameScene.mockResolvedValue({ ok: false, kind: "order-changed", message: "이름 바꾸기는 번호를 그대로 둡니다." })
 
     new CommandRegistrar().register([new RenameSceneCommand({ drafts: { renameScene }, runGate: { hold } })])
     await renameHandler!(sceneUri)
 
-    expect(window.showWarningMessage).toHaveBeenCalledWith("4번은 이미 04-dawn 가 쓰고 있습니다.")
+    expect(window.showWarningMessage).toHaveBeenCalledWith("이름 바꾸기는 번호를 그대로 둡니다.")
   })
 
   it("refuses a card outside the scene folder without asking for a name", async () => {

@@ -341,7 +341,8 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     return backgroundId
       ? await new DraftRepository(this.host.fileSystem).findRecentBackgroundExcerpt(
           inputs.paths,
-          inputs.scene.stem,
+          inputs.scene,
+          (await this.host.scenes.loadRoster(inputs.paths.workspaceRoot)).scenes,
           backgroundId,
         )
       : undefined;

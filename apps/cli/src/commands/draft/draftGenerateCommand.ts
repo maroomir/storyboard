@@ -28,7 +28,7 @@ export class DraftGenerateCommand implements ICommandHandler {
     usage: 'draft generate <stem> | --all',
     summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
     flags: ['all', 'force', 'no-revise', 'revise-iterations'],
-    examples: ['storyboard draft generate 01-scene-1-1', 'storyboard draft generate --all'],
+    examples: ['storyboard draft generate 001-scene-1-1', 'storyboard draft generate --all'],
   };
 
   public async execute(context: CommandContext): Promise<CommandOutcome> {
@@ -74,7 +74,7 @@ export class DraftGenerateCommand implements ICommandHandler {
   private async generateScene({ container, args }: CommandContext): Promise<CommandOutcome> {
     const stem: string | undefined = sceneStemFrom(args);
     if (stem === undefined) {
-      return failure('씬 stem을 지정해 주세요. 예: storyboard draft generate 01-scene-1-1');
+      return failure('씬 stem을 지정해 주세요. 예: storyboard draft generate 001-scene-1-1');
     }
 
     const { generation, revision }: GenerateAndReviseDraftResult =

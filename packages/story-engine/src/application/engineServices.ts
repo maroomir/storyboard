@@ -40,6 +40,7 @@ import type {
 import type { IBibleCandidateRepository } from '#engine/application/project/bibleRepositories';
 import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 
 export interface HostAdapters {
   readonly fileSystem: IFileSystem;
@@ -50,6 +51,7 @@ export interface HostAdapters {
   readonly generator: string;
   readonly caches: WorkspaceCaches;
   readonly cards: WorkspaceCards;
+  readonly scenes: WorkspaceScenes;
 }
 
 export interface AiServices {

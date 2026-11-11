@@ -1,7 +1,5 @@
 import {
-  joinStoryPath,
-  type StoryUri,
-  parseSceneCard,
+  BundleFileError,
   type SceneCard,
   compositionKinds,
   extractErrorMessage,
@@ -17,7 +15,11 @@ import type { CliContainer } from '@/container';
 import type { CommandOutcome } from '@/commands/outcome';
 import type { WorkspaceStatus } from '@storyboard/story-app';
 import { flagString, type ParsedArguments } from '@/cliArguments';
-import { buildCompositionPreset, type CompositionPreset } from '@storyboard/story-engine';
+import {
+  buildCompositionPreset,
+  type CompositionPreset,
+  type SceneRoster,
+} from '@storyboard/story-engine';
 import { resolve } from 'node:path';
 
 export interface ReadSceneCardsResult {
@@ -178,25 +180,23 @@ function createContractInput(
 export class WorkspaceInput {
   public constructor(private readonly container: CliContainer) {}
 
-  public async readSceneCards(
-    sceneDirectory: StoryUri,
-    fileNames: readonly string[],
-  ): Promise<ReadSceneCardsResult> {
-    const cards: { fileName: string; card: SceneCard }[] = [];
-    const unreadable: string[] = [];
-
-    for (const fileName of fileNames.filter((name) => name.endsWith('.card'))) {
-      const uri: StoryUri = joinStoryPath(sceneDirectory, fileName);
-      const text: string = new TextDecoder().decode(await this.container.fileSystem.readFile(uri));
-
-      try {
-        cards.push({ fileName, card: parseSceneCard(text) });
-      } catch {
-        unreadable.push(fileName);
+  public async readSceneCards(): Promise<ReadSceneCardsResult> {
+    let roster: SceneRoster;
+    try {
+      roster = await this.container.drafts.loadSceneRoster(this.container.workspaceRoot);
+    } catch (error) {
+      if (error instanceof BundleFileError) {
+        return { cards: [], unreadable: [error.fileName] };
       }
+      throw error;
     }
 
-    return { cards, unreadable };
+    return {
+      cards: roster.scenes.map((scene) => ({ fileName: `${scene.stem}.card`, card: scene.card })),
+      unreadable: roster.warnings
+        .filter((warning) => warning.kind === 'unreadable')
+        .flatMap((warning) => warning.paths),
+    };
   }
 
   public async readContract(args: ParsedArguments): Promise<ContractInput> {

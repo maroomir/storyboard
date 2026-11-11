@@ -13,7 +13,7 @@ export class SceneRenameCommand implements ICommandHandler {
     usage: 'scene rename <stem> --to <stem>',
     summary: '씬 이름·번호를 바꾸고 초안·기억·정전의 참조를 함께 옮깁니다',
     flags: ['to'],
-    examples: ['storyboard scene rename 03-night-market --to 04-night-market'],
+    examples: ['storyboard scene rename 003-night-market --to 003-moon-market'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
@@ -34,13 +34,8 @@ export class SceneRenameCommand implements ICommandHandler {
       return failure(sceneRename.message);
     }
 
-    const orderNote: '' | ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.' =
-      sceneRename.hasOrderChanged
-        ? ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
-        : '';
-
     return success(
-      `${sceneRename.fromStem} → ${sceneRename.toStem} (옮긴 파일 ${sceneRename.movedFiles.length}개, 고친 파일 ${sceneRename.rewrittenFiles.length}개).${orderNote}`,
+      `${sceneRename.fromStem} → ${sceneRename.toStem} (옮긴 파일 ${sceneRename.movedFiles.length}개, 고친 파일 ${sceneRename.rewrittenFiles.length}개).`,
       sceneRename,
     );
   }

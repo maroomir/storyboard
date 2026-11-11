@@ -1,8 +1,7 @@
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
-  extractInlineSceneSummary,
+  parseSceneFileName,
   joinStoryPath,
-  serializeSceneCard,
   serializeSynopsisMarkdown,
   type OutlineSynopsis,
   type SceneCard,
@@ -30,12 +29,15 @@ import {
 import type {
   BibleSubjectKind,
   NoteAbsorbPlan,
-  SceneSummaryExtraction,
+  StatementSource,
   StoryboardProjectPaths,
   VoiceSeeds,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
+
+const absorbedSource: StatementSource = { origin: 'studio' };
 import type { ZodSafeParseResult } from 'zod';
 
 function encodeText(text: string): Uint8Array {
@@ -66,6 +68,7 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
+    private readonly scenes: WorkspaceScenes,
   ) {}
 
   public async saveBundle(workspaceRoot: StoryUri, bundle: NoteBundle): Promise<void> {
@@ -134,7 +137,8 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
   }
 
   public async sceneExists(workspaceRoot: StoryUri, fileName: string): Promise<boolean> {
-    return await this.fileSystem.exists(this.sceneUri(workspaceRoot, fileName));
+    const slug: string | undefined = parseSceneFileName(fileName)?.slug;
+    return slug !== undefined && (await this.scenes.find(workspaceRoot, slug)) !== undefined;
   }
 
   public async writeScene(
@@ -142,19 +146,11 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     fileName: string,
     card: SceneCard,
   ): Promise<void> {
-    const extraction: SceneSummaryExtraction | undefined = extractInlineSceneSummary(card);
-
-    if (extraction !== undefined) {
-      await this.fileSystem.writeFile(
-        this.sceneUri(workspaceRoot, extraction.summaryFileName),
-        encodeText(extraction.summaryText),
-      );
-    }
-
-    await this.fileSystem.writeFile(
-      this.sceneUri(workspaceRoot, fileName),
-      encodeText(serializeSceneCard(extraction?.card ?? card)),
-    );
+    const slug: string | undefined = parseSceneFileName(fileName)?.slug;
+    await this.scenes.writeCard(workspaceRoot, card, {
+      source: absorbedSource,
+      ...(slug === undefined ? {} : { slug }),
+    });
   }
 
   public async synopsisExists(workspaceRoot: StoryUri): Promise<boolean> {
@@ -237,10 +233,6 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
       generatedAt: new Date().toISOString(),
       facts: [...facts],
     });
-  }
-
-  private sceneUri(workspaceRoot: StoryUri, fileName: string): StoryUri {
-    return joinStoryPath(getStoryboardProjectPaths(workspaceRoot).sceneDirectory, fileName);
   }
 
   private async writeCacheFile(

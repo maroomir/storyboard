@@ -2,25 +2,21 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { RenameSceneUseCase, type IStoryboardLogger } from '@storyboard/story-engine';
 import {
-  createDraft,
-  NodeUri,
-  parseBible,
-  parseDraft,
-  parseSceneStem,
-  parseStoryState,
-  rewriteSceneCardStemText,
-  serializeDraft,
-} from '@storyboard/story-model';
+  RenameSceneUseCase,
+  WorkspaceScenes,
+  type IStoryboardLogger,
+} from '@storyboard/story-engine';
+import { createDraft, NodeUri, parseBible, parseDraft, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createTestHost } from '@storyboard/story-engine/testing';
 import type { WorkspaceCaches } from '@storyboard/story-engine';
 
-import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
+import { createWorkspaceCaches, createWorkspaceCards } from './fixtures/workspaceCacheFixture';
+import { readSceneFromBundles, writeSceneBundlesFromYaml } from './fixtures/sceneBundles';
 
-const fromStem = '03-night-market';
+const fromStem = '003-night-market';
 const silentLogger: IStoryboardLogger = {
   info: (): void => {},
   warn: (): void => {},
@@ -49,7 +45,14 @@ function rename(
   toStem: string,
   fileSystem: NodeFileSystem = new NodeFileSystem(),
 ): ReturnType<RenameSceneUseCase['execute']> {
-  return new RenameSceneUseCase(createTestHost({ fileSystem, logger: silentLogger, caches })).execute({
+  const scenes: WorkspaceScenes = new WorkspaceScenes({
+    fileSystem,
+    caches,
+    cards: createWorkspaceCards(caches),
+  });
+  return new RenameSceneUseCase(
+    createTestHost({ fileSystem, logger: silentLogger, caches, scenes }),
+  ).execute({
     workspaceRoot: NodeUri.file(workspace),
     fromStem,
     toStem,
@@ -84,16 +87,16 @@ function draftFor(stem: string, body: string): string {
   );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   caches = createWorkspaceCaches();
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-rename-'));
 
-  write(
-    `scene/${fromStem}.card`,
-    `type: scene\nid: ${fromStem}\ntitle: 야시장\nsummary: ${fromStem}.summary.md\nbeats:\n  - 등불이 켜진다.\n`,
-  );
-  write(`scene/${fromStem}.summary.md`, '야시장에서 둘이 마주친다.\n');
-  write('scene/05-dawn.card', 'type: scene\nid: 05-dawn\n');
+  await writeSceneBundlesFromYaml(workspace, [
+    'type: scene\nid: 001-opening\n',
+    'type: scene\nid: 002-walk\n',
+    `type: scene\nid: ${fromStem}\ntitle: 야시장\nsummary: 야시장에서 둘이 마주친다.\nbeats:\n  - 등불이 켜진다.\n`,
+    'type: scene\nid: 004-dawn\n',
+  ]);
   write(`draft/${fromStem}.md`, draftFor(fromStem, '등불 아래.\n'));
   write(`.draft/${fromStem}/2026-10-01-00-00-rev-01.md`, draftFor(fromStem, '옛 초안.\n'));
   write(
@@ -154,125 +157,81 @@ afterEach(async () => {
 });
 
 describe('RenameSceneUseCase', () => {
-  it('moves every file named after the scene and rewrites the stem inside them', async () => {
-    const result = await rename('04-night-market');
+  it('moves the bundle and every file named after the scene', async () => {
+    const result = await rename('003-moon-market');
 
-    expect(result).toMatchObject({ ok: true, kind: 'renamed', hasOrderChanged: true });
+    expect(result).toMatchObject({ ok: true, kind: 'renamed', toStem: '003-moon-market' });
     expect(has(`scene/${fromStem}.card`)).toBe(false);
-    expect(read('scene/04-night-market.card')).toBe(
-      'type: scene\nid: 04-night-market\ntitle: 야시장\nsummary: 04-night-market.summary.md\nbeats:\n  - 등불이 켜진다.\n',
-    );
-    expect(read('scene/04-night-market.summary.md')).toBe('야시장에서 둘이 마주친다.\n');
-    expect(parseDraft(read('draft/04-night-market.md'))).toMatchObject({
-      sceneStem: '04-night-market',
+    expect(has('scene/003-moon-market.card/card.yaml')).toBe(true);
+    const moved = await readSceneFromBundles(workspace, '003-moon-market');
+    expect(moved).toMatchObject({ slug: 'moon-market', order: 3 });
+    expect(moved?.card.title).toBe('야시장');
+    expect(moved?.summaryText).toBe('야시장에서 둘이 마주친다.\n');
+    expect(parseDraft(read('draft/003-moon-market.md'))).toMatchObject({
+      sceneStem: '003-moon-market',
       body: '등불 아래.\n',
     });
-    expect(parseDraft(read('.draft/04-night-market/2026-10-01-00-00-rev-01.md')).sceneStem).toBe(
-      '04-night-market',
+    expect(has(`draft/${fromStem}.md`)).toBe(false);
+    expect(parseDraft(read('.draft/003-moon-market/2026-10-01-00-00-rev-01.md')).sceneStem).toBe(
+      '003-moon-market',
     );
     expect(has(`.draft/${fromStem}`)).toBe(false);
-    expect(JSON.parse(read('.storyboard/cache/scenes/04-night-market.json')).sceneStem).toBe(
-      '04-night-market',
+    expect(JSON.parse(read('.storyboard/cache/scenes/003-moon-market.json')).sceneStem).toBe(
+      '003-moon-market',
     );
     expect(
-      JSON.parse(read('.storyboard/memory/threads/side/dialogue/04-night-market.json')).sceneStem,
-    ).toBe('04-night-market');
+      JSON.parse(read('.storyboard/memory/threads/side/dialogue/003-moon-market.json')).sceneStem,
+    ).toBe('003-moon-market');
     expect(
-      JSON.parse(read('.storyboard/cache/studio-sessions/scene/04-night-market/s1.json')).entity,
-    ).toEqual({ kind: 'scene', key: '04-night-market' });
+      JSON.parse(read('.storyboard/cache/studio-sessions/scene/003-moon-market/s1.json')).entity,
+    ).toEqual({ kind: 'scene', key: '003-moon-market' });
     expect(has(`.storyboard/cache/studio-sessions/scene/${fromStem}`)).toBe(false);
   });
 
-  it('renumbers the ledger and canon and follows the stem in memory', async () => {
-    await rename('04-night-market');
+  it('keeps the ledger and follows the stem in canon and memory', async () => {
+    const before = read('.storyboard/memory/storyState.md');
 
-    const state = parseStoryState(read('.storyboard/memory/storyState.md'));
-    expect(state.throughSceneOrder).toBe(5);
-    expect([...state.sceneInputHashes.keys()].sort()).toEqual([4, 5]);
-    expect(state.entries.map((entry) => entry.throughScene)).toEqual([4, 5]);
-    expect(state.entries[0]?.witnesses).toEqual(['hana']);
+    await rename('003-moon-market');
 
+    expect(read('.storyboard/memory/storyState.md')).toBe(before);
     const [moved, untouched] = parseBible(read('.storyboard/bible/canon.yaml')).facts;
     expect(moved).toMatchObject({
-      id: 'character:hana:job@3',
-      sourceScene: '04-night-market',
-      validFrom: '04-night-market',
-      validUntil: 4,
-      revealFrom: { scene: 4, knownBy: ['hana'] },
-    });
-    expect(untouched?.validFrom).toBe(5);
-
-    expect(JSON.parse(read('.storyboard/memory/personas/hana.json')).updatedThroughScene).toBe(
-      '04-night-market',
-    );
-
-  });
-
-  it('changes only the stem references when the number stays', async () => {
-    const before = read('.storyboard/memory/storyState.md');
-    const result = await rename('03-moon-market');
-
-    expect(result).toMatchObject({ ok: true, hasOrderChanged: false });
-    expect(read('.storyboard/memory/storyState.md')).toBe(before);
-    expect(parseBible(read('.storyboard/bible/canon.yaml')).facts[0]).toMatchObject({
-      sourceScene: '03-moon-market',
+      sourceScene: '003-moon-market',
+      validFrom: '003-moon-market',
       validUntil: 3,
     });
+    expect(untouched?.validFrom).toBe(5);
+    expect(JSON.parse(read('.storyboard/memory/personas/hana.json')).updatedThroughScene).toBe(
+      '003-moon-market',
+    );
   });
 
-  it('refuses a number another scene holds and leaves the workspace untouched', async () => {
-    const result = await rename('05-night-market');
+  it('refuses a number change and leaves the workspace untouched', async () => {
+    const result = await rename('004-night-market');
 
-    expect(result).toMatchObject({ ok: false, kind: 'order-taken' });
+    expect(result).toMatchObject({ ok: false, kind: 'order-changed' });
+    expect((result as { message: string }).message).toContain('scene move');
     expect(has(`scene/${fromStem}.card`)).toBe(true);
-    expect(has('scene/05-night-market.card')).toBe(false);
+    expect(has(`draft/${fromStem}.md`)).toBe(true);
   });
 
   it('finishes a rename that was cut off by running it again', async () => {
-    expect(await rename('04-night-market', new FailingFileSystem(9))).toMatchObject({ ok: false });
-    expect(read('.storyboard/memory/storyState.md')).toContain('scene-input: 4 ');
+    expect(await rename('003-moon-market', new FailingFileSystem(2))).toMatchObject({ ok: false });
     expect(has('.storyboard/cache/scene-rename.json')).toBe(true);
     expect(has(`scene/${fromStem}.card`)).toBe(true);
-    expect(has('scene/04-night-market.card')).toBe(true);
 
-    expect(await rename('04-night-market')).toMatchObject({ ok: true, kind: 'renamed' });
+    expect(await rename('003-moon-market')).toMatchObject({ ok: true, kind: 'renamed' });
     expect(has(`scene/${fromStem}.card`)).toBe(false);
     expect(has('.storyboard/cache/scene-rename.json')).toBe(false);
     expect(has(`draft/${fromStem}.md`)).toBe(false);
-    expect(parseDraft(read('draft/04-night-market.md')).sceneStem).toBe('04-night-market');
-    const state = parseStoryState(read('.storyboard/memory/storyState.md'));
-    expect([...state.sceneInputHashes.keys()].sort()).toEqual([4, 5]);
-    expect(state.entries.map((entry) => entry.throughScene)).toEqual([4, 5]);
-    expect(parseBible(read('.storyboard/bible/canon.yaml')).facts[0]?.sourceScene).toBe(
-      '04-night-market',
-    );
-  });
-
-  it('still refuses the number when the card there is not the cut-off copy', async () => {
-    write('scene/04-night-market.card', 'type: scene\nid: 04-night-market\ntitle: 다른 씬\n');
-
-    expect(await rename('04-night-market')).toMatchObject({ ok: false, kind: 'order-taken' });
-  });
-
-  it('does not take a card that matches but whose draft is another scene', async () => {
-    write(
-      'scene/04-night-market.card',
-      rewriteSceneCardStemText(read(`scene/${fromStem}.card`), {
-        from: parseSceneStem(fromStem)!,
-        to: parseSceneStem('04-night-market')!,
-      }),
-    );
-    write('draft/04-night-market.md', draftFor('04-night-market', '다른 씬의 초안.\n'));
-
-    expect(await rename('04-night-market')).toMatchObject({ ok: false, kind: 'order-taken' });
-    expect(parseDraft(read('draft/04-night-market.md')).body).toBe('다른 씬의 초안.\n');
+    expect(parseDraft(read('draft/003-moon-market.md')).sceneStem).toBe('003-moon-market');
   });
 
   it('refuses a malformed stem and a missing scene', async () => {
     expect(await rename('night-market')).toMatchObject({ ok: false, kind: 'invalid-stem' });
     expect(await rename(fromStem)).toMatchObject({ ok: false, kind: 'invalid-stem' });
 
-    rmSync(join(workspace, 'scene', `${fromStem}.card`));
-    expect(await rename('04-night-market')).toMatchObject({ ok: false, kind: 'missing' });
+    rmSync(join(workspace, 'scene', `${fromStem}.card`), { recursive: true });
+    expect(await rename('003-moon-market')).toMatchObject({ ok: false, kind: 'missing' });
   });
 });

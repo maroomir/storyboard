@@ -24,10 +24,14 @@ export class SceneBundleFiles {
   }
 
   public async writeBeats(scenePath: string, beats: readonly Beat[]): Promise<void> {
-    await this.files.writeText(
-      bundleFileRelativePath(scenePath, 'beats'),
-      serializeBeatsFile(beats),
-    );
+    const path: string = bundleFileRelativePath(scenePath, 'beats');
+    const text: string = serializeBeatsFile(beats);
+    const isUnchanged: boolean = (await this.files.readTextIfExists(path)) === text;
+    if (isUnchanged) {
+      return;
+    }
+
+    await this.files.writeText(path, text);
   }
 
   public async readState(scenePath: string): Promise<SceneStoryState | undefined> {
@@ -61,5 +65,9 @@ export class SceneBundleFiles {
 
   public async readSummary(scenePath: string): Promise<string | undefined> {
     return await this.files.readTextIfExists(bundleFileRelativePath(scenePath, 'summary'));
+  }
+
+  public async writeSummary(scenePath: string, summaryText: string): Promise<void> {
+    await this.files.writeText(bundleFileRelativePath(scenePath, 'summary'), summaryText);
   }
 }

@@ -1,4 +1,9 @@
-import { WorkspaceCaches, WorkspaceCards, WorkspaceRunLocks } from '@storyboard/story-engine';
+import {
+  WorkspaceCaches,
+  WorkspaceCards,
+  WorkspaceRunLocks,
+  WorkspaceScenes,
+} from '@storyboard/story-engine';
 import {
   createWorkspaceRunLockRecord,
   NodeUri,
@@ -54,4 +59,12 @@ export async function readRunLockToken(
 
 export function createWorkspaceCards(caches: WorkspaceCaches): WorkspaceCards {
   return new WorkspaceCards({ fileSystem: new NodeFileSystem(), caches });
+}
+
+export function createWorkspaceScenes(caches: WorkspaceCaches): WorkspaceScenes {
+  return new WorkspaceScenes({
+    fileSystem: new NodeFileSystem(),
+    caches,
+    cards: createWorkspaceCards(caches),
+  });
 }

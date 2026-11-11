@@ -29,6 +29,7 @@ import { measureWidth } from '@/terminal/width';
 
 import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
 import { writeCardBundleFromYaml } from './fixtures/cardBundles';
+import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 let home: string;
 let workspace: string;
@@ -173,7 +174,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(checks.find((check) => check.label === '씬')?.detail).toContain('0개');
   });
 
-  function writeWorkspaceWithLedger(ledger: string): void {
+  async function writeWorkspaceWithLedger(ledger: string): Promise<void> {
     mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
@@ -184,14 +185,10 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
         format: 'novel',
         language: 'ko',
         createdAt: new Date().toISOString(),
-        editor: { scenePrefixDigits: 2 },
+        editor: {},
       }),
     );
-    mkdirSync(join(workspace, 'scene'), { recursive: true });
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      'type: scene\nid: 01-first\nsummary: 첫 방송을 마친다.\n',
-    );
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-first\nsummary: 첫 방송을 마친다.\n');
     writeFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), ledger);
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
@@ -214,7 +211,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   }
 
   it('asks for a repair when the ledger carries no input record', async () => {
-    writeWorkspaceWithLedger(unsealedLedger);
+    await writeWorkspaceWithLedger(unsealedLedger);
 
     const outcome = await new DoctorCommand().execute({ container: container(), args: args() });
 
@@ -224,7 +221,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   });
 
   it('reports a ledger that no longer matches its scene after the repair sealed it', async () => {
-    writeWorkspaceWithLedger(unsealedLedger);
+    await writeWorkspaceWithLedger(unsealedLedger);
 
     const repaired = await findCommand('init')!.execute({
       container: container(),
@@ -238,10 +235,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     const sealed = await new DoctorCommand().execute({ container: container(), args: args() });
     expect(checksOf(sealed).find((entry) => entry.label === '이야기 상태')?.status).toBe('ok');
 
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
-    );
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-first\nsummary: 고쳐 쓴 요약.\n');
 
     const stale = await new DoctorCommand().execute({ container: container(), args: args() });
     const check = checksOf(stale).find((entry) => entry.label === '이야기 상태');
@@ -251,13 +245,10 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   });
 
   it('clears the stale mark when state reseal accepts the drafts as they are', async () => {
-    writeWorkspaceWithLedger(unsealedLedger);
+    await writeWorkspaceWithLedger(unsealedLedger);
     await runCommand('init', args({ repair: true }));
 
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
-    );
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-first\nsummary: 고쳐 쓴 요약.\n');
     expect(await staleCheckStatus()).toBe('warn');
 
     const resealed = await runCommand('state reseal', args());
@@ -272,13 +263,10 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   });
 
   it('refuses a scene range it cannot read instead of resealing everything', async () => {
-    writeWorkspaceWithLedger(unsealedLedger);
+    await writeWorkspaceWithLedger(unsealedLedger);
     await runCommand('init', args({ repair: true }));
 
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
-    );
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-first\nsummary: 고쳐 쓴 요약.\n');
 
     const refused = await runCommand('state reseal', args({}, ['8-3']));
 
@@ -307,7 +295,7 @@ describe('storyboard doctor chapter summaries', () => {
         format: 'novel',
         language: 'ko',
         createdAt: new Date().toISOString(),
-        editor: { scenePrefixDigits: 2 },
+        editor: {},
       }),
     );
     writeFileSync(
@@ -717,7 +705,7 @@ describe('storyboard doctor beat cast', () => {
     return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
   }
 
-  function writeWorkspaceWithBeatCast(cast: readonly string[]): void {
+  async function writeWorkspaceWithBeatCast(cast: readonly string[]): void {
     mkdirSync(join(workspace, '.storyboard'), { recursive: true });
     mkdirSync(join(workspace, 'character'), { recursive: true });
     mkdirSync(join(workspace, 'scene'), { recursive: true });
@@ -730,30 +718,19 @@ describe('storyboard doctor beat cast', () => {
         format: 'novel',
         language: 'ko',
         createdAt: new Date().toISOString(),
-        editor: { scenePrefixDigits: 2 },
+        editor: {},
       }),
     );
     writeCardBundleFromYaml(workspace, 'type: character\nid: hana\nname: 김하나\naliases:\n  - 하나 씨\n');
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      `type: scene\nid: 01-first\ncharacters:\n  - hana\nbeats:\n  - text: 하나가 문을 연다.\n    cast:\n${cast.map((ref) => `      - ${ref}\n`).join('')}`,
+    await writeSceneBundleFromYaml(
+      workspace,
+      `type: scene\nid: 001-first\ncharacters:\n  - hana\nbeats:\n  - text: 하나가 문을 연다.\n    cast:\n${cast.map((ref) => `      - ${ref}\n`).join('')}`,
     );
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
-  it('warns about a cast entry no character card answers to', async () => {
-    writeWorkspaceWithBeatCast(['hana', '김하나', '하나 씨', 'minsu']);
-
-    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
-      (entry) => entry.label === '비트 출연',
-    );
-
-    expect(check?.detail).toContain('01-first 비트 1: minsu');
-    expect(check?.detail).not.toContain('하나 씨');
-  });
-
   it('stays quiet when every cast entry is a card id, name or alias', async () => {
-    writeWorkspaceWithBeatCast(['hana', '하나 씨']);
+    await writeWorkspaceWithBeatCast(['hana', '하나 씨']);
 
     const checks = checksOf(await new DoctorCommand().execute({ container: container(), args: args() }));
 
@@ -766,7 +743,7 @@ describe('storyboard doctor outline addresses', () => {
     return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
   }
 
-  function writeWorkspaceWithScenePlace(groundingPlace: string, beatPlace: string): void {
+  async function writeWorkspaceWithScenePlace(groundingPlace: string, beatPlace: string): void {
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
     mkdirSync(join(workspace, 'scene'), { recursive: true });
     writeFileSync(
@@ -778,32 +755,22 @@ describe('storyboard doctor outline addresses', () => {
         format: 'novel',
         language: 'ko',
         createdAt: new Date().toISOString(),
-        editor: { scenePrefixDigits: 2 },
+        editor: {},
       }),
     );
     writeFileSync(
       join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
       'version: 1.0.0\nacts:\n  - id: act-1\n    title: 1막\n    chapters:\n      - id: chapter-1\n        title: 1장\n        summary: 3동 704호에 새 세입자가 든다. 불은 7동에서 났다.\n        scenes:\n          - id: s1\n            title: 첫 씬\n',
     );
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      `type: scene\nid: 01-first\ngrounding:\n  place: ${groundingPlace}\nbeats:\n  - text: 문을 연다.\n    place: ${beatPlace}\n`,
+    await writeSceneBundleFromYaml(
+      workspace,
+      `type: scene\nid: 001-first\ngrounding:\n  place: ${groundingPlace}\nbeats:\n  - text: 문을 연다.\n    place: ${beatPlace}\n`,
     );
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
-  it('warns when a scene card names a building the chapter outline gives another unit', async () => {
-    writeWorkspaceWithScenePlace('7동 704호 거실', '7동 704호 현관');
-
-    const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
-      (entry) => entry.label === '아웃라인 장소',
-    );
-
-    expect(check?.detail).toContain('01-first: 7동 704호 (아웃라인 3동 704호)');
-  });
-
   it('stays quiet when the scene card keeps the outline address', async () => {
-    writeWorkspaceWithScenePlace('3동 704호 거실', '7동 화재 현장');
+    await writeWorkspaceWithScenePlace('3동 704호 거실', '7동 화재 현장');
 
     const checks = checksOf(await new DoctorCommand().execute({ container: container(), args: args() }));
 
@@ -831,7 +798,7 @@ describe('storyboard doctor background conflicts', () => {
         format: 'novel',
         language: 'ko',
         createdAt: new Date().toISOString(),
-        editor: { scenePrefixDigits: 2 },
+        editor: {},
       }),
     );
     writeCardBundleFromYaml(

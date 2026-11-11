@@ -442,12 +442,8 @@ export class DoctorChecks {
     ];
   }
 
-  private async surveySceneCards(sceneFileNames: readonly string[]): Promise<SceneCardCensus> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    const { cards, unreadable } = await new WorkspaceInput(this.container).readSceneCards(
-      paths.sceneDirectory,
-      sceneFileNames,
-    );
+  private async surveySceneCards(): Promise<SceneCardCensus> {
+    const { cards, unreadable } = await new WorkspaceInput(this.container).readSceneCards();
     const withoutBeats: number = cards.filter(({ card }) => (card.beats?.length ?? 0) === 0).length;
     const largestSceneTarget: number = cards.reduce(
       (largest, { card }) => Math.max(largest, card.targetWordCount ?? 0),
@@ -654,10 +650,9 @@ export class DoctorChecks {
     rootPath: string,
     paths: StoryboardProjectPaths,
   ): Promise<WorkspaceSurvey> {
-    const sceneFileNames: readonly string[] = await this.container.fileSystem
-      .listFileNames(paths.sceneDirectory)
-      .catch(() => []);
-    const scenes: string[] = sceneFileNames.filter((name) => name.endsWith('.card'));
+    const census: SceneCardCensus = await this.surveySceneCards();
+    const sceneFileNames: readonly string[] = census.cards.map(({ fileName }) => fileName);
+    const scenes: readonly string[] = sceneFileNames;
     const drafts: string[] = (
       await this.container.fileSystem.listFileNames(paths.draftDirectory).catch(() => [])
     ).filter((name) => name.endsWith('.md'));
@@ -665,7 +660,6 @@ export class DoctorChecks {
       .filter((uri) => !existsSync(uri.fsPath))
       .map((uri) => `${basename(uri.fsPath)}/`);
     const hasOutline: boolean = existsSync(paths.outlineChapters.fsPath);
-    const census: SceneCardCensus = await this.surveySceneCards(scenes);
     const missingIgnoreEntries: readonly string[] = readMissingGitignoreEntries(
       existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
     );

@@ -696,7 +696,11 @@ export class InterviewSessionUseCase {
     }
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(context.workspaceRoot);
-    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem, this.host.cards);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(
+      this.host.fileSystem,
+      this.host.cards,
+      this.host.scenes,
+    );
     try {
       const narration: NarrationDirective | undefined = await resolver.resolveNarration(
         paths,
@@ -1384,7 +1388,7 @@ export class InterviewSessionUseCase {
 
     for (const item of chosen) {
       scenes.push(
-        await this.repositories.scenes.read(scenePath(workspaceRoot, item.stem), `${item.stem}.card`),
+        await this.repositories.scenes.read(scenePath(workspaceRoot, item.stem)),
       );
     }
 

@@ -1,10 +1,7 @@
 import {
   joinStoryPath,
-  readSceneFile,
-  scenePath,
 } from '@storyboard/story-model';
 import type {
-  SceneFile,
   StoryUri,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
@@ -68,18 +65,4 @@ export class WorkspaceFiles {
     await this.fileSystem.writeFile(uri, new TextEncoder().encode(text));
   }
 
-  public async readSceneOrUndefined(
-    workspaceRoot: StoryUri,
-    sceneStem: string,
-  ): Promise<SceneFile | undefined> {
-    try {
-      return await readSceneFile(
-        scenePath(workspaceRoot, sceneStem),
-        this.fileSystem,
-        `${sceneStem}.card`,
-      );
-    } catch {
-      return undefined;
-    }
-  }
 }

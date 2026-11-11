@@ -1,39 +1,18 @@
-import type { ProjectManager } from '@storyboard/story-app';
+import type { NovelManager } from '@storyboard/story-app';
+import type { SeedScenesResult } from '@storyboard/story-engine';
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
-import type {
-  StoryUri,
-  ReadWriteFileSystem,
-  StoryboardProjectPaths,
-  StoryboardProject,
-  ChapterPlan,
-} from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
-import {
-  getStoryboardProjectPaths,
-  buildSceneSeeds,
-  type GeneratedSceneSeed,
-  ChapterPlanParseError,
-  parseSceneFileName,
-  readChapterPlanFile,
-  resolveScenePrefixDigitCount,
-} from '@storyboard/story-model';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import type { ConfigBridge } from '@storyboard/story-ai';
+import { sceneCardPath } from '@storyboard/story-model';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
-const outlineFileSystem: ReadWriteFileSystem = {
-  readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
-    vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: StoryUri, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
-
 export interface GenerateSceneSeedsCommandDependencies {
-  readonly configBridge: ConfigBridge;
-  readonly project: Pick<ProjectManager, 'read'>;
+  readonly novel: Pick<NovelManager, 'seedScenes'>;
 }
+
+const seedFileExtension: string = '.card';
 
 export class GenerateSceneSeedsCommand implements IExtensionCommand {
   public readonly id: string = storyboardCommandIds.sceneGenerateAllSeeds;
@@ -48,109 +27,70 @@ export class GenerateSceneSeedsCommand implements IExtensionCommand {
       return;
     }
 
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-
-    if (!(await uriExists(paths.outlineChapters))) {
-      await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
+    const seeding: SeedScenesResult | undefined = await this.seedScenes(workspaceRoot);
+    if (seeding === undefined) {
       return;
     }
 
-    const seeds: GeneratedSceneSeed[] | undefined = await this.loadSceneSeeds(paths);
-    if (!seeds) {
-      return;
-    }
-
-    const [firstSeed] = seeds;
-    if (!firstSeed) {
-      await vscode.window.showInformationMessage('아웃라인에 생성할 씬이 없습니다.');
-      return;
-    }
-
-    if (!(await this.confirmSeedOverwrite(paths.sceneDirectory, seeds.length))) {
-      return;
-    }
-
-    await writeSceneSeeds(paths.sceneDirectory, seeds);
-
-    const firstSceneUri: vscode.Uri = vscode.Uri.joinPath(paths.sceneDirectory, firstSeed.fileName);
-    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(firstSceneUri);
-    await vscode.window.showTextDocument(document);
-
-    await vscode.window.showInformationMessage(`씬 시드 ${seeds.length}개를 생성했습니다.`);
+    await this.reportSeeding(workspaceRoot, seeding);
   }
 
-  private async loadSceneSeeds(
-    paths: StoryboardProjectPaths,
-  ): Promise<GeneratedSceneSeed[] | undefined> {
-    const project: StoryboardProject = await this.dependencies.project.read(paths.workspaceRoot);
-    const digitCount: number = resolveScenePrefixDigitCount(
-      project.editor.scenePrefixDigits,
-      this.dependencies.configBridge.inspectScenePrefixDigits(),
-    );
-
-    try {
-      const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, outlineFileSystem);
-      return buildSceneSeeds(plan, digitCount);
-    } catch (error) {
-      if (error instanceof ChapterPlanParseError) {
-        await vscode.window.showErrorMessage(`chapters.yaml을 읽을 수 없습니다: ${error.message}`);
-        return undefined;
-      }
-
-      throw error;
-    }
-  }
-
-  private async confirmSeedOverwrite(
-    sceneDirectory: vscode.Uri,
-    seedCount: number,
-  ): Promise<boolean> {
-    if ((await this.countExistingSceneFiles(sceneDirectory)) === 0) {
-      return true;
+  private async seedScenes(workspaceRoot: vscode.Uri): Promise<SeedScenesResult | undefined> {
+    const firstTry: SeedScenesResult = await this.dependencies.novel.seedScenes({
+      workspaceRoot,
+      overwrite: false,
+    });
+    if (firstTry.kind !== 'existing_scenes') {
+      return firstTry;
     }
 
     const overwrite: string = '덮어쓰기';
     const choice: string | undefined = await vscode.window.showWarningMessage(
-      `이미 씬 파일이 있습니다. 아웃라인에서 생성한 시드 ${seedCount}개를 씁니다. 같은 이름의 파일은 덮어쓰며, 다른 파일은 그대로 둡니다. 진행할까요?`,
+      `이미 씬이 ${firstTry.existingCount}개 있습니다. 아웃라인에서 만든 시드로 같은 이름의 씬을 덮어쓰며, 다른 씬은 그대로 둡니다. 진행할까요?`,
       { modal: true },
       overwrite,
     );
-
-    return choice === overwrite;
-  }
-
-  private async countExistingSceneFiles(sceneDirectory: vscode.Uri): Promise<number> {
-    let entries: [string, vscode.FileType][];
-    try {
-      entries = await vscode.workspace.fs.readDirectory(sceneDirectory);
-    } catch {
-      return 0;
+    if (choice !== overwrite) {
+      return undefined;
     }
 
-    return entries.filter(
-      ([name, fileType]) =>
-        fileType === vscode.FileType.File && parseSceneFileName(name) !== undefined,
-    ).length;
+    return await this.dependencies.novel.seedScenes({ workspaceRoot, overwrite: true });
   }
-}
 
-async function writeSceneSeeds(
-  sceneDirectory: vscode.Uri,
-  seeds: readonly GeneratedSceneSeed[],
-): Promise<void> {
-  await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: '씬 시드 생성' },
-    async (progress) => {
-      await vscode.workspace.fs.createDirectory(sceneDirectory);
+  private async reportSeeding(workspaceRoot: vscode.Uri, seeding: SeedScenesResult): Promise<void> {
+    switch (seeding.kind) {
+      case 'missing_outline':
+        await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
+        return;
+      case 'empty_plan':
+        await vscode.window.showInformationMessage('아웃라인에 생성할 씬이 없습니다.');
+        return;
+      case 'existing_scenes':
+        return;
+      case 'failed':
+        await vscode.window.showErrorMessage(seeding.message);
+        return;
+      case 'seeded':
+        await this.openFirstSeed(workspaceRoot, seeding.fileNames);
+        await vscode.window.showInformationMessage(
+          `씬 시드 ${seeding.fileNames.length}개를 생성했습니다.`,
+        );
+    }
+  }
 
-      for (const [index, seed] of seeds.entries()) {
-        progress.report({
-          message: `${index + 1}/${seeds.length} ${seed.fileName}`,
-          increment: 100 / seeds.length,
-        });
-        const sceneUri: vscode.Uri = vscode.Uri.joinPath(sceneDirectory, seed.fileName);
-        await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(seed.content));
-      }
-    },
-  );
+  private async openFirstSeed(
+    workspaceRoot: vscode.Uri,
+    fileNames: readonly string[],
+  ): Promise<void> {
+    const firstFileName: string | undefined = fileNames[0];
+    if (firstFileName === undefined) {
+      return;
+    }
+
+    const stem: string = firstFileName.slice(0, -seedFileExtension.length);
+    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+      sceneCardPath(workspaceRoot, stem) as vscode.Uri,
+    );
+    await vscode.window.showTextDocument(document);
+  }
 }

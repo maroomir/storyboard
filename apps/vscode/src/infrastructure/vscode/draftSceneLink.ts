@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { parseDraft, parseSceneStem, sceneFilePath } from '@storyboard/story-model';
+import { parseDraft, parseSceneStem, scenePath } from '@storyboard/story-model';
 import type { Draft, SceneFileNameParts } from '@storyboard/story-model';
 
 export function parseDraftSceneParts(rawDraftText: string): SceneFileNameParts | undefined {
@@ -22,5 +22,5 @@ export function deriveSceneUri(
     return undefined;
   }
 
-  return sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug);
+  return scenePath(workspaceFolder.uri, parts.stem);
 }

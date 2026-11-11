@@ -6,9 +6,6 @@ export const storyboardGitignoreEntries: readonly string[] = [
   `${STORYBOARD_RELATIVE_PATHS.cacheDirectory}/`,
   `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/`,
   `${STORYBOARD_RELATIVE_PATHS.manuscriptDirectory}/`,
-  STORYBOARD_RELATIVE_PATHS.sampleCharacterCard,
-  STORYBOARD_RELATIVE_PATHS.sampleBackgroundCard,
-  STORYBOARD_RELATIVE_PATHS.sampleScene,
 ];
 
 export function readMissingGitignoreEntries(current: string | undefined): readonly string[] {

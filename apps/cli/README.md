@@ -134,10 +134,10 @@ storyboard init --title "시그널" --genre "하이틴 로맨스" --audience "10
   --pov third-limited --target-words 480000 --chapters 8 --scenes-per-chapter 4
 storyboard outline generate
 storyboard scene seed
-storyboard scene plot 01-scene-1-1 --dry-run
-storyboard draft generate 01-scene-1-1 --force
+storyboard scene plot 001-scene-1-1 --dry-run
+storyboard draft generate 001-scene-1-1 --force
 storyboard draft generate --all
-storyboard draft revise 01-scene-1-1
+storyboard draft revise 001-scene-1-1
 storyboard novel generate
 storyboard manuscript assemble && storyboard manuscript review
 ```
@@ -302,7 +302,7 @@ parse loose text; progress and warnings always go to stderr. Exit code is 0 on s
 on failure.
 
 ```bash
-storyboard draft show 01-scene-1-1 --json | jq -r .data.path
+storyboard draft show 001-scene-1-1 --json | jq -r .data.path
 ```
 
 ## Config

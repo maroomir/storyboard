@@ -185,6 +185,13 @@ export function elementCardRelativePath(kind: ElementKind, slug: string): string
   );
 }
 
+export function sceneCardRelativePath(sceneStem: string): string {
+  return bundleFileRelativePath(
+    `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${sceneStem}${STORYBOARD_FILE_EXTENSIONS.card}`,
+    'card',
+  );
+}
+
 export function characterCardRelativePath(slug: string): string {
   return elementCardRelativePath('character', slug);
 }

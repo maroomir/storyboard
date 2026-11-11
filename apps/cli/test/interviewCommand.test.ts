@@ -10,6 +10,7 @@ import { createCliContainer, type CliContainer } from '@/container';
 import type { ChoiceRequest, IPrompter, TextRequest } from '@/adapters/prompter';
 
 import { isLegacyCardPath, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 let home: string;
 let workspace: string;
@@ -70,10 +71,15 @@ async function run(verb: string, parsed: ParsedArguments, prompter?: IPrompter) 
   return await command.execute({ container: container(prompter), args: parsed });
 }
 
-function write(relativePath: string, lines: readonly string[]): void {
+async function write(relativePath: string, lines: readonly string[]): Promise<void> {
   const text: string = `${lines.join('\n')}\n`;
   if (isLegacyCardPath(relativePath)) {
     writeCardBundleFromYaml(workspace, text);
+    return;
+  }
+
+  if (/^scene\/[^/]+\.card$/.test(relativePath)) {
+    await writeSceneBundleFromYaml(workspace, text);
     return;
   }
 
@@ -88,9 +94,9 @@ beforeEach(async () => {
   writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   await run('init', args(['init'], { title: '달의 문' }));
   write('character/hana.card', ['type: character', 'id: hana', 'name: 하나', 'role: main']);
-  write('scene/01-night.card', [
+  await write('scene/001-night.card', [
     'type: scene',
-    'id: 01-night',
+    'id: 001-night',
     'characters:',
     '  - hana',
     'beats:',
@@ -129,10 +135,10 @@ describe('card interview', () => {
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toContain('답 3, 카드 후보 1건');
     expect(prompter.titles).toEqual([
-      '1번째 · 압박 아래 방어 (01-night · 사건 1)',
-      '2번째 · 압박 아래 방어 (01-night · 사건 2)',
-      '3번째 · 호감 표출 (01-night · 사건 3)',
-      '4번째 · 호감 표출 (01-night · 사건 1)',
+      '1번째 · 압박 아래 방어 (001-night · 사건 1)',
+      '2번째 · 압박 아래 방어 (001-night · 사건 2)',
+      '3번째 · 호감 표출 (001-night · 사건 3)',
+      '4번째 · 호감 표출 (001-night · 사건 1)',
     ]);
     expect(prompter.announced[0]).toBe('┌  하나 인터뷰');
     expect(prompter.announced.at(-1)).toBe('   storyboard card promote 로 반영할 수 있습니다');
@@ -153,7 +159,7 @@ describe('card interview', () => {
 
     expect(outcome.ok).toBe(true);
     expect(prompter.titles).toEqual([
-      '1번째 · 압박 아래 방어 (01-night · 사건 1)',
+      '1번째 · 압박 아래 방어 (001-night · 사건 1)',
       '이 답을 「역공」로 읽었습니다. 맞나요?',
     ]);
     const model = JSON.parse(
@@ -224,7 +230,7 @@ describe('card interview', () => {
     expect(after.message).toContain('인터뷰    하나(압박 아래 방어·호감 표출) — 다음 씬에 답이 없는 축이 있습니다');
 
     const doctor = await run('doctor', args(['doctor']));
-    expect(doctor.message).toContain('하나(hana): 다음 씬 01-night에 답이 없는 축');
+    expect(doctor.message).toContain('하나(hana): 다음 씬 001-night에 답이 없는 축');
   });
 
   it('reports an unreadable working model file in doctor and status without stopping the other checks', async () => {
@@ -255,11 +261,11 @@ describe('card interview', () => {
   });
 
   it('narrows the questions to the requested scenes', async () => {
-    write('scene/02-dawn.card', ['type: scene', 'id: 02-dawn', 'characters:', '  - hana', 'beats:', '  - text: 하나가 편지를 쓴다', '    cast: [하나]']);
+    await write('scene/002-dawn.card', ['type: scene', 'id: 002-dawn', 'characters:', '  - hana', 'beats:', '  - text: 하나가 편지를 쓴다', '    cast: [하나]']);
     const prompter: ScriptedPrompter = scriptedPrompter(['[Mock AI] withhold', '여기까지']);
 
     await run('card interview', args(['card', 'interview'], { scenes: '2..2' }, ['hana']), prompter);
 
-    expect(prompter.titles[0]).toBe('1번째 · 압박 아래 방어 (02-dawn · 사건 1)');
+    expect(prompter.titles[0]).toBe('1번째 · 압박 아래 방어 (002-dawn · 사건 1)');
   });
 });

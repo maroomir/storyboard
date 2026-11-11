@@ -1,28 +1,19 @@
-import type { ProjectManager } from '@storyboard/story-app';
+import type { DraftManager } from '@storyboard/story-app';
+import type { CreateSceneResult } from '@storyboard/story-engine';
 import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
 import {
   getStoryboardProjectPaths,
-  sceneFilePath,
-  serializeSceneCard,
-  resolveScenePrefixDigitCount,
-  type StoryUri,
+  sceneCardPath,
   type StoryboardProjectPaths,
-  type StoryboardProject,
 } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, uriExists } from '@/infrastructure/vscode/workspace';
-import {
-  computeNextSceneOrderFromSceneFileNames,
-  formatSceneOrderPrefix,
-  validateSceneSlugInput,
-} from '@/presentation/commands/newSceneHelpers';
-import type { ConfigBridge } from '@storyboard/story-ai';
+import { validateSceneSlugInput } from '@/presentation/commands/newSceneHelpers';
 
 export interface CreateSceneCommandDependencies {
-  readonly configBridge: ConfigBridge;
-  readonly project: Pick<ProjectManager, 'read'>;
+  readonly drafts: Pick<DraftManager, 'createScene'>;
 }
 
 export class CreateSceneCommand implements IExtensionCommand {
@@ -46,11 +37,9 @@ export class CreateSceneCommand implements IExtensionCommand {
       return;
     }
 
-    const prefix: string = await this.resolveNextScenePrefix(paths);
-
     const slug: string | undefined = await vscode.window.showInputBox({
       title: '새 씬 슬러그',
-      prompt: `파일명: ${prefix}-<slug>.card`,
+      prompt: '씬은 맨 뒤 번호로 scene/<번호>-<slug>.card 에 만들어집니다.',
       ignoreFocusOut: true,
       validateInput: validateSceneSlugInput,
     });
@@ -59,39 +48,19 @@ export class CreateSceneCommand implements IExtensionCommand {
       return;
     }
 
-    const normalizedSlug: string = slug.trim();
-    const sceneUri: StoryUri = sceneFilePath(workspaceFolder.uri, prefix, normalizedSlug);
+    const created: CreateSceneResult = await this.dependencies.drafts.createScene({
+      workspaceRoot: workspaceFolder.uri,
+      slug: slug.trim(),
+    });
 
-    if (await uriExists(sceneUri)) {
-      await vscode.window.showWarningMessage('이미 같은 이름의 씬 파일이 있습니다.');
+    if (!created.ok) {
+      await vscode.window.showWarningMessage(created.message);
       return;
     }
 
-    const emptySceneCard: string = serializeSceneCard({
-      type: 'scene',
-      id: `${prefix}-${normalizedSlug}`,
-    });
-    await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(emptySceneCard));
-
-    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(sceneUri);
+    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(
+      sceneCardPath(workspaceFolder.uri, created.stem) as vscode.Uri,
+    );
     await vscode.window.showTextDocument(document);
-  }
-
-  private async resolveNextScenePrefix(paths: StoryboardProjectPaths): Promise<string> {
-    const project: StoryboardProject = await this.dependencies.project.read(paths.workspaceRoot);
-    const digitCount: number = resolveScenePrefixDigitCount(
-      project.editor.scenePrefixDigits,
-      this.dependencies.configBridge.inspectScenePrefixDigits(),
-    );
-
-    const directoryEntries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
-      paths.sceneDirectory,
-    );
-    const sceneFileNames: string[] = directoryEntries
-      .filter(([, fileType]) => fileType === vscode.FileType.File)
-      .map(([name]) => name);
-
-    const nextOrder: number = computeNextSceneOrderFromSceneFileNames(sceneFileNames);
-    return formatSceneOrderPrefix(nextOrder, digitCount);
   }
 }

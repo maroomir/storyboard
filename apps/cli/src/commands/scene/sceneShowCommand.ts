@@ -13,7 +13,7 @@ export class SceneShowCommand implements ICommandHandler {
     group: '씬',
     usage: 'scene show <stem>',
     summary: '씬 카드의 내용과 이 씬에 적용될 시점·줄기를 보여 줍니다',
-    examples: ['storyboard scene show 03-night-market'],
+    examples: ['storyboard scene show 003-night-market'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {

@@ -10,15 +10,16 @@ import {
   draftPath,
   extractDraftBody,
   getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
   isSafeStudioEntityKey,
   nextDraftHistoryRevision,
   parseCard,
+  parseSceneCard,
   parseDraft,
   parseSceneFileName,
   sceneContextPaths,
   scenePath,
   serializeCard,
+  serializeSceneCard,
 } from '@storyboard/story-model';
 import type {
   BibleSubjectKind,
@@ -43,9 +44,9 @@ import type {
   StudioTarget,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { WorkspaceScenes, WrittenScene } from '#engine/persistence/bundles/workspaceScenes';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: StudioAgentEntityKind;
@@ -139,15 +140,12 @@ function draftBodyLength(rawDraft: string): number {
 const studioSource: StatementSource = { origin: 'studio' };
 
 export class StudioContextRepository {
-  private readonly files: WorkspaceFiles;
-
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly revisionPlans: RevisionPlanRecorder,
     private readonly cards: WorkspaceCards,
-  ) {
-    this.files = new WorkspaceFiles(fileSystem);
-  }
+    private readonly scenes: WorkspaceScenes,
+  ) {}
 
   public async readEntityContext(
     workspaceRoot: StoryUri,
@@ -264,11 +262,13 @@ export class StudioContextRepository {
     sceneFocus: StudioSceneFocus,
   ): Promise<StudioEntityContext | undefined> {
     const sceneUri: StoryUri = scenePath(workspaceRoot, sceneStem);
-    const sceneText: string | undefined = await this.readTextOrUndefined(sceneUri);
+    const scene: SceneFile | undefined = await this.readSceneOrUndefined(workspaceRoot, sceneStem);
 
-    if (sceneText === undefined) {
+    if (scene === undefined) {
       return undefined;
     }
+
+    const sceneText: string = serializeSceneCard(scene.card);
 
     const draftUri: StoryUri = draftPath(workspaceRoot, sceneStem);
     const draftText: string | undefined = await this.readTextOrUndefined(draftUri);
@@ -315,7 +315,7 @@ export class StudioContextRepository {
 
     const sections: (string | undefined)[] = await Promise.all(
       stems.map(async (stem) => {
-        const scene: SceneFile | undefined = await this.files.readSceneOrUndefined(
+        const scene: SceneFile | undefined = await this.readSceneOrUndefined(
           workspaceRoot,
           stem,
         );
@@ -350,7 +350,7 @@ export class StudioContextRepository {
         return card ? serializeCard(card).trim() : undefined;
       }
       case 'scene': {
-        const scene: SceneFile | undefined = await this.files.readSceneOrUndefined(
+        const scene: SceneFile | undefined = await this.readSceneOrUndefined(
           workspaceRoot,
           request.key,
         );
@@ -370,7 +370,7 @@ export class StudioContextRepository {
     sceneStem: string,
   ): Promise<StudioSceneStage> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const scene: SceneFile | undefined = await this.files.readSceneOrUndefined(
+    const scene: SceneFile | undefined = await this.readSceneOrUndefined(
       workspaceRoot,
       sceneStem,
     );
@@ -414,7 +414,7 @@ export class StudioContextRepository {
 
     const matches: (string | undefined)[] = await Promise.all(
       stems.map(async (stem) => {
-        const scene: SceneFile | undefined = await this.files.readSceneOrUndefined(
+        const scene: SceneFile | undefined = await this.readSceneOrUndefined(
           workspaceRoot,
           stem,
         );
@@ -426,15 +426,7 @@ export class StudioContextRepository {
   }
 
   private async listSceneStems(workspaceRoot: StoryUri): Promise<string[]> {
-    const names: readonly string[] = await this.files.listNames(
-      getStoryboardProjectPaths(workspaceRoot).sceneDirectory,
-      (name) => !isIgnoredSampleCardFileName(name),
-    );
-
-    return names
-      .map((name) => parseSceneFileName(name)?.stem)
-      .filter((stem): stem is string => stem !== undefined)
-      .sort();
+    return (await this.scenes.loadRoster(workspaceRoot)).scenes.map((scene) => scene.stem);
   }
 
   private async readStageCards(
@@ -515,6 +507,19 @@ export class StudioContextRepository {
     }
   }
 
+  public async applySceneCardText(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+    cardText: string,
+  ): Promise<StoryUri> {
+    const scene: SceneFile | undefined = await this.readSceneOrUndefined(workspaceRoot, sceneStem);
+    const written: WrittenScene = await this.scenes.writeCard(workspaceRoot, parseSceneCard(cardText), {
+      source: studioSource,
+      ...(scene === undefined ? {} : { slug: scene.slug }),
+    });
+    return written.uri;
+  }
+
   public async hasCard(
     workspaceRoot: StoryUri,
     cardKind: BibleSubjectKind,
@@ -526,6 +531,17 @@ export class StudioContextRepository {
 
   public async applyEntityCardText(workspaceRoot: StoryUri, cardText: string): Promise<StoryUri> {
     return await this.cards.writeCard(workspaceRoot, parseCard(cardText), studioSource);
+  }
+
+  private async readSceneOrUndefined(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+  ): Promise<SceneFile | undefined> {
+    try {
+      return await this.scenes.read(workspaceRoot, sceneStem);
+    } catch {
+      return undefined;
+    }
   }
 
   private async readCardOrUndefined(

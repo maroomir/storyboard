@@ -31,7 +31,7 @@ describe('mergeStoryboardGitignore', () => {
     const merged = mergeStoryboardGitignore(stale);
 
     expect(merged).toBe(
-      `${stale}manuscript/\ncharacter/.sample.card\nbackground/.sample.card\nscene/.sample.card\n`,
+      `${stale}manuscript/\n`,
     );
     expect(merged?.match(/# Storyboard generated files/g)).toHaveLength(1);
   });

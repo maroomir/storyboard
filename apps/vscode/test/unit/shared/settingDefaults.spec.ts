@@ -17,7 +17,6 @@ const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | numbe
   "generation.sceneBreak.enabled": (bridge) => bridge.getDraftSceneBreakSeparator() !== undefined,
   "generation.sceneBreak.separator": (bridge) => bridge.getDraftSceneBreakSeparator(),
   "generation.context.condense": (bridge) => bridge.isAiContextCondenseEnabled(),
-  "editor.scene.prefixDigits": (bridge) => bridge.getScenePrefixDigits(),
   "editor.studio.validation": (bridge) => bridge.isStudioValidationEnabled(),
   "editor.grammar.realtime": (bridge) => bridge.isGrammarRealtimeEnabled(),
   "editor.slop.realtime": (bridge) => bridge.isSlopRealtimeEnabled()

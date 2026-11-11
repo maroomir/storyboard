@@ -66,6 +66,7 @@ import {
   WorkspaceCaches,
   WorkspaceCards,
   WorkspaceRunLocks,
+  WorkspaceScenes,
   type IFileSystem,
   type ISqlDatabaseHost,
   type IStoryboardLogger,
@@ -132,6 +133,7 @@ interface EngineGraph {
   readonly logger: IStoryboardLogger;
   readonly caches: WorkspaceCaches;
   readonly cards: WorkspaceCards;
+  readonly scenes: WorkspaceScenes;
   readonly runLocks: WorkspaceRunLocks;
   readonly usageLedger: UsageLedgerRecorder;
   readonly usageMeter: UsageMeter;
@@ -226,6 +228,7 @@ export class StoryboardApplication {
     this.workspace = new WorkspaceManager({
       fileSystem: services.fileSystem,
       cards: services.cards,
+      scenes: services.scenes,
       configBridge: services.configBridge,
       resourceRoots: this.resourceRoots,
       runGate: this.runGate,
@@ -292,6 +295,7 @@ function buildServices(
   });
   const runLocks: WorkspaceRunLocks = new WorkspaceRunLocks({ caches });
   const cards: WorkspaceCards = new WorkspaceCards({ fileSystem, caches });
+  const scenes: WorkspaceScenes = new WorkspaceScenes({ fileSystem, caches, cards });
   const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder({ caches });
   const usageMeter: UsageMeter = new UsageMeter();
   const usageSink: IUsageSink = usageMeter.wrap(
@@ -308,6 +312,7 @@ function buildServices(
     generator,
     caches,
     cards,
+    scenes,
   };
   const ai: AiServices = { gateway: aiGateway, providerRegistry: aiProviderRegistry, usageSink };
   const repositories: WorkspaceRepositories = buildWorkspaceRepositories(
@@ -344,6 +349,7 @@ function buildServices(
     logger,
     caches,
     cards,
+    scenes,
     runLocks,
     usageLedger,
     usageMeter,
@@ -398,7 +404,7 @@ function buildServices(
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
     studioChatUseCase: new StudioChatUseCase(host, ai),
-    studioContextRepository: new StudioContextRepository(fileSystem, revisionPlanRecorder, cards),
+    studioContextRepository: new StudioContextRepository(fileSystem, revisionPlanRecorder, cards, scenes),
     studioSessionRepository: new StudioSessionRepository(fileSystem),
     studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
     cardCollectRepository: new CardCollectRepository(fileSystem, cards),
@@ -419,11 +425,11 @@ function buildWorkspaceRepositories(
 
   return {
     drafts: new DraftRepository(fileSystem),
-    scenes: new SceneRepository(fileSystem),
-    sceneBatches: new SceneBatchRepository(fileSystem, workspaceLocator),
-    sceneSeeds: new SceneSeedRepository(fileSystem),
+    scenes: new SceneRepository(host.scenes),
+    sceneBatches: new SceneBatchRepository(fileSystem, workspaceLocator, host.scenes),
+    sceneSeeds: new SceneSeedRepository(host.scenes),
     sceneCache: new SceneCacheRepository(fileSystem),
-    sceneSidebar: new SceneSidebarRepository(fileSystem),
+    sceneSidebar: new SceneSidebarRepository(fileSystem, host.scenes),
     project: new ProjectRepository(fileSystem),
     outline,
     novelOutline: outline,
@@ -435,12 +441,12 @@ function buildWorkspaceRepositories(
     manuscriptReview: manuscriptAssembly,
     cardWriter: new CardWriterRepository(fileSystem, host.cards),
     cardCollect: new CardCollectRepository(fileSystem, host.cards),
-    cardRecommendations: new CardRecommendationRepository(fileSystem, host.cards),
+    cardRecommendations: new CardRecommendationRepository(fileSystem, host.cards, host.scenes),
     cardSidebar: new CardSidebarRepository(host.cards),
     narratorCards: new NarratorCardRepository(host.cards),
     bibleCandidates: new BibleCandidateRepository(fileSystem),
-    storyFeatures: new StoryFeatureRepository(fileSystem, host.cards),
-    noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards),
+    storyFeatures: new StoryFeatureRepository(fileSystem, host.cards, host.scenes),
+    noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards, host.scenes),
     noteSources: new NoteSourceProvider(host, { fetch }),
     interviews: new InterviewRepository(fileSystem),
   };

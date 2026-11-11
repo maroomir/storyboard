@@ -6,7 +6,6 @@ import {
   STORYBOARD_FILE_EXTENSIONS,
   STORYBOARD_GLOBS,
   detectCharactersInText,
-  isIgnoredSampleCardFileName,
   readCardFile,
 } from '@storyboard/story-model';
 import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
@@ -75,9 +74,7 @@ async function listCharacterCardsInWorkspace(
   const cardNames: string[] = entries
     .filter(
       ([name, type]) =>
-        type === vscode.FileType.File &&
-        name.endsWith(STORYBOARD_FILE_EXTENSIONS.card) &&
-        !isIgnoredSampleCardFileName(name),
+        type === vscode.FileType.File && name.endsWith(STORYBOARD_FILE_EXTENSIONS.card),
     )
     .map(([name]) => name);
 

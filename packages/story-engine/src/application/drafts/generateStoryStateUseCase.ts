@@ -1,11 +1,8 @@
 import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
-import type { SceneFileNameParts, StoryboardProjectPaths, StoryState, StoryUri } from '@storyboard/story-model';
+import type { SceneFile, StoryState, StoryUri } from '@storyboard/story-model';
 import {
   draftPath,
   extractDraftBody,
-  joinStoryPath,
-  getStoryboardProjectPaths,
-  parseSceneFileName,
   readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
@@ -16,7 +13,6 @@ import {
 } from '#engine/application/drafts/sceneGenerationInputs';
 import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
 
 export interface GenerateStoryStateRequest {
   readonly workspaceRoot: StoryUri;
@@ -132,28 +128,28 @@ export class GenerateStoryStateUseCase {
   }
 
   private async listScenesWithDrafts(request: GenerateStoryStateRequest): Promise<ScenesWithDrafts> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const entries: never[] | FileSystemDirectoryEntry[] = await this.host.fileSystem.readDirectory(paths.sceneDirectory).catch(() => []);
     const requested: readonly number[] | undefined = request.sceneOrders;
     const targets: { stem: string; order: number; sceneUri: StoryUri }[] = [];
     const withoutDraft: string[] = [];
+    const scenes: readonly SceneFile[] = (await this.host.scenes.loadRoster(request.workspaceRoot)).scenes;
 
-    for (const [fileName, entry] of entries) {
-      const parsed: SceneFileNameParts | undefined = entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
-      if (parsed === undefined || (requested !== undefined && !requested.includes(parsed.order))) {
+    for (const scene of scenes) {
+      if (requested !== undefined && !requested.includes(scene.order)) {
         continue;
       }
 
-      const stem: string = fileName.slice(0, -'.card'.length);
-      if (!(await this.host.fileSystem.exists(draftPath(request.workspaceRoot, stem)))) {
-        withoutDraft.push(stem);
+      if (!(await this.host.fileSystem.exists(draftPath(request.workspaceRoot, scene.stem)))) {
+        withoutDraft.push(scene.stem);
         continue;
       }
 
-      targets.push({ stem, order: parsed.order, sceneUri: joinStoryPath(paths.sceneDirectory, fileName) });
+      targets.push({
+        stem: scene.stem,
+        order: scene.order,
+        sceneUri: this.host.scenes.sceneUri(request.workspaceRoot, scene.stem),
+      });
     }
 
-    targets.sort((left, right) => left.order - right.order);
     return { targets, withoutDraft: withoutDraft.sort() };
   }
 }

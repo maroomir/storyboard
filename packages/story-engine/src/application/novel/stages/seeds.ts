@@ -13,7 +13,7 @@ export class SeedsStage implements INovelStage {
     await run.runStageOnce('seeds', '씬 시드 생성 중…', async () => {
       await run.services.repositories.sceneSeeds.saveMissingSeeds(
         run.options.workspaceUri,
-        buildSceneSeeds(plan, run.scenePrefixDigitCount()),
+        buildSceneSeeds(plan),
       );
     });
 

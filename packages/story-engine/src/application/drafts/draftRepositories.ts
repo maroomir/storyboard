@@ -12,7 +12,7 @@ export interface IProjectRepository {
 }
 
 export interface ISceneRepository {
-  read(uri: StoryUri, fileName: string): Promise<SceneFile>;
+  read(uri: StoryUri): Promise<SceneFile>;
   writeBeats(uri: StoryUri, beats: readonly SceneBeat[]): Promise<void>;
 }
 
