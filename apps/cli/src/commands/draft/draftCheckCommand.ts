@@ -3,7 +3,7 @@ import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import { type CommandSpec, draftCheckKinds } from '@/commands/catalog';
 import { DraftRewriter } from '@/commands/draft/draftRewriting';
 import { failure, success } from '@/commands/outcomes';
-import { sceneStemFrom } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom } from '@/commands/sceneArguments';
 import type { CheckDraftResult, DraftCheckKind } from '@storyboard/story-engine';
 
 export class DraftCheckCommand implements ICommandHandler {
@@ -23,7 +23,7 @@ export class DraftCheckCommand implements ICommandHandler {
     const kind: DraftCheckKind | undefined = draftCheckKinds.find(
       (candidate) => candidate === args.positionals[0],
     );
-    const stem: string | undefined = sceneStemFrom(args, 1);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args, 1);
 
     if (kind === undefined) {
       return failure(

@@ -4,7 +4,7 @@ import type { CommandSpec } from '@/commands/catalog';
 import { LineRange, rangeFrom } from '@/commands/draft/draftLines';
 import { DraftRewriter } from '@/commands/draft/draftRewriting';
 import { failure } from '@/commands/outcomes';
-import { sceneStemFrom } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom } from '@/commands/sceneArguments';
 import type { ExpandDraftResult } from '@storyboard/story-engine';
 
 export class DraftExpandCommand implements ICommandHandler {
@@ -19,7 +19,7 @@ export class DraftExpandCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const stem: string | undefined = sceneStemFrom(args);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
     const range: LineRange | 'invalid' | undefined = rangeFrom(args);
 
     if (stem === undefined) {

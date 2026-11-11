@@ -931,6 +931,37 @@ describe('draft generate progress', () => {
   });
 });
 
+describe('scene references on draft verbs', () => {
+  it('turns a number or a slug into the scene bundle before generating', async () => {
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 01-first\ntitle: 첫 만남\n');
+    const real = container();
+    const requestedPaths: string[] = [];
+    const stubbed = {
+      ...real,
+      logger: silentLogger,
+      drafts: stubManager(real.drafts, {
+        generate: async (request: { sceneUri: { path: string } }) => {
+          requestedPaths.push(request.sceneUri.path);
+          return { ok: true, kind: 'generated', draftUri: real.workspaceRoot, warnings: [] };
+        },
+      } as never),
+    } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
+
+    for (const reference of ['1', 'first', '001-first']) {
+      await findCommand('draft generate')!.execute({
+        container: stubbed,
+        args: args(['draft', 'generate'], {}, [reference]),
+      });
+    }
+
+    expect(requestedPaths.map((path) => path.split('/').slice(-2).join('/'))).toEqual([
+      'scene/001-first.card',
+      'scene/001-first.card',
+      'scene/001-first.card',
+    ]);
+  });
+});
+
 describe('draft generate --all progress', () => {
   it('names the stage on each log line, so a piped log does not repeat one line', async () => {
     const logged: string[] = [];

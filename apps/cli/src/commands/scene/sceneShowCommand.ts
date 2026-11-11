@@ -3,7 +3,7 @@ import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import { describeSceneNarration } from '@/commands/card/narratorViews';
 import { failure, success } from '@/commands/outcomes';
-import { sceneStemFrom } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom } from '@/commands/sceneArguments';
 import type { SceneFile } from '@storyboard/story-model';
 import type { SceneThreadContext } from '@storyboard/story-engine';
 
@@ -17,7 +17,7 @@ export class SceneShowCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const stem: string | undefined = sceneStemFrom(args);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
 
     if (stem === undefined) {
       return failure('씬 stem 을 지정해 주세요.');

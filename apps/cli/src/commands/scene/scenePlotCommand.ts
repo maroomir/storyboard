@@ -3,7 +3,7 @@ import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import { flagBoolean } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
-import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import type { CliContainer } from '@/container';
 import type { GenerateSceneBeatsResult } from '@storyboard/story-engine';
 
@@ -55,7 +55,7 @@ export class ScenePlotCommand implements ICommandHandler {
       return this.plotAllScenes(container, force, dryRun);
     }
 
-    const stem: string | undefined = sceneStemFrom(args);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
     if (stem === undefined) {
       return failure('씬 stem을 지정해 주세요. 예: storyboard scene plot 001-scene-1-1');
     }

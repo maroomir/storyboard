@@ -9,7 +9,7 @@ import {
 import { flagBoolean } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
 import { describeMissingChapterSummaries, WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
-import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import {
   describeReviseOutcome,
   type GenerateAllDraftsResult,
@@ -73,7 +73,7 @@ export class DraftGenerateCommand implements ICommandHandler {
   }
 
   private async generateScene({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const stem: string | undefined = sceneStemFrom(args);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
     if (stem === undefined) {
       return failure('씬 stem을 지정해 주세요. 예: storyboard draft generate 001-scene-1-1');
     }

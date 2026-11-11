@@ -5,7 +5,7 @@ import { LineRange, rangeFrom } from '@/commands/draft/draftLines';
 import { DraftRewriter } from '@/commands/draft/draftRewriting';
 import { flagBoolean, flagString } from '@/cliArguments';
 import { failure } from '@/commands/outcomes';
-import { sceneStemFrom } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom } from '@/commands/sceneArguments';
 
 export class DraftAugmentCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -19,7 +19,7 @@ export class DraftAugmentCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const stem: string | undefined = sceneStemFrom(args);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
     const range: LineRange | 'invalid' | undefined = rangeFrom(args);
 
     if (stem === undefined) {
