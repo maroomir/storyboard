@@ -1,3 +1,4 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
@@ -246,6 +247,7 @@ async function prepareReviseDraftContext(
   fs: IFileSystem,
   cards: WorkspaceCards,
   scenes: WorkspaceScenes,
+  summaries: ChapterSummaryLedger,
   paths: StoryboardProjectPaths,
   draftUri: StoryUri,
   sceneStem: string,
@@ -255,6 +257,7 @@ async function prepareReviseDraftContext(
     fs,
     cards,
     scenes,
+    summaries,
     paths,
     sceneStem,
   );
@@ -262,6 +265,7 @@ async function prepareReviseDraftContext(
     fs,
     cards,
     scenes,
+    summaries,
     paths,
     sources,
     sceneCacheRepository,
@@ -279,11 +283,12 @@ async function loadReviseSceneSources(
   fs: IFileSystem,
   cards: WorkspaceCards,
   scenes: WorkspaceScenes,
+  summaries: ChapterSummaryLedger,
   paths: StoryboardProjectPaths,
   sceneStem: string,
 ): Promise<ReviseSceneSources> {
   const scene: SceneFile = await scenes.readByUri(scenePath(paths.workspaceRoot, sceneStem));
-  const context: SceneContext = await new SceneContextReader(fs, cards, scenes).build(
+  const context: SceneContext = await new SceneContextReader(fs, cards, scenes, summaries).build(
     sceneContextPaths(paths),
     scene,
   );
@@ -304,13 +309,14 @@ async function loadReviseFactLines(
   fs: IFileSystem,
   cards: WorkspaceCards,
   scenes: WorkspaceScenes,
+  summaries: ChapterSummaryLedger,
   paths: StoryboardProjectPaths,
   sources: ReviseSceneSources,
   sceneCacheRepository: ISceneCacheRepository | undefined,
 ): Promise<string[]> {
   const { scene, context } = sources;
   const { threadPaths, previousSceneOrder, narration } = sources.reviseNarration;
-  const narrative: NarrativeContext = await new SceneContextReader(fs, cards, scenes).buildNarrative(
+  const narrative: NarrativeContext = await new SceneContextReader(fs, cards, scenes, summaries).buildNarrative(
     sceneContextPaths(threadPaths),
     context,
     {
@@ -380,6 +386,7 @@ export class ReviseDraftUseCase {
       this.host.fileSystem,
       this.host.cards,
       this.host.scenes,
+      this.host.summaries,
       paths,
       draftUri,
       sceneStem,

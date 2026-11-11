@@ -1,7 +1,6 @@
 import {
   STORYBOARD_RELATIVE_PATHS,
   getStoryboardProjectPaths,
-  joinStoryPath,
   mergeStoryboardGitignore,
   type NarratorCard,
   type ProjectSetting,
@@ -47,27 +46,10 @@ export interface CreateWorkspaceResult {
   readonly createdNarrators: readonly string[];
 }
 
-export interface MemoryMigrationResult {
-  readonly movedPaths: readonly string[];
-}
-
 interface AgentGuideFile {
   readonly uri: StoryUri;
   readonly name: string;
   readonly content: string;
-}
-
-interface LegacyMemoryMove {
-  readonly legacy: string;
-  readonly current: string;
-}
-
-const legacyMemoryLocations: readonly LegacyMemoryMove[] = [
-  { legacy: 'manuscript/SUMMARY.md', current: STORYBOARD_RELATIVE_PATHS.chapterSummaries },
-];
-
-function resolveRelative(workspaceRoot: StoryUri, relativePath: string): StoryUri {
-  return joinStoryPath(workspaceRoot, ...relativePath.split('/'));
 }
 
 export class WorkspaceInitializer {
@@ -113,8 +95,7 @@ export class WorkspaceInitializer {
   public async createDirectories(paths: StoryboardProjectPaths): Promise<void> {
     await Promise.all([
       this.fileSystem.createDirectory(paths.sceneCacheDirectory),
-      this.fileSystem.createDirectory(paths.memoryDirectory),
-      this.fileSystem.createDirectory(paths.characterProfileDirectory),
+      this.fileSystem.createDirectory(paths.characterDirectory),
       this.fileSystem.createDirectory(paths.backgroundDirectory),
       this.fileSystem.createDirectory(paths.sceneDirectory),
       this.fileSystem.createDirectory(paths.draftDirectory),
@@ -178,29 +159,6 @@ export class WorkspaceInitializer {
     }
 
     return written;
-  }
-
-  public async migrateLegacyMemory(paths: StoryboardProjectPaths): Promise<MemoryMigrationResult> {
-    const workspaceRoot: StoryUri = paths.workspaceRoot;
-    const movedPaths: string[] = [];
-
-    for (const location of legacyMemoryLocations) {
-      const legacyUri: StoryUri = resolveRelative(workspaceRoot, location.legacy);
-      if (!(await this.fileSystem.exists(legacyUri))) {
-        continue;
-      }
-
-      const currentUri: StoryUri = resolveRelative(workspaceRoot, location.current);
-      if (!(await this.fileSystem.exists(currentUri))) {
-        await this.fileSystem.createDirectory(paths.memoryDirectory);
-        await this.fileSystem.writeFile(currentUri, await this.fileSystem.readFile(legacyUri));
-        movedPaths.push(location.current);
-      }
-
-      await this.fileSystem.delete(legacyUri);
-    }
-
-    return { movedPaths };
   }
 
 }

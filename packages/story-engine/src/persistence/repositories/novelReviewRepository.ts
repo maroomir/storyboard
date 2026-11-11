@@ -1,8 +1,9 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import {
   joinStoryPath,
   type StoryUri,
   getStoryboardProjectPaths,
-  parseChapterSummariesMarkdown,
+  mainThreadId,
   type ChapterSummary,
   type StoryboardProjectPaths,
   type ManuscriptDraftEntry,
@@ -18,6 +19,7 @@ export class NovelReviewRepository implements INovelReviewRepository {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly facts: CardFactReader,
+    private readonly summaries: ChapterSummaryLedger,
   ) {}
 
   public async loadReviewSource(workspaceRoot: StoryUri): Promise<NovelReviewSource> {
@@ -26,8 +28,9 @@ export class NovelReviewRepository implements INovelReviewRepository {
       this.fileSystem,
     ).collectByOrder(paths, { warn: (): void => undefined });
     const canonFactLines: string[] = await this.facts.readFactLines(workspaceRoot);
-    const chapterSummaries: ChapterSummary[] = await this.loadFreshChapterSummaries(
-      paths.chapterSummaries,
+    const chapterSummaries: ChapterSummary[] = await this.summaries.read(
+      workspaceRoot,
+      mainThreadId,
     );
 
     return { draftsByOrder, canonFactLines, chapterSummaries };
@@ -42,13 +45,5 @@ export class NovelReviewRepository implements INovelReviewRepository {
     );
   }
 
-  private async loadFreshChapterSummaries(summaryUri: StoryUri): Promise<ChapterSummary[]> {
-    try {
-      const markdown: string = new TextDecoder().decode(await this.fileSystem.readFile(summaryUri));
-      return parseChapterSummariesMarkdown(markdown).filter((chapter) => chapter.isStale !== true);
-    } catch {
-      return [];
-    }
-  }
 
 }

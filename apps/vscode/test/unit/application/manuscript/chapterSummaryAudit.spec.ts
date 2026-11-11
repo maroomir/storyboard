@@ -7,13 +7,18 @@ import {
   serializeProjectJson,
 } from '@storyboard/story-engine';
 import {
-  buildChapterSummariesMarkdown,
   getStoryboardProjectPaths,
-  parseChapterSummariesMarkdown,
   createDraft,
   serializeDraft,
+  type ChapterSummary,
 } from '@storyboard/story-model';
-import type { FileSystemDirectoryEntry, IFileSystem, WorkspaceScenes } from '@storyboard/story-engine';
+import type {
+  ChapterSummaryLedger,
+  FileSystemDirectoryEntry,
+  IFileSystem,
+  WorkspaceScenes,
+} from '@storyboard/story-engine';
+import { memorySummaries } from '../../../stubs/summaries';
 import { stubScenes } from '../../../stubs/scenes';
 import { unseededOutlineYaml } from '../../../stubs/chapterOutline';
 
@@ -100,10 +105,17 @@ acts:
 
 describe('chapter summary audit over a workspace', () => {
   let fileSystem: MemoryWorkspace;
+  let summaries: ReturnType<typeof memorySummaries>;
 
-  const request = (): { fileSystem: IFileSystem; scenes: WorkspaceScenes; paths: typeof paths } => ({
+  const request = (): {
+    fileSystem: IFileSystem;
+    scenes: WorkspaceScenes;
+    summaries: ChapterSummaryLedger;
+    paths: typeof paths;
+  } => ({
     fileSystem,
     scenes: stubScenes(),
+    summaries,
     paths,
   });
 
@@ -114,11 +126,11 @@ describe('chapter summary audit over a workspace', () => {
     );
   };
 
-  const readSummaries = (): ReturnType<typeof parseChapterSummariesMarkdown> =>
-    parseChapterSummariesMarkdown(fileSystem.read(paths.chapterSummaries.path) ?? '');
+  const readSummaries = (): readonly ChapterSummary[] => summaries.rows.get('main') ?? [];
 
   beforeEach(async () => {
     fileSystem = new MemoryWorkspace();
+    summaries = memorySummaries();
     fileSystem.write(
       paths.projectJson.path,
       serializeProjectJson(createDefaultProjectJson({ name: '작품' })),
@@ -134,13 +146,10 @@ describe('chapter summary audit over a workspace', () => {
   async function sealSummaries(): Promise<void> {
     const current = await new ChapterMemoryAuditor(request()).collectCurrentChapterHashes('작품');
 
-    fileSystem.write(
-      paths.chapterSummaries.path,
-      buildChapterSummariesMarkdown('작품', [
-        { chapterTitle: '1장', summary: '1장 요약', sourceHash: current.get('1장'), isStale: false },
-        { chapterTitle: '2장', summary: '2장 요약', sourceHash: current.get('2장'), isStale: false },
-      ]),
-    );
+    summaries.rows.set('main', [
+      { chapterTitle: '1장', summary: '1장 요약', sourceHash: current.get('1장') },
+      { chapterTitle: '2장', summary: '2장 요약', sourceHash: current.get('2장') },
+    ]);
   }
 
   it('leaves a summary alone while its chapter drafts are unchanged', async () => {
@@ -161,21 +170,20 @@ describe('chapter summary audit over a workspace', () => {
     expect(audit.needsMarking).toBe(true);
   });
 
-  it('writes the mark into the file so the next scene prompt drops that chapter', async () => {
+  it('drops the stale summary so the next generation summarizes that chapter again', async () => {
     writeDraft('01-first', '고쳐 쓴 첫 장 본문');
 
     await new ChapterMemoryAuditor(request()).markStale(await new ChapterMemoryAuditor(request()).audit());
 
-    expect(readSummaries()[0]?.isStale).toBe(true);
-    expect(readSummaries()[1]?.isStale).toBe(false);
+    expect(readSummaries().map((summary) => summary.chapterTitle)).toEqual(['2장']);
   });
 
-  it('does not rewrite the file when nothing became stale', async () => {
-    const before = fileSystem.read(paths.chapterSummaries.path);
+  it('keeps every summary when nothing became stale', async () => {
+    const before = readSummaries();
 
     await new ChapterMemoryAuditor(request()).markStale(await new ChapterMemoryAuditor(request()).audit());
 
-    expect(fileSystem.read(paths.chapterSummaries.path)).toBe(before);
+    expect(readSummaries()).toEqual(before);
   });
 
   it('treats a chapter as stale when its draft is deleted', async () => {

@@ -40,7 +40,7 @@ code, ask before changing the contract, the budget or the model. Existing files 
 overwritten; fill in its last section with the work's own notes.
 
 `doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
-ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
+ledger (the scene bundles' `state.yaml`) against the current cards and scenes: entries whose
 scene has been edited since are reported as stale, and generation drops them from the prompt until
 you regenerate that scene. When the edit was one you do not want redrafted — beats added to a card
 whose prose still stands — `storyboard state reseal [<scene range>]` records the current cards as the
@@ -48,7 +48,7 @@ ledger's basis instead, which is the only way to clear that mark without regener
 has drafts but no ledger — written before the ledger existed, or brought in from outside — gets one
 from `storyboard state generate [<scene range>]`: one `storyStateUpdate` call per scene with a draft,
 in number order, skipping the scenes the ledger already carries (`--force` records the named scenes
-again and, like regenerating a draft, marks the entries of later scenes stale). The chapter summaries (`.storyboard/memory/summaries.md`) are checked the
+again and, like regenerating a draft, marks the entries of later scenes stale). The chapter summaries (in the cache database) are checked the
 same way against the drafts they were written from, and `storyboard manuscript summarize` refreshes
 the ones that no longer match. `storyboard init --repair` restores the directories, `.gitignore` and any missing agent guide
 (`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one) and seals a

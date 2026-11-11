@@ -1,10 +1,11 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import type { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
   joinStoryPath,
   type StoryUri,
   getStoryboardProjectPaths,
-  parseChapterSummariesMarkdown,
+  mainThreadId,
   type ChapterSummary,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -38,6 +39,7 @@ export class ManuscriptAssemblyRepository
     private readonly fileSystem: IFileSystem,
     private readonly facts: CardFactReader,
     private readonly chapters: ChapterOutlineStore,
+    private readonly summaries: ChapterSummaryLedger,
   ) {}
 
   public async hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean> {
@@ -109,22 +111,15 @@ export class ManuscriptAssemblyRepository
     return reportUri;
   }
 
-  public async readChapterSummaries(workspaceRoot: StoryUri): Promise<string | undefined> {
-    const summaryUri: StoryUri = getStoryboardProjectPaths(workspaceRoot).chapterSummaries;
-
-    if (!(await this.fileSystem.exists(summaryUri))) {
-      return undefined;
-    }
-
-    return new TextDecoder().decode(await this.fileSystem.readFile(summaryUri));
+  public async readChapterSummaries(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
+    return await this.summaries.read(workspaceRoot, mainThreadId);
   }
 
-  public async saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.memoryDirectory);
-    const summaryUri: StoryUri = paths.chapterSummaries;
-    await this.fileSystem.writeFile(summaryUri, new TextEncoder().encode(markdown));
-    return summaryUri;
+  public async saveChapterSummaries(
+    workspaceRoot: StoryUri,
+    summaries: readonly ChapterSummary[],
+  ): Promise<void> {
+    await this.summaries.write(workspaceRoot, mainThreadId, summaries);
   }
 
   public async saveAssembly(
@@ -154,11 +149,8 @@ export class ManuscriptAssemblyRepository
   }
 
   private async loadFreshChapterSummaries(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
-    const markdown: string | undefined = await this.readChapterSummaries(workspaceRoot);
-
-    return markdown === undefined
-      ? []
-      : parseChapterSummariesMarkdown(markdown).filter((chapter) => chapter.isStale !== true);
+    return await this.readChapterSummaries(workspaceRoot);
   }
+
 
 }

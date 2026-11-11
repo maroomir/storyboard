@@ -1,3 +1,4 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import {
@@ -6,7 +7,6 @@ import {
   buildChapterSummariesMarkdown,
   computeDraftBodyHash,
   formatChapterSummaryStaleWarning,
-  parseChapterSummariesMarkdown,
 } from '@storyboard/story-model';
 import type {
   AssembledManuscript,
@@ -22,6 +22,7 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 export interface ChapterSummaryAuditRequest {
   readonly fileSystem: IFileSystem;
   readonly scenes: WorkspaceScenes;
+  readonly summaries: ChapterSummaryLedger;
   readonly paths: StoryboardProjectPaths;
 }
 
@@ -51,18 +52,15 @@ export class ChapterMemoryAuditor {
   public async audit(): Promise<ChapterMemoryAudit> {
     const { fileSystem, paths } = this.request;
 
-    if (
-      !(await fileSystem.exists(paths.chapterSummaries)) ||
-      !(await fileSystem.exists(paths.outlineChapters))
-    ) {
+    if (!(await fileSystem.exists(paths.outlineChapters))) {
       return idleAudit;
     }
 
     try {
-      const markdown: string = new TextDecoder().decode(
-        await fileSystem.readFile(paths.chapterSummaries),
+      const summaries: ChapterSummary[] = await this.request.summaries.read(
+        paths.workspaceRoot,
+        paths.threadId,
       );
-      const summaries: ChapterSummary[] = parseChapterSummariesMarkdown(markdown);
 
       if (summaries.length === 0) {
         return idleAudit;
@@ -94,11 +92,10 @@ export class ChapterMemoryAuditor {
       return;
     }
 
-    await this.request.fileSystem.writeFile(
-      this.request.paths.chapterSummaries,
-      new TextEncoder().encode(
-        buildChapterSummariesMarkdown(audit.projectName, audit.audit.summaries),
-      ),
+    await this.request.summaries.write(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
+      audit.audit.summaries,
     );
   }
 

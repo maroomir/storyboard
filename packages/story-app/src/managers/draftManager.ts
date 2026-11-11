@@ -47,6 +47,7 @@ import type {
   WorkspaceCards,
   WorkspaceScenes,
   SceneRoster,
+  ChapterSummaryLedger,
 } from '@storyboard/story-engine';
 import {
   ProjectRepository,
@@ -109,6 +110,7 @@ export interface DraftManagerDependencies {
   readonly fileSystem: IFileSystem;
   readonly cards: WorkspaceCards;
   readonly scenes: WorkspaceScenes;
+  readonly summaries: ChapterSummaryLedger;
 }
 
 export class DraftManager {
@@ -244,7 +246,12 @@ export class DraftManager {
   }
 
   public readSceneContext(workspaceRoot: StoryUri, scene: SceneFile): Promise<SceneContext> {
-    return new SceneContextReader(this.deps.fileSystem, this.deps.cards, this.deps.scenes).build(
+    return new SceneContextReader(
+      this.deps.fileSystem,
+      this.deps.cards,
+      this.deps.scenes,
+      this.deps.summaries,
+    ).build(
       sceneContextPaths(getStoryboardProjectPaths(workspaceRoot)),
       scene,
     );
@@ -254,7 +261,12 @@ export class DraftManager {
     workspaceRoot: StoryUri,
     context: SceneContext,
   ): Promise<NarrativeContext> {
-    return new SceneContextReader(this.deps.fileSystem, this.deps.cards, this.deps.scenes).buildNarrative(
+    return new SceneContextReader(
+      this.deps.fileSystem,
+      this.deps.cards,
+      this.deps.scenes,
+      this.deps.summaries,
+    ).buildNarrative(
       sceneContextPaths(getStoryboardProjectPaths(workspaceRoot)),
       context,
     );

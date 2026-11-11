@@ -1,3 +1,4 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -51,6 +52,7 @@ export interface HostAdapters {
   readonly caches: WorkspaceCaches;
   readonly cards: WorkspaceCards;
   readonly scenes: WorkspaceScenes;
+  readonly summaries: ChapterSummaryLedger;
 }
 
 export interface AiServices {

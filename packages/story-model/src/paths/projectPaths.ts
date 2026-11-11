@@ -16,7 +16,6 @@ import {
   isDraftMarkdownRelativePath,
   parseCardIdFromFileName,
   sceneRelativePath,
-  threadMemoryRelativePath,
 } from '#model/format/paths';
 import { mainThreadId } from '#model/format/project';
 import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from '#model/paths/storyUri';
@@ -32,12 +31,9 @@ export interface StoryboardProjectPaths {
   readonly structure: StoryUri;
   readonly cacheDatabase: StoryUri;
   readonly cacheDirectory: StoryUri;
-  readonly memoryDirectory: StoryUri;
-  readonly threadMemoryDirectory: StoryUri;
   readonly sceneRenameJournal: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
   readonly revisionRoundsDirectory: StoryUri;
-  readonly chapterSummaries: StoryUri;
   readonly cardCacheDirectory: StoryUri;
   readonly noteCacheDirectory: StoryUri;
   readonly noteSource: StoryUri;
@@ -55,7 +51,6 @@ export interface StoryboardProjectPaths {
   readonly outlineChapters: StoryUri;
   readonly pendingChapterPlan: StoryUri;
   readonly characterDirectory: StoryUri;
-  readonly characterProfileDirectory: StoryUri;
   readonly backgroundDirectory: StoryUri;
   readonly narratorDirectory: StoryUri;
   readonly sceneDirectory: StoryUri;
@@ -99,12 +94,9 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     structure: resolve(STORYBOARD_RELATIVE_PATHS.structure),
     cacheDatabase: resolve(STORYBOARD_RELATIVE_PATHS.cacheDatabase),
     cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
-    memoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.memoryDirectory),
-    threadMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory),
     sceneRenameJournal: resolve(STORYBOARD_RELATIVE_PATHS.sceneRenameJournal),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
-    chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
     noteCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.noteCacheDirectory),
     noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
@@ -119,7 +111,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),
     pendingChapterPlan: resolve(STORYBOARD_RELATIVE_PATHS.pendingChapterPlan),
     characterDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterDirectory),
-    characterProfileDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterProfileDirectory),
     backgroundDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
     narratorDirectory: resolve(STORYBOARD_RELATIVE_PATHS.narratorDirectory),
     sceneDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDirectory),
@@ -142,14 +133,7 @@ export function resolveThreadPaths(
     return paths;
   }
 
-  const resolveThreadPath = (relativePath: string): StoryUri =>
-    resolveWorkspacePath(paths.workspaceRoot, threadMemoryRelativePath(threadId, relativePath));
-
-  return {
-    ...paths,
-    threadId,
-    chapterSummaries: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
-  };
+  return { ...paths, threadId };
 }
 
 function workspaceRelativePath(uri: StoryUri, workspaceFolder: StoryWorkspaceFolder): string {

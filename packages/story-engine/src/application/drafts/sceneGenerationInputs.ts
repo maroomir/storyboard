@@ -356,6 +356,7 @@ export class SceneGenerationInputsLoader {
         this.dependencies.host.fileSystem,
         this.dependencies.host.cards,
         this.dependencies.host.scenes,
+        this.dependencies.host.summaries,
       ).build(ctxPaths, rawScene);
       return { ok: true, context };
     } catch (error) {
@@ -433,11 +434,12 @@ export class SceneGenerationInputsLoader {
     sceneBreakJoiner: string | undefined,
     beforeSceneOrder: number,
   ): Promise<readonly (string | undefined)[]> {
-    const { fileSystem, cards, scenes } = this.dependencies.host;
+    const { fileSystem, cards, scenes, summaries } = this.dependencies.host;
     const memoryAuditor: StoryMemoryAuditor = new StoryMemoryAuditor({
       fileSystem,
       cards,
       scenes,
+      summaries,
       paths: threadPaths,
       format: project.format,
       sceneBreakJoiner,
@@ -449,6 +451,7 @@ export class SceneGenerationInputsLoader {
     const chapterAuditor: ChapterMemoryAuditor = new ChapterMemoryAuditor({
       fileSystem,
       scenes,
+      summaries,
       paths: threadPaths,
     });
     const chapterAudit: ChapterMemoryAudit = await chapterAuditor.audit();
@@ -462,7 +465,7 @@ export class SceneGenerationInputsLoader {
     narration: NarrationDirective | undefined,
     context: SceneContext,
   ): Promise<NarrativeContext> {
-    return await new SceneContextReader(this.dependencies.host.fileSystem, this.dependencies.host.cards, this.dependencies.host.scenes).buildNarrative(
+    return await new SceneContextReader(this.dependencies.host.fileSystem, this.dependencies.host.cards, this.dependencies.host.scenes, this.dependencies.host.summaries).buildNarrative(
       sceneContextPaths(thread.threadPaths),
       context,
       {

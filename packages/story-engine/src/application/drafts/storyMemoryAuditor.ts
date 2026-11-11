@@ -1,3 +1,4 @@
+import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
@@ -31,6 +32,7 @@ export interface StoryStateAuditRequest {
   readonly fileSystem: IFileSystem;
   readonly cards: WorkspaceCards;
   readonly scenes: WorkspaceScenes;
+  readonly summaries: ChapterSummaryLedger;
   readonly paths: StoryboardProjectPaths;
   readonly format: ProjectFormat;
   readonly sceneBreakJoiner: string | undefined;
@@ -213,11 +215,12 @@ export class StoryMemoryAuditor {
         return undefined;
       }
       const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-      const context: SceneContext = await new SceneContextReader(reads, this.request.cards, this.request.scenes).build(ctxPaths, scene);
+      const context: SceneContext = await new SceneContextReader(reads, this.request.cards, this.request.scenes, this.request.summaries).build(ctxPaths, scene);
       const bibleFacts: readonly BibleFact[] = await new SceneContextReader(
         reads,
         this.request.cards,
         this.request.scenes,
+        this.request.summaries,
       ).resolveBibleFacts(ctxPaths, context);
 
       return computeSceneInputHash({

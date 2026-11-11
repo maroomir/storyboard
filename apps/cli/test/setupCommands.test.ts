@@ -27,7 +27,12 @@ import type { ParsedArguments } from '@/cliArguments';
 import { createTheme } from '@/terminal/theme';
 import { measureWidth } from '@/terminal/width';
 
-import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
+import {
+  createChapterSummaryLedger,
+  createWorkspaceCaches,
+  createWorkspaceScenes,
+  writeChapterSummaries,
+} from './fixtures/workspaceCacheFixture';
 import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
 import { writeCardBundleFromYaml } from './fixtures/cardBundles';
 import { readSceneState, writeSceneBundleFromYaml, writeSceneState } from './fixtures/sceneBundles';
@@ -282,8 +287,7 @@ describe('storyboard doctor chapter summaries', () => {
     return (outcome.data as { checks: { label: string; detail: string; fix?: string }[] }).checks;
   }
 
-  function writeWorkspaceWithSummary(draftBody: string, recordedHash: string): void {
-    mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
+  async function writeWorkspaceWithSummary(draftBody: string, recordedHash: string): Promise<void> {
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
     mkdirSync(join(workspace, 'draft'), { recursive: true });
     writeFileSync(
@@ -306,15 +310,14 @@ describe('storyboard doctor chapter summaries', () => {
       join(workspace, 'draft', '01-first.md'),
       `---\nsceneStem: 01-first\nformat: novel\ngeneratedAt: '2026-09-07T00:00:00.000Z'\n---\n${draftBody}\n`,
     );
-    writeFileSync(
-      join(workspace, '.storyboard', 'memory', 'summaries.md'),
-      `# 장별 요약\n\n> 대상: 테스트\n\n## 1장\n\n<!-- chapter-input: ${recordedHash} -->\n\n1장 요약\n`,
-    );
+    await writeChapterSummaries(workspace, [
+      { chapterTitle: '1장', summary: '1장 요약', sourceHash: recordedHash },
+    ]);
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
   it('reports a summary that no longer matches its chapter drafts', async () => {
-    writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
+    await writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
 
     const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '장별 요약',
@@ -325,13 +328,17 @@ describe('storyboard doctor chapter summaries', () => {
   });
 
   it('says nothing is wrong once the recorded hash matches the assembled chapter', async () => {
-    writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
+    await writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
     const cli = container();
+    const caches = createWorkspaceCaches();
     const current = await new ChapterMemoryAuditor({
       fileSystem: cli.fileSystem,
+      scenes: createWorkspaceScenes(caches),
+      summaries: createChapterSummaryLedger(caches),
       paths: getStoryboardProjectPaths(cli.workspaceRoot),
     }).collectCurrentChapterHashes('테스트');
-    writeWorkspaceWithSummary('첫 장 본문', current.get('1장') as string);
+    await caches.closeAll();
+    await writeWorkspaceWithSummary('첫 장 본문', current.get('1장') as string);
 
     const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '장별 요약',

@@ -65,8 +65,6 @@ describe('resolveSceneThread', () => {
 
     expect(resolved.threadId).toBe('ep2');
     expect(resolved.threadPaths.threadId).toBe('ep2');
-    expect(resolved.threadPaths.chapterSummaries.path).toContain('memory/threads/ep2/');
-    expect(resolved.threadPaths.chapterSummaries.path).toContain('memory/threads/ep2/summaries.md');
   });
 
   it('skips over scenes belonging to another thread when finding the previous scene', async () => {
