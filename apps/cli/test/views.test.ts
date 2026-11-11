@@ -110,14 +110,14 @@ describe('draft show', () => {
 
 describe('card list and card show', () => {
   beforeEach(async () => {
-    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana']);
-    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'background', '--name', 'Night Market']);
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '등대지기의 손녀', '--name', '하나', '--id', 'hana']);
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'background', '자정에 닫는 야시장', '--name', 'Night Market']);
   });
 
   it('lists both kinds, or the one named', async () => {
     const all = await runJson('card', 'list');
     const characters = await runJson('card', 'list', 'character');
-    const unknown = await new CommandDispatcher(deps()).dispatch(['card', 'list', 'narrator']);
+    const unknown = await new CommandDispatcher(deps()).dispatch(['card', 'list', 'monster']);
 
     expect(all.data.cards.map((card: { id: string }) => card.id)).toEqual([
       'hana',
@@ -163,7 +163,7 @@ describe('status', () => {
 
     await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
     await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
-    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana']);
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '등대지기의 손녀', '--name', '하나', '--id', 'hana']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
     const drafting = await runJson('status');

@@ -2,9 +2,11 @@ import { createEmptyCard, type StoryUri, type UsageAttribution } from '@storyboa
 
 import type { IUseCase } from '#engine/application/useCase';
 import type {
+  CardIdCollisionPolicy,
   CreateCardResult,
   CreateCardUseCase,
 } from '#engine/application/cards/createCardUseCase';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type {
   CreateSceneResult,
   CreateSceneUseCase,
@@ -20,6 +22,7 @@ export interface StudioCreateUseCaseDependencies {
   readonly createCard: CreateCardUseCase;
   readonly createScene: CreateSceneUseCase;
   readonly edit: StudioEditUseCase;
+  readonly cards: WorkspaceCards;
 }
 
 export interface StudioCreateRequest {
@@ -31,6 +34,8 @@ export interface StudioCreateRequest {
   readonly shouldPropose: boolean;
   readonly isValidationEnabled: boolean;
   readonly attribution?: UsageAttribution;
+  readonly whenSlugIsTaken?: CardIdCollisionPolicy;
+  readonly isPreview?: boolean;
 }
 
 export type StudioCreateResult =
@@ -61,14 +66,19 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
       return created;
     }
 
+    const isPreview: boolean = request.isPreview === true && request.kind !== 'scene';
     const edit: StudioEditResult = await this.dependencies.edit.execute({
       workspaceRoot: request.workspaceRoot,
       entity: { kind: request.kind, key: created.key },
       instruction: composeCreationInstruction(request.description),
-      shouldPropose: request.shouldPropose,
+      shouldPropose: request.shouldPropose || isPreview,
       isValidationEnabled: request.isValidationEnabled,
       ...(request.attribution === undefined ? {} : { attribution: request.attribution }),
     });
+
+    if (isPreview && request.kind !== 'scene') {
+      await this.dependencies.cards.remove(request.workspaceRoot, request.kind, created.key);
+    }
 
     return { ok: true, kind: 'created', key: created.key, uri: created.uri, edit };
   }
@@ -92,7 +102,7 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
       workspaceRoot: request.workspaceRoot,
       cardType,
       id: request.slug,
-      whenIdIsTaken: 'refuse',
+      whenIdIsTaken: request.whenSlugIsTaken ?? 'refuse',
       buildCard: (id) => createEmptyCard(cardType, id, request.name.trim()),
     });
 

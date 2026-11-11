@@ -1,78 +1,157 @@
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
-import { type CommandSpec, cardCategories } from '@/commands/catalog';
-import {
-  cardCategoryFrom,
-  cardIdPattern,
-  describeMissingCardCategory,
-} from '@/commands/card/cardArguments';
-import { flagString } from '@/cliArguments';
+import { type CardKind, type CommandSpec, cardKinds } from '@/commands/catalog';
+import { cardIdPattern } from '@/commands/card/cardArguments';
+import { describeLineDiff } from '@/commands/card/cardEditCommand';
+import { buildCard, narratorIdPattern, type BuildCardResult } from '@/commands/card/narratorCardForm';
+import { toNarratorData } from '@/commands/card/narratorViews';
+import { flagBoolean, flagString } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
-import {
-  createEmptyCard,
-  slugify,
-  type BibleSubjectKind,
-  type StoryUri,
-} from '@storyboard/story-model';
-import type { CreateCardResult } from '@storyboard/story-engine';
+import type { CliContainer } from '@/container';
+import type {
+  CreateNarratorCardResult,
+  ElementBundle,
+  StudioCreateResult,
+} from '@storyboard/story-engine';
+import { listStatementFacetsOf, slugify, type StoryUri } from '@storyboard/story-model';
+
+type DescribedKind = Exclude<CardKind, 'narrator'>;
+
+const provisionalNames: Readonly<Record<DescribedKind, string>> = {
+  character: '새 인물',
+  background: '새 배경',
+};
+
+function isCardKind(value: string | undefined): value is CardKind {
+  return cardKinds.some((kind) => kind === value);
+}
+
+function describeEditOutcome(
+  slug: string,
+  edit: Extract<StudioCreateResult, { readonly ok: true }>['edit'],
+): string[] {
+  if (!edit.ok) {
+    return [`설명을 카드에 채우지 못했습니다: ${edit.message}`];
+  }
+  if (edit.kind === 'proposed') {
+    return [`제안: ${edit.summary}`, ...describeLineDiff(edit.diff)];
+  }
+
+  return edit.kind === 'applied' ? [`✓ ${edit.summary}`] : [`스튜디오: ${edit.message}`];
+}
 
 export class CardCreateCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card create',
     writesWorkspace: true,
     group: '카드',
-    usage: `card create <${cardCategories.join('|')}> --name <text>`,
-    summary: '빈 인물·배경 카드를 만듭니다',
-    flags: ['name', 'id'],
+    usage: `card create <${cardKinds.join('|')}> "<설명>" [--name <이름>] [--id <slug>]`,
+    summary:
+      '설명에서 카드 번들을 만들고 채웁니다 (빈 칸과 다음 명령을 알림, --dry-run 은 읽어 낸 줄만 보여 줌). 서술자는 --person 등으로',
+    flags: ['name', 'id', 'dry-run', 'propose', 'person', 'knowledge', 'tense', 'focal', 'voice'],
     examples: [
-      'storyboard card create character --name "서진아" --id seo-jina',
-      'storyboard card create background --name "Night Market"',
+      'storyboard card create character "무뚝뚝한 열일곱 살 궁수 엘리아" --id elia',
+      'storyboard card create background "자정에 닫는 항구 야시장" --dry-run',
+      'storyboard card create narrator hana-first --person first --focal hana',
     ],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const kind: BibleSubjectKind | undefined = cardCategoryFrom(args);
-    const name: string | undefined = flagString(args.flags, 'name') ?? args.positionals[1];
-
-    if (kind === undefined) {
-      return failure(describeMissingCardCategory('card create'));
+    const kind: string | undefined = args.positionals[0];
+    if (!isCardKind(kind)) {
+      return failure(`카드 종류를 지정해 주세요: storyboard card create <${cardKinds.join('|')}> "<설명>"`);
     }
 
-    if (name === undefined || name.trim().length === 0) {
-      return failure('--name 으로 이름을 지정해 주세요.');
+    return kind === 'narrator'
+      ? await this.createNarrator(container, args.positionals[1], args.flags)
+      : await this.createDescribed(container, kind, args.positionals[1], args.flags);
+  }
+
+  private async createDescribed(
+    container: CliContainer,
+    kind: DescribedKind,
+    description: string | undefined,
+    flags: CommandContext['args']['flags'],
+  ): Promise<CommandOutcome> {
+    if (description === undefined || description.trim().length === 0) {
+      return failure(`카드를 설명해 주세요: storyboard card create ${kind} "<설명>"`);
     }
 
-    const cardType: 'character' | 'location' = kind === 'character' ? 'character' : 'location';
-    const explicitId: string | undefined = flagString(args.flags, 'id');
-    const suggested: string | undefined = explicitId ?? slugify(name);
-
-    if (suggested === undefined) {
-      return failure(
-        `'${name.trim()}' 에서 id 를 만들 수 없습니다. --id hana 처럼 영문 id 를 주세요 (영소문자·숫자·하이픈).`,
-      );
+    const name: string = flagString(flags, 'name')?.trim() || provisionalNames[kind];
+    const explicitSlug: string | undefined = flagString(flags, 'id');
+    const slug: string = explicitSlug ?? slugify(name) ?? `new-${kind}`;
+    if (!cardIdPattern.test(slug)) {
+      return failure(`slug 는 영소문자·숫자·하이픈만 쓸 수 있습니다: ${slug}`);
     }
 
-    if (!cardIdPattern.test(suggested)) {
-      return failure(`id 는 영소문자·숫자·하이픈만 쓸 수 있습니다: ${suggested}`);
-    }
-
-    const created: CreateCardResult = await container.cards.create({
+    const isPreview: boolean = flagBoolean(flags, 'dry-run');
+    const created: StudioCreateResult = await container.studio.create({
       workspaceRoot: container.workspaceRoot,
-      cardType,
-      id: suggested,
-      whenIdIsTaken: explicitId === undefined ? 'number-it' : 'refuse',
-      buildCard: (id) => createEmptyCard(cardType, id, name.trim()),
+      kind,
+      slug,
+      name,
+      description,
+      shouldPropose: flagBoolean(flags, 'propose'),
+      isPreview,
+      whenSlugIsTaken: explicitSlug === undefined ? 'number-it' : 'refuse',
     });
-
     if (!created.ok) {
-      return failure(
-        `이미 있는 카드입니다: ${created.id}. 다른 id 를 주거나 card show ${created.id} 로 확인하세요.`,
-      );
+      return failure(created.message, created);
     }
 
-    const id: string = created.id;
-    const uri: StoryUri = created.uri;
+    return isPreview
+      ? success(['미리보기입니다. 아무것도 쓰지 않았습니다.', ...describeEditOutcome(created.key, created.edit)].join('\n'), created)
+      : success(await this.describeCreated(container, kind, created), created);
+  }
 
-    return success(`${id} 카드를 만들었습니다.`, { id, path: (uri as StoryUri).fsPath });
+  private async describeCreated(
+    container: CliContainer,
+    kind: DescribedKind,
+    created: Extract<StudioCreateResult, { readonly ok: true }>,
+  ): Promise<string> {
+    const bundle: ElementBundle | undefined = await container.cards.readBundle(
+      container.workspaceRoot,
+      created.key,
+    );
+    const filled: ReadonlySet<string> = new Set((bundle?.statements ?? []).map((line) => line.facet));
+    const empty: readonly string[] = listStatementFacetsOf(kind)
+      .map((row) => row.id)
+      .filter((facet) => !filled.has(facet));
+
+    return [
+      `✓ ${(created.uri as StoryUri).fsPath} 를 만들었습니다 (${created.key}).`,
+      ...describeEditOutcome(created.key, created.edit),
+      ...(empty.length === 0 ? [] : [`비어 있음: ${empty.join(', ')}`]),
+      `다음: storyboard card interview ${created.key} 또는 storyboard card set ${created.key} <facet> "<값>"`,
+    ].join('\n');
+  }
+
+  private async createNarrator(
+    container: CliContainer,
+    positionalSlug: string | undefined,
+    flags: CommandContext['args']['flags'],
+  ): Promise<CommandOutcome> {
+    const slug: string | undefined = flagString(flags, 'id') ?? positionalSlug;
+    if (slug === undefined || !narratorIdPattern.test(slug)) {
+      return failure('서술자 slug 는 영소문자·숫자·하이픈만 쓸 수 있습니다 (예: hana-first).');
+    }
+
+    const card: BuildCardResult = buildCard(slug, flags);
+    if (!card.ok) {
+      return card.outcome;
+    }
+
+    const created: CreateNarratorCardResult = await container.cards.createNarrator(
+      container.workspaceRoot,
+      card.card,
+    );
+    if (!created.ok) {
+      return failure(`이미 있습니다: narrator/${slug}.card`);
+    }
+
+    return success(
+      `narrator/${slug}.card 를 만들었습니다. 씬이나 장의 서술자로 이 slug 를 쓰면 그 씬에 적용됩니다.`,
+      { ...toNarratorData(card.card), path: (created.uri as StoryUri).fsPath },
+    );
   }
 }

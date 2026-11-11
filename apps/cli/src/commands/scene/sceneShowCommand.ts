@@ -1,7 +1,7 @@
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
-import { describeSceneNarration } from '@/commands/narrator/narratorViews';
+import { describeSceneNarration } from '@/commands/card/narratorViews';
 import { failure, success } from '@/commands/outcomes';
 import { sceneStemFrom } from '@/commands/sceneArguments';
 import type { SceneFile } from '@storyboard/story-model';

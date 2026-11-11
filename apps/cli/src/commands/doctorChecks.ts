@@ -180,7 +180,7 @@ function checkMissingNarrators({ missingNarrators }: NarrationSurvey): DoctorChe
           status: 'fail',
           label: '서술자 참조',
           detail: `카드가 없는 서술자를 참조합니다 (${missingNarrators.join(', ')}). 그 씬은 생성되지 않습니다.`,
-          fix: `storyboard narrator create ${missingNarrators[0]}`,
+          fix: `storyboard card create narrator ${missingNarrators[0]}`,
         },
       ]
     : [];

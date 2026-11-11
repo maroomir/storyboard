@@ -238,55 +238,51 @@ describe('project contract', () => {
 });
 
 describe('card create', () => {
-  it('refuses a name it cannot turn into an id instead of inventing one', async () => {
-    const outcome = await run(
-      'card create',
-      args(['card', 'create'], { name: '서진아' }, ['character']),
-    );
+  it('needs a description to fill the card from', async () => {
+    const outcome = await run('card create', args(['card', 'create'], { name: '하나' }, ['character']));
 
     expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('--id');
-    expect(existsSync(join(workspace, 'character', 'new-card.card'))).toBe(false);
+    expect(outcome.message).toContain('card create character "<설명>"');
   });
 
-  it('shows the shape of the id it wants when it refuses a name', async () => {
+  it('gives a card whose name makes no slug a numbered new-character slug', async () => {
     const outcome = await run(
       'card create',
-      args(['card', 'create'], { name: '하나' }, ['character']),
+      args(['card', 'create'], { name: '서진아' }, ['character', '무뚝뚝한 열일곱 살 궁수']),
     );
 
-    expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('--id hana 처럼 영문 id 를 주세요');
+    expect(outcome.ok, outcome.message).toBe(true);
+    expect(existsSync(join(workspace, 'character', 'new-character.card'))).toBe(true);
+    expect(outcome.message).toContain('비어 있음:');
+    expect(outcome.message).toContain('storyboard card interview new-character');
   });
 
-  it('uses the explicit id when one is given', async () => {
+  it('uses the explicit slug when one is given', async () => {
     const outcome = await run(
       'card create',
-      args(['card', 'create'], { name: '서진아', id: 'seo-jina' }, ['character']),
+      args(['card', 'create'], { name: '서진아', id: 'seo-jina' }, ['character', '궁수']),
     );
 
-    expect(outcome.ok).toBe(true);
-    expect(await readCardYaml(workspace, 'seo-jina')).toContain(
-      'name: 서진아',
-    );
+    expect(outcome.ok, outcome.message).toBe(true);
+    expect(await readCardYaml(workspace, 'seo-jina')).toContain('name: 서진아');
   });
 
-  it('rejects an explicit id that is not file-name safe', async () => {
+  it('rejects an explicit slug that is not file-name safe', async () => {
     const outcome = await run(
       'card create',
-      args(['card', 'create'], { name: '서진아', id: 'Seo Jina' }, ['character']),
+      args(['card', 'create'], { name: '서진아', id: 'Seo Jina' }, ['character', '궁수']),
     );
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('영소문자');
   });
 
-  it('refuses an explicit id a card already holds instead of numbering it', async () => {
-    await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character']));
+  it('refuses an explicit slug a card already holds instead of numbering it', async () => {
+    await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character', '궁수']));
 
     const outcome = await run(
       'card create',
-      args(['card', 'create'], { name: '한아', id: 'hana' }, ['character']),
+      args(['card', 'create'], { name: '한아', id: 'hana' }, ['character', '궁수']),
     );
 
     expect(outcome.ok).toBe(false);
@@ -294,16 +290,24 @@ describe('card create', () => {
     expect(existsSync(join(workspace, 'character', 'hana-2.card'))).toBe(false);
   });
 
-  it('still numbers an id it derived from the name', async () => {
-    await run('card create', args(['card', 'create'], { name: 'Hana' }, ['character']));
+  it('still numbers a slug it derived from the name', async () => {
+    await run('card create', args(['card', 'create'], { name: 'Hana' }, ['character', '궁수']));
 
-    const outcome = await run(
-      'card create',
-      args(['card', 'create'], { name: 'Hana' }, ['character']),
-    );
+    const outcome = await run('card create', args(['card', 'create'], { name: 'Hana' }, ['character', '궁수']));
 
     expect(outcome.ok).toBe(true);
     expect(existsSync(join(workspace, 'character', 'hana-2.card'))).toBe(true);
+  });
+
+  it('writes nothing under --dry-run', async () => {
+    const outcome = await run(
+      'card create',
+      args(['card', 'create'], { name: 'Hana', 'dry-run': true }, ['character', '궁수']),
+    );
+
+    expect(outcome.ok, outcome.message).toBe(true);
+    expect(outcome.message).toContain('아무것도 쓰지 않았습니다');
+    expect(existsSync(join(workspace, 'character', 'hana.card'))).toBe(false);
   });
 });
 
@@ -313,14 +317,16 @@ describe('kind arguments', () => {
     const renamed = await run('card rename', args(['card', 'rename'], { to: 'jun' }, ['hana']));
     const recommended = await run('card recommend', args(['card', 'recommend'], {}, ['narrator']));
 
-    for (const outcome of [created, renamed, recommended]) {
+    expect(created.ok).toBe(false);
+    expect(created.message).toContain('<character|background|narrator>');
+    for (const outcome of [renamed, recommended]) {
       expect(outcome.ok).toBe(false);
       expect(outcome.message).toContain('<character|background>');
     }
   });
 
   it('renames the card of the type named first', async () => {
-    await run('card create', args(['card', 'create'], { name: 'Hana' }, ['character']));
+    await run('card create', args(['card', 'create'], { name: 'Hana' }, ['character', '테스트용 카드']));
 
     const outcome = await run(
       'card rename',
@@ -1111,7 +1117,7 @@ describe('draft generate after a failed review', () => {
 
 describe('narrator verbs', () => {
   it('reports no narrator cards on a fresh workspace', async () => {
-    const outcome = await run('narrator list', args(['narrator', 'list']));
+    const outcome = await run('card list', args(['card', 'list'], {}, ['narrator']));
 
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toContain('작품 계약의 시점');
@@ -1119,26 +1125,26 @@ describe('narrator verbs', () => {
 
   it('creates a narrator card and lists it', async () => {
     const created = await run(
-      'narrator create',
+      'card create',
       args(
-        ['narrator', 'create'],
+        ['card', 'create'],
         { person: 'first', focal: 'hana', voice: '건조한 단문, 자기 비하' },
-        ['hana-first'],
+        ['narrator', 'hana-first'],
       ),
     );
 
     expect(created.ok).toBe(true);
     expect(existsSync(join(workspace, 'narrator', 'hana-first.card'))).toBe(true);
 
-    const listed = await run('narrator list', args(['narrator', 'list']));
+    const listed = await run('card list', args(['card', 'list'], {}, ['narrator']));
     expect(listed.message).toContain('hana-first');
     expect(listed.message).toContain('1인칭');
   });
 
   it('refuses a person the format does not define', async () => {
     const outcome = await run(
-      'narrator create',
-      args(['narrator', 'create'], { person: 'fourth' }, ['x']),
+      'card create',
+      args(['card', 'create'], { person: 'fourth' }, ['narrator', 'x']),
     );
 
     expect(outcome.ok).toBe(false);
@@ -1146,15 +1152,15 @@ describe('narrator verbs', () => {
   });
 
   it('refuses an id that is not a valid file name', async () => {
-    const outcome = await run('narrator create', args(['narrator', 'create'], {}, ['하나']));
+    const outcome = await run('card create', args(['card', 'create'], {}, ['narrator', '하나']));
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('영소문자');
   });
 
   it('refuses to overwrite an existing narrator', async () => {
-    await run('narrator create', args(['narrator', 'create'], {}, ['hana-first']));
-    const again = await run('narrator create', args(['narrator', 'create'], {}, ['hana-first']));
+    await run('card create', args(['card', 'create'], {}, ['narrator', 'hana-first']));
+    const again = await run('card create', args(['card', 'create'], {}, ['narrator', 'hana-first']));
 
     expect(again.ok).toBe(false);
     expect(again.message).toContain('이미 있습니다');
@@ -1162,20 +1168,20 @@ describe('narrator verbs', () => {
 
   it('shows one narrator and removes it', async () => {
     await run(
-      'narrator create',
-      args(['narrator', 'create'], { person: 'first', knowledge: 'retrospective' }, ['old-hana']),
+      'card create',
+      args(['card', 'create'], { person: 'first', knowledge: 'retrospective' }, ['narrator', 'old-hana']),
     );
 
-    const shown = await run('narrator show', args(['narrator', 'show'], {}, ['old-hana']));
+    const shown = await run('card show', args(['card', 'show'], {}, ['old-hana']));
     expect(shown.message).toContain('회고');
 
-    const removed = await run('narrator remove', args(['narrator', 'remove'], {}, ['old-hana']));
+    const removed = await run('card remove', args(['card', 'remove'], {}, ['old-hana']));
     expect(removed.ok).toBe(true);
     expect(existsSync(join(workspace, 'narrator', 'old-hana.card'))).toBe(false);
   });
 
   it('reports a narrator that does not exist', async () => {
-    const outcome = await run('narrator show', args(['narrator', 'show'], {}, ['ghost']));
+    const outcome = await run('card show', args(['card', 'show'], {}, ['ghost']));
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('ghost');
@@ -1244,8 +1250,8 @@ describe('scene show', () => {
 
   it('reports the narrator card a scene names', async () => {
     await run(
-      'narrator create',
-      args(['narrator', 'create'], { person: 'third', knowledge: 'omniscient' }, ['wide']),
+      'card create',
+      args(['card', 'create'], { person: 'third', knowledge: 'omniscient' }, ['narrator', 'wide']),
     );
     await run('scene create', args(['scene', 'create'], { name: 'bridge' }));
     declareThreads({ ep2: { title: '2화' } });
@@ -1262,8 +1268,8 @@ describe('scene show', () => {
 
   it('falls back to the narrator its chapter names', async () => {
     await run(
-      'narrator create',
-      args(['narrator', 'create'], { person: 'third', knowledge: 'omniscient' }, ['wide']),
+      'card create',
+      args(['card', 'create'], { person: 'third', knowledge: 'omniscient' }, ['narrator', 'wide']),
     );
     await run('scene create', args(['scene', 'create'], { name: 'harbor' }));
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
@@ -1751,7 +1757,7 @@ describe('novel generate on an empty work', () => {
 
   it('leaves a card that exists alone and asks only for the missing one', async () => {
     await setContract();
-    await run('card create', args(['card', 'create'], { name: '한아', id: 'hana' }, ['character']));
+    await run('card create', args(['card', 'create'], { name: '한아', id: 'hana' }, ['character', '테스트용 카드']));
     const authored = await readCardYaml(workspace, 'hana');
 
     await generateRecording();
@@ -1762,8 +1768,8 @@ describe('novel generate on an empty work', () => {
 
   it('calls nothing when every cast member has a card', async () => {
     await setContract();
-    await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character']));
-    await run('card create', args(['card', 'create'], { name: '준', id: 'jun' }, ['character']));
+    await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character', '테스트용 카드']));
+    await run('card create', args(['card', 'create'], { name: '준', id: 'jun' }, ['character', '테스트용 카드']));
 
     const { tasks } = await generateRecording();
 

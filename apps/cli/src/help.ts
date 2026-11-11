@@ -301,7 +301,12 @@ export const renamedCommands: Readonly<Record<string, RenamedCommand>> = {
   'scene seeds': { verb: 'scene seed' },
   'scene beats': { verb: 'scene plot' },
   'cards build': { verb: 'card build' },
-  'narrator add': { verb: 'narrator create' },
+  'narrator add': { verb: 'card create', kind: 'narrator' },
+  'narrator create': { verb: 'card create', kind: 'narrator' },
+  'narrator list': { verb: 'card list', kind: 'narrator' },
+  'narrator show': { verb: 'card show' },
+  'narrator remove': { verb: 'card remove' },
+  'card promote': { verb: 'card apply' },
   'manuscript summaries': { verb: 'manuscript summarize' },
 };
 

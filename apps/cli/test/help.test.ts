@@ -9,7 +9,7 @@ import {
   commandGroups,
   completionShells,
   flagCatalog,
-  draftCheckKinds,
+  draftCheckKinds, cardKinds,
   globalFlagNames,
   initLanguages,
 } from '@/commands/catalog';
@@ -230,7 +230,7 @@ describe('suggestVerbs', () => {
       expect(verbs, oldName).toContain(renamed.verb);
       expect(verbs, oldName).not.toContain(oldName);
       if (renamed.kind !== undefined) {
-        expect(draftCheckKinds, oldName).toContain(renamed.kind);
+        expect([...draftCheckKinds, ...cardKinds], oldName).toContain(renamed.kind);
       }
     }
   });

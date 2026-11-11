@@ -542,6 +542,7 @@ function buildStudioServices(
       createCard: new CreateCardUseCase(inputs.repositories),
       createScene: new CreateSceneUseCase(host),
       edit: studioEditUseCase,
+      cards: host.cards,
     }),
   };
 }

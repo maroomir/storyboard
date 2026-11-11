@@ -17,10 +17,6 @@ import { OutlineGenerateCommand } from '@/commands/outline/outlineGenerateComman
 import { OutlineShowCommand } from '@/commands/outline/outlineShowCommand';
 import { OutlineApplyCommand } from '@/commands/outline/outlineApplyCommand';
 import { OutlineDiscardCommand } from '@/commands/outline/outlineDiscardCommand';
-import { NarratorListCommand } from '@/commands/narrator/narratorListCommand';
-import { NarratorShowCommand } from '@/commands/narrator/narratorShowCommand';
-import { NarratorCreateCommand } from '@/commands/narrator/narratorCreateCommand';
-import { NarratorRemoveCommand } from '@/commands/narrator/narratorRemoveCommand';
 import { NovelGenerateCommand } from '@/commands/novel/novelGenerateCommand';
 import { SceneListCommand } from '@/commands/scene/sceneListCommand';
 import { SceneShowCommand } from '@/commands/scene/sceneShowCommand';
@@ -91,10 +87,6 @@ const workCommands: readonly ICommandHandler[] = [
   new OutlineShowCommand(),
   new OutlineApplyCommand(),
   new OutlineDiscardCommand(),
-  new NarratorListCommand(),
-  new NarratorShowCommand(),
-  new NarratorCreateCommand(),
-  new NarratorRemoveCommand(),
   new NovelGenerateCommand(),
   new SceneListCommand(),
   new SceneShowCommand(),

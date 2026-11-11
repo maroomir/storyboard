@@ -30,7 +30,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 
 ## 한 사이클
 
-1. 계약: \`storyboard project set\`, 서술자가 필요하면 \`storyboard narrator create\`
+1. 계약: \`storyboard project set\`, 서술자가 필요하면 \`storyboard card create narrator\`
 2. 카드: \`storyboard card create character\`, \`storyboard card create background\`,
    \`storyboard card build\`, \`storyboard card recommend character\`
 3. 기획: \`storyboard outline generate\` → \`storyboard scene seed\` → \`storyboard scene plot --all\`

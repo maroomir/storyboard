@@ -153,7 +153,7 @@ describe('CLI verbs and the run lock', () => {
   it('still answers read-only verbs while the workspace is held', async () => {
     await plantLock(new Date());
 
-    expect((await new CommandDispatcher(deps()).dispatch(['narrator', 'list'])).exitCode).toBe(0);
+    expect((await new CommandDispatcher(deps()).dispatch(['card', 'list', 'narrator'])).exitCode).toBe(0);
   });
 
   it('releases the lock when a writing verb finishes', async () => {
@@ -183,8 +183,6 @@ describe('CLI verbs and the run lock', () => {
       'tui',
       'help',
       'project show',
-      'narrator list',
-      'narrator show',
       'scene list',
       'scene show',
       'outline show',
