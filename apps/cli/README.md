@@ -84,7 +84,10 @@ check`. `storyboard --help` groups the commands the same way: 시작하기, 기�
 ```bash
 storyboard status                 # contract, outline, cards, scenes, drafts, manuscript + next command
 storyboard project show           # the contract, and which fields are still empty
-storyboard scene list             # scene cards in number order, each with its draft state
+storyboard scene list             # number · thread · title · state (초안 없음 / 초안 / 낡음); the thread column only when there are two
+storyboard scene create "옥상에서 둘이 처음 마주친다" --name rooftop --after 2   # the studio fills it; --after inserts and renumbers
+storyboard scene move rooftop --after 5   # folders and drafts behind it are renumbered (001-…, 002-…)
+storyboard scene remove 003-detour  # the bundle, its draft and revisions; the scenes behind close the gap
 storyboard draft show 01-intro    # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
 storyboard card show hana         # one card, found by slug (--sources: each line's origin, --history: its sessions)

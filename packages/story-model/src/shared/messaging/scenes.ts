@@ -12,6 +12,8 @@ export interface SceneListItem {
   stem: string;
   order: number;
   slug: string;
+  id?: string;
+  thread?: string;
   sceneUri: string;
   status: 'ready' | 'stale' | 'missing';
   sceneMtime: number;
@@ -25,6 +27,8 @@ const sceneListItemSchema: z.ZodType<SceneListItem> = z.object({
   stem: z.string().trim().min(1),
   order: z.number().int(),
   slug: z.string().trim().min(1),
+  id: z.string().trim().min(1).optional(),
+  thread: z.string().trim().min(1).optional(),
   title: z.string().trim().min(1).optional(),
   sceneUri: uriStringSchema,
   draftUri: uriStringSchema.optional(),

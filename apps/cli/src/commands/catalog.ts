@@ -183,9 +183,10 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'out', valueLabel: '<path>', summary: 'manuscript export 의 출력 파일' },
   { name: 'lines', valueLabel: '<a-b>', summary: '대상 줄 범위 (없으면 본문 전체)' },
   { name: 'instruction', valueLabel: '<text>', summary: 'draft augment/edit 에 줄 지시' },
-  { name: 'name', valueLabel: '<text>', summary: 'card create 가 쓸 이름 (없으면 스튜디오가 설명에서 채움)' },
+  { name: 'name', valueLabel: '<text>', summary: 'card create 가 쓸 이름 (없으면 스튜디오가 설명에서 채움), scene create 의 slug' },
   { name: 'id', valueLabel: '<slug>', summary: 'card create 의 slug (기본: 이름에서 유도)' },
   { name: 'to', valueLabel: '<id>', summary: 'card rename 의 새 id, scene rename 의 새 stem' },
+  { name: 'after', valueLabel: '<씬>', summary: 'scene create/move: 이 씬 바로 뒤에 둡니다 (번호-slug, 번호, slug)' },
   { name: 'title', valueLabel: '<name>', summary: 'init 이 만들 작품 이름' },
   {
     name: 'repair',

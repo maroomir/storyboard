@@ -78,10 +78,49 @@ describe('scene list', () => {
       '002-storm',
     ]);
     expect(listed.data.scenes[0].draft).not.toBe('missing');
-    expect(listed.data.scenes[1].draft).toBe('missing');
+    expect(listed.data.scenes[1]).toMatchObject({ slug: 'storm', number: 2, thread: 'main', draft: 'missing' });
+    expect(listed.data.scenes[1].uuid).toMatch(/^[0-9a-f-]{36}$/);
 
     const text = await new CommandDispatcher(deps()).dispatch(['scene', 'list']);
-    expect(text.stdout).toContain('002-storm\tstorm\t초안 없음');
+    expect(text.stdout).toContain('번호\t제목\t상태');
+    expect(text.stdout).toContain('002\tstorm\t초안 없음');
+    expect(text.stdout).not.toContain('main');
+  });
+
+  it('shows the thread column once a work has two threads', async () => {
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['project', 'set', '--composition', 'omnibus', '--episodes', '2']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
+    const structure: string = join(workspace, '.storyboard', 'structure.yaml');
+    writeFileSync(structure, readFileSync(structure, 'utf8').replace(/thread: main\n(?![\s\S]*thread: main)/, 'thread: ep1\n'));
+
+    const text = await new CommandDispatcher(deps()).dispatch(['scene', 'list']);
+
+    expect(text.stdout).toContain('번호\t줄기\t제목\t상태');
+    expect(text.stdout).toContain('002\tep1\tstorm\t초안 없음');
+  });
+
+  it('moves, inserts and removes scenes, renumbering the rest', async () => {
+    for (const name of ['opening', 'storm', 'harbor']) {
+      await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', name]);
+    }
+    writeDraft('003-harbor', '항구의 불빛이 꺼졌다.');
+
+    const moved = await new CommandDispatcher(deps()).dispatch(['scene', 'move', 'harbor', '--after', '1']);
+    expect(moved.exitCode, moved.stdout).toBe(0);
+    expect(moved.stdout).toContain('003-harbor → 002-harbor');
+
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'rain', '--after', 'opening']);
+    const removed = await new CommandDispatcher(deps()).dispatch(['scene', 'remove', 'storm']);
+    expect(removed.exitCode, removed.stdout).toBe(0);
+
+    const listed = await runJson('scene', 'list');
+    expect(listed.data.scenes.map((scene: { stem: string }) => scene.stem)).toEqual([
+      '001-opening',
+      '002-rain',
+      '003-harbor',
+    ]);
+    expect(readFileSync(join(workspace, 'draft', '003-harbor.md'), 'utf8')).toContain('sceneStem: 003-harbor');
   });
 });
 
