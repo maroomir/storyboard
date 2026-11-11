@@ -28,6 +28,7 @@ import { createTheme } from '@/terminal/theme';
 import { measureWidth } from '@/terminal/width';
 
 import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
+import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
 import { writeCardBundleFromYaml } from './fixtures/cardBundles';
 import { readSceneState, writeSceneBundleFromYaml, writeSceneState } from './fixtures/sceneBundles';
 import type { SceneStoryState } from '@storyboard/story-model';
@@ -297,8 +298,8 @@ describe('storyboard doctor chapter summaries', () => {
         editor: {},
       }),
     );
-    writeFileSync(
-      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+    writeUnseededChapterPlan(
+      workspace,
       'version: 1.0.0\nacts:\n  - id: act-1\n    title: 1막\n    chapters:\n      - id: chapter-1\n        title: 1장\n        scenes:\n          - id: s1\n            title: 첫 씬\n',
     );
     writeFileSync(
@@ -757,8 +758,8 @@ describe('storyboard doctor outline addresses', () => {
         editor: {},
       }),
     );
-    writeFileSync(
-      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+    writeUnseededChapterPlan(
+      workspace,
       'version: 1.0.0\nacts:\n  - id: act-1\n    title: 1막\n    chapters:\n      - id: chapter-1\n        title: 1장\n        summary: 3동 704호에 새 세입자가 든다. 불은 7동에서 났다.\n        scenes:\n          - id: s1\n            title: 첫 씬\n',
     );
     await writeSceneBundleFromYaml(

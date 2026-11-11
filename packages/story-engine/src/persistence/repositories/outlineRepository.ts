@@ -1,8 +1,10 @@
+import type { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type {
   StoryUri,
   ChapterPlan,
+  GeneratedSceneSeed,
   OutlineCharacterBrief,
   OutlineSynopsis,
   StoryboardProject,
@@ -13,8 +15,6 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import {
   getStoryboardProjectPaths,
   parseSynopsisMarkdown,
-  readChapterPlanFile,
-  writeChapterPlanFile,
   writeSynopsisFile,
 } from '@storyboard/story-model';
 import { NarratorCardRepository } from '#engine/persistence/repositories/narratorCardRepository';
@@ -23,6 +23,7 @@ export class OutlineRepository implements IOutlineRepository {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
+    private readonly chapters: ChapterOutlineStore,
   ) {}
 
   public async hasExisting(workspaceRoot: StoryUri): Promise<boolean> {
@@ -62,10 +63,15 @@ export class OutlineRepository implements IOutlineRepository {
   }
 
   public async loadChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan> {
-    return await readChapterPlanFile(
-      getStoryboardProjectPaths(workspaceRoot).outlineChapters,
-      this.fileSystem,
-    );
+    return await this.chapters.load(workspaceRoot);
+  }
+
+  public async recordSeeded(
+    workspaceRoot: StoryUri,
+    plan: ChapterPlan,
+    seeds: readonly GeneratedSceneSeed[],
+  ): Promise<void> {
+    await this.chapters.recordSeeded(workspaceRoot, plan, seeds);
   }
 
   public async loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined> {
@@ -93,7 +99,7 @@ export class OutlineRepository implements IOutlineRepository {
   ): Promise<StoryUri> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     await this.saveSynopsis(workspaceRoot, synopsis);
-    await writeChapterPlanFile(paths.outlineChapters, this.fileSystem, chapterPlan);
+    await this.chapters.save(workspaceRoot, chapterPlan);
     return paths.outlineSynopsis;
   }
 }

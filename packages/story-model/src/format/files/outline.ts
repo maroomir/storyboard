@@ -58,22 +58,6 @@ export function parseChapterPlan(rawChapterPlan: string): ChapterPlan {
   }
 }
 
-export async function readChapterPlanFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-): Promise<ChapterPlan> {
-  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
-  return parseChapterPlan(new TextDecoder().decode(bytes));
-}
-
-export async function writeChapterPlanFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-  plan: ChapterPlan,
-): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeChapterPlan(plan)));
-}
-
 export function serializeSynopsisMarkdown(synopsis: OutlineSynopsis): string {
   const sections: string[] = ['# 시놉시스'];
 

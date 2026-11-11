@@ -13,7 +13,9 @@ import {
   createDraft,
   serializeDraft,
 } from '@storyboard/story-model';
-import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
+import type { FileSystemDirectoryEntry, IFileSystem, WorkspaceScenes } from '@storyboard/story-engine';
+import { stubScenes } from '../../../stubs/scenes';
+import { unseededOutlineYaml } from '../../../stubs/chapterOutline';
 
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>();
@@ -99,8 +101,9 @@ acts:
 describe('chapter summary audit over a workspace', () => {
   let fileSystem: MemoryWorkspace;
 
-  const request = (): { fileSystem: IFileSystem; paths: typeof paths } => ({
+  const request = (): { fileSystem: IFileSystem; scenes: WorkspaceScenes; paths: typeof paths } => ({
     fileSystem,
+    scenes: stubScenes(),
     paths,
   });
 
@@ -120,7 +123,8 @@ describe('chapter summary audit over a workspace', () => {
       paths.projectJson.path,
       serializeProjectJson(createDefaultProjectJson({ name: '작품' })),
     );
-    fileSystem.write(paths.outlineChapters.path, chapterPlan);
+    fileSystem.write(paths.outlineChapters.path, unseededOutlineYaml(chapterPlan));
+    fileSystem.write(paths.pendingChapterPlan.path, chapterPlan);
     writeDraft('01-first', '첫 장 본문');
     writeDraft('02-second', '둘째 장 본문');
 

@@ -33,6 +33,7 @@ import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
 import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
+import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
 import { RunStore } from '@storyboard/story-engine';
 import { readCardYaml } from './fixtures/cardBundles';
 import {
@@ -368,8 +369,8 @@ describe('scene create and scene seed', () => {
     expect(missing.message).toContain('outline generate');
 
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
-    writeFileSync(
-      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+    writeUnseededChapterPlan(
+      workspace,
       [
         'version: 1.0.0',
         'acts:',
@@ -1266,8 +1267,8 @@ describe('scene show', () => {
     );
     await run('scene create', args(['scene', 'create'], { name: 'harbor' }));
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
-    writeFileSync(
-      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+    writeUnseededChapterPlan(
+      workspace,
       [
         'version: 1.0.0',
         'acts:',

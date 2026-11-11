@@ -26,6 +26,7 @@ interface StoryboardRelativePaths {
   readonly outlineDirectory: string;
   readonly outlineSynopsis: string;
   readonly outlineChapters: string;
+  readonly pendingChapterPlan: string;
   readonly characterDirectory: string;
   readonly characterProfileDirectory: string;
   readonly backgroundDirectory: string;
@@ -68,6 +69,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   outlineDirectory: '.storyboard/outline',
   outlineSynopsis: '.storyboard/outline/synopsis.md',
   outlineChapters: '.storyboard/outline/chapters.yaml',
+  pendingChapterPlan: '.storyboard/cache/outline/pending-chapters.yaml',
   characterDirectory: 'character',
   characterProfileDirectory: 'character/profile',
   backgroundDirectory: 'background',

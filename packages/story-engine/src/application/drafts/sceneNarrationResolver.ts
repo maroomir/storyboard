@@ -1,7 +1,7 @@
+import { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
 import {
   flattenChapterPlan,
   mainThreadId,
-  readChapterPlanFile,
   resolveNarration,
   resolveThreadPaths,
 } from '@storyboard/story-model';
@@ -48,7 +48,10 @@ export class SceneNarrationResolver {
     sceneOrder: number,
   ): Promise<ChapterNarrationDefaults> {
     try {
-      const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, this.fileSystem);
+      const plan: ChapterPlan = await new ChapterOutlineStore({
+        fileSystem: this.fileSystem,
+        scenes: this.scenes,
+      }).load(paths.workspaceRoot);
       const placement: FlatChapterScene | undefined = flattenChapterPlan(plan)[sceneOrder - 1];
 
       return {

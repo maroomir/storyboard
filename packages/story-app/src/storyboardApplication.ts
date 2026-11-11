@@ -28,6 +28,7 @@ import {
   GenerateStoryStateUseCase,
   ManuscriptAssemblyRepository,
   CardFactReader,
+  ChapterOutlineStore,
   NarratorCardRepository,
   NoteAbsorbRepository,
   NoteSourceProvider,
@@ -78,6 +79,7 @@ import {
   type ICardSidebarRepository,
   type INarratorCardRepository,
   type INovelRunStateRepository,
+  type INovelOutlineRepository,
   type ISceneSidebarRepository,
   InterviewSessionUseCase,
   DescribeInterviewCoverageUseCase,
@@ -138,6 +140,7 @@ interface EngineGraph {
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly narratorCardRepository: INarratorCardRepository;
   readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly novelOutline: INovelOutlineRepository;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
@@ -352,6 +355,7 @@ function buildServices(
     cardSidebarRepository: repositories.cardSidebar,
     narratorCardRepository: repositories.narratorCards,
     novelRunStateRepository: repositories.novelRunState,
+    novelOutline: repositories.novelOutline,
     sceneSidebarRepository: repositories.sceneSidebar,
     applyDraftFormatUseCase: new ApplyDraftFormatUseCase(host, ai),
     applyNoteAbsorbUseCase: new ApplyNoteAbsorbUseCase(host, repositories),
@@ -412,11 +416,13 @@ function buildWorkspaceRepositories(
   fetch: NoteHttpFetch,
 ): WorkspaceRepositories {
   const { fileSystem, workspaceLocator } = host;
-  const outline: OutlineRepository = new OutlineRepository(fileSystem, host.cards);
+  const chapters: ChapterOutlineStore = new ChapterOutlineStore({ fileSystem, scenes: host.scenes });
+  const outline: OutlineRepository = new OutlineRepository(fileSystem, host.cards, chapters);
   const cardFacts: CardFactReader = new CardFactReader({ cards: host.cards, scenes: host.scenes });
   const manuscriptAssembly: ManuscriptAssemblyRepository = new ManuscriptAssemblyRepository(
     fileSystem,
     cardFacts,
+    chapters,
   );
 
   return {

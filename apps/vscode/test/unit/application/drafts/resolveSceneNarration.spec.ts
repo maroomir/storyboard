@@ -1,4 +1,6 @@
 import { legacyCards } from '../../../stubs/cards';
+import { stubScenes } from '../../../stubs/scenes';
+import { unseededOutlineYaml } from '../../../stubs/chapterOutline';
 import { joinStoryPath } from '@storyboard/story-model';
 import { describe, expect, it } from 'vitest';
 
@@ -44,6 +46,7 @@ function fileSystemOf(
   directories: Record<string, string[]> = {},
 ): NarrationFileSystem {
   return {
+    exists: async (uri: StoryUri): Promise<boolean> => files[uri.path] !== undefined,
     readDirectory: async (uri: StoryUri): Promise<[string, { type: 'file' | 'directory' }][]> => {
       const entries = directories[uri.path];
 
@@ -67,7 +70,8 @@ function fileSystemOf(
 
 const workspaceFileSystem = fileSystemOf(
   {
-    [paths.outlineChapters.path]: chapterPlanYaml,
+    [paths.outlineChapters.path]: unseededOutlineYaml(chapterPlanYaml),
+    [paths.pendingChapterPlan.path]: chapterPlanYaml,
     [`${paths.narratorDirectory.path}/hana-first.card`]: narratorCards['hana-first.card'] as string,
     [`${paths.narratorDirectory.path}/jun-omniscient.card`]: narratorCards[
       'jun-omniscient.card'
@@ -104,33 +108,33 @@ function sceneOf(raw: string, fileName: string): SceneFile {
 
 describe('readChapterNarrationDefaults', () => {
   it('reads the narrator and thread of the chapter that owns the scene', async () => {
-    expect(await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem)).readChapterDefaults(paths, 1)).toEqual({
+    expect(await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).readChapterDefaults(paths, 1)).toEqual({
       narrator: 'hana-first',
       thread: 'ep1',
     });
   });
 
   it('reads the second chapter for the second scene', async () => {
-    expect(await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem)).readChapterDefaults(paths, 2)).toEqual({
+    expect(await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).readChapterDefaults(paths, 2)).toEqual({
       narrator: 'jun-omniscient',
     });
   });
 
   it('returns nothing when there is no chapter plan', async () => {
-    expect(await new SceneNarrationResolver(fileSystemOf({}), cardsOf(fileSystemOf({}))).readChapterDefaults(paths, 1)).toEqual({});
+    expect(await new SceneNarrationResolver(fileSystemOf({}), cardsOf(fileSystemOf({})), stubScenes()).readChapterDefaults(paths, 1)).toEqual({});
   });
 });
 
 describe('resolveSceneNarration', () => {
   it('derives an implicit narrator from the project point of view alone', async () => {
-    const narration = await new SceneNarrationResolver(fileSystemOf({}), cardsOf(fileSystemOf({}))).resolveNarration(paths, sceneOf('type: scene\nid: 01-dock\nsummary: 나룻배.\n', '01-dock.card'), projectWith({ pov: 'third-limited' }), {});
+    const narration = await new SceneNarrationResolver(fileSystemOf({}), cardsOf(fileSystemOf({})), stubScenes()).resolveNarration(paths, sceneOf('type: scene\nid: 01-dock\nsummary: 나룻배.\n', '01-dock.card'), projectWith({ pov: 'third-limited' }), {});
 
     expect(narration).toMatchObject({ person: 'third', knowledge: 'witnessed' });
     expect(narration?.narratorId).toBeUndefined();
   });
 
   it('uses the chapter narrator when the scene card names none', async () => {
-    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem)).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nsummary: 골목.\n', '02-alley.card'), projectWith({ pov: 'third-limited' }), { narrator: 'jun-omniscient' });
+    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nsummary: 골목.\n', '02-alley.card'), projectWith({ pov: 'third-limited' }), { narrator: 'jun-omniscient' });
 
     expect(narration).toMatchObject({
       narratorId: 'jun-omniscient',
@@ -140,13 +144,13 @@ describe('resolveSceneNarration', () => {
   });
 
   it('lets the scene card override the chapter narrator', async () => {
-    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem)).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nnarrator: hana-first\nsummary: 골목.\n', '02-alley.card'), projectWith({ pov: 'third-omniscient' }), { narrator: 'jun-omniscient' });
+    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nnarrator: hana-first\nsummary: 골목.\n', '02-alley.card'), projectWith({ pov: 'third-omniscient' }), { narrator: 'jun-omniscient' });
 
     expect(narration).toMatchObject({ narratorId: 'hana-first', person: 'first', focal: 'hana' });
   });
 
   it("falls back to the scene's point-of-view character for a narrator card with no focal", async () => {
-    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem)).resolveNarration(paths, sceneOf(
+    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).resolveNarration(paths, sceneOf(
         'type: scene\nid: 02-alley\nnarrator: jun-omniscient\npovCharacter: jun\nsummary: 골목.\n',
         '02-alley.card',
       ), projectWith({}), {});
@@ -156,7 +160,7 @@ describe('resolveSceneNarration', () => {
 
   it('refuses a scene naming a narrator that has no card', async () => {
     await expect(
-      new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem)).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nnarrator: ghost\nsummary: 골목.\n', '02-alley.card'), projectWith({}), {}),
+      new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nnarrator: ghost\nsummary: 골목.\n', '02-alley.card'), projectWith({}), {}),
     ).rejects.toThrow('ghost');
   });
 });

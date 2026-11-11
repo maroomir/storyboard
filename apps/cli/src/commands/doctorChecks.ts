@@ -24,7 +24,6 @@ import {
   parseSceneFileName,
   parseSceneRenameJournal,
   parseSceneStem,
-  readChapterPlanFile,
   readInterviewAxesFile,
   readMissingGitignoreEntries,
   requiresApiKey,
@@ -468,12 +467,11 @@ export class DoctorChecks {
       return [];
     }
 
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    const chapterNarrators: (string | undefined)[] = await readChapterPlanFile(
-      paths.outlineChapters,
-      this.container.fileSystem,
-    )
-      .then((plan) => flattenChapterPlan(plan).map((placement) => placement.chapterNarrator))
+    const chapterNarrators: (string | undefined)[] = await this.container.novel
+      .readChapterPlan(this.container.workspaceRoot)
+      .then((plan) =>
+        plan === undefined ? [] : flattenChapterPlan(plan).map((placement) => placement.chapterNarrator),
+      )
       .catch(() => [] as (string | undefined)[]);
 
     return sceneCards
@@ -673,12 +671,9 @@ export class DoctorChecks {
   private async outlineAddresses(
     sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
   ): Promise<DoctorCheck[]> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    const chapterTexts: readonly string[] = await readChapterPlanFile(
-      paths.outlineChapters,
-      this.container.fileSystem,
-    )
-      .then(listChapterTextsBySceneOrder)
+    const chapterTexts: readonly string[] = await this.container.novel
+      .readChapterPlan(this.container.workspaceRoot)
+      .then((plan) => (plan === undefined ? [] : listChapterTextsBySceneOrder(plan)))
       .catch((): string[] => []);
     if (chapterTexts.length === 0) {
       return [];

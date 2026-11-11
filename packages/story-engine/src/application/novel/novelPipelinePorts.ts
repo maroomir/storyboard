@@ -19,6 +19,11 @@ export interface INovelOutlineRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
   loadChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan>;
+  recordSeeded(
+    workspaceRoot: StoryUri,
+    plan: ChapterPlan,
+    seeds: readonly GeneratedSceneSeed[],
+  ): Promise<void>;
   loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined>;
   saveSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void>;
   save(

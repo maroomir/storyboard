@@ -2,7 +2,6 @@ import type { HostAdapters, WorkspaceRepositories } from '#engine/application/en
 import {
   buildSceneSeeds,
   getStoryboardProjectPaths,
-  readChapterPlanFile,
   type ChapterPlan,
   type GeneratedSceneSeed,
   type StoryboardProjectPaths,
@@ -44,7 +43,9 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
       return { ok: false, kind: 'missing_outline' };
     }
 
-    const plan: ChapterPlan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
+    const plan: ChapterPlan = await this.repositories.novelOutline.loadChapterPlan(
+      request.workspaceRoot,
+    );
     const seeds: GeneratedSceneSeed[] = buildSceneSeeds(plan);
 
     if (seeds.length === 0) {
@@ -60,6 +61,7 @@ export class SeedScenesUseCase implements IUseCase<SeedScenesRequest, SeedScenes
     }
 
     await sceneSeedRepository.saveSeeds(request.workspaceRoot, seeds);
+    await this.repositories.novelOutline.recordSeeded(request.workspaceRoot, plan, seeds);
 
     return { ok: true, kind: 'seeded', fileNames: seeds.map((seed) => seed.fileName) };
   }
