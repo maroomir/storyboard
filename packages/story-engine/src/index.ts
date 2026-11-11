@@ -82,6 +82,7 @@ export * from '#engine/application/studio/studioChatUseCase';
 export * from '#engine/persistence/bibleCacheWorkspace';
 export * from '#engine/persistence/cache/cacheDatabase';
 export * from '#engine/persistence/cache/cacheDatabaseSchema';
+export * from '#engine/persistence/cache/runLockStore';
 export * from '#engine/persistence/cardCacheWorkspace';
 export * from '#engine/persistence/notes/noteSourceProvider';
 export * from '#engine/persistence/notes/notionExportNoteSource';
