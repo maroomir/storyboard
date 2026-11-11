@@ -175,7 +175,7 @@ export class InitCommand implements ICommandHandler {
       return failure('Storyboard 워크스페이스가 아닙니다: storyboard init --title "작품 이름"');
     }
 
-    const { addedAgentGuides, sealedSceneOrders }: WorkspaceRepairResult =
+    const { addedAgentGuides, sealedSceneOrders, reassignedPaths }: WorkspaceRepairResult =
       await container.workspace.repair(container.workspaceRoot);
     const gitRepository: GitRepositoryOutcome = ensureGitRepository(container.workspaceRoot.fsPath);
 
@@ -186,8 +186,11 @@ export class InitCommand implements ICommandHandler {
         (addedAgentGuides.length === 0
           ? ''
           : ` 에이전트 지침 ${addedAgentGuides.join(', ')} 를 추가했습니다.`) +
+        (reassignedPaths.length === 0
+          ? ''
+          : ` 같은 uuid 를 쓰던 나중 폴더 ${reassignedPaths.join(', ')} 에 새 uuid 를 주었습니다.`) +
         describeGitRepository(gitRepository),
-      { repaired: true, sealedSceneOrders, addedAgentGuides, gitRepository },
+      { repaired: true, sealedSceneOrders, addedAgentGuides, reassignedPaths, gitRepository },
     );
   }
 

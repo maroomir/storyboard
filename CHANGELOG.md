@@ -11,6 +11,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 변경 (호환성 주의)
 
+- **작품 `AGENTS.md` 가 새 동사로 다시 쓰였고, `init --repair` 가 복사된 uuid 를 고칩니다.** 새 작품의 `AGENTS.md`(규칙)는 번들 파일을 손으로 고치지 말 것, 작가가 확인한 것만 `card set` 으로 쓰고 자기 생각은 `card edit --propose` 로 남길 것, `card apply`·`outline apply` 로 제안을 받는 길과 씬 순서 동사를 적고, `CLAUDE.md` 는 그 파일을 가리키며, 있는 파일은 덮지 않습니다. `init --repair` 는 같은 uuid 를 쓰는 두 폴더 가운데 나중 것(`card.yaml` 이 더 새것)에 새 uuid 를 줍니다.
 - **`card build --propose` 와 `manuscript review --show` 가 생겼습니다.** `card build --propose` 는 새 카드는 바로 쓰고 있던 카드의 변경은 세션 제안(출처 `studio`)으로 남겨 `card apply` 를 기다리게 합니다. `manuscript review --show` 는 캐시 DB 의 마지막 수정 계획을 모델을 부르지 않고 보여 주고 `--json` 을 받습니다.
 - **씬을 설명으로 만들고, 끼우고, 옮기고, 지웁니다.** `scene create "<설명>"` 이 씬 번들을 만든 뒤 스튜디오가 채우고(`--name` 만 주면 빈 씬), `--after <씬>` 이면 그 씬 뒤에 끼웁니다. 새 동사 `scene move <씬> --after <씬>`(없으면 맨 앞)·`scene remove <씬>` 이 뒤 씬들의 폴더와 초안 번호를 다시 매깁니다. `scene list` 는 번호 · 줄기 · 제목 · 상태(초안 없음 / 초안 / 낡음)를 한 줄씩 보이고 줄기가 하나면 줄기 열을 숨기며, `--json` 은 `uuid · slug · number · thread · title · draft`(와 `stem`)를 줍니다.
 - **카드는 설명에서 만들고, `narrator` 명사는 `card` 로 합쳤습니다.** `card create <character|background> "<설명>"` 이 빈 카드 대신 스튜디오가 설명으로 채운 번들을 쓰고 빈 칸과 다음 명령을 알리며, `--dry-run` 이면 읽어 낸 줄만 보여 주고 아무것도 쓰지 않습니다. `--name`·`--id` 는 이름과 slug 를 정할 때만 쓰고, 이름에서 slug 를 만들 수 없으면 `new-character` 처럼 번호가 붙습니다. 서술자는 `card create narrator <slug> --person …`·`card list narrator`·`card show|remove <slug>` 로 다루고 `narrator create|list|show|remove` 는 없어졌습니다(옛 이름을 치면 새 이름을 알려 줍니다).

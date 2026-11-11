@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -144,5 +144,23 @@ describe('card show --history and card edit', () => {
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('카드를 찾을 수 없습니다: nobody');
+  });
+});
+
+describe('init --repair and copied uuids', () => {
+  it('gives the later of two folders sharing a uuid a new one', async () => {
+    const original: string = join(workspace, 'character', 'elia.card');
+    const copy: string = join(workspace, 'character', 'elia-copy.card');
+    cpSync(original, copy, { recursive: true });
+    writeFileSync(join(copy, 'card.yaml'), readFileSync(join(copy, 'card.yaml'), 'utf8').replace('slug: elia', 'slug: elia-copy'));
+    utimesSync(join(original, 'card.yaml'), new Date('2026-01-01'), new Date('2026-01-01'));
+
+    const repaired = await run('init', args(['init'], { repair: true }));
+
+    expect(repaired.ok, repaired.message).toBe(true);
+    expect(repaired.message).toContain('character/elia-copy.card 에 새 uuid 를 주었습니다');
+    const idOf = (folder: string): string | undefined =>
+      /^id: (.+)$/m.exec(readFileSync(join(folder, 'card.yaml'), 'utf8'))?.[1];
+    expect(idOf(copy)).not.toBe(idOf(original));
   });
 });

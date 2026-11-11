@@ -13,6 +13,7 @@ import {
   createWorkspaceCaches,
   createWorkspaceRunLocks,
   createWorkspaceScenes,
+  createWorkspaceCards,
 } from './fixtures/workspaceCacheFixture';
 
 let directory: string;
@@ -36,6 +37,7 @@ function createManager(): WorkspaceManager {
     }),
     resourceRoots: [],
     caches,
+    cards: createWorkspaceCards(caches),
     scenes: createWorkspaceScenes(caches),
   });
 }

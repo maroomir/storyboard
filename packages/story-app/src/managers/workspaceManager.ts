@@ -42,6 +42,7 @@ export interface WorkspaceRepairResult {
   readonly addedAgentGuides: readonly string[];
   readonly sealedSceneOrders: readonly number[];
   readonly hasResumedSceneRenumbering: boolean;
+  readonly reassignedPaths: readonly string[];
 }
 
 const nothingSealedWhileTheProjectIsUnreadable: readonly number[] = [];
@@ -62,6 +63,7 @@ export class WorkspaceManager {
     const hasResumedSceneRenumbering: boolean = await this.createSceneRenumberer().resume(
       workspaceRoot,
     );
+    const reassignedPaths: readonly string[] = await this.deps.cards.reassignCopiedIds(workspaceRoot);
     const addedAgentGuides: string[] = await initializer.writeAgentGuidesIfMissing(paths);
     const project: StoryboardProject | undefined = await this.readProject(paths).catch(
       () => undefined,
@@ -71,7 +73,7 @@ export class WorkspaceManager {
         ? nothingSealedWhileTheProjectIsUnreadable
         : await this.createStoryMemoryAuditor(paths, project).seal();
 
-    return { addedAgentGuides, sealedSceneOrders, hasResumedSceneRenumbering };
+    return { addedAgentGuides, sealedSceneOrders, hasResumedSceneRenumbering, reassignedPaths };
   }
 
   public findUnfinishedSceneRenumbering(
