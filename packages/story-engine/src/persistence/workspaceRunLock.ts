@@ -59,7 +59,7 @@ function isProcessAlive(pid: number): boolean {
   }
 }
 
-function isHolderGoneFromThisMachine(record: WorkspaceRunLockRecord): boolean {
+export function isHolderGoneFromThisMachine(record: WorkspaceRunLockRecord): boolean {
   return record.hostname === hostname() && !isProcessAlive(record.pid);
 }
 
