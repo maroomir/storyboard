@@ -156,6 +156,15 @@ describe('CLI verbs and the run lock', () => {
     expect((await new CommandDispatcher(deps()).dispatch(['card', 'list', 'narrator'])).exitCode).toBe(0);
   });
 
+  it('answers the read-only form of a writing verb while the workspace is held', async () => {
+    await plantLock(new Date());
+
+    const result = await new CommandDispatcher(deps()).dispatch(['manuscript', 'review', '--show']);
+
+    expect(result.stdout).not.toContain('작업 중입니다');
+    expect(result.exitCode).toBe(0);
+  });
+
   it('releases the lock when a writing verb finishes', async () => {
     const result = await new CommandDispatcher(deps()).dispatch(['project', 'set', '--genre', '판타지']);
 

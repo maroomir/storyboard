@@ -106,6 +106,7 @@ export interface CommandSpec {
   readonly examples?: readonly string[];
   readonly needsWorkspace?: false;
   readonly writesWorkspace?: true;
+  readonly readsOnlyWithFlags?: readonly string[];
   readonly rewritesDraft?: true;
 }
 
