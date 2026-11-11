@@ -91,6 +91,24 @@ afterEach(() => {
 });
 
 describe('StudioSidebar chat', () => {
+  it('runs the card interview inside the studio and starts it on the card uri', () => {
+    const postMessage = renderStudio(characterTarget);
+
+    fireEvent.click(screen.getByRole('button', { name: '인터뷰' }));
+    fireEvent.click(screen.getByRole('button', { name: '인터뷰 시작' }));
+
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(messagesByMethod(postMessage, 'interviews.start').at(-1)).toMatchObject({
+      payload: { uri: 'file:///character/seorin.card' },
+    });
+  });
+
+  it('offers no interview for a draft', () => {
+    renderStudio(draftTarget);
+
+    expect(screen.queryByRole('button', { name: '인터뷰' })).toBeNull();
+  });
+
   it('sends the instruction with the entity and the prior history', () => {
     const postMessage = renderStudio(characterTarget);
 

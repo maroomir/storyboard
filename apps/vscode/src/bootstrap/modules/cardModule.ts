@@ -37,7 +37,6 @@ export class CardModule implements IApplicationModule {
       aiProviderRegistry,
       cards,
       drafts,
-      interviews,
       logger,
       proposalReviewService,
       usageRecorder,
@@ -65,7 +64,7 @@ export class CardModule implements IApplicationModule {
       new CardDiagnosticsProvider({ logger }).register(),
       new CardCustomEditorProvider(
         context.extensionUri,
-        { aiGateway, aiProviderRegistry, cards, interviews, usageRecorder, logger },
+        { aiGateway, aiProviderRegistry, cards, usageRecorder, logger },
         collectPreview.store,
       ).register(),
       new SidebarCardsProvider(

@@ -1,8 +1,8 @@
 import { uriExists } from '@/infrastructure/vscode/workspace';
 import * as vscode from 'vscode';
 
-import type { AiGateway, InterviewStartResult } from '@storyboard/story-engine';
-import type { CardManager, InterviewManager } from '@storyboard/story-app';
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import {
   CardParseError,
   isInlineSceneSummary,
@@ -32,7 +32,6 @@ import type {
   NarratorSummary,
   CharacterRosterEntry,
   SceneStructureProposal,
-  InterviewQuestion,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
@@ -50,7 +49,6 @@ export interface CardCustomEditorDependencies {
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly cards: Pick<CardManager, 'collectProposals' | 'loadCharacterRoster' | 'listNarrators'>;
-  readonly interviews: Pick<InterviewManager, 'start' | 'next' | 'answer' | 'confirm' | 'finish'>;
   readonly usageRecorder: UsageLedgerRecorder;
   readonly logger: IStoryboardLogger;
 }
@@ -190,86 +188,8 @@ export class CardEditorRpc {
       'cards.collect': this.collectProposals,
       'cards.applyCollect': this.applyCollect,
       'cards.previewCollect': this.previewCollect,
-      'interviews.start': this.startInterview,
-      'interviews.next': this.nextInterviewQuestion,
-      'interviews.answer': this.answerInterview,
-      'interviews.confirm': this.confirmInterview,
-      'interviews.finish': this.finishInterview,
     };
   }
-
-  private interviewCard(): { readonly cardId: string; readonly card: StoryboardCard } {
-    const card: StoryboardCard = parseCard(this.document.getText());
-    return { cardId: card.id, card };
-  }
-
-  private readonly startInterview = async (
-    payload: StoryboardRequestPayload<'interviews.start'>,
-  ): Promise<StoryboardResponsePayload<'interviews.start'>> => {
-    const started: InterviewStartResult = await this.dependencies.interviews.start({
-      workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      ...this.interviewCard(),
-      ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
-      ...(payload.shouldResetAxes === true ? { shouldResetAxes: true } : {}),
-    });
-    if (!started.ok) {
-      throw new Error(started.message);
-    }
-
-    return { opening: started.opening };
-  };
-
-  private readonly nextInterviewQuestion = async (
-    payload: StoryboardRequestPayload<'interviews.next'>,
-  ): Promise<StoryboardResponsePayload<'interviews.next'>> => {
-    const question: InterviewQuestion | undefined = await this.dependencies.interviews.next({
-      workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      ...this.interviewCard(),
-      sessionId: payload.sessionId,
-      ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
-    });
-
-    return { question: question ?? null };
-  };
-
-  private readonly answerInterview = async (
-    payload: StoryboardRequestPayload<'interviews.answer'>,
-  ): Promise<StoryboardResponsePayload<'interviews.answer'>> => ({
-    outcome: await this.dependencies.interviews.answer({
-      workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      ...this.interviewCard(),
-      sessionId: payload.sessionId,
-      ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
-      questionId: payload.questionId,
-      answer: payload.answer,
-    }),
-  });
-
-  private readonly confirmInterview = async (
-    payload: StoryboardRequestPayload<'interviews.confirm'>,
-  ): Promise<StoryboardResponsePayload<'interviews.confirm'>> => {
-    await this.dependencies.interviews.confirm({
-      workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      ...this.interviewCard(),
-      sessionId: payload.sessionId,
-      ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
-      questionId: payload.questionId,
-      confirmation: payload.confirmation,
-    });
-
-    return {};
-  };
-
-  private readonly finishInterview = async (
-    payload: StoryboardRequestPayload<'interviews.finish'>,
-  ): Promise<StoryboardResponsePayload<'interviews.finish'>> => ({
-    summary: await this.dependencies.interviews.finish({
-      workspaceRoot: getDocumentWorkspaceRoot(this.document),
-      ...this.interviewCard(),
-      sessionId: payload.sessionId,
-      ...(payload.sceneStems === undefined ? {} : { sceneStems: payload.sceneStems }),
-    }),
-  });
 
   private readonly readCard = async (): Promise<{ readonly card: WorkspaceCard }> => ({
     card: await loadEditorCard(this.document),

@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { InterviewPanel } from "@webview/components/editor/InterviewPanel"
+import { InterviewPanel } from "@webview/components/sidebar/InterviewPanel"
 import type { InterviewOpening, InterviewQuestion, StoryboardCard } from "@webview/lib/types"
 
 const card: StoryboardCard = { type: "character", id: "hana", name: "하나", role: "main" }
@@ -89,7 +89,7 @@ describe("InterviewPanel", () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
     const statuses: string[] = []
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} onStatusChange={(status) => statuses.push(status)} />)
+    render(<InterviewPanel cardKey={card.id} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} onStatusChange={(status) => statuses.push(status)} />)
 
     fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
     await respond(postMessage, "interviews.start", { opening })
@@ -119,7 +119,7 @@ describe("InterviewPanel", () => {
   it("warns when the contract changed after the axes were drawn and can redraw them", async () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+    render(<InterviewPanel cardKey={card.id} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
 
     fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
     await respond(postMessage, "interviews.start", { opening: { ...opening, isContractStale: true } })
@@ -141,7 +141,7 @@ describe("InterviewPanel", () => {
   it("offers to redraw the axes before a session starts", async () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+    render(<InterviewPanel cardKey={card.id} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
 
     fireEvent.click(screen.getByRole("button", { name: "축 다시 뽑고 시작" }))
 
@@ -151,7 +151,7 @@ describe("InterviewPanel", () => {
   it("clears an answer error once the retry succeeds", async () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+    render(<InterviewPanel cardKey={card.id} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
 
     fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
     await respond(postMessage, "interviews.start", { opening })
@@ -173,7 +173,7 @@ describe("InterviewPanel", () => {
   it("asks the writer to confirm how a written answer was read and sends the rename", async () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+    render(<InterviewPanel cardKey={card.id} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
 
     fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
     await respond(postMessage, "interviews.start", { opening })
@@ -199,7 +199,7 @@ describe("InterviewPanel", () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
     const crowded: InterviewQuestion = { ...question, values: [{ id: "custom-3", label: "먼저 쓴 새 값" }, ...question.values] }
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
+    render(<InterviewPanel cardKey={card.id} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
 
     fireEvent.click(screen.getByRole("button", { name: "인터뷰 시작" }))
     await respond(postMessage, "interviews.start", { opening })

@@ -4,6 +4,7 @@ import {
   History,
   Loader2,
   MapPin,
+  MessageCircleQuestion,
   Send,
   SquarePen,
   User,
@@ -50,12 +51,28 @@ import {
   type StudioComposerTool,
   type StudioToolEntry,
 } from '@webview/lib/studioTools';
+import { InterviewPanel } from '@webview/components/sidebar/InterviewPanel';
 import { StudioSessionList } from '@webview/components/sidebar/StudioSessionList';
 import { StudioToolMenu } from '@webview/components/sidebar/StudioToolMenu';
 import { StudioTurnView, type StudioProposalActions } from '@webview/components/sidebar/StudioTurnView';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
+
+type StudioView = 'chat' | 'history' | 'interview';
+
+interface InterviewCardTarget {
+  readonly cardKey: string;
+  readonly cardUri: string;
+}
+
+function readInterviewCard(target: StudioTarget): InterviewCardTarget | undefined {
+  const isInterviewable: boolean = target.kind === 'character' || target.kind === 'background';
+
+  return isInterviewable && target.entity !== undefined && target.cardUri !== undefined
+    ? { cardKey: target.entity.key, cardUri: target.cardUri }
+    : undefined;
+}
 
 type StudioResponseMessage = {
   readonly type: 'response';
@@ -82,7 +99,7 @@ export function StudioSidebar({
   const [turns, setTurns] = useState<readonly StudioChatTurn[]>(
     () => initialData.session?.turns ?? [],
   );
-  const [view, setView] = useState<'chat' | 'history'>('chat');
+  const [view, setView] = useState<StudioView>('chat');
   const [sessions, setSessions] = useState<readonly StudioSessionSummary[]>([]);
   const [stage, setStage] = useState<StudioStage | undefined>(undefined);
   const [stageToken, setStageToken] = useState(0);
@@ -406,6 +423,8 @@ export function StudioSidebar({
   };
 
   const isHistoryView: boolean = view === 'history';
+  const interviewCard: InterviewCardTarget | undefined = readInterviewCard(target);
+  const isInterviewView: boolean = view === 'interview' && interviewCard !== undefined;
   const canChat: boolean = target.entity !== undefined && target.entity.kind !== 'project';
 
   return (
@@ -414,6 +433,14 @@ export function StudioSidebar({
         <SectionHeader eyebrow="Storyboard" title={initialData.title} />
         <div className="flex shrink-0 items-center gap-1">
           <HeaderButton label="새 대화" icon={SquarePen} onClick={startNewSession} />
+          {interviewCard === undefined ? null : (
+            <HeaderButton
+              label={isInterviewView ? '대화로 돌아가기' : '인터뷰'}
+              icon={MessageCircleQuestion}
+              isActive={isInterviewView}
+              onClick={(): void => setView(isInterviewView ? 'chat' : 'interview')}
+            />
+          )}
           <HeaderButton
             label={isHistoryView ? '대화로 돌아가기' : '대화 기록'}
             icon={History}
@@ -426,6 +453,12 @@ export function StudioSidebar({
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         {isHistoryView ? (
           <StudioSessionList sessions={sessions} onOpen={openSession} />
+        ) : isInterviewView && interviewCard !== undefined ? (
+          <InterviewPanel
+            cardKey={interviewCard.cardKey}
+            documentUri={interviewCard.cardUri}
+            vscodeApi={vscodeApi}
+          />
         ) : !canChat ? (
           <StudioWelcome target={target} />
         ) : (
@@ -457,7 +490,7 @@ export function StudioSidebar({
         <div ref={logEndRef} />
       </div>
 
-      {isHistoryView ? null : (
+      {isHistoryView || isInterviewView ? null : (
         <Composer
           value={draft}
           isDisabled={chatStage !== 'idle'}

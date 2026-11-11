@@ -292,6 +292,11 @@ export class Uri {
     return new Uri("file", path)
   }
 
+  static parse(value: string): Uri {
+    const match = /^([a-z][\w+.-]*):\/\/(.*)$/i.exec(value)
+    return match ? new Uri(match[1] ?? "file", match[2] ?? "") : Uri.file(value)
+  }
+
   static from(components: { readonly scheme: string; readonly path?: string }): Uri {
     return new Uri(components.scheme, components.path ?? "")
   }

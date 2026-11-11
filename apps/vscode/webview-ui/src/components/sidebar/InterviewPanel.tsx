@@ -13,7 +13,6 @@ import type {
   InterviewOpening,
   InterviewQuestion,
   InterviewSessionSummary,
-  StoryboardCard,
 } from '@webview/lib/types';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 
@@ -46,7 +45,7 @@ const staleContractNotice: string =
   '축 어휘를 뽑은 뒤 작품 계약(장르·독자층·컨셉)이 바뀌었습니다. 어휘는 그대로 쓰이고 있습니다. 축을 다시 뽑으면 표와 작업 모델도 비워집니다.';
 
 export type InterviewPanelProps = {
-  readonly card: StoryboardCard;
+  readonly cardKey: string;
   readonly documentUri: string;
   readonly vscodeApi?: VscodeApi;
   readonly onStatusChange?: (status: string) => void;
@@ -65,7 +64,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export function InterviewPanel({
-  card,
+  cardKey,
   documentUri,
   vscodeApi,
   onStatusChange,
@@ -80,7 +79,7 @@ export function InterviewPanel({
     setPhase({ kind: 'idle' });
     setAnswered(0);
     setError(undefined);
-  }, [card.id]);
+  }, [cardKey]);
 
   const fail: (failure: unknown, fallback: string) => void = useCallback(
     (failure: unknown, fallback: string): void => {
