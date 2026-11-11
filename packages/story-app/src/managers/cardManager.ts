@@ -40,6 +40,7 @@ import type {
   CardPendingApplyReport,
   PendingCardChanges,
   PendingCardSummary,
+  ProposeStoryCardTargetsResult,
   CardSessionSummary,
   ElementBundle,
 } from '@storyboard/story-engine';
@@ -238,6 +239,13 @@ export class CardManager {
     targets: readonly StoryCardTarget[],
   ): Promise<ApplyStoryCardTargetsResult> {
     return this.deps.applyStoryProposals.applyCardTargets(workspaceRoot, targets);
+  }
+
+  public proposeBuildTargets(
+    workspaceRoot: StoryUri,
+    targets: readonly StoryCardTarget[],
+  ): Promise<ProposeStoryCardTargetsResult> {
+    return this.deps.applyStoryProposals.proposeCardTargets(workspaceRoot, targets);
   }
 
   public hasCurrentBuildSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {

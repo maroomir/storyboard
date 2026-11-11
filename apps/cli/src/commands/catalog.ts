@@ -255,6 +255,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
   { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
   { name: 'pending', summary: 'outline show: 적용을 기다리는 시놉시스 후보를 보여 줍니다' },
+  { name: 'show', summary: 'manuscript review: 마지막 수정 계획을 읽기만 합니다 (모델 호출 없음)' },
   {
     name: 'scenes',
     valueLabel: '<범위>',

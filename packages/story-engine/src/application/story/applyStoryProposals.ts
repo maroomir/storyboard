@@ -1,5 +1,9 @@
 import type { HostAdapters } from '#engine/application/engineServices';
+import { randomUUID } from 'node:crypto';
+
 import {
+  replacePendingHeader,
+  replacePendingStatements,
   parseSceneCard,
   parseSceneFileName,
   type StatementSource,
@@ -9,10 +13,17 @@ import {
 
 import { applyStoryCardChanges, type StoryCardTarget } from '#engine/application/story/buildStoryCardsUseCase';
 import type { CompletedStoryScene } from '#engine/application/story/completeStoryScenesUseCase';
+import type { ElementBundle } from '#engine/persistence/bundles/elementBundleRepository';
+import type { PlannedCardChanges } from '#engine/persistence/bundles/workspaceCards';
+import { SessionStore } from '#engine/persistence/cache/sessionStore';
 
 export interface ApplyStoryCardTargetsResult {
   readonly writtenIds: readonly string[];
   readonly needsIdNames: readonly string[];
+}
+
+export interface ProposeStoryCardTargetsResult extends ApplyStoryCardTargetsResult {
+  readonly proposedIds: readonly string[];
 }
 
 export interface ApplyCompletedScenesResult {
@@ -50,6 +61,57 @@ export class ApplyStoryProposals {
     await this.host.cards.writeCards(workspaceRoot, cardsToWrite, studioSource);
 
     return { writtenIds, needsIdNames };
+  }
+
+  public async proposeCardTargets(
+    workspaceRoot: StoryUri,
+    targets: readonly StoryCardTarget[],
+  ): Promise<ProposeStoryCardTargetsResult> {
+    const newTargets: readonly StoryCardTarget[] = targets.filter((target) => target.isNew);
+    const written: ApplyStoryCardTargetsResult = await this.applyCardTargets(workspaceRoot, newTargets);
+    const proposedIds: string[] = [];
+
+    for (const target of targets.filter((item) => !item.isNew)) {
+      const isProposed: boolean = await this.leavePending(workspaceRoot, target);
+      if (isProposed) {
+        proposedIds.push(target.card.id);
+      }
+    }
+
+    return { ...written, proposedIds };
+  }
+
+  private async leavePending(workspaceRoot: StoryUri, target: StoryCardTarget): Promise<boolean> {
+    const card: StoryboardCard = applyStoryCardChanges(
+      target,
+      target.changes.map((change) => change.proposal),
+    );
+    const bundle: ElementBundle | undefined = await this.host.cards.findBundleBySlug(
+      workspaceRoot,
+      card.id,
+    );
+    const planned: PlannedCardChanges = await this.host.cards.planCardChanges(workspaceRoot, card, {
+      ...studioSource,
+      command: 'card build',
+    });
+    const pendingCount: number = planned.statements.length + (planned.header === undefined ? 0 : 1);
+    if (bundle === undefined || pendingCount === 0) {
+      return false;
+    }
+
+    const proposedAt: string = new Date().toISOString();
+    new SessionStore(await this.host.caches.open(workspaceRoot)).save({
+      id: randomUUID(),
+      kind: 'studio',
+      elementId: bundle.header.id,
+      openedAt: proposedAt,
+      pendingCount,
+      data: replacePendingHeader(
+        replacePendingStatements({ title: 'card build' }, planned.statements),
+        planned.header,
+      ),
+    });
+    return true;
   }
 
   public async applyCompletedScenes(
