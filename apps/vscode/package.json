@@ -193,7 +193,7 @@
         "displayName": "Storyboard Card",
         "selector": [
           {
-            "filenamePattern": "*.card"
+            "filenamePattern": "**/*.card/card.yaml"
           }
         ],
         "priority": "default"
@@ -261,17 +261,17 @@
       "explorer/context": [
         {
           "command": "storyboard.character.rename",
-          "when": "resourceExtname == .card && resourceFilename != .sample.card",
+          "when": "explorerResourceIsFolder && resourceExtname == .card && resourceDirname =~ /[\\\\/]character$/",
           "group": "storyboard@1"
         },
         {
           "command": "storyboard.background.rename",
-          "when": "resourceExtname == .card && resourceFilename != .sample.card",
+          "when": "explorerResourceIsFolder && resourceExtname == .card && resourceDirname =~ /[\\\\/]background$/",
           "group": "storyboard@1"
         },
         {
           "command": "storyboard.scene.rename",
-          "when": "resourceExtname == .card && resourceDirname =~ /[\\\\/]scene$/",
+          "when": "explorerResourceIsFolder && resourceExtname == .card && resourceDirname =~ /[\\\\/]scene$/",
           "group": "storyboard@1"
         }
       ],

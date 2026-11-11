@@ -2,21 +2,65 @@ import * as vscode from 'vscode';
 import { ZodError, type ZodIssue } from 'zod';
 
 import {
-  CardParseError,
-  STORYBOARD_GLOBS,
-  parseCard,
+  BundleFileError,
+  STORYBOARD_FILE_EXTENSIONS,
+  bundleFileNames,
+  elementKindDirectories,
+  elementKinds,
   escapeRegExp,
   extractErrorMessage,
+  parseBeatsFile,
+  parseElementCard,
+  parseSceneStateFile,
+  parseStatementsFile,
+  type ElementKind,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { createDiagnostic } from '@/presentation/providers/diagnosticsShared';
 
 const cardSource: string = 'storyboard-card';
-const cardGlobs: readonly string[] = [
-  STORYBOARD_GLOBS.characterCards,
-  STORYBOARD_GLOBS.backgroundCards,
-];
+const cardGlobs: readonly string[] = elementKinds.map(
+  (kind) => `${elementKindDirectories[kind]}/*${STORYBOARD_FILE_EXTENSIONS.card}/*.yaml`,
+);
+
+type BundleFileValidator = (kind: ElementKind, text: string, fileName: string) => void;
+
+const bundleFileValidators: Readonly<Record<string, BundleFileValidator>> = {
+  [bundleFileNames.card]: (kind, text, fileName) => {
+    parseElementCard(kind, text, fileName);
+  },
+  [bundleFileNames.statements]: (_kind, text, fileName) => {
+    parseStatementsFile(text, fileName);
+  },
+  [bundleFileNames.beats]: (_kind, text, fileName) => {
+    parseBeatsFile(text, fileName);
+  },
+  [bundleFileNames.state]: (_kind, text, fileName) => {
+    parseSceneStateFile(text, fileName);
+  },
+};
+
+function findBundleKind(uri: vscode.Uri): ElementKind | undefined {
+  const segments: readonly string[] = uri.path.split('/');
+  const kindDirectory: string | undefined = segments.at(-3);
+  const isInsideBundle: boolean =
+    segments.at(-2)?.endsWith(STORYBOARD_FILE_EXTENSIONS.card) === true;
+
+  return isInsideBundle
+    ? elementKinds.find((kind) => elementKindDirectories[kind] === kindDirectory)
+    : undefined;
+}
+
+export function validateBundleFile(uri: vscode.Uri, text: string): void {
+  const fileName: string = uri.path.split('/').at(-1) ?? '';
+  const kind: ElementKind | undefined = findBundleKind(uri);
+  const validator: BundleFileValidator | undefined = bundleFileValidators[fileName];
+
+  if (kind !== undefined && validator !== undefined) {
+    validator(kind, text, fileName);
+  }
+}
 
 export interface CardDiagnosticSpan {
   readonly line: number;
@@ -30,8 +74,8 @@ export interface CardDiagnosticsProviderDependencies {
 }
 
 export function mapCardErrorToSpans(text: string, error: unknown): CardDiagnosticSpan[] {
-  if (error instanceof CardParseError) {
-    if (error.code === 'invalid-card-schema' && error.cause instanceof ZodError) {
+  if (error instanceof BundleFileError) {
+    if (error.code === 'invalid-shape' && error.cause instanceof ZodError) {
       return error.cause.issues.map((issue) => schemaIssueToSpan(text, issue));
     }
 
@@ -124,7 +168,7 @@ class CardDiagnosticsController {
     }
 
     try {
-      parseCard(text);
+      validateBundleFile(uri, text);
       this.collection.delete(uri);
     } catch (error) {
       const severity: vscode.DiagnosticSeverity = (vscode.DiagnosticSeverity?.Error ??

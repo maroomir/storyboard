@@ -1,63 +1,71 @@
 import * as vscode from 'vscode';
 
+import type { CardManager, DraftManager } from '@storyboard/story-app';
+import type {
+  IStoryboardLogger,
+  RenameCardResult,
+  RenameSceneResult,
+} from '@storyboard/story-engine';
 import {
-  appendCardRenameWorkspaceEdit,
-  CardRenameValidationError,
-  parseCardRenameCandidate,
-} from '@/infrastructure/vscode/cardRenameEdit';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+  parseBundleFolderRename,
+  type BundleFolderRename,
+} from '@/infrastructure/vscode/bundleFolderRename';
 
-interface CardFileRename {
-  readonly oldUri: vscode.Uri;
-  readonly newUri: vscode.Uri;
+export interface CardRenameParticipantDependencies {
+  readonly cards: Pick<CardManager, 'rename'>;
+  readonly drafts: Pick<DraftManager, 'renameScene'>;
+  readonly logger: IStoryboardLogger;
 }
+
+type EngineRenameOutcome = { readonly ok: true } | { readonly ok: false; readonly message: string };
 
 export class CardRenameParticipant {
-  public constructor(private readonly logger: IStoryboardLogger) {}
+  public constructor(private readonly dependencies: CardRenameParticipantDependencies) {}
 
   public register(): vscode.Disposable {
-    return vscode.workspace.onWillRenameFiles((event) => {
-      const cardRenames: CardFileRename[] = event.files.filter(
-        (file) => parseCardRenameCandidate(file.oldUri, file.newUri) !== undefined,
+    return vscode.workspace.onDidRenameFiles((event) => {
+      const renames: readonly BundleFolderRename[] = event.files.flatMap(
+        (file) => parseBundleFolderRename(file.oldUri, file.newUri) ?? [],
       );
 
-      if (cardRenames.length === 0) {
-        return;
+      if (renames.length > 0) {
+        void this.redirectToEngine(renames);
       }
-
-      for (const file of cardRenames) {
-        this.logger.info(
-          `card rename participant: ${file.oldUri.fsPath} -> ${file.newUri.fsPath} (n=${cardRenames.length})`,
-        );
-      }
-
-      event.waitUntil(applyCardRenames(cardRenames, this.logger));
     });
   }
-}
 
-async function applyCardRenames(
-  files: readonly { readonly oldUri: vscode.Uri; readonly newUri: vscode.Uri }[],
-  logger: IStoryboardLogger,
-): Promise<vscode.WorkspaceEdit | undefined> {
-  const combinedEdit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
+  private async redirectToEngine(renames: readonly BundleFolderRename[]): Promise<void> {
+    for (const rename of renames) {
+      this.dependencies.logger.info(
+        `card rename participant: ${rename.kind} ${rename.fromKey} -> ${rename.toKey}`,
+      );
+      await vscode.workspace.fs.rename(rename.newUri, rename.oldUri, { overwrite: false });
 
-  for (const file of files) {
-    try {
-      await appendCardRenameWorkspaceEdit(combinedEdit, file.oldUri, file.newUri);
-    } catch (error) {
-      const message: string =
-        error instanceof CardRenameValidationError
-          ? error.message
-          : '카드 rename을 적용할 수 없어 원래 파일명을 유지합니다.';
-
-      logger.error('card rename participant: failed', error);
-      void vscode.window.showWarningMessage(message);
-      throw error;
+      const outcome: EngineRenameOutcome = await this.renameThroughEngine(rename);
+      if (!outcome.ok) {
+        void vscode.window.showWarningMessage(
+          `${rename.fromKey} 의 이름을 바꾸지 않았습니다: ${outcome.message}`,
+        );
+      }
     }
   }
 
-  logger.info(`card rename participant: applied edits for ${files.length} card(s)`);
+  private async renameThroughEngine(rename: BundleFolderRename): Promise<EngineRenameOutcome> {
+    if (rename.kind === 'scene') {
+      const renamed: RenameSceneResult = await this.dependencies.drafts.renameScene({
+        workspaceRoot: rename.workspaceRoot,
+        fromStem: rename.fromKey,
+        toStem: rename.toKey,
+      });
+      return renamed.ok ? { ok: true } : { ok: false, message: renamed.message };
+    }
 
-  return combinedEdit;
+    const renamed: RenameCardResult = await this.dependencies.cards.rename({
+      workspaceRoot: rename.workspaceRoot,
+      category: rename.kind,
+      fromId: rename.fromKey,
+      toId: rename.toKey,
+    });
+    return renamed.ok ? { ok: true } : { ok: false, message: renamed.message };
+  }
 }

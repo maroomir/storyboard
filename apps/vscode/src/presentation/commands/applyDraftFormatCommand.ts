@@ -5,29 +5,15 @@ import * as vscode from 'vscode';
 import type { ApplyDraftFormatResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import {
-  extractErrorMessage,
-  isDirectSceneCardFile,
-  parseSceneFileName,
-  type SceneFileNameParts,
-} from '@storyboard/story-model';
+import { extractErrorMessage } from '@storyboard/story-model';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
-
-function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
-  if (invokedUri && invokedUri.scheme === 'file') {
-    return invokedUri;
-  }
-
-  const doc: vscode.TextDocument | undefined = vscode.window.activeTextEditor?.document;
-
-  if (!doc || doc.uri.scheme !== 'file') {
-    return undefined;
-  }
-
-  return doc.uri;
-}
+import {
+  resolveSceneBundleTarget,
+  resolveSceneUriFromInvocation,
+  type SceneBundleTarget,
+} from '@/presentation/commands/sceneInvocation';
 
 interface FormatTargetScene {
   readonly workspaceFolder: vscode.WorkspaceFolder;
@@ -50,22 +36,15 @@ async function resolveFormatTargetScene(
     return undefined;
   }
 
-  if (!isDirectSceneCardFile(sceneUri, workspaceFolder)) {
+  const target: SceneBundleTarget | undefined = resolveSceneBundleTarget(sceneUri);
+  if (!target) {
     await vscode.window.showErrorMessage(
-      'Storyboard 씬 파일만 처리할 수 있습니다. `scene/NN-slug.card` 형식의 파일을 사용해 주세요.',
+      'Storyboard 씬만 처리할 수 있습니다. `scene/NNN-slug.card` 폴더나 그 안의 파일을 사용해 주세요.',
     );
     return undefined;
   }
 
-  const fileName: string = sceneUri.path.split('/').pop() ?? '';
-  const nameParts: SceneFileNameParts | undefined = parseSceneFileName(fileName);
-
-  if (!nameParts) {
-    await vscode.window.showErrorMessage('씬 파일명은 `NN-slug.card` 형식이어야 합니다.');
-    return undefined;
-  }
-
-  return { workspaceFolder, stem: nameParts.stem };
+  return { workspaceFolder, stem: target.stem };
 }
 
 export interface ApplyDraftFormatCommandDependencies {
@@ -79,7 +58,7 @@ export class ApplyDraftFormatCommand implements IExtensionCommand {
   public constructor(private readonly dependencies: ApplyDraftFormatCommandDependencies) {}
 
   public async run(invokedUri?: vscode.Uri): Promise<void> {
-    const sceneUri: vscode.Uri | undefined = resolveSceneUri(invokedUri);
+    const sceneUri: vscode.Uri | undefined = resolveSceneUriFromInvocation(invokedUri);
 
     if (!sceneUri) {
       await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);

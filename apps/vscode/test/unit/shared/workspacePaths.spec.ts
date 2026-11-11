@@ -33,8 +33,8 @@ describe("workspace path conventions", () => {
   })
 
   it("matches what it builds with the globs the editor watches", () => {
-    expect(STORYBOARD_GLOBS.characterCards).toBe(
-      `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`
+    expect(STORYBOARD_GLOBS.characterBundleFiles).toBe(
+      `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}/*.yaml`
     )
     expect(STORYBOARD_GLOBS.anyDraftMarkdown).toContain(
       `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/`

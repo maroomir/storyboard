@@ -5,10 +5,9 @@ import * as vscode from 'vscode';
 import type { DraftManager, RunGate } from '@storyboard/story-app';
 import {
   getStoryboardProjectPaths,
-  scenePath,
+  sceneCardPath,
   parseSceneFileName,
   parseSceneStem,
-  type SceneFileNameParts,
 } from '@storyboard/story-model';
 import {
   hasStoryboardProject,
@@ -16,6 +15,11 @@ import {
   uriExists,
 } from '@/infrastructure/vscode/workspace';
 import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
+import {
+  resolveSceneBundleTarget,
+  resolveSceneUriFromInvocation,
+} from '@/presentation/commands/sceneInvocation';
+import { cardEditorViewType } from '@/contributionIds';
 import type { RenameSceneResult } from '@storyboard/story-engine';
 
 export interface RenameSceneCommandDependencies {
@@ -64,14 +68,15 @@ export class RenameSceneCommand implements IExtensionCommand {
       return;
     }
 
-    const wasOpen: boolean | undefined = vscode.window.activeTextEditor?.document.uri.path.endsWith(
-      `/${fromStem}.card`,
-    );
+    const activeUri: vscode.Uri | undefined = resolveSceneUriFromInvocation();
+    const wasOpen: boolean =
+      activeUri !== undefined && resolveSceneBundleTarget(activeUri)?.stem === fromStem;
 
     if (wasOpen) {
       await vscode.commands.executeCommand(
-        'vscode.open',
-        scenePath(workspaceRoot, sceneRename.toStem) as vscode.Uri,
+        'vscode.openWith',
+        sceneCardPath(workspaceRoot, sceneRename.toStem) as vscode.Uri,
+        cardEditorViewType,
       );
     }
 
@@ -92,21 +97,17 @@ export class RenameSceneCommand implements IExtensionCommand {
       return undefined;
     }
 
-    const sceneDirectory: string = getStoryboardProjectPaths(workspaceRoot).sceneDirectory.path;
-    const candidateUri: vscode.Uri | undefined =
-      invokedUri ?? vscode.window.activeTextEditor?.document.uri;
-    const candidateParts: SceneFileNameParts | undefined =
-      candidateUri && candidateUri.path.startsWith(`${sceneDirectory}/`)
-        ? parseSceneFileName(candidateUri.path.split('/').at(-1) ?? '')
-        : undefined;
+    const candidateUri: vscode.Uri | undefined = resolveSceneUriFromInvocation(invokedUri);
+    const candidateStem: string | undefined =
+      candidateUri === undefined ? undefined : resolveSceneBundleTarget(candidateUri)?.stem;
 
-    if (candidateParts) {
-      return { workspaceRoot, fromStem: candidateParts.stem };
+    if (candidateStem) {
+      return { workspaceRoot, fromStem: candidateStem };
     }
 
     if (invokedUri) {
       await vscode.window.showErrorMessage(
-        '`scene` 폴더의 `NN-slug.card` 파일만 이름을 바꿀 수 있습니다.',
+        '`scene` 폴더의 `NNN-slug.card` 씬만 이름을 바꿀 수 있습니다.',
       );
       return undefined;
     }
@@ -147,7 +148,7 @@ async function askForNewSceneStem(fromStem: string): Promise<string | undefined>
   return await vscode.window.showInputBox({
     title: '씬 이름 변경',
     prompt:
-      '새 이름을 NN-slug 형식으로 입력하세요. 초안·요약·기억·캐시가 함께 옮겨지고 원장과 정전의 참조도 고쳐집니다.',
+      '새 이름을 NNN-slug 형식으로 입력하세요. 번호는 그대로 두고 slug 만 바꿉니다. 번호 붙은 폴더와 초안 이름이 함께 바뀝니다.',
     value: fromStem,
     ignoreFocusOut: true,
     validateInput: (value) =>

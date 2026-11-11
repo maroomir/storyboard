@@ -5,6 +5,7 @@ import {
   isDirectCharacterCardFile,
   isDirectSceneCardFile,
   isDraftMarkdownFile,
+  resolveSceneBundleStem,
 } from "@storyboard/story-model"
 import { Uri, type WorkspaceFolder } from "../../../stubs/vscode"
 
@@ -87,5 +88,20 @@ describe("card file contracts", () => {
 
   it.each(backgroundCases)("background: $label → $expected", ({ filePath, expected }) => {
     expect(isDirectBackgroundCardFile(Uri.file(filePath) as never, workspaceFolder)).toBe(expected)
+  })
+})
+
+describe("resolveSceneBundleStem contract", () => {
+  const cases: readonly { readonly label: string; readonly filePath: string; readonly expected: string | undefined }[] = [
+    { label: "the bundle folder", filePath: "/workspace/story/scene/003-rooftop.card", expected: "003-rooftop" },
+    { label: "card.yaml inside the bundle", filePath: "/workspace/story/scene/003-rooftop.card/card.yaml", expected: "003-rooftop" },
+    { label: "beats.yaml inside the bundle", filePath: "/workspace/story/scene/003-rooftop.card/beats.yaml", expected: "003-rooftop" },
+    { label: "a folder without a number", filePath: "/workspace/story/scene/rooftop.card/card.yaml", expected: undefined },
+    { label: "nested deeper than the bundle", filePath: "/workspace/story/scene/003-rooftop.card/sub/card.yaml", expected: undefined },
+    { label: "a character bundle", filePath: "/workspace/story/character/seorin.card/card.yaml", expected: undefined }
+  ]
+
+  it.each(cases)("$label → $expected", ({ filePath, expected }) => {
+    expect(resolveSceneBundleStem(Uri.file(filePath) as never, workspaceFolder)).toBe(expected)
   })
 })

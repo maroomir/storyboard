@@ -1,7 +1,7 @@
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
-import { validateCardRenameId } from '@/infrastructure/vscode/cardRenameEdit';
+import { validateCardRenameId } from '@/infrastructure/vscode/bundleFolderRename';
 import type { CardManager } from '@storyboard/story-app';
 import type { RenameCardResult } from '@storyboard/story-engine';
 import {
@@ -11,6 +11,7 @@ import {
   type BibleSubjectKind,
 } from '@storyboard/story-model';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
+import { resolveActiveFileUri } from '@/presentation/commands/activeFileUri';
 
 export interface RenameCardCommandDependencies {
   readonly cards: Pick<CardManager, 'rename'>;
@@ -47,7 +48,8 @@ export abstract class RenameCardCommandBase implements IExtensionCommand {
 
     const newId: string | undefined = await vscode.window.showInputBox({
       title: kind === 'character' ? '캐릭터 ID 변경' : '배경 ID 변경',
-      prompt: '새 ID를 입력하세요. 파일명, 본문 id, 참조, 프로필 이미지가 함께 갱신됩니다.',
+      prompt:
+        '새 slug 를 입력하세요. 번들 폴더 이름과 card.yaml 의 slug 한 줄이 바뀝니다. 참조는 uuid 라 다른 파일은 바뀌지 않습니다.',
       value: oldId,
       ignoreFocusOut: true,
       validateInput: validateCardRenameId,
@@ -71,18 +73,17 @@ export abstract class RenameCardCommandBase implements IExtensionCommand {
   }
 
   private resolveCardUri(kind: BibleSubjectKind, invokedUri?: vscode.Uri): vscode.Uri | undefined {
-    const candidateUri: vscode.Uri | undefined =
-      invokedUri ?? vscode.window.activeTextEditor?.document.uri;
+    const candidateUri: vscode.Uri | undefined = invokedUri ?? resolveActiveFileUri();
 
     if (!candidateUri || candidateUri.scheme !== 'file') {
       void vscode.window.showErrorMessage(
-        'rename할 `.card` 파일을 선택하거나 연 뒤 다시 시도해 주세요.',
+        '이름을 바꿀 카드(`.card` 폴더)를 고르거나 연 뒤 다시 시도해 주세요.',
       );
       return undefined;
     }
 
     if (parseCardIdFromPath(candidateUri) === undefined) {
-      void vscode.window.showErrorMessage('Storyboard 카드 파일만 rename할 수 있습니다.');
+      void vscode.window.showErrorMessage('Storyboard 카드만 이름을 바꿀 수 있습니다.');
       return undefined;
     }
 
@@ -90,7 +91,7 @@ export abstract class RenameCardCommandBase implements IExtensionCommand {
       vscode.workspace.getWorkspaceFolder(candidateUri);
 
     if (!workspaceFolder) {
-      void vscode.window.showErrorMessage('워크스페이스에 속한 카드 파일을 선택해 주세요.');
+      void vscode.window.showErrorMessage('워크스페이스에 속한 카드를 골라 주세요.');
       return undefined;
     }
 

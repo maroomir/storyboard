@@ -124,13 +124,14 @@ describe("computeStudioTarget", () => {
   it("keys a scene card target by its stem and reports draft existence", async () => {
     stubExistingFiles([
       "/workspace/story/.storyboard/project.json",
-      "/workspace/story/draft/01-intro.md"
+      "/workspace/story/draft/001-intro.md"
     ])
 
-    const target = await computeStudioTarget(editorAt("/workspace/story/scene/01-intro.card"))
+    const target = await computeStudioTarget(editorAt("/workspace/story/scene/001-intro.card/card.yaml"))
 
     expect(target.kind).toBe("scene")
-    expect(target.entity).toEqual({ kind: "scene", key: "01-intro" })
+    expect(target.entity).toEqual({ kind: "scene", key: "001-intro" })
+    expect(target.sceneUri).toBe(vscode.Uri.file("/workspace/story/scene/001-intro.card").toString())
     expect(target.draftExists).toBe(true)
   })
 

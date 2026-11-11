@@ -143,13 +143,16 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
 
   private registerWatchers(workspaceRoot: vscode.Uri): void {
     const sceneWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.sceneCards),
+      new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.sceneBundleFiles),
     );
     const draftWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.draftMarkdown),
     );
     const projectWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, STORYBOARD_RELATIVE_PATHS.projectJson),
+    );
+    const structureWatcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(workspaceRoot, STORYBOARD_RELATIVE_PATHS.structure),
     );
 
     const refresh = (): void => {
@@ -160,6 +163,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       sceneWatcher,
       draftWatcher,
       projectWatcher,
+      structureWatcher,
       sceneWatcher.onDidCreate(refresh),
       sceneWatcher.onDidChange(refresh),
       sceneWatcher.onDidDelete(refresh),
@@ -167,6 +171,8 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       draftWatcher.onDidChange(refresh),
       draftWatcher.onDidDelete(refresh),
       projectWatcher.onDidChange(refresh),
+      structureWatcher.onDidCreate(refresh),
+      structureWatcher.onDidChange(refresh),
     );
   }
 

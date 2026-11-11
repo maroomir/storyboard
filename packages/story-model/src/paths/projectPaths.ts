@@ -6,6 +6,7 @@ import {
   isDirectCharacterCardRelativePath,
   narratorCardRelativePath,
   parseElementSlugFromCardPath,
+  parseSceneBundleStemFromRelativePath,
   sceneCardRelativePath,
 } from '#model/format/bundlePaths';
 import {
@@ -119,6 +120,13 @@ export function isDirectSceneCardFile(
 }
 
 const safeEntityKeyPattern: RegExp = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
+
+export function resolveSceneBundleStem(
+  uri: StoryUri,
+  workspaceFolder: StoryWorkspaceFolder,
+): string | undefined {
+  return parseSceneBundleStemFromRelativePath(workspaceRelativePath(uri, workspaceFolder));
+}
 
 export function isSafeStudioEntityKey(key: string): boolean {
   return safeEntityKeyPattern.test(key);

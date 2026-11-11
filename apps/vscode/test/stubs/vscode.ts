@@ -131,12 +131,11 @@ export class Disposable implements IDisposable {
   }
 }
 
-export interface WillRenameFilesEvent {
+export interface RenameFilesEvent {
   readonly files: ReadonlyArray<{ readonly oldUri: UriLike; readonly newUri: UriLike }>
-  waitUntil(thenable: Promise<WorkspaceEdit | undefined>): void
 }
 
-const willRenameFilesEmitter = new EventEmitter<WillRenameFilesEvent>()
+const didRenameFilesEmitter = new EventEmitter<RenameFilesEvent>()
 
 export const workspace: {
   workspaceFolders: readonly WorkspaceFolder[] | undefined
@@ -156,7 +155,7 @@ export const workspace: {
     maxResults?: number
   ) => Promise<UriLike[]>
   applyEdit: (edit: WorkspaceEdit) => Promise<boolean>
-  onWillRenameFiles: (listener: (event: WillRenameFilesEvent) => void) => IDisposable
+  onDidRenameFiles: (listener: (event: RenameFilesEvent) => void) => IDisposable
 } = {
   workspaceFolders: undefined,
   getWorkspaceFolder: () => undefined,
@@ -171,11 +170,11 @@ export const workspace: {
   },
   findFiles: async () => [],
   applyEdit: async () => true,
-  onWillRenameFiles: (listener) => willRenameFilesEmitter.event(listener)
+  onDidRenameFiles: (listener) => didRenameFilesEmitter.event(listener)
 }
 
-export function fireWillRenameFiles(event: WillRenameFilesEvent): void {
-  willRenameFilesEmitter.fire(event)
+export function fireDidRenameFiles(event: RenameFilesEvent): void {
+  didRenameFilesEmitter.fire(event)
 }
 
 export class TabInputText {
