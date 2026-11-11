@@ -5,8 +5,6 @@ import type {
   CollectNotesRequest,
   CollectNotesResult,
   CollectNotesUseCase,
-  DiscardNoteCandidatesRequest,
-  DiscardNoteCandidatesResult,
   ExportNotesRequest,
   ExportNotesResult,
   ExportNotesUseCase,
@@ -14,18 +12,18 @@ import type {
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult,
   PlanNoteAbsorbUseCase,
-  PrepareNoteCandidatePromotionResult,
-  PromoteNoteCandidatesResult,
-  PromoteNoteCandidatesUseCase,
+  ApplySynopsisCandidateResult,
+  NoteSynopsisCandidate,
+  SynopsisCandidateDesk,
 } from '@storyboard/story-engine';
-import type { MergedNoteCardCandidate, NoteBundle, StoryUri } from '@storyboard/story-model';
+import type { NoteBundle, StoryUri } from '@storyboard/story-model';
 import type { SecretStore } from '@storyboard/story-ai';
 
 export interface NoteManagerDependencies {
   readonly collectNotesUseCase: CollectNotesUseCase;
   readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
-  readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
+  readonly synopsisCandidateDesk: SynopsisCandidateDesk;
   readonly exportNotesUseCase: ExportNotesUseCase;
   readonly secretStore: SecretStore;
 }
@@ -53,27 +51,22 @@ export class NoteManager {
     return this.deps.applyNoteAbsorbUseCase.execute(request);
   }
 
-  public prepareCandidatePromotion(
-    workspaceRoot: StoryUri,
-  ): Promise<PrepareNoteCandidatePromotionResult> {
-    return this.deps.promoteNoteCandidatesUseCase.prepare(workspaceRoot);
-  }
-
-  public promoteCandidates(
-    workspaceRoot: StoryUri,
-    candidates: readonly MergedNoteCardCandidate[],
-  ): Promise<PromoteNoteCandidatesResult> {
-    return this.deps.promoteNoteCandidatesUseCase.promote(workspaceRoot, candidates);
-  }
-
   public export(request: ExportNotesRequest): Promise<ExportNotesResult> {
     return this.deps.exportNotesUseCase.execute(request);
   }
 
-  public discardCandidates(
+  public listSynopsisCandidates(workspaceRoot: StoryUri): Promise<readonly NoteSynopsisCandidate[]> {
+    return this.deps.synopsisCandidateDesk.list(workspaceRoot);
+  }
+
+  public applySynopsisCandidate(
     workspaceRoot: StoryUri,
-    request: DiscardNoteCandidatesRequest,
-  ): Promise<DiscardNoteCandidatesResult> {
-    return this.deps.promoteNoteCandidatesUseCase.discard(workspaceRoot, request);
+    location?: string,
+  ): Promise<ApplySynopsisCandidateResult> {
+    return this.deps.synopsisCandidateDesk.apply(workspaceRoot, location);
+  }
+
+  public discardSynopsisCandidates(workspaceRoot: StoryUri, location?: string): Promise<number> {
+    return this.deps.synopsisCandidateDesk.discard(workspaceRoot, location);
   }
 }

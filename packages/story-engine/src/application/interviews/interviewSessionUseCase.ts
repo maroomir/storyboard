@@ -1,3 +1,4 @@
+import type { PlannedCardChanges } from '#engine/persistence/bundles/workspaceCards';
 import type {
   InterviewAnswerRequest,
   InterviewConfirmRequest,
@@ -82,7 +83,6 @@ import {
   type InterviewWorkingModel,
   NarrationError,
   type NarrationDirective,
-  type Statement,
   type OutlineSynopsis,
   type SceneFile,
   type SceneListItem,
@@ -929,7 +929,7 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
     changes: readonly CardCollectProposal[],
   ): Promise<void> {
     const proposed: StoryboardCard = applyCardCollectProposals(context.card, changes);
-    const statements: readonly Statement[] = await this.host.cards.planStatementChanges(
+    const planned: PlannedCardChanges = await this.host.cards.planCardChanges(
       request.workspaceRoot,
       proposed,
       { origin: 'interview', session: request.sessionId },
@@ -938,7 +938,8 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
     await this.repositories.interviews.savePendingStatements(
       request.workspaceRoot,
       context.card.id,
-      statements,
+      planned.statements,
+      planned.header,
     );
   }
 

@@ -120,6 +120,11 @@ function createLookup(bundles: readonly ElementBundle[]): ElementSlugLookup {
   };
 }
 
+export interface PlannedCardChanges {
+  readonly statements: readonly Statement[];
+  readonly header?: Readonly<Record<string, unknown>>;
+}
+
 interface PlannedCard {
   readonly kind: 'character' | 'background';
   readonly content: ElementBundleContent<ElementHeader>;
@@ -356,11 +361,11 @@ export class WorkspaceCards {
     return joinStoryPath(workspaceRoot, ...this.bundlePath(kind, slug).split('/'));
   }
 
-  public async planStatementChanges(
+  public async planCardChanges(
     workspaceRoot: StoryUri,
     card: StoryboardCard,
     source: StatementSource,
-  ): Promise<readonly Statement[]> {
+  ): Promise<PlannedCardChanges> {
     const roster: CardRoster = await this.loadRoster(workspaceRoot);
     const current: ElementBundle | undefined = this.findBundle(roster, kindOfCard(card), card.id);
     const planned: PlannedCard = this.planCard(card, {
@@ -372,10 +377,19 @@ export class WorkspaceCards {
     const currentLines: ReadonlySet<string> = new Set(
       (current?.statements ?? []).map((statement) => JSON.stringify(statement)),
     );
-
-    return planned.content.statements.filter(
-      (statement) => !currentLines.has(JSON.stringify(statement)),
+    const currentHeader: Readonly<Record<string, unknown>> = { ...(current?.header ?? {}) };
+    const header: Record<string, unknown> = Object.fromEntries(
+      Object.entries(planned.content.header).filter(
+        ([key, value]) => JSON.stringify(currentHeader[key]) !== JSON.stringify(value),
+      ),
     );
+
+    return {
+      statements: planned.content.statements.filter(
+        (statement) => !currentLines.has(JSON.stringify(statement)),
+      ),
+      ...(Object.keys(header).length === 0 ? {} : { header }),
+    };
   }
 
   private async writePlannedCard(

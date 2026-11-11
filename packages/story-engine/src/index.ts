@@ -45,7 +45,7 @@ export * from '#engine/application/notes/exportNotesUseCase';
 export * from '#engine/application/notes/noteAbsorbRepository';
 export * from '#engine/application/notes/noteSource';
 export * from '#engine/application/notes/planNoteAbsorbUseCase';
-export * from '#engine/application/notes/promoteNoteCandidatesUseCase';
+export * from '#engine/application/notes/synopsisCandidateDesk';
 export * from '#engine/application/interviews/interviewRepository';
 export * from '#engine/application/interviews/interviewCoverage';
 export * from '#engine/application/interviews/interviewTuning';

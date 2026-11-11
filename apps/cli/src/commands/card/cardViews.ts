@@ -1,23 +1,4 @@
-import type {
-  BibleSubjectKind,
-  CharacterRole,
-  MergedNoteCardCandidate,
-} from '@storyboard/story-model';
-
-export function describeNoteConflicts(cards: readonly MergedNoteCardCandidate[]): string[] {
-  const lines: string[] = cards.flatMap((card) =>
-    card.conflicts.flatMap((conflict) => [
-      `  보류      ${card.cardId} ${conflict.key} — 노트마다 값이 다릅니다`,
-      ...conflict.options.map(
-        (option) => `    [${option.ref}] ${option.value} ← ${option.locations.join(', ')}`,
-      ),
-    ]),
-  );
-
-  return lines.length === 0
-    ? []
-    : [...lines, '  하나만 남기려면: storyboard card discard <id> --change <ref>'];
-}
+import type { BibleSubjectKind, CharacterRole } from '@storyboard/story-model';
 
 export function describeCardBuild(writtenCount: number, needsId: readonly string[]): string {
   if (needsId.length === 0) {

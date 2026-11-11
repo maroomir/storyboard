@@ -138,7 +138,7 @@ export class AbsorbNotesCommand implements IExtensionCommand {
 
     if (isPlanAccepted !== '반영') {
       await vscode.window.showInformationMessage(
-        '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
+        '반영하지 않았습니다. 계획은 캐시 DB 의 흡수 세션에 있습니다.',
       );
       return false;
     }

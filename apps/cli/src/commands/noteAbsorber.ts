@@ -145,7 +145,7 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     lines.push('시놉시스를 썼습니다: .storyboard/outline/synopsis.md');
   } else if (outcome.synopsis === 'candidate') {
     lines.push(
-      '시놉시스가 이미 있어 노트의 시놉시스는 .storyboard/cache/notes/synopsis.candidate.md 에 두었습니다.',
+      '시놉시스가 이미 있어 노트의 시놉시스는 캐시 DB 의 흡수 세션에 후보로 두었습니다.',
     );
   }
 
@@ -294,7 +294,7 @@ export class NoteAbsorber {
       ? undefined
       : {
           ok: false,
-          message: '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
+          message: '반영하지 않았습니다. 계획은 캐시 DB 의 흡수 세션에 있습니다.',
           data: { plan },
           stop: 'cancelled',
         };

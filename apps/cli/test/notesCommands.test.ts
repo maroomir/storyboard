@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   buildNoteAbsorbPlan,
   coerceNoteExtraction,
+  NodeUri,
   type NoteAbsorbPlan,
 } from '@storyboard/story-model';
 import { type PlanNoteAbsorbRequest } from '@storyboard/story-engine';
@@ -24,6 +25,7 @@ import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
 import { readBundleText, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+import { readAbsorbPending, readAbsorbSessions } from './fixtures/absorbSessions';
 import {
   listScenesFromBundles,
   readSceneCardYaml,
@@ -153,7 +155,7 @@ async function planFor(request: PlanNoteAbsorbRequest) {
     .map((name) => ({
       type: 'character' as const,
       id: name.replace(/\.card$/, ''),
-      name: name === 'hana.card' ? '하나' : name,
+      name: name === 'hana.card' ? '하나' : name === 'jun.card' ? '준' : name,
       role: 'main' as const,
       description: ['등대지기의 손녀.'],
       attributes: { age: '17' },
@@ -218,8 +220,9 @@ describe('notes absorb', () => {
     expect(outcome.message).toContain('링크로 읽음  세계관');
     expect(outcome.message).toContain('--yes');
     expect(cardFiles('character')).toEqual(before);
-    expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'source.json'))).toBe(true);
-    expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'plan.json'))).toBe(false);
+    const [session] = await readAbsorbSessions(workspace);
+    expect(session?.bundle).toBeDefined();
+    expect(session?.plan).toBeUndefined();
   });
 
   it('asks a person with the estimate in the question and writes nothing when declined', async () => {
@@ -241,7 +244,7 @@ describe('notes absorb', () => {
     expect(questions).toHaveLength(1);
     expect(questions[0]?.title).toBe('노트를 AI 로 정리할까요?');
     expect(questions[0]?.details.join('\n')).toContain('읽은 노트 7장');
-    expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'plan.json'))).toBe(false);
+    expect((await readAbsorbSessions(workspace))[0]?.plan).toBeUndefined();
   });
 
   it('runs the whole path on the mock provider and writes nothing it was not given', async () => {
@@ -249,7 +252,7 @@ describe('notes absorb', () => {
 
     expect(outcome.ok).toBe(true);
     expect(outcome.message).toContain('카드 0장을 만들었습니다.');
-    expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'plan.json'))).toBe(true);
+    expect((await readAbsorbSessions(workspace))[0]?.plan).toBeDefined();
   });
 
   it('shows the plan and writes nothing under --dry-run', async () => {
@@ -359,17 +362,43 @@ describe('notes absorb', () => {
     const after = await readCardYaml(workspace, 'hana');
     expect(after).toContain("age: '19'");
     expect(after).toContain('달의 문 너머를 보고 싶다');
-    expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'candidates.json'))).toBe(
-      false,
-    );
+    expect(await readAbsorbPending(workspace, 'hana')).toEqual([]);
 
     const again = await run('card promote', args(['card', 'promote']));
     expect(again.message).toBe('승격할 후보가 없습니다.');
   });
 
+  function withHanaFact(plan: NoteAbsorbPlan): NoteAbsorbPlan {
+    return {
+      ...plan,
+      cards: plan.cards.map((entry) =>
+        entry.card.id === 'hana'
+          ? { ...entry, facts: [{ key: 'birth', value: '등대에서 태어났다' }] }
+          : entry,
+      ),
+    };
+  }
+
+  it('writes the facts a note gives a new card as fact lines', async () => {
+    await run('notes absorb', absorbArgs({ yes: true }), withFixedModel(container(), withHanaFact));
+
+    const statements: string = readBundleText(workspace, 'character', 'hana');
+    expect(statements).toContain('facet: fact');
+    expect(statements).toContain('등대에서 태어났다');
+  });
+
+  it('leaves the facts a note gives an existing card pending', async () => {
+    writeCardBundleFromYaml(workspace, 'type: character\nid: hana\nname: 하나\nrole: main\n');
+
+    await run('notes absorb', absorbArgs({ yes: true }), withFixedModel(container(), withHanaFact));
+
+    expect(readBundleText(workspace, 'character', 'hana')).not.toContain('등대에서 태어났다');
+    expect(await readAbsorbPending(workspace, 'hana')).toContainEqual(
+      expect.objectContaining({ facet: 'fact', key: 'birth', value: '등대에서 태어났다' }),
+    );
+  });
+
   describe('candidates left by earlier absorbs', () => {
-    const candidatesPath = () =>
-      join(workspace, '.storyboard', 'cache', 'notes', 'candidates.json');
     const otherLocation = join(vault, '인물');
 
     function writeExistingCard(id: string, name: string): void {
@@ -416,194 +445,113 @@ describe('notes absorb', () => {
     });
 
     it('keeps the candidates of an earlier location when another is absorbed', async () => {
-      const second = await absorbAt(otherLocation, onlyCards('harbor'));
-      expect(second.message).toContain('기존 카드 harbor 에 대한 내용은 후보로 남겼습니다.');
-      expect(second.message).toContain('승격을 기다리는 카드 2장 (hana, harbor)');
+      const second = await absorbAt(otherLocation, hanaAged('20'));
+      expect(second.message).toContain('기존 카드 hana 에 대한 내용은 후보로 남겼습니다.');
+      expect(second.message).toContain('승격을 기다리는 카드 1장 (hana)');
 
+      const sessions = new Set((await readAbsorbPending(workspace, 'hana')).map((line) => line.source.session));
+      expect([...sessions].sort()).toEqual([vault, otherLocation].sort());
       const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-      expect(preview.message).toContain(`노트에서  hana (하나) 변경 3건 ← ${vault}`);
-      expect(preview.message).not.toContain(`${vault}, `);
-      expect(preview.message).not.toContain('보류');
+      expect(preview.message).toContain('노트에서  hana (하나) 변경 2건');
     });
-
-    it('merges what two locations say about one card', async () => {
-      await absorbAt(otherLocation, onlyCards('hana'));
-
-      const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-      expect(preview.message).toContain(
-        `노트에서  hana (하나) 변경 3건 ← ${vault}, ${otherLocation}`,
-      );
-    });
-
     it('replaces only what the same location left before', async () => {
       await absorbAt(vault, hanaAged('20'));
 
-      const file = JSON.parse(readFileSync(candidatesPath(), 'utf8')) as {
-        sources: { location: string }[];
-      };
-      expect(file.sources.map((source) => source.location)).toEqual([vault]);
-
-      const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-      expect(preview.message).not.toContain('보류');
+      const sessions = new Set((await readAbsorbPending(workspace, 'hana')).map((line) => line.source.session));
+      expect([...sessions]).toEqual([vault]);
+      await run('card promote', args(['card', 'promote']));
+      expect(await readCardYaml(workspace, 'hana')).toContain("age: '20'");
     });
-
     it('does not drop pending candidates when an absorb leaves none of its own', async () => {
       const second = await absorbAt(otherLocation, onlyCards());
 
       expect(second.message).toContain('승격을 기다리는 카드 1장 (hana)');
-      expect(existsSync(candidatesPath())).toBe(true);
+      expect((await readAbsorbPending(workspace, 'hana')).length).toBeGreaterThan(0);
     });
 
     it('starts over with --replace-candidates', async () => {
-      const second = await absorbAt(otherLocation, onlyCards('harbor'), {
+      writeExistingCard('jun', '준');
+      const second = await absorbAt(otherLocation, onlyCards('jun'), {
         'replace-candidates': true,
       });
 
-      expect(second.message).toContain('승격을 기다리는 카드 1장 (harbor)');
+      expect(second.message).toContain('승격을 기다리는 카드 1장 (jun)');
     });
-
-    it('holds back a slot two notes disagree on and promotes the rest', async () => {
+    it('applies the location absorbed last when two notes disagree on a slot', async () => {
       await absorbAt(otherLocation, hanaAged('20'));
-
-      const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-      expect(preview.message).toContain('보류      hana attribute:age');
-      expect(preview.message).toContain(`[s1:attribute:age] 19 ← ${vault}`);
-      expect(preview.message).toContain(`[s2:attribute:age] 20 ← ${otherLocation}`);
-
-      const promoted = await run('card promote', args(['card', 'promote']));
-      expect(promoted.message).toContain('카드 1개를 갱신했습니다.');
-      expect(promoted.message).toContain('보류      hana attribute:age');
-
-      const hana = await readCardYaml(workspace, 'hana');
-      expect(hana).toContain('age: 17');
-      expect(hana).toContain('달의 문 너머를 보고 싶다');
-
-      const again = await run('card promote', args(['card', 'promote']));
-      expect(again.message).toContain('카드 0개를 갱신했습니다.');
-      expect(again.message).toContain('[s2:attribute:age] 20');
-    });
-
-    it('keeps one value of a conflict with card discard --change, then promotes it', async () => {
-      await absorbAt(otherLocation, hanaAged('20'));
-
-      const missing = await run(
-        'card discard',
-        args(['card', 'discard'], { change: 's9:attribute:age' }, ['hana']),
-      );
-      expect(missing.ok).toBe(false);
-
-      const discarded = await run(
-        'card discard',
-        args(['card', 'discard'], { change: 's1:attribute:age' }, ['hana']),
-      );
-      expect(discarded.ok).toBe(true);
 
       const promoted = await run('card promote', args(['card', 'promote']));
       expect(promoted.message).toBe('카드 1개를 갱신했습니다.');
-      expect(await readCardYaml(workspace, 'hana')).toContain(
-        "age: '20'",
-      );
+      const hana = await readCardYaml(workspace, 'hana');
+      expect(hana).toContain("age: '20'");
+      expect(hana).toContain('달의 문 너머를 보고 싶다');
     });
 
     it('refuses --change without exactly one card id', async () => {
       const outcome = await run(
         'card discard',
-        args(['card', 'discard'], { change: 's1:attribute:age' }),
+        args(['card', 'discard'], { change: 's1:attribute:age' }, ['hana']),
       );
       expect(outcome.ok).toBe(false);
+      expect(outcome.message).toContain('카드 단위로 버립니다');
     });
 
     it('discards the candidates of the named cards, or all of them', async () => {
-      await absorbAt(otherLocation, onlyCards('harbor'));
+      writeExistingCard('jun', '준');
+      await absorbAt(otherLocation, onlyCards('jun'));
 
-      const one = await run('card discard', args(['card', 'discard'], {}, ['harbor']));
-      expect(one.message).toBe('후보를 버렸습니다.\n  노트에서  harbor');
+      const one = await run('card discard', args(['card', 'discard'], {}, ['jun']));
+      expect(one.message).toBe('후보를 버렸습니다.\n  jun');
 
       const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
       expect(preview.message).toContain('노트에서  hana');
 
       const all = await run('card discard', args(['card', 'discard']));
-      expect(all.message).toBe('후보를 버렸습니다.\n  노트에서  hana');
-      expect(existsSync(candidatesPath())).toBe(false);
+      expect(all.message).toBe('후보를 버렸습니다.\n  hana');
+      expect(await readAbsorbPending(workspace, 'hana')).toEqual([]);
 
       const none = await run('card discard', args(['card', 'discard']));
       expect(none.message).toBe('버릴 후보가 없습니다.');
     });
-
-    it('keeps one synopsis section per location beside the author synopsis', async () => {
-      const synopsisCandidate = join(
-        workspace,
-        '.storyboard',
-        'cache',
-        'notes',
-        'synopsis.candidate.md',
-      );
-      const sectionLocations = () =>
-        [...readFileSync(synopsisCandidate, 'utf8').matchAll(/^<!-- note-source: (.+) -->$/gm)].map(
-          (match) => match[1],
+    it('keeps one synopsis candidate per location beside the author synopsis', async () => {
+      const candidateLocations = async (): Promise<string[]> =>
+        (await container().notes.listSynopsisCandidates(NodeUri.file(workspace))).map(
+          (candidate) => candidate.location,
         );
 
       await absorbAt(vault);
       await absorbAt(otherLocation);
       await absorbAt(vault);
-      expect(sectionLocations()).toEqual([otherLocation, vault]);
-      expect(readFileSync(synopsisCandidate, 'utf8')).toContain(
-        '만조에만 열리는 문을 둘러싼 이야기.',
-      );
+      expect((await candidateLocations()).sort()).toEqual([otherLocation, vault].sort());
+      const [newest] = await container().notes.listSynopsisCandidates(NodeUri.file(workspace));
+      expect(newest?.markdown).toContain('만조에만 열리는 문을 둘러싼 이야기.');
 
       await absorbAt(vault, undefined, { 'replace-candidates': true });
-      expect(sectionLocations()).toEqual([vault]);
+      expect(await candidateLocations()).toEqual([vault]);
     });
 
-    it('refuses a candidate file it cannot read before any request or write', async () => {
-      writeFileSync(candidatesPath(), '{broken');
+    it('writes the newest synopsis candidate on apply and forgets the rest', async () => {
+      await absorbAt(vault);
+      await absorbAt(otherLocation);
+      const notes = container().notes;
 
-      const planned = await run('notes absorb', absorbArgs({ yes: true }));
-      expect(planned.ok).toBe(false);
-      expect(planned.message).toContain('.storyboard/cache/notes/candidates.json');
-      expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'responses.json'))).toBe(
-        false,
+      expect(await notes.applySynopsisCandidate(NodeUri.file(workspace))).toMatchObject({ ok: true });
+      expect(readFileSync(join(workspace, '.storyboard', 'outline', 'synopsis.md'), 'utf8')).toContain(
+        '만조에만 열리는 문을 둘러싼 이야기.',
       );
-
-      const applied = await absorbAt(vault, onlyCards('jun'));
-      expect(applied.ok).toBe(false);
-      expect(existsSync(join(workspace, 'character', 'jun.card'))).toBe(false);
-
-      await expect(
-        run('card promote', args(['card', 'promote'], { 'dry-run': true })),
-      ).rejects.toThrow('.storyboard/cache/notes/candidates.json');
-      expect(readFileSync(candidatesPath(), 'utf8')).toBe('{broken');
-    });
-
-    it('drops a candidate file an earlier version wrote, with a warning', async () => {
-      const warnings: string[] = [];
-      const warning = createCliContainer({
-        workspacePath: workspace,
-        logger: { ...silentLogger, warn: (message: string) => warnings.push(message) },
-        canPrompt: false,
-        version: '0.0.0',
+      expect(await notes.listSynopsisCandidates(NodeUri.file(workspace))).toEqual([]);
+      expect(await notes.applySynopsisCandidate(NodeUri.file(workspace))).toMatchObject({
+        ok: false,
+        kind: 'none',
       });
-      mkdirSync(join(workspace, '.storyboard', 'cache', 'notes'), { recursive: true });
-      writeFileSync(
-        candidatesPath(),
-        JSON.stringify({ location: '/old', absorbedAt: new Date().toISOString(), candidates: [] }),
-      );
+    });
 
-      const preview = await run(
-        'card promote',
-        args(['card', 'promote'], { 'dry-run': true }),
-        warning,
-      );
-      expect(preview.message).toBe('승격할 후보가 없습니다.');
-      expect(warnings.join('\n')).toContain('이전 버전이 남긴 노트 카드 후보는 읽지 않습니다');
+    it('discards the synopsis candidates without touching the synopsis', async () => {
+      await absorbAt(vault);
+      const before: string = readFileSync(join(workspace, '.storyboard', 'outline', 'synopsis.md'), 'utf8');
 
-      await run(
-        'notes absorb',
-        args(['notes', 'absorb'], { yes: true }, [vault]),
-        withFixedModel(warning),
-      );
-      const file = JSON.parse(readFileSync(candidatesPath(), 'utf8')) as { version: number };
-      expect(file.version).toBe(2);
+      expect(await container().notes.discardSynopsisCandidates(NodeUri.file(workspace))).toBe(1);
+      expect(readFileSync(join(workspace, '.storyboard', 'outline', 'synopsis.md'), 'utf8')).toBe(before);
     });
   });
 

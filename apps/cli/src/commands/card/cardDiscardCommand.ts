@@ -5,22 +5,17 @@ import { cardIdPattern } from '@/commands/card/cardArguments';
 import { flagString } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
-import type { DiscardNoteCandidatesResult } from '@storyboard/story-engine';
+import type { PendingCardSummary } from '@storyboard/story-engine';
 
 export class CardDiscardCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card discard',
     writesWorkspace: true,
     group: '카드',
-    usage: 'card discard <id> [--change <ref>]',
-    summary:
-      '승격하지 않은 카드 후보를 버립니다 (id 를 여럿 줄 수 있고, 없으면 전부 · --change 는 그 카드의 노트 후보 하나만)',
+    usage: 'card discard <id>',
+    summary: '반영하지 않은 카드 제안을 버립니다 (id 를 여럿 줄 수 있고, 없으면 전부)',
     flags: ['change'],
-    examples: [
-      'storyboard card discard hana',
-      'storyboard card discard hana --change s2:attribute:age',
-      'storyboard card discard',
-    ],
+    examples: ['storyboard card discard hana', 'storyboard card discard'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
@@ -30,61 +25,35 @@ export class CardDiscardCommand implements ICommandHandler {
       return failure(`카드 id 가 올바르지 않습니다: ${invalidId}`);
     }
 
-    const changeRef: string | undefined = flagString(args.flags, 'change');
-
-    return changeRef === undefined
-      ? this.discardCards(container, args.positionals)
-      : this.discardChange(container, args.positionals, changeRef);
-  }
-
-  private async discardChange(
-    container: CliContainer,
-    positionals: readonly string[],
-    changeRef: string,
-  ): Promise<CommandOutcome> {
-    const [cardId] = positionals;
-
-    if (cardId === undefined || positionals.length > 1) {
-      return failure('--change 는 카드 id 하나와 함께 씁니다: card discard <id> --change <ref>');
+    if (flagString(args.flags, 'change') !== undefined) {
+      return failure('세션의 제안은 카드 단위로 버립니다. --change 없이 card discard <id> 를 쓰세요.');
     }
 
-    const discard: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
-      container.workspaceRoot,
-      {
-        kind: 'change',
-        cardId,
-        ref: changeRef,
-      },
-    );
-
-    return discard.kind === 'change_not_found'
-      ? failure(
-          `${cardId} 의 노트 후보에 ${changeRef} 가 없습니다. card promote --dry-run 으로 확인하세요.`,
-        )
-      : success(`${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, discard);
+    return await this.discardCards(container, args.positionals);
   }
 
   private async discardCards(
     container: CliContainer,
     positionals: readonly string[],
   ): Promise<CommandOutcome> {
-    const cardIds: Set<string> | undefined =
-      positionals.length > 0 ? new Set(positionals) : undefined;
-    const notes: DiscardNoteCandidatesResult = await container.notes.discardCandidates(
+    const pending: readonly PendingCardSummary[] = await container.cards.listPendingCards(
       container.workspaceRoot,
-      {
-        kind: 'cards',
-        ...(cardIds === undefined ? {} : { cardIds }),
-      },
     );
-    const noteCardIds: readonly string[] = notes.kind === 'discarded' ? notes.cardIds : [];
+    const requested: ReadonlySet<string> = new Set(positionals);
+    const targets: readonly string[] = pending
+      .map((card) => card.slug)
+      .filter((slug) => requested.size === 0 || requested.has(slug));
 
-    if (noteCardIds.length === 0) {
-      return success('버릴 후보가 없습니다.', { notes: [] });
+    for (const slug of targets) {
+      await container.cards.discardPending(container.workspaceRoot, slug);
     }
 
-    return success(['후보를 버렸습니다.', `  노트에서  ${noteCardIds.join(', ')}`].join('\n'), {
-      notes: noteCardIds,
+    if (targets.length === 0) {
+      return success('버릴 후보가 없습니다.', { cards: [] });
+    }
+
+    return success(['후보를 버렸습니다.', `  ${targets.join(', ')}`].join('\n'), {
+      cards: targets,
     });
   }
 }

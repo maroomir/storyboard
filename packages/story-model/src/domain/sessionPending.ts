@@ -21,6 +21,21 @@ export function readPendingStatements(sessionData: unknown): readonly Statement[
   return parsed.success ? parsed.data.pendingStatements : [];
 }
 
+export type PendingHeaderChange = Readonly<Record<string, unknown>>;
+
+export function readPendingHeader(sessionData: unknown): PendingHeaderChange | undefined {
+  const header: unknown = isRecord(sessionData) ? sessionData.pendingHeader : undefined;
+  return isRecord(header) && Object.keys(header).length > 0 ? header : undefined;
+}
+
+export function replacePendingHeader(
+  sessionData: unknown,
+  pendingHeader: PendingHeaderChange | undefined,
+): Readonly<Record<string, unknown>> {
+  const { pendingHeader: _previous, ...rest } = isRecord(sessionData) ? sessionData : {};
+  return pendingHeader === undefined ? rest : { ...rest, pendingHeader };
+}
+
 export function replacePendingStatements(
   sessionData: unknown,
   pendingStatements: readonly Statement[],

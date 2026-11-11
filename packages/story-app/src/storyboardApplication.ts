@@ -40,7 +40,7 @@ import {
   OutlineRepository,
   PlanNoteAbsorbUseCase,
   ProjectRepository,
-  PromoteNoteCandidatesUseCase,
+  SynopsisCandidateDesk,
   RecommendCardsUseCase,
   RenameCardUseCase,
   ReviewManuscriptUseCase,
@@ -182,7 +182,7 @@ interface EngineGraph {
   readonly interviewSessionProtocol: InterviewSessionProtocol;
   readonly interviewRepository: IInterviewRepository;
   readonly describeInterviewCoverageUseCase: DescribeInterviewCoverageUseCase;
-  readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
+  readonly synopsisCandidateDesk: SynopsisCandidateDesk;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameCardUseCase: RenameCardUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
@@ -431,7 +431,7 @@ function buildServices(
     interviewSessionProtocol: createInterviewProtocol(host, ai, repositories),
     interviewRepository: repositories.interviews,
     describeInterviewCoverageUseCase: new DescribeInterviewCoverageUseCase(host, repositories),
-    promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase(host, repositories),
+    synopsisCandidateDesk: new SynopsisCandidateDesk(repositories.noteAbsorb),
     recommendCardsUseCase: new RecommendCardsUseCase(host, ai, repositories),
     renameCardUseCase: new RenameCardUseCase(host),
     renameSceneUseCase: new RenameSceneUseCase(host),
@@ -582,7 +582,7 @@ function buildWorkspaceRepositories(
     cardSidebar: new CardSidebarRepository(host.cards),
     narratorCards: new NarratorCardRepository(host.cards),
     storyFeatures: new StoryFeatureRepository(fileSystem, host.cards, host.scenes, cardFacts),
-    noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards, host.scenes),
+    noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards, host.scenes, host.caches),
     noteSources: new NoteSourceProvider(host, { fetch }),
     interviews: new InterviewRepository({ caches: host.caches, cards: host.cards }),
   };

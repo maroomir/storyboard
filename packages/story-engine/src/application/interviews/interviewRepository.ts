@@ -1,4 +1,5 @@
 import type {
+  PendingHeaderChange,
   InterviewAxesFile,
   InterviewWorkingModel,
   Statement,
@@ -15,5 +16,6 @@ export interface IInterviewRepository {
     workspaceRoot: StoryUri,
     cardId: string,
     statements: readonly Statement[],
+    header?: PendingHeaderChange,
   ): Promise<void>;
 }

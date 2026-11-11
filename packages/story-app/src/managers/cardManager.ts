@@ -39,6 +39,7 @@ import type {
   CardPendingResult,
   CardPendingApplyReport,
   PendingCardChanges,
+  PendingCardSummary,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
@@ -172,6 +173,10 @@ export class CardManager {
 
   public remove(request: RemoveCardRequest): Promise<RemoveCardResult> {
     return this.deps.removeCardUseCase.execute(request);
+  }
+
+  public listPendingCards(workspaceRoot: StoryUri): Promise<readonly PendingCardSummary[]> {
+    return this.deps.cardPendingChanges.listCards(workspaceRoot);
   }
 
   public listPending(

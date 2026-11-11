@@ -53,7 +53,6 @@ export * from '#model/domain/generationContract';
 export * from '#model/domain/manuscriptExport';
 export * from '#model/domain/manuscriptReview';
 export * from '#model/domain/notes/noteAbsorbPlan';
-export * from '#model/domain/notes/noteCandidates';
 export * from '#model/domain/notes/noteCardConsolidation';
 export * from '#model/domain/notes/noteChunks';
 export * from '#model/domain/notes/noteMarkdown';

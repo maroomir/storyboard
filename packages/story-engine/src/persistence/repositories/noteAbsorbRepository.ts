@@ -9,47 +9,61 @@ import {
   type StoryboardProject,
   getStoryboardProjectPaths,
   mainThreadId,
-  noteCandidateFileSchema,
-  STORYBOARD_RELATIVE_PATHS,
+  replacePendingHeader,
+  replacePendingStatements,
   type NoteBundle,
-  type NoteCandidateFile,
   type NoteExtractionResponse,
+  type Statement,
+  type PendingHeaderChange,
 } from '@storyboard/story-model';
 
-import {
-  NoteCandidateFileError,
-  type INoteAbsorbRepository,
-  type NoteCandidateLoad,
+import type {
+  INoteAbsorbRepository,
+  NoteSynopsisCandidate,
 } from '#engine/application/notes/noteAbsorbRepository';
+import { SessionStore, type SessionRecord } from '#engine/persistence/cache/sessionStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import type {
   BibleSubjectKind,
   NoteAbsorbPlan,
   StatementSource,
   ElementMemory,
-  StoryboardProjectPaths,
   VoiceSampleLine,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 
 const absorbedSource: StatementSource = { origin: 'studio' };
-import type { ZodSafeParseResult } from 'zod';
+import { createHash } from 'node:crypto';
 
 function encodeText(text: string): Uint8Array {
   return new TextEncoder().encode(text);
 }
 
-function encodeJson(value: unknown): Uint8Array {
-  return encodeText(`${JSON.stringify(value, null, 2)}\n`);
+interface AbsorbSessionData {
+  readonly location?: string;
+  readonly bundle?: NoteBundle;
+  readonly plan?: NoteAbsorbPlan;
+  readonly responses?: readonly NoteExtractionResponse[];
+  readonly synopsisCandidate?: string;
 }
 
-function unreadableCandidateFile(cause: unknown): NoteCandidateFileError {
-  return new NoteCandidateFileError(
-    'unreadable',
-    `노트 카드 후보 파일을 읽지 못했습니다 (JSON 이 아니거나 형식이 맞지 않습니다): ${STORYBOARD_RELATIVE_PATHS.noteCandidates}\n고치거나 지운 뒤 다시 실행하세요. 지우면 승격을 기다리던 노트 후보가 사라집니다.`,
-    cause,
-  );
+function locationKeyOf(location: string): string {
+  return createHash('sha256').update(location).digest('hex').slice(0, 16);
+}
+
+function absorbSessionId(location: string): string {
+  return `absorb:${locationKeyOf(location)}`;
+}
+
+function absorbDataOf(record: SessionRecord | undefined): AbsorbSessionData {
+  const data: unknown = record?.data;
+  return typeof data === 'object' && data !== null ? (data as AbsorbSessionData) : {};
+}
+
+function isOfLocation(record: SessionRecord, location: string | undefined): boolean {
+  return location === undefined || absorbDataOf(record).location === location;
 }
 
 export class NoteAbsorbRepository implements INoteAbsorbRepository {
@@ -57,59 +71,77 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
     private readonly scenes: WorkspaceScenes,
+    private readonly caches: WorkspaceCaches,
+    private readonly now: () => Date = (): Date => new Date(),
   ) {}
 
   public async saveBundle(workspaceRoot: StoryUri, bundle: NoteBundle): Promise<void> {
-    await this.writeCacheFile(workspaceRoot, 'noteSource', encodeJson(bundle));
+    await this.updateAbsorbSession(workspaceRoot, bundle.location, (data) => ({ ...data, bundle }));
   }
 
-  public async savePlan(workspaceRoot: StoryUri, plan: NoteAbsorbPlan): Promise<void> {
-    await this.writeCacheFile(workspaceRoot, 'notePlan', encodeJson(plan));
+  public async savePlan(workspaceRoot: StoryUri, location: string, plan: NoteAbsorbPlan): Promise<void> {
+    await this.updateAbsorbSession(workspaceRoot, location, (data) => ({ ...data, plan }));
   }
 
   public async saveExtractionResponses(
     workspaceRoot: StoryUri,
+    location: string,
     responses: readonly NoteExtractionResponse[],
   ): Promise<void> {
-    await this.writeCacheFile(workspaceRoot, 'noteExtractionResponses', encodeJson(responses));
+    await this.updateAbsorbSession(workspaceRoot, location, (data) => ({ ...data, responses }));
   }
 
-  public async loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateLoad> {
-    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).noteCandidates;
-
-    if (!(await this.fileSystem.exists(uri))) {
-      return { kind: 'none' };
+  public async saveCardPending(
+    workspaceRoot: StoryUri,
+    location: string,
+    cardId: string,
+    statements: readonly Statement[],
+    header?: PendingHeaderChange,
+  ): Promise<void> {
+    const elementId: string | undefined = (await this.cards.findBundleBySlug(workspaceRoot, cardId))
+      ?.header.id;
+    if (elementId === undefined) {
+      throw new Error(`제안을 남길 카드가 없습니다: ${cardId}`);
     }
 
-    const text: string = new TextDecoder().decode(await this.fileSystem.readFile(uri));
-    let json: unknown;
-
-    try {
-      json = JSON.parse(text);
-    } catch (error) {
-      throw unreadableCandidateFile(error);
-    }
-
-    if (typeof json === 'object' && json !== null && !('version' in json)) {
-      return { kind: 'legacy' };
-    }
-
-    const parsed: ZodSafeParseResult<NoteCandidateFile> = noteCandidateFileSchema.safeParse(json);
-
-    if (!parsed.success) {
-      throw unreadableCandidateFile(parsed.error);
-    }
-
-    return { kind: 'current', file: parsed.data };
+    const store: SessionStore = await this.store(workspaceRoot);
+    const id: string = `${absorbSessionId(location)}:${elementId}`;
+    store.save({
+      id,
+      kind: 'absorb',
+      elementId,
+      openedAt: store.find(id)?.openedAt ?? this.now().toISOString(),
+      data: replacePendingHeader(replacePendingStatements({ location }, statements), header),
+      pendingCount: statements.length + (header === undefined ? 0 : 1),
+    });
   }
 
-  public async saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void> {
-    if (file.sources.length === 0) {
-      await this.fileSystem.delete(getStoryboardProjectPaths(workspaceRoot).noteCandidates);
-      return;
-    }
+  public async clearCardPending(workspaceRoot: StoryUri, location?: string): Promise<void> {
+    const store: SessionStore = await this.store(workspaceRoot);
 
-    await this.writeCacheFile(workspaceRoot, 'noteCandidates', encodeJson(file));
+    for (const record of store.listByKind('absorb')) {
+      if (record.elementId !== undefined && isOfLocation(record, location)) {
+        store.update(record.id, {
+          data: replacePendingHeader(replacePendingStatements(record.data, []), undefined),
+          pendingCount: 0,
+        });
+      }
+    }
+  }
+
+  public async listCardsWithPending(workspaceRoot: StoryUri): Promise<readonly string[]> {
+    const pendingIds: ReadonlySet<string> = new Set(
+      (await this.store(workspaceRoot))
+        .listByKind('absorb')
+        .filter((record) => record.elementId !== undefined && record.pendingCount > 0)
+        .flatMap((record) => (record.elementId === undefined ? [] : [record.elementId])),
+    );
+    const lookup: CardRoster['lookup'] = (await this.cards.loadRoster(workspaceRoot)).lookup;
+
+    return [...pendingIds].flatMap((id) => {
+      const slug: string | undefined = lookup.slugOf(id);
+      return slug === undefined ? [] : [slug];
+    });
   }
 
   public async loadCard(
@@ -152,23 +184,43 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     );
   }
 
-  public async loadSynopsisCandidate(workspaceRoot: StoryUri): Promise<string | undefined> {
-    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).noteSynopsisCandidate;
-
-    if (!(await this.fileSystem.exists(uri))) {
-      return undefined;
-    }
-
-    return new TextDecoder().decode(await this.fileSystem.readFile(uri));
+  public async listSynopsisCandidates(
+    workspaceRoot: StoryUri,
+  ): Promise<readonly NoteSynopsisCandidate[]> {
+    return (await this.store(workspaceRoot))
+      .listByKind('absorb')
+      .flatMap((record): NoteSynopsisCandidate[] => {
+        const data: AbsorbSessionData = absorbDataOf(record);
+        return record.elementId === undefined &&
+          data.synopsisCandidate !== undefined &&
+          data.location !== undefined
+          ? [{ location: data.location, absorbedAt: record.updatedAt, markdown: data.synopsisCandidate }]
+          : [];
+      });
   }
 
-  public async saveSynopsisCandidate(workspaceRoot: StoryUri, text: string): Promise<void> {
-    if (text.length === 0) {
-      await this.fileSystem.delete(getStoryboardProjectPaths(workspaceRoot).noteSynopsisCandidate);
-      return;
-    }
+  public async saveSynopsisCandidate(
+    workspaceRoot: StoryUri,
+    location: string,
+    synopsis: OutlineSynopsis | undefined,
+  ): Promise<void> {
+    await this.updateAbsorbSession(workspaceRoot, location, (data) => {
+      const { synopsisCandidate: _previous, ...rest } = data;
+      return synopsis === undefined
+        ? rest
+        : { ...rest, synopsisCandidate: serializeSynopsisMarkdown(synopsis) };
+    });
+  }
 
-    await this.writeCacheFile(workspaceRoot, 'noteSynopsisCandidate', encodeText(text));
+  public async clearSynopsisCandidates(workspaceRoot: StoryUri, location?: string): Promise<void> {
+    const store: SessionStore = await this.store(workspaceRoot);
+
+    for (const record of store.listByKind('absorb')) {
+      if (record.elementId === undefined && isOfLocation(record, location)) {
+        const { synopsisCandidate: _previous, ...rest } = absorbDataOf(record);
+        store.update(record.id, { data: rest, pendingCount: 0 });
+      }
+    }
   }
 
   public async addVoiceSeeds(
@@ -211,19 +263,26 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     );
   }
 
-  private async writeCacheFile(
+  private async updateAbsorbSession(
     workspaceRoot: StoryUri,
-    key:
-      | 'noteSource'
-      | 'notePlan'
-      | 'noteCandidates'
-      | 'noteSynopsisCandidate'
-      | 'noteExtractionResponses',
-    content: Uint8Array,
+    location: string,
+    change: (data: AbsorbSessionData) => AbsorbSessionData,
   ): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    const store: SessionStore = await this.store(workspaceRoot);
+    const id: string = absorbSessionId(location);
+    const record: SessionRecord | undefined = store.find(id);
+    const data: AbsorbSessionData = { ...change(absorbDataOf(record)), location };
 
-    await this.fileSystem.createDirectory(paths.noteCacheDirectory);
-    await this.fileSystem.writeFile(paths[key], content);
+    store.save({
+      id,
+      kind: 'absorb',
+      openedAt: record?.openedAt ?? this.now().toISOString(),
+      data,
+      pendingCount: data.synopsisCandidate === undefined ? 0 : 1,
+    });
+  }
+
+  private async store(workspaceRoot: StoryUri): Promise<SessionStore> {
+    return new SessionStore(await this.caches.open(workspaceRoot));
   }
 }

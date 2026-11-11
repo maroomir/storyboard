@@ -31,12 +31,6 @@ export interface StoryboardProjectPaths {
   readonly sceneCacheDirectory: StoryUri;
   readonly revisionRoundsDirectory: StoryUri;
   readonly cardCacheDirectory: StoryUri;
-  readonly noteCacheDirectory: StoryUri;
-  readonly noteSource: StoryUri;
-  readonly notePlan: StoryUri;
-  readonly noteCandidates: StoryUri;
-  readonly noteSynopsisCandidate: StoryUri;
-  readonly noteExtractionResponses: StoryUri;
   readonly outlineDirectory: StoryUri;
   readonly outlineSynopsis: StoryUri;
   readonly outlineChapters: StoryUri;
@@ -73,12 +67,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
-    noteCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.noteCacheDirectory),
-    noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
-    notePlan: resolve(STORYBOARD_RELATIVE_PATHS.notePlan),
-    noteCandidates: resolve(STORYBOARD_RELATIVE_PATHS.noteCandidates),
-    noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
-    noteExtractionResponses: resolve(STORYBOARD_RELATIVE_PATHS.noteExtractionResponses),
     outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),
     outlineSynopsis: resolve(STORYBOARD_RELATIVE_PATHS.outlineSynopsis),
     outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),

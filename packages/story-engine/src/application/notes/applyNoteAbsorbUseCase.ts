@@ -5,23 +5,25 @@ import type {
   NoteSynthesisSetting,
   NoteAbsorbPlan,
   SkippedNote,
-  NoteCardCandidate,
-NoteCandidateFile,
-StoryboardProject,
-BibleSubjectKind,
+  NoteCardFact,
+  NoteCardPlan,
+  Statement,
+  StatementSource,
+  StoryboardProject,
   StoryboardCard,
 } from '@storyboard/story-model';
 
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import {
-  addNoteCandidateSource,
-  applyCardCollectProposals,
-  emptyNoteCandidateFile,
-  mergeNoteCandidateSources,
-  mergeNoteSynopsisCandidate,
-  serializeSynopsisMarkdown,
-} from '@storyboard/story-model';
-import type { NoteCandidateLoad } from '#engine/application/notes/noteAbsorbRepository';
+import { applyCardCollectProposals, mergeStatements } from '@storyboard/story-model';
+import type { ElementBundle } from '#engine/persistence/bundles/elementBundleRepository';
+import type { PlannedCardChanges } from '#engine/persistence/bundles/workspaceCards';
+
+export function toFactStatements(
+  facts: readonly NoteCardFact[],
+  source: StatementSource,
+): Statement[] {
+  return facts.map((fact) => ({ facet: 'fact', key: fact.key, value: fact.value, source }));
+}
 
 export interface ApplyNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;
@@ -103,55 +105,98 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
 
   private async applyCards(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteCards> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
-    const loaded: NoteCandidateLoad = await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
-
-    if (loaded.kind === 'legacy') {
-      this.host.logger.warn(
-        '이전 버전이 남긴 카드 후보(.storyboard/cache/notes/candidates.json)는 읽지 않고 이번 후보로 바꿉니다. 필요하면 그 노트를 다시 흡수하세요.',
-      );
-    }
+    const { noteAbsorb } = this.repositories;
+    await noteAbsorb.clearCardPending(workspaceRoot, shouldReplaceCandidates ? undefined : location);
 
     const createdCards: string[] = [];
     const newCards: StoryboardCard[] = [];
-    const candidates: NoteCardCandidate[] = [];
-
+    const existingEntries: NoteCardPlan[] = [];
     for (const entry of plan.cards) {
-      const cardType: BibleSubjectKind = entry.card.type === 'character' ? 'character' : 'background';
       const isStillNew: boolean =
         entry.isNew &&
         !(await this.repositories.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));
-
       if (isStillNew) {
         newCards.push(applyCardCollectProposals(entry.card, entry.changes));
         createdCards.push(entry.card.id);
-        continue;
-      }
-
-      if (entry.changes.length > 0) {
-        candidates.push({
-          cardId: entry.card.id,
-          cardType,
-          name: entry.card.name,
-          sourceNotes: [...entry.sourceNotes],
-          changes: [...entry.changes],
-        });
+      } else if (entry.changes.length > 0 || entry.facts.length > 0) {
+        existingEntries.push(entry);
       }
     }
 
     await this.repositories.cardWriter.writeAll(workspaceRoot, newCards);
-
-    const file: NoteCandidateFile = addNoteCandidateSource(
-      loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile,
-      { location, absorbedAt: new Date().toISOString(), candidates },
-      shouldReplaceCandidates,
-    );
-    await this.repositories.noteAbsorb.saveCandidates(workspaceRoot, file);
+    await this.writeNewCardFacts(request, plan.cards.filter((entry) => createdCards.includes(entry.card.id)));
+    const candidateCards: string[] = await this.leaveExistingCardPending(request, existingEntries);
 
     return {
       createdCards,
-      candidateCards: candidates.map((candidate) => candidate.cardId),
-      pendingCandidateCards: mergeNoteCandidateSources(file.sources).map((card) => card.cardId),
+      candidateCards,
+      pendingCandidateCards: [...(await noteAbsorb.listCardsWithPending(workspaceRoot))],
     };
+  }
+
+  private async writeNewCardFacts(
+    request: ApplyNoteAbsorbRequest,
+    entries: readonly NoteCardPlan[],
+  ): Promise<void> {
+    const source: StatementSource = this.absorbSource(request.location);
+
+    for (const entry of entries.filter((item) => item.facts.length > 0)) {
+      const bundle: ElementBundle | undefined = await this.host.cards.findBundleBySlug(
+        request.workspaceRoot,
+        entry.card.id,
+      );
+      if (bundle !== undefined) {
+        await this.host.cards.rewriteBundle(request.workspaceRoot, bundle, {
+          header: bundle.header,
+          statements: mergeStatements(bundle.statements, toFactStatements(entry.facts, source))
+            .statements,
+        });
+      }
+    }
+  }
+
+  private async leaveExistingCardPending(
+    request: ApplyNoteAbsorbRequest,
+    entries: readonly NoteCardPlan[],
+  ): Promise<string[]> {
+    const { workspaceRoot, location } = request;
+    const source: StatementSource = this.absorbSource(location);
+    const candidateCards: string[] = [];
+
+    for (const entry of entries) {
+      const current: StoryboardCard | undefined = await this.host.cards.findCard(
+        workspaceRoot,
+        entry.card.id,
+      );
+      const changed: PlannedCardChanges =
+        current === undefined
+          ? { statements: [] }
+          : await this.host.cards.planCardChanges(
+              workspaceRoot,
+              applyCardCollectProposals(current, entry.changes),
+              source,
+            );
+      const statements: readonly Statement[] = [
+        ...changed.statements,
+        ...toFactStatements(entry.facts, source),
+      ];
+      if (statements.length > 0 || changed.header !== undefined) {
+        await this.repositories.noteAbsorb.saveCardPending(
+          workspaceRoot,
+          location,
+          entry.card.id,
+          statements,
+          changed.header,
+        );
+        candidateCards.push(entry.card.id);
+      }
+    }
+
+    return candidateCards;
+  }
+
+  private absorbSource(location: string): StatementSource {
+    return { origin: 'studio', command: 'notes absorb', session: location };
   }
 
   private async applyScenes(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteScenes> {
@@ -180,33 +225,23 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   ): Promise<'written' | 'candidate' | 'none'> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
     const { noteAbsorb: noteRepository } = this.repositories;
-    const isCandidate: boolean =
-      plan.synopsis !== undefined && (await noteRepository.synopsisExists(workspaceRoot));
-
-    if (plan.synopsis !== undefined && !isCandidate) {
-      await noteRepository.writeSynopsis(workspaceRoot, plan.synopsis);
+    if (shouldReplaceCandidates) {
+      await noteRepository.clearSynopsisCandidates(workspaceRoot);
     }
-
-    const existing: string | undefined = await noteRepository.loadSynopsisCandidate(workspaceRoot);
-
-    if (existing !== undefined || isCandidate) {
-      await noteRepository.saveSynopsisCandidate(
-        workspaceRoot,
-        mergeNoteSynopsisCandidate(
-          shouldReplaceCandidates ? undefined : existing,
-          location,
-          isCandidate && plan.synopsis !== undefined
-            ? serializeSynopsisMarkdown(plan.synopsis)
-            : undefined,
-        ),
-      );
-    }
-
     if (plan.synopsis === undefined) {
+      await noteRepository.saveSynopsisCandidate(workspaceRoot, location, undefined);
       return 'none';
     }
 
-    return isCandidate ? 'candidate' : 'written';
+    const isCandidate: boolean = await noteRepository.synopsisExists(workspaceRoot);
+    if (isCandidate) {
+      await noteRepository.saveSynopsisCandidate(workspaceRoot, location, plan.synopsis);
+      return 'candidate';
+    }
+
+    await noteRepository.writeSynopsis(workspaceRoot, plan.synopsis);
+    await noteRepository.saveSynopsisCandidate(workspaceRoot, location, undefined);
+    return 'written';
   }
 
   private async applySetting(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteSetting> {
