@@ -17,6 +17,7 @@ import {
   NodeUri,
   parseDraft,
   parseSceneStem,
+  parseStoryStructure,
   serializeDraft,
   serializeSceneRenameJournal,
   STORYBOARD_RELATIVE_PATHS,
@@ -1211,9 +1212,14 @@ describe('composition presets', () => {
     const project = JSON.parse(
       readFileSync(join(workspace, '.storyboard', 'project.json'), 'utf8'),
     ) as { setting?: { composition?: string; threads?: Record<string, unknown> } };
+    const structure = parseStoryStructure(
+      readFileSync(join(workspace, '.storyboard', 'structure.yaml'), 'utf8'),
+      'structure.yaml',
+    );
 
     expect(project.setting?.composition).toBe('omnibus');
-    expect(Object.keys(project.setting?.threads ?? {})).toEqual(['ep1', 'ep2', 'ep3', 'ep4']);
+    expect(project.setting?.threads).toBeUndefined();
+    expect(structure.threads.map((thread) => thread.id)).toEqual(['ep1', 'ep2', 'ep3', 'ep4']);
   });
 
   it('writes narrator cards for an alternating point of view', async () => {
