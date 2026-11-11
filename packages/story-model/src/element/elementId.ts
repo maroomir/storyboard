@@ -23,4 +23,6 @@ export const elementSlugSchema: z.ZodType<string> = z.string().refine(isElementS
 
 export const headerTextSchema: z.ZodType<string> = z.string().trim().min(1);
 
-export const headerTextListSchema: z.ZodType<readonly string[]> = z.array(headerTextSchema).readonly();
+export const headerTextListSchema: z.ZodType<readonly string[]> = z
+  .array(headerTextSchema)
+  .readonly();
