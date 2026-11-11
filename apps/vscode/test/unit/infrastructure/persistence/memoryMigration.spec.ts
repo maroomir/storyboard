@@ -81,7 +81,6 @@ function migrate(fileSystem: InMemoryFileSystem): Promise<MemoryMigrationResult>
 describe('migrateLegacyMemory', () => {
   it('moves every legacy memory location under .storyboard/memory/', async () => {
     const fileSystem = new InMemoryFileSystem({
-      '.storyboard/cache/storyState.md': '상태',
       '.storyboard/cache/personas/elia.json': '{"persona":1}',
       '.storyboard/cache/backgrounds/school.json': '{"background":1}',
       '.storyboard/cache/dialogue/01-prologue.json': '{"dialogue":1}',
@@ -91,7 +90,6 @@ describe('migrateLegacyMemory', () => {
     const { movedPaths } = await migrate(fileSystem);
 
     expect(fileSystem.snapshot()).toEqual({
-      '.storyboard/memory/storyState.md': '상태',
       '.storyboard/memory/personas/elia.json': '{"persona":1}',
       '.storyboard/memory/backgrounds/school.json': '{"background":1}',
       '.storyboard/memory/dialogue/01-prologue.json': '{"dialogue":1}',
@@ -101,26 +99,24 @@ describe('migrateLegacyMemory', () => {
       '.storyboard/memory/backgrounds/school.json',
       '.storyboard/memory/dialogue/01-prologue.json',
       '.storyboard/memory/personas/elia.json',
-      '.storyboard/memory/storyState.md',
       '.storyboard/memory/summaries.md',
     ]);
   });
 
   it('keeps the current memory and drops the legacy copy when both exist', async () => {
     const fileSystem = new InMemoryFileSystem({
-      '.storyboard/cache/storyState.md': '옛 상태',
-      '.storyboard/memory/storyState.md': '새 상태',
+      'manuscript/SUMMARY.md': '옛 요약',
+      '.storyboard/memory/summaries.md': '새 요약',
     });
 
     const { movedPaths } = await migrate(fileSystem);
 
-    expect(fileSystem.snapshot()).toEqual({ '.storyboard/memory/storyState.md': '새 상태' });
+    expect(fileSystem.snapshot()).toEqual({ '.storyboard/memory/summaries.md': '새 요약' });
     expect(movedPaths).toEqual([]);
   });
 
   it('reports nothing on a second run', async () => {
     const fileSystem = new InMemoryFileSystem({
-      '.storyboard/cache/storyState.md': '상태',
       '.storyboard/cache/personas/elia.json': '{"persona":1}',
     });
 

@@ -1,5 +1,3 @@
-import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
-import type { StoryUri } from '#model/format/storyUri';
 
 export type StoryStateSection = 'facts' | 'relations' | 'revealed' | 'motifs';
 
@@ -114,33 +112,6 @@ function parseWitnesses(raw: string | undefined): readonly string[] | undefined 
   return names.length > 0 ? names : undefined;
 }
 
-const suspectTagPattern: RegExp = /^\[[^\]]*\]/;
-
-export function findUnreadableStoryStateLines(content: string): string[] {
-  const unreadable: string[] = [];
-  let insideSection: boolean = false;
-
-  for (const rawLine of content.split('\n')) {
-    const line: string = rawLine.trim();
-
-    if (line.startsWith('## ')) {
-      insideSection = labelToSection.has(line.slice(3).trim());
-      continue;
-    }
-
-    if (!insideSection || !line.startsWith('- ')) {
-      continue;
-    }
-
-    const text: string = line.slice(2).trim();
-    if (suspectTagPattern.test(text) && !entrySceneTagPattern.test(text)) {
-      unreadable.push(text);
-    }
-  }
-
-  return unreadable;
-}
-
 export function serializeStoryState(state: StoryState): string {
   const blocks: string[] = ['# 이야기 상태', `<!-- through-scene: ${state.throughSceneOrder} -->`];
 
@@ -169,26 +140,6 @@ function formatEntryTag(entry: StoryStateEntry): string {
     entry.witnesses && entry.witnesses.length > 0 ? `|${entry.witnesses.join(',')}` : '';
 
   return `[${entry.throughScene}${entry.isStale === true ? '!' : ''}${witnesses}] `;
-}
-
-export async function readStoryState(
-  uri: StoryUri,
-  fileSystem: Pick<ReadWriteFileSystem, 'readFile'>,
-): Promise<StoryState> {
-  try {
-    const content: string = new TextDecoder().decode(await fileSystem.readFile(uri));
-    return parseStoryState(content);
-  } catch {
-    return createEmptyStoryState();
-  }
-}
-
-export async function writeStoryState(
-  uri: StoryUri,
-  state: StoryState,
-  fileSystem: Pick<ReadWriteFileSystem, 'writeFile'>,
-): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeStoryState(state)));
 }
 
 const sectionInjectionBudget: number = 24;

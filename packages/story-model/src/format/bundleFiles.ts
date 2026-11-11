@@ -40,6 +40,7 @@ export interface ElementMemory {
 
 export interface SceneStoryState {
   readonly inputHash?: string;
+  readonly stale?: true;
   readonly statements: readonly StoryStateStatement[];
 }
 
@@ -67,6 +68,7 @@ export const elementMemorySchema: z.ZodType<ElementMemory> = z
 export const sceneStoryStateSchema: z.ZodType<SceneStoryState> = z
   .object({
     inputHash: contentHashSchema.optional(),
+    stale: z.literal(true).optional(),
     statements: z.array(storyStateStatementSchema).readonly(),
   })
   .strict();

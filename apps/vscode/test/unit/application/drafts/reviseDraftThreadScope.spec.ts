@@ -1,5 +1,5 @@
 import { legacyCards } from '../../../stubs/cards';
-import { legacyScenesUnder } from '../../../stubs/scenes';
+import { legacyScenesUnder, type StubSceneStates } from '../../../stubs/scenes';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ContinuityIssueLike, DraftCritiqueIssue, StyleDirective } from '@storyboard/story-model';
@@ -7,8 +7,6 @@ import {
   createDraft,
   NodeUri,
   serializeDraft,
-  serializeStoryState,
-  type StoryState,
   type StoryUri,
   getStoryboardProjectPaths,
   joinStoryPath,
@@ -109,14 +107,11 @@ class InMemoryFileSystem implements IFileSystem {
 const workspaceUri = NodeUri.file('/w');
 const paths = getStoryboardProjectPaths(workspaceUri);
 
-function storyStateWith(fact: string): string {
-  const state: StoryState = {
-    throughSceneOrder: 1,
-    sceneInputHashes: new Map(),
-    entries: [{ section: 'facts', text: fact, throughScene: 1 }],
-  };
-
-  return serializeStoryState(state);
+function sceneStates(): StubSceneStates {
+  return new Map([
+    ['01-dock', { statements: [{ facet: 'event', value: '다른 줄기의 사실' }] }],
+    ['02-lamp', { statements: [{ facet: 'event', value: '등불 줄기의 사실' }] }],
+  ]);
 }
 
 function threadedWorkspace(): InMemoryFileSystem {
@@ -146,21 +141,20 @@ function threadedWorkspace(): InMemoryFileSystem {
     '/w/scene/01-dock.card',
     'type: scene\nid: 01-dock\nthread: ep1\nsummary: 나룻배가 떠난다.\n',
   );
+  fs.put('/w/scene/02-lamp.card', 'type: scene\nid: 02-lamp\nthread: ep2\nsummary: 등불을 켠다.\n');
   fs.put(
-    '/w/scene/02-alley.card',
-    'type: scene\nid: 02-alley\nthread: ep2\nnarrator: hana\nsummary: 등불이 흔들린다.\n',
+    '/w/scene/03-alley.card',
+    'type: scene\nid: 03-alley\nthread: ep2\nnarrator: hana\nsummary: 등불이 흔들린다.\n',
   );
   fs.put(
     '/w/narrator/hana.card',
     'type: narrator\nid: hana\nname: 하나\nperson: first\nknowledge: witnessed\nfocal: hana\n',
   );
-  fs.put('/w/.storyboard/memory/storyState.md', storyStateWith('메인 줄기의 사실'));
-  fs.put('/w/.storyboard/memory/threads/ep2/storyState.md', storyStateWith('등불 줄기의 사실'));
   fs.put(
-    '/w/draft/02-alley.md',
+    '/w/draft/03-alley.md',
     serializeDraft(
       createDraft({
-        sceneStem: '02-alley',
+        sceneStem: '03-alley',
         format: 'novel',
         body: '등불이 흔들렸다.',
         generator: 'test',
@@ -174,7 +168,7 @@ function threadedWorkspace(): InMemoryFileSystem {
 }
 
 async function reviseAlleyScene(fs: InMemoryFileSystem): Promise<void> {
-  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, cards: legacyCards(fs, { characterDirectory: paths.characterDirectory, backgroundDirectory: paths.backgroundDirectory, narratorDirectory: paths.narratorDirectory, joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments) }), scenes: legacyScenesUnder(fs, paths.workspaceRoot), logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
+  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, cards: legacyCards(fs, { characterDirectory: paths.characterDirectory, backgroundDirectory: paths.backgroundDirectory, narratorDirectory: paths.narratorDirectory, joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments) }), scenes: legacyScenesUnder(fs, paths.workspaceRoot, undefined, sceneStates()), logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
       getTaskProvider: () => 'mock',
       getTaskAiConfig: () => ({ providerId: 'mock', model: 'mock-model' }),
     } as never, usageSink: { record: async (): Promise<void> => undefined } }), createTestRepositories());
@@ -182,8 +176,8 @@ async function reviseAlleyScene(fs: InMemoryFileSystem): Promise<void> {
   await useCase.execute({
     workspaceUri,
     paths,
-    draftUri: NodeUri.file('/w/draft/02-alley.md'),
-    sceneStem: '02-alley',
+    draftUri: NodeUri.file('/w/draft/03-alley.md'),
+    sceneStem: '03-alley',
     maxIterations: 1,
     maxCompressionPercent: 50,
     reviseScoreThreshold: 0,
@@ -196,13 +190,13 @@ describe('ReviseDraftUseCase thread scope', () => {
     critiqueDraftMock.mockClear();
   });
 
-  it('checks continuity against the story state of the scene thread, not the main thread', async () => {
+  it('checks continuity against the story state of the scene thread, not another thread', async () => {
     await reviseAlleyScene(threadedWorkspace());
 
     const factLines = checkContinuityMock.mock.calls[0]?.[1] ?? [];
 
     expect(factLines.some((line) => line.includes('등불 줄기의 사실'))).toBe(true);
-    expect(factLines.some((line) => line.includes('메인 줄기의 사실'))).toBe(false);
+    expect(factLines.some((line) => line.includes('다른 줄기의 사실'))).toBe(false);
   });
 
   it('critiques with the narration the scene narrator card resolves to', async () => {

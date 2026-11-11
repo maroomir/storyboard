@@ -1,3 +1,4 @@
+import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type {
@@ -23,7 +24,6 @@ import {
   type StoryboardProjectPaths,
   createDraft,
   formatBibleFactLines,
-  readStoryState,
   storyStateFactLines,
   computeDraftBodyHash,
   parseDraft,
@@ -321,7 +321,10 @@ async function loadReviseFactLines(
     },
   );
   const canonFactLines: string[] = formatBibleFactLines(context, narrative.bibleFacts);
-  const priorState: StoryState = await readStoryState(threadPaths.storyState, fs);
+  const priorState: StoryState = await new StoryLedger({ scenes, cards }).read(
+    threadPaths.workspaceRoot,
+    threadPaths.threadId,
+  );
 
   return [
     ...canonFactLines,

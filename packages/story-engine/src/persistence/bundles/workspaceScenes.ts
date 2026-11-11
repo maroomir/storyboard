@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import {
   STORYBOARD_RELATIVE_PATHS,
   bundleFileNames,
+  bundleFileRelativePath,
   elementKindDirectories,
   formatBundleDirectoryName,
   joinStoryPath,
@@ -21,6 +22,7 @@ import {
   type SceneFile,
   type SceneHeader,
   type SceneProjectionLookup,
+  type SceneStoryState,
   type StatementSource,
   type StoryStructure,
   type StoryUri,
@@ -199,6 +201,38 @@ export class WorkspaceScenes {
     }
 
     await this.writeBeats(location.workspaceRoot, location.stem, beats);
+  }
+
+  public async readState(
+    workspaceRoot: StoryUri,
+    stem: string,
+  ): Promise<SceneStoryState | undefined> {
+    const found: SceneRosterEntry | undefined = await this.find(workspaceRoot, stem);
+    return found === undefined ? undefined : await this.bundleFiles(workspaceRoot).readState(found.path);
+  }
+
+  public async writeState(
+    workspaceRoot: StoryUri,
+    stem: string,
+    state: SceneStoryState | undefined,
+  ): Promise<void> {
+    const found: SceneRosterEntry | undefined = await this.find(workspaceRoot, stem);
+    if (found === undefined) {
+      throw new Error(`씬이 없습니다: ${stem}`);
+    }
+
+    if (state !== undefined) {
+      await this.bundleFiles(workspaceRoot).writeState(found.path, state);
+      return;
+    }
+
+    const stateUri: StoryUri = joinStoryPath(
+      workspaceRoot,
+      ...bundleFileRelativePath(found.path, 'state').split('/'),
+    );
+    if (await this.dependencies.fileSystem.exists(stateUri)) {
+      await this.dependencies.fileSystem.delete(stateUri);
+    }
   }
 
   public sceneUri(workspaceRoot: StoryUri, stem: string): StoryUri {

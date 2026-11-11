@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { WorkspaceCaches, WorkspaceCards, WorkspaceScenes } from '@storyboard/story-engine';
@@ -6,11 +6,14 @@ import { NodeFileSystem, NodeSqlDatabaseHost } from '@storyboard/story-node';
 import {
   NodeUri,
   parseSceneCard,
+  parseSceneStateFile,
   parseSceneStem,
   serializeSceneCard,
+  serializeSceneStateFile,
   type SceneCard,
   type SceneFile,
   type SceneFileNameParts,
+  type SceneStoryState,
   type StatementSource,
 } from '@storyboard/story-model';
 
@@ -85,4 +88,17 @@ export function listSceneStems(workspace: string): string[] {
     .filter((name) => name.endsWith('.card'))
     .map((name) => name.slice(0, -'.card'.length))
     .sort();
+}
+
+function sceneStatePath(workspace: string, stem: string): string {
+  return join(workspace, 'scene', `${stem}.card`, 'state.yaml');
+}
+
+export function writeSceneState(workspace: string, stem: string, state: SceneStoryState): void {
+  writeFileSync(sceneStatePath(workspace, stem), serializeSceneStateFile(state));
+}
+
+export function readSceneState(workspace: string, stem: string): SceneStoryState | undefined {
+  const path: string = sceneStatePath(workspace, stem);
+  return existsSync(path) ? parseSceneStateFile(readFileSync(path, 'utf8'), path) : undefined;
 }

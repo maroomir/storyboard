@@ -44,9 +44,9 @@ beforeEach(() => {
   caches = createWorkspaceCaches();
 });
 
-function writeLegacyStoryState(): void {
-  mkdirSync(join(directory, '.storyboard', 'cache'), { recursive: true });
-  writeFileSync(join(directory, '.storyboard', 'cache', 'storyState.md'), '- [1] 옛 원장\n');
+function writeLegacySummaries(): void {
+  mkdirSync(join(directory, 'manuscript'), { recursive: true });
+  writeFileSync(join(directory, 'manuscript', 'SUMMARY.md'), '옛 장 요약\n');
 }
 
 async function holdRunLockFromAnotherApp(): Promise<void> {
@@ -65,32 +65,29 @@ afterEach(async () => {
 
 describe('WorkspaceManager', () => {
   it('moves legacy memory into place when a work is prepared', async () => {
-    mkdirSync(join(directory, '.storyboard', 'cache'), { recursive: true });
-    writeFileSync(join(directory, '.storyboard', 'cache', 'storyState.md'), '- [1] 옛 원장\n');
+    writeLegacySummaries();
 
     const report = await createManager().prepare(NodeUri.file(directory));
 
-    expect(readFileSync(join(directory, '.storyboard', 'memory', 'storyState.md'), 'utf8')).toBe(
-      '- [1] 옛 원장\n',
+    expect(readFileSync(join(directory, STORYBOARD_RELATIVE_PATHS.chapterSummaries), 'utf8')).toBe(
+      '옛 장 요약\n',
     );
     expect(report.problems).toEqual([]);
   });
 
   it('leaves legacy memory in place while another app holds the run lock', async () => {
-    writeLegacyStoryState();
+    writeLegacySummaries();
     await holdRunLockFromAnotherApp();
 
     const report = await createManager().prepare(NodeUri.file(directory));
 
-    expect(readFileSync(join(directory, '.storyboard', 'cache', 'storyState.md'), 'utf8')).toBe(
-      '- [1] 옛 원장\n',
-    );
-    expect(existsSync(join(directory, STORYBOARD_RELATIVE_PATHS.storyState))).toBe(false);
+    expect(readFileSync(join(directory, 'manuscript', 'SUMMARY.md'), 'utf8')).toBe('옛 장 요약\n');
+    expect(existsSync(join(directory, STORYBOARD_RELATIVE_PATHS.chapterSummaries))).toBe(false);
     expect(report.problems).toEqual([]);
   });
 
   it('warns and still loads the resources when moving legacy memory fails', async () => {
-    mkdirSync(join(directory, '.storyboard', 'cache', 'storyState.md'), { recursive: true });
+    mkdirSync(join(directory, 'manuscript', 'SUMMARY.md'), { recursive: true });
 
     const report = await createManager().prepare(NodeUri.file(directory));
 

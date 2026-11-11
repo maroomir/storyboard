@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { AiProviderError, type ContinuityIssueLike, type DraftCritiqueIssue, type SceneFile } from "@storyboard/story-model";
 import { stubScenes } from "../../../stubs/scenes";
+import { stubCards } from "../../../stubs/cards";
 
 const checkContinuityMock = vi.fn<[], Promise<ContinuityIssueLike[]>>()
 const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIssue[]> => {
@@ -98,7 +99,8 @@ function baseOptions(
       logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
       fileSystem: { createDirectory: async () => undefined, writeFile: fileWriteMock, exists: async () => false } as never,
       generator: "storyboard@0.0.0-test",
-      scenes: stubScenes([sceneUnderRevision])
+      scenes: stubScenes([sceneUnderRevision]),
+      cards: stubCards()
     }),
     ai: createTestAi({
       providerRegistry: {

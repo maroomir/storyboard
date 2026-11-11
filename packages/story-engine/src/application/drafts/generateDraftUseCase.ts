@@ -1,3 +1,4 @@
+import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import type {
   AiServices,
   HostAdapters,
@@ -23,7 +24,6 @@ import {
   serializeDraft,
   buildStyleDirective,
   archiveExistingDraft,
-  readStoryState,
   type SceneCacheRecord,
   extractErrorMessage,
 } from '@storyboard/story-model';
@@ -96,10 +96,10 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     }
 
     if (!(await this.host.fileSystem.exists(inputs.cacheUri))) {
-      const ledger: StoryState = await readStoryState(
-        inputs.threadPaths.storyState,
-        this.host.fileSystem,
-      );
+      const ledger: StoryState = await new StoryLedger({
+        scenes: this.host.scenes,
+        cards: this.host.cards,
+      }).read(inputs.threadPaths.workspaceRoot, inputs.threadPaths.threadId);
       return ledger.sceneInputHashes.get(inputs.scene.order) === inputs.inputHash;
     }
 

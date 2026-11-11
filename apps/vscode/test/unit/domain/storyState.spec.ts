@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 
 import {
   findForeignScriptSpans,
-  findUnreadableStoryStateLines,
   hasForeignScript,
   stripForeignScript,
   storyStateFactLines,
@@ -16,39 +15,13 @@ import {
   parseStoryState,
   selectCharacterKnowledge,
   selectCharacterRelations,
-  readStoryState,
   serializeStoryState,
   storyStateSceneOrders,
-  writeStoryState,
   type StoryState,
   type StoryStateEntry,
   coerceStoryStateUpdate,
 } from '@storyboard/story-model';
 import { StoryStateUpdatePrompt } from '@storyboard/story-ai';
-
-class MemoryFileSystem {
-  private content: string | undefined
-
-  public constructor(initial?: string) {
-    this.content = initial
-  }
-
-  public async readFile(): Promise<Uint8Array> {
-    if (this.content === undefined) {
-      throw new Error("File not found")
-    }
-
-    return new TextEncoder().encode(this.content)
-  }
-
-  public async writeFile(_uri: unknown, data: Uint8Array): Promise<void> {
-    this.content = new TextDecoder().decode(data)
-  }
-
-  public read(): string | undefined {
-    return this.content
-  }
-}
 
 const inputHash = `sha256:${"a".repeat(64)}`
 const otherInputHash = `sha256:${"b".repeat(64)}`
@@ -87,20 +60,6 @@ describe("storyState serialization", () => {
 
   it("parses an empty document as an empty state", () => {
     expect(parseStoryState("")).toEqual(createEmptyStoryState())
-  })
-})
-
-describe("storyState file access", () => {
-  it("reads back what it writes", async () => {
-    const fileSystem = new MemoryFileSystem()
-
-    await writeStoryState("/state.md", sampleState, fileSystem)
-
-    expect(await readStoryState("/state.md", fileSystem)).toEqual(sampleState)
-  })
-
-  it("returns an empty state when the file is missing", async () => {
-    expect(await readStoryState("/missing.md", new MemoryFileSystem())).toEqual(createEmptyStoryState())
   })
 })
 
@@ -615,43 +574,3 @@ describe("story state witnesses", () => {
     ])
   })
 })
-
-describe("findUnreadableStoryStateLines", () => {
-  function ledgerWith(...lines: readonly string[]): string {
-    return ["# 이야기 상태", "<!-- through-scene: 3 -->", "## 확정 사실", ...lines, ""].join("\n")
-  }
-
-  it("says nothing about lines it can read", () => {
-    expect(
-      findUnreadableStoryStateLines(
-        ledgerWith("- 태그 없는 사실", "- [2] 사실", "- [2!] 사실", "- [2|hana] 사실", "- [2!|hana,jun] 사실")
-      )
-    ).toEqual([])
-  })
-
-  it("reports a bracket prefix that is not a scene tag", () => {
-    expect(findUnreadableStoryStateLines(ledgerWith("- [삼] 사실"))).toEqual(["[삼] 사실"])
-    expect(findUnreadableStoryStateLines(ledgerWith("- [2!!] 사실"))).toEqual(["[2!!] 사실"])
-    expect(findUnreadableStoryStateLines(ledgerWith("- [] 사실"))).toEqual(["[] 사실"])
-  })
-
-  it("ignores bullets outside a known section", () => {
-    const stray = ["# 이야기 상태", "## 알 수 없는 절", "- [삼] 사실", ""].join("\n")
-
-    expect(findUnreadableStoryStateLines(stray)).toEqual([])
-  })
-
-  it("looks at every section, not just the first", () => {
-    const twoSections = [
-      "# 이야기 상태",
-      "## 확정 사실",
-      "- [2] 사실",
-      "## 공개된 정보",
-      "- [abc] 공개",
-      ""
-    ].join("\n")
-
-    expect(findUnreadableStoryStateLines(twoSections)).toEqual(["[abc] 공개"])
-  })
-})
-

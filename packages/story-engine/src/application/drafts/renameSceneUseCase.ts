@@ -2,13 +2,10 @@ import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
   parseDraft,
-  parseStoryState,
   parseSceneStem,
-  renumberStoryStateScene,
   serializeDraft,
   serializeSceneRenameJournal,
   scenePath,
-  serializeStoryState,
   type SceneRename,
   type StoryUri,
   draftHistorySceneDirectory,
@@ -18,7 +15,6 @@ import {
   resolveThreadPaths,
   type StoryboardProjectPaths,
   type SceneFileNameParts,
-  type StoryState,
   type RevisionPlan,
   type RevisionPlanEntry,
 } from '@storyboard/story-model';
@@ -316,7 +312,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     scope: StoryboardProjectPaths,
     rename: SceneRename,
   ): Promise<void> {
-    await this.addRewrite(rewrites, scope.storyState, (raw) => rewriteStoryStateText(raw, rename));
 
     for (const directory of [scope.personaMemoryDirectory, scope.backgroundMemoryDirectory]) {
       for (const fileName of await this.listFileNames(directory)) {
@@ -387,13 +382,6 @@ function rewriteJsonSceneStemsOrKeep(raw: string, rename: SceneRename): string {
 
 function rewriteMentionedJsonSceneStems(raw: string, rename: SceneRename): string | undefined {
   return mentionsFromStem(raw, rename) ? rewriteJsonSceneStems(raw, rename) : undefined;
-}
-
-function rewriteStoryStateText(raw: string, rename: SceneRename): string | undefined {
-  const state: StoryState = parseStoryState(raw);
-  const renumbered: StoryState = renumberStoryStateScene(state, rename);
-
-  return renumbered === state ? undefined : serializeStoryState(renumbered);
 }
 
 function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undefined {

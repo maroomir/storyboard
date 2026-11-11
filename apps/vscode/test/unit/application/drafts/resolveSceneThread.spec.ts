@@ -56,7 +56,7 @@ describe('resolveSceneThread', () => {
     const resolved = await new SceneNarrationResolver(fileSystem, stubCards(), sceneStore).resolveThread(paths, sceneOf('04-lantern.card'), projectWith({}));
 
     expect(resolved.threadId).toBe('main');
-    expect(resolved.threadPaths.storyState).toBe(paths.storyState);
+    expect(resolved.threadPaths.threadId).toBe('main');
     expect(resolved.previousSceneOrder).toBeUndefined();
   });
 
@@ -64,7 +64,8 @@ describe('resolveSceneThread', () => {
     const resolved = await new SceneNarrationResolver(fileSystem, stubCards(), sceneStore).resolveThread(paths, sceneOf('04-lantern.card'), threadedProject);
 
     expect(resolved.threadId).toBe('ep2');
-    expect(resolved.threadPaths.storyState.path).toContain('memory/threads/ep2/storyState.md');
+    expect(resolved.threadPaths.threadId).toBe('ep2');
+    expect(resolved.threadPaths.chapterSummaries.path).toContain('memory/threads/ep2/');
     expect(resolved.threadPaths.chapterSummaries.path).toContain('memory/threads/ep2/summaries.md');
     expect(resolved.threadPaths.personaMemoryDirectory.path).toContain('threads/ep2/personas');
   });

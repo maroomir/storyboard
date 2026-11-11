@@ -1,5 +1,6 @@
 import { stubFileSystem } from "../../../stubs/fileSystem"
-import { stubScenes } from "../../../stubs/scenes"
+import { stubScenes, type StubSceneStates } from "../../../stubs/scenes"
+import { stubCards } from "../../../stubs/cards"
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -207,6 +208,7 @@ interface DependencyOverrides {
   readonly sceneCacheRepository?: SceneCacheRepositoryStub
   readonly writeBeats?: ReturnType<typeof vi.fn>
   readonly sceneRepository?: unknown
+  readonly sceneStates?: StubSceneStates
 }
 
 function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftServices {
@@ -216,7 +218,8 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftS
       fileSystem: overrides.fileSystem ?? { ...stubFileSystem, exists: uriExistsMock },
       generator: "storyboard@0.0.0-test",
       logger: overrides.logger ?? createLogger(),
-      scenes: stubScenes([fakeScene]),
+      scenes: stubScenes([fakeScene], undefined, overrides.sceneStates),
+      cards: stubCards(),
       workspaceLocator: {
         folders: () => workspace.workspaceFolders ?? [],
         folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
@@ -345,18 +348,13 @@ describe("GenerateDraftUseCase", () => {
         grounding: { place: "카페" }
       })
 
-      function clonedWorkspaceFileSystem(ledgerInputHash: string): IFileSystem {
-        const ledger = `# 이야기 상태\n<!-- through-scene: 1 -->\n<!-- scene-input: 1 ${ledgerInputHash} -->\n`
-        return {
-          ...stubFileSystem,
-          exists: async (uri) => !uri.path.includes("/.storyboard/cache/"),
-          readFile: async (uri): Promise<Uint8Array> => {
-            if (uri.path.endsWith("/storyState.md")) {
-              return new TextEncoder().encode(ledger)
-            }
-            throw new Error(`not found: ${uri.path}`)
-          }
-        }
+      const clonedWorkspaceFileSystem: IFileSystem = {
+        ...stubFileSystem,
+        exists: async (uri) => !uri.path.includes("/.storyboard/cache/")
+      }
+
+      function ledgerRecording(inputHash: string): StubSceneStates {
+        return new Map([[fakeScene.stem, { inputHash, statements: [] }]])
       }
 
       it("keeps the draft when the ledger recorded the same input hash", async () => {
@@ -365,7 +363,8 @@ describe("GenerateDraftUseCase", () => {
         const dependencies = createDependencies({
           sceneCacheRepository,
           draftRepository,
-          fileSystem: clonedWorkspaceFileSystem(groundedHash)
+          fileSystem: clonedWorkspaceFileSystem,
+          sceneStates: ledgerRecording(groundedHash)
         })
 
         const result = await execute(dependencies, createRequest({ force: false }))
@@ -377,7 +376,8 @@ describe("GenerateDraftUseCase", () => {
 
       it("regenerates when the ledger recorded a different input hash", async () => {
         const dependencies = createDependencies({
-          fileSystem: clonedWorkspaceFileSystem(`sha256:${"0".repeat(64)}`)
+          fileSystem: clonedWorkspaceFileSystem,
+          sceneStates: ledgerRecording(`sha256:${"0".repeat(64)}`)
         })
 
         const result = await execute(dependencies, createRequest({ force: false }))
