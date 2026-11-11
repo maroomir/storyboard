@@ -1,4 +1,9 @@
-import { createEmptyCard, type StoryUri, type UsageAttribution } from '@storyboard/story-model';
+import {
+  createEmptyCard,
+  slugify,
+  type StoryUri,
+  type UsageAttribution,
+} from '@storyboard/story-model';
 
 import type { IUseCase } from '#engine/application/useCase';
 import type {
@@ -28,8 +33,8 @@ export interface StudioCreateUseCaseDependencies {
 export interface StudioCreateRequest {
   readonly workspaceRoot: StoryUri;
   readonly kind: StudioCreatableKind;
-  readonly slug: string;
-  readonly name: string;
+  readonly slug?: string;
+  readonly name?: string;
   readonly description: string;
   readonly shouldPropose: boolean;
   readonly isValidationEnabled: boolean;
@@ -52,6 +57,33 @@ export type StudioCreateResult =
 type CreatedElement =
   | { readonly ok: true; readonly key: string; readonly uri: StoryUri }
   | { readonly ok: false; readonly kind: 'exists' | 'failed'; readonly message: string };
+
+type StudioCreatableCardKind = Exclude<StudioCreatableKind, 'scene'>;
+
+const provisionalCardNames: Readonly<Record<StudioCreatableCardKind, string>> = {
+  character: '새 인물',
+  background: '새 배경',
+};
+
+interface CardIdentity {
+  readonly slug: string;
+  readonly name: string;
+  readonly whenSlugIsTaken: CardIdCollisionPolicy;
+}
+
+function resolveCardIdentity(
+  kind: StudioCreatableCardKind,
+  request: StudioCreateRequest,
+): CardIdentity {
+  const name: string = request.name?.trim() || provisionalCardNames[kind];
+  const isSlugGiven: boolean = request.slug !== undefined;
+
+  return {
+    slug: request.slug ?? slugify(name) ?? `new-${kind}`,
+    name,
+    whenSlugIsTaken: request.whenSlugIsTaken ?? (isSlugGiven ? 'refuse' : 'number-it'),
+  };
+}
 
 export function composeCreationInstruction(description: string): string {
   return `새로 만든 카드입니다. 아래 설명을 읽고 이 카드의 빈 칸을 채워 주세요.\n\n${description.trim()}`;
@@ -87,25 +119,30 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
   private async createScene(request: StudioCreateRequest): Promise<CreatedElement> {
     const result: CreateSceneResult = await this.dependencies.createScene.execute({
       workspaceRoot: request.workspaceRoot,
-      slug: request.slug,
+      ...(request.slug === undefined ? {} : { slug: request.slug }),
       ...(request.after === undefined ? {} : { after: request.after }),
     });
     if (result.ok) {
       return { ok: true, key: result.stem, uri: result.uri };
     }
 
-    return { ok: false, kind: result.kind === 'exists' ? 'exists' : 'failed', message: result.message };
+    return {
+      ok: false,
+      kind: result.kind === 'exists' ? 'exists' : 'failed',
+      message: result.message,
+    };
   }
 
   private async createCard(request: StudioCreateRequest): Promise<CreatedElement> {
-    const cardType: 'character' | 'location' =
-      request.kind === 'character' ? 'character' : 'location';
+    const kind: StudioCreatableCardKind = request.kind === 'character' ? 'character' : 'background';
+    const cardType: 'character' | 'location' = kind === 'character' ? 'character' : 'location';
+    const identity: CardIdentity = resolveCardIdentity(kind, request);
     const result: CreateCardResult = await this.dependencies.createCard.execute({
       workspaceRoot: request.workspaceRoot,
       cardType,
-      id: request.slug,
-      whenIdIsTaken: request.whenSlugIsTaken ?? 'refuse',
-      buildCard: (id) => createEmptyCard(cardType, id, request.name.trim()),
+      id: identity.slug,
+      whenIdIsTaken: identity.whenSlugIsTaken,
+      buildCard: (id) => createEmptyCard(cardType, id, identity.name),
     });
 
     return result.ok

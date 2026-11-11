@@ -13,14 +13,9 @@ import type {
   ElementBundle,
   StudioCreateResult,
 } from '@storyboard/story-engine';
-import { listStatementFacetsOf, slugify, type StoryUri } from '@storyboard/story-model';
+import { listStatementFacetsOf, type StoryUri } from '@storyboard/story-model';
 
 type DescribedKind = Exclude<CardKind, 'narrator'>;
-
-const provisionalNames: Readonly<Record<DescribedKind, string>> = {
-  character: '새 인물',
-  background: '새 배경',
-};
 
 function isCardKind(value: string | undefined): value is CardKind {
   return cardKinds.some((kind) => kind === value);
@@ -77,10 +72,9 @@ export class CardCreateCommand implements ICommandHandler {
       return failure(`카드를 설명해 주세요: storyboard card create ${kind} "<설명>"`);
     }
 
-    const name: string = flagString(flags, 'name')?.trim() || provisionalNames[kind];
-    const explicitSlug: string | undefined = flagString(flags, 'id');
-    const slug: string = explicitSlug ?? slugify(name) ?? `new-${kind}`;
-    if (!cardIdPattern.test(slug)) {
+    const name: string | undefined = flagString(flags, 'name')?.trim() || undefined;
+    const slug: string | undefined = flagString(flags, 'id');
+    if (slug !== undefined && !cardIdPattern.test(slug)) {
       return failure(`slug 는 영소문자·숫자·하이픈만 쓸 수 있습니다: ${slug}`);
     }
 
@@ -88,12 +82,11 @@ export class CardCreateCommand implements ICommandHandler {
     const created: StudioCreateResult = await container.studio.create({
       workspaceRoot: container.workspaceRoot,
       kind,
-      slug,
-      name,
+      ...(slug === undefined ? {} : { slug }),
+      ...(name === undefined ? {} : { name }),
       description,
       shouldPropose: flagBoolean(flags, 'propose'),
       isPreview,
-      whenSlugIsTaken: explicitSlug === undefined ? 'number-it' : 'refuse',
     });
     if (!created.ok) {
       return failure(created.message, created);
