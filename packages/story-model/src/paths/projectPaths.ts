@@ -10,7 +10,6 @@ import {
 } from '#model/format/bundlePaths';
 import {
   STORYBOARD_RELATIVE_PATHS,
-  draftHistorySceneRelativeDirectory,
   draftRelativePath,
   isDirectSceneCardRelativePath,
   isDraftMarkdownRelativePath,
@@ -55,7 +54,6 @@ export interface StoryboardProjectPaths {
   readonly narratorDirectory: StoryUri;
   readonly sceneDirectory: StoryUri;
   readonly draftDirectory: StoryUri;
-  readonly draftHistoryDirectory: StoryUri;
   readonly manuscriptDirectory: StoryUri;
   readonly manuscriptVolume: StoryUri;
   readonly gitignore: StoryUri;
@@ -115,7 +113,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     narratorDirectory: resolve(STORYBOARD_RELATIVE_PATHS.narratorDirectory),
     sceneDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDirectory),
     draftDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftDirectory),
-    draftHistoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory),
     manuscriptDirectory: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory),
     manuscriptVolume: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptVolume),
     gitignore: resolve(STORYBOARD_RELATIVE_PATHS.gitignore),
@@ -223,10 +220,6 @@ export function draftPath(workspaceRoot: StoryUri, sceneStem: string): StoryUri 
 
 export function joinUri(base: StoryUri, ...segments: string[]): StoryUri {
   return joinStoryPath(base, ...segments);
-}
-
-export function draftHistorySceneDirectory(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
-  return resolveWorkspacePath(workspaceRoot, draftHistorySceneRelativeDirectory(sceneStem));
 }
 
 export function parseCardIdFromPath(uri: StoryUri): string | undefined {

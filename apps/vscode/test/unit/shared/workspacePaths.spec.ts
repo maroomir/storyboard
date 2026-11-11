@@ -44,7 +44,6 @@ describe("workspace path conventions", () => {
   it("ignores the generated directories the table names", () => {
     for (const directory of [
       STORYBOARD_RELATIVE_PATHS.cacheDirectory,
-      STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory,
       STORYBOARD_RELATIVE_PATHS.manuscriptDirectory
     ]) {
       expect(storyboardGitignoreEntries, `${directory} is not ignored`).toContain(`${directory}/`)

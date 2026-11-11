@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { serializeDraft } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { listDraftRevisions } from './fixtures/sceneBundles';
 
 import { commandCatalog } from '@/commands/index';
 import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
@@ -232,7 +233,7 @@ describe('draft check', () => {
 });
 
 describe('draft expand', () => {
-  it('keeps the version it started from in .draft/ when keepHistory is on', async () => {
+  it('keeps the version it started from as a revision when keepHistory is on', async () => {
     writeFileSync(
       join(home, 'config.json'),
       JSON.stringify({ 'ai.provider.default': 'mock', 'editor.draft.keepHistory': true }),
@@ -243,6 +244,6 @@ describe('draft expand', () => {
     const expanded = await new CommandDispatcher(deps()).dispatch(['draft', 'expand', '001-opening']);
 
     expect(expanded.exitCode, expanded.stdout).toBe(0);
-    expect(readdirSync(join(workspace, '.draft', '001-opening'))).toHaveLength(1);
+    expect(await listDraftRevisions(workspace, '001-opening')).toHaveLength(1);
   });
 });

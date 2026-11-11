@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubScenes } from '../../../stubs/scenes';
 
 import { DraftHistoryArchiver, type HostAdapters } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
@@ -84,6 +85,7 @@ describe('condense draft command', () => {
     const archiver: DraftHistoryArchiver = new DraftHistoryArchiver({
       fileSystem: vscodeFileSystem,
       configBridge: { isKeepDraftHistoryEnabled: (): boolean => true },
+      scenes: stubScenes([{ stem: '01-intro', order: 1, orderText: '01', slug: 'intro', frontmatter: {}, body: '' } as never]),
     } as unknown as HostAdapters);
     const command: CondenseDraftCommand = new CondenseDraftCommand(
       {
@@ -100,7 +102,7 @@ describe('condense draft command', () => {
     await command.run();
 
     const archived: string[] = [...files.entries()]
-      .filter(([path]) => path.startsWith('/workspace/.draft/'))
+      .filter(([path]) => path.startsWith('/workspace/.storyboard/cache/revisions/'))
       .map(([, content]) => content);
     expect(archived).toEqual([openedDraftText]);
   });

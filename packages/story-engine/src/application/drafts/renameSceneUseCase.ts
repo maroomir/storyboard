@@ -8,7 +8,6 @@ import {
   scenePath,
   type SceneRename,
   type StoryUri,
-  draftHistorySceneDirectory,
   draftPath,
   getStoryboardProjectPaths,
   joinUri,
@@ -172,7 +171,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     const moves: PlannedWrite[] = [];
 
     await this.planDraftMove(moves, paths, rename);
-    await this.planDraftHistoryMoves(moves, paths, rename);
     await this.planCacheFileMoves(moves, paths, rename);
     await this.planStudioSessionMoves(moves, paths, rename);
 
@@ -202,24 +200,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     await this.addMove(moves, draftPath(root, rename.from.stem), draftPath(root, rename.to.stem), (raw) =>
       serializeDraft({ ...parseDraft(raw), sceneStem: rename.to.stem }),
     );
-  }
-
-  private async planDraftHistoryMoves(
-    moves: PlannedWrite[],
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-    const historyFrom: StoryUri = draftHistorySceneDirectory(paths.workspaceRoot, rename.from.stem);
-    const historyTo: StoryUri = draftHistorySceneDirectory(paths.workspaceRoot, rename.to.stem);
-
-    for (const fileName of await this.listFileNames(historyFrom)) {
-      await this.addMove(
-        moves,
-        joinUri(historyFrom, fileName),
-        joinUri(historyTo, fileName),
-        (raw) => rewriteArchivedDraftStem(raw, rename.to.stem),
-      );
-    }
   }
 
   private async planCacheFileMoves(
@@ -291,7 +271,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     rename: SceneRename,
   ): Promise<void> {
     for (const directory of [
-      draftHistorySceneDirectory(paths.workspaceRoot, rename.from.stem),
       joinUri(paths.studioSessionDirectory, 'scene', rename.from.stem),
     ]) {
       if (
@@ -321,14 +300,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     return (await this.host.fileSystem.exists(directory))
       ? await this.host.fileSystem.readDirectory(directory)
       : [];
-  }
-}
-
-function rewriteArchivedDraftStem(raw: string, toStem: string): string {
-  try {
-    return serializeDraft({ ...parseDraft(raw), sceneStem: toStem });
-  } catch {
-    return raw;
   }
 }
 

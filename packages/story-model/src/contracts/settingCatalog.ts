@@ -105,7 +105,7 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
   {
     key: 'editor.draft.keepHistory',
     label: '이전 초안 보관',
-    description: '초안을 덮어쓰기 전에 .draft/ 아래에 이전 판을 남깁니다.',
+    description: '초안을 덮어쓰기 전에 이전 판을 캐시(.storyboard/cache/revisions/)에 씬마다 최근 10판까지 남깁니다.',
     kind: 'boolean',
     defaultValue: false,
     group: '생성',

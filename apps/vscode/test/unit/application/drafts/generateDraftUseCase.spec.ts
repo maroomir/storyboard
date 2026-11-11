@@ -5,7 +5,7 @@ import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
-  draftHistorySceneDirectory,
+  joinStoryPath,
   draftPath,
   computeSceneInputHash,
   computeDraftBodyHash,
@@ -496,7 +496,7 @@ describe("GenerateDraftUseCase", () => {
       }
       expect(archiveArgs.draftUri).toEqual(draftPath(workspaceRoot, fakeScene.stem))
       expect(archiveArgs.historyDirectory).toEqual(
-        draftHistorySceneDirectory(workspaceRoot, fakeScene.stem)
+        joinStoryPath(workspaceRoot, ".storyboard", "cache", "revisions", fakeScene.stem)
       )
       expect(archiveArgs.fileSystem).toBe(fileSystem)
       expect(typeof archiveArgs.resolveArchiveUri).toBe("function")
@@ -598,7 +598,7 @@ describe("GenerateDraftUseCase", () => {
 
       expect(result.kind).toBe("generated")
       expect(logger.warn).toHaveBeenCalledWith(
-        `이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(archiveError)}`
+        `이전 초안을 판본으로 보관하지 못했습니다: ${String(archiveError)}`
       )
       expect(logger.error).not.toHaveBeenCalled()
       expect(draftRepository.write).toHaveBeenCalledTimes(1)

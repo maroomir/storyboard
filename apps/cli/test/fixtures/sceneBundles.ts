@@ -102,3 +102,18 @@ export function readSceneState(workspace: string, stem: string): SceneStoryState
   const path: string = sceneStatePath(workspace, stem);
   return existsSync(path) ? parseSceneStateFile(readFileSync(path, 'utf8'), path) : undefined;
 }
+
+export async function draftRevisionDirectory(workspace: string, stem: string): Promise<string> {
+  const sceneId: string | undefined = await withScenes(
+    async (scenes) => (await scenes.find(NodeUri.file(workspace), stem))?.content.header.id,
+  );
+  if (sceneId === undefined) {
+    throw new Error(`씬 번들이 없습니다: ${stem}`);
+  }
+  return join(workspace, '.storyboard', 'cache', 'revisions', sceneId);
+}
+
+export async function listDraftRevisions(workspace: string, stem: string): Promise<string[]> {
+  const directory: string = await draftRevisionDirectory(workspace, stem);
+  return existsSync(directory) ? readdirSync(directory).sort() : [];
+}

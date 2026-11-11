@@ -118,7 +118,7 @@ function bridgeWith(): FakeWebview {
       followUpRepository,
       drafts: {
         archiveDraftWhenHistoryIsKept: (root, stem): Promise<string | undefined> =>
-          new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
+          new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge, scenes: scenesFromFiles(() => Object.fromEntries(files)) } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
       },
       studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text)), scenesFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text))) },
       logger: harnessLogger,
@@ -462,7 +462,7 @@ describe("studio proposal draft history", () => {
 
     await send(bridgeWith(), "studio.proposal.apply", { entity: sceneEntity, turn: draftTurn() })
 
-    const archived = [...files.keys()].filter((path) => path.includes("/.draft/"))
+    const archived = [...files.keys()].filter((path) => path.includes("/.storyboard/cache/revisions/"))
     expect(archived).toHaveLength(1)
     expect(files.get(archived[0] as string)).toBe(draftText)
   })
@@ -470,7 +470,7 @@ describe("studio proposal draft history", () => {
   it("writes no archive when keepHistory is off", async () => {
     await send(bridgeWith(), "studio.proposal.apply", { entity: sceneEntity, turn: draftTurn() })
 
-    expect([...files.keys()].filter((path) => path.includes("/.draft/"))).toEqual([])
+    expect([...files.keys()].filter((path) => path.includes("/.storyboard/cache/revisions/"))).toEqual([])
   })
 
   it("never archives for a card apply", async () => {
@@ -481,6 +481,6 @@ describe("studio proposal draft history", () => {
       turn: proposalTurn()
     })
 
-    expect([...files.keys()].filter((path) => path.includes("/.draft/"))).toEqual([])
+    expect([...files.keys()].filter((path) => path.includes("/.storyboard/cache/revisions/"))).toEqual([])
   })
 })
