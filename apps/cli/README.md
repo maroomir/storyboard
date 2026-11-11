@@ -87,9 +87,17 @@ storyboard project show           # the contract, and which fields are still emp
 storyboard scene list             # scene cards in number order, each with its draft state
 storyboard draft show 01-intro    # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
-storyboard card show hana         # one card, found by id
+storyboard card show hana         # one card, found by slug (--sources: each line's origin, --history: its sessions)
 storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal, tui, or --step --json)
+storyboard card set hana traits "몰리면 먼저 웃는다"   # one line in statements.yaml, the writer's own
+storyboard card edit hana "말투를 더 퉁명스럽게"        # the studio's edit; --propose leaves a proposal and a diff
+storyboard card apply hana        # take what waits in hana's sessions (card discard drops it)
+storyboard card remove sera       # shows what refers to sera; --force cleans it up and removes the bundle
 ```
+
+A line written by `card set` is the writer's (`author`) and the studio never overwrites it; when
+no person can answer (an agent's run) the same verb writes an `agent` line instead. `card unset`
+removes lines by facet (and `--key`, `--about`, or the value).
 
 `status --json` carries the same counts plus `data.next` (`step`, `command`, `reason`), so an agent
 can ask what to run next and branch on it.

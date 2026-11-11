@@ -174,7 +174,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'force',
     summary:
-      '이미 있는 결과를 덮어씁니다 (draft generate, scene plot, scene seed, outline generate)',
+      '이미 있는 결과를 덮어씁니다 (draft generate, scene plot, scene seed, outline generate) · card remove: 가리키는 곳을 함께 정리하고 지웁니다',
   },
   { name: 'out', valueLabel: '<path>', summary: 'manuscript export 의 출력 파일' },
   { name: 'lines', valueLabel: '<a-b>', summary: '대상 줄 범위 (없으면 본문 전체)' },
@@ -242,7 +242,11 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'scenes-per-chapter', valueLabel: '<n>', summary: '작품 계약: 장당 씬 수' },
   { name: 'concept', valueLabel: '<text>', summary: '작품 계약: 한 줄 콘셉트' },
   { name: 'description', valueLabel: '<text>', summary: '작품 계약: 설명' },
-  { name: 'key', valueLabel: '<key>', summary: 'config set 이 바꿀 설정 키' },
+  { name: 'key', valueLabel: '<key>', summary: 'config set 이 바꿀 설정 키, card set/unset 의 진술 key' },
+  { name: 'about', valueLabel: '<slug>', summary: 'card set/unset: 진술이 가리키는 상대 카드' },
+  { name: 'sources', summary: 'card show: 진술마다 줄 번호와 출처를 보여 줍니다' },
+  { name: 'history', summary: 'card show: 그 카드의 세션 기록을 보여 줍니다' },
+  { name: 'propose', summary: '쓰지 않고 세션에 제안과 diff 만 남깁니다 (card apply 로 받음)' },
   { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
   { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
   { name: 'pending', summary: 'outline show: 적용을 기다리는 시놉시스 후보를 보여 줍니다' },

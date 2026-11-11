@@ -40,6 +40,8 @@ import type {
   CardPendingApplyReport,
   PendingCardChanges,
   PendingCardSummary,
+  CardSessionSummary,
+  ElementBundle,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
@@ -173,6 +175,21 @@ export class CardManager {
 
   public remove(request: RemoveCardRequest): Promise<RemoveCardResult> {
     return this.deps.removeCardUseCase.execute(request);
+  }
+
+  public readBundle(workspaceRoot: StoryUri, slug: string): Promise<ElementBundle | undefined> {
+    return this.deps.cards.findBundleBySlug(workspaceRoot, slug);
+  }
+
+  public async slugOfElement(workspaceRoot: StoryUri, elementId: string): Promise<string | undefined> {
+    return (await this.deps.cards.loadRoster(workspaceRoot)).lookup.slugOf(elementId);
+  }
+
+  public listHistory(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<CardPendingResult<readonly CardSessionSummary[]>> {
+    return this.deps.cardPendingChanges.listHistory(workspaceRoot, slug);
   }
 
   public listPendingCards(workspaceRoot: StoryUri): Promise<readonly PendingCardSummary[]> {
