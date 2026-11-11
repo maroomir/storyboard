@@ -8,6 +8,7 @@ import {
   describeManuscript,
   describeMissingContract,
   describeNextStep,
+  describePendingLines,
   nextStepCommands,
 } from '@/commands/workspaceNextStep';
 import type { WorkspaceStatus } from '@storyboard/story-app';
@@ -43,6 +44,7 @@ export class StatusCommand implements ICommandHandler {
         command === undefined
           ? `다음      ${reason}`
           : `다음      storyboard ${command} — ${reason}`,
+        ...describePendingLines(status),
         ...(interviewWarning === undefined ? [] : [`인터뷰    ${interviewWarning}`]),
         ...(interviewHint === undefined ? [] : [`인터뷰    ${interviewHint}`]),
       ].join('\n'),

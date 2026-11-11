@@ -95,3 +95,16 @@ export function describeManuscript({ manuscript }: WorkspaceStatus): string {
     manuscript.isReviewed ? '검사함' : '검사 전',
   ].join(' · ');
 }
+
+export function describePendingLines(status: WorkspaceStatus): string[] {
+  const { cards, synopsisCandidates } = status.pending;
+
+  return [
+    ...(cards.length === 0
+      ? []
+      : [`제안      카드 ${cards.length}장 (${cards.join(', ')}) · storyboard card apply`]),
+    ...(synopsisCandidates === 0
+      ? []
+      : [`제안      시놉시스 후보 ${synopsisCandidates}개 · storyboard outline show --pending`]),
+  ];
+}

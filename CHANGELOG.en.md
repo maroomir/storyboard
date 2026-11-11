@@ -12,6 +12,7 @@ after the first public release.
 
 ### Changed (breaking)
 
+- **`card promote` became `card apply`.** `card apply [<slug> …]` shows the card proposals waiting in sessions (notes, interviews, studio) and writes them to `statements.yaml`, or only shows them with `--dry-run`. `card discard [<slug> …]` drops the same proposals (`--change` is gone). The new verbs `outline show [--pending]`, `outline apply` and `outline discard` handle the chapter plan and the synopsis candidates notes leave, and `status` names the card proposals and synopsis candidates waiting on a «제안» line.
 - **0.16 does not open 0.15 works.** A work's format version (`version` in `.storyboard/project.json`) is now `2.0.0`, and a `1.0.0` work is refused with a message that it is in the 0.15 format. Keep using 0.15.x for a 0.15 work; there is no conversion script.
 - **The run lock moved into the cache database.** The lock that keeps one writing app per work is now a table of `.storyboard/cache/storyboard.db` rather than the file `.storyboard/cache/run.lock`. The extension and the CLI open that database through the same WebAssembly SQLite.
 - **The usage ledger moved into the cache database.** The usage of each call is kept in the `usage` table of the cache database rather than in `.storyboard/cache/usage.json`, and the CLI records it as well as the extension.

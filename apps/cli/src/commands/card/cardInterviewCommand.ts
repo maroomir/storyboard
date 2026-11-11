@@ -73,11 +73,11 @@ function describeOpening(opening: InterviewOpening): string[] {
 
 function describeSummary(summary: InterviewSessionSummary): string[] {
   return [
-    `└  답 ${summary.answered} · 건너뜀 ${summary.skipped} · 카드 후보 ${summary.candidateCount}건`,
+    `└  답 ${summary.answered} · 건너뜀 ${summary.skipped} · 카드 제안 ${summary.candidateCount}건`,
     ...(summary.undecidedAxisLabels.length > 0
       ? [`   아직 정해지지 않은 축: ${summary.undecidedAxisLabels.join(' · ')}`]
       : []),
-    ...(summary.candidateCount > 0 ? ['   storyboard card promote 로 반영할 수 있습니다'] : []),
+    ...(summary.candidateCount > 0 ? [`   storyboard card apply ${summary.cardId} 로 반영할 수 있습니다`] : []),
   ];
 }
 
@@ -87,7 +87,7 @@ export class CardInterviewCommand implements ICommandHandler {
     group: '카드',
     usage: 'card interview <id> [--step --json [--answer <n> | --write <text> | --skip | --confirm <n> | --rename <name> | --finish | --abandon]]',
     summary:
-      '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지 고르게 해, 선택의 패턴을 카드 후보로 증류합니다 (대화형 화면, 또는 --step --json 으로 한 단계씩)',
+      '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지 고르게 해, 선택의 패턴을 카드 제안으로 증류합니다 (대화형 화면, 또는 --step --json 으로 한 단계씩)',
     flags: ['scenes', 'limit', 'reset-axes', 'step', 'session', 'answer', 'write', 'skip', 'confirm', 'rename', 'finish', 'abandon'],
     examples: [
       'storyboard card interview hana',
@@ -154,7 +154,7 @@ export class CardInterviewCommand implements ICommandHandler {
     }
 
     return success(
-      `${started.opening.name} 인터뷰를 마쳤습니다 (답 ${answered}, 카드 후보 ${summary.candidateCount}건).`,
+      `${started.opening.name} 인터뷰를 마쳤습니다 (답 ${answered}, 카드 제안 ${summary.candidateCount}건).`,
       summary,
     );
   }

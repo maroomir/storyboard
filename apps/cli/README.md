@@ -165,9 +165,9 @@ kept; for a thriller: what the character does under pressure, how they lie). Pic
 writing your own answer counts double and can become a new value. A character session opens by asking,
 for each relation present in those scenes, what the character calls them and how they speak to them;
 that answer goes to the card's `relations[].speech` as it is. When one value of an axis reaches
-the threshold, the session's end distils it into a card candidate — a conditional tendency such as
-"몰릴 때 먼저 참고, 밀리면 되묻는다" — that `card promote` applies next to the draft and note
-candidates. The chosen lines themselves never reach a prompt: the choice records, the axis
+the threshold, the session's end distils it into a proposal for the card — a conditional tendency
+such as "몰릴 때 먼저 참고, 밀리면 되묻는다" — that waits in the card's session until `card apply`
+writes it to `statements.yaml` (or `card discard` drops it), next to what notes left. The chosen lines themselves never reach a prompt: the choice records, the axis
 vocabulary and the working model stay in the interview sessions of the cache database
 (`.storyboard/cache/storyboard.db`), and only what is
 distilled goes to the card.
@@ -189,7 +189,7 @@ storyboard card interview hana --step --json                 # opens a session: 
 storyboard card interview hana --step --json --answer 2      # the option the writer picked
 storyboard card interview hana --step --json --write "웃어 버린다"   # or what the writer wrote
 storyboard card interview hana --step --json --confirm 1     # after a written answer: 1 keeps the reading
-storyboard card interview hana --step --json --finish        # distil; then storyboard card promote
+storyboard card interview hana --step --json --finish        # distil; then storyboard card apply hana
 ```
 
 Every call prints `data.state` — `question` (`question.options` numbered from 1, `allowsText`),
@@ -251,9 +251,11 @@ or a Notion page with everything under it, plus the notes they link to one step 
 them into character and background cards, scene cards and a synopsis. It shows the cost estimate
 first and asks before writing; an agent passes `--yes`, and `--dry-run` stops at the plan. Cards
 that already exist are never overwritten — what the notes add to them waits in the card's session
-for `card promote`, and absorbing more notes adds to what is waiting rather than replacing it. Where
+for `card apply`, and absorbing more notes adds to what is waiting rather than replacing it. Where
 two notes give one slot different values, the note absorbed last wins when the proposals are applied;
-`card discard <id>` drops a card's waiting proposals.
+`card discard <slug>` drops a card's waiting proposals. A synopsis the notes give a work that
+already has one waits too: `outline show --pending` shows it, `outline apply` writes it and
+`outline discard` drops it, and `status` names whatever is waiting.
 The other direction is `notes export
 <folder>`: cards, scenes and the synopsis as a Markdown folder (`인물/`, `배경/`, `씬/`,
 `시놉시스.md`) with front matter ids and `[[wiki links]]`, for Obsidian or a Notion Markdown import;

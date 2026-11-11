@@ -294,6 +294,7 @@ export class StoryboardApplication {
       project: this.project,
       interviews: this.interviews,
       manuscript: this.manuscript,
+      notes: this.notes,
     });
   }
 

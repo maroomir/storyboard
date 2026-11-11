@@ -348,24 +348,25 @@ describe('notes absorb', () => {
       withFixedModel(container()),
     );
 
-    expect(absorbed.message).toContain('기존 카드 hana 에 대한 내용은 후보로 남겼습니다');
+    expect(absorbed.message).toContain('기존 카드 hana 에 대한 내용은 제안으로 남겼습니다');
     expect(readBundleText(workspace, 'character', 'hana')).toBe(before);
 
-    const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-    expect(preview.message).toContain('노트에서  hana (하나) 변경');
+    const preview = await run('card apply', args(['card', 'apply'], { 'dry-run': true }));
+    expect(preview.message).toContain('hana  character/hana.card');
+    expect(preview.message).toContain('  노트 · ');
     expect(readBundleText(workspace, 'character', 'hana')).toBe(before);
 
-    const promoted = await run('card promote', args(['card', 'promote']));
+    const promoted = await run('card apply', args(['card', 'apply']));
     expect(promoted.ok).toBe(true);
-    expect(promoted.message).toBe('카드 1개를 갱신했습니다.');
+    expect(promoted.message).toContain('✓ 카드 1개에 반영했습니다.');
 
     const after = await readCardYaml(workspace, 'hana');
     expect(after).toContain("age: '19'");
     expect(after).toContain('달의 문 너머를 보고 싶다');
     expect(await readAbsorbPending(workspace, 'hana')).toEqual([]);
 
-    const again = await run('card promote', args(['card', 'promote']));
-    expect(again.message).toBe('승격할 후보가 없습니다.');
+    const again = await run('card apply', args(['card', 'apply']));
+    expect(again.message).toBe('반영할 제안이 없습니다.');
   });
 
   function withHanaFact(plan: NoteAbsorbPlan): NoteAbsorbPlan {
@@ -446,26 +447,26 @@ describe('notes absorb', () => {
 
     it('keeps the candidates of an earlier location when another is absorbed', async () => {
       const second = await absorbAt(otherLocation, hanaAged('20'));
-      expect(second.message).toContain('기존 카드 hana 에 대한 내용은 후보로 남겼습니다.');
-      expect(second.message).toContain('승격을 기다리는 카드 1장 (hana)');
+      expect(second.message).toContain('기존 카드 hana 에 대한 내용은 제안으로 남겼습니다.');
+      expect(second.message).toContain('제안을 기다리는 카드 1장 (hana)');
 
       const sessions = new Set((await readAbsorbPending(workspace, 'hana')).map((line) => line.source.session));
       expect([...sessions].sort()).toEqual([vault, otherLocation].sort());
-      const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-      expect(preview.message).toContain('노트에서  hana (하나) 변경 2건');
+      const preview = await run('card apply', args(['card', 'apply'], { 'dry-run': true }));
+      expect(preview.message.match(/  노트 · /g)).toHaveLength(2);
     });
     it('replaces only what the same location left before', async () => {
       await absorbAt(vault, hanaAged('20'));
 
       const sessions = new Set((await readAbsorbPending(workspace, 'hana')).map((line) => line.source.session));
       expect([...sessions]).toEqual([vault]);
-      await run('card promote', args(['card', 'promote']));
+      await run('card apply', args(['card', 'apply']));
       expect(await readCardYaml(workspace, 'hana')).toContain("age: '20'");
     });
     it('does not drop pending candidates when an absorb leaves none of its own', async () => {
       const second = await absorbAt(otherLocation, onlyCards());
 
-      expect(second.message).toContain('승격을 기다리는 카드 1장 (hana)');
+      expect(second.message).toContain('제안을 기다리는 카드 1장 (hana)');
       expect((await readAbsorbPending(workspace, 'hana')).length).toBeGreaterThan(0);
     });
 
@@ -475,25 +476,16 @@ describe('notes absorb', () => {
         'replace-candidates': true,
       });
 
-      expect(second.message).toContain('승격을 기다리는 카드 1장 (jun)');
+      expect(second.message).toContain('제안을 기다리는 카드 1장 (jun)');
     });
     it('applies the location absorbed last when two notes disagree on a slot', async () => {
       await absorbAt(otherLocation, hanaAged('20'));
 
-      const promoted = await run('card promote', args(['card', 'promote']));
-      expect(promoted.message).toBe('카드 1개를 갱신했습니다.');
+      const promoted = await run('card apply', args(['card', 'apply']));
+      expect(promoted.message).toContain('✓ 카드 1개에 반영했습니다.');
       const hana = await readCardYaml(workspace, 'hana');
       expect(hana).toContain("age: '20'");
       expect(hana).toContain('달의 문 너머를 보고 싶다');
-    });
-
-    it('refuses --change without exactly one card id', async () => {
-      const outcome = await run(
-        'card discard',
-        args(['card', 'discard'], { change: 's1:attribute:age' }, ['hana']),
-      );
-      expect(outcome.ok).toBe(false);
-      expect(outcome.message).toContain('카드 단위로 버립니다');
     });
 
     it('discards the candidates of the named cards, or all of them', async () => {
@@ -501,17 +493,17 @@ describe('notes absorb', () => {
       await absorbAt(otherLocation, onlyCards('jun'));
 
       const one = await run('card discard', args(['card', 'discard'], {}, ['jun']));
-      expect(one.message).toBe('후보를 버렸습니다.\n  jun');
+      expect(one.message).toBe('제안을 버렸습니다.\n  jun');
 
-      const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
-      expect(preview.message).toContain('노트에서  hana');
+      const preview = await run('card apply', args(['card', 'apply'], { 'dry-run': true }));
+      expect(preview.message).toContain('hana  character/hana.card');
 
       const all = await run('card discard', args(['card', 'discard']));
-      expect(all.message).toBe('후보를 버렸습니다.\n  hana');
+      expect(all.message).toBe('제안을 버렸습니다.\n  hana');
       expect(await readAbsorbPending(workspace, 'hana')).toEqual([]);
 
       const none = await run('card discard', args(['card', 'discard']));
-      expect(none.message).toBe('버릴 후보가 없습니다.');
+      expect(none.message).toBe('버릴 제안이 없습니다.');
     });
     it('keeps one synopsis candidate per location beside the author synopsis', async () => {
       const candidateLocations = async (): Promise<string[]> =>
@@ -544,6 +536,30 @@ describe('notes absorb', () => {
         ok: false,
         kind: 'none',
       });
+    });
+
+    it('shows, applies and discards synopsis candidates through the outline verbs', async () => {
+      await absorbAt(vault);
+
+      const status = await run('status', args(['status']));
+      expect(status.message).toContain('제안      시놉시스 후보 1개 · storyboard outline show --pending');
+      expect(status.message).toContain('제안      카드 1장 (hana) · storyboard card apply');
+
+      const shown = await run('outline show', args(['outline', 'show'], { pending: true }));
+      expect(shown.message).toContain(`── ${vault}`);
+      expect(shown.message).toContain('만조에만 열리는 문을 둘러싼 이야기.');
+
+      const applied = await run('outline apply', args(['outline', 'apply']));
+      expect(applied.ok).toBe(true);
+      expect((await run('outline show', args(['outline', 'show'], { pending: true }))).message).toBe(
+        '기다리는 시놉시스 후보가 없습니다.',
+      );
+
+      await absorbAt(otherLocation);
+      expect((await run('outline discard', args(['outline', 'discard']))).message).toBe(
+        '시놉시스 후보 1개를 버렸습니다.',
+      );
+      expect((await run('outline apply', args(['outline', 'apply']))).ok).toBe(false);
     });
 
     it('discards the synopsis candidates without touching the synopsis', async () => {

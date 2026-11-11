@@ -2,7 +2,6 @@ import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import { cardIdPattern } from '@/commands/card/cardArguments';
-import { flagString } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
 import type { PendingCardSummary } from '@storyboard/story-engine';
@@ -12,9 +11,8 @@ export class CardDiscardCommand implements ICommandHandler {
     verb: 'card discard',
     writesWorkspace: true,
     group: '카드',
-    usage: 'card discard <id>',
-    summary: '반영하지 않은 카드 제안을 버립니다 (id 를 여럿 줄 수 있고, 없으면 전부)',
-    flags: ['change'],
+    usage: 'card discard [<slug> …]',
+    summary: '세션에 남은 카드 제안을 버립니다 (slug 를 여럿 줄 수 있고, 없으면 전부)',
     examples: ['storyboard card discard hana', 'storyboard card discard'],
   };
 
@@ -22,11 +20,7 @@ export class CardDiscardCommand implements ICommandHandler {
     const invalidId: string | undefined = args.positionals.find((id) => !cardIdPattern.test(id));
 
     if (invalidId !== undefined) {
-      return failure(`카드 id 가 올바르지 않습니다: ${invalidId}`);
-    }
-
-    if (flagString(args.flags, 'change') !== undefined) {
-      return failure('세션의 제안은 카드 단위로 버립니다. --change 없이 card discard <id> 를 쓰세요.');
+      return failure(`카드 slug 가 올바르지 않습니다: ${invalidId}`);
     }
 
     return await this.discardCards(container, args.positionals);
@@ -49,10 +43,10 @@ export class CardDiscardCommand implements ICommandHandler {
     }
 
     if (targets.length === 0) {
-      return success('버릴 후보가 없습니다.', { cards: [] });
+      return success('버릴 제안이 없습니다.', { cards: [] });
     }
 
-    return success(['후보를 버렸습니다.', `  ${targets.join(', ')}`].join('\n'), {
+    return success(['제안을 버렸습니다.', `  ${targets.join(', ')}`].join('\n'), {
       cards: targets,
     });
   }

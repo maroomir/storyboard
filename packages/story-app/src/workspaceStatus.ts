@@ -18,6 +18,7 @@ import type { CardManager } from '#app/managers/cardManager';
 import type { DraftManager, DraftReading } from '#app/managers/draftManager';
 import type { ProjectManager } from '#app/managers/projectManager';
 import type { InterviewManager } from '#app/managers/interviewManager';
+import type { NoteManager } from '#app/managers/noteManager';
 import type { ManuscriptManager } from '#app/managers/manuscriptManager';
 
 export type WorkspaceNextStep =
@@ -72,8 +73,14 @@ export interface WorkspaceStatus {
   readonly drafts: WorkspaceDraftCounts;
   readonly manuscript: WorkspaceManuscriptStatus;
   readonly chapterSummaries: { readonly missing: number };
+  readonly pending: WorkspacePendingStatus;
   readonly nextStep: WorkspaceNextStep;
   readonly interviews: readonly InterviewCardCoverage[];
+}
+
+export interface WorkspacePendingStatus {
+  readonly cards: readonly string[];
+  readonly synopsisCandidates: number;
 }
 
 export interface DescribeWorkspaceStatusInput {
@@ -84,6 +91,7 @@ export interface DescribeWorkspaceStatusInput {
   readonly project: ProjectManager;
   readonly interviews?: InterviewManager;
   readonly manuscript?: ManuscriptManager;
+  readonly notes?: NoteManager;
 }
 
 async function describeOutline(
@@ -165,6 +173,7 @@ export async function describeWorkspaceStatus(
     chapterSummaries: {
       missing: (await manuscripts?.listMissingChapterSummaries(workspaceRoot))?.length ?? 0,
     },
+    pending: await describePending(cards, input.notes, workspaceRoot),
     interviews: await suggestInterviews(interviews, workspaceRoot, draftCounts),
     nextStep: chooseNextStep({
       hasMissingContract: missingContract.length > 0,
@@ -173,6 +182,17 @@ export async function describeWorkspaceStatus(
       draftsToWrite: draftCounts.missing + draftCounts.stale,
       manuscript,
     }),
+  };
+}
+
+async function describePending(
+  cards: CardManager,
+  notes: NoteManager | undefined,
+  workspaceRoot: StoryUri,
+): Promise<WorkspacePendingStatus> {
+  return {
+    cards: (await cards.listPendingCards(workspaceRoot)).map((card) => card.slug),
+    synopsisCandidates: (await notes?.listSynopsisCandidates(workspaceRoot))?.length ?? 0,
   };
 }
 

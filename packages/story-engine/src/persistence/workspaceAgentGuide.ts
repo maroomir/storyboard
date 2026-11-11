@@ -38,7 +38,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
    장편 전체는 \`storyboard novel generate\`)
 5. 검수: \`storyboard draft check continuity <stem>\`, \`storyboard draft check grammar <stem>\`,
    \`storyboard draft check slop <stem>\` → 문제는 \`storyboard draft revise\` 또는 \`storyboard draft edit\`
-6. 반영: \`storyboard card promote\`
+6. 반영: \`storyboard card apply\`
 7. 조립: \`storyboard manuscript assemble\` → \`storyboard manuscript review\` →
    \`storyboard manuscript export\`
 
@@ -52,7 +52,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 - \`--force\`, \`--all\`, \`storyboard novel generate\`는 비용이 크다. 사람이 시키지 않았으면 씬
   하나로 확인한 뒤 넓혀라.
 - \`--dry-run\`이 있는 명령(\`storyboard scene plot\`, \`storyboard card build\`,
-  \`storyboard card promote\`, \`storyboard draft augment\`,
+  \`storyboard card apply\`, \`storyboard draft augment\`,
   \`storyboard scene complete\`)은 먼저 \`--dry-run\`으로 제안을 보고 결정하라.
 - 터미널이 아닌 곳에서 진행 로그가 필요하면 \`--verbose\`.
 - 인물·배경 인터뷰는 \`storyboard card interview <id> --step --json\`으로 한 단계씩 돌린다. 질문과
