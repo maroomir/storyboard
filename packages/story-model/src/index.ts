@@ -10,6 +10,7 @@ export * from '#model/element/narrator';
 export * from '#model/element/scene';
 export * from '#model/element/statement';
 export * from '#model/element/statementMerge';
+export * from '#model/element/statementSceneWindow';
 export * from '#model/element/statementText';
 export * from '#model/element/storyStateFacets';
 export * from '#model/format/index';
