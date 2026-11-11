@@ -1,6 +1,7 @@
 export * from '#model/element/background';
 export * from '#model/element/character';
 export * from '#model/element/commonFacets';
+export * from '#model/element/elementHeader';
 export * from '#model/element/elementId';
 export * from '#model/element/elementKind';
 export * from '#model/element/facet';

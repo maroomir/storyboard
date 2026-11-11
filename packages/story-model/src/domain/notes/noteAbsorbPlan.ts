@@ -6,7 +6,8 @@ import type {
 } from '#model/contracts/noteExtraction';
 import type { NoteSynthesis, NoteSynthesisSetting } from '#model/contracts/noteSynthesis';
 import type { BibleFactSubject } from '#model/format/bible';
-import { cardIdPattern, type CharacterRole, type StoryboardCard } from '#model/format/card';
+import type { CharacterRole } from '#model/element/character';
+import { cardIdPattern, type StoryboardCard } from '#model/format/card';
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
 import { sceneFileNamePattern, type SceneCard, type SceneFile } from '#model/format/scene';
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { isElementId } from '#model/element/elementId';
+import { elementIdSchema } from '#model/element/elementId';
 import type { ElementKind } from '#model/element/elementKind';
 import type { FacetQualifierRule } from '#model/element/facet';
 import {
@@ -58,10 +58,6 @@ export interface StatementKindIssue {
 const factFacetId: StatementFacetId = 'fact';
 
 const trimmedTextSchema: z.ZodType<string> = z.string().trim().min(1);
-
-const elementIdSchema: z.ZodType<string> = z.string().refine(isElementId, {
-  message: '요소 id 는 uuid 여야 합니다.',
-});
 
 export const statementSourceSchema: z.ZodType<StatementSource> = z
   .object({

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { characterRoles } from '#model/format/card';
-import type { AttributeCandidate, CharacterRole, RelationLink } from '#model/format/card';
+import { characterRoles, type CharacterRole } from '#model/element/character';
+import type { AttributeCandidate, RelationLink } from '#model/format/card';
 import type { BibleSubjectKind } from '#model/format/bible';
 
 export type NoteKind =

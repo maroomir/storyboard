@@ -1,22 +1,12 @@
 import { z } from 'zod';
 
+import { characterRoles, type CharacterRole } from '#model/element/character';
+
 export const cardIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
 export type CardType = 'character' | 'location' | 'temporal' | 'social';
 
 export const cardTypes: readonly CardType[] = ['character', 'location', 'temporal', 'social'];
-
-export type CharacterRole = 'main' | 'supporting' | 'extra';
-
-export const characterRoles: readonly [CharacterRole, ...CharacterRole[]] = [
-  'main',
-  'supporting',
-  'extra',
-];
-
-export function isCharacterRole(value: string | undefined): value is CharacterRole {
-  return value === 'main' || value === 'supporting' || value === 'extra';
-}
 
 export const characterRoleSchema: z.ZodType<CharacterRole | undefined> = z.preprocess(
   (value) => {

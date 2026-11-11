@@ -1,3 +1,6 @@
+import { z } from 'zod';
+
+import { elementIdSchema, elementSlugSchema, headerTextSchema } from '#model/element/elementId';
 import type { ElementDefinition } from '#model/element/facet';
 
 export type SceneFacetId =
@@ -74,3 +77,53 @@ export const sceneElement: ElementDefinition<SceneFacetId> = {
     },
   ],
 };
+
+const sceneNumberPrefixPattern: RegExp = /^\d{3}-/;
+
+const allDigitsPattern: RegExp = /^\d+$/;
+
+export function isSceneSlug(slug: string): boolean {
+  return !allDigitsPattern.test(slug) && !sceneNumberPrefixPattern.test(slug);
+}
+
+export interface SceneHeader {
+  readonly id: string;
+  readonly slug: string;
+  readonly kind: 'scene';
+  readonly title: string;
+  readonly cast?: readonly string[];
+  readonly place?: string;
+  readonly time?: string;
+  readonly targetWordCount?: number;
+}
+
+export const sceneHeaderSchema: z.ZodType<SceneHeader> = z
+  .object({
+    id: elementIdSchema,
+    slug: elementSlugSchema.refine(isSceneSlug, {
+      message: '씬 slug 에는 번호를 붙이지 않습니다. 번호는 구조 순서에서 나옵니다.',
+    }),
+    kind: z.literal('scene'),
+    title: headerTextSchema,
+    cast: z.array(elementIdSchema).readonly().optional(),
+    place: elementIdSchema.optional(),
+    time: headerTextSchema.optional(),
+    targetWordCount: z.number().int().positive().optional(),
+  })
+  .strict();
+
+export interface Beat {
+  readonly text: string;
+  readonly cast?: readonly string[];
+  readonly place?: string;
+  readonly time?: string;
+}
+
+export const beatSchema: z.ZodType<Beat> = z
+  .object({
+    text: headerTextSchema,
+    cast: z.array(elementIdSchema).readonly().optional(),
+    place: elementIdSchema.optional(),
+    time: headerTextSchema.optional(),
+  })
+  .strict();

@@ -2,12 +2,13 @@ import {
   narrativeTenseLabels,
   narratorKnowledgeLabels,
   narratorPersonLabels,
-} from '#model/format/narrator';
+  type NarrativeTense,
+} from '#model/element/narrator';
 import { resolveCraftContract } from '#model/format/craftContract';
 import { resolveSceneTargetLength } from '#model/format/sceneLength';
 import { sceneGroundingFieldLabels } from '#model/format/scene';
 import type { CraftContract, CraftContractOverride } from '#model/format/craftContract';
-import type { NarrationDirective, NarrativeTense } from '#model/format/narrator';
+import type { NarrationDirective } from '#model/format/narrator';
 import type { ProjectSetting } from '#model/format/project';
 import type { SceneGrounding } from '#model/format/scene';
 export interface StyleDirective {

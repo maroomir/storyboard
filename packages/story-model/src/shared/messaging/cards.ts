@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { cardSchema, cardTypes, characterRoles, type CardType } from '#model/format/card';
+import { characterRoles } from '#model/element/character';
+import { cardSchema, cardTypes, type CardType } from '#model/format/card';
 import { narratorCardSchema } from '#model/format/narrator';
 import { sceneCardSchema } from '#model/format/scene';
 import { cardCollectProposalSchema, type CardCollectProposal } from '#model/shared/cardCollect';

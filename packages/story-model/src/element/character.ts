@@ -1,4 +1,24 @@
+import { z } from 'zod';
+
+import {
+  elementIdSchema,
+  elementSlugSchema,
+  headerTextListSchema,
+  headerTextSchema,
+} from '#model/element/elementId';
 import type { ElementDefinition } from '#model/element/facet';
+
+export type CharacterRole = 'main' | 'supporting' | 'extra';
+
+export const characterRoles: readonly [CharacterRole, ...CharacterRole[]] = [
+  'main',
+  'supporting',
+  'extra',
+];
+
+export function isCharacterRole(value: string | undefined): value is CharacterRole {
+  return value === 'main' || value === 'supporting' || value === 'extra';
+}
 
 export type CharacterFacetId = 'traits' | 'catchphrases' | 'desire' | 'relation' | 'speech' | 'arc';
 
@@ -68,3 +88,43 @@ export const characterElement: ElementDefinition<CharacterFacetId> = {
     },
   ],
 };
+
+export type CharacterAttributeKey = 'sex' | 'age' | 'job';
+
+export const characterAttributeKeys: readonly CharacterAttributeKey[] = ['sex', 'age', 'job'];
+
+export interface CharacterAttributes {
+  readonly sex?: string;
+  readonly age?: number | string;
+  readonly job?: string;
+}
+
+export interface CharacterHeader {
+  readonly id: string;
+  readonly slug: string;
+  readonly kind: 'character';
+  readonly name: string;
+  readonly role?: CharacterRole;
+  readonly attributes?: CharacterAttributes;
+  readonly aliases?: readonly string[];
+}
+
+const characterAttributesSchema: z.ZodType<CharacterAttributes> = z
+  .object({
+    sex: headerTextSchema.optional(),
+    age: z.union([z.number().int().nonnegative(), headerTextSchema]).optional(),
+    job: headerTextSchema.optional(),
+  })
+  .strict();
+
+export const characterHeaderSchema: z.ZodType<CharacterHeader> = z
+  .object({
+    id: elementIdSchema,
+    slug: elementSlugSchema,
+    kind: z.literal('character'),
+    name: headerTextSchema,
+    role: z.enum(characterRoles).optional(),
+    attributes: characterAttributesSchema.optional(),
+    aliases: headerTextListSchema.optional(),
+  })
+  .strict();

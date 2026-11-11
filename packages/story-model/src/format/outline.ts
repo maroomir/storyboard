@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { cardIdPattern, characterRoles, type CharacterRole } from '#model/format/card';
+import { characterRoles, type CharacterRole } from '#model/element/character';
+import { cardIdPattern } from '#model/format/card';
 import {
   pointOfViews,
   type CompositionKind,
