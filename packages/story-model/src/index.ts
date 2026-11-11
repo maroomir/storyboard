@@ -37,6 +37,7 @@ export * from '#model/contracts/studioValidation';
 export * from '#model/contracts/styleDirective';
 export * from '#model/domain/biblePromotion';
 export * from '#model/domain/canonDiff';
+export * from '#model/domain/cardProjection';
 export * from '#model/domain/cardCollect';
 export * from '#model/domain/chapterSummaries';
 export * from '#model/domain/files/backgroundFactConflicts';
