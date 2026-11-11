@@ -1,52 +1,47 @@
 ---
 name: card-scene-format
 description: >-
-  Storyboard workspace layout, .card YAML rules, scene/draft/cache file naming,
-  and custom editor expectations. Use when editing character/background cards,
-  scene seeds, project init, path helpers, or docs about file formats.
+  Storyboard workspace layout, element bundles (card.yaml header + statements.yaml),
+  scene/draft/cache file naming, and the read-only card viewer. Use when editing
+  character/background/narrator/scene bundles, project init, path helpers, or docs
+  about file formats.
 ---
 
 # Card and scene formats (Storyboard)
 
-Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story-model/src/format/files/card.ts`](packages/story-model/src/format/card.ts), [`packages/story-model/src/format/scene.ts`](packages/story-model/src/format/scene.ts). Extended ADR (local): `.doc/decisions/02-card-files-and-editor.md`.
+Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Vocabulary: [`packages/story-model/src/element/`](packages/story-model/src/element/) (one file per kind, the facet catalog and the statement schema). Paths and codecs: [`packages/story-model/src/format/bundlePaths.ts`](packages/story-model/src/format/bundlePaths.ts), [`bundleFiles.ts`](packages/story-model/src/format/bundleFiles.ts), [`structure.ts`](packages/story-model/src/format/structure.ts).
 
 ## Workspace model
 
-- One VSCode workspace folder = one novel project.
-- Tracked content: `character/`, `background/`, `scene/`, `.storyboard/project.json` (and optional `.storyboard/settings.json`).
-- Agent guide: `AGENTS.md` plus a one-line `CLAUDE.md` (`@AGENTS.md`), tracked, written by every app's init only when missing (`init --repair` fills gaps). The text lives in `packages/story-engine/src/persistence/workspaceAgentGuide.ts`; name commands as `storyboard <verb>` there, because `apps/cli/test/help.test.ts` checks each one and its flags against the command catalog.
-- Regeneratable: `draft/`, `.storyboard/cache/`—default gitignore targets; do not treat as durable user source.
-- Durable AI memory: `.storyboard/memory/` (story state, persona/background memory, dialogue sidecars, chapter summaries) is tracked—no committed input reproduces it.
-- `storyState.md` entries carry the input hash of the scene that produced them (`<!-- scene-input: N sha256:… -->`). Editing a card or scene without regenerating that scene marks its entries `- [N!] …`: kept in the file, dropped from prompts, reported in generation warnings and `storyboard doctor`.
-- `summaries.md` chapters carry the hash of the chapter body they were written from (`<!-- chapter-input: sha256:… -->`). Editing a draft without resummarizing that chapter appends `stale`: kept in the file, dropped from scene prompts, reported in generation warnings and `storyboard doctor`.
-- A scene card may declare an integer `storyTime` (the event's place in story time, defaulting to the scene order). Canon `validFrom`/`validUntil` are measured on that axis so a flashback gets the facts that were true then; `revealFrom` stays on scene order, and its object form `{ scene, knownBy }` marks characters who do not know yet.
+- One workspace folder = one novel. `.storyboard/project.json` is the contract (`version` `2.0.0`; a `1.0.0` work is refused as «0.15 형식», with no conversion).
+- `.storyboard/structure.yaml`: `threads: [{id, title}]` and `scenes: [{scene: <uuid>, thread, narrator?, storyTime?}]`. Scene order, and so every scene number, comes from here.
+- Tracked content: the bundles under `character/`, `background/`, `narrator/`, `scene/`, plus `draft/`, `.storyboard/project.json`, `structure.yaml` and `.storyboard/outline/`.
+- Agent guide: `AGENTS.md` plus a one-line `CLAUDE.md` (`@AGENTS.md`), written by init only when missing (`init --repair` fills gaps). The text lives in `packages/story-engine/src/persistence/workspaceAgentGuide.ts`; name commands as `storyboard <verb>` there, because `apps/cli/test/help.test.ts` checks each one against the command catalog.
+- Git-ignored and rebuildable: `.storyboard/cache/` — one SQLite file `storyboard.db` (`sessions`, `runs`, `usage`, `element_index`, `lock`, `findings`, `journal`, `chapter_summaries`, `revision_plans`, plus `schema_version`; a mismatched version drops and rebuilds it), draft revisions under `cache/revisions/<scene uuid>/` (the last `keptDraftRevisionCount` = 10 per scene), scene context snapshots under `cache/scenes/`. Nothing a writer needs lives only there except pending proposals and chapter summaries, which are regenerated.
 
-## `.card` (YAML)
+## Bundles (`<kind>/<slug>.card/`)
 
-- On disk: YAML; UI: custom text editor for `*.card`.
-- **Card `id`**: `^[a-z0-9][a-z0-9-]*$` only (ASCII). Human-readable names go in `name`. Keeps filenames and refs portable—see `cardIdPattern` / `cardSchema` in [`packages/story-model/src/format/files/card.ts`](packages/story-model/src/format/card.ts).
-- **Source of truth for edits**: `TextDocument`; webview/form changes serialize to YAML and replace document text (full replace is acceptable until diff sync is needed).
-- **Codec**: keep `parseCard` / `serializeCard` in [`packages/story-model/src/format/files/card.ts`](packages/story-model/src/format/files/card.ts) testable with round-trip tests.
-- **List-form text fields**: character `voice`/`description`/`desire` and background `description`/`senses`/`layout`/`rules` are `string[]` (one bullet per item), not prose. Background `time`/`weather` are scalar strings. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `packages/story-model/src/format/files/card.ts`) wherever a field is fed to prompts/hashes.
+- Every element is a folder: `card.yaml` (the header: `id` uuid, `slug`, `kind`, a name or title and the few header fields of its kind) and `statements.yaml` (a top-level list, no envelope). Characters and backgrounds also hold `memory/<thread>.yaml` (`throughScene`, `cardHash`, `persona`, `voiceSample: [{text, source}]`) and one image (`profile.png` / `image.png`).
+- **Identity**: the folder name is the slug (`^[a-z0-9][a-z0-9-]*$`); the uuid in `card.yaml` never changes. References between elements (`cast`, `place`, `about`, `knownBy`, a narrator's focal, `structure.yaml`) are uuids, so renaming a slug rewrites nothing else. Two folders with one uuid fail `doctor`; `init --repair` gives the later one a new uuid.
+- **Statements** carry `facet`, `value`, optional `key`/`about`/`since`/`until`/`revealFrom`/`knownBy`/`keywords`, and `source.origin` (`author`, `agent`, `studio`, `interview`). An author line is never overwritten (`statementMerge.ts`). Generation writes memory and scene state only, never statements.
+- **Who writes**: the engine through manager verbs (`card create|set|unset|edit|apply|remove`, the studio, the interview, notes absorb). A file changed outside the engine is read with a warning; a schema mismatch fails. Proposals wait in the card's session in the cache DB until `card apply` / `card discard`.
+- **Viewer**: the extension opens `**/*.card/card.yaml` in a read-only viewer (header line + statements grouped by the facet's section); «텍스트로 열기» opens the YAML, «스튜디오에서 고치기» edits through the studio.
 
-## Scenes (`scene/*.card`)
+## Scenes (`scene/NNN-slug.card/`)
 
-- Filename: `NN-<slug>.card` where `NN` is zero-padded order and `<slug>` is lowercase letters, digits, hyphens—see `sceneFileNamePattern` in [`packages/story-model/src/format/scene.ts`](packages/story-model/src/format/scene.ts). The card's `id` must equal that stem.
-- YAML with `type: scene`. Metadata (`title`/`characters`/`location`/`mood`/`relationStage`/`targetWordCount`/`grounding`), structured seed fields (`purpose`/`conflict`/`twist`/`emotionalShift`/`foreshadowing`/`neededCanon`), an event list `beats`, and `summary`, which names the sibling prose file `scene/<stem>.summary.md` (`sceneSummaryReference`/`isInlineSceneSummary` in [`packages/story-model/src/format/files/scene.ts`](packages/story-model/src/format/files/scene.ts); `parseScene(raw, fileName, summaryText)` takes the file's text). Inline prose is legacy — `scene migrate` moves it out.
-- **Beats**: `draft generate` expands `beats` before drafting when empty (`GenerateSceneBeatsUseCase`, `generation.beats.auto`/`charsPerBeat`/`minBeats`); `scene plot` (CLI) and `storyboard.scene.beats` (extension) run the same use case up front, and existing beats are only overwritten with `--force`. In `renderSceneCardBody`, `beats` take precedence over `summary`.
-- **Codec**: `parseScene`/`parseSceneCard`/`serializeSceneCard` in [`packages/story-model/src/format/files/scene.ts`](packages/story-model/src/format/files/scene.ts). Serialization is canonical like entity cards, so `canonicalizeSceneCardText` exists for deliberate normalization.
-- **Prompt contract**: `SceneFile.body` is rendered from the card (`renderSceneCardBody`) as the same `[목적]`/`[갈등]` labeled blocks the old seed format used—prompts did not change with the format.
-- **Legacy `.txt`**: no longer read, and the converters were removed after 0.11.5. Convert such a workspace with 0.11.5 or earlier (`storyboard scene migrate`) before upgrading.
-- **Editor**: scene cards open in the same `storyboard.card` custom editor; the scene form adds an AI **Summary에서 구조화** action (`cards.structureScene`) that proposes only the empty structure fields for review.
-- **Background attachment**: a scene attaches a background via frontmatter `location: <id>`, or—when absent—by auto-detecting a background whose `name`/`aliases` appear in the body (most-specific/longest match wins). Mirrors character name/alias detection; see `resolveSceneBackground`/`detectSceneBackground` in [`packages/story-model/src/format/sceneContext.ts`](packages/story-model/src/format/sceneContext.ts). Backgrounds support an optional `aliases: string[]` for body surface forms.
+- Folder `NNN-slug.card` where `NNN` is the three-digit number derived from `structure.yaml` and the slug has no number (`formatNumberedSceneStem` / `parseNumberedSceneStem`). The engine renames folders and drafts when scenes are inserted, moved or removed (`scene create --after`, `scene move`, `scene remove`), through the cache DB `journal`. The CLI accepts `NNN-slug`, the number, or the slug.
+- Files: `card.yaml` (`title`, `cast`, `place`, `time`, `targetWordCount` only when it differs from the project), `statements.yaml` (design: `purpose`, `conflict`, `emotionalShift`, `twist`, `foreshadowing` …), `beats.yaml` (a list of `{text, cast?, place?, time?}`, cast and place as uuids), `summary.md`, and what generation writes: `dialogue.json` and `state.yaml`.
+- `state.yaml` is the story-state ledger of that scene: `inputHash` (the scene input the draft was made from) and its statements (`event`, `relationShift`, `reveal`, `motif`, each with `knownBy`). A thread's ledger is its scenes' `state.yaml` in structure order. A draft is current when its `inputHash` matches the input recomputed now, cache or no cache.
+- **Grounding** (incident, place, time) is derived, never stored: the title and first beat, the first beat's place or the place card's name, the first beat's time (`sceneGroundingDerivation.ts`).
+- **Beats**: `draft generate` expands empty beats before drafting and writes them to `beats.yaml` (`generation.beats.auto`/`charsPerBeat`/`minBeats`); `scene plot` runs the same use case up front and overwrites only with `--force`.
+- **Prompt contract**: prompts still read the old card shapes: `domain/cardProjection.ts` and `domain/sceneProjection.ts` project a bundle into `CharacterCard`/`BackgroundCard`/`SceneCard`, and `renderSceneCardBody` renders the `[목적]`/`[갈등]` blocks.
 
-## Drafts and cache
+## Drafts
 
-- `draft/<scene>.md`: AI-generated prose; may be overwritten on regenerate.
-- `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`: previous-draft history archived before an overwrite when `storyboard.draft.keepHistory` is on (off by default). Local archive time + per-scene incrementing revision; gitignored like `draft/`. See `archiveExistingDraft` in [`packages/story-model/src/domain/files/draftHistory.ts`](packages/story-model/src/domain/files/draftHistory.ts), wired in [`apps/vscode/src/presentation/commands/generateDraft.ts`](apps/vscode/src/presentation/commands/generateDraft.ts).
-- `.storyboard/cache/scenes/<scene>.json`: extension-managed context snapshots; users should not hand-edit paths outside the tool.
+- `draft/NNN-slug.md`: AI-generated prose outside the bundle; overwritten on regenerate after the previous one is kept in `cache/revisions/<scene uuid>/`.
 
 ## When changing formats
 
-- Update zod schemas, file helpers, and **fixtures** under `packages/story-model/test/fixtures/` together.
-- Run: `npm run test` and any card/scene-specific specs you touched.
+- Update the element vocabulary, the zod schemas, the codecs and the round-trip **fixtures** under `packages/story-model/test/fixtures/` (`bundles/magicboy/`) together.
+- An intended change to what a work writes is a golden snapshot update (`npm run bvt:golden -- --update`) in the same commit.
+- Run `npm test` and the bundle specs you touched.

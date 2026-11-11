@@ -43,6 +43,9 @@ in `bvt/`, and each step is also its own script:
   approved by `npm run bvt:golden -- --update` and the snapshot diff in the same commit; a new
   frozen workspace is a copy of a fresh snapshot's `workspace/` made at a release and a `reopen`
   row pointing at it.
+  A frozen workspace is retired only by a release that breaks the format on purpose and says so
+  in both changelogs: 0.16.0 has no conversion (a 0.15 work is refused as «0.15 형식»), so
+  `reopen-0.12.2` was retired and the frozen line starts again at `frozen/0.16.0-linear`.
 - `bvt:smoke` — **artifact smoke** (`scripts/bvt/smoke.sh`, local wrapper `smokeRelease.sh`): the
   VSIX, the CLI tarball and `install.sh` are packaged by `scripts/package-release.sh` (the same
   script `publish` uses) and then *used*: `install.sh --from` installs the tarball into a scratch
