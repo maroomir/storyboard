@@ -1,4 +1,3 @@
-import type { StoryUri } from '#model/format/storyUri';
 import type { AiProviderId } from '#model/contracts/providerCatalog';
 import type {
   AiTaskName,
@@ -21,10 +20,6 @@ import {
   type ModelPricePerMillion,
 } from '#model/contracts/providerCatalog';
 import { addUsageAmount, aiTaskNames, emptyUsageAmount } from '#model/contracts/ai';
-type UsageLedgerVersion = 1;
-
-const usageLedgerVersion: UsageLedgerVersion = 1;
-
 export type UsageLedgerEntry = UsageRecord & {
   readonly id: string;
   readonly recordedAt: string;
@@ -75,22 +70,6 @@ const usageLedgerEntrySchema: z.ZodType<UsageLedgerEntryPayload> = z.object({
   costUsd: z.number().optional(),
   attribution: usageAttributionSchema,
 });
-
-interface UsageLedgerFile {
-  version: 1;
-  entries: UsageLedgerEntryPayload[];
-}
-
-const usageLedgerFileSchema: z.ZodType<UsageLedgerFile> = z.object({
-  version: z.literal(usageLedgerVersion),
-  entries: z.array(usageLedgerEntrySchema),
-});
-
-export interface UsageLedgerFileSystem {
-  readonly readFile: (uri: StoryUri) => Promise<Uint8Array>;
-  readonly writeFile: (uri: StoryUri, content: Uint8Array) => Promise<void>;
-  readonly createDirectory: (uri: StoryUri) => Promise<void>;
-}
 
 export function emptyUsageSummary(): UsageSummaryByEntity {
   return {
@@ -247,86 +226,6 @@ export function computeUsageSummaryFromEntries(
   }
 
   return summary;
-}
-
-export function parseUsageLedgerBytes(
-  bytes: Uint8Array,
-  warn?: (message: string) => void,
-): UsageLedgerEntry[] {
-  let text: string;
-
-  try {
-    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    warn?.('Storyboard usage ledger is not valid UTF-8; starting from an empty ledger.');
-    return [];
-  }
-
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch {
-    warn?.('Storyboard usage ledger is corrupted (invalid JSON); starting from an empty ledger.');
-    return [];
-  }
-
-  const decoded: z.ZodSafeParseResult<UsageLedgerFile> = usageLedgerFileSchema.safeParse(parsed);
-
-  if (!decoded.success) {
-    warn?.(
-      'Storyboard usage ledger is corrupted (unexpected shape); starting from an empty ledger.',
-    );
-    return [];
-  }
-
-  return decoded.data.entries.map(toUsageLedgerEntry);
-}
-
-interface SerializedUsageLedger {
-  readonly version: UsageLedgerVersion;
-  readonly entries: UsageLedgerEntryPayload[];
-}
-
-export function serializeUsageLedger(entries: readonly UsageLedgerEntry[]): Uint8Array {
-  const payload: SerializedUsageLedger = {
-    version: usageLedgerVersion,
-    entries: entries.map(serializeLedgerEntry),
-  };
-
-  return new TextEncoder().encode(JSON.stringify(payload));
-}
-
-export async function readUsageLedgerFromUri(
-  fs: UsageLedgerFileSystem,
-  ledgerUri: StoryUri,
-  warn?: (message: string) => void,
-): Promise<UsageLedgerEntry[]> {
-  try {
-    const bytes: Uint8Array = await fs.readFile(ledgerUri);
-    return parseUsageLedgerBytes(bytes, warn);
-  } catch {
-    return [];
-  }
-}
-
-export async function writeUsageLedgerToUri(
-  fs: UsageLedgerFileSystem,
-  ledgerUri: StoryUri,
-  entries: readonly UsageLedgerEntry[],
-): Promise<void> {
-  await fs.writeFile(ledgerUri, serializeUsageLedger(entries));
-}
-
-export function appendLedgerEntryIfNew(
-  entries: readonly UsageLedgerEntry[],
-  entry: UsageLedgerEntry,
-): { readonly entries: UsageLedgerEntry[]; readonly appended: boolean } {
-  if (entries.some((existing) => existing.id === entry.id)) {
-    return { entries: [...entries], appended: false };
-  }
-
-  return { entries: [...entries, entry], appended: true };
 }
 
 function serializeLedgerEntry(entry: UsageLedgerEntry): UsageLedgerEntryPayload {

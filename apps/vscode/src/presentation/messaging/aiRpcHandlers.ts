@@ -3,7 +3,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { emptyUsageSummary, type StoryboardResponsePayload } from '@storyboard/story-model';
 import { type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { AiProviderRegistry } from '@storyboard/story-ai';
-import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
+import type { UsageLedgerRecorder } from '@storyboard/story-engine';
 
 export interface AiRpcHandlersOptions {
   readonly onStreamChunk?: (requestId: string, delta: string) => Promise<void>;
@@ -62,7 +62,7 @@ export class AiRpc {
 }
 
 export class UsageRpc {
-  public constructor(private readonly recorder: UsageRecorder) {}
+  public constructor(private readonly recorder: UsageLedgerRecorder) {}
 
   public handlers(): Pick<StoryboardRpcHandlers, 'usage.read'> {
     return {

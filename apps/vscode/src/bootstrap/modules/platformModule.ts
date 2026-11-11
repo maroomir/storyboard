@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
-import { type IStoryboardLogger } from '@storyboard/story-engine';
+import { type IStoryboardLogger, type UsageLedgerRecorder } from '@storyboard/story-engine';
 import { StoryboardApplication } from '@storyboard/story-app';
 import { NodeSqlDatabaseHost } from '@storyboard/story-node';
 import {
@@ -19,10 +19,6 @@ import {
   createStoryboardHomeStores,
   type StoryboardHomeStores,
 } from '@/infrastructure/settings/storyboardHome';
-import {
-  createVscodeUsageLedgerFileSystem,
-  UsageRecorder,
-} from '@/infrastructure/ai/UsageRecorder';
 import { OutputChannelLogger } from '@/infrastructure/vscode/logger';
 import { VscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import { VscodeWorkspaceLocator } from '@/infrastructure/vscode/workspaceLocator';
@@ -53,7 +49,7 @@ export interface IPlatformServices extends Pick<
 > {
   readonly fileSystem: VscodeFileSystem;
   readonly homeStores: StoryboardHomeStores;
-  readonly usageRecorder: UsageRecorder;
+  readonly usageRecorder: UsageLedgerRecorder;
   readonly proposalReviewService: ProposalReviewService;
 }
 
@@ -81,10 +77,6 @@ export class PlatformModule implements IApplicationModule {
     });
     void migrateLegacySettings(context, homeStores, logger);
     const fileSystem: VscodeFileSystem = new VscodeFileSystem();
-    const usageRecorder: UsageRecorder = new UsageRecorder(
-      createVscodeUsageLedgerFileSystem(),
-      (message): void => logger.warn(message),
-    );
     const proposalReviewService: ProposalReviewService = new ProposalReviewService(context);
 
     const application: StoryboardApplication = new StoryboardApplication(
@@ -95,7 +87,6 @@ export class PlatformModule implements IApplicationModule {
         secretStore,
         configBridge,
         sqlDatabaseHost: new NodeSqlDatabaseHost(),
-        usageLedger: usageRecorder,
         resourceRoots: [
           vscode.Uri.file(homeStores.paths.home),
           ...(workspaceFolder === undefined
@@ -135,14 +126,13 @@ export class PlatformModule implements IApplicationModule {
       postGenerationUpdates: application.postGenerationUpdates,
       fileSystem,
       homeStores,
-      usageRecorder,
+      usageRecorder: application.usageLedger,
       proposalReviewService,
     };
     this.disposables.add(
       logger,
       homeStores,
       application,
-      usageRecorder,
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
       configBridge.onDidChange((): void => void askHiddenProviderConsent(configBridge)),
       proposalReviewService,

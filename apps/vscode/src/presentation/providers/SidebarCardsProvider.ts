@@ -19,7 +19,7 @@ import type {
   BibleSubjectKind,
   SidebarCardsInitialData,
 } from '@storyboard/story-model';
-import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
+import type { UsageLedgerRecorder } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
 
@@ -33,7 +33,7 @@ interface SidebarCardsProviderOptions {
 export interface SidebarCardsProvidersDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly cardSidebarRepository: ICardSidebarRepository;
-  readonly usageRecorder: UsageRecorder;
+  readonly usageRecorder: UsageLedgerRecorder;
 }
 
 export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.Disposable {

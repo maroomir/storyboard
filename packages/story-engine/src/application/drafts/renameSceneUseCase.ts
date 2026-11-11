@@ -359,9 +359,11 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       rewriteRevisionPlanText(raw, rename),
     );
 
-    for (const uri of [paths.usageLedger, joinUri(paths.cacheDirectory, 'studio-followups.json')]) {
-      await this.addRewrite(rewrites, uri, (raw) => rewriteMentionedJsonSceneStems(raw, rename));
-    }
+    await this.addRewrite(
+      rewrites,
+      joinUri(paths.cacheDirectory, 'studio-followups.json'),
+      (raw) => rewriteMentionedJsonSceneStems(raw, rename),
+    );
 
     await this.planCharacterCardRewrites(rewrites, paths, rename);
 

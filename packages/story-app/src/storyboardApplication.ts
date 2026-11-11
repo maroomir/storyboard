@@ -64,6 +64,7 @@ import {
   StudioFollowUpRepository,
   SummarizeChaptersUseCase,
   UpdateProjectContractUseCase,
+  UsageLedgerRecorder,
   UsageMeter,
   WorkspaceCaches,
   WorkspaceRunLocks,
@@ -114,7 +115,7 @@ export interface StoryboardApplicationDependencies {
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
   readonly sqlDatabaseHost: ISqlDatabaseHost;
-  readonly usageLedger?: IUsageSink;
+  readonly usageObserver?: IUsageSink;
   readonly resourceRoots?: readonly StoryUri[];
   readonly fetch?: NoteHttpFetch;
 }
@@ -134,6 +135,7 @@ interface EngineGraph {
   readonly logger: IStoryboardLogger;
   readonly caches: WorkspaceCaches;
   readonly runLocks: WorkspaceRunLocks;
+  readonly usageLedger: UsageLedgerRecorder;
   readonly usageMeter: UsageMeter;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
@@ -206,6 +208,7 @@ export class StoryboardApplication {
   public readonly logger: IStoryboardLogger;
   public readonly fileSystem: IFileSystem;
   public readonly usageMeter: UsageMeter;
+  public readonly usageLedger: UsageLedgerRecorder;
   public readonly postGenerationUpdates: PostGenerationUpdateManager;
   private readonly caches: WorkspaceCaches;
   public constructor(
@@ -238,6 +241,7 @@ export class StoryboardApplication {
     this.logger = services.logger;
     this.fileSystem = services.fileSystem;
     this.usageMeter = services.usageMeter;
+    this.usageLedger = services.usageLedger;
     this.postGenerationUpdates = services.postGenerationUpdates;
     this.caches = services.caches;
   }
@@ -269,6 +273,7 @@ export class StoryboardApplication {
 
   public async dispose(): Promise<void> {
     this.postGenerationUpdates.dispose();
+    this.usageLedger.dispose();
     await this.caches.closeAll();
   }
 }
@@ -286,17 +291,18 @@ function buildServices(
     requireConfiguredProvider: true,
     onRiskWarning: (message) => logger.warn(message),
   });
-  const usageMeter: UsageMeter = new UsageMeter();
-  const usageSink: IUsageSink = usageMeter.wrap(
-    recordUsageWithoutFailingPaidGeneration(dependencies.usageLedger, logger),
-  );
-  const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
-  const postGenerationUpdates: PostGenerationUpdateManager = new PostGenerationUpdateManager();
   const caches: WorkspaceCaches = new WorkspaceCaches({
     host: dependencies.sqlDatabaseHost,
     fileSystem,
   });
   const runLocks: WorkspaceRunLocks = new WorkspaceRunLocks({ caches });
+  const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder({ caches });
+  const usageMeter: UsageMeter = new UsageMeter();
+  const usageSink: IUsageSink = usageMeter.wrap(
+    recordUsageWithoutFailingPaidGeneration([usageLedger, dependencies.usageObserver], logger),
+  );
+  const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
+  const postGenerationUpdates: PostGenerationUpdateManager = new PostGenerationUpdateManager();
 
   const host: HostAdapters = {
     fileSystem,
@@ -342,6 +348,7 @@ function buildServices(
     logger,
     caches,
     runLocks,
+    usageLedger,
     usageMeter,
     postGenerationUpdates,
     bibleCandidateRepository: repositories.bibleCandidates,
@@ -446,19 +453,21 @@ function buildWorkspaceRepositories(
 }
 
 function recordUsageWithoutFailingPaidGeneration(
-  ledger: IUsageSink | undefined,
+  sinks: readonly (IUsageSink | undefined)[],
   logger: IStoryboardLogger,
 ): IUsageSink {
-  if (!ledger) {
-    return { record: async (): Promise<void> => undefined };
-  }
+  const presentSinks: readonly IUsageSink[] = sinks.filter(
+    (sink): sink is IUsageSink => sink !== undefined,
+  );
 
   return {
     record: async (workspaceRoot, usage): Promise<void> => {
-      try {
-        await ledger.record(workspaceRoot, usage);
-      } catch (error) {
-        logger.error('사용량 기록에 실패했습니다.', error);
+      for (const sink of presentSinks) {
+        try {
+          await sink.record(workspaceRoot, usage);
+        } catch (error) {
+          logger.error('사용량 기록에 실패했습니다.', error);
+        }
       }
     },
   };

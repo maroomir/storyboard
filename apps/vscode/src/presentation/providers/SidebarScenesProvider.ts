@@ -22,14 +22,14 @@ import type {
   SceneListItem,
   SidebarScenesInitialData,
 } from '@storyboard/story-model';
-import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
+import type { UsageLedgerRecorder } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from '@/presentation/providers/webviewHtml';
 import { sidebarViewIds, storyboardCommandIds } from '@/contributionIds';
 
 export interface SidebarScenesProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
-  readonly usageRecorder: UsageRecorder;
+  readonly usageRecorder: UsageLedgerRecorder;
 }
 
 export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode.Disposable {

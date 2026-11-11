@@ -169,7 +169,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       secretStore,
       configBridge,
       sqlDatabaseHost: new NodeSqlDatabaseHost(),
-      ...(options.usageSink === undefined ? {} : { usageLedger: options.usageSink }),
+      ...(options.usageSink === undefined ? {} : { usageObserver: options.usageSink }),
       resourceRoots: [
         NodeUri.file(homePaths.home),
         getStoryboardProjectPaths(workspaceRoot).metadataDirectory,

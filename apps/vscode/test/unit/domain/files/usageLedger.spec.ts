@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
 import {
-  appendLedgerEntryIfNew,
   computeUsageSummaryFromEntries,
   mergeUsageLedgerEntryIntoSummary,
-  parseUsageLedgerBytes,
-  serializeUsageLedger,
+  parseUsageLedgerEntry,
+  serializeUsageLedgerEntry,
   type UsageLedgerEntry,
   storyboardModelPricing
 } from "@storyboard/story-model"
@@ -118,32 +117,27 @@ describe("usageLedger", () => {
     expect(summary.scenes["s1"]?.cache).toEqual(summary.total.cache)
   })
 
-  it("parses legacy ledger entries that still carry costUsd 0 as priced", () => {
-    const bytes = new TextEncoder().encode(
+  it("reads an entry that still carries costUsd 0 as priced", () => {
+    const parsed = parseUsageLedgerEntry(
       JSON.stringify({
-        version: 1,
-        entries: [
-          {
-            id: "legacy",
-            recordedAt: "2026-01-01T00:00:00.000Z",
-            taskName: "sceneDraft",
-            providerId: "claude",
-            usage: { inputTokens: 10, outputTokens: 10 },
-            costUsd: 0,
-            attribution: {}
-          }
-        ]
+        id: "legacy",
+        recordedAt: "2026-01-01T00:00:00.000Z",
+        taskName: "sceneDraft",
+        providerId: "claude",
+        usage: { inputTokens: 10, outputTokens: 10 },
+        costUsd: 0,
+        attribution: {}
       })
     )
 
-    expect(computeUsageSummaryFromEntries(parseUsageLedgerBytes(bytes)).total).toEqual({
+    expect(computeUsageSummaryFromEntries(parsed === undefined ? [] : [parsed]).total).toEqual({
       costUsd: 0,
       tokens: 20,
       hasUnpricedUsage: false
     })
   })
 
-  it("roundtrips ledger JSON and recomputes summary", () => {
+  it("roundtrips one ledger entry and recomputes summary", () => {
     const entries: UsageLedgerEntry[] = [
       entry({
         id: "a",
@@ -154,34 +148,11 @@ describe("usageLedger", () => {
       })
     ]
 
-    const bytes = serializeUsageLedger(entries)
-    const parsed = parseUsageLedgerBytes(bytes)
+    const parsed = entries.flatMap((item) => {
+      const decoded = parseUsageLedgerEntry(serializeUsageLedgerEntry(item))
+      return decoded === undefined ? [] : [decoded]
+    })
     expect(parsed).toHaveLength(1)
     expect(computeUsageSummaryFromEntries(parsed)).toEqual(computeUsageSummaryFromEntries(entries))
-  })
-
-  it("warns and returns empty entries for invalid JSON", () => {
-    const warn = vi.fn()
-    const parsed = parseUsageLedgerBytes(new TextEncoder().encode("{"), warn)
-
-    expect(parsed).toEqual([])
-    expect(warn).toHaveBeenCalled()
-  })
-
-  it("skips append when entry id already exists", () => {
-    const first = entry({ id: "dup", taskName: "inlineCompletion", providerId: "mock", costUsd: 1, attribution: {} })
-    const second = entry({
-      id: "dup",
-      taskName: "inlineCompletion",
-      providerId: "mock",
-      costUsd: 2,
-      attribution: { primary: { kind: "scene", id: "x" } }
-    })
-
-    const { entries, appended } = appendLedgerEntryIfNew([first], second)
-
-    expect(appended).toBe(false)
-    expect(entries).toHaveLength(1)
-    expect(entries[0]?.costUsd).toBe(1)
   })
 })

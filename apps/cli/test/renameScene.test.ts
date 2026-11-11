@@ -139,10 +139,6 @@ beforeEach(() => {
     ].join('\n'),
   );
   write(
-    '.storyboard/cache/usage.json',
-    JSON.stringify({ entries: [{ attribution: { primary: { kind: 'scene', id: fromStem } } }] }),
-  );
-  write(
     '.storyboard/memory/personas/hana.json',
     `${JSON.stringify({ cardId: 'hana', updatedThroughScene: fromStem }, null, 2)}\n`,
   );
@@ -187,7 +183,7 @@ describe('RenameSceneUseCase', () => {
     expect(has(`.storyboard/cache/studio-sessions/scene/${fromStem}`)).toBe(false);
   });
 
-  it('renumbers the ledger and canon and follows the stem in memory, usage and cards', async () => {
+  it('renumbers the ledger and canon and follows the stem in memory and cards', async () => {
     await rename('04-night-market');
 
     const state = parseStoryState(read('.storyboard/memory/storyState.md'));
@@ -206,10 +202,6 @@ describe('RenameSceneUseCase', () => {
     });
     expect(untouched?.validFrom).toBe(5);
 
-    expect(JSON.parse(read('.storyboard/cache/usage.json'))).toEqual({
-      entries: [{ attribution: { primary: { kind: 'scene', id: '04-night-market' } } }],
-    });
-    expect(read('.storyboard/cache/usage.json')).not.toContain('\n');
     expect(JSON.parse(read('.storyboard/memory/personas/hana.json')).updatedThroughScene).toBe(
       '04-night-market',
     );
