@@ -35,6 +35,29 @@ describe("applyStudioPatch for cards", () => {
     expect(result.ok ? result.changedFields : []).toEqual(["traits"])
   })
 
+  it("takes a single string for a list field as one line per text line", () => {
+    const result = applyStudioPatch(
+      characterCard,
+      cardPatch([{ field: "voice", value: "말끝을 흐린다\n스승에게만 존댓말" }]),
+      "entityCard"
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.ok ? result.text : "").toContain("- 말끝을 흐린다")
+    expect(result.ok ? result.text : "").toContain("- 스승에게만 존댓말")
+  })
+
+  it("takes a single string for arc as the one change line", () => {
+    const result = applyStudioPatch(
+      characterCard,
+      cardPatch([{ field: "arc", value: "불 앞에서 숨을 고르게 된다" }]),
+      "entityCard"
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.ok ? result.text : "").toContain("불 앞에서 숨을 고르게 된다")
+  })
+
   it("replaces a scalar field", () => {
     const result = applyStudioPatch(
       characterCard,

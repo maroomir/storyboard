@@ -1,3 +1,4 @@
+import { getStatementFacetRow } from '#model/element/facetCatalog';
 import { cardSchema, type StoryboardCard } from '#model/format/card';
 import { parseCard, serializeCard } from '#model/format/files/card';
 import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
@@ -16,6 +17,21 @@ export type StudioPatchResult =
   | { readonly ok: false; readonly message: string };
 
 const protectedEntityCardFields: Set<string> = new Set(['id', 'type']);
+
+const entityCardTextListFields: ReadonlySet<string> = new Set([
+  'aliases',
+  'tags',
+  'traits',
+  'description',
+  'voice',
+  'catchphrases',
+  'desire',
+  'senses',
+  'layout',
+  'rules',
+]);
+
+const arcField: string = 'arc';
 
 const editableSceneCardFields: Set<string> = new Set([
   'title',
@@ -76,7 +92,7 @@ function applyEntityCardPatch(
   }
 
   const parsed: ZodSafeParseResult<StoryboardCard> = cardSchema.safeParse(
-    mergeChanges(card, changes),
+    mergeChanges(card, changes.map(acceptScalarForListField)),
   );
 
   if (!parsed.success) {
@@ -125,6 +141,32 @@ function applySceneCardPatch(
   } catch (error) {
     return { ok: false, message: `수정한 씬 카드가 형식에 맞지 않습니다: ${String(error)}` };
   }
+}
+
+function acceptScalarForListField(change: StudioCardFieldChange): StudioCardFieldChange {
+  if (typeof change.value !== 'string') {
+    return change;
+  }
+
+  if (entityCardTextListFields.has(change.field)) {
+    return { ...change, value: splitIntoLines(change.value) };
+  }
+
+  if (change.field === arcField) {
+    return {
+      ...change,
+      value: [{ stage: getStatementFacetRow('arc').label, summary: change.value.trim() }],
+    };
+  }
+
+  return change;
+}
+
+function splitIntoLines(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 function mergeChanges(
