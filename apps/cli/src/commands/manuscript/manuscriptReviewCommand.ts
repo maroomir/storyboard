@@ -22,6 +22,7 @@ export class ManuscriptReviewCommand implements ICommandHandler {
     usage: 'manuscript review [--show]',
     summary: '조립 원고를 검사합니다 (--show 는 캐시의 마지막 수정 계획을 읽기만, 모델을 부르지 않음)',
     flags: ['show'],
+    readsOnlyWithFlags: ['show'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {

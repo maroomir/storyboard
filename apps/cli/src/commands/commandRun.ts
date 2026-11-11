@@ -207,15 +207,23 @@ export class CommandRun {
   }
 
   private executeCommand(): Promise<CommandOutcome> {
-    const { command, invocation, target } = this.deps;
+    const { command, invocation } = this.deps;
     const { args, terminal } = invocation;
     const { container } = this;
 
-    return target.spec?.writesWorkspace === true
+    return this.isWritingRun()
       ? this.runHoldingWorkspaceLock(() =>
           command.execute({ container, args, stdout: terminal.stdout }),
         )
       : command.execute({ container, args, stdout: terminal.stdout });
+  }
+
+  private isWritingRun(): boolean {
+    const { invocation, target } = this.deps;
+    const isReadOnlyRun: boolean = (target.spec?.readsOnlyWithFlags ?? []).some((flag) =>
+      flagBoolean(invocation.args.flags, flag),
+    );
+    return target.spec?.writesWorkspace === true && !isReadOnlyRun;
   }
 
   private async runHoldingWorkspaceLock(
@@ -243,8 +251,8 @@ export class CommandRun {
     costUsd: number,
     draftSnapshot: DraftSnapshot | undefined,
   ): Promise<DispatchResult> {
-    const { invocation, target } = this.deps;
-    const isAction: boolean = target.spec?.writesWorkspace === true || invocation.verb === 'init';
+    const { invocation } = this.deps;
+    const isAction: boolean = this.isWritingRun() || invocation.verb === 'init';
     const stdout: string = this.renderOutcomeStdout(outcome, isAction);
     const draftChanges: string = await this.describeDraftChanges(outcome, draftSnapshot);
     const nextStep: string = this.shouldSuggestNextStep(outcome, isAction)
