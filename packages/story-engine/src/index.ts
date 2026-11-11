@@ -54,6 +54,7 @@ export * from '#engine/application/manuscript/reviewChapterWindows';
 export * from '#engine/application/manuscript/exportManuscriptUseCase';
 export * from '#engine/application/manuscript/reviewManuscriptUseCase';
 export * from '#engine/application/manuscript/summarizeChaptersUseCase';
+export * from '#engine/application/manuscript/chapterSummaryRefresher';
 export * from '#engine/application/novel/generateOutlineUseCase';
 export * from '#engine/application/novel/novelPipeline';
 export * from '#engine/application/novel/novelPipelinePorts';

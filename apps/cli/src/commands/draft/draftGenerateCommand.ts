@@ -8,7 +8,7 @@ import {
 } from '@/commands/draft/draftProgress';
 import { flagBoolean } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
-import { WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
+import { describeMissingChapterSummaries, WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
 import { sceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import {
   describeReviseOutcome,
@@ -44,6 +44,7 @@ export class DraftGenerateCommand implements ICommandHandler {
         title: `초안 ${pending}개 생성`,
         details: [
           `대상  초안이 없거나 카드보다 오래된 씬 ${pending}개 (전체 ${status.scenes.total}개)`,
+          ...describeMissingChapterSummaries(status),
         ],
       };
     });

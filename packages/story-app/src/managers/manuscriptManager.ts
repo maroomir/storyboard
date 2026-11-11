@@ -13,6 +13,7 @@ import type {
   SummarizeChaptersRequest,
   SummarizeChaptersResult,
   SummarizeChaptersUseCase,
+  ChapterSummaryRefresher,
 } from '@storyboard/story-engine';
 import type { ManuscriptExportFormat, StoryUri } from '@storyboard/story-model';
 
@@ -20,6 +21,7 @@ export interface ManuscriptManagerDependencies {
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
+  readonly chapterSummaryRefresher: ChapterSummaryRefresher;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly revisionPlanRecorder: RevisionPlanRecorder;
 }
@@ -37,6 +39,10 @@ export class ManuscriptManager {
 
   public readRevisionPlan(workspaceRoot: StoryUri): Promise<StoredRevisionPlan | undefined> {
     return this.deps.revisionPlanRecorder.readLatest(workspaceRoot);
+  }
+
+  public listMissingChapterSummaries(workspaceRoot: StoryUri): Promise<string[]> {
+    return this.deps.chapterSummaryRefresher.listMissing(workspaceRoot);
   }
 
   public summarizeChapters(request: SummarizeChaptersRequest): Promise<SummarizeChaptersResult> {

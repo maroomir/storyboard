@@ -177,6 +177,11 @@ function createContractInput(
   };
 }
 
+export function describeMissingChapterSummaries(status: WorkspaceStatus): string[] {
+  const { missing } = status.chapterSummaries;
+  return missing > 0 ? [`장 요약  비어 있는 ${missing}개 장을 생성 전에 다시 요약합니다 (그만큼 호출이 늘어남)`] : [];
+}
+
 export class WorkspaceInput {
   public constructor(private readonly container: CliContainer) {}
 

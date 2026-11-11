@@ -235,6 +235,7 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftS
     repositories: createTestRepositories({
       drafts: overrides.draftRepository ?? createDraftRepository(),
       project: { read: vi.fn(async () => fakeProject) },
+      chapterSummaries: { hasChapterPlan: vi.fn(async () => false) },
       sceneCache: overrides.sceneCacheRepository ?? createSceneCacheRepository(),
       scenes: overrides.sceneRepository ?? {
         read: vi.fn(async () => fakeScene),
