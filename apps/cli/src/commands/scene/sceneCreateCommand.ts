@@ -74,12 +74,10 @@ export class SceneCreateCommand implements ICommandHandler {
     slug: string | undefined,
     after: string | undefined,
   ): Promise<CommandOutcome> {
-    const sceneCount: number = (await container.drafts.listScenes(container.workspaceRoot)).length;
     const created: StudioCreateResult = await container.studio.create({
       workspaceRoot: container.workspaceRoot,
       kind: 'scene',
-      slug: slug ?? `scene-${sceneCount + 1}`,
-      name: slug ?? description,
+      ...(slug === undefined ? {} : { slug }),
       description,
       shouldPropose: false,
       ...(after === undefined ? {} : { after }),

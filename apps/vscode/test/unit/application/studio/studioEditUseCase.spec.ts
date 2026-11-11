@@ -179,4 +179,35 @@ describe("StudioCreateUseCase", () => {
       })
     ).toMatchObject({ ok: false, kind: "exists" })
   })
+
+  it("gives a card made from a description alone a provisional name and a numbered slug", async () => {
+    const createRequests: unknown[] = []
+    const builtNames: string[] = []
+    const create = new StudioCreateUseCase({
+      createCard: {
+        execute: async (request: { id: string; buildCard: (id: string) => { name: string } }) => {
+          createRequests.push(request)
+          builtNames.push(request.buildCard(request.id).name)
+          return { ok: true, kind: "created", id: "new-character-2", uri: vscode.Uri.file("/workspace/character/new-character-2.card") }
+        }
+      } as unknown as CreateCardUseCase,
+      createScene: {} as unknown as CreateSceneUseCase,
+      cards: {} as unknown as WorkspaceCards,
+      edit: {
+        execute: async () => ({ ok: true, kind: "applied", sessionId: "s", summary: "", message: "" })
+      } as unknown as StudioEditUseCase
+    })
+
+    const result = await create.execute({
+      workspaceRoot,
+      kind: "character",
+      description: "무뚝뚝한 열일곱 살 궁수",
+      shouldPropose: false,
+      isValidationEnabled: false
+    })
+
+    expect(result).toMatchObject({ ok: true, key: "new-character-2" })
+    expect(createRequests[0]).toMatchObject({ id: "new-character", whenIdIsTaken: "number-it" })
+    expect(builtNames).toEqual(["새 인물"])
+  })
 })
