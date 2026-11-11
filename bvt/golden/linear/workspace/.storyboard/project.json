@@ -1,13 +1,11 @@
 {
-  "version": "1.0.0",
-  "id": "992b9df0-f4fa-4808-ac50-27d030475f4e",
+  "version": "2.0.0",
+  "id": "54ea3735-8c61-4989-b4a5-c24c6a376bd8",
   "name": "골든 linear",
   "format": "novel",
   "language": "ko",
-  "createdAt": "2026-10-24T01:53:35.416Z",
-  "editor": {
-    "scenePrefixDigits": 2
-  },
+  "createdAt": "2026-11-11T15:52:59.174Z",
+  "editor": {},
   "setting": {
     "genre": "미스터리",
     "concept": "짧은 골든 작품",
