@@ -2,7 +2,7 @@ import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import { failure, success } from '@/commands/outcomes';
-import { sceneStemFrom } from '@/commands/sceneArguments';
+import { resolveSceneStemFrom } from '@/commands/sceneArguments';
 import { describeReviseOutcome, type ReviseDraftWorkflowResult } from '@storyboard/story-engine';
 
 export class DraftReviseCommand implements ICommandHandler {
@@ -17,7 +17,7 @@ export class DraftReviseCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const stem: string | undefined = sceneStemFrom(args);
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
     if (stem === undefined) {
       return failure('씬 stem을 지정해 주세요.');
     }

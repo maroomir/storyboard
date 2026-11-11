@@ -2,6 +2,7 @@ import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import { failure, success } from '@/commands/outcomes';
+import { resolveSceneStemFrom } from '@/commands/sceneArguments';
 import type { DraftReading } from '@storyboard/story-app';
 import type { StoryUri } from '@storyboard/story-model';
 
@@ -18,7 +19,7 @@ export class DraftShowCommand implements ICommandHandler {
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const stem: string | undefined = args.positionals[0]?.replace(/\.card$/, '');
+    const stem: string | undefined = await resolveSceneStemFrom(container, args);
 
     if (stem === undefined) {
       return failure('씬 stem 을 지정해 주세요: storyboard draft show <stem>');
