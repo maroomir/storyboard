@@ -1,3 +1,4 @@
+import { legacyCards } from '../../../stubs/cards';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ContinuityIssueLike, DraftCritiqueIssue, StyleDirective } from '@storyboard/story-model';
@@ -9,6 +10,7 @@ import {
   type StoryState,
   type StoryUri,
   getStoryboardProjectPaths,
+  joinStoryPath,
 } from '@storyboard/story-model';
 
 const checkContinuityMock = vi.fn(
@@ -171,7 +173,7 @@ function threadedWorkspace(): InMemoryFileSystem {
 }
 
 async function reviseAlleyScene(fs: InMemoryFileSystem): Promise<void> {
-  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
+  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, cards: legacyCards(fs, { characterDirectory: paths.characterDirectory, backgroundDirectory: paths.backgroundDirectory, narratorDirectory: paths.narratorDirectory, joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments) }), logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
       getTaskProvider: () => 'mock',
       getTaskAiConfig: () => ({ providerId: 'mock', model: 'mock-model' }),
     } as never, usageSink: { record: async (): Promise<void> => undefined } }), createTestRepositories());

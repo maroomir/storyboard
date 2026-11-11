@@ -59,6 +59,17 @@ export class ElementIndexStore {
   }
 
   public upsert(element: IndexedElement): void {
+    const current: IndexedElement | undefined = this.findByPath(element.path);
+    const isUnchanged: boolean =
+      current !== undefined &&
+      current.id === element.id &&
+      current.kind === element.kind &&
+      current.slug === element.slug &&
+      current.cardHash === element.cardHash;
+    if (isUnchanged) {
+      return;
+    }
+
     this.database.run(
       'INSERT OR REPLACE INTO element_index (path, uuid, kind, slug, card_hash) VALUES (?, ?, ?, ?, ?)',
       [element.path, element.id, element.kind, element.slug, element.cardHash],

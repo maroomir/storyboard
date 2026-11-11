@@ -10,6 +10,7 @@ NoteCandidateFile,
 StoryboardProject,
 BibleFact,
 BibleSubjectKind,
+  StoryboardCard,
 } from '@storyboard/story-model';
 
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
@@ -125,6 +126,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     }
 
     const createdCards: string[] = [];
+    const newCards: StoryboardCard[] = [];
     const candidates: NoteCardCandidate[] = [];
 
     for (const entry of plan.cards) {
@@ -134,10 +136,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
         !(await this.repositories.cardWriter.exists(workspaceRoot, entry.card.type, entry.card.id));
 
       if (isStillNew) {
-        await this.repositories.cardWriter.write(
-          workspaceRoot,
-          applyCardCollectProposals(entry.card, entry.changes),
-        );
+        newCards.push(applyCardCollectProposals(entry.card, entry.changes));
         createdCards.push(entry.card.id);
         continue;
       }
@@ -152,6 +151,8 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
         });
       }
     }
+
+    await this.repositories.cardWriter.writeAll(workspaceRoot, newCards);
 
     const file: NoteCandidateFile = addNoteCandidateSource(
       loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile,

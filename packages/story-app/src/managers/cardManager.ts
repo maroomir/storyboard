@@ -28,12 +28,12 @@ import type {
   IBackgroundFactConflictStore,
   CardCollectRepository,
   WorkspaceCaches,
+  WorkspaceCards,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
-  parseCard,
   type BackgroundFactConflict,
   type CardCollectProposal,
   type NarratorCard,
@@ -72,6 +72,7 @@ export interface CardManagerDependencies {
   readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly fileSystem: IFileSystem;
   readonly caches: WorkspaceCaches;
+  readonly cards: WorkspaceCards;
 }
 
 export class CardManager {
@@ -88,21 +89,17 @@ export class CardManager {
   }
 
   public async read(workspaceRoot: StoryUri, id: string): Promise<CardReading | undefined> {
-    const candidates: readonly CardReading['category'][] = ['character', 'background'];
-
-    for (const category of candidates) {
-      const uri: StoryUri =
-        category === 'character'
-          ? characterCardPath(workspaceRoot, id)
-          : backgroundCardPath(workspaceRoot, id);
-
-      if (await this.deps.fileSystem.exists(uri)) {
-        const text: string = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
-        return { category, uri, card: parseCard(text) };
-      }
+    const card: StoryboardCard | undefined = await this.deps.cards.findCard(workspaceRoot, id);
+    if (card === undefined) {
+      return undefined;
     }
 
-    return undefined;
+    const category: CardReading['category'] = card.type === 'character' ? 'character' : 'background';
+    const uri: StoryUri =
+      category === 'character'
+        ? characterCardPath(workspaceRoot, id)
+        : backgroundCardPath(workspaceRoot, id);
+    return { category, uri, card };
   }
 
   public async listBackgroundFactConflicts(

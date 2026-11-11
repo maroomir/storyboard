@@ -9,6 +9,8 @@ import { findCommand } from '@/commands/index';
 import { createCliContainer, type CliContainer } from '@/container';
 import type { ChoiceRequest, IPrompter, TextRequest } from '@/adapters/prompter';
 
+import { isLegacyCardPath, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+
 let home: string;
 let workspace: string;
 let previousHome: string | undefined;
@@ -69,7 +71,13 @@ async function run(verb: string, parsed: ParsedArguments, prompter?: IPrompter) 
 }
 
 function write(relativePath: string, lines: readonly string[]): void {
-  writeFileSync(join(workspace, relativePath), `${lines.join('\n')}\n`);
+  const text: string = `${lines.join('\n')}\n`;
+  if (isLegacyCardPath(relativePath)) {
+    writeCardBundleFromYaml(workspace, text);
+    return;
+  }
+
+  writeFileSync(join(workspace, relativePath), text);
 }
 
 beforeEach(async () => {
@@ -135,7 +143,7 @@ describe('card interview', () => {
 
     const promoted = await run('card promote', args(['card', 'promote']));
     expect(promoted.ok).toBe(true);
-    expect(readFileSync(join(workspace, 'character/hana.card'), 'utf8')).toContain('[Mock AI] 몰릴 때');
+    expect(await readCardYaml(workspace, 'hana')).toContain('[Mock AI] 몰릴 때');
   });
 
   it('lets the writer rename a written answer to a new value and honours --limit', async () => {

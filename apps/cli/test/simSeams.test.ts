@@ -12,6 +12,8 @@ import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer, type CliContainerOptions } from '@/container';
 
+import { readBundleText, writeCardBundleFromYaml } from './fixtures/cardBundles';
+
 let home: string;
 let workspace: string;
 let previousHome: string | undefined;
@@ -63,12 +65,9 @@ beforeEach(async () => {
   mkdirSync(join(workspace, 'character'), { recursive: true });
   mkdirSync(join(workspace, 'background'), { recursive: true });
   mkdirSync(join(workspace, 'scene'), { recursive: true });
-  writeFileSync(
-    join(workspace, 'character', 'elia.card'),
-    'type: character\nid: elia\nname: 엘리아\nrole: main\n',
-  );
-  writeFileSync(
-    join(workspace, 'background', 'gate.card'),
+  writeCardBundleFromYaml(workspace, 'type: character\nid: elia\nname: 엘리아\nrole: main\n');
+  writeCardBundleFromYaml(
+    workspace,
     'type: location\nid: gate\nname: 학교 정문\nlocationKind: place\ndescription:\n  - 아침의 교문.\n',
   );
   writeFileSync(
@@ -152,11 +151,15 @@ describe('fixture mutation', () => {
   }
 
   it('leaves the character and background cards byte-identical', async () => {
-    const before = ['character/elia.card', 'background/gate.card'].map(textOf);
+    const cardTexts = (): string[] => [
+      readBundleText(workspace, 'character', 'elia'),
+      readBundleText(workspace, 'background', 'gate'),
+    ];
+    const before = cardTexts();
 
     await generateScene();
 
-    expect(['character/elia.card', 'background/gate.card'].map(textOf)).toEqual(before);
+    expect(cardTexts()).toEqual(before);
   });
 
   it('rewrites the scene card, which is why a run needs a scratch copy', async () => {

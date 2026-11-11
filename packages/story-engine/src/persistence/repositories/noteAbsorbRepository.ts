@@ -2,7 +2,6 @@ import { ProjectRepository } from '#engine/persistence/repositories/projectRepos
 import {
   extractInlineSceneSummary,
   joinStoryPath,
-  parseCard,
   serializeSceneCard,
   serializeSynopsisMarkdown,
   type OutlineSynopsis,
@@ -10,8 +9,6 @@ import {
   type StoryUri,
   type StoryboardCard,
   type StoryboardProject,
-  backgroundCardPath,
-  characterCardPath,
   getStoryboardProjectPaths,
   mergeVoiceSeeds,
   noteCandidateFileSchema,
@@ -38,6 +35,7 @@ import type {
   VoiceSeeds,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { ZodSafeParseResult } from 'zod';
 
 function encodeText(text: string): Uint8Array {
@@ -65,7 +63,10 @@ function unreadableCandidateFile(cause: unknown): NoteCandidateFileError {
 }
 
 export class NoteAbsorbRepository implements INoteAbsorbRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async saveBundle(workspaceRoot: StoryUri, bundle: NoteBundle): Promise<void> {
     await this.writeCacheFile(workspaceRoot, 'noteSource', encodeJson(bundle));
@@ -125,16 +126,11 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     cardType: BibleSubjectKind,
     id: string,
   ): Promise<StoryboardCard | undefined> {
-    const uri: StoryUri =
-      cardType === 'character'
-        ? characterCardPath(workspaceRoot, id)
-        : backgroundCardPath(workspaceRoot, id);
+    const card: StoryboardCard | undefined = await this.cards.findCard(workspaceRoot, id);
+    const isRequestedKind: boolean =
+      card !== undefined && (card.type === 'character') === (cardType === 'character');
 
-    if (!(await this.fileSystem.exists(uri))) {
-      return undefined;
-    }
-
-    return parseCard(new TextDecoder().decode(await this.fileSystem.readFile(uri)));
+    return isRequestedKind ? card : undefined;
   }
 
   public async sceneExists(workspaceRoot: StoryUri, fileName: string): Promise<boolean> {

@@ -696,7 +696,7 @@ export class InterviewSessionUseCase {
     }
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(context.workspaceRoot);
-    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem, this.host.cards);
     try {
       const narration: NarrationDirective | undefined = await resolver.resolveNarration(
         paths,

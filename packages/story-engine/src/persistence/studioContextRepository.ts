@@ -1,6 +1,8 @@
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
   backgroundCardPath,
+  bundleRelativePath,
+  formatBundleDirectoryName,
   characterCardPath,
   characterMatchTokens,
   detectCharactersInText,
@@ -11,6 +13,7 @@ import {
   isIgnoredSampleCardFileName,
   isSafeStudioEntityKey,
   nextDraftHistoryRevision,
+  parseCard,
   parseDraft,
   parseSceneFileName,
   sceneContextPaths,
@@ -23,6 +26,7 @@ import type {
   RevisionPlanEntry,
   SceneContext,
   SceneFile,
+  StatementSource,
   StoryboardCard,
   StoryboardProjectPaths,
   StoryUri,
@@ -41,6 +45,7 @@ import type {
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: StudioAgentEntityKind;
@@ -82,7 +87,7 @@ function cardPathFor(
 }
 
 function relativeCardPath(cardKind: BibleSubjectKind, cardId: string): string {
-  return `${cardKind}/${cardId}.card`;
+  return bundleRelativePath(cardKind, formatBundleDirectoryName(cardKind, { slug: cardId }));
 }
 
 function sceneDeclaresCard(scene: SceneFile, cardId: string, cardKind: BibleSubjectKind): boolean {
@@ -131,12 +136,15 @@ function draftBodyLength(rawDraft: string): number {
   }
 }
 
+const studioSource: StatementSource = { origin: 'studio' };
+
 export class StudioContextRepository {
   private readonly files: WorkspaceFiles;
 
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly revisionPlans: RevisionPlanRecorder,
+    private readonly cards: WorkspaceCards,
   ) {
     this.files = new WorkspaceFiles(fileSystem);
   }
@@ -219,11 +227,13 @@ export class StudioContextRepository {
     cardId: string,
   ): Promise<StudioEntityContext | undefined> {
     const targetUri: StoryUri = cardPathFor(workspaceRoot, cardKind, cardId);
-    const baseline: string | undefined = await this.readTextOrUndefined(targetUri);
+    const card: StoryboardCard | undefined = await this.readCardOrUndefined(workspaceRoot, cardId);
 
-    if (baseline === undefined) {
+    if (card === undefined) {
       return undefined;
     }
+
+    const baseline: string = serializeCard(card);
 
     const relatedScenes: string[] = await this.readScenesFeaturingCard(
       workspaceRoot,
@@ -333,8 +343,9 @@ export class StudioContextRepository {
     switch (request.kind) {
       case 'character':
       case 'background': {
-        const card: StoryboardCard | undefined = await this.files.readCardOrUndefined(
-          cardPathFor(workspaceRoot, request.kind, request.key),
+        const card: StoryboardCard | undefined = await this.readCardOrUndefined(
+          workspaceRoot,
+          request.key,
         );
         return card ? serializeCard(card).trim() : undefined;
       }
@@ -378,11 +389,9 @@ export class StudioContextRepository {
     cardKind: BibleSubjectKind,
     cardId: string,
   ): Promise<StudioCardStage | undefined> {
-    const card: StoryboardCard | undefined = await this.files.readCardOrUndefined(
-      cardPathFor(workspaceRoot, cardKind, cardId),
-    );
+    const card: StoryboardCard | undefined = await this.readCardOrUndefined(workspaceRoot, cardId);
 
-    if (!card) {
+    if (!card || (cardKind === 'character') !== (card.type === 'character')) {
       return undefined;
     }
 
@@ -433,7 +442,7 @@ export class StudioContextRepository {
     scene: SceneFile,
   ): Promise<StudioStageCard[]> {
     try {
-      const context: SceneContext = await new SceneContextReader(this.fileSystem).build(
+      const context: SceneContext = await new SceneContextReader(this.fileSystem, this.cards).build(
         sceneContextPaths(paths),
         scene,
       );
@@ -503,6 +512,30 @@ export class StudioContextRepository {
       return entry.remainingBlocking === 0 ? 'clean' : 'issues';
     } catch {
       return 'unreviewed';
+    }
+  }
+
+  public async hasCard(
+    workspaceRoot: StoryUri,
+    cardKind: BibleSubjectKind,
+    cardId: string,
+  ): Promise<boolean> {
+    const card: StoryboardCard | undefined = await this.readCardOrUndefined(workspaceRoot, cardId);
+    return card !== undefined && (card.type === 'character') === (cardKind === 'character');
+  }
+
+  public async applyEntityCardText(workspaceRoot: StoryUri, cardText: string): Promise<StoryUri> {
+    return await this.cards.writeCard(workspaceRoot, parseCard(cardText), studioSource);
+  }
+
+  private async readCardOrUndefined(
+    workspaceRoot: StoryUri,
+    cardId: string,
+  ): Promise<StoryboardCard | undefined> {
+    try {
+      return await this.cards.findCard(workspaceRoot, cardId);
+    } catch {
+      return undefined;
     }
   }
 

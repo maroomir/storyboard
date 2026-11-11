@@ -12,8 +12,6 @@ import {
   parseCard,
   parseSceneCard,
   isBackgroundCard,
-  backgroundCardPath,
-  characterCardPath,
   isSafeStudioEntityKey,
 } from '@storyboard/story-model';
 
@@ -23,7 +21,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 export interface StudioCardToolResolverDependencies {
   readonly aiGateway: AiGateway;
-  readonly cards: Pick<CardManager, 'collectProposals'>;
+  readonly cards: Pick<CardManager, 'collectProposals' | 'read'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -37,11 +35,16 @@ export interface StudioCardToolResolverInput {
 
 const maxReportedItems: number = 15;
 
-async function runRelationCheck(input: StudioCardToolResolverInput): Promise<string> {
+type CardReader = Pick<CardManager, 'read'>;
+
+async function runRelationCheck(
+  input: StudioCardToolResolverInput,
+  cards: CardReader,
+): Promise<string> {
   const lines: string[] =
     input.entity.kind === 'scene'
-      ? await checkSceneReferences(input)
-      : await checkCardRelations(input);
+      ? await checkSceneReferences(input, cards)
+      : await checkCardRelations(input, cards);
 
   if (lines.length === 0) {
     return '[도구 결과: relationCheck] 끊어진 참조가 없다.';
@@ -50,12 +53,15 @@ async function runRelationCheck(input: StudioCardToolResolverInput): Promise<str
   return [`[도구 결과: relationCheck] 문제 ${lines.length}건`, ...lines].join('\n');
 }
 
-async function checkSceneReferences(input: StudioCardToolResolverInput): Promise<string[]> {
+async function checkSceneReferences(
+  input: StudioCardToolResolverInput,
+  cards: CardReader,
+): Promise<string[]> {
   const scene: SceneCard = parseSceneCard(input.baseline);
   const lines: string[] = [];
 
   for (const id of scene.characters ?? []) {
-    if (!(await cardExists(characterCardPath, input.workspaceRoot, id))) {
+    if (!(await hasCardOfKind(cards, input.workspaceRoot, 'character', id))) {
       lines.push(`- characters의 ${id} — character/${id}.card 가 없다.`);
     }
   }
@@ -64,7 +70,7 @@ async function checkSceneReferences(input: StudioCardToolResolverInput): Promise
 
   if (
     location !== undefined &&
-    !(await cardExists(backgroundCardPath, input.workspaceRoot, location))
+    !(await hasCardOfKind(cards, input.workspaceRoot, 'background', location))
   ) {
     lines.push(`- location의 ${location} — background/${location}.card 가 없다.`);
   }
@@ -72,13 +78,16 @@ async function checkSceneReferences(input: StudioCardToolResolverInput): Promise
   return lines;
 }
 
-async function checkCardRelations(input: StudioCardToolResolverInput): Promise<string[]> {
+async function checkCardRelations(
+  input: StudioCardToolResolverInput,
+  cards: CardReader,
+): Promise<string[]> {
   const card: StoryboardCard = parseCard(input.baseline);
   const lines: string[] = [];
 
   if (isBackgroundCard(card)) {
     for (const id of card.characterIds) {
-      if (!(await cardExists(characterCardPath, input.workspaceRoot, id))) {
+      if (!(await hasCardOfKind(cards, input.workspaceRoot, 'character', id))) {
         lines.push(`- characterIds의 ${id} — character/${id}.card 가 없다.`);
       }
     }
@@ -87,18 +96,18 @@ async function checkCardRelations(input: StudioCardToolResolverInput): Promise<s
   }
 
   for (const relation of card.relations ?? []) {
-    const targetText: string | undefined = isSafeStudioEntityKey(relation.target)
-      ? await readCardText(characterCardPath(input.workspaceRoot, relation.target))
+    const target: StoryboardCard | undefined = isSafeStudioEntityKey(relation.target)
+      ? (await cards.read(input.workspaceRoot, relation.target))?.card
       : undefined;
 
-    if (targetText === undefined) {
+    if (target === undefined || isBackgroundCard(target)) {
       lines.push(
         `- 관계 ${relation.target}(${relation.type}) — character/${relation.target}.card 가 없다.`,
       );
       continue;
     }
 
-    if (!hasRelationBack(targetText, card.id)) {
+    if (!(target.relations ?? []).some((back) => back.target === card.id)) {
       lines.push(
         `- 관계 ${relation.target}(${relation.type}) — 상대 카드에는 ${card.id} 방향 관계가 없다(일방향).`,
       );
@@ -108,41 +117,18 @@ async function checkCardRelations(input: StudioCardToolResolverInput): Promise<s
   return lines;
 }
 
-function hasRelationBack(targetCardText: string, sourceId: string): boolean {
-  try {
-    const target: StoryboardCard = parseCard(targetCardText);
-    return (
-      !isBackgroundCard(target) &&
-      (target.relations ?? []).some((relation) => relation.target === sourceId)
-    );
-  } catch {
-    return false;
-  }
-}
-
-export async function cardExists(
-  pathOf: (root: vscode.Uri, id: string) => vscode.Uri,
-  root: vscode.Uri,
+async function hasCardOfKind(
+  cards: CardReader,
+  workspaceRoot: vscode.Uri,
+  kind: 'character' | 'background',
   id: string,
 ): Promise<boolean> {
   if (!isSafeStudioEntityKey(id)) {
     return false;
   }
 
-  try {
-    await vscode.workspace.fs.stat(pathOf(root, id));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function readCardText(uri: vscode.Uri): Promise<string | undefined> {
-  try {
-    return new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
-  } catch {
-    return undefined;
-  }
+  const reading: Awaited<ReturnType<CardReader['read']>> = await cards.read(workspaceRoot, id);
+  return reading?.category === kind;
 }
 
 function describeCollectProposal(proposal: CardCollectProposal): string {
@@ -179,7 +165,7 @@ export class StudioCardInvokeResolver {
         case 'cardAudit':
           return await this.runAudit();
         case 'relationCheck':
-          return await runRelationCheck(this.input);
+          return await runRelationCheck(this.input, this.deps.cards);
         default:
           return `[도구 실패: ${request.tool}] 이 대화에서는 쓸 수 없는 도구다.`;
       }

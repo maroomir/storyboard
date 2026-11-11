@@ -3,13 +3,10 @@ import {
   extractDraftBody,
   formatBibleFactLines,
   formatStoryStateForPrompt,
-  isBackgroundCard,
-  isIgnoredSampleCardFileName,
   isStaleChapterSection,
   parseSceneCard,
   parseSceneFileName,
   readBibleFile,
-  readCardFile,
   readStoryState,
   resolveSceneBackground,
   resolveSceneCharacters,
@@ -30,18 +27,14 @@ import type {
   SceneFile,
   SceneFileNameParts,
   StoryBible,
-  StoryboardCard,
   StoryState,
   StoryUri,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 const summaryContextBudget: number = 8000;
 const previousDraftTailLength: number = 1000;
-
-function isWorkingCardFileName(name: string): boolean {
-  return name.endsWith('.card') && !isIgnoredSampleCardFileName(name);
-}
 
 function dropStaleChapters(content: string): string | undefined {
   if (content.length === 0) {
@@ -178,17 +171,18 @@ function selectSceneCharacterKnowledge(
 }
 
 export class SceneContextReader {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async build(paths: SceneContextWorkspacePaths, scene: SceneFile): Promise<SceneContext> {
-    const [allCharacters, allBackgrounds] = await Promise.all([
-      this.listCards(paths.characterDirectory, paths, (card) =>
-        card.type === 'character' ? card : undefined,
-      ),
-      this.listCards(paths.backgroundDirectory, paths, (card) =>
-        isBackgroundCard(card) ? card : undefined,
-      ),
+    const roster: CardRoster = await this.cards.loadRoster(paths.workspaceRoot, [
+      'character',
+      'background',
     ]);
+    const allCharacters: readonly CharacterCard[] = roster.characters;
+    const allBackgrounds: readonly BackgroundCard[] = roster.backgrounds;
 
     const characters: readonly CharacterCard[] = resolveSceneCharacters(scene, allCharacters);
     const background: BackgroundCard | undefined = resolveSceneBackground(scene, allBackgrounds);
@@ -278,34 +272,6 @@ export class SceneContextReader {
       ...(characterKnowledge === undefined ? {} : { characterKnowledge }),
       ...(characterRelations === undefined ? {} : { characterRelations }),
     };
-  }
-
-  private async listCards<T extends StoryboardCard>(
-    directory: StoryUri,
-    paths: SceneContextWorkspacePaths,
-    pick: (card: StoryboardCard) => T | undefined,
-  ): Promise<readonly T[]> {
-    try {
-      const entries: FileSystemDirectoryEntry[] = await this.fileSystem.readDirectory(directory);
-      const cardFiles: FileSystemDirectoryEntry[] = entries.filter(
-        ([name, entry]) => entry.type === 'file' && isWorkingCardFileName(name),
-      );
-
-      const cards: (T | undefined)[] = await Promise.all(
-        cardFiles.map(async ([name]) => {
-          const uri: StoryUri = paths.joinPath(directory, name);
-          try {
-            return pick(await readCardFile(uri, this.fileSystem));
-          } catch {
-            return undefined;
-          }
-        }),
-      );
-
-      return cards.filter((card): card is T => card !== undefined);
-    } catch {
-      return [];
-    }
   }
 
   private async readRollingSummary(paths: SceneContextWorkspacePaths): Promise<string | undefined> {

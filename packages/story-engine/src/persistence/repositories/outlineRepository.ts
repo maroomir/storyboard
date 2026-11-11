@@ -1,5 +1,5 @@
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type {
   StoryUri,
   ChapterPlan,
@@ -20,7 +20,10 @@ import {
 import { NarratorCardRepository } from '#engine/persistence/repositories/narratorCardRepository';
 import type { IOutlineRepository } from '#engine/application/novel/novelPipelinePorts';
 export class OutlineRepository implements IOutlineRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async hasExisting(workspaceRoot: StoryUri): Promise<boolean> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
@@ -37,14 +40,16 @@ export class OutlineRepository implements IOutlineRepository {
   public async loadCharacterBriefs(
     workspaceRoot: StoryUri,
   ): Promise<readonly OutlineCharacterBrief[]> {
-    return await new WorkspaceFiles(this.fileSystem).listCharacterBriefs(
-      getStoryboardProjectPaths(workspaceRoot).characterDirectory,
-    );
+    return (await this.cards.loadRoster(workspaceRoot, ['character'])).characters.map((card) => ({
+      id: card.id,
+      name: card.name,
+      role: card.role,
+    }));
   }
 
   public async loadNarratorIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
     const narrators: ReadonlyMap<string, NarratorCard> = await new NarratorCardRepository(
-      this.fileSystem,
+      this.cards,
     ).list(workspaceRoot);
 
     return [...narrators.keys()];

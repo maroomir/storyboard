@@ -1,3 +1,4 @@
+import { parseCard } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -80,7 +81,18 @@ function fakeDeps(): FakeDeps {
       createService: () => ({ auditStudioEntity: audit }),
       getTaskProvider: () => 'mock',
     },
-    cards: { collectProposals: collect },
+    cards: {
+      collectProposals: collect,
+      read: async (_root: unknown, id: string) => {
+        for (const category of ['character', 'background'] as const) {
+          const text = files.get(`/workspace/${category}/${id}.card`);
+          if (text !== undefined) {
+            return { category, uri: vscode.Uri.file(`/workspace/${category}/${id}.card`), card: parseCard(text) };
+          }
+        }
+        return undefined;
+      },
+    },
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
   } as unknown as StudioCardToolResolverDependencies;
 

@@ -1,3 +1,4 @@
+import { cardsFromFiles } from "../../../stubs/cards"
 import * as vscode from "vscode"
 import { createMemoryRevisionPlans } from "../../../stubs/caches"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -12,7 +13,7 @@ import { vscodeFileSystem } from "@/infrastructure/vscode/vscodeFileSystem"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { StudioProposalRpc } from "@/presentation/messaging/studioProposalRpcHandlers"
 import type { ProposalReviewService } from "@/presentation/providers/proposalReviewService"
-import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
+import { parseCard, serializeCard, storyboardMessageProtocolVersion } from "@storyboard/story-model"
 import type { StudioChatTurn, StudioEntity } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
@@ -68,7 +69,7 @@ function proposalTurn(overrides: Partial<Record<string, unknown>> = {}): StudioC
     summary: "역할 변경",
     targetFile: "character/seorin.card",
     patch: { target: "card", changes: [{ field: "role", value: "supporting" }] },
-    baselineHash: hashBaseline(cardText),
+    baselineHash: hashBaseline(serializeCard(parseCard(cardText))),
     validation: { state: "pass", warnings: [] },
     status: "pending",
     ...overrides
@@ -112,7 +113,7 @@ function bridgeWith(): FakeWebview {
         archiveDraftWhenHistoryIsKept: (root, stem): Promise<string | undefined> =>
           new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
       },
-      studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans()) },
+      studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text))) },
       logger: harnessLogger,
       getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot,
       createFollowUpId: (): string => "follow-1"

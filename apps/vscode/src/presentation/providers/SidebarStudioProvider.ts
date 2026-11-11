@@ -44,7 +44,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly sessionRepository: IStudioSessionRepository,
     private readonly studio: Pick<StudioManager, 'chat' | 'context'>,
     private readonly aiGateway: AiGateway,
-    private readonly cards: Pick<CardManager, 'collectProposals' | 'create'>,
+    private readonly cards: Pick<CardManager, 'collectProposals' | 'create' | 'read'>,
     private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,

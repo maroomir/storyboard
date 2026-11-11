@@ -2,21 +2,26 @@ import type { IExtensionCommand } from '@/presentation/commands/extensionCommand
 import * as vscode from 'vscode';
 
 import { validateCardRenameId } from '@/infrastructure/vscode/cardRenameEdit';
+import type { CardManager } from '@storyboard/story-app';
+import type { RenameCardResult } from '@storyboard/story-engine';
 import {
-  backgroundCardPath,
-  characterCardPath,
   getStoryboardProjectPaths,
   parseCardIdFromPath,
   studioSessionEntityDirectory,
-  isIgnoredSampleCardFileName,
   type StoryUri,
   type StoryboardProjectPaths,
   type BibleSubjectKind,
 } from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 
+export interface RenameCardCommandDependencies {
+  readonly cards: Pick<CardManager, 'rename'>;
+}
+
 export abstract class RenameCardCommandBase implements IExtensionCommand {
   public abstract readonly id: string;
+
+  public constructor(private readonly dependencies: RenameCardCommandDependencies) {}
 
   public abstract run(...args: never[]): unknown;
 
@@ -54,23 +59,15 @@ export abstract class RenameCardCommandBase implements IExtensionCommand {
       return;
     }
 
-    const newUri: StoryUri =
-      kind === 'character'
-        ? characterCardPath(workspaceFolder.uri, newId)
-        : backgroundCardPath(workspaceFolder.uri, newId);
+    const renamed: RenameCardResult = await this.dependencies.cards.rename({
+      workspaceRoot: workspaceFolder.uri,
+      category: kind,
+      fromId: oldId,
+      toId: newId,
+    });
 
-    if (await uriExists(newUri)) {
-      await vscode.window.showWarningMessage(`이미 존재하는 카드입니다: ${newId}`);
-      return;
-    }
-
-    const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
-    edit.renameFile(cardUri, newUri, { overwrite: false });
-
-    const applied: boolean = await vscode.workspace.applyEdit(edit);
-
-    if (!applied) {
-      await vscode.window.showErrorMessage('카드 rename에 실패했습니다.');
+    if (!renamed.ok) {
+      await vscode.window.showWarningMessage(renamed.message);
       return;
     }
 
@@ -116,9 +113,7 @@ export abstract class RenameCardCommandBase implements IExtensionCommand {
       return undefined;
     }
 
-    const fileName: string = candidateUri.path.split('/').at(-1) ?? '';
-
-    if (!fileName.endsWith('.card') || isIgnoredSampleCardFileName(fileName)) {
+    if (parseCardIdFromPath(candidateUri) === undefined) {
       void vscode.window.showErrorMessage('Storyboard 카드 파일만 rename할 수 있습니다.');
       return undefined;
     }

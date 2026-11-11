@@ -1,8 +1,7 @@
 import {
+  characterCardPath,
   getStoryboardProjectPaths,
   isCharacterRole,
-  isIgnoredSampleCardFileName,
-  parseCard,
   parseDraft,
   readDraftFile,
 } from '@storyboard/story-model';
@@ -11,16 +10,19 @@ import type {
   CharacterRosterEntry,
   Draft,
   RelationListCharacter,
-  StoryboardCard,
   StoryUri,
 } from '@storyboard/story-model';
 import type { CollectDraft } from '#engine/ai/cardCollectBuilder';
 import type { ICardCollectRepository } from '#engine/application/cards/cardRepositories';
 import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 export class CardCollectRepository implements ICardCollectRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CharacterRef[]> {
     const characters: RelationListCharacter[] = await this.listRelationCharacters(workspaceRoot);
@@ -37,40 +39,20 @@ export class CardCollectRepository implements ICardCollectRepository {
   }
 
   public async listRelationCharacters(workspaceRoot: StoryUri): Promise<RelationListCharacter[]> {
-    const uris: StoryUri[] = await new WorkspaceFiles(this.fileSystem).listCardUris(
-      getStoryboardProjectPaths(workspaceRoot).characterDirectory,
-    );
-    const listCharacters: RelationListCharacter[] = [];
+    const characters: RelationListCharacter[] = (
+      await this.cards.loadRoster(workspaceRoot, ['character'])
+    ).characters.map((card) => ({
+      id: card.id,
+      name: card.name,
+      ...(card.role === undefined ? {} : { role: card.role }),
+      uri: characterCardPath(workspaceRoot, card.id).toString(),
+      relations: (card.relations ?? []).map((relation) => ({
+        target: relation.target,
+        type: relation.type,
+      })),
+    }));
 
-    for (const uri of uris) {
-      if (isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? '')) {
-        continue;
-      }
-
-      try {
-        const raw: string = new TextDecoder().decode(await this.fileSystem.readFile(uri));
-        const card: StoryboardCard = parseCard(raw);
-
-        if (card.type !== 'character') {
-          continue;
-        }
-
-        listCharacters.push({
-          id: card.id,
-          name: card.name,
-          ...(card.role === undefined ? {} : { role: card.role }),
-          uri: uri.toString(),
-          relations: (card.relations ?? []).map((relation) => ({
-            target: relation.target,
-            type: relation.type,
-          })),
-        });
-      } catch {
-        continue;
-      }
-    }
-
-    return listCharacters.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
+    return characters.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
   }
 
   public async loadDrafts(workspaceRoot: StoryUri): Promise<readonly CollectDraft[]> {

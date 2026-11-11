@@ -24,6 +24,8 @@ import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
+import { readBundleText, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
+
 const vault = join(__dirname, 'fixtures', 'notes', 'obsidianVault', '달의 문');
 
 let home: string;
@@ -279,11 +281,11 @@ describe('notes absorb', () => {
 
     expect(outcome.ok).toBe(true);
 
-    const hana = readFileSync(join(workspace, 'character', 'hana.card'), 'utf8');
+    const hana = await readCardYaml(workspace, 'hana');
     expect(hana).toContain('name: 하나');
     expect(hana).toContain('target: jun');
-    expect(existsSync(join(workspace, 'character', 'profile', 'hana.png'))).toBe(true);
-    expect(readFileSync(join(workspace, 'background', 'harbor.card'), 'utf8')).toContain('- jun');
+    expect(existsSync(join(workspace, 'character', 'hana.card', 'profile.png'))).toBe(true);
+    expect(await readCardYaml(workspace, 'harbor')).toContain('name: 항구');
 
     const scene = readFileSync(join(workspace, 'scene', '01-high-tide.card'), 'utf8');
     expect(scene).toContain('location: harbor');
@@ -344,12 +346,11 @@ describe('notes absorb', () => {
   });
 
   it('turns notes about an existing card into candidates that card promote applies', async () => {
-    const hanaPath = join(workspace, 'character', 'hana.card');
-    writeFileSync(
-      hanaPath,
+    writeCardBundleFromYaml(
+      workspace,
       'type: character\nid: hana\nname: 하나\nrole: main\nattributes:\n  age: 17\ndescription:\n  - 등대지기의 손녀.\n',
     );
-    const before = readFileSync(hanaPath, 'utf8');
+    const before = readBundleText(workspace, 'character', 'hana');
 
     const absorbed = await run(
       'notes absorb',
@@ -358,17 +359,17 @@ describe('notes absorb', () => {
     );
 
     expect(absorbed.message).toContain('기존 카드 hana 에 대한 내용은 후보로 남겼습니다');
-    expect(readFileSync(hanaPath, 'utf8')).toBe(before);
+    expect(readBundleText(workspace, 'character', 'hana')).toBe(before);
 
     const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
     expect(preview.message).toContain('노트에서  hana (하나) 변경');
-    expect(readFileSync(hanaPath, 'utf8')).toBe(before);
+    expect(readBundleText(workspace, 'character', 'hana')).toBe(before);
 
     const promoted = await run('card promote', args(['card', 'promote']));
     expect(promoted.ok).toBe(true);
     expect(promoted.message).toBe('카드 1개를 갱신했습니다.');
 
-    const after = readFileSync(hanaPath, 'utf8');
+    const after = await readCardYaml(workspace, 'hana');
     expect(after).toContain("age: '19'");
     expect(after).toContain('달의 문 너머를 보고 싶다');
     expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'candidates.json'))).toBe(
@@ -385,8 +386,8 @@ describe('notes absorb', () => {
     const otherLocation = join(vault, '인물');
 
     function writeExistingCard(id: string, name: string): void {
-      writeFileSync(
-        join(workspace, 'character', `${id}.card`),
+      writeCardBundleFromYaml(
+        workspace,
         `type: character\nid: ${id}\nname: ${name}\nrole: main\nattributes:\n  age: 17\n`,
       );
     }
@@ -486,7 +487,7 @@ describe('notes absorb', () => {
       expect(promoted.message).toContain('카드 1개를 갱신했습니다.');
       expect(promoted.message).toContain('보류      hana attribute:age');
 
-      const hana = readFileSync(join(workspace, 'character', 'hana.card'), 'utf8');
+      const hana = await readCardYaml(workspace, 'hana');
       expect(hana).toContain('age: 17');
       expect(hana).toContain('달의 문 너머를 보고 싶다');
 
@@ -512,7 +513,7 @@ describe('notes absorb', () => {
 
       const promoted = await run('card promote', args(['card', 'promote']));
       expect(promoted.message).toBe('카드 1개를 갱신했습니다.');
-      expect(readFileSync(join(workspace, 'character', 'hana.card'), 'utf8')).toContain(
+      expect(await readCardYaml(workspace, 'hana')).toContain(
         "age: '20'",
       );
     });

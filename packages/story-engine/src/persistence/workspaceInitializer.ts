@@ -3,7 +3,6 @@ import {
   getStoryboardProjectPaths,
   joinStoryPath,
   mergeStoryboardGitignore,
-  serializeNarratorCard,
   type NarratorCard,
   type ProjectSetting,
   type StoryboardProject,
@@ -11,6 +10,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import { createDefaultProjectJson } from '#engine/persistence/projectJson';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
@@ -87,7 +87,10 @@ function resolveRelative(workspaceRoot: StoryUri, relativePath: string): StoryUr
 }
 
 export class WorkspaceInitializer {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async createWorkspace(request: CreateWorkspaceRequest): Promise<CreateWorkspaceResult> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
@@ -153,17 +156,13 @@ export class WorkspaceInitializer {
       return [];
     }
 
-    await this.fileSystem.createDirectory(paths.narratorDirectory);
-
     const written: string[] = [];
     for (const card of cards) {
-      const uri: StoryUri = joinStoryPath(paths.narratorDirectory, `${card.id}.card`);
-
-      if (await this.fileSystem.exists(uri)) {
+      if (await this.cards.exists(paths.workspaceRoot, 'narrator', card.id)) {
         continue;
       }
 
-      await this.fileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
+      await this.cards.writeNarrator(paths.workspaceRoot, card);
       written.push(card.id);
     }
 

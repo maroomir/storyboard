@@ -7,7 +7,6 @@ import {
   createDraft,
   NodeUri,
   parseBible,
-  parseCard,
   parseDraft,
   parseSceneStem,
   parseStoryState,
@@ -147,11 +146,6 @@ beforeEach(() => {
     '.storyboard/memory/personas/hana.json',
     `${JSON.stringify({ cardId: 'hana', updatedThroughScene: fromStem }, null, 2)}\n`,
   );
-  write(
-    'character/hana.card',
-    `type: character\nid: hana\nname: 하나\nrole: main\narc:\n  - stage: 시작\n    summary: 장사를 시작한다\n    sceneRef: ${fromStem}\n`,
-  );
-  write('character/jun.card', 'type: character\nid: jun\nname: 준\nrole: main\n');
 });
 
 afterEach(async () => {
@@ -189,7 +183,7 @@ describe('RenameSceneUseCase', () => {
     expect(has(`.storyboard/cache/studio-sessions/scene/${fromStem}`)).toBe(false);
   });
 
-  it('renumbers the ledger and canon and follows the stem in memory and cards', async () => {
+  it('renumbers the ledger and canon and follows the stem in memory', async () => {
     await rename('04-night-market');
 
     const state = parseStoryState(read('.storyboard/memory/storyState.md'));
@@ -212,9 +206,6 @@ describe('RenameSceneUseCase', () => {
       '04-night-market',
     );
 
-    const hana = parseCard(read('character/hana.card'));
-    expect(hana.type === 'character' ? hana.arc?.[0]?.sceneRef : undefined).toBe('04-night-market');
-    expect(read('character/jun.card')).toBe('type: character\nid: jun\nname: 준\nrole: main\n');
   });
 
   it('changes only the stem references when the number stays', async () => {

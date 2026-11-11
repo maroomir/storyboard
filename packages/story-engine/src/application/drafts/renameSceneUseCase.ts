@@ -2,7 +2,6 @@ import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
   parseBible,
-  parseCard,
   parseDraft,
   parseSceneRenameJournal,
   parseStoryState,
@@ -10,11 +9,9 @@ import {
   parseSceneStem,
   renumberStoryStateScene,
   rewriteBibleSceneReferences,
-  rewriteCharacterArcSceneRefs,
   rewriteSceneCardStemText,
   sceneSummaryFileName,
   serializeBible,
-  serializeCard,
   serializeDraft,
   serializeSceneRenameJournal,
   serializeStoryState,
@@ -32,8 +29,6 @@ import {
   type StoryBible,
   type RevisionPlan,
   type RevisionPlanEntry,
-  type StoryboardCard,
-  type CharacterCard,
 } from '@storyboard/story-model';
 
 import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
@@ -379,7 +374,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       (raw) => rewriteMentionedJsonSceneStems(raw, rename),
     );
 
-    await this.planCharacterCardRewrites(rewrites, paths, rename);
 
     return rewrites;
   }
@@ -410,22 +404,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
           rewriteMentionedJsonSceneStems(raw, rename),
         );
       }
-    }
-  }
-
-  private async planCharacterCardRewrites(
-    rewrites: PlannedWrite[],
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-    for (const fileName of await this.listFileNames(paths.characterDirectory)) {
-      if (!fileName.endsWith('.card')) {
-        continue;
-      }
-
-      await this.addRewrite(rewrites, joinUri(paths.characterDirectory, fileName), (raw) =>
-        rewriteCharacterCardText(raw, rename),
-      );
     }
   }
 
@@ -503,22 +481,6 @@ function rewriteBibleText(raw: string, rename: SceneRename): string | undefined 
   const rewritten: StoryBible = rewriteBibleSceneReferences(bible, rename);
 
   return rewritten === bible ? undefined : serializeBible(rewritten);
-}
-
-function rewriteCharacterCardText(raw: string, rename: SceneRename): string | undefined {
-  if (!mentionsFromStem(raw, rename)) {
-    return undefined;
-  }
-
-  const card: StoryboardCard = parseCard(raw);
-
-  if (card.type !== 'character') {
-    return undefined;
-  }
-
-  const rewritten: CharacterCard = rewriteCharacterArcSceneRefs(card, rename);
-
-  return rewritten === card ? undefined : serializeCard(rewritten);
 }
 
 function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undefined {

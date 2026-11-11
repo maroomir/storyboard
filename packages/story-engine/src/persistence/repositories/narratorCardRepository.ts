@@ -1,64 +1,43 @@
-import {
-  getStoryboardProjectPaths,
-  isHiddenSceneFileName,
-  joinStoryPath,
-  parseCardIdFromFileName,
-  parseNarratorCard,
-  serializeNarratorCard,
-} from '@storyboard/story-model';
+import { narratorCardPath } from '@storyboard/story-model';
 import type { NarratorCard, StoryUri } from '@storyboard/story-model';
 import type {
   CreateNarratorCardResult,
   INarratorCardRepository,
   RemoveNarratorCardResult,
 } from '#engine/application/cards/narratorCardRepository';
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 export class NarratorCardRepository implements INarratorCardRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(private readonly cards: WorkspaceCards) {}
 
   public async list(workspaceRoot: StoryUri): Promise<ReadonlyMap<string, NarratorCard>> {
-    const files: WorkspaceFiles = new WorkspaceFiles(this.fileSystem);
-    const cards: NarratorCard[] = await files.readAll(
-      getStoryboardProjectPaths(workspaceRoot).narratorDirectory,
-      {
-        isEligible: (fileName) =>
-          !isHiddenSceneFileName(fileName) && parseCardIdFromFileName(fileName) !== undefined,
-        read: async (uri) => parseNarratorCard(await files.loadText(uri)),
-      },
-    );
+    const narrators: readonly NarratorCard[] = (
+      await this.cards.loadRoster(workspaceRoot, ['character', 'narrator'])
+    ).narrators;
 
-    return new Map(cards.map((card) => [card.id, card]));
+    return new Map(narrators.map((card) => [card.id, card]));
   }
 
   public async create(
     workspaceRoot: StoryUri,
     card: NarratorCard,
   ): Promise<CreateNarratorCardResult> {
-    const { narratorDirectory } = getStoryboardProjectPaths(workspaceRoot);
-    const uri: StoryUri = joinStoryPath(narratorDirectory, `${card.id}.card`);
+    const uri: StoryUri = narratorCardPath(workspaceRoot, card.id);
 
-    if (await this.fileSystem.exists(uri)) {
+    if (await this.cards.exists(workspaceRoot, 'narrator', card.id)) {
       return { ok: false, kind: 'exists', uri };
     }
 
-    await this.fileSystem.createDirectory(narratorDirectory);
-    await this.fileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
+    await this.cards.writeNarrator(workspaceRoot, card);
     return { ok: true, kind: 'created', uri };
   }
 
   public async remove(workspaceRoot: StoryUri, id: string): Promise<RemoveNarratorCardResult> {
-    const uri: StoryUri = joinStoryPath(
-      getStoryboardProjectPaths(workspaceRoot).narratorDirectory,
-      `${id}.card`,
-    );
-
-    if (!(await this.fileSystem.exists(uri))) {
+    if (!(await this.cards.exists(workspaceRoot, 'narrator', id))) {
       return { ok: false, kind: 'missing' };
     }
 
-    await this.fileSystem.delete(uri);
+    await this.cards.remove(workspaceRoot, 'narrator', id);
     return { ok: true, kind: 'removed' };
   }
 }

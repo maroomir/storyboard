@@ -111,11 +111,11 @@ export class CheckDraftUseCase implements IUseCase<CheckDraftRequest, CheckDraft
       `${sceneStem}.card`,
     );
     const contextPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-    const context: SceneContext = await new SceneContextReader(fileSystem).build(
+    const context: SceneContext = await new SceneContextReader(fileSystem, this.host.cards).build(
       contextPaths,
       scene,
     );
-    const narrative: NarrativeContext = await new SceneContextReader(fileSystem).buildNarrative(
+    const narrative: NarrativeContext = await new SceneContextReader(fileSystem, this.host.cards).buildNarrative(
       contextPaths,
       context,
     );

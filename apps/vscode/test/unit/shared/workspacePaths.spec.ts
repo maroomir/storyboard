@@ -22,7 +22,7 @@ const manifestPath = path.resolve(
 describe("workspace path conventions", () => {
   it("builds card and draft paths under the directories the table names", () => {
     expect(characterCardRelativePath("hana")).toBe(
-      `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/hana${STORYBOARD_FILE_EXTENSIONS.card}`
+      `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/hana${STORYBOARD_FILE_EXTENSIONS.card}/card.yaml`
     )
     expect(sceneRelativePath("01-start")).toBe(
       `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/01-start${STORYBOARD_FILE_EXTENSIONS.card}`

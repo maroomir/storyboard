@@ -67,7 +67,7 @@ export class GenerateSceneBeatsUseCase {
     }
 
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
-    const context: SceneContext = await new SceneContextReader(this.host.fileSystem).build(
+    const context: SceneContext = await new SceneContextReader(this.host.fileSystem, this.host.cards).build(
       sceneContextPaths(paths),
       scene,
     );

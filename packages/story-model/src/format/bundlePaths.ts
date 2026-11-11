@@ -177,3 +177,65 @@ export function isKnownBundleEntry(kind: ElementKind, entryName: string): boolea
     bundleFileRolesByKind[kind].some((role) => bundleFileNames[role] === entryName)
   );
 }
+
+export function elementCardRelativePath(kind: ElementKind, slug: string): string {
+  return bundleFileRelativePath(
+    bundleRelativePath(kind, formatBundleDirectoryName(kind, { slug })),
+    'card',
+  );
+}
+
+export function characterCardRelativePath(slug: string): string {
+  return elementCardRelativePath('character', slug);
+}
+
+export function backgroundCardRelativePath(slug: string): string {
+  return elementCardRelativePath('background', slug);
+}
+
+export function narratorCardRelativePath(slug: string): string {
+  return elementCardRelativePath('narrator', slug);
+}
+
+export function characterProfileRelativePath(slug: string): string {
+  return bundleFileRelativePath(
+    bundleRelativePath('character', formatBundleDirectoryName('character', { slug })),
+    'profileImage',
+  );
+}
+
+function parseElementCardRelativePath(kind: ElementKind, relativePath: string): string | undefined {
+  const segments: readonly string[] = relativePath.replace(/\\/g, '/').split('/');
+  const [directory, bundleDirectory, fileName] = segments;
+  const isCardFile: boolean =
+    segments.length === 3 &&
+    directory === elementKindDirectories[kind] &&
+    fileName === bundleFileNames.card;
+
+  return isCardFile && bundleDirectory !== undefined
+    ? parseBundleDirectoryName(kind, bundleDirectory)?.slug
+    : undefined;
+}
+
+export function isDirectCharacterCardRelativePath(relativePath: string): boolean {
+  return parseElementCardRelativePath('character', relativePath) !== undefined;
+}
+
+export function isDirectBackgroundCardRelativePath(relativePath: string): boolean {
+  return parseElementCardRelativePath('background', relativePath) !== undefined;
+}
+
+export function isDirectNarratorCardRelativePath(relativePath: string): boolean {
+  return parseElementCardRelativePath('narrator', relativePath) !== undefined;
+}
+
+export function parseElementSlugFromCardPath(path: string): string | undefined {
+  const segments: readonly string[] = path.replace(/\\/g, '/').split('/');
+  const fileName: string | undefined = segments.at(-1);
+  const bundleDirectory: string | undefined = segments.at(-2);
+  const cardSuffix: string = STORYBOARD_FILE_EXTENSIONS.card;
+
+  return fileName === bundleFileNames.card && bundleDirectory?.endsWith(cardSuffix) === true
+    ? bundleDirectory.slice(0, -cardSuffix.length)
+    : undefined;
+}

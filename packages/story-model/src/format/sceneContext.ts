@@ -6,6 +6,7 @@ import { detectCharactersInText } from '#model/format/characterDetector';
 import type { StoryStateFocalFilter } from '#model/format/storyState';
 
 export interface SceneContextWorkspacePaths {
+  readonly workspaceRoot: StoryUri;
   readonly characterDirectory: StoryUri;
   readonly sceneDirectory?: StoryUri;
   readonly backgroundDirectory: StoryUri;

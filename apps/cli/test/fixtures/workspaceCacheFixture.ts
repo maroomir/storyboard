@@ -1,4 +1,4 @@
-import { WorkspaceCaches, WorkspaceRunLocks } from '@storyboard/story-engine';
+import { WorkspaceCaches, WorkspaceCards, WorkspaceRunLocks } from '@storyboard/story-engine';
 import {
   createWorkspaceRunLockRecord,
   NodeUri,
@@ -50,4 +50,8 @@ export async function readRunLockToken(
   const database = await caches.open(NodeUri.file(workspace));
   const row = database.first('SELECT token FROM lock WHERE slot = 1');
   return row === undefined ? undefined : String(row.token);
+}
+
+export function createWorkspaceCards(caches: WorkspaceCaches): WorkspaceCards {
+  return new WorkspaceCards({ fileSystem: new NodeFileSystem(), caches });
 }

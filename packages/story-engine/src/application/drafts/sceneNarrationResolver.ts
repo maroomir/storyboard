@@ -22,6 +22,7 @@ import type {
 } from '@storyboard/story-model';
 import { NarratorCardRepository } from '#engine/persistence/repositories/narratorCardRepository';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 export interface ChapterNarrationDefaults {
   readonly narrator?: string;
@@ -45,7 +46,10 @@ function hasDeclaredThreads(project: StoryboardProject): boolean {
 }
 
 export class SceneNarrationResolver {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async readChapterDefaults(
     paths: StoryboardProjectPaths,
@@ -92,7 +96,7 @@ export class SceneNarrationResolver {
         : { focalFallback: scene.frontmatter.povCharacter }),
       ...(referencesNarratorCard
         ? {
-            narrators: await new NarratorCardRepository(this.fileSystem).list(paths.workspaceRoot),
+            narrators: await new NarratorCardRepository(this.cards).list(paths.workspaceRoot),
           }
         : {}),
     });

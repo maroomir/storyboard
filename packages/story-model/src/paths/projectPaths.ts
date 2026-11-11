@@ -1,12 +1,16 @@
 import {
-  STORYBOARD_RELATIVE_PATHS,
   backgroundCardRelativePath,
   characterCardRelativePath,
   characterProfileRelativePath,
-  draftHistorySceneRelativeDirectory,
-  draftRelativePath,
   isDirectBackgroundCardRelativePath,
   isDirectCharacterCardRelativePath,
+  narratorCardRelativePath,
+  parseElementSlugFromCardPath,
+} from '#model/format/bundlePaths';
+import {
+  STORYBOARD_RELATIVE_PATHS,
+  draftHistorySceneRelativeDirectory,
+  draftRelativePath,
   isDirectSceneCardRelativePath,
   isDraftMarkdownRelativePath,
   parseCardIdFromFileName,
@@ -242,6 +246,10 @@ export function backgroundCardPath(workspaceRoot: StoryUri, id: string): StoryUr
   return resolveWorkspacePath(workspaceRoot, backgroundCardRelativePath(id));
 }
 
+export function narratorCardPath(workspaceRoot: StoryUri, id: string): StoryUri {
+  return resolveWorkspacePath(workspaceRoot, narratorCardRelativePath(id));
+}
+
 export function sceneFilePath(workspaceRoot: StoryUri, prefix: string, slug: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, sceneFileRelativePath(prefix, slug));
 }
@@ -263,7 +271,8 @@ export function draftHistorySceneDirectory(workspaceRoot: StoryUri, sceneStem: s
 }
 
 export function parseCardIdFromPath(uri: StoryUri): string | undefined {
+  const bundleSlug: string | undefined = parseElementSlugFromCardPath(uri.path);
   const fileName: string | undefined = uri.path.split('/').at(-1);
 
-  return fileName === undefined ? undefined : parseCardIdFromFileName(fileName);
+  return bundleSlug ?? (fileName === undefined ? undefined : parseCardIdFromFileName(fileName));
 }

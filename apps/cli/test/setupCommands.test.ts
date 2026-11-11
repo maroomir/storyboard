@@ -28,6 +28,7 @@ import { createTheme } from '@/terminal/theme';
 import { measureWidth } from '@/terminal/width';
 
 import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
+import { writeCardBundleFromYaml } from './fixtures/cardBundles';
 
 let home: string;
 let workspace: string;
@@ -732,10 +733,7 @@ describe('storyboard doctor beat cast', () => {
         editor: { scenePrefixDigits: 2 },
       }),
     );
-    writeFileSync(
-      join(workspace, 'character', 'hana.card'),
-      'type: character\nid: hana\nname: 김하나\naliases:\n  - 하나 씨\n',
-    );
+    writeCardBundleFromYaml(workspace, 'type: character\nid: hana\nname: 김하나\naliases:\n  - 하나 씨\n');
     writeFileSync(
       join(workspace, 'scene', '01-first.card'),
       `type: scene\nid: 01-first\ncharacters:\n  - hana\nbeats:\n  - text: 하나가 문을 연다.\n    cast:\n${cast.map((ref) => `      - ${ref}\n`).join('')}`,
@@ -836,8 +834,8 @@ describe('storyboard doctor background conflicts', () => {
         editor: { scenePrefixDigits: 2 },
       }),
     );
-    writeFileSync(
-      join(workspace, 'background', 'condo.card'),
+    writeCardBundleFromYaml(
+      workspace,
       `type: location\nid: condo\nname: 해외 콘도\ndescription:\n  - ${sofa}\n  - ${room}\n`,
     );
     const checked = {

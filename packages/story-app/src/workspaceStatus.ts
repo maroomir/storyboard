@@ -1,5 +1,4 @@
 import {
-  NarratorCardRepository,
   manuscriptReviewFileName,
   type IFileSystem,
 } from '@storyboard/story-engine';
@@ -150,7 +149,7 @@ async function countCards(
   return {
     characters: (await cards.list(workspaceRoot, 'character')).length,
     backgrounds: (await cards.list(workspaceRoot, 'background')).length,
-    narrators: (await new NarratorCardRepository(fileSystem).list(workspaceRoot)).size,
+    narrators: (await cards.listNarrators(workspaceRoot)).size,
   };
 }
 

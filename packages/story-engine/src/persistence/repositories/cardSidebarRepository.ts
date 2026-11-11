@@ -1,87 +1,75 @@
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
+  backgroundCardPath,
+  characterCardPath,
   getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
   isCharacterRole,
   joinCardText,
-  parseCard,
 } from '@storyboard/story-model';
 import type {
-  StoryUri,
-  CardType,
-  SidebarCardSummary,
-  StoryboardProjectPaths,
-  StoryboardCard,
-  CharacterRole,
   BibleSubjectKind,
+  CharacterRole,
+  SidebarCardSummary,
+  StoryboardCard,
+  StoryUri,
 } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ICardSidebarRepository } from '#engine/application/cards/cardSidebarRepository';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
 export class CardSidebarRepository implements ICardSidebarRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(private readonly cards: WorkspaceCards) {}
 
   public async list(
     workspaceRoot: StoryUri,
     category: BibleSubjectKind,
   ): Promise<SidebarCardSummary[]> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const directory: StoryUri =
-      category === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-    const uris: StoryUri[] = await new WorkspaceFiles(this.fileSystem).listCardUris(directory);
-    const summaries: SidebarCardSummary[] = await Promise.all(
-      uris
-        .filter((uri) => !isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? ''))
-        .map(async (uri) => await this.toSummary(uri, category)),
-    );
-
-    return summaries.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
-  }
-
-  private async toSummary(uri: StoryUri, category: BibleSubjectKind): Promise<SidebarCardSummary> {
+    let roster: CardRoster;
     try {
-      const card: StoryboardCard = parseCard(
-        new TextDecoder().decode(await this.fileSystem.readFile(uri)),
-      );
-
-      if (this.toCategory(card.type) !== category) {
-        return this.errorSummary(uri, category, `Expected ${category} card, got ${card.type}.`);
-      }
-
-      const role: CharacterRole | undefined =
-        card.type === 'character' && isCharacterRole(card.role) ? card.role : undefined;
-      return {
-        type: card.type,
-        id: card.id,
-        name: card.name,
-        uri: uri.toString(),
-        description: joinCardText(card.description),
-        ...(role ? { role } : {}),
-      };
+      roster = await this.cards.loadRoster(workspaceRoot, [category]);
     } catch (error) {
-      return this.errorSummary(
-        uri,
-        category,
-        error instanceof Error ? error.message : '카드를 읽을 수 없습니다.',
-      );
+      return [this.errorSummary(workspaceRoot, category, error)];
     }
+
+    const cards: readonly StoryboardCard[] =
+      category === 'character' ? roster.characters : roster.backgrounds;
+    return cards
+      .map((card) => this.toSummary(workspaceRoot, card))
+      .sort((left, right) => left.name.localeCompare(right.name, 'ko'));
   }
 
-  private errorSummary(
-    uri: StoryUri,
-    category: BibleSubjectKind,
-    error: string,
-  ): SidebarCardSummary {
+  private toSummary(workspaceRoot: StoryUri, card: StoryboardCard): SidebarCardSummary {
+    const role: CharacterRole | undefined =
+      card.type === 'character' && isCharacterRole(card.role) ? card.role : undefined;
+    const uri: StoryUri =
+      card.type === 'character'
+        ? characterCardPath(workspaceRoot, card.id)
+        : backgroundCardPath(workspaceRoot, card.id);
+
     return {
-      type: category === 'character' ? 'character' : 'location',
-      id: uri.path,
-      name: uri.path.split('/').at(-1) ?? uri.toString(),
+      type: card.type,
+      id: card.id,
+      name: card.name,
       uri: uri.toString(),
-      error,
+      description: joinCardText(card.description),
+      ...(role ? { role } : {}),
     };
   }
 
-  private toCategory(cardType: CardType): BibleSubjectKind {
-    return cardType === 'character' ? 'character' : 'background';
+  private errorSummary(
+    workspaceRoot: StoryUri,
+    category: BibleSubjectKind,
+    error: unknown,
+  ): SidebarCardSummary {
+    const directory: StoryUri =
+      category === 'character'
+        ? getStoryboardProjectPaths(workspaceRoot).characterDirectory
+        : getStoryboardProjectPaths(workspaceRoot).backgroundDirectory;
+
+    return {
+      type: category === 'character' ? 'character' : 'location',
+      id: directory.path,
+      name: directory.path.split('/').at(-1) ?? directory.toString(),
+      uri: directory.toString(),
+      error: error instanceof Error ? error.message : '카드를 읽을 수 없습니다.',
+    };
   }
 }

@@ -1,14 +1,13 @@
-import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
 import {
   STORYBOARD_RELATIVE_PATHS,
+  bundleFileNames,
   joinStoryPath,
   type StoryUri,
-  parseCard,
   parseScene,
   getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
   extractErrorMessage,
 } from '@storyboard/story-model';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { createHash } from 'node:crypto';
 
@@ -26,13 +25,17 @@ import type {
 import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureSource';
 import { parseProjectJson } from '#engine/persistence/projectJson';
 export class StoryFeatureRepository implements IStoryFeatureRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly cards: WorkspaceCards,
+  ) {}
 
   public async load(workspaceRoot: StoryUri): Promise<StoryFeatureSource> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const sourceFiles: StorySourceFiles = await this.readSourceFiles(paths);
+    const roster: CardRoster = await this.readRoster(workspaceRoot);
+    const sourceFiles: StorySourceFiles = await this.readSourceFiles(paths, roster);
     const scenes: SceneFile[] = this.parseScenes(sourceFiles.sceneFiles);
-    const cards: StoryboardCard[] = this.parseCards(sourceFiles.cardFiles);
+    const cards: StoryboardCard[] = [...roster.characters, ...roster.backgrounds];
 
     const project: StoryboardProject = parseProjectJson(sourceFiles.projectText.text);
     const snapshots: StoryFileSnapshot[] = await this.snapshotSources(paths, sourceFiles);
@@ -67,7 +70,22 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     return true;
   }
 
-  private async readSourceFiles(paths: StoryboardProjectPaths): Promise<StorySourceFiles> {
+  private async readRoster(workspaceRoot: StoryUri): Promise<CardRoster> {
+    try {
+      return await this.cards.loadRoster(workspaceRoot, ['character', 'background']);
+    } catch (error) {
+      throw new StoryFeatureSourceError(
+        'invalid-card',
+        `유효하지 않은 카드: ${formatParseError(error)}`,
+        error,
+      );
+    }
+  }
+
+  private async readSourceFiles(
+    paths: StoryboardProjectPaths,
+    roster: CardRoster,
+  ): Promise<StorySourceFiles> {
     const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
       readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
       readTextFiles(
@@ -75,7 +93,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
         paths.sceneDirectory,
         (name) => name.endsWith('.card') && !name.startsWith('.'),
       ),
-      readCardFiles(this.fileSystem, paths.characterDirectory, paths.backgroundDirectory),
+      readBundleFiles(this.fileSystem, paths.workspaceRoot, roster),
       readOptionalText(this.fileSystem, paths.bibleCanon),
     ]);
 
@@ -102,22 +120,6 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     }
 
     return scenes;
-  }
-
-  private parseCards(cardFiles: readonly TextFile[]): StoryboardCard[] {
-    const cards: StoryboardCard[] = [];
-    for (const file of cardFiles) {
-      try {
-        cards.push(parseCard(file.text));
-      } catch (error) {
-        throw new StoryFeatureSourceError(
-          'invalid-card',
-          `유효하지 않은 카드: ${file.name}: ${formatParseError(error)}`,
-          error,
-        );
-      }
-    }
-    return cards;
   }
 
   private async snapshotSources(
@@ -191,24 +193,22 @@ async function readTextFiles(
   );
 }
 
-async function readCardFiles(
+async function readBundleFiles(
   fs: IFileSystem,
-  ...directories: readonly StoryUri[]
+  workspaceRoot: StoryUri,
+  roster: CardRoster,
 ): Promise<TextFile[]> {
-  const files: TextFile[][] = await Promise.all(
-    directories.map(async (directory) => {
-      const names: readonly string[] = await new WorkspaceFiles(fs).listNames(
-        directory,
-        (name) => name.endsWith('.card') && !isIgnoredSampleCardFileName(name),
-      );
-      return await Promise.all(
-        [...names]
-          .sort((left, right) => left.localeCompare(right))
-          .map((name) => readTextFile(fs, joinStoryPath(directory, name))),
-      );
-    }),
+  const bundleFileUris: StoryUri[] = roster.bundles.flatMap((bundle) =>
+    [bundleFileNames.card, bundleFileNames.statements].map((fileName) =>
+      joinStoryPath(workspaceRoot, ...bundle.path.split('/'), fileName),
+    ),
   );
-  return files.flat();
+
+  return await Promise.all(bundleFileUris.map((uri) => readOptionalBundleFile(fs, uri)));
+}
+
+async function readOptionalBundleFile(fs: IFileSystem, uri: StoryUri): Promise<TextFile> {
+  return (await readOptionalText(fs, uri)) ?? { uri, name: uri.path, bytes: new Uint8Array(), text: '' };
 }
 
 async function readTextFile(fs: IFileSystem, uri: StoryUri): Promise<TextFile> {
@@ -229,7 +229,7 @@ async function snapshotDirectory(fs: IFileSystem, uri: StoryUri): Promise<StoryF
   try {
     const entries: FileSystemDirectoryEntry[] = await fs.readDirectory(uri);
     const manifest: string = entries
-      .filter(([name, entry]) => entry.type === 'file' && !name.startsWith('.'))
+      .filter(([name]) => !name.startsWith('.'))
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([name, entry]) => `${entry.type}:${name}`)
       .join('\n');
