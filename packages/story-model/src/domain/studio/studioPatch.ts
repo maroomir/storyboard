@@ -42,8 +42,6 @@ const editableSceneCardFields: Set<string> = new Set([
   'emotionalShift',
   'endState',
   'foreshadowing',
-  'mood',
-  'relationStage',
   'characters',
   'location',
 ]);

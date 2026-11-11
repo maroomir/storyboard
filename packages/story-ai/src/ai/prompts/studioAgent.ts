@@ -63,8 +63,6 @@ const editableSceneCardFields: string[] = [
   'emotionalShift',
   'endState',
   'foreshadowing',
-  'mood',
-  'relationStage',
   'characters',
   'location',
 ];
