@@ -12,7 +12,7 @@ import {
   type StoryStateStatement,
 } from '#model/element/statement';
 
-export type BundleFileErrorCode = 'invalid-yaml' | 'invalid-shape';
+export type BundleFileErrorCode = 'invalid-yaml' | 'invalid-shape' | 'missing-file';
 
 export class BundleFileError extends Error {
   public constructor(
