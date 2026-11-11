@@ -1,26 +1,42 @@
-import type { StoryUri } from '@storyboard/story-model';
+import {
+  createEmptyRevisionPlan,
+  joinStoryPath,
+  upsertRevisionEntry,
+  type RevisionPlan,
+  type RevisionPlanEntry,
+  type StoryboardProjectPaths,
+  type StoryUri,
+} from '@storyboard/story-model';
+
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ReviseRound } from '#engine/pipeline/reviseLoop';
 import {
-  joinStoryPath,
-  type StoryboardProjectPaths,
-  createEmptyRevisionPlan,
-  readRevisionPlanFile,
-  type RevisionPlan,
-  type RevisionPlanEntry,
-  upsertRevisionEntry,
-  writeRevisionPlanFile,
-} from '@storyboard/story-model';
+  RevisionPlanStore,
+  type StoredRevisionPlan,
+} from '#engine/persistence/cache/revisionPlanStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
+
+export interface RevisionPlanRecorderDependencies {
+  readonly fileSystem: IFileSystem;
+  readonly caches: WorkspaceCaches;
+}
 
 export class RevisionPlanRecorder {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(private readonly dependencies: RevisionPlanRecorderDependencies) {}
 
-  public async recordEntry(paths: StoryboardProjectPaths, entry: RevisionPlanEntry): Promise<void> {
-    const current: RevisionPlan = await this.readPlanOrEmpty(paths.outlineRevisionPlan);
-    const next: RevisionPlan = upsertRevisionEntry(current, entry);
+  public async recordEntry(workspaceRoot: StoryUri, entry: RevisionPlanEntry): Promise<void> {
+    const store: RevisionPlanStore = await this.openStore(workspaceRoot);
+    const current: RevisionPlan = store.findLatest()?.plan ?? createEmptyRevisionPlan();
 
-    await this.fileSystem.createDirectory(paths.outlineDirectory);
-    await writeRevisionPlanFile(paths.outlineRevisionPlan, this.fileSystem, next);
+    store.saveLatest(upsertRevisionEntry(current, entry));
+  }
+
+  public async readLatest(workspaceRoot: StoryUri): Promise<StoredRevisionPlan | undefined> {
+    return (await this.openStore(workspaceRoot)).findLatest();
+  }
+
+  public async replaceLatest(workspaceRoot: StoryUri, plan: RevisionPlan): Promise<void> {
+    (await this.openStore(workspaceRoot)).saveLatest(plan);
   }
 
   public async recordRounds(
@@ -28,8 +44,8 @@ export class RevisionPlanRecorder {
     sceneStem: string,
     rounds: readonly ReviseRound[],
   ): Promise<void> {
-    await this.fileSystem.createDirectory(paths.revisionRoundsDirectory);
-    await this.fileSystem.writeFile(
+    await this.dependencies.fileSystem.createDirectory(paths.revisionRoundsDirectory);
+    await this.dependencies.fileSystem.writeFile(
       joinStoryPath(paths.revisionRoundsDirectory, `${sceneStem}.json`),
       new TextEncoder().encode(
         `${JSON.stringify({ sceneStem, checkedAt: new Date().toISOString(), rounds }, null, 2)}\n`,
@@ -37,15 +53,7 @@ export class RevisionPlanRecorder {
     );
   }
 
-  private async readPlanOrEmpty(uri: StoryUri): Promise<RevisionPlan> {
-    if (!(await this.fileSystem.exists(uri))) {
-      return createEmptyRevisionPlan();
-    }
-
-    try {
-      return await readRevisionPlanFile(uri, this.fileSystem);
-    } catch {
-      return createEmptyRevisionPlan();
-    }
+  private async openStore(workspaceRoot: StoryUri): Promise<RevisionPlanStore> {
+    return new RevisionPlanStore(await this.dependencies.caches.open(workspaceRoot));
   }
 }

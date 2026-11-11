@@ -36,6 +36,19 @@ export class RevisionPlanStore {
     return stored;
   }
 
+  public saveLatest(plan: RevisionPlan): StoredRevisionPlan {
+    const latest: StoredRevisionPlan | undefined = this.findLatest();
+    if (latest === undefined) {
+      return this.save(plan);
+    }
+
+    this.database.run('UPDATE revision_plans SET data = ? WHERE id = ?', [
+      serializeRevisionPlan(plan),
+      latest.id,
+    ]);
+    return { ...latest, plan };
+  }
+
   public findLatest(): StoredRevisionPlan | undefined {
     const row: SqlRow | undefined = this.database.first(
       'SELECT * FROM revision_plans ORDER BY created_at DESC, rowid DESC LIMIT 1',

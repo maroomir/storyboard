@@ -1,3 +1,4 @@
+import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
   parseBible,
@@ -19,8 +20,6 @@ import {
   serializeStoryState,
   type SceneRename,
   type StoryUri,
-  parseRevisionPlan,
-  serializeRevisionPlan,
   draftHistorySceneDirectory,
   draftPath,
   getStoryboardProjectPaths,
@@ -130,6 +129,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     const rewrites: PlannedWrite[] = await this.planRewrites(paths, memoryScopes, rename);
 
     await this.applyPlannedWrites(paths, rename, moves, rewrites);
+    await this.renameRevisionPlanScene(root, rename);
 
     return {
       ok: true,
@@ -140,6 +140,23 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       movedFiles: moves.map((move) => relativePath(root, move.to)),
       rewrittenFiles: rewrites.map((rewrite) => relativePath(root, rewrite.to)),
     };
+  }
+
+  private async renameRevisionPlanScene(root: StoryUri, rename: SceneRename): Promise<void> {
+    const revisionPlans: RevisionPlanRecorder = new RevisionPlanRecorder(this.host);
+    const plan: RevisionPlan | undefined = (await revisionPlans.readLatest(root))?.plan;
+    const isMentioned: boolean =
+      plan?.entries.some((entry) => entry.sceneStem === rename.from.stem) ?? false;
+    if (plan === undefined || !isMentioned) {
+      return;
+    }
+
+    const entries: RevisionPlanEntry[] = plan.entries
+      .map((entry) =>
+        entry.sceneStem === rename.from.stem ? { ...entry, sceneStem: rename.to.stem } : entry,
+      )
+      .sort((left, right) => left.sceneStem.localeCompare(right.sceneStem));
+    await revisionPlans.replaceLatest(root, { ...plan, entries });
   }
 
   private async findOrderOccupant(
@@ -355,9 +372,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
 
     await this.addRewrite(rewrites, paths.bibleCanon, (raw) => rewriteBibleText(raw, rename));
-    await this.addRewrite(rewrites, paths.outlineRevisionPlan, (raw) =>
-      rewriteRevisionPlanText(raw, rename),
-    );
 
     await this.addRewrite(
       rewrites,
@@ -489,21 +503,6 @@ function rewriteBibleText(raw: string, rename: SceneRename): string | undefined 
   const rewritten: StoryBible = rewriteBibleSceneReferences(bible, rename);
 
   return rewritten === bible ? undefined : serializeBible(rewritten);
-}
-
-function rewriteRevisionPlanText(raw: string, rename: SceneRename): string | undefined {
-  if (!mentionsFromStem(raw, rename)) {
-    return undefined;
-  }
-
-  const plan: RevisionPlan = parseRevisionPlan(raw);
-  const entries: RevisionPlanEntry[] = plan.entries
-    .map((entry) =>
-      entry.sceneStem === rename.from.stem ? { ...entry, sceneStem: rename.to.stem } : entry,
-    )
-    .sort((left, right) => left.sceneStem.localeCompare(right.sceneStem));
-
-  return serializeRevisionPlan({ ...plan, entries });
 }
 
 function rewriteCharacterCardText(raw: string, rename: SceneRename): string | undefined {

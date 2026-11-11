@@ -79,7 +79,7 @@ export class ReviseAfterGenerateGate {
       });
 
     try {
-      await new RevisionPlanRecorder(this.host.fileSystem).recordEntry(paths, {
+      await new RevisionPlanRecorder(this.host).recordEntry(paths.workspaceRoot, {
         sceneStem,
         checkedAt: new Date().toISOString(),
         revisionCount: reviseResult.revisionCount,
@@ -90,7 +90,7 @@ export class ReviseAfterGenerateGate {
       });
     } catch (error) {
       this.host.logger.warn(
-        `revision-plan.yaml 기록에 실패했습니다: ${extractErrorMessage(error)}`,
+        `수정 계획 기록에 실패했습니다: ${extractErrorMessage(error)}`,
       );
     }
 

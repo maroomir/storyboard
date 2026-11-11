@@ -1,9 +1,22 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { ChapterSummaryStore, FindingStore, RevisionPlanStore } from '@storyboard/story-engine';
-import { createEmptyRevisionPlan, upsertRevisionEntry, type RevisionPlan } from '@storyboard/story-model';
+import {
+  ChapterSummaryStore,
+  FindingStore,
+  RevisionPlanRecorder,
+  RevisionPlanStore,
+  type WorkspaceCaches,
+} from '@storyboard/story-engine';
+import {
+  createEmptyRevisionPlan,
+  NodeUri,
+  upsertRevisionEntry,
+  type RevisionPlan,
+} from '@storyboard/story-model';
+import { NodeFileSystem } from '@storyboard/story-node';
 
 import { TemporaryWorkspaces } from './fixtures/cacheWorkspace';
+import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
 
 const workspaces: TemporaryWorkspaces = new TemporaryWorkspaces();
 const rooftop = 'c2e8a1b4-9d7c-4e3f-a2b1-0c9d8e7f6a5b';
@@ -63,3 +76,36 @@ describe('revision plan store', () => {
     expect(new RevisionPlanStore(await workspaces.openFreshCache()).findLatest()).toBeUndefined();
   });
 });
+
+describe('revision plan recorder', () => {
+  it('folds each reviewed scene into the one latest plan', async () => {
+    const workspace: string = workspaces.create();
+    const caches: WorkspaceCaches = createWorkspaceCaches();
+    const recorder: RevisionPlanRecorder = new RevisionPlanRecorder({
+      fileSystem: new NodeFileSystem(),
+      caches,
+    });
+    const root: NodeUri = NodeUri.file(workspace);
+    const entry = (sceneStem: string, remainingBlocking: number) => ({
+      sceneStem,
+      checkedAt: '2026-11-11T00:00:00.000Z',
+      revisionCount: 1,
+      remainingBlocking,
+      instructions: [],
+    });
+
+    await recorder.recordEntry(root, entry('001-arrival', 2));
+    await recorder.recordEntry(root, entry('002-rooftop', 0));
+    await recorder.recordEntry(root, entry('001-arrival', 0));
+
+    const latest = await recorder.readLatest(root);
+    const database = await caches.open(root);
+    expect(latest?.plan.entries.map((item) => [item.sceneStem, item.remainingBlocking])).toEqual([
+      ['001-arrival', 0],
+      ['002-rooftop', 0],
+    ]);
+    expect(database.all('SELECT id FROM revision_plans')).toHaveLength(1);
+    await caches.closeAll();
+  });
+});
+

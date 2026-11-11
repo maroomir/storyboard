@@ -12,7 +12,7 @@ English README: [`README.en.md`](README.en.md)
 - 시점은 다섯 값(1인칭, 1인칭 회고, 2인칭, 3인칭 제한, 3인칭 전지) 가운데 하나이며, `narrator/*.card`로 이름 붙인 서술자를 만들면 씬·장마다 시점을 달리할 수 있음
 - 구성(선형·옴니버스·시점 교차·액자식)을 고르면 연속성 줄기와 서술자 카드를 프리셋이 만들고, 옴니버스는 편 안에서만 이야기 상태·요약·기억이 이어짐
 - `Storyboard: Generate Novel`로 작품 설정 → outline → 인물 카드 → 씬 시드 → 초안·검수·재작성 → 원고 조립·검사·요약까지 실행
-- `.storyboard/outline/synopsis.md`, `chapters.yaml`, `revision-plan.yaml` 기반 장편 구조 계획
+- `.storyboard/outline/synopsis.md`, `chapters.yaml` 기반 장편 구조 계획
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
 - outline에서 `scene/*.card` 씬 시드를 만들고 `draft/*.md` 초안을 생성
@@ -37,7 +37,7 @@ English README: [`README.en.md`](README.en.md)
 - Characters / Backgrounds 사이드바의 **추천** 버튼: `scene/*.card`·`draft/*.md` 전체를 LLM으로 훑어 본문에 등장하지만 카드가 없는 인물·배경을 찾아 QuickPick으로 제안하고, 선택분을 신규 카드로 생성
 - **이야기 완결**: `scene/*.card`만 이어서 읽고 기존 씬을 건드리지 않은 채 끝번호 뒤에 완결 씬을 제안합니다. 연속된 앞부분만 선택해 VS Code diff와 최종 확인 뒤 추가합니다.
 - **씬 기반 카드 구성**: `scene/*.card`를 유일한 새 사실 근거로 읽어 신규 인물·장소 카드와 기존 카드의 필드별 보강안을 함께 제안합니다. 선택한 항목만 diff 검토 뒤 반영하며, 신규 캐릭터는 profile PNG를 만들지 않습니다.
-- 씬별 검수·재작성 루프와 `revision-plan.yaml` 기록
+- 씬별 검수·재작성 루프와 수정 계획 기록(캐시 DB)
 - `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`.storyboard/memory/summaries.md`), 복선 체크리스트(`FORESHADOWING.md`)
 - 최종 검사가 찾은 high 이슈를 해당 씬 초안에 되먹여 재작성하고 전권을 다시 검사(high 가 남으면 `revise.loop.maxIterations` 회까지 되풀이). 재작성한 씬은 `REVIEW.md`의 «재작성 결과»에 남음
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`

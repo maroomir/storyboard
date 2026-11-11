@@ -127,7 +127,7 @@ export class ReviseFromReviewStage implements INovelStage {
         revisedStems.push(target.sceneStem);
       }
 
-      await new RevisionPlanRecorder(run.services.host.fileSystem).recordEntry(paths, {
+      await new RevisionPlanRecorder(run.services.host).recordEntry(paths.workspaceRoot, {
         sceneStem: target.sceneStem,
         checkedAt: new Date().toISOString(),
         revisionCount: reviseResult.revisionCount,

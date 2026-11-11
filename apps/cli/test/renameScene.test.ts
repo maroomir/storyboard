@@ -17,6 +17,9 @@ import {
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createTestHost } from '@storyboard/story-engine/testing';
+import type { WorkspaceCaches } from '@storyboard/story-engine';
+
+import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
 
 const fromStem = '03-night-market';
 const silentLogger: IStoryboardLogger = {
@@ -27,6 +30,7 @@ const silentLogger: IStoryboardLogger = {
 };
 
 let workspace: string;
+let caches: WorkspaceCaches;
 
 function write(relativePath: string, content: string): void {
   const target = join(workspace, relativePath);
@@ -46,7 +50,7 @@ function rename(
   toStem: string,
   fileSystem: NodeFileSystem = new NodeFileSystem(),
 ): ReturnType<RenameSceneUseCase['execute']> {
-  return new RenameSceneUseCase(createTestHost({ fileSystem, logger: silentLogger })).execute({
+  return new RenameSceneUseCase(createTestHost({ fileSystem, logger: silentLogger, caches })).execute({
     workspaceRoot: NodeUri.file(workspace),
     fromStem,
     toStem,
@@ -82,6 +86,7 @@ function draftFor(stem: string, body: string): string {
 }
 
 beforeEach(() => {
+  caches = createWorkspaceCaches();
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-rename-'));
 
   write(
@@ -149,7 +154,8 @@ beforeEach(() => {
   write('character/jun.card', 'type: character\nid: jun\nname: 준\nrole: main\n');
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await caches.closeAll();
   rmSync(workspace, { recursive: true, force: true });
 });
 

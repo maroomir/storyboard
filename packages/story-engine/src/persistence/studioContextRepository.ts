@@ -13,7 +13,6 @@ import {
   nextDraftHistoryRevision,
   parseDraft,
   parseSceneFileName,
-  readRevisionPlanFile,
   sceneContextPaths,
   scenePath,
   serializeCard,
@@ -41,6 +40,7 @@ import type {
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { WorkspaceFiles } from '#engine/persistence/workspaceFiles';
+import type { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: StudioAgentEntityKind;
@@ -134,7 +134,10 @@ function draftBodyLength(rawDraft: string): number {
 export class StudioContextRepository {
   private readonly files: WorkspaceFiles;
 
-  public constructor(private readonly fileSystem: IFileSystem) {
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly revisionPlans: RevisionPlanRecorder,
+  ) {
     this.files = new WorkspaceFiles(fileSystem);
   }
 
@@ -364,7 +367,7 @@ export class StudioContextRepository {
     const [cards, draft, review] = await Promise.all([
       scene ? this.readStageCards(paths, scene) : Promise.resolve([]),
       this.readDraftFacts(workspaceRoot, sceneStem),
-      this.readReviewState(paths.outlineRevisionPlan, sceneStem),
+      this.readReviewState(workspaceRoot, sceneStem),
     ]);
 
     return { kind: 'scene', sceneStem, title: scene?.frontmatter.title, cards, review, ...draft };
@@ -483,12 +486,13 @@ export class StudioContextRepository {
   }
 
   private async readReviewState(
-    revisionPlanUri: StoryUri,
+    workspaceRoot: StoryUri,
     sceneStem: string,
   ): Promise<StudioSceneStage['review']> {
     try {
-      const plan: RevisionPlan = await readRevisionPlanFile(revisionPlanUri, this.fileSystem);
-      const entry: RevisionPlanEntry | undefined = plan.entries.find(
+      const plan: RevisionPlan | undefined = (await this.revisionPlans.readLatest(workspaceRoot))
+        ?.plan;
+      const entry: RevisionPlanEntry | undefined = plan?.entries.find(
         (candidate) => candidate.sceneStem === sceneStem,
       );
 
