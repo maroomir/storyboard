@@ -28,8 +28,15 @@ export class CardModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    const { aiProviderRegistry, cards, drafts, logger, proposalReviewService, usageRecorder } =
-      this.platform;
+    const {
+      aiProviderRegistry,
+      cards,
+      drafts,
+      logger,
+      proposalReviewService,
+      studioLauncher,
+      usageRecorder,
+    } = this.platform;
     const sidebarDependencies: ConstructorParameters<typeof SidebarCardsProvider>[1] = {
       aiProviderRegistry,
       cardSidebarRepository: cards.sidebar,
@@ -38,8 +45,8 @@ export class CardModule implements IApplicationModule {
 
     this.disposables.add(
       new CommandRegistrar().register([
-        new CreateCharacterCardCommand({ cards }),
-        new CreateBackgroundCardCommand({ cards }),
+        new CreateCharacterCardCommand({ launcher: studioLauncher }),
+        new CreateBackgroundCardCommand({ launcher: studioLauncher }),
         new RecommendCharacterCardsCommand({ cards }),
         new RecommendBackgroundCardsCommand({ cards }),
         new BuildStoryCardsFromScenesCommand(cards, proposalReviewService),

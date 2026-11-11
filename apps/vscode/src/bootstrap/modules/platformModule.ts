@@ -23,6 +23,7 @@ import { OutputChannelLogger } from '@/infrastructure/vscode/logger';
 import { VscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import { VscodeWorkspaceLocator } from '@/infrastructure/vscode/workspaceLocator';
 import { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
+import { StudioLauncher } from '@/presentation/providers/studioLauncher';
 
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
@@ -50,6 +51,7 @@ export interface IPlatformServices extends Pick<
   readonly homeStores: StoryboardHomeStores;
   readonly usageRecorder: UsageLedgerRecorder;
   readonly proposalReviewService: ProposalReviewService;
+  readonly studioLauncher: StudioLauncher;
 }
 
 export class PlatformModule implements IApplicationModule {
@@ -77,6 +79,7 @@ export class PlatformModule implements IApplicationModule {
     void migrateLegacySettings(context, homeStores, logger);
     const fileSystem: VscodeFileSystem = new VscodeFileSystem();
     const proposalReviewService: ProposalReviewService = new ProposalReviewService(context);
+    const studioLauncher: StudioLauncher = new StudioLauncher();
 
     const application: StoryboardApplication = new StoryboardApplication(
       {
@@ -126,6 +129,7 @@ export class PlatformModule implements IApplicationModule {
       homeStores,
       usageRecorder: application.usageLedger,
       proposalReviewService,
+      studioLauncher,
     };
     this.disposables.add(
       logger,
@@ -134,6 +138,7 @@ export class PlatformModule implements IApplicationModule {
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
       configBridge.onDidChange((): void => void askHiddenProviderConsent(configBridge)),
       proposalReviewService,
+      studioLauncher,
     );
     void askHiddenProviderConsent(configBridge);
 

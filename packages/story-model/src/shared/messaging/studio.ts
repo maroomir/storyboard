@@ -360,26 +360,48 @@ export interface StudioChatCancelRequestPayload {
 export const studioChatCancelRequestPayloadSchema: z.ZodType<StudioChatCancelRequestPayload> =
   z.object({});
 
-export interface StudioCardUpdateRequestPayload {
+export type StudioCreatableKind = 'character' | 'background' | 'scene';
+
+export const studioCreatableKinds: readonly [StudioCreatableKind, ...StudioCreatableKind[]] = [
+  'character',
+  'background',
+  'scene',
+];
+
+export interface StudioCreateRequestPayload {
+  kind?: StudioCreatableKind;
   description: string;
 }
 
-export const studioCardUpdateRequestPayloadSchema: z.ZodType<StudioCardUpdateRequestPayload> =
-  z.object({
-    description: z.string().min(1),
-  });
+export const studioCreateRequestPayloadSchema: z.ZodType<StudioCreateRequestPayload> = z.object({
+  kind: z.enum(studioCreatableKinds).optional(),
+  description: z.string().trim().min(1),
+});
 
-export interface StudioCardUpdateResponsePayload {
+export interface StudioCreateResponsePayload {
   ok: boolean;
-  message?: string;
-  instruction?: string;
+  message: string;
 }
 
-export const studioCardUpdateResponsePayloadSchema: z.ZodType<StudioCardUpdateResponsePayload> =
+export const studioCreateResponsePayloadSchema: z.ZodType<StudioCreateResponsePayload> = z.object({
+  ok: z.boolean(),
+  message: z.string(),
+});
+
+export interface StudioCreatePendingRequestPayload {
+  [key: string]: never;
+}
+
+export const studioCreatePendingRequestPayloadSchema: z.ZodType<StudioCreatePendingRequestPayload> =
+  z.object({});
+
+export interface StudioCreatePendingResponsePayload {
+  kind?: StudioCreatableKind;
+}
+
+export const studioCreatePendingResponsePayloadSchema: z.ZodType<StudioCreatePendingResponsePayload> =
   z.object({
-    ok: z.boolean(),
-    message: z.string().optional(),
-    instruction: z.string().optional(),
+    kind: z.enum(studioCreatableKinds).optional(),
   });
 
 export interface StudioChatCancelResponsePayload {

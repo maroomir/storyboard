@@ -14,6 +14,7 @@ import {
 } from '@/presentation/messaging/bridge';
 import type {
   StoryboardResponsePayload,
+  StudioCreatableKind,
   StudioInitialData,
   StudioSessionSnapshot,
   StudioTarget,
@@ -22,7 +23,8 @@ import type { StudioChatStage } from '@storyboard/story-engine';
 import type { CardManager, InterviewManager, StudioManager } from '@storyboard/story-app';
 import type { AiGateway } from '@storyboard/story-engine';
 import { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
-import { StudioCardUpdateRpc } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
+import { StudioCreateRpc } from '@/presentation/messaging/studioCreateRpcHandlers';
+import type { StudioLauncher } from '@/presentation/providers/studioLauncher';
 import { StudioChatRpc } from '@/presentation/messaging/studioChatRpcHandlers';
 import { StudioFollowUpRpc } from '@/presentation/messaging/studioFollowUpRpcHandlers';
 import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
@@ -39,16 +41,17 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   private webviewView: vscode.WebviewView | undefined;
   private readonly disposables: vscode.Disposable[] = [];
   private lastTargetKey: string | undefined;
+  private isWebviewMounted: boolean = false;
 
   public constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly sessionRepository: IStudioSessionRepository,
     private readonly studio: Pick<
       StudioManager,
-      'chat' | 'context' | 'prepareProposal' | 'applyProposal'
+      'chat' | 'context' | 'prepareProposal' | 'applyProposal' | 'create'
     >,
     private readonly aiGateway: AiGateway,
-    private readonly cards: Pick<CardManager, 'collectProposals' | 'create' | 'read'>,
+    private readonly cards: Pick<CardManager, 'collectProposals' | 'read'>,
     private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
@@ -57,12 +60,14 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       InterviewManager,
       'start' | 'next' | 'answer' | 'confirm' | 'finish'
     >,
+    private readonly launcher: StudioLauncher,
     private readonly logger: IStoryboardLogger,
   ) {}
 
   public register(): vscode.Disposable {
     return vscode.Disposable.from(
       vscode.window.registerWebviewViewProvider(sidebarViewIds.studio, this),
+      this.launcher.onDidRequestCreate(() => void this.forwardCreateRequest()),
       this,
       this.toolDiagnostics,
     );
@@ -85,7 +90,23 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     }
   }
 
+  private async forwardCreateRequest(): Promise<void> {
+    if (!this.isWebviewMounted) {
+      return;
+    }
+
+    const kind: StudioCreatableKind | undefined = this.launcher.takePendingKind();
+    if (kind !== undefined) {
+      await this.webviewView?.webview.postMessage({
+        type: 'event',
+        method: 'studio.beginCreate',
+        payload: { kind },
+      });
+    }
+  }
+
   private async bootstrapWebview(webviewView: vscode.WebviewView): Promise<void> {
+    this.isWebviewMounted = false;
     const target: StudioTarget = await computeStudioTarget(resolveActiveStudioFocus());
     this.lastTargetKey = JSON.stringify(target);
 
@@ -153,11 +174,15 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         getTarget: () => computeStudioTarget(resolveActiveStudioFocus()),
         postProgress: (stage) => this.postChatProgress(stage),
       }).handlers(),
-      ...new StudioCardUpdateRpc({
+      ...new StudioCreateRpc({
         aiGateway: this.aiGateway,
-        cards: this.cards,
+        studio: this.studio,
+        launcher: this.launcher,
         logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
+        onWebviewMounted: (): void => {
+          this.isWebviewMounted = true;
+        },
       }).handlers(),
       ...new StudioProposalRpc({
         reviewService: this.reviewService,

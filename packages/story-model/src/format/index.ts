@@ -23,7 +23,6 @@ export * from '#model/format/craftContract';
 export * from '#model/format/project';
 export * from '#model/format/scene';
 export * from '#model/format/gitignore';
-export * from '#model/format/sceneNaming';
 export * from '#model/format/sceneContext';
 export * from '#model/format/sceneLength';
 export * from '#model/format/storyState';

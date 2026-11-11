@@ -37,6 +37,7 @@ export class WorkbenchModule implements IApplicationModule {
       proposalReviewService,
       secretStore,
       studio,
+      studioLauncher,
     } = this.platform;
     const configFiles = (): { readonly user: string; readonly workspace?: string } => ({
       user: homeStores.paths.configFile,
@@ -68,6 +69,7 @@ export class WorkbenchModule implements IApplicationModule {
         studio.followUps,
         { drafts, project },
         interviews,
+        studioLauncher,
         logger,
       ).register(),
       new CommandRegistrar().register([
