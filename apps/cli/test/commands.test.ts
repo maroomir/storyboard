@@ -20,7 +20,6 @@ import {
   parseStoryStructure,
   serializeDraft,
   serializeStoryStructure,
-  serializeSceneRenameJournal,
   STORYBOARD_RELATIVE_PATHS,
   type UsageRecord,
 } from '@storyboard/story-model';
@@ -34,7 +33,7 @@ import { createCliContainer } from '@/container';
 
 import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
-import { RunStore } from '@storyboard/story-engine';
+import { JournalStore, RunStore } from '@storyboard/story-engine';
 import { readCardYaml } from './fixtures/cardBundles';
 import {
   listSceneStems,
@@ -1313,33 +1312,38 @@ describe('doctor: interrupted scene rename', () => {
     await writeSceneBundleFromYaml(workspace, `type: scene\nid: ${stem}\ntitle: ${title}\n`);
   }
 
-  function writeRenameJournal(fromStem: string, toStem: string): void {
-    writeFileSync(
-      join(workspace, STORYBOARD_RELATIVE_PATHS.sceneRenameJournal),
-      serializeSceneRenameJournal({ from: parseSceneStem(fromStem)!, to: parseSceneStem(toStem)! }),
-    );
+  async function writeRenumberingJournal(): Promise<void> {
+    const caches = createWorkspaceCaches();
+    new JournalStore(await caches.open(NodeUri.file(workspace))).beginSceneRename([
+      {
+        sceneId: '00000000-0000-4000-8000-000000000001',
+        target: 'bundle',
+        from: 'scene/009-gone.card',
+        to: 'scene/001-gone.card',
+      },
+    ]);
+    await caches.closeAll();
   }
 
-  it('names the rename its journal left unfinished', async () => {
+  it('names the renumbering its journal left unfinished', async () => {
     await writeScene('001-night-market');
-    writeRenameJournal('001-night-market', '001-moon-market');
+    await writeRenumberingJournal();
 
     const outcome = await run('doctor', args(['doctor']));
 
     expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('001-night-market → 001-moon-market 가 끝나지 않아');
-    expect(outcome.message).toContain(
-      'storyboard scene rename 001-night-market --to 001-moon-market',
-    );
+    expect(outcome.message).toContain('1단계 중 0단계에서 끊겼습니다');
+    expect(outcome.message).toContain('storyboard init --repair');
   });
 
-  it('ignores a journal whose old card is already gone', async () => {
-    await writeScene('001-moon-market');
-    writeRenameJournal('001-night-market', '001-moon-market');
+  it('stops reporting once init --repair finishes the journal', async () => {
+    await writeScene('001-night-market');
+    await writeRenumberingJournal();
 
+    await run('init', args(['init'], { repair: true }));
     const outcome = await run('doctor', args(['doctor']));
 
-    expect(outcome.message).not.toContain('씬 이름 바꾸기');
+    expect(outcome.message).not.toContain('씬 번호 다시 매기기');
   });
 
   it('reports a draft left with no card', async () => {
@@ -1349,7 +1353,7 @@ describe('doctor: interrupted scene rename', () => {
     const outcome = await run('doctor', args(['doctor']));
 
     expect(outcome.message).toContain('draft/001-night-market.md 의 씬 카드가 없습니다');
-    expect(outcome.message).not.toContain('가 끝나지 않아');
+    expect(outcome.message).not.toContain('단계에서 끊겼습니다');
   });
 
   it('stays quiet about scenes that only look alike', async () => {
@@ -1358,7 +1362,7 @@ describe('doctor: interrupted scene rename', () => {
 
     const outcome = await run('doctor', args(['doctor']));
 
-    expect(outcome.message).not.toContain('씬 이름 바꾸기');
+    expect(outcome.message).not.toContain('씬 번호 다시 매기기');
     expect(outcome.message).not.toContain('카드 없는 씬 파일');
   });
 });
@@ -1372,7 +1376,7 @@ describe('scene rename: two fresh scenes are not a cut-off rename', () => {
   it('does not report a rename in doctor', async () => {
     const outcome = await run('doctor', args(['doctor']));
 
-    expect(outcome.message).not.toContain('씬 이름 바꾸기');
+    expect(outcome.message).not.toContain('씬 번호 다시 매기기');
   });
 
   it('refuses a number change and keeps both cards', async () => {

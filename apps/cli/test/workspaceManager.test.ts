@@ -9,7 +9,11 @@ import type { WorkspaceCaches } from '@storyboard/story-engine';
 import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
-import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
+import {
+  createWorkspaceCaches,
+  createWorkspaceRunLocks,
+  createWorkspaceScenes,
+} from './fixtures/workspaceCacheFixture';
 
 let directory: string;
 let warnings: string[];
@@ -31,6 +35,8 @@ function createManager(): WorkspaceManager {
       getConfiguration: () => ({ get: <T>(_section: string, defaultValue: T): T => defaultValue }),
     }),
     resourceRoots: [],
+    caches,
+    scenes: createWorkspaceScenes(caches),
   });
 }
 

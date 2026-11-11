@@ -49,6 +49,8 @@ import {
   DraftHistoryArchiver,
   ReviseDraftUseCase,
   RenameSceneUseCase,
+  MoveSceneUseCase,
+  RemoveSceneUseCase,
   SaveDraftEditUseCase,
   SceneBatchRepository,
   SceneCacheRepository,
@@ -174,6 +176,8 @@ interface EngineGraph {
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameCardUseCase: RenameCardUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
+  readonly moveSceneUseCase: MoveSceneUseCase;
+  readonly removeSceneUseCase: RemoveSceneUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly revisionPlanRecorder: RevisionPlanRecorder;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
@@ -233,6 +237,7 @@ export class StoryboardApplication {
       cards: services.cards,
       scenes: services.scenes,
       summaries: services.summaries,
+      caches: services.caches,
       configBridge: services.configBridge,
       resourceRoots: this.resourceRoots,
       runGate: this.runGate,
@@ -412,6 +417,8 @@ function buildServices(
     recommendCardsUseCase: new RecommendCardsUseCase(host, ai, repositories),
     renameCardUseCase: new RenameCardUseCase(host),
     renameSceneUseCase: new RenameSceneUseCase(host),
+    moveSceneUseCase: new MoveSceneUseCase(host),
+    removeSceneUseCase: new RemoveSceneUseCase(host),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase(host, ai, repositories),
     revisionPlanRecorder,
     reviseAfterGenerateGate,

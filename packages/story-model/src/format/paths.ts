@@ -5,7 +5,6 @@ interface StoryboardRelativePaths {
   readonly structure: string;
   readonly cacheDatabase: string;
   readonly cacheDirectory: string;
-  readonly sceneRenameJournal: string;
   readonly sceneCacheDirectory: string;
   readonly revisionRoundsDirectory: string;
   readonly cardCacheDirectory: string;
@@ -43,7 +42,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   structure: '.storyboard/structure.yaml',
   cacheDatabase: '.storyboard/cache/storyboard.db',
   cacheDirectory: '.storyboard/cache',
-  sceneRenameJournal: '.storyboard/cache/scene-rename.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
   revisionRoundsDirectory: '.storyboard/cache/revisions',
   cardCacheDirectory: '.storyboard/cache/cards',

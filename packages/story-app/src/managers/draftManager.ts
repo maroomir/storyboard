@@ -40,6 +40,12 @@ import type {
   RenameSceneRequest,
   RenameSceneResult,
   RenameSceneUseCase,
+  MoveSceneRequest,
+  MoveSceneResult,
+  MoveSceneUseCase,
+  RemoveSceneRequest,
+  RemoveSceneResult,
+  RemoveSceneUseCase,
   ReviseGateHooks,
   SaveDraftEditRequest,
   SaveDraftEditResult,
@@ -106,6 +112,8 @@ export interface DraftManagerDependencies {
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
   readonly createSceneUseCase: CreateSceneUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
+  readonly moveSceneUseCase: MoveSceneUseCase;
+  readonly removeSceneUseCase: RemoveSceneUseCase;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly fileSystem: IFileSystem;
   readonly cards: WorkspaceCards;
@@ -324,5 +332,13 @@ export class DraftManager {
 
   public renameScene(request: RenameSceneRequest): Promise<RenameSceneResult> {
     return this.deps.renameSceneUseCase.execute(request);
+  }
+
+  public moveScene(request: MoveSceneRequest): Promise<MoveSceneResult> {
+    return this.deps.moveSceneUseCase.execute(request);
+  }
+
+  public removeScene(request: RemoveSceneRequest): Promise<RemoveSceneResult> {
+    return this.deps.removeSceneUseCase.execute(request);
   }
 }

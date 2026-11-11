@@ -1,10 +1,8 @@
+import { SceneRenumberer } from '#engine/persistence/bundles/sceneRenumberer';
 import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
-  parseDraft,
   parseSceneStem,
-  serializeDraft,
-  serializeSceneRenameJournal,
   scenePath,
   type SceneRename,
   type StoryUri,
@@ -88,9 +86,10 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
 
     const root: StoryUri = request.workspaceRoot;
+    await new SceneRenumberer(this.host).resume(root);
 
     if ((await this.host.scenes.find(root, from.stem)) === undefined) {
-      return { ok: false, kind: 'missing', message: `씬이 없습니다: ${from.stem}` };
+      return await this.finishOrRefuseMissing(root, { from, to });
     }
 
     return await this.renameExistingScene(root, { from, to });
@@ -102,6 +101,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   ): Promise<RenameSceneResult> {
     const { from, to } = rename;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
+    const hasDraft: boolean = await this.host.fileSystem.exists(draftPath(root, from.stem));
     const moves: PlannedWrite[] = await this.planMoves(paths, rename);
     const rewrites: PlannedWrite[] = await this.planRewrites(paths, rename);
 
@@ -115,9 +115,31 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       toStem: to.stem,
       movedFiles: [
         relativePath(root, scenePath(root, to.stem)),
+        ...(hasDraft ? [relativePath(root, draftPath(root, to.stem))] : []),
         ...moves.map((move) => relativePath(root, move.to)),
       ],
       rewrittenFiles: rewrites.map((rewrite) => relativePath(root, rewrite.to)),
+    };
+  }
+
+  private async finishOrRefuseMissing(
+    root: StoryUri,
+    rename: SceneRename,
+  ): Promise<RenameSceneResult> {
+    const isAlreadyRenamed: boolean =
+      (await this.host.scenes.find(root, rename.to.stem)) !== undefined;
+    if (!isAlreadyRenamed) {
+      return { ok: false, kind: 'missing', message: `씬이 없습니다: ${rename.from.stem}` };
+    }
+
+    await this.renameRevisionPlanScene(root, rename);
+    return {
+      ok: true,
+      kind: 'renamed',
+      fromStem: rename.from.stem,
+      toStem: rename.to.stem,
+      movedFiles: [],
+      rewrittenFiles: [],
     };
   }
 
@@ -144,11 +166,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     moves: readonly PlannedWrite[],
     rewrites: readonly PlannedWrite[],
   ): Promise<void> {
-    await this.host.fileSystem.writeFile(
-      paths.sceneRenameJournal,
-      toBytes(serializeSceneRenameJournal(rename)),
-    );
-
     for (const write of [...moves, ...rewrites]) {
       await this.host.fileSystem.writeFile(write.to, toBytes(write.content));
     }
@@ -159,9 +176,9 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       }
     }
 
-    await this.host.scenes.renameSlug(paths.workspaceRoot, rename.from.stem, rename.to.slug);
+    await this.host.scenes.writeSlug(paths.workspaceRoot, rename.from.stem, rename.to.slug);
+    await new SceneRenumberer(this.host).renumber(paths.workspaceRoot);
     await this.deleteEmptyDirectories(paths, rename);
-    await this.host.fileSystem.delete(paths.sceneRenameJournal);
   }
 
   private async planMoves(
@@ -170,7 +187,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   ): Promise<PlannedWrite[]> {
     const moves: PlannedWrite[] = [];
 
-    await this.planDraftMove(moves, paths, rename);
     await this.planCacheFileMoves(moves, paths, rename);
     await this.planStudioSessionMoves(moves, paths, rename);
 
@@ -188,18 +204,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     if (raw !== undefined) {
       moves.push({ from: source, to: target, content: transform(raw) });
     }
-  }
-
-  private async planDraftMove(
-    moves: PlannedWrite[],
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-    const root: StoryUri = paths.workspaceRoot;
-
-    await this.addMove(moves, draftPath(root, rename.from.stem), draftPath(root, rename.to.stem), (raw) =>
-      serializeDraft({ ...parseDraft(raw), sceneStem: rename.to.stem }),
-    );
   }
 
   private async planCacheFileMoves(

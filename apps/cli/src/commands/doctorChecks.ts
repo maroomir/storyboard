@@ -9,6 +9,7 @@ import type {
   CardReading,
   ResourceOverrideReport,
 } from '@storyboard/story-app';
+import type { SceneRenameJournal } from '@storyboard/story-engine';
 import {
   backgroundCardRelativePath,
   computeInterviewContractHash,
@@ -22,7 +23,6 @@ import {
   listChapterTextsBySceneOrder,
   mainThreadId,
   parseSceneFileName,
-  parseSceneRenameJournal,
   parseSceneStem,
   readInterviewAxesFile,
   readMissingGitignoreEntries,
@@ -33,7 +33,6 @@ import {
   type ModelMeasurement,
   type NarratorCard,
   type SceneCard,
-  type SceneRename,
   type SidebarCardSummary,
   type StoryboardProject,
   type StoryboardProjectPaths,
@@ -54,18 +53,13 @@ export const largeSceneTarget: number = 8_000;
 export const acceptableReach: number = 0.8;
 
 export function collectInterruptedRenameChecks(
-  paths: ReturnType<typeof getStoryboardProjectPaths>,
+  journal: SceneRenameJournal | undefined,
   sceneFileNames: readonly string[],
   draftFileNames: readonly string[],
 ): DoctorCheck[] {
   const cardStems: Set<string> = new Set(
     sceneFileNames.flatMap((fileName) => parseSceneFileName(fileName)?.stem ?? []),
   );
-  const journal: SceneRename | undefined = existsSync(paths.sceneRenameJournal.fsPath)
-    ? parseSceneRenameJournal(readFileSync(paths.sceneRenameJournal.fsPath, 'utf8'))
-    : undefined;
-  const cutOffRename: SceneRename | undefined =
-    journal !== undefined && cardStems.has(journal.from.stem) ? journal : undefined;
 
   const orphanFiles: string[] = [
     ...draftFileNames
@@ -79,13 +73,13 @@ export function collectInterruptedRenameChecks(
   ];
 
   return [
-    ...(cutOffRename !== undefined
+    ...(journal !== undefined
       ? [
           {
             status: 'fail' as const,
-            label: '씬 이름 바꾸기',
-            detail: `${cutOffRename.from.stem} → ${cutOffRename.to.stem} 가 끝나지 않아 옛 카드가 남아 있습니다.`,
-            fix: `storyboard scene rename ${cutOffRename.from.stem} --to ${cutOffRename.to.stem}`,
+            label: '씬 번호 다시 매기기',
+            detail: `씬 폴더·초안 이름 바꾸기가 ${journal.steps.length}단계 중 ${journal.completedSteps}단계에서 끊겼습니다.`,
+            fix: 'storyboard init --repair',
           },
         ]
       : []),
@@ -122,6 +116,7 @@ interface WorkspaceSurvey {
   readonly hasOutline: boolean;
   readonly census: SceneCardCensus;
   readonly missingIgnoreEntries: readonly string[];
+  readonly unfinishedSceneRenumbering: SceneRenameJournal | undefined;
 }
 
 type WorkspaceCheck = (survey: WorkspaceSurvey) => DoctorCheck[];
@@ -252,7 +247,11 @@ function checkMissingDirectories({ missingDirectories }: WorkspaceSurvey): Docto
 }
 
 function checkInterruptedRenames(survey: WorkspaceSurvey): DoctorCheck[] {
-  return collectInterruptedRenameChecks(survey.paths, survey.sceneFileNames, survey.drafts);
+  return collectInterruptedRenameChecks(
+    survey.unfinishedSceneRenumbering,
+    survey.sceneFileNames,
+    survey.drafts,
+  );
 }
 
 function checkUnreadableSceneCards({ census }: WorkspaceSurvey): DoctorCheck[] {
@@ -616,6 +615,9 @@ export class DoctorChecks {
       hasOutline,
       census,
       missingIgnoreEntries,
+      unfinishedSceneRenumbering: await this.container.workspace.findUnfinishedSceneRenumbering(
+        this.container.workspaceRoot,
+      ),
     };
   }
 

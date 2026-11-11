@@ -30,7 +30,6 @@ export interface StoryboardProjectPaths {
   readonly structure: StoryUri;
   readonly cacheDatabase: StoryUri;
   readonly cacheDirectory: StoryUri;
-  readonly sceneRenameJournal: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
   readonly revisionRoundsDirectory: StoryUri;
   readonly cardCacheDirectory: StoryUri;
@@ -92,7 +91,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     structure: resolve(STORYBOARD_RELATIVE_PATHS.structure),
     cacheDatabase: resolve(STORYBOARD_RELATIVE_PATHS.cacheDatabase),
     cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
-    sceneRenameJournal: resolve(STORYBOARD_RELATIVE_PATHS.sceneRenameJournal),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
