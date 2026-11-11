@@ -3,6 +3,8 @@ import { sampleCardFileName } from '#model/format/sampleCard';
 interface StoryboardRelativePaths {
   readonly metadataDirectory: string;
   readonly projectJson: string;
+  readonly structure: string;
+  readonly cacheDatabase: string;
   readonly cacheDirectory: string;
   readonly memoryDirectory: string;
   readonly threadMemoryDirectory: string;
@@ -60,6 +62,8 @@ interface StoryboardRelativePaths {
 export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   metadataDirectory: '.storyboard',
   projectJson: '.storyboard/project.json',
+  structure: '.storyboard/structure.yaml',
+  cacheDatabase: '.storyboard/cache/storyboard.db',
   cacheDirectory: '.storyboard/cache',
   memoryDirectory: '.storyboard/memory',
   threadMemoryDirectory: '.storyboard/memory/threads',
