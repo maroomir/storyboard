@@ -5,7 +5,6 @@ import { createRequestId, parseCardEditorInitialData } from '@webview/lib/messag
 import type { CardEditorInitialData, EditorCard, StoryboardEventMessage } from '@webview/lib/types';
 import { Button } from '@webview/components/ui/Button';
 import { CollectPanel } from '@webview/components/editor/CollectPanel';
-import { InterviewPanel } from '@webview/components/editor/InterviewPanel';
 import { PreviewPanel } from '@webview/components/editor/PreviewPanel';
 import { YamlEditorPanel } from '@webview/components/editor/YamlEditorPanel';
 import { SectionHeader } from '@webview/components/ui/SectionHeader';
@@ -231,23 +230,9 @@ export function CardEditor({
       ),
     };
 
-    const interviewTab: TabItem = {
-      id: 'interview',
-      label: '인터뷰',
-      panel: (
-        <InterviewPanel
-          card={card}
-          documentUri={documentState.documentUri}
-          vscodeApi={vscodeApi}
-          onStatusChange={setStatus}
-        />
-      ),
-    };
-
     if (card.type !== 'character') {
       return [
         { id: 'overview', label: '편집', panel: overview },
-        interviewTab,
         collectTab,
         { id: 'yaml', label: 'YAML', panel: yamlPanel },
       ];
@@ -275,7 +260,6 @@ export function CardEditor({
           </div>
         ),
       },
-      interviewTab,
       collectTab,
       { id: 'yaml', label: 'YAML', panel: yamlPanel },
     ];

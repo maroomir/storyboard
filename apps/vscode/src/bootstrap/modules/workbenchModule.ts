@@ -31,6 +31,7 @@ export class WorkbenchModule implements IApplicationModule {
       configBridge,
       drafts,
       homeStores,
+      interviews,
       logger,
       project,
       proposalReviewService,
@@ -66,6 +67,7 @@ export class WorkbenchModule implements IApplicationModule {
         proposalReviewService,
         studio.followUps,
         { drafts, project },
+        interviews,
         logger,
       ).register(),
       new CommandRegistrar().register([

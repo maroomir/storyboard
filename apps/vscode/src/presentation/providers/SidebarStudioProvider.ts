@@ -19,7 +19,7 @@ import type {
   StudioTarget,
 } from '@storyboard/story-model';
 import type { StudioChatStage } from '@storyboard/story-engine';
-import type { CardManager, StudioManager } from '@storyboard/story-app';
+import type { CardManager, InterviewManager, StudioManager } from '@storyboard/story-app';
 import type { AiGateway } from '@storyboard/story-engine';
 import { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import { StudioCardUpdateRpc } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
@@ -27,6 +27,7 @@ import { StudioChatRpc } from '@/presentation/messaging/studioChatRpcHandlers';
 import { StudioFollowUpRpc } from '@/presentation/messaging/studioFollowUpRpcHandlers';
 import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { StudioSessionRpc } from '@/presentation/messaging/studioSessionRpcHandlers';
+import { StudioInterviewRpc } from '@/presentation/messaging/studioInterviewRpcHandlers';
 import {
   computeStudioTarget,
   resolveActiveStudioFocus,
@@ -52,6 +53,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
     private readonly documents: StudioDocumentManagers,
+    private readonly interviews: Pick<
+      InterviewManager,
+      'start' | 'next' | 'answer' | 'confirm' | 'finish'
+    >,
     private readonly logger: IStoryboardLogger,
   ) {}
 
@@ -165,6 +170,11 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       }).handlers(),
       ...new StudioSessionRpc({
         repository: this.sessionRepository,
+        getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
+      }).handlers(),
+      ...new StudioInterviewRpc({
+        interviews: this.interviews,
+        cards: this.cards,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
       }).handlers(),
     };
