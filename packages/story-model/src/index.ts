@@ -52,6 +52,7 @@ export * from '#model/domain/files/studioFollowUp';
 export * from '#model/domain/files/studioSession';
 export * from '#model/domain/files/usageLedger';
 export * from '#model/domain/files/workspaceRunLock';
+export * from '#model/domain/elementResolver';
 export * from '#model/domain/foreshadowingTracker';
 export * from '#model/domain/generationContract';
 export * from '#model/domain/manuscriptExport';
