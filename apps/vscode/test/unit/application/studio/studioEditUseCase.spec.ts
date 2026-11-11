@@ -107,6 +107,21 @@ describe("StudioEditUseCase", () => {
     expect(pending).toHaveLength(1)
   })
 
+  it("shows a preview's proposal and diff without keeping a session", async () => {
+    const result = await createEdit().execute({
+      workspaceRoot,
+      entity,
+      instruction: "말투를 더 퉁명스럽게",
+      shouldPropose: true,
+      isValidationEnabled: false,
+      isPreview: true
+    })
+
+    expect(result).toMatchObject({ ok: true, kind: "proposed" })
+    expect(new SessionStore(await caches.open(workspaceRoot)).listWithPending()).toHaveLength(0)
+    expect(await latestSession()).toBeUndefined()
+  })
+
   it("records a failed proposal without claiming it was applied", async () => {
     applier.apply.mockResolvedValueOnce({ status: "failed", message: "제안을 만든 뒤 파일이 바뀌어서" })
 

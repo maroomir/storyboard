@@ -35,6 +35,7 @@ export interface StudioEditRequest {
   readonly shouldPropose: boolean;
   readonly isValidationEnabled: boolean;
   readonly attribution?: UsageAttribution;
+  readonly isPreview?: boolean;
 }
 
 export interface StudioProposalDiff {
@@ -97,7 +98,12 @@ export class StudioEditUseCase implements IUseCase<StudioEditRequest, StudioEdit
     const userTurn: StudioChatTurn = { id: randomUUID(), role: 'user', text: request.instruction };
     const replies: readonly StudioChatTurn[] = await this.runChat(request, entityContext);
     const proposal: StudioProposalTurn | undefined = findProposal(replies);
-    const record = async (turns: readonly StudioChatTurn[], hasAppliedChanges: boolean): Promise<void> =>
+    const shouldKeepSession: boolean = request.isPreview !== true;
+    const record = async (turns: readonly StudioChatTurn[], hasAppliedChanges: boolean): Promise<void> => {
+      if (!shouldKeepSession) {
+        return;
+      }
+
       await this.dependencies.sessions.save(request.workspaceRoot, {
         id: sessionId,
         entity: request.entity,
@@ -105,6 +111,7 @@ export class StudioEditUseCase implements IUseCase<StudioEditRequest, StudioEdit
         hasAppliedChanges,
         turns: [userTurn, ...turns],
       });
+    };
 
     if (proposal === undefined) {
       await record(replies, false);
