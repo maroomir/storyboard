@@ -29,7 +29,6 @@ interface StoryboardRelativePaths {
   readonly narratorDirectory: string;
   readonly sceneDirectory: string;
   readonly draftDirectory: string;
-  readonly draftHistoryDirectory: string;
   readonly manuscriptDirectory: string;
   readonly manuscriptVolume: string;
   readonly gitignore: string;
@@ -68,7 +67,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   narratorDirectory: 'narrator',
   sceneDirectory: 'scene',
   draftDirectory: 'draft',
-  draftHistoryDirectory: '.draft',
   manuscriptDirectory: 'manuscript',
   manuscriptVolume: 'manuscript/manuscript.md',
   gitignore: '.gitignore',
@@ -117,10 +115,6 @@ export function sceneRelativePath(sceneStem: string): string {
 
 export function draftRelativePath(sceneStem: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/${sceneStem}${STORYBOARD_FILE_EXTENSIONS.draft}`;
-}
-
-export function draftHistorySceneRelativeDirectory(sceneStem: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}`;
 }
 
 export function parseCardIdFromFileName(fileName: string): string | undefined {

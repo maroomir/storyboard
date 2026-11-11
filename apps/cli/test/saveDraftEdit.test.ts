@@ -1,27 +1,35 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { SaveDraftEditUseCase, type DraftArchivePolicy } from '@storyboard/story-engine';
+import {
+  SaveDraftEditUseCase,
+  type DraftArchivePolicy,
+  type WorkspaceCaches,
+} from '@storyboard/story-engine';
 import { createDraft, NodeUri, parseDraft, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createTestHost } from '@storyboard/story-engine/testing';
 
-const stem = '01-harbor';
+import { createWorkspaceCaches, createWorkspaceScenes } from './fixtures/workspaceCacheFixture';
+import {
+  draftRevisionDirectory,
+  listDraftRevisions,
+  writeSceneBundleFromYaml,
+} from './fixtures/sceneBundles';
+
+const stem = '001-harbor';
 
 let workspace: string;
+let caches: WorkspaceCaches;
 
 function draftFile(): string {
   return join(workspace, 'draft', `${stem}.md`);
 }
 
-function historyFiles(): string[] {
-  try {
-    return readdirSync(join(workspace, '.draft', stem));
-  } catch {
-    return [];
-  }
+async function historyFiles(): Promise<string[]> {
+  return await listDraftRevisions(workspace, stem);
 }
 
 function save(
@@ -33,6 +41,7 @@ function save(
     createTestHost({
       fileSystem: new NodeFileSystem(),
       configBridge: { isKeepDraftHistoryEnabled: () => isKeepDraftHistoryEnabled } as never,
+      scenes: createWorkspaceScenes(caches),
     }),
   ).execute({
     workspaceRoot: NodeUri.file(workspace),
@@ -42,8 +51,10 @@ function save(
   });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-edit-'));
+  caches = createWorkspaceCaches();
+  await writeSceneBundleFromYaml(workspace, `type: scene\nid: ${stem}\n`);
   mkdirSync(join(workspace, 'draft'), { recursive: true });
   writeFileSync(
     draftFile(),
@@ -59,7 +70,8 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await caches.closeAll();
   rmSync(workspace, { recursive: true, force: true });
 });
 
@@ -72,9 +84,12 @@ describe('SaveDraftEditUseCase', () => {
     expect(saved.body).toBe('작가가 고친 문단.\n');
     expect(saved.generatedAt).toBe('2026-09-27T00:00:00.000Z');
     expect(saved.warnings).toEqual(['too-short']);
-    expect(historyFiles()).toHaveLength(1);
+    expect(await historyFiles()).toHaveLength(1);
     expect(
-      readFileSync(join(workspace, '.draft', stem, historyFiles()[0] ?? ''), 'utf8'),
+      readFileSync(
+        join(await draftRevisionDirectory(workspace, stem), (await historyFiles())[0] ?? ''),
+        'utf8',
+      ),
     ).toContain('생성된 첫 문단.');
   });
 
@@ -82,21 +97,21 @@ describe('SaveDraftEditUseCase', () => {
     await save('한 번.\n', 'always');
     await save('두 번.\n', 'never');
 
-    expect(historyFiles()).toHaveLength(1);
+    expect(await historyFiles()).toHaveLength(1);
     expect(parseDraft(readFileSync(draftFile(), 'utf8')).body).toBe('두 번.\n');
   });
 
   it('follows the history setting by default', async () => {
     await save('설정을 따름.\n', 'per-setting', false);
-    expect(historyFiles()).toHaveLength(0);
+    expect(await historyFiles()).toHaveLength(0);
 
     await save('설정이 켜짐.\n', 'per-setting', true);
-    expect(historyFiles()).toHaveLength(1);
+    expect(await historyFiles()).toHaveLength(1);
   });
 
   it('writes nothing when the body did not change', async () => {
     expect(await save('생성된 첫 문단.\n', 'always')).toEqual({ ok: true, kind: 'unchanged' });
-    expect(historyFiles()).toHaveLength(0);
+    expect(await historyFiles()).toHaveLength(0);
   });
 
   it('reports a missing draft instead of creating one', async () => {

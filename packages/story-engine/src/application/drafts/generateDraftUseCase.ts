@@ -1,3 +1,4 @@
+import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 import { ChapterSummaryRefresher } from '#engine/application/manuscript/chapterSummaryRefresher';
 import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import type {
@@ -16,15 +17,12 @@ import type {
 } from '@storyboard/story-model';
 import {
   AiProviderError,
-  draftHistorySceneDirectory,
-  joinUri,
   computeDraftBodyHash,
   createDraft,
   joinCardText,
   parseDraft,
   serializeDraft,
   buildStyleDirective,
-  archiveExistingDraft,
   type SceneCacheRecord,
   extractErrorMessage,
 } from '@storyboard/story-model';
@@ -172,20 +170,14 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       return;
     }
 
-    const historyDirectory: StoryUri = draftHistorySceneDirectory(
-      inputs.workspaceFolder.uri,
-      inputs.scene.stem,
-    );
-
     try {
-      await archiveExistingDraft({
-        draftUri: inputs.draftUri,
-        historyDirectory,
-        resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-        fileSystem: this.host.fileSystem,
-      });
+      await new DraftHistoryArchiver(this.host).archive(
+        inputs.workspaceFolder.uri,
+        inputs.scene.stem,
+        inputs.draftUri,
+      );
     } catch (error) {
-      this.host.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
+      this.host.logger.warn(`이전 초안을 판본으로 보관하지 못했습니다: ${String(error)}`);
     }
   }
 

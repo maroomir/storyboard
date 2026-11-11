@@ -26,7 +26,7 @@ English README: [`README.en.md`](README.en.md)
 - 씬 사실 시트(grounding): 사건(씬 제목과 첫 비트)·장소(첫 비트의 장소나 배경 카드)·시점(첫 비트의 시간)·관계를 카드에서 파생해 대사 생성에 주입. 따로 저장하거나 AI에게 묻지 않음
 - 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
 - 고정 산문 규약: 서술은 과거형, 대사는 곡선 큰따옴표(`“ ”`). 한 작품 안에서 갈리면 안 되는 규약이라 계약이 아니라 세 생성 프롬프트에 고정으로 주입한다
-- 이전 초안 히스토리 보관(`editor.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
+- 이전 초안 판본 보관(`editor.draft.keepHistory`): 덮어쓰기 직전 초안을 캐시 `.storyboard/cache/revisions/<씬 uuid>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 씬마다 최근 10판까지 적재(기본 꺼짐)
 - 장면 전환 구분자 삽입(`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - 씬의 인물·장소 카드에 적힌 사실(`fact` 진술) 주입과 초안 연속성 검사
 - **노트 흡수** (`Storyboard: Absorb Notes…`): Obsidian 폴더·노트, Notion 내보내기 zip, Notion 페이지 주소를 골라 읽고, 견적 → AI 정리 → 계획 확인 뒤 인물·배경·씬 카드와 시놉시스로 옮깁니다(CLI `notes absorb`와 같은 동작). 기존 카드에 대한 내용은 후보로 남고 `Promote Card Candidates`가 초안 후보와 함께 보여 줍니다.
@@ -64,7 +64,7 @@ manuscript/*.md
 - `Storyboard: Generate Novel Outline`은 `synopsis.md`와 `chapters.yaml`을 만들고, `Storyboard: Generate Scene Seeds`는 이 계획에서 씬 시드를 파생합니다.
 - `.card` 파일은 YAML 기반 자료 카드입니다.
 - `scene/*.card` 파일 하나가 씬 하나이며(`type: scene`), 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다.
-- 씬은 `scene/NNN-slug.card/` 폴더 하나이고, 번호(세 자리)는 `.storyboard/structure.yaml` 의 순서에서 나옵니다. 이름(slug)을 바꿀 때는 명령 팔레트의 **Storyboard: Rename Scene...** 을 씁니다. 씬 폴더·초안·`.draft/` 이력·캐시·대사 기억·Studio 대화가 함께 옮겨지고, 캐넌의 참조도 새 이름으로 고쳐집니다. 이름 바꾸기는 번호를 바꾸지 않습니다.
+- 씬은 `scene/NNN-slug.card/` 폴더 하나이고, 번호(세 자리)는 `.storyboard/structure.yaml` 의 순서에서 나옵니다. 이름(slug)을 바꿀 때는 명령 팔레트의 **Storyboard: Rename Scene...** 을 씁니다. 씬 폴더(대사·상태 포함)·초안·캐시·Studio 대화가 함께 옮겨집니다(판본은 씬 uuid 아래라 그대로). 이름 바꾸기는 번호를 바꾸지 않습니다.
 - `draft/*.md` 파일은 AI가 생성하고 검사·재작성하는 원고입니다.
 - `manuscript/`는 장별 조립 원고, 전체 원고(`manuscript.md`), 최종 검사·요약·복선 보고서를 담는 재생성 가능한 산출물입니다.
 

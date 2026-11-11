@@ -232,7 +232,7 @@ storyboard project set --composition alternating-pov --pov-characters hana,jun -
 storyboard scene show 03-night-market
 ```
 
-A scene's file name is its key: the draft, its `.draft/` history, the summary, the caches, the
+A scene's file name is its key: the draft, the summary, the caches, the
 dialogue memory and the studio sessions are all named after the stem, and the story-state ledger
 and canon refer to it by stem or by number. `scene rename` moves and rewrites all of them together.
 It refuses a number another scene already holds, so to insert a scene, move the later scenes up

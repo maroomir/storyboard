@@ -1,3 +1,4 @@
+import type { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
@@ -7,7 +8,6 @@ import {
   characterCardPath,
   characterMatchTokens,
   detectCharactersInText,
-  draftHistorySceneDirectory,
   draftPath,
   extractDraftBody,
   getStoryboardProjectPaths,
@@ -147,6 +147,7 @@ export class StudioContextRepository {
     private readonly cards: WorkspaceCards,
     private readonly scenes: WorkspaceScenes,
     private readonly summaries: ChapterSummaryLedger,
+    private readonly revisions: DraftHistoryArchiver,
   ) {}
 
   public async readEntityContext(
@@ -476,8 +477,9 @@ export class StudioContextRepository {
     sceneStem: string,
   ): Promise<number | undefined> {
     try {
-      const fileNames: readonly string[] = await this.fileSystem.listFileNames(
-        draftHistorySceneDirectory(workspaceRoot, sceneStem),
+      const fileNames: readonly string[] = await this.revisions.listRevisions(
+        workspaceRoot,
+        sceneStem,
       );
 
       const currentRevision: number = nextDraftHistoryRevision(fileNames);

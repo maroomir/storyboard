@@ -426,6 +426,7 @@ function buildServices(
       cards,
       scenes,
       summaries,
+      new DraftHistoryArchiver(host),
     ),
     studioSessionRepository: new StudioSessionRepository(fileSystem),
     studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),

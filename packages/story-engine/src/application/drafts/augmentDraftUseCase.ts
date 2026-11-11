@@ -1,3 +1,4 @@
+import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { AiServices, HostAdapters } from '#engine/application/engineServices';
@@ -15,12 +16,9 @@ import type {
 import { failedResult } from '#engine/application/useCase';
 import {
   sceneContextPaths,
-  draftHistorySceneDirectory,
   getStoryboardProjectPaths,
-  joinUri,
   formatBibleFactLines,
   SceneParseError,
-  archiveExistingDraft,
 } from '@storyboard/story-model';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { DraftAugmentScope } from '@storyboard/story-ai';
@@ -103,20 +101,14 @@ export class AugmentDraftUseCase {
       return;
     }
 
-    const historyDirectory: StoryUri = draftHistorySceneDirectory(
-      request.workspaceRoot,
-      request.sceneStem,
-    );
-
     try {
-      await archiveExistingDraft({
-        draftUri: request.draftUri,
-        historyDirectory,
-        resolveArchiveUri: (archiveFileName) => joinUri(historyDirectory, archiveFileName),
-        fileSystem: this.host.fileSystem,
-      });
+      await new DraftHistoryArchiver(this.host).archive(
+        request.workspaceRoot,
+        request.sceneStem,
+        request.draftUri,
+      );
     } catch (error) {
-      this.host.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
+      this.host.logger.warn(`이전 초안을 판본으로 보관하지 못했습니다: ${String(error)}`);
     }
   }
 

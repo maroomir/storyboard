@@ -55,7 +55,7 @@
 ## 6) 바뀐 문장 보기
 
 초안을 다시 쓰는 명령은 끝난 뒤 바뀐 문장만 골라 보여 줍니다. 같은 문장은 «N문장 같음»으로
-접힙니다. 고치기 전 초안은 `.draft/`에 남습니다.
+접힙니다. 고치기 전 초안은 캐시(`.storyboard/cache/revisions/`)에 판본으로 남습니다.
 
 ![문장 diff](docs/screenshots/08-draft-diff.png)
 

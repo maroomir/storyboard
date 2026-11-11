@@ -40,6 +40,7 @@ import {
   listSceneStems,
   readSceneCardYaml,
   readSceneState,
+  listDraftRevisions,
   writeSceneBundleFromYaml,
 } from './fixtures/sceneBundles';
 
@@ -1404,9 +1405,8 @@ describe('draft edit and draft augment', () => {
     return parseDraft(readFileSync(join(workspace, 'draft', '001-night-market.md'), 'utf8')).body;
   }
 
-  function historyCount(): number {
-    const directory = join(workspace, '.draft', '001-night-market');
-    return existsSync(directory) ? readdirSync(directory).length : 0;
+  async function historyCount(): Promise<number> {
+    return (await listDraftRevisions(workspace, '001-night-market')).length;
   }
 
   it.each([
@@ -1430,7 +1430,7 @@ describe('draft edit and draft augment', () => {
 
     await run(verb, args(verb.split(' '), flags, ['001-night-market']));
 
-    expect(historyCount()).toBe(0);
+    expect(await historyCount()).toBe(0);
 
     writeFileSync(
       join(home, 'config.json'),
@@ -1438,7 +1438,7 @@ describe('draft edit and draft augment', () => {
     );
     await run(verb, args(verb.split(' '), flags, ['001-night-market']));
 
-    expect(historyCount()).toBe(1);
+    expect(await historyCount()).toBe(1);
   });
 
   it.each([
@@ -1454,7 +1454,7 @@ describe('draft edit and draft augment', () => {
 
     expect(outcome.ok).toBe(true);
     expect(draftBody()).toBe(originalBody);
-    expect(historyCount()).toBe(0);
+    expect(await historyCount()).toBe(0);
   });
 
   it('refuses an empty --lines range on --dry-run too', async () => {

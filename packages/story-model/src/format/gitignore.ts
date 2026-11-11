@@ -4,7 +4,6 @@ export const storyboardGitignoreMarker: string = '# Storyboard generated files';
 
 export const storyboardGitignoreEntries: readonly string[] = [
   `${STORYBOARD_RELATIVE_PATHS.cacheDirectory}/`,
-  `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/`,
   `${STORYBOARD_RELATIVE_PATHS.manuscriptDirectory}/`,
 ];
 
