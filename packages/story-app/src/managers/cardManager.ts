@@ -30,12 +30,12 @@ import type {
   StoryFileSnapshot,
   IBackgroundFactConflictStore,
   CardCollectRepository,
+  WorkspaceCaches,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
-  getStoryboardProjectPaths,
   parseCard,
   type BackgroundFactConflict,
   type CardCandidateItem,
@@ -76,6 +76,7 @@ export interface CardManagerDependencies {
   readonly cardCollectRepository: CardCollectRepository;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly fileSystem: IFileSystem;
+  readonly caches: WorkspaceCaches;
 }
 
 export class CardManager {
@@ -113,8 +114,8 @@ export class CardManager {
     workspaceRoot: StoryUri,
   ): Promise<BackgroundFactConflictReport[]> {
     const store: IBackgroundFactConflictStore = new BackgroundFactConflictStore(
-      this.deps.fileSystem,
-      getStoryboardProjectPaths(workspaceRoot),
+      this.deps.caches,
+      workspaceRoot,
     );
     const reports: BackgroundFactConflictReport[] = [];
 

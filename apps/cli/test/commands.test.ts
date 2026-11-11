@@ -30,7 +30,7 @@ import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
-import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/runLockFixture';
+import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 import { RunStore } from '@storyboard/story-engine';
 
 let home: string;

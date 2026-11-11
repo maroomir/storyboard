@@ -13,7 +13,7 @@ import {
   createWorkspaceCaches,
   createWorkspaceRunLocks,
   plantRunLock,
-} from './fixtures/runLockFixture';
+} from './fixtures/workspaceCacheFixture';
 
 let directory: string;
 let warnings: string[];

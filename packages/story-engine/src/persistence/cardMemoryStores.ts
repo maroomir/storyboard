@@ -2,10 +2,6 @@ import {
   joinStoryPath,
   type StoryUri,
   computeBackgroundCardHash,
-  computeBackgroundFactConflictKey,
-  parseBackgroundFactConflictRecords,
-  serializeBackgroundFactConflictRecords,
-  type BackgroundFactConflictRecords,
   computeDraftBodyHash,
   computePersonaCardHash,
   parseDraft,
@@ -30,12 +26,9 @@ import type {
   VoiceSeeds,
   PersonaMemoryRecord,
   BackgroundMemoryRecord,
-  BackgroundFactConflictRecord,
   SceneDialogueTurn,
-  BackgroundFactConflict,
 } from '@storyboard/story-model';
 import type {
-  IBackgroundFactConflictStore,
   IBackgroundMemoryStore,
   IPersonaMemoryStore,
   ISceneDialogueStore,
@@ -129,54 +122,6 @@ export class BackgroundMemoryStore implements IBackgroundMemoryStore {
 
   private filePath(cardId: string): StoryUri {
     return joinStoryPath(this.paths.backgroundMemoryDirectory, `${cardId}.json`);
-  }
-}
-
-export class BackgroundFactConflictStore implements IBackgroundFactConflictStore {
-  private readonly promptFingerprint: string = promptResourceFingerprint('backgroundFactConflicts');
-
-  public constructor(
-    private readonly fileSystem: IFileSystem,
-    private readonly paths: StoryboardProjectPaths,
-  ) {}
-
-  public async load(card: BackgroundCard): Promise<readonly BackgroundFactConflict[] | undefined> {
-    const record: BackgroundFactConflictRecord | undefined = (await this.readRecords())[card.id];
-    const isCurrent: boolean =
-      record?.inputKey === computeBackgroundFactConflictKey(card, this.promptFingerprint);
-
-    return isCurrent ? record?.conflicts : undefined;
-  }
-
-  public async save(card: BackgroundCard, conflicts: readonly BackgroundFactConflict[]): Promise<void> {
-    const records: BackgroundFactConflictRecords = await this.readRecords();
-    const next: BackgroundFactConflictRecords = {
-      ...records,
-      [card.id]: {
-        inputKey: computeBackgroundFactConflictKey(card, this.promptFingerprint),
-        conflicts,
-      },
-    };
-    await this.fileSystem.createDirectory(this.paths.cacheDirectory);
-    await this.fileSystem.writeFile(
-      this.paths.backgroundFactConflicts,
-      new TextEncoder().encode(serializeBackgroundFactConflictRecords(next)),
-    );
-  }
-
-  public async readRecords(): Promise<BackgroundFactConflictRecords> {
-    if (!(await this.fileSystem.exists(this.paths.backgroundFactConflicts))) {
-      return {};
-    }
-
-    try {
-      const raw: string = new TextDecoder().decode(
-        await this.fileSystem.readFile(this.paths.backgroundFactConflicts),
-      );
-      return parseBackgroundFactConflictRecords(raw);
-    } catch {
-      return {};
-    }
   }
 }
 

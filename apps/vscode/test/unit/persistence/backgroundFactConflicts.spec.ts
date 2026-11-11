@@ -1,57 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
-import { BackgroundFactConflictStore } from '@storyboard/story-engine';
-import {
-  getStoryboardProjectPaths,
-  readBackgroundFactConflictResponse,
-  type BackgroundCard,
-} from '@storyboard/story-model';
-import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
+import { BackgroundFactConflictStore, type WorkspaceCaches } from '@storyboard/story-engine';
+import { readBackgroundFactConflictResponse, type BackgroundCard } from '@storyboard/story-model';
 
-class MemoryWorkspace implements IFileSystem {
-  private readonly files = new Map<string, string>();
-
-  public async readFile(uri: { path: string }): Promise<Uint8Array> {
-    const content = this.files.get(uri.path);
-
-    if (content === undefined) {
-      throw new Error(`ENOENT: ${uri.path}`);
-    }
-
-    return new TextEncoder().encode(content);
-  }
-
-  public async writeFile(uri: { path: string }, content: Uint8Array): Promise<void> {
-    this.files.set(uri.path, new TextDecoder().decode(content));
-  }
-
-  public async createDirectory(): Promise<void> {}
-
-  public async exists(uri: { path: string }): Promise<boolean> {
-    return this.files.has(uri.path);
-  }
-
-  public async listFileNames(): Promise<string[]> {
-    return [];
-  }
-
-  public async readDirectory(): Promise<FileSystemDirectoryEntry[]> {
-    return [];
-  }
-
-  public async delete(uri: { path: string }): Promise<void> {
-    this.files.delete(uri.path);
-  }
-
-  public async modifiedTime(): Promise<number> {
-    return 0;
-  }
-
-  public async isRealPathInside(): Promise<boolean> {
-    return true;
-  }
-}
+import { createMemoryCaches } from '../../stubs/caches';
 
 const sofa = '손님은 거실 소파에서 잔다';
 const room = '손님에게 자기 방이 있다';
@@ -91,19 +44,19 @@ describe('background fact conflict response', () => {
 });
 
 describe('background fact conflict store', () => {
-  const paths = getStoryboardProjectPaths(vscode.Uri.file('/workspace'));
-  let fileSystem: MemoryWorkspace;
+  const workspaceRoot = vscode.Uri.file('/workspace');
+  let caches: WorkspaceCaches;
 
   beforeEach(() => {
-    fileSystem = new MemoryWorkspace();
+    caches = createMemoryCaches();
   });
 
   it('has no answer for a card it never checked', async () => {
-    expect(await new BackgroundFactConflictStore(fileSystem, paths).load(condo)).toBeUndefined();
+    expect(await new BackgroundFactConflictStore(caches, workspaceRoot).load(condo)).toBeUndefined();
   });
 
   it('returns the saved answer while the card lines stay the same', async () => {
-    const store = new BackgroundFactConflictStore(fileSystem, paths);
+    const store = new BackgroundFactConflictStore(caches, workspaceRoot);
     await store.save(condo, [{ items: [sofa, room] }]);
 
     expect(await store.load({ ...condo, tags: ['새 태그'] })).toEqual([{ items: [sofa, room] }]);
@@ -112,8 +65,8 @@ describe('background fact conflict store', () => {
     ).toBeUndefined();
   });
 
-  it('keeps one record per card in the shared cache file', async () => {
-    const store = new BackgroundFactConflictStore(fileSystem, paths);
+  it('keeps one record per card in the findings table', async () => {
+    const store = new BackgroundFactConflictStore(caches, workspaceRoot);
     const office: BackgroundCard = { ...condo, id: 'office', name: '사무실' };
     await store.save(condo, [{ items: [sofa, room] }]);
     await store.save(office, []);

@@ -15,6 +15,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **실행 잠금이 캐시 DB 로 옮겨 갔습니다.** 한 작품에 쓰는 앱을 하나로 지키는 잠금이 `.storyboard/cache/run.lock` 파일이 아니라 `.storyboard/cache/storyboard.db` 의 표에 있습니다. 확장과 CLI 는 이 DB 를 같은 WebAssembly SQLite 로 엽니다.
 - **사용량 장부가 캐시 DB 로 옮겨 갔습니다.** 호출마다의 사용량이 `.storyboard/cache/usage.json` 이 아니라 캐시 DB 의 `usage` 표에 쌓이고, 확장뿐 아니라 CLI 도 기록합니다.
 - **장편 생성의 진행 상태가 캐시 DB 로 옮겨 갔습니다.** 끊긴 장편 생성을 이어 가는 근거가 `.storyboard/cache/novel-run.json` 이 아니라 캐시 DB 의 `runs` 표에 있습니다.
+- **판정 기록이 캐시 DB 로 옮겨 갔습니다.** 사실 시트에서 모델이 비워 둔 칸(`grounding-gaps.json`)과 배경 카드의 상충(`background-conflicts.json`)이 캐시 DB 의 `findings` 표 하나에 있고, 입력이 같으면 다시 묻지 않는 규칙은 그대로입니다.
 
 ### 내부
 
