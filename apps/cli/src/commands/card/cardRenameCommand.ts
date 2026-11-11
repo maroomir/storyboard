@@ -12,7 +12,7 @@ export class CardRenameCommand implements ICommandHandler {
     verb: 'card rename',
     writesWorkspace: true,
     group: '카드',
-    usage: `card rename <${cardCategories.join('|')}> <id> --to <id>`,
+    usage: `card rename <${cardCategories.join('|')}> <slug> --to <slug>`,
     summary: '카드 id 를 바꾸고 참조를 함께 고칩니다',
     flags: ['to'],
     examples: ['storyboard card rename character hana --to hana-seo'],
