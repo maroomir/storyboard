@@ -22,5 +22,5 @@ export function describeBatchStep(progress: GenerateAllDraftsProgress): string {
 export function describeBatchFailure(kind: 'no_projects' | 'no_scenes'): string {
   return kind === 'no_projects'
     ? 'Storyboard 프로젝트를 찾을 수 없습니다.'
-    : '생성할 씬이 없습니다. scene/*.card 를 먼저 만들어 주세요.';
+    : '생성할 씬이 없습니다. storyboard scene create 나 storyboard scene seed 로 먼저 만들어 주세요.';
 }
