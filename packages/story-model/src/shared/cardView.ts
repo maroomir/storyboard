@@ -113,23 +113,28 @@ function toViewLine(statement: Statement, lookup: CardViewLookup): CardViewLine 
   return label === undefined ? { text: statement.value } : { text: statement.value, label };
 }
 
+export function groupStatementsBySection(
+  kind: ElementKind,
+  statements: readonly Statement[],
+  lookup: CardViewLookup,
+): readonly CardViewSection[] {
+  return elementDefinitions[kind].sections.map((sectionId) => ({
+    id: sectionId,
+    label: cardSectionLabels[sectionId],
+    lines: statements
+      .filter((statement) => getStatementFacetRow(statement.facet).section === sectionId)
+      .map((statement) => toViewLine(statement, lookup)),
+  }));
+}
+
 export function buildCardView(bundle: CardViewBundle, lookup: CardViewLookup): CardView {
   const { header, statements } = bundle;
-  const sections: readonly CardViewSection[] = elementDefinitions[header.kind].sections.map(
-    (sectionId) => ({
-      id: sectionId,
-      label: cardSectionLabels[sectionId],
-      lines: statements
-        .filter((statement) => getStatementFacetRow(statement.facet).section === sectionId)
-        .map((statement) => toViewLine(statement, lookup)),
-    }),
-  );
 
   return {
     kind: header.kind,
     slug: header.slug,
     name: getElementDisplayName(header),
     facts: describeHeader(header, lookup),
-    sections,
+    sections: groupStatementsBySection(header.kind, statements, lookup),
   };
 }

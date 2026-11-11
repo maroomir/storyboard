@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { BuildStoryCardsFromScenesCommand } from '@/presentation/commands/buildStoryCardsFromScenesCommand';
 import { CreateBackgroundCardCommand } from '@/presentation/commands/createBackgroundCardCommand';
 import { CreateCharacterCardCommand } from '@/presentation/commands/createCharacterCardCommand';
-import { PromoteCardCandidatesCommand } from '@/presentation/commands/promoteCardCandidatesCommand';
 import { RecommendBackgroundCardsCommand } from '@/presentation/commands/recommendBackgroundCardsCommand';
 import { RecommendCharacterCardsCommand } from '@/presentation/commands/recommendCharacterCardsCommand';
 import { RenameBackgroundCardCommand } from '@/presentation/commands/renameBackgroundCardCommand';
@@ -52,7 +51,6 @@ export class CardModule implements IApplicationModule {
         new BuildStoryCardsFromScenesCommand(cards, proposalReviewService),
         new RenameCharacterCardCommand({ cards }),
         new RenameBackgroundCardCommand({ cards }),
-        new PromoteCardCandidatesCommand({ cards }),
       ]),
       new CardRenameParticipant({ cards, drafts, logger }).register(),
       new CardDiagnosticsProvider({ logger }).register(),

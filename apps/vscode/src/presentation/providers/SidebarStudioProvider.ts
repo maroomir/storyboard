@@ -30,6 +30,7 @@ import { StudioFollowUpRpc } from '@/presentation/messaging/studioFollowUpRpcHan
 import { StudioProposalRpc } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { StudioSessionRpc } from '@/presentation/messaging/studioSessionRpcHandlers';
 import { StudioInterviewRpc } from '@/presentation/messaging/studioInterviewRpcHandlers';
+import { StudioPendingRpc } from '@/presentation/messaging/studioPendingRpcHandlers';
 import {
   computeStudioTarget,
   resolveActiveStudioFocus,
@@ -51,7 +52,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       'chat' | 'context' | 'prepareProposal' | 'applyProposal' | 'create'
     >,
     private readonly aiGateway: AiGateway,
-    private readonly cards: Pick<CardManager, 'collectProposals' | 'read'>,
+    private readonly cards: Pick<
+      CardManager,
+      'collectProposals' | 'read' | 'readPendingView' | 'applyPending' | 'discardPending'
+    >,
     private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
@@ -195,6 +199,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       }).handlers(),
       ...new StudioSessionRpc({
         repository: this.sessionRepository,
+        getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
+      }).handlers(),
+      ...new StudioPendingRpc({
+        cards: this.cards,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
       }).handlers(),
       ...new StudioInterviewRpc({

@@ -26,8 +26,16 @@ type Phase =
   | { readonly kind: 'starting' }
   | { readonly kind: 'stale'; readonly opening: InterviewOpening }
   | { readonly kind: 'asking'; readonly opening: InterviewOpening }
-  | { readonly kind: 'question'; readonly opening: InterviewOpening; readonly question: InterviewQuestion }
-  | { readonly kind: 'writing'; readonly opening: InterviewOpening; readonly question: InterviewQuestion }
+  | {
+      readonly kind: 'question';
+      readonly opening: InterviewOpening;
+      readonly question: InterviewQuestion;
+    }
+  | {
+      readonly kind: 'writing';
+      readonly opening: InterviewOpening;
+      readonly question: InterviewQuestion;
+    }
   | {
       readonly kind: 'confirming';
       readonly opening: InterviewOpening;
@@ -106,7 +114,7 @@ export function InterviewPanel({
           setPhase({ kind: 'finished', summary: result.summary });
           onStatusChange?.(
             result.summary.candidateCount > 0
-              ? `인터뷰를 마쳤습니다. 카드 후보 ${result.summary.candidateCount}건은 «Promote Card Candidates»로 반영합니다.`
+              ? `인터뷰를 마쳤습니다. 읽은 줄 ${result.summary.candidateCount}건은 스튜디오의 «적용»으로 카드에 씁니다.`
               : '인터뷰를 마쳤습니다. 아직 특성으로 굳은 축이 없습니다.',
           );
         })
@@ -157,7 +165,9 @@ export function InterviewPanel({
       setError(undefined);
       setAnswered(0);
       setPhase({ kind: 'starting' });
-      onStatusChange?.(shouldResetAxes ? '축 어휘를 다시 뽑는 중입니다…' : '인터뷰를 준비하는 중입니다…');
+      onStatusChange?.(
+        shouldResetAxes ? '축 어휘를 다시 뽑는 중입니다…' : '인터뷰를 준비하는 중입니다…',
+      );
 
       void callRpc<{ readonly opening: InterviewOpening }>(vscodeApi, 'interviews.start', {
         uri: documentUri,
@@ -183,7 +193,11 @@ export function InterviewPanel({
     question: InterviewQuestion,
     answer: InterviewAnswerInput,
   ) => void = useCallback(
-    (opening: InterviewOpening, question: InterviewQuestion, answer: InterviewAnswerInput): void => {
+    (
+      opening: InterviewOpening,
+      question: InterviewQuestion,
+      answer: InterviewAnswerInput,
+    ): void => {
       if (!vscodeApi) {
         return;
       }
@@ -223,7 +237,11 @@ export function InterviewPanel({
     question: InterviewQuestion,
     confirmation: InterviewConfirmation | undefined,
   ) => void = useCallback(
-    (opening: InterviewOpening, question: InterviewQuestion, confirmation: InterviewConfirmation | undefined): void => {
+    (
+      opening: InterviewOpening,
+      question: InterviewQuestion,
+      confirmation: InterviewConfirmation | undefined,
+    ): void => {
       if (!vscodeApi || confirmation === undefined) {
         askNext(opening);
         return;
@@ -252,7 +270,7 @@ export function InterviewPanel({
     <SectionHeader
       title="인터뷰"
       eyebrow="Interview"
-      description="다가올 씬의 사건을 하나씩 내고 이 인물(또는 장소)이 어떻게 하는지 고릅니다. 고른 대사가 아니라 선택의 패턴이 카드 후보가 됩니다."
+      description="다가올 씬의 사건을 하나씩 내고 이 인물(또는 장소)이 어떻게 하는지 고릅니다. 고른 대사가 아니라 선택의 패턴이 카드에 쓸 제안이 됩니다."
     />
   );
 
@@ -262,10 +280,17 @@ export function InterviewPanel({
         {header}
         {error ? <p className="m-0 text-sm text-sb-fg-error">{error}</p> : null}
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" disabled={!vscodeApi || phase.kind === 'starting'} onClick={() => start()}>
+          <Button
+            variant="primary"
+            disabled={!vscodeApi || phase.kind === 'starting'}
+            onClick={() => start()}
+          >
             {phase.kind === 'starting' ? '준비 중…' : '인터뷰 시작'}
           </Button>
-          <Button disabled={!vscodeApi || phase.kind === 'starting'} onClick={() => start({ shouldResetAxes: true })}>
+          <Button
+            disabled={!vscodeApi || phase.kind === 'starting'}
+            onClick={() => start({ shouldResetAxes: true })}
+          >
             축 다시 뽑고 시작
           </Button>
         </div>
@@ -278,7 +303,8 @@ export function InterviewPanel({
       <div className={panelClass}>
         {header}
         <p className="m-0 text-sm">
-          답 {phase.summary.answered} · 건너뜀 {phase.summary.skipped} · 카드 후보 {phase.summary.candidateCount}건
+          답 {phase.summary.answered} · 건너뜀 {phase.summary.skipped} · 읽은 줄{' '}
+          {phase.summary.candidateCount}건
         </p>
         {phase.summary.undecidedAxisLabels.length > 0 ? (
           <p className="m-0 text-xs text-sb-fg-muted">
@@ -287,7 +313,7 @@ export function InterviewPanel({
         ) : null}
         {phase.summary.candidateCount > 0 ? (
           <p className="m-0 text-xs text-sb-fg-muted">
-            후보는 명령 팔레트의 «Storyboard: Promote Card Candidates»로 반영합니다.
+            대화로 돌아가 «기다리는 제안»에서 «적용»하거나 «버림»합니다.
           </p>
         ) : null}
         <Button onClick={() => start()}>다시 인터뷰</Button>
@@ -319,7 +345,9 @@ export function InterviewPanel({
         {header}
         <p className="m-0 text-xs text-sb-fg-muted">{progress}</p>
         <p className="m-0 text-sm text-sb-fg-muted">
-          {phase.kind === 'finishing' ? '답을 카드 후보로 증류하는 중입니다…' : '다음 질문을 만드는 중입니다…'}
+          {phase.kind === 'finishing'
+            ? '답을 카드 제안으로 증류하는 중입니다…'
+            : '다음 질문을 만드는 중입니다…'}
         </p>
       </div>
     );
@@ -336,13 +364,19 @@ export function InterviewPanel({
           이 답을 「{classification?.valueLabel}」로 읽었습니다. 맞나요?
         </p>
         <div className="flex flex-col gap-2">
-          <button type="button" className={optionClass} onClick={() =>
+          <button
+            type="button"
+            className={optionClass}
+            onClick={() =>
               confirm(
                 opening,
                 question,
-                classification === undefined ? undefined : { kind: 'value', valueId: classification.valueId },
+                classification === undefined
+                  ? undefined
+                  : { kind: 'value', valueId: classification.valueId },
               )
-            }>
+            }
+          >
             맞다 — {classification?.valueLabel}
           </button>
           {question.values
@@ -416,7 +450,9 @@ export function InterviewPanel({
             <Button
               variant="primary"
               disabled={writtenText.trim().length === 0}
-              onClick={() => submit(opening, question, { kind: 'written', text: writtenText.trim() })}
+              onClick={() =>
+                submit(opening, question, { kind: 'written', text: writtenText.trim() })
+              }
             >
               이렇게 한다
             </Button>
@@ -425,7 +461,9 @@ export function InterviewPanel({
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setPhase({ kind: 'writing', opening, question })}>직접 쓰기</Button>
+          <Button onClick={() => setPhase({ kind: 'writing', opening, question })}>
+            직접 쓰기
+          </Button>
           <Button onClick={() => submit(opening, question, { kind: 'skipped' })}>건너뛰기</Button>
           <Button onClick={() => finish(opening)}>여기까지</Button>
         </div>

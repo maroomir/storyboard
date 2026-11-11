@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { characterRoles } from '#model/element/character';
 import { cardSchema, cardTypes, type CardType } from '#model/format/card';
+import { cardSectionIds } from '#model/element/facet';
+import type { CardViewLine, CardViewSection } from '#model/shared/cardView';
 import { uriStringSchema } from '#model/shared/messaging/atoms';
 import type { StoryboardCard } from '#model/format/card';
 
@@ -147,3 +149,66 @@ export interface CardsViewerActionResponsePayload {
 
 export const cardsViewerActionResponsePayloadSchema: z.ZodType<CardsViewerActionResponsePayload> =
   z.object({});
+
+export type CardPendingOrigin = 'studio' | 'interview' | 'absorb';
+
+export const cardPendingOrigins: readonly [CardPendingOrigin, ...CardPendingOrigin[]] = [
+  'studio',
+  'interview',
+  'absorb',
+];
+
+export interface CardPendingChangeView {
+  origin: CardPendingOrigin;
+  summary: string;
+  sections: CardViewSection[];
+}
+
+const cardViewLineSchema: z.ZodType<CardViewLine> = z.object({
+  text: z.string(),
+  label: z.string().optional(),
+});
+
+const cardViewSectionSchema: z.ZodType<CardViewSection> = z.object({
+  id: z.enum(cardSectionIds),
+  label: z.string(),
+  lines: z.array(cardViewLineSchema).readonly(),
+});
+
+const cardPendingChangeViewSchema: z.ZodType<CardPendingChangeView> = z.object({
+  origin: z.enum(cardPendingOrigins),
+  summary: z.string(),
+  sections: z.array(cardViewSectionSchema),
+});
+
+export interface CardsPendingRequestPayload {
+  slug: string;
+}
+
+export const cardsPendingRequestPayloadSchema: z.ZodType<CardsPendingRequestPayload> = z.object({
+  slug: z.string().trim().min(1),
+});
+
+export interface CardsPendingListResponsePayload {
+  ok: boolean;
+  message?: string;
+  changes: CardPendingChangeView[];
+}
+
+export const cardsPendingListResponsePayloadSchema: z.ZodType<CardsPendingListResponsePayload> =
+  z.object({
+    ok: z.boolean(),
+    message: z.string().optional(),
+    changes: z.array(cardPendingChangeViewSchema),
+  });
+
+export interface CardsPendingSettleResponsePayload {
+  ok: boolean;
+  message: string;
+}
+
+export const cardsPendingSettleResponsePayloadSchema: z.ZodType<CardsPendingSettleResponsePayload> =
+  z.object({
+    ok: z.boolean(),
+    message: z.string(),
+  });

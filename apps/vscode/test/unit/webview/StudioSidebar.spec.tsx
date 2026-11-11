@@ -230,7 +230,7 @@ describe('StudioSidebar chat', () => {
     expect(screen.getByText('정합성 검사 통과')).toBeTruthy();
     expect(screen.getByText('카드 필드 1곳')).toBeTruthy();
 
-    fireEvent.click(screen.getByText('승인'));
+    fireEvent.click(screen.getByText('적용'));
 
     const applied = messagesByMethod(postMessage, 'studio.proposal.apply').at(-1) as {
       payload: { turn: { id: string } };
@@ -251,8 +251,8 @@ describe('StudioSidebar chat', () => {
     typeAndSend('과거사 보강해줘');
     respondTo(postMessage, 'studio.chat.send', { turns: [proposalTurn] });
 
-    await waitFor(() => expect(screen.getByText('승인')).toBeTruthy());
-    fireEvent.click(screen.getByText('승인'));
+    await waitFor(() => expect(screen.getByText('적용')).toBeTruthy());
+    fireEvent.click(screen.getByText('적용'));
 
     respondTo(postMessage, 'studio.proposal.apply', {
       status: 'failed',
@@ -284,7 +284,7 @@ describe('StudioSidebar chat', () => {
 
     await waitFor(() => expect(screen.getByText('기존 설정과 충돌할 수 있어요')).toBeTruthy());
     expect(screen.getByText('씬 3과 어긋납니다 (scene/03.card)')).toBeTruthy();
-    expect(screen.getByText('승인')).toBeTruthy();
+    expect(screen.getByText('적용')).toBeTruthy();
   });
 
   it('opens a diff without applying', async () => {
@@ -304,10 +304,10 @@ describe('StudioSidebar chat', () => {
     typeAndSend('과거사 보강해줘');
     respondTo(postMessage, 'studio.chat.send', { turns: [proposalTurn] });
 
-    await waitFor(() => expect(screen.getByText('거절')).toBeTruthy());
-    fireEvent.click(screen.getByText('거절'));
+    await waitFor(() => expect(screen.getByText('버림')).toBeTruthy());
+    fireEvent.click(screen.getByText('버림'));
 
-    await waitFor(() => expect(screen.getByText('거절함')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('버렸습니다')).toBeTruthy());
     expect(messagesByMethod(postMessage, 'studio.proposal.apply')).toHaveLength(0);
   });
 
@@ -359,8 +359,8 @@ describe('StudioSidebar sessions', () => {
     typeAndSend('과거사 보강해줘');
     respondTo(postMessage, 'studio.chat.send', { turns: [proposalTurn] });
 
-    await waitFor(() => expect(screen.getByText('승인')).toBeTruthy());
-    fireEvent.click(screen.getByText('승인'));
+    await waitFor(() => expect(screen.getByText('적용')).toBeTruthy());
+    fireEvent.click(screen.getByText('적용'));
     respondTo(postMessage, 'studio.proposal.apply', { status: 'applied', message: '적용됨' });
 
     await waitFor(() => {
