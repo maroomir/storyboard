@@ -54,12 +54,47 @@ import {
 import { InterviewPanel } from '@webview/components/sidebar/InterviewPanel';
 import { StudioSessionList } from '@webview/components/sidebar/StudioSessionList';
 import { StudioToolMenu } from '@webview/components/sidebar/StudioToolMenu';
-import { StudioTurnView, type StudioProposalActions } from '@webview/components/sidebar/StudioTurnView';
+import {
+  StudioTurnView,
+  type StudioProposalActions,
+} from '@webview/components/sidebar/StudioTurnView';
 import type { VscodeApi } from '@webview/lib/vscodeApi';
 import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
-import type { BibleSubjectKind } from '@storyboard/story-model/contracts';
+import type { BibleSubjectKind, StudioCreatableKind } from '@storyboard/story-model/contracts';
 
 type StudioView = 'chat' | 'history' | 'interview';
+
+interface StudioCreation {
+  readonly kind: StudioCreatableKind;
+}
+
+interface StudioCreateOutcome {
+  readonly ok: boolean;
+  readonly message: string;
+}
+
+const creationQuestions: Readonly<Record<StudioCreatableKind, string>> = {
+  character: '어떤 캐릭터를 만드시겠어요?',
+  background: '어떤 배경을 만드시겠어요?',
+  scene: '어떤 씬을 만드시겠어요?',
+};
+
+function isStudioCreatableKind(value: unknown): value is StudioCreatableKind {
+  return value === 'character' || value === 'background' || value === 'scene';
+}
+
+function parseCreatePendingPayload(payload: unknown): StudioCreatableKind | undefined {
+  const kind: unknown = readPayloadFields(payload).kind;
+  return isStudioCreatableKind(kind) ? kind : undefined;
+}
+
+function parseCreatePayload(payload: unknown): StudioCreateOutcome {
+  const fields: PayloadFields = readPayloadFields(payload);
+  return {
+    ok: fields.ok === true,
+    message: typeof fields.message === 'string' ? fields.message : '만들지 못했어요.',
+  };
+}
 
 interface InterviewCardTarget {
   readonly cardKey: string;
@@ -100,6 +135,8 @@ export function StudioSidebar({
     () => initialData.session?.turns ?? [],
   );
   const [view, setView] = useState<StudioView>('chat');
+  const [creation, setCreation] = useState<StudioCreation | undefined>(undefined);
+  const [createOutcome, setCreateOutcome] = useState<StudioCreateOutcome | undefined>(undefined);
   const [sessions, setSessions] = useState<readonly StudioSessionSummary[]>([]);
   const [stage, setStage] = useState<StudioStage | undefined>(undefined);
   const [stageToken, setStageToken] = useState(0);
@@ -124,9 +161,13 @@ export function StudioSidebar({
   const sendRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
     undefined,
   );
-  const updateCardRequestIdRef: React.MutableRefObject<string | undefined> = useRef<
+  const createRequestIdRef: React.MutableRefObject<string | undefined> = useRef<string | undefined>(
+    undefined,
+  );
+  const pendingCreateRequestIdRef: React.MutableRefObject<string | undefined> = useRef<
     string | undefined
   >(undefined);
+  const opensInterviewRef: React.MutableRefObject<boolean> = useRef(false);
   const followUpRequestIdRef: React.MutableRefObject<string | undefined> = useRef<
     string | undefined
   >(undefined);
@@ -144,6 +185,12 @@ export function StudioSidebar({
   const post = (method: string, payload: unknown, id = createRequestId()): string => {
     vscodeApi?.postMessage({ protocolVersion: '1.0.0', type: 'request', id, method, payload });
     return id;
+  };
+
+  const beginCreate = (kind: StudioCreatableKind): void => {
+    setCreation({ kind });
+    setCreateOutcome(undefined);
+    setView('chat');
   };
 
   useEffect(() => {
@@ -196,13 +243,26 @@ export function StudioSidebar({
         return;
       }
 
-      if (data.id === updateCardRequestIdRef.current) {
-        updateCardRequestIdRef.current = undefined;
+      if (data.id === pendingCreateRequestIdRef.current) {
+        pendingCreateRequestIdRef.current = undefined;
+        const pendingKind: StudioCreatableKind | undefined = parseCreatePendingPayload(
+          data.payload,
+        );
+        if (pendingKind !== undefined) {
+          beginCreate(pendingKind);
+        }
+        return;
+      }
+
+      if (data.id === createRequestIdRef.current) {
+        createRequestIdRef.current = undefined;
         setChatStage('idle');
-        const cardUpdate: CardUpdateInstruction = parseCardUpdatePayload(data.payload);
-        if (cardUpdate.ok) {
-          startsFreshRef.current = true;
-          setDraft(cardUpdate.instruction ?? '');
+        const outcome: StudioCreateOutcome = parseCreatePayload(data.payload);
+        setCreateOutcome(outcome);
+        if (outcome.ok) {
+          setCreation(undefined);
+        } else {
+          opensInterviewRef.current = false;
         }
         return;
       }
@@ -238,6 +298,16 @@ export function StudioSidebar({
         return;
       }
 
+      if (hostMessage.type === 'event' && hostMessage.method === 'studio.beginCreate') {
+        const requestedKind: StudioCreatableKind | undefined = parseCreatePendingPayload(
+          hostMessage.payload,
+        );
+        if (requestedKind !== undefined) {
+          beginCreate(requestedKind);
+        }
+        return;
+      }
+
       if (hostMessage.type === 'event' && hostMessage.method === 'studio.targetChanged') {
         setTarget(parseStudioTarget(hostMessage.payload));
         return;
@@ -250,6 +320,10 @@ export function StudioSidebar({
 
     window.addEventListener('message', receiveHostMessage);
     return (): void => window.removeEventListener('message', receiveHostMessage);
+  }, []);
+
+  useEffect(() => {
+    pendingCreateRequestIdRef.current = post('studio.create.pending', {});
   }, []);
 
   useEffect(() => {
@@ -275,7 +349,8 @@ export function StudioSidebar({
     setPinnedTool(undefined);
     setSessionId(createRequestId());
     setCreatedAt(new Date().toISOString());
-    setView('chat');
+    setView(opensInterviewRef.current && readInterviewCard(target) ? 'interview' : 'chat');
+    opensInterviewRef.current = false;
 
     if (target.entity && !startsFreshRef.current) {
       latestRequestIdRef.current = post('studio.session.latest', { entity: target.entity });
@@ -336,12 +411,12 @@ export function StudioSidebar({
       return;
     }
 
-    if (tool === 'updateCard') {
-      setChatStage('thinking');
-      setPinnedTool(undefined);
-      updateCardRequestIdRef.current = post('studio.card.update', { description: instruction });
+    if (creation !== undefined || tool === 'updateCard') {
+      sendCreate(instruction, creation?.kind);
       return;
     }
+
+    setCreateOutcome(undefined);
 
     if (!target.entity) {
       return;
@@ -356,6 +431,17 @@ export function StudioSidebar({
       instruction,
       history,
       ...(tool === undefined ? {} : { tool }),
+    });
+  };
+
+  const sendCreate = (description: string, kind: StudioCreatableKind | undefined): void => {
+    setChatStage('thinking');
+    setPinnedTool(undefined);
+    setCreateOutcome(undefined);
+    opensInterviewRef.current = kind !== 'scene';
+    createRequestIdRef.current = post('studio.create', {
+      ...(kind === undefined ? {} : { kind }),
+      description,
     });
   };
 
@@ -451,8 +537,15 @@ export function StudioSidebar({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {createOutcome === undefined ? null : <CreateOutcomeLine outcome={createOutcome} />}
         {isHistoryView ? (
           <StudioSessionList sessions={sessions} onOpen={openSession} />
+        ) : creation !== undefined ? (
+          <CreationPrompt
+            kind={creation.kind}
+            isWaiting={chatStage !== 'idle'}
+            onCancel={() => setCreation(undefined)}
+          />
         ) : isInterviewView && interviewCard !== undefined ? (
           <InterviewPanel
             cardKey={interviewCard.cardKey}
@@ -494,9 +587,9 @@ export function StudioSidebar({
         <Composer
           value={draft}
           isDisabled={chatStage !== 'idle'}
-          placeholder={composerPlaceholder(target, chatStage, pinnedTool)}
+          placeholder={composerPlaceholder(target, chatStage, pinnedTool, creation)}
           pinnedTool={pinnedTool}
-          menu={menu}
+          menu={creation === undefined ? menu : []}
           menuIndex={menuIndex}
           hasSelection={target.hasSelection}
           onChange={(value) => {
@@ -883,18 +976,48 @@ interface StagePill {
   readonly text: string;
 }
 
-interface CardUpdateInstruction {
-  readonly ok: boolean;
-  readonly instruction?: string;
+function CreationPrompt({
+  kind,
+  isWaiting,
+  onCancel,
+}: {
+  readonly kind: StudioCreatableKind;
+  readonly isWaiting: boolean;
+  readonly onCancel: () => void;
+}): React.ReactElement {
+  return (
+    <section
+      aria-label="새로 만들기"
+      className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2"
+    >
+      <p className="m-0 text-sm text-sb-fg">{creationQuestions[kind]}</p>
+      <p className="m-0 text-xs text-sb-fg-muted">
+        설명을 한 번 적으면 번들을 만들고 스튜디오가 빈 칸을 채웁니다.
+      </p>
+      {isWaiting ? null : (
+        <div>
+          <Button variant="ghost" onClick={onCancel}>
+            그만두기
+          </Button>
+        </div>
+      )}
+    </section>
+  );
 }
 
-function parseCardUpdatePayload(payload: unknown): CardUpdateInstruction {
-  const fields: PayloadFields = readPayloadFields(payload);
-
-  return {
-    ok: fields.ok === true,
-    ...(typeof fields.instruction === 'string' ? { instruction: fields.instruction } : {}),
-  };
+function CreateOutcomeLine({
+  outcome,
+}: {
+  readonly outcome: StudioCreateOutcome;
+}): React.ReactElement {
+  return (
+    <p
+      role="status"
+      className={outcome.ok ? 'm-0 text-xs text-emerald-500' : 'm-0 text-xs text-sb-fg-error'}
+    >
+      {outcome.message}
+    </p>
+  );
 }
 
 function pinnedInstruction(tool: StudioComposerTool | undefined): string {
@@ -905,9 +1028,14 @@ function composerPlaceholder(
   target: StudioTarget,
   stage: StudioChatStage,
   pinnedTool: StudioComposerTool | undefined,
+  creation: StudioCreation | undefined,
 ): string {
   if (stage !== 'idle') {
     return '응답을 기다리는 중…';
+  }
+
+  if (creation !== undefined) {
+    return '설명을 한 번 적어 주세요…';
   }
 
   if (pinnedTool === 'updateCard') {

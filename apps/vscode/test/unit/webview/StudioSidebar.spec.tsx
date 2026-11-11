@@ -91,6 +91,39 @@ afterEach(() => {
 });
 
 describe('StudioSidebar chat', () => {
+  it('asks what to make when the host opens it from a + button and sends the description', async () => {
+    const postMessage = renderStudio(projectTarget);
+
+    respondTo(postMessage, 'studio.create.pending', { kind: 'character' });
+
+    expect(await screen.findByText('어떤 캐릭터를 만드시겠어요?')).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '엘리아. 열일곱 전학생, 주인공.' },
+    });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+
+    expect(messagesByMethod(postMessage, 'studio.create').at(-1)).toMatchObject({
+      payload: { kind: 'character', description: '엘리아. 열일곱 전학생, 주인공.' },
+    });
+  });
+
+  it('shows the creation result and stops asking', async () => {
+    const postMessage = renderStudio(projectTarget);
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'event', method: 'studio.beginCreate', payload: { kind: 'background' } },
+      }),
+    );
+    await screen.findByText('어떤 배경을 만드시겠어요?');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '자정에 닫는 야시장' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+
+    respondTo(postMessage, 'studio.create', { ok: true, message: '배경 night-market 를 만들었어요.' });
+
+    expect(await screen.findByRole('status')).toBeTruthy();
+    expect(screen.queryByText('어떤 배경을 만드시겠어요?')).toBeNull();
+  });
+
   it('runs the card interview inside the studio and starts it on the card uri', () => {
     const postMessage = renderStudio(characterTarget);
 

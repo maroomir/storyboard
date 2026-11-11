@@ -43,6 +43,7 @@ export class DraftModule implements IApplicationModule {
       drafts,
       runGate,
       logger,
+      studioLauncher,
       usageRecorder,
       workspace,
     } = this.platform;
@@ -79,7 +80,7 @@ export class DraftModule implements IApplicationModule {
         new AugmentDraftCommand({ drafts, logger }, augmentPreview.store),
         new AugmentSelectionCommand({ drafts, logger }, augmentPreview.store),
         new EditSelectionCommand({ drafts, logger }, augmentPreview.store),
-        new CreateSceneCommand({ drafts }),
+        new CreateSceneCommand({ launcher: studioLauncher }),
         new OpenSceneDraftCommand(),
         new RenameSceneCommand({ drafts, runGate }),
         new ResealStoryStateCommand({ workspace, logger }),

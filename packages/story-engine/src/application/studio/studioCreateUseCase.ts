@@ -2,6 +2,7 @@ import {
   createEmptyCard,
   slugify,
   type StoryUri,
+  type StudioCreatableKind,
   type UsageAttribution,
 } from '@storyboard/story-model';
 
@@ -20,8 +21,6 @@ import type {
   StudioEditResult,
   StudioEditUseCase,
 } from '#engine/application/studio/studioEditUseCase';
-
-export type StudioCreatableKind = 'character' | 'background' | 'scene';
 
 export interface StudioCreateUseCaseDependencies {
   readonly createCard: CreateCardUseCase;

@@ -12,6 +12,6 @@ export class CreateBackgroundCardCommand extends CreateCardCommandBase {
   }
 
   public run(): Promise<void> {
-    return this.create('location');
+    return this.create('background');
   }
 }

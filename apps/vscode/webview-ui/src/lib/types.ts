@@ -179,6 +179,7 @@ export interface StoryboardEventMessage {
     | 'relations.listChanged'
     | 'studio.targetChanged'
     | 'studio.chat.progress'
+    | 'studio.beginCreate'
     | 'usage.changed'
     | 'ai.generateStream.chunk';
   readonly payload: unknown;
