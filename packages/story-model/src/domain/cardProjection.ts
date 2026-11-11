@@ -2,7 +2,7 @@ import type { BackgroundHeader } from '#model/element/background';
 import type { CharacterAttributes, CharacterHeader } from '#model/element/character';
 import { characterAttributeKeys } from '#model/element/character';
 import type { ElementKind } from '#model/element/elementKind';
-import type { StatementFacetId } from '#model/element/facetCatalog';
+import { getStatementFacetRow, type StatementFacetId } from '#model/element/facetCatalog';
 import type { NarratorHeader } from '#model/element/narrator';
 import {
   isAuthorStatement,
@@ -141,7 +141,9 @@ export function projectCharacterCard(
     ...(header.aliases === undefined ? {} : { aliases: [...header.aliases] }),
     ...listFields,
     ...(relations.length > 0 ? { relations } : {}),
-    ...(arcSummary === undefined ? {} : { arc: [{ stage: '', summary: arcSummary }] }),
+    ...(arcSummary === undefined
+      ? {}
+      : { arc: [{ stage: getStatementFacetRow('arc').label, summary: arcSummary }] }),
   };
 }
 
