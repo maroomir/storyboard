@@ -90,6 +90,7 @@ export * from '#engine/persistence/bundles/threadLedgerReader';
 export * from '#engine/persistence/cache/cacheDatabase';
 export * from '#engine/persistence/cache/cacheDatabaseSchema';
 export * from '#engine/persistence/cache/chapterSummaryStore';
+export * from '#engine/persistence/cache/draftRevisionStore';
 export * from '#engine/persistence/cache/elementIndexStore';
 export * from '#engine/persistence/cache/findingStore';
 export * from '#engine/persistence/cache/journalStore';
