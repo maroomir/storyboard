@@ -91,6 +91,7 @@ export * from '#engine/persistence/bundles/elementBundleRepository';
 export * from '#engine/persistence/bundles/elementMemoryRepository';
 export * from '#engine/persistence/bundles/sceneBundleFiles';
 export * from '#engine/persistence/bundles/sceneRenumberer';
+export * from '#engine/persistence/bundles/workspaceBundleAuditor';
 export * from '#engine/persistence/bundles/storyLedger';
 export * from '#engine/persistence/bundles/structureRepository';
 export * from '#engine/persistence/bundles/threadLedgerReader';

@@ -317,6 +317,10 @@ export class WorkspaceCards {
     return joinStoryPath(workspaceRoot, ...renamed.path.split('/'));
   }
 
+  public async listWarnings(workspaceRoot: StoryUri): Promise<readonly BundleWarning[]> {
+    return (await (await this.openRepository(workspaceRoot)).listBundles(elementKinds)).warnings;
+  }
+
   public async reassignCopiedIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
     const repository: ElementBundleRepository = await this.openRepository(workspaceRoot);
     const listing: BundleListing = await repository.listBundles(elementKinds);
