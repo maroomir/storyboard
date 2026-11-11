@@ -3,6 +3,7 @@ import { z, ZodError } from 'zod';
 
 import { elementIdSchema, elementSlugSchema, headerTextSchema } from '#model/element/elementId';
 import { maxSceneNumber } from '#model/format/bundlePaths';
+import { mainThreadId } from '#model/format/project';
 
 export interface StructureThread {
   readonly id: string;
@@ -62,9 +63,10 @@ function listStructureIssues(structure: StoryStructure): readonly string[] {
   const duplicateScene: string | undefined = findDuplicate(
     structure.scenes.map((entry) => entry.scene),
   );
+  const knownSceneThreads: readonly string[] = [mainThreadId, ...threadIds];
   const unknownSceneThreads: readonly string[] = structure.scenes
     .map((entry) => entry.thread)
-    .filter((threadId) => !threadIds.includes(threadId));
+    .filter((threadId) => !knownSceneThreads.includes(threadId));
   const unknownWrappedThreads: readonly string[] = structure.threads
     .flatMap((thread) => thread.wraps ?? [])
     .filter((threadId) => !threadIds.includes(threadId));

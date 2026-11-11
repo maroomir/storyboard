@@ -1739,6 +1739,16 @@ describe('novel generate on an empty work', () => {
     expect(await readCardYaml(workspace, 'jun')).toContain('name: 준');
   });
 
+  it('runs to the end in an omnibus work whose chapters name no thread', async () => {
+    await setContract();
+    await run('project set', args(['project', 'set'], { composition: 'omnibus', episodes: '2' }));
+
+    const { outcome } = await generateRecording();
+
+    expect(outcome.ok, outcome.message).toBe(true);
+    expect(listSceneStems(workspace).length).toBeGreaterThan(0);
+  });
+
   it('leaves a card that exists alone and asks only for the missing one', async () => {
     await setContract();
     await run('card create', args(['card', 'create'], { name: '한아', id: 'hana' }, ['character']));
