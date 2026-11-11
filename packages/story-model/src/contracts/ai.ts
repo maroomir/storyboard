@@ -30,7 +30,6 @@ import type { AiProviderId } from '#model/contracts/providerCatalog';
 
 export type AiTaskName =
   | 'sceneBeats'
-  | 'sceneStructure'
   | 'situationExtraction'
   | 'personaGeneration'
   | 'personaDialogue'
@@ -81,7 +80,6 @@ export interface AiTaskCatalogEntry {
 
 export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'sceneBeats', label: '씬 비트 전개' },
-  { name: 'sceneStructure', label: '씬 구조화' },
   { name: 'situationExtraction', label: '상황 추출' },
   { name: 'personaGeneration', label: '페르소나 생성' },
   { name: 'personaDialogue', label: '페르소나 대화 (사용 안 함)' },

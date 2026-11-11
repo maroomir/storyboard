@@ -107,24 +107,6 @@ export const cardsResolveImageUriResponsePayloadSchema: z.ZodType<CardsResolveIm
     uri: uriStringSchema,
   });
 
-export interface SceneStructureProposal {
-  purpose?: string;
-  conflict?: string;
-  twist?: string;
-  emotionalShift?: string;
-  foreshadowing?: string[];
-  neededCanon?: string[];
-}
-
-export const sceneStructureProposalSchema: z.ZodType<SceneStructureProposal> = z.object({
-  purpose: z.string().optional(),
-  conflict: z.string().optional(),
-  twist: z.string().optional(),
-  emotionalShift: z.string().optional(),
-  foreshadowing: z.array(z.string()).optional(),
-  neededCanon: z.array(z.string()).optional(),
-});
-
 export interface CardsOpenResponsePayload {
   [key: string]: never;
 }

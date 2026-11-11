@@ -50,7 +50,6 @@ export * from '#ai/ai/prompts/sceneDialogueAttribution';
 export * from '#ai/ai/prompts/sceneDialoguePolish';
 export * from '#ai/ai/prompts/sceneSectionExpansion';
 export * from '#ai/ai/prompts/sceneSkeleton';
-export * from '#ai/ai/prompts/sceneStructure';
 export * from '#ai/ai/prompts/situationExtraction';
 export * from '#ai/ai/prompts/storyStateUpdate';
 export * from '#ai/ai/prompts/studioAgent';
