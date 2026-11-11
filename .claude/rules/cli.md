@@ -212,13 +212,13 @@ the notes go verbatim to `.storyboard/memory/voiceSeeds.json`, the voice samples
 written; two candidates of one field that contradict each other both stay, with a warning naming
 them (a one-shot verb asks nothing). Nothing that exists
 is overwritten: a card that exists gets candidates in `.storyboard/cache/notes/candidates.json`,
-which `card promote` applies beside the draft candidates; an existing synopsis gets a section in
+which `card promote` applies; an existing synopsis gets a section in
 `synopsis.candidate.md`. Both accumulate per note location (a Notion page is its id, however it
 was linked) — absorbing a location again replaces only its share, and `--replace-candidates` starts
 over; a candidate file that cannot be read stops the verb before the paid step. `card promote` merges a card's candidates
 across locations and holds back a slot the notes give different values, until
 `card discard <id> --change <ref>` drops all but one (`card discard` also drops whole cards'
-candidates, draft and note). The contract is only proposed (`project set …`), except that
+candidates). The contract is only proposed (`project set …`), except that
 `init --from-notes` fills the empty fields of the work it just made. Scenes follow the last scene
 number in the order the notes were read — the model never reorders them. A person is asked before
 the paid step and before writing; without a TTY the verb stops at the estimate unless `--yes` is
@@ -227,7 +227,7 @@ given, and `--dry-run` stops at the plan. The Notion integration token lives in 
 stay in the git-ignored cache. A request cut at the output limit or without a readable result is a
 warning naming its notes, and when no request could be read the verb fails rather than report an
 empty plan. List items that differ only in spacing or punctuation are one item (absorb, `card
-promote` and the draft candidates share that rule); a card (person or place) whose lists were read
+promote` share that rule); a card (person or place) whose lists were read
 in more than one request, or whose card already has some, gets one more request that keeps one
 wording per meaning in its aliases, traits, tags, description, voice, desire and senses — chosen
 from the candidates, never rewritten — and when it fails the merged lists stand with a warning. An

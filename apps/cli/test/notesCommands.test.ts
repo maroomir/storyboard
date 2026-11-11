@@ -526,16 +526,6 @@ describe('notes absorb', () => {
     });
 
     it('discards the candidates of the named cards, or all of them', async () => {
-      const draftCandidates = join(workspace, '.storyboard', 'cache', 'cards');
-      mkdirSync(draftCandidates, { recursive: true });
-      writeFileSync(
-        join(draftCandidates, '01-high-tide.json'),
-        JSON.stringify({
-          sceneStem: '01-high-tide',
-          generatedAt: new Date().toISOString(),
-          characters: [{ cardId: 'hana', attributes: [{ key: 'height', value: '160' }] }],
-        }),
-      );
       await absorbAt(otherLocation, onlyCards('harbor'));
 
       const one = await run('card discard', args(['card', 'discard'], {}, ['harbor']));
@@ -543,10 +533,9 @@ describe('notes absorb', () => {
 
       const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
       expect(preview.message).toContain('노트에서  hana');
-      expect(preview.message).toContain('초안에서  1건');
 
       const all = await run('card discard', args(['card', 'discard']));
-      expect(all.message).toBe('후보를 버렸습니다.\n  노트에서  hana\n  초안에서  1건');
+      expect(all.message).toBe('후보를 버렸습니다.\n  노트에서  hana');
       expect(existsSync(candidatesPath())).toBe(false);
 
       const none = await run('card discard', args(['card', 'discard']));

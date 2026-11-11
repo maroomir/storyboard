@@ -17,6 +17,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **장편 생성의 진행 상태가 캐시 DB 로 옮겨 갔습니다.** 끊긴 장편 생성을 이어 가는 근거가 `.storyboard/cache/novel-run.json` 이 아니라 캐시 DB 의 `runs` 표에 있습니다.
 - **판정 기록이 캐시 DB 로 옮겨 갔습니다.** 사실 시트에서 모델이 비워 둔 칸(`grounding-gaps.json`)과 배경 카드의 상충(`background-conflicts.json`)이 캐시 DB 의 `findings` 표 하나에 있고, 입력이 같으면 다시 묻지 않는 규칙은 그대로입니다.
 - **수정 계획을 커밋하지 않습니다.** 씬별 검수 기록(`.storyboard/outline/revision-plan.yaml`)이 캐시 DB 의 `revision_plans` 표로 내려갔습니다. 캐시를 비우면 검수를 다시 돌려야 합니다.
+- **생성이 카드에 쓰지 않습니다.** 초안을 만든 뒤 인물 카드의 특성·최근 대사와 배경 카드의 등장 인물을 고쳐 쓰던 일, 초안에서 카드 항목 후보(`.storyboard/cache/cards/`)와 정전 후보를 뽑던 일이 없어졌습니다. 설정 `cards.candidates.updateAfterGenerate`·`cards.candidates.verify` 가 지워졌고, `card promote`·`card discard` 와 확장의 «Promote Card Candidates» 는 노트·인터뷰의 후보만 다룹니다.
 
 ### 내부
 

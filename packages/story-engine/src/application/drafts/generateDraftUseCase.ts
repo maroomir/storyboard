@@ -8,15 +8,12 @@ import type {
   BackgroundCard,
   AiProviderId,
   AiTaskName,
-  CharacterCard,
   StoryState,
   Draft,
   StyleDirective,
 } from '@storyboard/story-model';
 import {
   AiProviderError,
-  backgroundCardPath,
-  characterCardPath,
   draftHistorySceneDirectory,
   joinUri,
   computeDraftBodyHash,
@@ -37,8 +34,6 @@ import {
   SceneDialogueStore,
 } from '#engine/persistence/cardMemoryStores';
 import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
-import { bibleCandidateFilePath } from '#engine/persistence/bibleCacheWorkspace';
-import { cardCandidateFilePath } from '#engine/persistence/cardCacheWorkspace';
 import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/scene/sceneGenerationPipeline';
 import {
@@ -59,22 +54,8 @@ import {
 } from '#engine/application/drafts/sceneGenerationInputs';
 import type { IUseCase } from '#engine/application/useCase';
 import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
-import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 
 export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
-
-export interface GenerateDraftCollaborators {
-  readonly postGenerationUpdates?: PostGenerationUpdateManager;
-}
-
-interface PostGenerationUpdateContext {
-  readonly updates: PostGenerationUpdateManager;
-  readonly inputs: SceneGenerationInputs;
-  readonly request: GenerateDraftRequest;
-  readonly aiService: StoryboardAiService;
-  readonly pipelineResult: RunSceneGenerationPipelineResult;
-  readonly detectedCharacterCards: CharacterCard[];
-}
 
 export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
   private readonly inputsLoader: SceneGenerationInputsLoader;
@@ -85,7 +66,6 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     private readonly host: HostAdapters,
     private readonly ai: AiServices,
     private readonly repositories: WorkspaceRepositories,
-    private readonly collaborators: GenerateDraftCollaborators,
   ) {
     this.inputsLoader = new SceneGenerationInputsLoader({ host, ai, repositories });
     this.storyStateRecorder = new StoryStateRecorder({ host, ai });
@@ -248,10 +228,6 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       pipelineResult.draftBody,
     );
 
-    if (this.host.configBridge.isUpdateCardsAfterGenerateEnabled()) {
-      this.schedulePostGenerationUpdates(inputs, request, aiService, pipelineResult);
-    }
-
     return {
       ok: true,
       kind: 'generated',
@@ -310,110 +286,6 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     }
   }
 
-  private schedulePostGenerationUpdates(
-    inputs: SceneGenerationInputs,
-    request: GenerateDraftRequest,
-    aiService: StoryboardAiService,
-    pipelineResult: RunSceneGenerationPipelineResult,
-  ): void {
-    const updates: PostGenerationUpdateManager | undefined =
-      this.collaborators.postGenerationUpdates;
-
-    if (!updates) {
-      return;
-    }
-
-    const detectedCharacterCards: CharacterCard[] = inputs.context.characters.filter((card) =>
-      pipelineResult.detectedCharacters.includes(card.name),
-    );
-    const updateContext: PostGenerationUpdateContext = {
-      updates,
-      inputs,
-      request,
-      aiService,
-      pipelineResult,
-      detectedCharacterCards,
-    };
-
-    this.scheduleCharacterTraits(updateContext);
-    this.scheduleBibleCandidates(updateContext);
-    this.scheduleCardCandidates(updateContext);
-    this.scheduleBackgroundCharacters(updateContext);
-  }
-
-  private scheduleCharacterTraits(updateContext: PostGenerationUpdateContext): void {
-    const { updates, inputs, request, aiService, pipelineResult, detectedCharacterCards } =
-      updateContext;
-    const { workspaceFolder, scene } = inputs;
-
-    updates.scheduleCharacterTraits({
-      queueKey: workspaceFolder.uri.toString(),
-      sceneStem: scene.stem,
-      draftBody: pipelineResult.draftBody,
-      detectedCharacterCards,
-      aiService,
-      fileSystem: this.host.fileSystem,
-      resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
-      logger: this.host.logger,
-      onComplete: request.onTraitsUpdateComplete,
-    });
-  }
-
-  private scheduleBibleCandidates(updateContext: PostGenerationUpdateContext): void {
-    const { updates, inputs, aiService, pipelineResult, detectedCharacterCards } = updateContext;
-    const { workspaceFolder, paths, scene } = inputs;
-    const { fileSystem, logger } = this.host;
-
-    updates.scheduleBibleCandidates({
-      queueKey: `${workspaceFolder.uri.toString()}#bible`,
-      sceneStem: scene.stem,
-      draftBody: pipelineResult.draftBody,
-      detectedCharacterCards,
-      aiService,
-      fileSystem,
-      ensureDirectory: () => fileSystem.createDirectory(paths.bibleCacheDirectory),
-      resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
-      logger,
-    });
-  }
-
-  private scheduleCardCandidates(updateContext: PostGenerationUpdateContext): void {
-    const { updates, inputs, aiService, pipelineResult, detectedCharacterCards } = updateContext;
-    const { workspaceFolder, paths, scene, context } = inputs;
-    const { fileSystem, logger } = this.host;
-
-    updates.scheduleCardCandidates({
-      queueKey: `${workspaceFolder.uri.toString()}#cards`,
-      sceneStem: scene.stem,
-      draftBody: pipelineResult.draftBody,
-      detectedCharacterCards,
-      characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
-      aiService,
-      verify: this.host.configBridge.isVerifyCardCandidatesEnabled(),
-      fileSystem,
-      ensureDirectory: () => fileSystem.createDirectory(paths.cardCacheDirectory),
-      resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),
-      logger,
-    });
-  }
-
-  private scheduleBackgroundCharacters(updateContext: PostGenerationUpdateContext): void {
-    const { updates, inputs, detectedCharacterCards } = updateContext;
-    const { workspaceFolder, context } = inputs;
-
-    if (context.background) {
-      updates.scheduleBackgroundCharacters({
-        queueKey: `${workspaceFolder.uri.toString()}#background`,
-        backgroundId: context.background.id,
-        detectedCharacterCards,
-        fileSystem: this.host.fileSystem,
-        resolveBackgroundCardUri: (backgroundId) =>
-          backgroundCardPath(workspaceFolder.uri, backgroundId),
-        logger: this.host.logger,
-      });
-    }
-  }
-
   private async runAndPersistDraft(
     inputs: SceneGenerationInputs,
     request: GenerateDraftRequest,
@@ -422,10 +294,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       inputs.workspaceFolder.uri,
     );
     const pipelineProviders: SceneGenerationPipelineTaskProviders = this.resolvePipelineProviders();
-    const cacheProviders = {
-      ...pipelineProviders,
-      traitsExtraction: this.ai.gateway.getTaskProvider('traitsExtraction'),
-    } satisfies Partial<Record<AiTaskName, AiProviderId>>;
+    const cacheProviders: Partial<Record<AiTaskName, AiProviderId>> = pipelineProviders;
 
     const backgroundRecentExcerpt: string | undefined =
       await this.findBackgroundRecentExcerpt(inputs);

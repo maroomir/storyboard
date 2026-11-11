@@ -123,15 +123,12 @@
 ![씬 사이의 기억 전달](docs/figures/story-memory.svg)
 
 "협업"에 가장 가까운 부분이다. 역할들끼리 직접 대화하지는 않지만, 파일을 통해 다음 역할에 말을
-건다. 씬 N의 생성이 끝나면 다섯 추출기가 돌고, 그 결과는 씬 N+1의 프롬프트에 실린다.
+건다. 씬 N의 생성이 끝나면 이야기 상태 추출기가 돌고, 그 결과는 씬 N+1의 프롬프트에 실린다.
+생성은 카드에 쓰지 않고 카드 후보도 내지 않는다.
 
 | 추출기 | 호출 | 읽는 것 → 쓰는 곳 | 다음 씬에 실리는 때 |
 |---|---|---|---|
 | `storyStateUpdate` (0.2) | 동기, 씬마다 1회 | 초안 + 이전 원장 → `memory/[threads/<id>/]story-state.md`에 `- [씬번호\|목격자,…] 사실` 항목을 덧붙임 | 즉시 |
-| `traitsExtraction` (0.3) | 백그라운드, 등장 인물마다 | 초안 + 인물 이름 → `character/*.card`의 traits | 즉시(카드 직접 갱신) |
-| `factExtraction` (0.2) | 백그라운드, 등장 인물마다 | 초안 + 인물 이름 → `.storyboard/cache/bible/` 정전 후보 | 사람이 `canon promote` 한 뒤 |
-| `cardCandidateExtraction` (0.2) → `cardCandidateVerification` (0) | 백그라운드, 등장 인물마다; 검증은 `cards.candidates.verify` 설정이 켜졌을 때만 | 초안 → `.storyboard/cache/cards/` 카드 항목 후보 → 통과 여부 | 사람이 `card promote` 한 뒤 |
-| `backgroundFactExtraction` (0.2) | 백그라운드, 배경 카드가 있을 때 | 초안 + 배경 이름 → `background/*.card`에 사실·그곳 인물 덧붙임 | 즉시 |
 
 줄기(`setting.threads`)가 있으면 원장·장 요약·페르소나 기억은 줄기별로 나뉘고 **캐넌만 전역**으로
 공유된다. 씬 번호는 전역이고 원고 조립도 번호순이다.

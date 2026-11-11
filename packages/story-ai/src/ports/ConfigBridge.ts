@@ -449,14 +449,6 @@ export class ConfigBridge {
     return this.readIntegerSetting('revise.length.maxCompressionPercent');
   }
 
-  public isUpdateCardsAfterGenerateEnabled(): boolean {
-    return this.readBooleanSetting('cards.candidates.updateAfterGenerate');
-  }
-
-  public isVerifyCardCandidatesEnabled(): boolean {
-    return this.readBooleanSetting('cards.candidates.verify');
-  }
-
   public getRunBudgetUsd(): number {
     return this.readDecimalSetting('budget.run.limitUsd');
   }

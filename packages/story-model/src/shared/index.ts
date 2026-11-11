@@ -1,4 +1,3 @@
-export * from '#model/shared/cardCandidates';
 export * from '#model/shared/catalogs';
 export * from '#model/shared/cardCollect';
 export * from '#model/shared/disposableHandle';

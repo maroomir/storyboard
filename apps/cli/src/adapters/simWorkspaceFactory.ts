@@ -10,7 +10,6 @@ import type {
 import { createCliContainer, type CliContainer, type CliContainerOptions } from '@/container';
 import type { GenerateDraftResult } from '@storyboard/story-engine';
 
-const shouldUpdateCardsInBackgroundDuringMeasurement: boolean = false;
 const shouldBypassDraftCacheSoEveryRunCallsAi: boolean = true;
 
 export interface SimWorkspaceFactoryOptions {
@@ -45,7 +44,6 @@ export function createSimWorkspaceFactory(
         },
         createConfigBridge: (dependencies) =>
           new TunedConfigBridge(dependencies, input.tuning, input.sectionOutputLimit),
-        postGenerationUpdates: shouldUpdateCardsInBackgroundDuringMeasurement,
       });
 
       return {

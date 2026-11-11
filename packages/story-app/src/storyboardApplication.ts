@@ -8,7 +8,6 @@ import {
   AugmentDraftUseCase,
   BibleCandidateRepository,
   BuildStoryCardsUseCase,
-  CardCandidateRepository,
   CardCollectRepository,
   CardRecommendationRepository,
   CardSidebarRepository,
@@ -37,10 +36,8 @@ import {
   NovelRunStateRepository,
   OutlineRepository,
   PlanNoteAbsorbUseCase,
-  PostGenerationUpdateManager,
   ProjectRepository,
   PromoteBibleCandidatesUseCase,
-  PromoteCardCandidatesUseCase,
   PromoteNoteCandidatesUseCase,
   RecommendCardsUseCase,
   RenameCardUseCase,
@@ -124,7 +121,6 @@ export interface StoryboardApplicationDependencies {
 export interface StoryboardApplicationOptions {
   readonly generator: string;
   readonly lockOwner: WorkspaceRunLockOwner;
-  readonly postGenerationUpdates?: boolean;
 }
 
 interface EngineGraph {
@@ -138,7 +134,6 @@ interface EngineGraph {
   readonly runLocks: WorkspaceRunLocks;
   readonly usageLedger: UsageLedgerRecorder;
   readonly usageMeter: UsageMeter;
-  readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly narratorCardRepository: INarratorCardRepository;
@@ -170,7 +165,6 @@ interface EngineGraph {
   readonly interviewSessionUseCase: InterviewSessionUseCase;
   readonly describeInterviewCoverageUseCase: DescribeInterviewCoverageUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
-  readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameCardUseCase: RenameCardUseCase;
@@ -211,7 +205,6 @@ export class StoryboardApplication {
   public readonly fileSystem: IFileSystem;
   public readonly usageMeter: UsageMeter;
   public readonly usageLedger: UsageLedgerRecorder;
-  public readonly postGenerationUpdates: PostGenerationUpdateManager;
   private readonly caches: WorkspaceCaches;
   public constructor(
     dependencies: StoryboardApplicationDependencies,
@@ -244,7 +237,6 @@ export class StoryboardApplication {
     this.fileSystem = services.fileSystem;
     this.usageMeter = services.usageMeter;
     this.usageLedger = services.usageLedger;
-    this.postGenerationUpdates = services.postGenerationUpdates;
     this.caches = services.caches;
   }
 
@@ -274,7 +266,6 @@ export class StoryboardApplication {
   }
 
   public async dispose(): Promise<void> {
-    this.postGenerationUpdates.dispose();
     this.usageLedger.dispose();
     await this.caches.closeAll();
   }
@@ -304,7 +295,6 @@ function buildServices(
     recordUsageWithoutFailingPaidGeneration([usageLedger, dependencies.usageObserver], logger),
   );
   const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
-  const postGenerationUpdates: PostGenerationUpdateManager = new PostGenerationUpdateManager();
 
   const host: HostAdapters = {
     fileSystem,
@@ -334,7 +324,6 @@ function buildServices(
     host,
     ai,
     repositories,
-    options.postGenerationUpdates === false ? {} : { postGenerationUpdates },
   );
   const reviseDraftUseCase: ReviseDraftUseCase = new ReviseDraftUseCase(host, ai, repositories);
   const revisionPlanRecorder: RevisionPlanRecorder = new RevisionPlanRecorder(host);
@@ -353,7 +342,6 @@ function buildServices(
     runLocks,
     usageLedger,
     usageMeter,
-    postGenerationUpdates,
     bibleCandidateRepository: repositories.bibleCandidates,
     cardSidebarRepository: repositories.cardSidebar,
     narratorCardRepository: repositories.narratorCards,
@@ -393,7 +381,6 @@ function buildServices(
     interviewSessionUseCase: new InterviewSessionUseCase(host, ai, repositories),
     describeInterviewCoverageUseCase: new DescribeInterviewCoverageUseCase(host, repositories),
     promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(repositories),
-    promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(repositories),
     promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase(host, repositories),
     recommendCardsUseCase: new RecommendCardsUseCase(host, ai, repositories),
     renameCardUseCase: new RenameCardUseCase(host),
@@ -419,7 +406,7 @@ function buildWorkspaceRepositories(
   host: HostAdapters,
   fetch: NoteHttpFetch,
 ): WorkspaceRepositories {
-  const { fileSystem, workspaceLocator, logger } = host;
+  const { fileSystem, workspaceLocator } = host;
   const outline: OutlineRepository = new OutlineRepository(fileSystem);
   const manuscriptAssembly: ManuscriptAssemblyRepository = new ManuscriptAssemblyRepository(
     fileSystem,
@@ -443,7 +430,6 @@ function buildWorkspaceRepositories(
     manuscriptExport: manuscriptAssembly,
     manuscriptReview: manuscriptAssembly,
     cardWriter: new CardWriterRepository(fileSystem),
-    cardCandidates: new CardCandidateRepository(fileSystem, logger),
     cardCollect: new CardCollectRepository(fileSystem),
     cardRecommendations: new CardRecommendationRepository(fileSystem),
     cardSidebar: new CardSidebarRepository(fileSystem),
