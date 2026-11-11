@@ -354,3 +354,15 @@ function toUsageLedgerEntry(value: z.infer<typeof usageLedgerEntrySchema>): Usag
     attribution: value.attribution,
   };
 }
+
+export function serializeUsageLedgerEntry(entry: UsageLedgerEntry): string {
+  return JSON.stringify(usageLedgerEntrySchema.parse(serializeLedgerEntry(entry)));
+}
+
+export function parseUsageLedgerEntry(text: string): UsageLedgerEntry | undefined {
+  const parsed: z.ZodSafeParseResult<UsageLedgerEntryPayload> = usageLedgerEntrySchema.safeParse(
+    JSON.parse(text),
+  );
+
+  return parsed.success ? toUsageLedgerEntry(parsed.data) : undefined;
+}
