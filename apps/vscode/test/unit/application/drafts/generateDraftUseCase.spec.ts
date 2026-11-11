@@ -110,7 +110,6 @@ const sceneBackgroundCard = {
 
 const aiServiceStub = {
   marker: "ai-service",
-  proposeSceneGrounding: vi.fn(async () => ({ incident: "제안된 사건" })),
   proposeSceneBeats: vi.fn(async () => [
     { text: "첫 비트", cast: [] },
     { text: "둘째 비트", cast: [] }
@@ -150,7 +149,6 @@ function createLogger(): LoggerSpy {
 
 interface ConfigBridgeStub {
   readonly getDraftSceneBreakSeparator: () => string | undefined
-  readonly isSceneGroundingAutoApproveEnabled: () => boolean
   readonly isAutoBeatsEnabled: () => boolean
   readonly getCharsPerBeat: () => number
   readonly getMinBeats: () => number
@@ -163,7 +161,6 @@ interface ConfigBridgeStub {
 function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBridgeStub {
   return {
     getDraftSceneBreakSeparator: () => undefined,
-    isSceneGroundingAutoApproveEnabled: () => true,
     isAutoBeatsEnabled: () => false,
     getCharsPerBeat: () => 1500,
     getMinBeats: () => 5,
@@ -207,24 +204,8 @@ interface DependencyOverrides {
   readonly draftRepository?: DraftRepositoryStub
   readonly logger?: LoggerSpy
   readonly sceneCacheRepository?: SceneCacheRepositoryStub
-  readonly writeGrounding?: ReturnType<typeof vi.fn>
   readonly writeBeats?: ReturnType<typeof vi.fn>
   readonly sceneRepository?: unknown
-  readonly sceneGroundingGapRepository?: unknown
-}
-
-function createGroundingGapRepository(): unknown {
-  const records = new Map<string, unknown>()
-  return {
-    read: async (_uri: unknown, stem: string): Promise<unknown> => records.get(stem),
-    write: async (_uri: unknown, stem: string, gap: unknown): Promise<void> => {
-      if (gap === undefined) {
-        records.delete(stem)
-      } else {
-        records.set(stem, gap)
-      }
-    }
-  }
 }
 
 function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftServices {
@@ -252,10 +233,8 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftS
       sceneCache: overrides.sceneCacheRepository ?? createSceneCacheRepository(),
       scenes: overrides.sceneRepository ?? {
         read: vi.fn(async () => fakeScene),
-        writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined),
         writeBeats: overrides.writeBeats ?? vi.fn(async () => undefined)
-      },
-      sceneGroundingGaps: overrides.sceneGroundingGapRepository ?? createGroundingGapRepository()
+      }
     } as never)
   }
 }
@@ -304,7 +283,6 @@ describe("GenerateDraftUseCase", () => {
     uriExistsMock.mockReset().mockResolvedValue(true)
     archiveExistingDraftMock.mockReset().mockResolvedValue(undefined)
     pipelineRunMock.mockReset().mockResolvedValue(pipelineSuccessResult)
-    aiServiceStub.proposeSceneGrounding.mockClear()
     aiServiceStub.proposeSceneBeats.mockClear()
   })
 
@@ -334,7 +312,7 @@ describe("GenerateDraftUseCase", () => {
         format: fakeProject.format as never,
         bibleFacts: [],
         sceneBreakJoiner: undefined,
-        grounding: { incident: "제안된 사건" }
+        grounding: { place: "카페" }
       })
       const sceneCacheRepository = createSceneCacheRepository({
         read: vi.fn(async () => ({ inputHash: matchingHash }))
@@ -362,7 +340,7 @@ describe("GenerateDraftUseCase", () => {
         format: fakeProject.format as never,
         bibleFacts: [],
         sceneBreakJoiner: undefined,
-        grounding: { incident: "제안된 사건" }
+        grounding: { place: "카페" }
       })
 
       function clonedWorkspaceFileSystem(ledgerInputHash: string): IFileSystem {
@@ -625,127 +603,38 @@ describe("GenerateDraftUseCase", () => {
   })
 
   describe("scene grounding", () => {
-    it("proposes only the missing fields, writes them to the scene, and feeds them to the pipeline", async () => {
-      const writeGrounding = vi.fn(async () => undefined)
-      const dependencies = createDependencies({ writeGrounding })
+    it("derives the fact sheet from the card and the background without asking a model", async () => {
+      const dependencies = createDependencies()
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
       expect(result.kind).toBe("generated")
-      expect(aiServiceStub.proposeSceneGrounding).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sceneBody: fakeScene.body,
-          missingFields: ["incident", "place", "relation", "time"],
-          characterNames: ["준서", "하나"]
-        }),
-        expect.anything()
-      )
-      expect(writeGrounding).toHaveBeenCalledWith(sceneUri, { incident: "제안된 사건" })
       expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
-        context: { scene: { frontmatter: { grounding: { incident: "제안된 사건" } } } }
+        context: { scene: { frontmatter: { grounding: { place: "카페" } } } }
       })
     })
 
-    describe("fields the model left blank", () => {
-      function sceneThatRemembersItsGrounding(): { repository: unknown; changeBody: (body: string) => void } {
-        let current: typeof fakeScene & { frontmatter: Record<string, unknown> } = { ...fakeScene }
-        return {
-          repository: {
-            read: vi.fn(async () => current),
-            writeGrounding: vi.fn(async (_uri: unknown, grounding: unknown) => {
-              current = { ...current, frontmatter: { ...current.frontmatter, grounding } }
-            }),
-            writeBeats: vi.fn(async () => undefined)
-          },
-          changeBody: (body: string): void => {
-            current = { ...current, body }
-          }
-        }
-      }
-
-      it("are not asked for again until the scene changes", async () => {
-        const scene = sceneThatRemembersItsGrounding()
-        const dependencies = createDependencies({ sceneRepository: scene.repository })
-
-        await execute(dependencies, createRequest({ force: true }))
-        await execute(dependencies, createRequest({ force: true }))
-        expect(aiServiceStub.proposeSceneGrounding).toHaveBeenCalledTimes(1)
-
-        scene.changeBody("고친 씬 본문")
-        await execute(dependencies, createRequest({ force: true }))
-        expect(aiServiceStub.proposeSceneGrounding).toHaveBeenCalledTimes(2)
-      })
-
-      it("are asked for again after a proposal that failed", async () => {
-        const scene = sceneThatRemembersItsGrounding()
-        const dependencies = createDependencies({ sceneRepository: scene.repository })
-        aiServiceStub.proposeSceneGrounding.mockRejectedValueOnce(new Error("network"))
-
-        await execute(dependencies, createRequest({ force: true }))
-        await execute(dependencies, createRequest({ force: true }))
-
-        expect(aiServiceStub.proposeSceneGrounding).toHaveBeenCalledTimes(2)
-      })
-    })
-
-    it("keeps user-authored grounding and skips the proposal when every field is filled", async () => {
-      const grounded = {
+    it("builds the incident from the title and the first beat, and keeps what the card states", async () => {
+      const titledScene = {
         ...fakeScene,
-        frontmatter: {
-          grounding: {
-            incident: "면접 탈락",
-            place: "옥탑방",
-            relation: "아랫집 이웃",
-            time: "11월 말"
+        card: { type: "scene", id: "01-intro", beats: [{ text: "준서가 문을 연다", time: "새벽" }] },
+        frontmatter: { title: "첫 만남", grounding: { relation: "어색한 동료" } }
+      }
+      const dependencies = createDependencies({
+        sceneRepository: { read: vi.fn(async () => titledScene), writeBeats: vi.fn(async () => undefined) }
+      })
+
+      await execute(dependencies, createRequest({ force: true }))
+
+      expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
+        context: {
+          scene: {
+            frontmatter: {
+              grounding: { incident: "첫 만남: 준서가 문을 연다", place: "카페", time: "새벽", relation: "어색한 동료" }
+            }
           }
         }
-      }
-      buildSceneContextMock.mockReset().mockResolvedValue(sceneContext({ scene: grounded }))
-      const writeGrounding = vi.fn(async () => undefined)
-      const dependencies = createDependencies({ writeGrounding })
-      dependencies.repositories.scenes.read = vi.fn(async () => grounded) as never
-
-      const result = await execute(dependencies, createRequest({ force: true }))
-
-      expect(result.kind).toBe("generated")
-      expect(aiServiceStub.proposeSceneGrounding).not.toHaveBeenCalled()
-      expect(writeGrounding).not.toHaveBeenCalled()
-    })
-
-    it("cancels generation when the approval callback rejects the proposal", async () => {
-      const writeGrounding = vi.fn(async () => undefined)
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isSceneGroundingAutoApproveEnabled: () => false }),
-        writeGrounding
       })
-
-      const result = await execute(
-        dependencies,
-        createRequest({ force: true, confirmSceneGrounding: async () => undefined })
-      )
-
-      expect(result).toEqual({ ok: false, kind: "cancelled" })
-      expect(writeGrounding).not.toHaveBeenCalled()
-      expect(pipelineRunMock).not.toHaveBeenCalled()
-    })
-
-    it("writes the edited grounding when the approval callback returns a revision", async () => {
-      const writeGrounding = vi.fn(async () => undefined)
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isSceneGroundingAutoApproveEnabled: () => false }),
-        writeGrounding
-      })
-
-      const result = await execute(
-        dependencies,
-        createRequest({
-          force: true,
-          confirmSceneGrounding: async () => ({ incident: "사용자가 고친 사건" })
-        })
-      )
-
-      expect(result.kind).toBe("generated")
-      expect(writeGrounding).toHaveBeenCalledWith(sceneUri, { incident: "사용자가 고친 사건" })
     })
   })
 

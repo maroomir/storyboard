@@ -1,15 +1,9 @@
-import type { StoryUri, SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-model';
+import type { StoryUri } from '@storyboard/story-model';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 
 export function emptyDraftBodyMessage(sceneStem: string): string {
   return `모델이 빈 본문을 돌려줘 초안을 저장하지 않았습니다. 기존 초안은 그대로입니다: ${sceneStem}`;
 }
-
-export type ConfirmSceneGrounding = (input: {
-  readonly sceneStem: string;
-  readonly grounding: SceneGrounding;
-  readonly proposedFields: readonly SceneGroundingFieldKey[];
-}) => Promise<SceneGrounding | undefined>;
 
 export interface GenerateDraftRequest {
   readonly sceneUri: StoryUri;
@@ -21,8 +15,6 @@ export interface GenerateDraftRequest {
   ) => void;
   readonly onSaving?: () => void;
   readonly shouldCancel?: () => boolean;
-  readonly confirmSceneGrounding?: ConfirmSceneGrounding;
-  readonly skipSceneGrounding?: boolean;
   readonly skipSceneBeats?: boolean;
   readonly suppressLoggerPanel?: boolean;
 }

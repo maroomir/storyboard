@@ -29,7 +29,6 @@ export {
 import type { AiProviderId } from '#model/contracts/providerCatalog';
 
 export type AiTaskName =
-  | 'sceneGrounding'
   | 'sceneBeats'
   | 'sceneStructure'
   | 'situationExtraction'
@@ -81,7 +80,6 @@ export interface AiTaskCatalogEntry {
 }
 
 export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
-  { name: 'sceneGrounding', label: '씬 사실 시트' },
   { name: 'sceneBeats', label: '씬 비트 전개' },
   { name: 'sceneStructure', label: '씬 구조화' },
   { name: 'situationExtraction', label: '상황 추출' },

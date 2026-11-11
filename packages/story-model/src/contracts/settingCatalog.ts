@@ -64,14 +64,6 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     group: '생성',
   },
   {
-    key: 'generation.grounding.autoApprove',
-    label: '씬 사실 시트 자동 승인',
-    description: '생성 직전 AI가 채운 사건·장소·관계·시점을 묻지 않고 받아들입니다.',
-    kind: 'boolean',
-    defaultValue: false,
-    group: '생성',
-  },
-  {
     key: 'generation.beats.auto',
     label: '씬 비트 자동 전개',
     description: '생성 직전 카드에 beats 가 없으면 사건 비트를 뽑아 카드에 적습니다.',

@@ -91,7 +91,7 @@ describe('persistence repositories', () => {
     );
   });
 
-  it('leaves a scene card untouched when its grounding and beats would not change', async () => {
+  it('leaves a scene card untouched when its beats would not change', async () => {
     const fileSystem = new InMemoryFileSystem();
     const writes: unknown[] = [];
     const recordingFileSystem: IFileSystem = Object.assign(Object.create(fileSystem), {
@@ -101,15 +101,12 @@ describe('persistence repositories', () => {
       },
     });
     const repository = new SceneRepository(recordingFileSystem);
-    const grounding = { incident: '사건', place: '장소', relation: '관계', time: '시점' };
     await fileSystem.writeFile('scene', new TextEncoder().encode('type: scene\nid: 01-opening\n'));
 
-    await repository.writeGrounding('scene', grounding);
     await repository.writeBeats('scene', ['비트 하나']);
-    await repository.writeGrounding('scene', grounding);
     await repository.writeBeats('scene', ['비트 하나']);
 
-    expect(writes).toHaveLength(2);
+    expect(writes).toHaveLength(1);
   });
 
   it('persists canonical scene cache data and creates its directory', async () => {

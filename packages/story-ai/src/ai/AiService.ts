@@ -1,7 +1,6 @@
 import type {
   Background,
   Character,
-  SceneGrounding,
   ChapterPlan,
   OutlineBrief,
   OutlineCastMember,
@@ -159,13 +158,6 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<SituationWithCharacters[]> {
     return this.sceneAiService.extractSituations(input, options);
-  }
-
-  public async proposeSceneGrounding(
-    input: Parameters<SceneAiService['proposeSceneGrounding']>[0],
-    options: GenerateTextOptions = {},
-  ): Promise<SceneGrounding> {
-    return this.sceneAiService.proposeSceneGrounding(input, options);
   }
 
   public async proposeSceneBeats(

@@ -27,15 +27,15 @@ afterEach(() => workspaces.cleanUp());
 describe('finding store', () => {
   it('keeps one finding per kind and subject and hands it back only while its input holds', async () => {
     const findings: FindingStore = new FindingStore(await workspaces.openFreshCache());
-    findings.record({ kind: 'grounding-gap', subject: rooftop, inputHash: 'sha256:aa', data: { fields: ['time'] } });
-    findings.record({ kind: 'background-conflict', subject: school, inputHash: 'sha256:bb', data: { conflicts: [] } });
-    findings.record({ kind: 'grounding-gap', subject: rooftop, inputHash: 'sha256:cc', data: { fields: ['place'] } });
+    findings.record({ kind: 'background-conflict', subject: rooftop, inputHash: 'sha256:aa', data: [] });
+    findings.record({ kind: 'background-conflict', subject: school, inputHash: 'sha256:bb', data: [] });
+    findings.record({ kind: 'background-conflict', subject: rooftop, inputHash: 'sha256:cc', data: [{ items: ['가', '나'] }] });
 
-    expect(findings.list('grounding-gap')).toEqual([expect.objectContaining({ subject: rooftop, data: { fields: ['place'] } })]);
-    expect(findings.findCurrent('grounding-gap', rooftop, 'sha256:aa')).toBeUndefined();
-    expect(findings.findCurrent('grounding-gap', rooftop, 'sha256:cc')?.data).toEqual({ fields: ['place'] });
+    expect(findings.list('background-conflict').map((finding) => finding.subject)).toEqual([rooftop, school].sort());
+    expect(findings.findCurrent('background-conflict', rooftop, 'sha256:aa')).toBeUndefined();
+    expect(findings.findCurrent('background-conflict', rooftop, 'sha256:cc')?.data).toEqual([{ items: ['가', '나'] }]);
     findings.remove('background-conflict', school);
-    expect(findings.list('background-conflict')).toEqual([]);
+    expect(findings.list('background-conflict').map((finding) => finding.subject)).toEqual([rooftop]);
   });
 });
 

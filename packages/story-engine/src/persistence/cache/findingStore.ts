@@ -1,9 +1,9 @@
 import type { SqlRow, SqlValue } from '#engine/ports/sqlDatabase';
 import type { CacheDatabase } from '#engine/persistence/cache/cacheDatabase';
 
-export type FindingKind = 'grounding-gap' | 'background-conflict';
+export type FindingKind = 'background-conflict';
 
-export const findingKinds: readonly FindingKind[] = ['grounding-gap', 'background-conflict'];
+export const findingKinds: readonly FindingKind[] = ['background-conflict'];
 
 export interface Finding {
   readonly kind: FindingKind;

@@ -9,7 +9,6 @@ const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | numbe
   "revise.loop.scoreThreshold": (bridge) => bridge.getReviseScoreThreshold(),
   "revise.length.maxCompressionPercent": (bridge) => bridge.getMaxCompressionPercent(),
   "budget.run.limitUsd": (bridge) => bridge.getRunBudgetUsd(),
-  "generation.grounding.autoApprove": (bridge) => bridge.isSceneGroundingAutoApproveEnabled(),
   "generation.beats.auto": (bridge) => bridge.isAutoBeatsEnabled(),
   "generation.beats.charsPerBeat": (bridge) => bridge.getCharsPerBeat(),
   "generation.section.outputLimit": (bridge) => bridge.getSectionOutputLimit(),

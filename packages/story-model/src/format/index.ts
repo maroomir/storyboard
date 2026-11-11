@@ -45,4 +45,3 @@ export * from '#model/format/files/outline';
 export * from '#model/format/files/scene';
 export * from '#model/format/files/sceneBeats';
 export * from '#model/format/files/sceneDialogue';
-export * from '#model/format/files/sceneGrounding';

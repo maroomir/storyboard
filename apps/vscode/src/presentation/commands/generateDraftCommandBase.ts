@@ -9,7 +9,6 @@ import type {
   ReadyDraft,
   RunGate,
 } from '@storyboard/story-app';
-import { confirmSceneGrounding } from '@/presentation/commands/confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 import { runHoldingWorkspaceLock } from '@/presentation/commands/workspaceRunLock';
@@ -127,7 +126,6 @@ export abstract class GenerateDraftCommandBase implements IExtensionCommand {
       isReviseAllowed: true,
       onDraftReady: openDraftResult,
       onReviseProgress: (message) => progress.report({ message }),
-      confirmSceneGrounding,
       onPipelineProgress: (stage, current, total) => {
         if (!token.isCancellationRequested) {
           const label: string = stageProgressLabel(stage);

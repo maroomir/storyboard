@@ -3,10 +3,8 @@ import type {
   Draft,
   SceneBeat,
   SceneFile,
-  SceneGrounding,
   StoryboardProject,
   SceneCacheRecord,
-  SceneGroundingGap,
 } from '@storyboard/story-model';
 export interface IProjectRepository {
   read(uri: StoryUri): Promise<StoryboardProject>;
@@ -15,7 +13,6 @@ export interface IProjectRepository {
 
 export interface ISceneRepository {
   read(uri: StoryUri, fileName: string): Promise<SceneFile>;
-  writeGrounding(uri: StoryUri, grounding: SceneGrounding): Promise<void>;
   writeBeats(uri: StoryUri, beats: readonly SceneBeat[]): Promise<void>;
 }
 
@@ -27,15 +24,6 @@ export interface ISceneCacheRepository {
   read(uri: StoryUri): Promise<SceneCacheRecord>;
   write(uri: StoryUri, record: SceneCacheRecord): Promise<void>;
   ensureDirectory(uri: StoryUri): Promise<void>;
-}
-
-export interface ISceneGroundingGapRepository {
-  read(workspaceRoot: StoryUri, sceneStem: string): Promise<SceneGroundingGap | undefined>;
-  write(
-    workspaceRoot: StoryUri,
-    sceneStem: string,
-    gap: SceneGroundingGap | undefined,
-  ): Promise<void>;
 }
 
 export interface ISceneBatchRepository {

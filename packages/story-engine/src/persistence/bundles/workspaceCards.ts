@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  bundleFileNames,
   bundleRelativePath,
+  elementKindDirectories,
   formatBundleDirectoryName,
   isBackgroundCard,
   joinStoryPath,
@@ -56,6 +58,11 @@ export const cardBundleKinds: readonly CardBundleKind[] = ['character', 'backgro
 
 const authorSource: StatementSource = { origin: 'author' };
 
+const fingerprintedBundleFiles: readonly string[] = [
+  bundleFileNames.card,
+  bundleFileNames.statements,
+];
+
 interface CardWritePlan {
   readonly roster: CardRoster;
   readonly lookup: ElementSlugLookup;
@@ -109,12 +116,35 @@ function createLookup(bundles: readonly ElementBundle[]): ElementSlugLookup {
   };
 }
 
+interface CachedRoster {
+  readonly fingerprint: string;
+  readonly roster: CardRoster;
+}
+
 export class WorkspaceCards {
+  private readonly rosters: Map<string, CachedRoster> = new Map();
+
   public constructor(private readonly dependencies: WorkspaceCardsDependencies) {}
 
   public async loadRoster(
     workspaceRoot: StoryUri,
     kinds: readonly ElementKind[] = cardBundleKinds,
+  ): Promise<CardRoster> {
+    const key: string = `${workspaceRoot.toString()}#${kinds.join(',')}`;
+    const fingerprint: string = await this.fingerprintBundles(workspaceRoot, kinds);
+    const cached: CachedRoster | undefined = this.rosters.get(key);
+    if (cached?.fingerprint === fingerprint) {
+      return cached.roster;
+    }
+
+    const roster: CardRoster = await this.readRoster(workspaceRoot, kinds);
+    this.rosters.set(key, { fingerprint, roster });
+    return roster;
+  }
+
+  private async readRoster(
+    workspaceRoot: StoryUri,
+    kinds: readonly ElementKind[],
   ): Promise<CardRoster> {
     const listing: BundleListing = await (await this.openRepository(workspaceRoot)).listBundles(
       kinds,
@@ -135,6 +165,32 @@ export class WorkspaceCards {
       warnings: listing.warnings,
       lookup,
     };
+  }
+
+  private async fingerprintBundles(
+    workspaceRoot: StoryUri,
+    kinds: readonly ElementKind[],
+  ): Promise<string> {
+    const { fileSystem } = this.dependencies;
+    const parts: string[] = [];
+
+    for (const kind of kinds) {
+      const directory: StoryUri = joinStoryPath(workspaceRoot, elementKindDirectories[kind]);
+      const entries: FileSystemDirectoryEntry[] = (await fileSystem.exists(directory))
+        ? await fileSystem.readDirectory(directory)
+        : [];
+      for (const [name] of [...entries].sort(([left], [right]) => left.localeCompare(right))) {
+        const bundle: StoryUri = joinStoryPath(directory, name);
+        const times: number[] = await Promise.all(
+          fingerprintedBundleFiles.map((fileName) =>
+            fileSystem.modifiedTime(joinStoryPath(bundle, fileName)),
+          ),
+        );
+        parts.push(`${kind}/${name}:${times.join(',')}`);
+      }
+    }
+
+    return parts.join('|');
   }
 
   public async findCard(workspaceRoot: StoryUri, slug: string): Promise<StoryboardCard | undefined> {
@@ -208,6 +264,7 @@ export class WorkspaceCards {
   }
 
   public async remove(workspaceRoot: StoryUri, kind: CardBundleKind, slug: string): Promise<void> {
+    this.rosters.clear();
     const index: ElementIndexStore = await this.openIndex(workspaceRoot);
     const path: string = this.bundlePath(kind, slug);
 
@@ -229,6 +286,7 @@ export class WorkspaceCards {
 
     const fromUri: StoryUri = this.bundleUri(workspaceRoot, kind, fromSlug);
     const toUri: StoryUri = this.bundleUri(workspaceRoot, kind, toSlug);
+    this.rosters.clear();
     await this.copyDirectory(fromUri, toUri);
     await this.dependencies.fileSystem.delete(fromUri);
     (await this.openIndex(workspaceRoot)).remove(current.path);
@@ -298,6 +356,7 @@ export class WorkspaceCards {
     slug: string,
     planned: ElementBundleContent<THeader>,
   ): Promise<StoryUri> {
+    this.rosters.clear();
     const written: ElementBundle = await (await this.openRepository(workspaceRoot)).writeBundle(
       kind,
       {
