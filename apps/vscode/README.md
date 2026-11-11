@@ -13,15 +13,15 @@ English README: [`README.en.md`](README.en.md)
 - 구성(선형·옴니버스·시점 교차·액자식)을 고르면 연속성 줄기와 서술자 카드를 프리셋이 만들고, 옴니버스는 편 안에서만 이야기 상태·요약·기억이 이어짐
 - `Storyboard: Generate Novel`로 작품 설정 → outline → 인물 카드 → 씬 시드 → 초안·검수·재작성 → 원고 조립·검사·요약까지 실행
 - `.storyboard/outline/synopsis.md`, `chapters.yaml` 기반 장편 구조 계획
-- `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
-- `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
+- `character/<slug>.card/`, `background/<slug>.card/` 번들(`card.yaml` 머리말 + `statements.yaml` 진술) 기반 캐릭터/배경 카드 관리
+- 번들의 `card.yaml` 을 여는 읽기 전용 카드 뷰어(진술을 섹션별로, «텍스트로 열기»·«스튜디오에서 고치기»)와 Characters / Backgrounds 사이드바
 - outline에서 `scene/*.card` 씬 시드를 만들고 `draft/*.md` 초안을 생성
 - 씬 생성은 **뼈대 → 대사 다듬기 → 구간 살붙임 → 기계 검증** 4단으로 진행. 씬 전체의 사건 순서·등장·종료 지점을 뼈대에서 한 번에 확정한 뒤 문장만 두껍게 하므로, 같은 인물이 두 번 처음 등장하거나 도입이 반복되는 결함이 구조적으로 나오지 않음
 - 생성 검증은 AI 없이 결정론적으로 동작: 뼈대에 없던 인물·다른 문자 체계·사라진 대사·분량 미달을 잡아 재시도하고, 남은 위반은 초안 frontmatter의 `warnings`로 올려 어느 구간을 먼저 볼지 알림
 - 씬 간 이야기 상태 원장(씬 번들의 `state.yaml`을 구조 순서로 이은 것): 확정 사실·인물 관계와 말투·공개된 정보·살아 있는 모티프를 씬마다 남겨 다음 씬 프롬프트와 연속성 검사에 주입. 앞 씬을 재생성해도 뒤 씬 상태가 새어 들어가지 않음. 씬마다 입력 해시를 함께 남겨, 카드나 씬을 고쳐 놓고 다시 만들지 않은 씬은 낡음(`stale`)으로 표시하고 프롬프트에서 빼며 생성 경고로 알림
 - 캐넌 공개 시점(`revealFrom`): 사실이 **참이 되는 시점**(`validFrom`)과 **밝혀지는 시점**을 분리해, 1화부터 참인 결말 반전이 초반 본문에 누설되지 않게 함
 - 씬 카드의 종료 지점(`endState`)·시점 인물(`povCharacter`): 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말나는 것과, 한 씬 안에서 여러 인물의 내면이 교차하는 것을 막음
-- **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 인물·배경 카드나 씬·초안을 열고 자연어로 수정을 지시 → 에이전트가 모호하면 되묻고 → 정합성 검사를 거친 수정 제안을 diff로 확인 → 승인해야 반영. 대화는 대상별로 저장되어 이어집니다
+- **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 인물·배경 카드나 씬·초안을 열고 자연어로 수정을 지시 → 에이전트가 모호하면 되묻고 → 정합성 검사를 거친 수정 제안을 카드 스냅숏과 diff로 확인 → «적용»해야 반영. 사이드바의 **+** 도 스튜디오를 열어 설명 한 번으로 카드·씬을 만들고, 카드에 쌓인 제안(인터뷰·노트 흡수·스튜디오)은 «기다리는 제안» 띠에서 받거나 버립니다. 대화는 대상별로 캐시 DB 에 남아 이어집니다
 - 재생성 없이 카드 기반 보충: **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역) 명령으로 갱신된 카드와 그 사실을 기존 초안에 녹이고, 적용 전 diff로 확인
 - 씬 사실 시트(grounding): 사건(씬 제목과 첫 비트)·장소(첫 비트의 장소나 배경 카드)·시점(첫 비트의 시간)·관계를 카드에서 파생해 대사 생성에 주입. 따로 저장하거나 AI에게 묻지 않음
 - 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
@@ -29,9 +29,8 @@ English README: [`README.en.md`](README.en.md)
 - 이전 초안 판본 보관(`editor.draft.keepHistory`): 덮어쓰기 직전 초안을 캐시 `.storyboard/cache/revisions/<씬 uuid>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 씬마다 최근 10판까지 적재(기본 꺼짐)
 - 장면 전환 구분자 삽입(`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - 씬의 인물·장소 카드에 적힌 사실(`fact` 진술) 주입과 초안 연속성 검사
-- **노트 흡수** (`Storyboard: Absorb Notes…`): Obsidian 폴더·노트, Notion 내보내기 zip, Notion 페이지 주소를 골라 읽고, 견적 → AI 정리 → 계획 확인 뒤 인물·배경·씬 카드와 시놉시스로 옮깁니다(CLI `notes absorb`와 같은 동작). 기존 카드에 대한 내용은 후보로 남고 `Promote Card Candidates`가 초안 후보와 함께 보여 줍니다.
-- 카드 에디터의 **인터뷰** 탭: 다가올 씬의 사건을 하나씩 내고 이 인물(또는 장소)이 어떻게 하는지 세 안 중에서 고르게 합니다. 고른 대사가 아니라 선택의 패턴이 표로 쌓이고, 문턱을 넘은 축만 카드 후보로 증류되어 `Promote Card Candidates`가 반영합니다(CLI `card interview`와 같은 엔진). 선택 기록은 캐시 DB(`.storyboard/cache/storyboard.db`)의 인터뷰 세션에만 남습니다.
-- 카드 에디터의 **수집** 탭: 카드가 등장하는 draft에서 LLM으로 항목을 추출해 git diff처럼 보여주고, 선택 수락 시 캐릭터/배경 카드에 추가(기존 값 보존)
+- **노트 흡수** (`Storyboard: Absorb Notes…`): Obsidian 폴더·노트, Notion 내보내기 zip, Notion 페이지 주소를 골라 읽고, 견적 → AI 정리 → 계획 확인 뒤 인물·배경·씬 카드와 시놉시스로 옮깁니다(CLI `notes absorb`와 같은 동작). 기존 카드에 대한 내용은 그 카드의 제안으로 남고, 카드를 열면 스튜디오의 «기다리는 제안»에서 적용합니다.
+- 스튜디오의 **인터뷰**: 인물·배경 카드를 연 채 스튜디오 머리의 «인터뷰»를 누르면 다가올 씬의 사건을 하나씩 내고 이 인물(또는 장소)이 어떻게 하는지 세 안 중에서 고르게 합니다. 고른 대사가 아니라 선택의 패턴이 표로 쌓이고, 문턱을 넘은 축만 그 카드의 제안으로 증류되어 «기다리는 제안»에서 «적용»합니다(CLI `card interview`와 같은 엔진). 선택 기록은 캐시 DB(`.storyboard/cache/storyboard.db`)의 인터뷰 세션에만 남습니다.
 - Characters / Backgrounds 사이드바의 **추천** 버튼: `scene/*.card`·`draft/*.md` 전체를 LLM으로 훑어 본문에 등장하지만 카드가 없는 인물·배경을 찾아 QuickPick으로 제안하고, 선택분을 신규 카드로 생성
 - **이야기 완결**: `scene/*.card`만 이어서 읽고 기존 씬을 건드리지 않은 채 끝번호 뒤에 완결 씬을 제안합니다. 연속된 앞부분만 선택해 VS Code diff와 최종 확인 뒤 추가합니다.
 - **씬 기반 카드 구성**: `scene/*.card`를 유일한 새 사실 근거로 읽어 신규 인물·장소 카드와 기존 카드의 필드별 보강안을 함께 제안합니다. 선택한 항목만 diff 검토 뒤 반영하며, 신규 캐릭터는 profile PNG를 만들지 않습니다.
@@ -90,7 +89,7 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 공통값을 덮어씁니다. API 키는 `~/.storyboard/secrets.json`(권한 0600)에 있습니다. `STORYBOARD_HOME` 환경
 변수로 홈 위치를 옮길 수 있습니다.
 
-키 이름은 아래 문서의 `editor.draft.keepHistory` 같은 점 표기 그대로이며, 설정 패널(`Storyboard: Open Settings`)이 이
+키 이름은 아래 문서의 `editor.grammar.realtime` 같은 점 표기 그대로이며, 설정 패널(`Storyboard: Open Settings`)이 이
 파일을 편집합니다. 패널은 값마다 출처(공통 / 이 작품 / 기본값)를 표시하고, 저장할 때마다 어느 파일에 저장됐는지
 알려 줍니다. 생성·검수·편집기 스위치는 **옵션** 탭에 모여 있습니다. 상태바의 `✦ provider · model` 항목이 현재
 기본 AI를 보여 주며, 누르면 설정 패널이 열립니다. 예전 버전에서 VSCode `settings.json` 에 두었던 `storyboard.*` 값은 처음 활성화될 때 한 번
