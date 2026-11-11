@@ -34,7 +34,6 @@ import type {
   IManuscriptReviewRepository,
 } from '#engine/application/manuscript/manuscriptRepositories';
 import type {
-  ICardCandidateRepository,
   ICardCollectRepository,
   ICardRecommendationRepository,
   ICardWriterRepository,
@@ -76,7 +75,6 @@ export interface WorkspaceRepositories {
   readonly manuscriptExport: IManuscriptExportRepository;
   readonly manuscriptReview: IManuscriptReviewRepository;
   readonly cardWriter: ICardWriterRepository;
-  readonly cardCandidates: ICardCandidateRepository;
   readonly cardCollect: ICardCollectRepository;
   readonly cardRecommendations: ICardRecommendationRepository;
   readonly cardSidebar: ICardSidebarRepository;

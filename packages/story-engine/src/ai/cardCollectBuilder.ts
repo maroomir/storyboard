@@ -1,6 +1,7 @@
 import {
   shouldProposeCardCollect,
   cardCollectProposalId,
+  escapeRegExp,
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '@storyboard/story-model';
@@ -17,12 +18,68 @@ import type {
   CardCandidateExtraction,
   StoryboardAiService,
 } from '@storyboard/story-ai';
-import { extractQuotedUtterancesForCharacter } from '#engine/ai/traitsUpdater';
-import { buildTargetResolver } from '#engine/ai/cardCandidateUpdater';
 
 interface ProposalWithScenes {
   partial: PartialProposal;
   scenes: Set<string>;
+}
+
+
+export function extractQuotedUtterancesForCharacter(
+  script: string,
+  characterName: string,
+  aliases?: readonly string[],
+): string[] {
+  const utterances: string[] = [];
+  const speakerNames: string[] = [characterName, ...(aliases ?? [])]
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+  const speaker: RegExp = new RegExp(
+    `^\\s*(?:${speakerNames.map(escapeRegExp).join('|')})\\s*:\\s*(.+)$`,
+  );
+
+  for (const rawLine of script.split(/\r?\n/)) {
+    const match: RegExpExecArray | null = speaker.exec(rawLine);
+
+    if (!match) {
+      continue;
+    }
+
+    collectQuotedStrings(match[1] ?? '', utterances);
+  }
+
+  return utterances;
+}
+
+function collectQuotedStrings(text: string, out: string[]): void {
+  const quotePatterns: RegExp[] = [/"([^"]+)"/g, /「([^」]+)」/g, /'([^']+)'/g];
+
+  for (const pattern of quotePatterns) {
+    let match: RegExpExecArray | null;
+
+    while ((match = pattern.exec(text)) !== null) {
+      const raw: string = (match[1] ?? '').trim();
+
+      if (raw.length >= 2) {
+        out.push(raw);
+      }
+    }
+  }
+}
+
+export function buildTargetResolver(
+  roster: readonly CharacterRef[],
+): (rawTarget: string) => string | undefined {
+  const idByName: Map<string, string> = new Map(roster.map((entry) => [entry.name, entry.id]));
+  const ids: Set<string> = new Set(roster.map((entry) => entry.id));
+
+  return (rawTarget) => {
+    const target: string = rawTarget.trim();
+    if (ids.has(target)) {
+      return target;
+    }
+    return idByName.get(target);
+  };
 }
 
 export interface CollectDraft {

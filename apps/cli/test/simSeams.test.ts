@@ -154,8 +154,7 @@ describe('fixture mutation', () => {
   it('leaves the character and background cards byte-identical', async () => {
     const before = ['character/elia.card', 'background/gate.card'].map(textOf);
 
-    await generateScene({ postGenerationUpdates: false });
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await generateScene();
 
     expect(['character/elia.card', 'background/gate.card'].map(textOf)).toEqual(before);
   });
@@ -163,7 +162,7 @@ describe('fixture mutation', () => {
   it('rewrites the scene card, which is why a run needs a scratch copy', async () => {
     const before = textOf('scene/01-opening.card');
 
-    await generateScene({ postGenerationUpdates: false });
+    await generateScene();
 
     expect(textOf('scene/01-opening.card')).not.toBe(before);
     expect(textOf('scene/01-opening.card')).toContain('beats:');

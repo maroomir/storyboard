@@ -24,7 +24,6 @@ Korean README: [`README.md`](README.md)
 - Insert scene-break separators (`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
-- Update cards from drafts (`updateCardsAfterGenerate`): write detected characters into background cards directly, and extract relation/arc/attribute candidates for review via `Promote Card Candidates`.
 - Review and revise individual scene drafts while recording instructions in `revision-plan.yaml`.
 - Assemble `manuscript/`, run final review (`REVIEW.md`), write chapter summaries (`.storyboard/memory/summaries.md`), and track foreshadowing (`FORESHADOWING.md`).
 - Route the final review's high-severity findings back into the scenes they name, rewrite them, then review the volume again, repeating while high findings remain up to `revise.loop.maxIterations` rounds. Rewritten scenes are listed in `REVIEW.md`.

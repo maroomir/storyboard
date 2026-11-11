@@ -88,7 +88,6 @@ export interface CliContainerOptions {
   readonly configWriteTarget?: ConfigurationTarget;
   readonly usageSink?: IUsageSink;
   readonly createConfigBridge?: (dependencies: ConfigBridgeDependencies) => ConfigBridge;
-  readonly postGenerationUpdates?: boolean;
   readonly localRuntime?: {
     readonly baseUrl?: string;
     readonly contextTokens?: number;
@@ -178,9 +177,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     {
       generator: `storyboard@${options.version}`,
       lockOwner: 'cli',
-      ...(options.postGenerationUpdates === undefined
-        ? {}
-        : { postGenerationUpdates: options.postGenerationUpdates }),
     },
   );
 

@@ -15,10 +15,7 @@ import type {
   INarratorCardRepository,
   IFileSystem,
   PrepareBibleCandidatePromotionResult,
-  PrepareCardCandidatePromotionResult,
   PromoteBibleCandidatesUseCase,
-  PromoteCardCandidatesResult,
-  PromoteCardCandidatesUseCase,
   RemoveNarratorCardResult,
   RecommendCardsRequest,
   RecommendCardsResult,
@@ -38,7 +35,6 @@ import {
   characterCardPath,
   parseCard,
   type BackgroundFactConflict,
-  type CardCandidateItem,
   type CardCollectProposal,
   type NarratorCard,
   type BibleFact,
@@ -67,7 +63,6 @@ export interface CardManagerDependencies {
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameCardUseCase: RenameCardUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
-  readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
@@ -171,26 +166,6 @@ export class CardManager {
 
   public collectProposals(request: CollectCardProposalsRequest): Promise<CardCollectProposal[]> {
     return this.deps.collectCardProposalsUseCase.execute(request);
-  }
-
-  public prepareCandidatePromotion(
-    workspaceRoot: StoryUri,
-  ): Promise<PrepareCardCandidatePromotionResult> {
-    return this.deps.promoteCardCandidatesUseCase.prepare(workspaceRoot);
-  }
-
-  public promoteCandidates(
-    workspaceRoot: StoryUri,
-    items: readonly CardCandidateItem[],
-  ): Promise<PromoteCardCandidatesResult> {
-    return this.deps.promoteCardCandidatesUseCase.promote(workspaceRoot, items);
-  }
-
-  public discardCandidates(
-    workspaceRoot: StoryUri,
-    cardIds: ReadonlySet<string> | undefined,
-  ): Promise<number> {
-    return this.deps.promoteCardCandidatesUseCase.discard(workspaceRoot, cardIds);
   }
 
   public prepareBiblePromotion(

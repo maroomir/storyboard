@@ -1,5 +1,4 @@
 import type { StoryUri, SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-model';
-import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 
 export function emptyDraftBodyMessage(sceneStem: string): string {
@@ -26,7 +25,6 @@ export interface GenerateDraftRequest {
   readonly skipSceneGrounding?: boolean;
   readonly skipSceneBeats?: boolean;
   readonly suppressLoggerPanel?: boolean;
-  readonly onTraitsUpdateComplete?: (summary: TraitsUpdateSummary) => void;
 }
 
 export type GenerateDraftResult =

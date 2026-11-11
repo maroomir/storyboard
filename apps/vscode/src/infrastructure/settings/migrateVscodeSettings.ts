@@ -28,8 +28,6 @@ const legacySettingMigrations: readonly LegacySettingMigration[] = [
   { legacy: 'draft.reviseAfterGenerate', home: 'revise.loop.afterGenerate' },
   { legacy: 'draft.reviseScoreThreshold', home: 'revise.loop.scoreThreshold' },
   { legacy: 'draft.maxCompressionPercent', home: 'revise.length.maxCompressionPercent' },
-  { legacy: 'draft.updateCardsAfterGenerate', home: 'cards.candidates.updateAfterGenerate' },
-  { legacy: 'draft.verifyCardCandidates', home: 'cards.candidates.verify' },
   { legacy: 'grounding.autoApprove', home: 'generation.grounding.autoApprove' },
   { legacy: 'studio.validation', home: 'editor.studio.validation' },
   { legacy: 'draft.keepHistory', home: 'editor.draft.keepHistory' },

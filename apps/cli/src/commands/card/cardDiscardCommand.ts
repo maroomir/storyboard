@@ -77,23 +77,14 @@ export class CardDiscardCommand implements ICommandHandler {
         ...(cardIds === undefined ? {} : { cardIds }),
       },
     );
-    const draftItemCount: number = await container.cards.discardCandidates(
-      container.workspaceRoot,
-      cardIds,
-    );
     const noteCardIds: readonly string[] = notes.kind === 'discarded' ? notes.cardIds : [];
 
-    if (noteCardIds.length === 0 && draftItemCount === 0) {
-      return success('버릴 후보가 없습니다.', { notes: [], drafts: 0 });
+    if (noteCardIds.length === 0) {
+      return success('버릴 후보가 없습니다.', { notes: [] });
     }
 
-    return success(
-      [
-        '후보를 버렸습니다.',
-        ...(noteCardIds.length > 0 ? [`  노트에서  ${noteCardIds.join(', ')}`] : []),
-        ...(draftItemCount > 0 ? [`  초안에서  ${draftItemCount}건`] : []),
-      ].join('\n'),
-      { notes: noteCardIds, drafts: draftItemCount },
-    );
+    return success(['후보를 버렸습니다.', `  노트에서  ${noteCardIds.join(', ')}`].join('\n'), {
+      notes: noteCardIds,
+    });
   }
 }

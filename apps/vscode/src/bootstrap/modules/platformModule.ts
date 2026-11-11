@@ -45,7 +45,6 @@ export interface IPlatformServices extends Pick<
   | 'secretStore'
   | 'logger'
   | 'usageMeter'
-  | 'postGenerationUpdates'
 > {
   readonly fileSystem: VscodeFileSystem;
   readonly homeStores: StoryboardHomeStores;
@@ -123,7 +122,6 @@ export class PlatformModule implements IApplicationModule {
       secretStore: application.secretStore,
       logger: application.logger,
       usageMeter: application.usageMeter,
-      postGenerationUpdates: application.postGenerationUpdates,
       fileSystem,
       homeStores,
       usageRecorder: application.usageLedger,

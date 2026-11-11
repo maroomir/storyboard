@@ -53,22 +53,6 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     group: '검수',
   },
   {
-    key: 'cards.candidates.updateAfterGenerate',
-    label: '생성 후 카드 자동 갱신',
-    description: '초안에서 드러난 인물·배경 정보를 카드 후보로 모읍니다.',
-    kind: 'boolean',
-    defaultValue: false,
-    group: '생성',
-  },
-  {
-    key: 'cards.candidates.verify',
-    label: '카드 후보 검증',
-    description: '모은 카드 후보를 적용하기 전에 AI로 한 번 더 확인합니다.',
-    kind: 'boolean',
-    defaultValue: true,
-    group: '생성',
-  },
-  {
     key: 'budget.run.limitUsd',
     label: '장편 생성 1회 예산(USD)',
     description:

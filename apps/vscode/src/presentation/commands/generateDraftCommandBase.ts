@@ -128,13 +128,6 @@ export abstract class GenerateDraftCommandBase implements IExtensionCommand {
       onDraftReady: openDraftResult,
       onReviseProgress: (message) => progress.report({ message }),
       confirmSceneGrounding,
-      onTraitsUpdateComplete: (summary) => {
-        if (summary.updatedCardCount > 0) {
-          void vscode.window.showInformationMessage(
-            `캐릭터 카드 ${summary.updatedCardCount}개에 특성·최근 대사를 반영했습니다.`,
-          );
-        }
-      },
       onPipelineProgress: (stage, current, total) => {
         if (!token.isCancellationRequested) {
           const label: string = stageProgressLabel(stage);

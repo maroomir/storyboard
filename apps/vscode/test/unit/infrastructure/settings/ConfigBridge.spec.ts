@@ -292,15 +292,6 @@ describe("ConfigBridge", () => {
     ).toBe(42)
   })
 
-  it("disables update-cards-after-generate by default and reads the configured value", () => {
-    expect(createConfigBridge(new Map()).isUpdateCardsAfterGenerateEnabled()).toBe(false)
-    expect(
-      createConfigBridge(
-        new Map<string, unknown>([["cards.candidates.updateAfterGenerate", true]])
-      ).isUpdateCardsAfterGenerateEnabled()
-    ).toBe(true)
-  })
-
   it("returns the scene break separator only when the scene break is enabled", () => {
     expect(createConfigBridge(new Map()).getDraftSceneBreakSeparator()).toBeUndefined()
     expect(

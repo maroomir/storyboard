@@ -58,7 +58,6 @@ vi.mock('../../../../../../packages/story-engine/src/pipeline/scene/sceneGenerat
 import {
   GenerateDraftUseCase,
   type AiServices,
-  type GenerateDraftCollaborators,
   type GenerateDraftRequest,
   type GenerateDraftResult,
   type HostAdapters,
@@ -69,7 +68,7 @@ import { createTestAi, createTestHost, createTestRepositories } from "@storyboar
 
 const workspaceRoot = vscode.Uri.file("/ws")
 
-interface GenerateDraftServices extends GenerateDraftCollaborators {
+interface GenerateDraftServices {
   readonly host: HostAdapters
   readonly ai: AiServices
   readonly repositories: WorkspaceRepositories
@@ -159,8 +158,6 @@ interface ConfigBridgeStub {
   readonly getSectionOutputLimit: () => number
   readonly getSceneGenerationTuning: () => Record<string, number>
   readonly isKeepDraftHistoryEnabled: () => boolean
-  readonly isUpdateCardsAfterGenerateEnabled: () => boolean
-  readonly isVerifyCardCandidatesEnabled: () => boolean
 }
 
 function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBridgeStub {
@@ -174,8 +171,6 @@ function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBr
     getSectionOutputLimit: () => 7000,
     getSceneGenerationTuning: () => ({}),
     isKeepDraftHistoryEnabled: () => false,
-    isUpdateCardsAfterGenerateEnabled: () => false,
-    isVerifyCardCandidatesEnabled: () => false,
     ...overrides
   }
 }
@@ -207,27 +202,10 @@ function createSceneCacheRepository(
   }
 }
 
-interface PostGenerationUpdatesStub {
-  readonly scheduleCharacterTraits: ReturnType<typeof vi.fn>
-  readonly scheduleBibleCandidates: ReturnType<typeof vi.fn>
-  readonly scheduleCardCandidates: ReturnType<typeof vi.fn>
-  readonly scheduleBackgroundCharacters: ReturnType<typeof vi.fn>
-}
-
-function createPostGenerationUpdates(): PostGenerationUpdatesStub {
-  return {
-    scheduleCharacterTraits: vi.fn(),
-    scheduleBibleCandidates: vi.fn(),
-    scheduleCardCandidates: vi.fn(),
-    scheduleBackgroundCharacters: vi.fn()
-  }
-}
-
 interface DependencyOverrides {
   readonly configBridge?: ConfigBridgeStub
   readonly draftRepository?: DraftRepositoryStub
   readonly logger?: LoggerSpy
-  readonly postGenerationUpdates?: PostGenerationUpdatesStub
   readonly sceneCacheRepository?: SceneCacheRepositoryStub
   readonly writeGrounding?: ReturnType<typeof vi.fn>
   readonly writeBeats?: ReturnType<typeof vi.fn>
@@ -278,8 +256,7 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftS
         writeBeats: overrides.writeBeats ?? vi.fn(async () => undefined)
       },
       sceneGroundingGaps: overrides.sceneGroundingGapRepository ?? createGroundingGapRepository()
-    } as never),
-    postGenerationUpdates: overrides.postGenerationUpdates
+    } as never)
   }
 }
 
@@ -311,9 +288,10 @@ async function execute(
   dependencies: GenerateDraftServices,
   request: GenerateDraftRequest
 ): Promise<GenerateDraftResult> {
-  return await new GenerateDraftUseCase(dependencies.host, dependencies.ai, dependencies.repositories, {
-    postGenerationUpdates: dependencies.postGenerationUpdates
-  }).execute({ ...request, sceneUri })
+  return await new GenerateDraftUseCase(dependencies.host, dependencies.ai, dependencies.repositories).execute({
+    ...request,
+    sceneUri
+  })
 }
 
 describe("GenerateDraftUseCase", () => {
@@ -643,89 +621,6 @@ describe("GenerateDraftUseCase", () => {
       )
       expect(logger.error).not.toHaveBeenCalled()
       expect(draftRepository.write).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe("post-generation update scheduling", () => {
-    it("schedules character traits, bible, card, and background updates when the config gate is enabled", async () => {
-      const updates = createPostGenerationUpdates()
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isUpdateCardsAfterGenerateEnabled: () => true }),
-        postGenerationUpdates: updates
-      })
-
-      const result = await execute(dependencies, createRequest({ force: true }))
-
-      expect(result.kind).toBe("generated")
-      expect(updates.scheduleCharacterTraits).toHaveBeenCalledTimes(1)
-      expect(updates.scheduleCharacterTraits).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueKey: workspaceRoot.toString(),
-          sceneStem: fakeScene.stem,
-          draftBody: pipelineSuccessResult.draftBody,
-          detectedCharacterCards: [primaryCharacterCard],
-          aiService: aiServiceStub
-        })
-      )
-      expect(updates.scheduleBibleCandidates).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueKey: `${workspaceRoot.toString()}#bible`,
-          sceneStem: fakeScene.stem
-        })
-      )
-      expect(updates.scheduleCardCandidates).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueKey: `${workspaceRoot.toString()}#cards`,
-          verify: false
-        })
-      )
-      expect(updates.scheduleBackgroundCharacters).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queueKey: `${workspaceRoot.toString()}#background`,
-          backgroundId: sceneBackgroundCard.id
-        })
-      )
-    })
-
-    it("does not schedule any post-generation updates when the config gate is disabled", async () => {
-      const updates = createPostGenerationUpdates()
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isUpdateCardsAfterGenerateEnabled: () => false }),
-        postGenerationUpdates: updates
-      })
-
-      const result = await execute(dependencies, createRequest({ force: true }))
-
-      expect(result.kind).toBe("generated")
-      expect(updates.scheduleCharacterTraits).not.toHaveBeenCalled()
-      expect(updates.scheduleBibleCandidates).not.toHaveBeenCalled()
-      expect(updates.scheduleCardCandidates).not.toHaveBeenCalled()
-      expect(updates.scheduleBackgroundCharacters).not.toHaveBeenCalled()
-    })
-
-    it("does not schedule background character updates when the scene has no background card", async () => {
-      buildSceneContextMock.mockResolvedValueOnce(sceneContext({ background: undefined }))
-      const updates = createPostGenerationUpdates()
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isUpdateCardsAfterGenerateEnabled: () => true }),
-        postGenerationUpdates: updates
-      })
-
-      const result = await execute(dependencies, createRequest({ force: true }))
-
-      expect(result.kind).toBe("generated")
-      expect(updates.scheduleBackgroundCharacters).not.toHaveBeenCalled()
-      expect(updates.scheduleCharacterTraits).toHaveBeenCalledTimes(1)
-    })
-
-    it("does not throw when the config gate is enabled but no postGenerationUpdates dependency is provided", async () => {
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isUpdateCardsAfterGenerateEnabled: () => true })
-      })
-
-      const result = await execute(dependencies, createRequest({ force: true }))
-
-      expect(result.kind).toBe("generated")
     })
   })
 

@@ -63,7 +63,7 @@ export class CardModule implements IApplicationModule {
         new RenameCharacterCardCommand(),
         new RenameBackgroundCardCommand(),
         new PromoteBibleCandidatesCommand({ logger, cards }),
-        new PromoteCardCandidatesCommand({ logger, cards, notes }),
+        new PromoteCardCandidatesCommand({ notes }),
         new CanonDiffCommand({ logger, project }),
       ]),
       new CardRenameParticipant(logger).register(),
