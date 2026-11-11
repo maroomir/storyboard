@@ -7,6 +7,7 @@ export * from '#model/format/emptyCard';
 export * from '#model/format/bible';
 export * from '#model/format/bundlePaths';
 export * from '#model/format/card';
+export * from '#model/format/structure';
 export * from '#model/format/chapterSummaryMarks';
 export * from '#model/format/cardReferenceRewriter';
 export * from '#model/format/sceneReferenceRewriter';
