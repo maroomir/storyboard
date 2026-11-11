@@ -11,8 +11,8 @@ Korean README: [`README.md`](README.md)
 - Manage the **Generation Contract**: genre, audience, POV, target word count, prohibitions, style constraints, and quality criteria.
 - Run `Storyboard: Generate Novel` for project settings → outline → character cards → scene seeds → drafts, review, revision → manuscript assembly, review, and summaries.
 - Plan long-form structure with `.storyboard/outline/synopsis.md`, `chapters.yaml`, and `revision-plan.yaml`.
-- Manage character and background cards with `character/*.card` and `background/*.card`.
-- Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.
+- Manage character and background cards as bundles, `character/<slug>.card/` and `background/<slug>.card/` (the header `card.yaml` and the statements `statements.yaml`).
+- Read a card in a read-only viewer opened on its `card.yaml` (statements grouped by section, «텍스트로 열기» and «스튜디오에서 고치기»), make cards and scenes from a description through the studio's «+», take or drop a card's waiting proposals in the studio, and use the dedicated Characters / Backgrounds sidebars.
 - Generate `scene/*.txt` seeds from the outline, then generate `draft/*.md` drafts.
 - Generate each scene in four stages — skeleton → dialogue polish → section expansion → machine validation. The skeleton fixes the whole scene's event order, cast, and end state in a single context, so later stages only thicken the prose.
 - Validate generated scenes deterministically (no AI): cast not present in the skeleton, foreign scripts, lost dialogue, and length shortfalls are retried with reasons, and anything left is surfaced in the draft's `warnings` frontmatter.
@@ -20,7 +20,7 @@ Korean README: [`README.md`](README.md)
 - Gate canon facts by reveal time (`revealFrom`), separate from when a fact becomes true (`validFrom`), so a third-act twist is not leaked into early scenes.
 - Bound a scene with `endState` and `povCharacter` on the scene card, so one scene does not run into the next scene's territory or cross several characters' interiority.
 - Open a character/background card or a scene/draft and edit it by chatting in the always-visible **Storyboard · Studio** sidebar panel: describe the change, answer a follow-up question when the agent needs one, review the proposed patch with its consistency verdict as a diff, and approve to apply it. Conversations are stored per entity so you can pick one up later.
-- Keep previous-draft history (`editor.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
+- Keep previous-draft revisions: a draft is kept in `.storyboard/cache/revisions/<scene uuid>/` (the last ten per scene) before it is overwritten.
 - Insert scene-break separators (`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
