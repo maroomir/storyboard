@@ -29,7 +29,7 @@ import { describeSpending, splitCommandLine, suggestForInput } from '@/tui/sessi
 import { loadTuiThemeName, saveTuiThemeName } from '@/tui/tuiTheme';
 import { selectVisibleWindow } from '@/tui/suggestionList';
 
-import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/runLockFixture';
+import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
 
 let home: string;
 let cwd: string;

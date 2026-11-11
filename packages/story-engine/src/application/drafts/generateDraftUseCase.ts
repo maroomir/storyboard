@@ -30,8 +30,8 @@ import {
   type SceneCacheRecord,
   extractErrorMessage,
 } from '@storyboard/story-model';
+import { BackgroundFactConflictStore } from '#engine/persistence/backgroundFactConflictStore';
 import {
-  BackgroundFactConflictStore,
   BackgroundMemoryStore,
   PersonaMemoryStore,
   SceneDialogueStore,
@@ -511,7 +511,10 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       tuning: this.host.configBridge.getSceneGenerationTuning(),
       personaStore: new PersonaMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
       backgroundStore: new BackgroundMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
-      backgroundFactConflictStore: new BackgroundFactConflictStore(this.host.fileSystem, paths),
+      backgroundFactConflictStore: new BackgroundFactConflictStore(
+        this.host.caches,
+        paths.workspaceRoot,
+      ),
       dialogueCorpus: new SceneDialogueStore(this.host.fileSystem, threadPaths),
       backgroundRecentExcerpt,
     });

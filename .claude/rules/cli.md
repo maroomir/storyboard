@@ -153,7 +153,7 @@ and the instance list in `apps/cli/src/commands/index.ts` is where those specs a
 초점 없는 1·2인칭 서술자, 어느 인물 카드와도 맞지 않는 비트 출연(`cast`), 씬 카드의 장소(`grounding.place`·
 비트 `place`)가 그 장의 아웃라인에 있는 같은 호를 다른 동으로 가리키는 것(«3동 704호» 대 «7동 704호», 씬 번호로
 `chapters.yaml`의 장을 찾음), 생성이 판정해 둔
-배경 카드의 상충(`.storyboard/cache/background-conflicts.json`, 카드가 그 뒤 바뀌었으면 보지 않음)을
+배경 카드의 상충(캐시 DB 의 `findings` 표, 카드가 그 뒤 바뀌었으면 보지 않음)을
 경고로 보고한다. doctor 자신은 AI를 부르지 않는다.
 
 ## Interview verbs

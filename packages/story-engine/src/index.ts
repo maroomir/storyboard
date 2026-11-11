@@ -108,6 +108,7 @@ export * from '#engine/persistence/notes/obsidianNoteSource';
 export * from '#engine/persistence/repositories/noteAbsorbRepository';
 export * from '#engine/persistence/repositories/interviewRepository';
 export * from '#engine/persistence/cardMemoryStores';
+export * from '#engine/persistence/backgroundFactConflictStore';
 export * from '#engine/persistence/workspaceAgentGuide';
 export * from '#engine/persistence/workspaceFiles';
 export * from '#engine/persistence/workspaceInitializer';

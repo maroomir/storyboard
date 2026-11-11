@@ -427,7 +427,7 @@ function buildWorkspaceRepositories(
     sceneBatches: new SceneBatchRepository(fileSystem, workspaceLocator),
     sceneSeeds: new SceneSeedRepository(fileSystem),
     sceneCache: new SceneCacheRepository(fileSystem),
-    sceneGroundingGaps: new SceneGroundingGapRepository(fileSystem),
+    sceneGroundingGaps: new SceneGroundingGapRepository(host.caches),
     sceneSidebar: new SceneSidebarRepository(fileSystem),
     project: new ProjectRepository(fileSystem),
     outline,

@@ -12,7 +12,7 @@ import {
   createWorkspaceCaches,
   createWorkspaceRunLocks,
   readRunLockToken,
-} from './fixtures/runLockFixture';
+} from './fixtures/workspaceCacheFixture';
 
 let workspace: string;
 let caches: WorkspaceCaches;

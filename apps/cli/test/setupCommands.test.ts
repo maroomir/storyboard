@@ -12,10 +12,11 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { configurationTargets } from '@storyboard/story-config';
-import { ChapterMemoryAuditor } from '@storyboard/story-engine';
+import { ChapterMemoryAuditor, FindingStore } from '@storyboard/story-engine';
 import { promptResourceFingerprint } from '@storyboard/story-ai';
 import {
   computeBackgroundFactConflictKey,
+  NodeUri,
   getStoryboardProjectPaths,
   type BackgroundCard,
 } from '@storyboard/story-model';
@@ -25,6 +26,8 @@ import { commands } from '@/commands/index';
 import type { ParsedArguments } from '@/cliArguments';
 import { createTheme } from '@/terminal/theme';
 import { measureWidth } from '@/terminal/width';
+
+import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
 
 let home: string;
 let workspace: string;
@@ -818,7 +821,7 @@ describe('storyboard doctor background conflicts', () => {
     return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
   }
 
-  function writeWorkspaceWithCheckedCard(checkedLines: readonly string[]): void {
+  async function writeWorkspaceWithCheckedCard(checkedLines: readonly string[]): Promise<void> {
     mkdirSync(join(workspace, '.storyboard', 'cache'), { recursive: true });
     mkdirSync(join(workspace, 'background'), { recursive: true });
     writeFileSync(
@@ -843,26 +846,22 @@ describe('storyboard doctor background conflicts', () => {
       name: '해외 콘도',
       description: checkedLines,
     } as unknown as BackgroundCard;
-    writeFileSync(
-      join(workspace, '.storyboard', 'cache', 'background-conflicts.json'),
-      JSON.stringify({
-        version: 1,
-        cards: {
-          condo: {
-            inputKey: computeBackgroundFactConflictKey(
-              checked,
-              promptResourceFingerprint('backgroundFactConflicts'),
-            ),
-            conflicts: [{ items: [sofa, room] }],
-          },
-        },
-      }),
-    );
+    const caches = createWorkspaceCaches();
+    new FindingStore(await caches.open(NodeUri.file(workspace))).record({
+      kind: 'background-conflict',
+      subject: 'condo',
+      inputHash: computeBackgroundFactConflictKey(
+        checked,
+        promptResourceFingerprint('backgroundFactConflicts'),
+      ),
+      data: [{ items: [sofa, room] }],
+    });
+    await caches.closeAll();
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
   it('warns about a conflict generation found on the card as it is', async () => {
-    writeWorkspaceWithCheckedCard([sofa, room]);
+    await writeWorkspaceWithCheckedCard([sofa, room]);
 
     const check = checksOf(await new DoctorCommand().execute({ container: container(), args: args() })).find(
       (entry) => entry.label === '배경 사실 상충',
@@ -872,7 +871,7 @@ describe('storyboard doctor background conflicts', () => {
   });
 
   it('stays quiet once the card changed since the check', async () => {
-    writeWorkspaceWithCheckedCard([sofa, room, '거실 통창 너머 바다']);
+    await writeWorkspaceWithCheckedCard([sofa, room, '거실 통창 너머 바다']);
 
     const checks = checksOf(await new DoctorCommand().execute({ container: container(), args: args() }));
 

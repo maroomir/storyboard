@@ -1,23 +1,33 @@
 import {
-  getStoryboardProjectPaths,
-  parseSceneGroundingGaps,
-  serializeSceneGroundingGaps,
+  parseSceneGroundingGapFields,
+  type SceneGroundingFieldKey,
   type SceneGroundingGap,
-  type SceneGroundingGaps,
-  type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
+
+import { FindingStore, type Finding, type FindingKind } from '#engine/persistence/cache/findingStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import type { ISceneGroundingGapRepository } from '#engine/application/drafts/draftRepositories';
 
+const groundingGapKind: FindingKind = 'grounding-gap';
+
 export class SceneGroundingGapRepository implements ISceneGroundingGapRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(private readonly caches: WorkspaceCaches) {}
 
   public async read(
     workspaceRoot: StoryUri,
     sceneStem: string,
   ): Promise<SceneGroundingGap | undefined> {
-    return (await this.readAll(workspaceRoot))[sceneStem];
+    const finding: Finding | undefined = (await this.openStore(workspaceRoot)).find(
+      groundingGapKind,
+      sceneStem,
+    );
+    const fields: readonly SceneGroundingFieldKey[] | undefined =
+      finding === undefined ? undefined : parseSceneGroundingGapFields(finding.data);
+
+    return finding?.inputHash === undefined || fields === undefined
+      ? undefined
+      : { inputKey: finding.inputHash, fields };
   }
 
   public async write(
@@ -25,33 +35,22 @@ export class SceneGroundingGapRepository implements ISceneGroundingGapRepository
     sceneStem: string,
     gap: SceneGroundingGap | undefined,
   ): Promise<void> {
-    const { [sceneStem]: previous, ...others } = await this.readAll(workspaceRoot);
+    const store: FindingStore = await this.openStore(workspaceRoot);
 
-    if (gap === undefined && previous === undefined) {
+    if (gap === undefined) {
+      store.remove(groundingGapKind, sceneStem);
       return;
     }
 
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const next: SceneGroundingGaps = gap === undefined ? others : { ...others, [sceneStem]: gap };
-    await this.fileSystem.createDirectory(paths.cacheDirectory);
-    await this.fileSystem.writeFile(
-      paths.sceneGroundingGaps,
-      new TextEncoder().encode(serializeSceneGroundingGaps(next)),
-    );
+    store.record({
+      kind: groundingGapKind,
+      subject: sceneStem,
+      inputHash: gap.inputKey,
+      data: gap.fields,
+    });
   }
 
-  private async readAll(workspaceRoot: StoryUri): Promise<Record<string, SceneGroundingGap>> {
-    const gapsUri: StoryUri = getStoryboardProjectPaths(workspaceRoot).sceneGroundingGaps;
-
-    if (!(await this.fileSystem.exists(gapsUri))) {
-      return {};
-    }
-
-    try {
-      const raw: string = new TextDecoder().decode(await this.fileSystem.readFile(gapsUri));
-      return { ...parseSceneGroundingGaps(raw) };
-    } catch {
-      return {};
-    }
+  private async openStore(workspaceRoot: StoryUri): Promise<FindingStore> {
+    return new FindingStore(await this.caches.open(workspaceRoot));
   }
 }

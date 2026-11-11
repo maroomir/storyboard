@@ -15,7 +15,7 @@ import {
   createWorkspaceRunLocks,
   plantRunLock,
   readRunLockToken,
-} from './fixtures/runLockFixture';
+} from './fixtures/workspaceCacheFixture';
 
 import { commandCatalog } from '@/commands/index';
 import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
