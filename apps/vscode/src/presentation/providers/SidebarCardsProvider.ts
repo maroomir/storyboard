@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { RunCommandRpc } from '@/presentation/messaging/runCommandRpcHandlers';
+import type { CardRemovalPrompt } from '@/presentation/providers/cardRemovalPrompt';
 
 import type { ICardSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
@@ -34,6 +35,7 @@ export interface SidebarCardsProvidersDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly usageRecorder: UsageLedgerRecorder;
+  readonly removalPrompt: CardRemovalPrompt;
 }
 
 export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -118,20 +120,15 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
         return {};
       },
       'cards.delete': async (payload): Promise<StoryboardResponsePayload<'cards.delete'>> => {
-        const targetUri: vscode.Uri = vscode.Uri.parse(payload.uri);
-        const fileName: string = targetUri.path.split('/').at(-1) ?? this.options.cardType;
-        const confirmed: '삭제' | undefined = await vscode.window.showWarningMessage(
-          `${fileName} 카드를 삭제할까요?`,
-          { modal: true },
-          '삭제',
-        );
+        const root: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
 
-        if (confirmed !== '삭제') {
-          return {};
+        if (root) {
+          await this.dependencies.removalPrompt.confirmAndRemove(
+            root,
+            vscode.Uri.parse(payload.uri),
+          );
+          await this.refreshCards();
         }
-
-        await vscode.workspace.fs.delete(targetUri);
-        await this.refreshCards();
 
         return {};
       },
