@@ -114,6 +114,7 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
       entity: { kind: request.kind, key: created.key },
       instruction: composeCreationInstruction(request.description),
       shouldPropose: request.shouldPropose || isPreview,
+      ...(isPreview ? { isPreview: true } : {}),
       isValidationEnabled: request.isValidationEnabled,
       ...(request.attribution === undefined ? {} : { attribution: request.attribution }),
     });
