@@ -126,7 +126,7 @@ function confirmOptions(
 
 function describeFinished(summary: InterviewSessionSummary): string {
   return summary.candidateCount > 0
-    ? `인터뷰를 마쳤습니다 (답 ${summary.answered}, 카드 후보 ${summary.candidateCount}건). storyboard card promote 로 반영할 수 있습니다.`
+    ? `인터뷰를 마쳤습니다 (답 ${summary.answered}, 카드 제안 ${summary.candidateCount}건). storyboard card apply ${summary.cardId} 로 반영할 수 있습니다.`
     : `인터뷰를 마쳤습니다 (답 ${summary.answered}, 카드 후보 없음).`;
 }
 

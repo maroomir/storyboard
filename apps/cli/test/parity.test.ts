@@ -44,7 +44,7 @@ const commandToVerb: Readonly<Record<string, string>> = {
   'storyboard.apiKey.set': 'apikey set',
   'storyboard.character.recommend': 'card recommend',
   'storyboard.background.recommend': 'card recommend',
-  'storyboard.cards.promoteCandidates': 'card promote',
+  'storyboard.cards.promoteCandidates': 'card apply',
   'storyboard.draft.generate': 'draft generate',
   'storyboard.draft.regenerate': 'draft generate',
   'storyboard.draft.generateAll': 'draft generate',

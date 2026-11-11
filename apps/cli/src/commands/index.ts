@@ -14,6 +14,9 @@ import { StatusCommand } from '@/commands/statusCommand';
 import { ProjectShowCommand } from '@/commands/project/projectShowCommand';
 import { ProjectSetCommand } from '@/commands/project/projectSetCommand';
 import { OutlineGenerateCommand } from '@/commands/outline/outlineGenerateCommand';
+import { OutlineShowCommand } from '@/commands/outline/outlineShowCommand';
+import { OutlineApplyCommand } from '@/commands/outline/outlineApplyCommand';
+import { OutlineDiscardCommand } from '@/commands/outline/outlineDiscardCommand';
 import { NarratorListCommand } from '@/commands/narrator/narratorListCommand';
 import { NarratorShowCommand } from '@/commands/narrator/narratorShowCommand';
 import { NarratorCreateCommand } from '@/commands/narrator/narratorCreateCommand';
@@ -43,7 +46,7 @@ import { CardCreateCommand } from '@/commands/card/cardCreateCommand';
 import { CardRenameCommand } from '@/commands/card/cardRenameCommand';
 import { CardRecommendCommand } from '@/commands/card/cardRecommendCommand';
 import { CardBuildCommand } from '@/commands/card/cardBuildCommand';
-import { CardPromoteCommand } from '@/commands/card/cardPromoteCommand';
+import { CardApplyCommand } from '@/commands/card/cardApplyCommand';
 import { CardDiscardCommand } from '@/commands/card/cardDiscardCommand';
 import { CardInterviewCommand } from '@/commands/card/cardInterviewCommand';
 import { NotesConnectCommand } from '@/commands/notes/notesConnectCommand';
@@ -81,6 +84,9 @@ const workCommands: readonly ICommandHandler[] = [
   new ProjectShowCommand(),
   new ProjectSetCommand(),
   new OutlineGenerateCommand(),
+  new OutlineShowCommand(),
+  new OutlineApplyCommand(),
+  new OutlineDiscardCommand(),
   new NarratorListCommand(),
   new NarratorShowCommand(),
   new NarratorCreateCommand(),
@@ -110,7 +116,7 @@ const workCommands: readonly ICommandHandler[] = [
   new CardRenameCommand(),
   new CardRecommendCommand(),
   new CardBuildCommand(),
-  new CardPromoteCommand(),
+  new CardApplyCommand(),
   new CardDiscardCommand(),
   new CardInterviewCommand(),
   new NotesConnectCommand(),

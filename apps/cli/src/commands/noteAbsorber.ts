@@ -132,12 +132,12 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
   ];
 
   if (outcome.candidateCards.length > 0) {
-    lines.push(`기존 카드 ${outcome.candidateCards.join(', ')} 에 대한 내용은 후보로 남겼습니다.`);
+    lines.push(`기존 카드 ${outcome.candidateCards.join(', ')} 에 대한 내용은 제안으로 남겼습니다.`);
   }
 
   if (outcome.pendingCandidateCards.length > 0) {
     lines.push(
-      `승격을 기다리는 카드 ${outcome.pendingCandidateCards.length}장 (${outcome.pendingCandidateCards.join(', ')}): storyboard card promote`,
+      `제안을 기다리는 카드 ${outcome.pendingCandidateCards.length}장 (${outcome.pendingCandidateCards.join(', ')}): storyboard card apply`,
     );
   }
 
@@ -145,7 +145,7 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
     lines.push('시놉시스를 썼습니다: .storyboard/outline/synopsis.md');
   } else if (outcome.synopsis === 'candidate') {
     lines.push(
-      '시놉시스가 이미 있어 노트의 시놉시스는 캐시 DB 의 흡수 세션에 후보로 두었습니다.',
+      '시놉시스가 이미 있어 노트의 시놉시스는 후보로 두었습니다: storyboard outline show --pending',
     );
   }
 

@@ -187,6 +187,7 @@ describe('CLI verbs and the run lock', () => {
       'narrator show',
       'scene list',
       'scene show',
+      'outline show',
       'draft show',
       'card list',
       'card show',

@@ -245,6 +245,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'key', valueLabel: '<key>', summary: 'config set 이 바꿀 설정 키' },
   { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
   { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
+  { name: 'pending', summary: 'outline show: 적용을 기다리는 시놉시스 후보를 보여 줍니다' },
   {
     name: 'scenes',
     valueLabel: '<범위>',
@@ -265,13 +266,8 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'skip', summary: 'card interview --step: 이 질문을 건너뜁니다' },
   { name: 'confirm', valueLabel: '<n>', summary: 'card interview --step: 직접 쓴 답을 읽은 값 확인 (1 = 맞다)' },
   { name: 'rename', valueLabel: '<name>', summary: 'card interview --step: 직접 쓴 답에 새 값 이름을 붙입니다' },
-  { name: 'finish', summary: 'card interview --step: 세션을 끝내고 카드 후보로 증류합니다' },
+  { name: 'finish', summary: 'card interview --step: 세션을 끝내고 카드 제안으로 증류합니다' },
   { name: 'abandon', summary: 'card interview --step: 증류 없이 세션을 닫습니다 (답한 표는 남음)' },
-  {
-    name: 'change',
-    valueLabel: '<ref>',
-    summary: 'card discard: 버릴 노트 후보 하나 (card promote 가 보여 준 [ref])',
-  },
   {
     name: 'replace-candidates',
     summary: 'notes absorb: 앞선 흡수가 남긴 노트 후보를 버리고 이번 후보만 남깁니다',
