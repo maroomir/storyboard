@@ -17,7 +17,17 @@ export type WriteStubBeats = (stem: string, beats: readonly SceneBeat[]) => void
 
 function rosterOf(scenes: readonly SceneFile[]): SceneRoster {
   const entries: SceneRosterEntry[] = scenes.map(
-    (file) => ({ file, path: `scene/${file.stem}.card` }) as unknown as SceneRosterEntry
+    (file) =>
+      ({
+        file,
+        path: `scene/${file.stem}.card`,
+        content: { header: { id: file.stem } },
+        entry: {
+          scene: file.stem,
+          thread: "main",
+          ...(file.card?.storyTime === undefined ? {} : { storyTime: file.card.storyTime })
+        }
+      }) as unknown as SceneRosterEntry
   )
   return { entries, scenes, structure: structureWithProjectThreads(undefined, undefined), warnings: [] }
 }

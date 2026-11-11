@@ -6,7 +6,6 @@ import {
   ExportNotesUseCase,
   AssembleManuscriptUseCase,
   AugmentDraftUseCase,
-  BibleCandidateRepository,
   BuildStoryCardsUseCase,
   CardCollectRepository,
   CardRecommendationRepository,
@@ -28,6 +27,7 @@ import {
   GenerateSceneBeatsUseCase,
   GenerateStoryStateUseCase,
   ManuscriptAssemblyRepository,
+  CardFactReader,
   NarratorCardRepository,
   NoteAbsorbRepository,
   NoteSourceProvider,
@@ -37,7 +37,6 @@ import {
   OutlineRepository,
   PlanNoteAbsorbUseCase,
   ProjectRepository,
-  PromoteBibleCandidatesUseCase,
   PromoteNoteCandidatesUseCase,
   RecommendCardsUseCase,
   RenameCardUseCase,
@@ -76,7 +75,6 @@ import {
   type HostAdapters,
   type AiServices,
   type WorkspaceRepositories,
-  type IBibleCandidateRepository,
   type ICardSidebarRepository,
   type INarratorCardRepository,
   type INovelRunStateRepository,
@@ -137,7 +135,6 @@ interface EngineGraph {
   readonly runLocks: WorkspaceRunLocks;
   readonly usageLedger: UsageLedgerRecorder;
   readonly usageMeter: UsageMeter;
-  readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly narratorCardRepository: INarratorCardRepository;
   readonly novelRunStateRepository: INovelRunStateRepository;
@@ -167,7 +164,6 @@ interface EngineGraph {
   readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
   readonly interviewSessionUseCase: InterviewSessionUseCase;
   readonly describeInterviewCoverageUseCase: DescribeInterviewCoverageUseCase;
-  readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameCardUseCase: RenameCardUseCase;
@@ -353,7 +349,6 @@ function buildServices(
     runLocks,
     usageLedger,
     usageMeter,
-    bibleCandidateRepository: repositories.bibleCandidates,
     cardSidebarRepository: repositories.cardSidebar,
     narratorCardRepository: repositories.narratorCards,
     novelRunStateRepository: repositories.novelRunState,
@@ -391,7 +386,6 @@ function buildServices(
     planNoteAbsorbUseCase: new PlanNoteAbsorbUseCase(host, ai, repositories),
     interviewSessionUseCase: new InterviewSessionUseCase(host, ai, repositories),
     describeInterviewCoverageUseCase: new DescribeInterviewCoverageUseCase(host, repositories),
-    promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(repositories),
     promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase(host, repositories),
     recommendCardsUseCase: new RecommendCardsUseCase(host, ai, repositories),
     renameCardUseCase: new RenameCardUseCase(host),
@@ -419,8 +413,10 @@ function buildWorkspaceRepositories(
 ): WorkspaceRepositories {
   const { fileSystem, workspaceLocator } = host;
   const outline: OutlineRepository = new OutlineRepository(fileSystem, host.cards);
+  const cardFacts: CardFactReader = new CardFactReader({ cards: host.cards, scenes: host.scenes });
   const manuscriptAssembly: ManuscriptAssemblyRepository = new ManuscriptAssemblyRepository(
     fileSystem,
+    cardFacts,
   );
 
   return {
@@ -434,7 +430,7 @@ function buildWorkspaceRepositories(
     outline,
     novelOutline: outline,
     novelRunState: new NovelRunStateRepository(fileSystem, host.caches),
-    novelReviews: new NovelReviewRepository(fileSystem),
+    novelReviews: new NovelReviewRepository(fileSystem, cardFacts),
     manuscriptAssembly,
     chapterSummaries: manuscriptAssembly,
     manuscriptExport: manuscriptAssembly,
@@ -444,8 +440,7 @@ function buildWorkspaceRepositories(
     cardRecommendations: new CardRecommendationRepository(fileSystem, host.cards, host.scenes),
     cardSidebar: new CardSidebarRepository(host.cards),
     narratorCards: new NarratorCardRepository(host.cards),
-    bibleCandidates: new BibleCandidateRepository(fileSystem),
-    storyFeatures: new StoryFeatureRepository(fileSystem, host.cards, host.scenes),
+    storyFeatures: new StoryFeatureRepository(fileSystem, host.cards, host.scenes, cardFacts),
     noteAbsorb: new NoteAbsorbRepository(fileSystem, host.cards, host.scenes),
     noteSources: new NoteSourceProvider(host, { fetch }),
     interviews: new InterviewRepository(fileSystem),

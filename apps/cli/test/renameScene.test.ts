@@ -7,7 +7,7 @@ import {
   WorkspaceScenes,
   type IStoryboardLogger,
 } from '@storyboard/story-engine';
-import { createDraft, NodeUri, parseBible, parseDraft, serializeDraft } from '@storyboard/story-model';
+import { createDraft, NodeUri, parseDraft, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createTestHost } from '@storyboard/story-engine/testing';
@@ -125,27 +125,6 @@ beforeEach(async () => {
     ].join('\n'),
   );
   write(
-    '.storyboard/bible/canon.yaml',
-    [
-      "version: '1.0.0'",
-      'facts:',
-      '  - id: character:hana:job@3',
-      '    subject: { kind: character, id: hana }',
-      '    key: job',
-      '    value: 상인',
-      `    sourceScene: ${fromStem}`,
-      `    validFrom: ${fromStem}`,
-      '    validUntil: 3',
-      '    revealFrom: { scene: 3, knownBy: [hana] }',
-      '  - id: character:hana:age',
-      '    subject: { kind: character, id: hana }',
-      '    key: age',
-      "    value: '17'",
-      '    validFrom: 5',
-      '',
-    ].join('\n'),
-  );
-  write(
     '.storyboard/memory/personas/hana.json',
     `${JSON.stringify({ cardId: 'hana', updatedThroughScene: fromStem }, null, 2)}\n`,
   );
@@ -188,19 +167,12 @@ describe('RenameSceneUseCase', () => {
     expect(has(`.storyboard/cache/studio-sessions/scene/${fromStem}`)).toBe(false);
   });
 
-  it('keeps the ledger and follows the stem in canon and memory', async () => {
+  it('keeps the ledger and follows the stem in memory', async () => {
     const before = read('.storyboard/memory/storyState.md');
 
     await rename('003-moon-market');
 
     expect(read('.storyboard/memory/storyState.md')).toBe(before);
-    const [moved, untouched] = parseBible(read('.storyboard/bible/canon.yaml')).facts;
-    expect(moved).toMatchObject({
-      sourceScene: '003-moon-market',
-      validFrom: '003-moon-market',
-      validUntil: 3,
-    });
-    expect(untouched?.validFrom).toBe(5);
     expect(JSON.parse(read('.storyboard/memory/personas/hana.json')).updatedThroughScene).toBe(
       '003-moon-market',
     );

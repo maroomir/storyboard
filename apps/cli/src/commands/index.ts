@@ -46,8 +46,6 @@ import { CardBuildCommand } from '@/commands/card/cardBuildCommand';
 import { CardPromoteCommand } from '@/commands/card/cardPromoteCommand';
 import { CardDiscardCommand } from '@/commands/card/cardDiscardCommand';
 import { CardInterviewCommand } from '@/commands/card/cardInterviewCommand';
-import { CanonDiffCommand } from '@/commands/canon/canonDiffCommand';
-import { CanonPromoteCommand } from '@/commands/canon/canonPromoteCommand';
 import { NotesConnectCommand } from '@/commands/notes/notesConnectCommand';
 import { NotesAbsorbCommand } from '@/commands/notes/notesAbsorbCommand';
 import { NotesExportCommand } from '@/commands/notes/notesExportCommand';
@@ -115,8 +113,6 @@ const workCommands: readonly ICommandHandler[] = [
   new CardPromoteCommand(),
   new CardDiscardCommand(),
   new CardInterviewCommand(),
-  new CanonDiffCommand(),
-  new CanonPromoteCommand(),
   new NotesConnectCommand(),
   new NotesAbsorbCommand(),
   new NotesExportCommand(),

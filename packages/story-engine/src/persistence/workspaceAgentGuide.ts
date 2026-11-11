@@ -4,15 +4,14 @@ export function createWorkspaceAgentGuide(): string {
   return `# Storyboard 작품 저장소 — 에이전트 지침
 
 이 저장소는 Storyboard 워크스페이스다. 소설 본문은 사람도 에이전트도 직접 쓰지 않는다.
-\`storyboard\` CLI가 작품 계약·카드·정전에서 생성하고, 이야기 상태 원장과 검수가 그 위에서 돈다.
+\`storyboard\` CLI가 작품 계약과 카드에서 생성하고, 이야기 상태 원장과 검수가 그 위에서 돈다.
 
 ## 지켜야 할 선
 
 - **\`draft/*.md\`를 직접 쓰거나 고치지 마라.** 생성은 \`storyboard draft generate\`, 손질은
   \`storyboard draft edit\`·\`storyboard draft augment\`·\`storyboard draft condense\`·
-  \`storyboard draft expand\`. 직접 쓰면 원장·정전·검수가 전부 비껴간다.
-- **\`.storyboard/memory/\`와 \`.storyboard/bible/\`를 손으로 고치지 마라.** 원장은
-  \`storyboard state reseal\`, 정전은 \`storyboard canon promote\`로만 바뀐다.
+  \`storyboard draft expand\`. 직접 쓰면 원장·검수가 전부 비껴간다.
+- **\`.storyboard/memory/\`를 손으로 고치지 마라.** 원장은 \`storyboard state reseal\`로만 바뀐다.
   \`.storyboard/cache/\`는 생성물이니 고치지 마라.
 - 손대도 되는 것: \`character/\`, \`background/\`, \`narrator/\`, \`scene/*.card\`(시드·비트·요약).
   작품 계약(\`.storyboard/project.json\`)은 \`storyboard project set\`으로만 바꾼다.
@@ -39,7 +38,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
    장편 전체는 \`storyboard novel generate\`)
 5. 검수: \`storyboard draft check continuity <stem>\`, \`storyboard draft check grammar <stem>\`,
    \`storyboard draft check slop <stem>\` → 문제는 \`storyboard draft revise\` 또는 \`storyboard draft edit\`
-6. 반영: \`storyboard canon diff\` → \`storyboard canon promote\`, \`storyboard card promote\`
+6. 반영: \`storyboard card promote\`
 7. 조립: \`storyboard manuscript assemble\` → \`storyboard manuscript review\` →
    \`storyboard manuscript export\`
 
@@ -53,7 +52,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 - \`--force\`, \`--all\`, \`storyboard novel generate\`는 비용이 크다. 사람이 시키지 않았으면 씬
   하나로 확인한 뒤 넓혀라.
 - \`--dry-run\`이 있는 명령(\`storyboard scene plot\`, \`storyboard card build\`,
-  \`storyboard card promote\`, \`storyboard canon promote\`, \`storyboard draft augment\`,
+  \`storyboard card promote\`, \`storyboard draft augment\`,
   \`storyboard scene complete\`)은 먼저 \`--dry-run\`으로 제안을 보고 결정하라.
 - 터미널이 아닌 곳에서 진행 로그가 필요하면 \`--verbose\`.
 - 인물·배경 인터뷰는 \`storyboard card interview <id> --step --json\`으로 한 단계씩 돌린다. 질문과
@@ -63,7 +62,7 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 ## 사람에게 물어볼 것
 
 작품 계약 변경(장르·시점·구성·분량), 서술자 추가·삭제, 예산·모델 변경, 씬 삭제나 번호 변경,
-정전과 충돌하는 카드 수정.
+카드의 사실과 충돌하는 카드 수정.
 
 ## 작품 메모
 

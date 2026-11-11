@@ -9,7 +9,7 @@ import { serializeCard, type StoryUri } from '@storyboard/story-model';
 export class CardShowCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card show',
-    group: '카드와 정전',
+    group: '카드',
     usage: 'card show <id>',
     summary: '카드 하나의 내용을 봅니다 (인물에서 먼저 찾고 배경에서 찾습니다)',
     examples: ['storyboard card show hana'],

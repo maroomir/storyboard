@@ -5,7 +5,6 @@ import type {
   NoteExtractionScene,
 } from '#model/contracts/noteExtraction';
 import type { NoteSynthesis, NoteSynthesisSetting } from '#model/contracts/noteSynthesis';
-import type { BibleFactSubject } from '#model/format/bible';
 import type { CharacterRole } from '#model/element/character';
 import { cardIdPattern, type StoryboardCard } from '#model/format/card';
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
@@ -42,13 +41,6 @@ export interface UnclassifiedNote {
   readonly title: string;
 }
 
-export interface NoteCanonCandidate {
-  readonly subject: BibleFactSubject;
-  readonly key: string;
-  readonly value: string;
-  readonly sourceNotes: readonly string[];
-}
-
 export interface NoteAbsorbPlan {
   readonly cards: readonly NoteCardPlan[];
   readonly scenes: readonly NoteScenePlan[];
@@ -58,7 +50,6 @@ export interface NoteAbsorbPlan {
   readonly unclassifiedNotes: readonly UnclassifiedNote[];
   readonly draftNotes: readonly UnclassifiedNote[];
   readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
-  readonly canonCandidates: readonly NoteCanonCandidate[];
   readonly warnings: readonly string[];
 }
 
@@ -498,17 +489,6 @@ function collectVoiceSeeds(resolved: readonly ResolvedEntity[]): Record<string, 
   );
 }
 
-function collectCanonCandidates(resolved: readonly ResolvedEntity[]): NoteCanonCandidate[] {
-  return resolved.flatMap((entry) =>
-    entry.entity.canonFacts.map((fact) => ({
-      subject: { kind: entry.entity.type, id: entry.card.id },
-      key: fact.key,
-      value: fact.value,
-      sourceNotes: entry.entity.sourceNotes,
-    })),
-  );
-}
-
 function planCards(
   entities: readonly MergedEntity[],
   cards: readonly StoryboardCard[],
@@ -517,7 +497,6 @@ function planCards(
   readonly characters: CardNameIndex;
   readonly backgrounds: CardNameIndex;
   readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
-  readonly canonCandidates: NoteCanonCandidate[];
 } {
   const characters: CardNameIndex = new CardNameIndex('character');
   const backgrounds: CardNameIndex = new CardNameIndex('background');
@@ -546,7 +525,6 @@ function planCards(
     characters,
     backgrounds,
     voiceSeeds: collectVoiceSeeds(resolved),
-    canonCandidates: collectCanonCandidates(resolved),
   };
 }
 
@@ -808,7 +786,6 @@ export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan 
     unclassifiedNotes: findUnclassifiedNotes(input),
     draftNotes: findDraftNotes(input),
     voiceSeeds: cards.voiceSeeds,
-    canonCandidates: cards.canonCandidates,
     warnings: scenes.warnings,
   };
 }

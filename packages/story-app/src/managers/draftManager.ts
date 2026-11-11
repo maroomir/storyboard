@@ -244,7 +244,7 @@ export class DraftManager {
   }
 
   public readSceneContext(workspaceRoot: StoryUri, scene: SceneFile): Promise<SceneContext> {
-    return new SceneContextReader(this.deps.fileSystem, this.deps.cards).build(
+    return new SceneContextReader(this.deps.fileSystem, this.deps.cards, this.deps.scenes).build(
       sceneContextPaths(getStoryboardProjectPaths(workspaceRoot)),
       scene,
     );
@@ -254,7 +254,7 @@ export class DraftManager {
     workspaceRoot: StoryUri,
     context: SceneContext,
   ): Promise<NarrativeContext> {
-    return new SceneContextReader(this.deps.fileSystem, this.deps.cards).buildNarrative(
+    return new SceneContextReader(this.deps.fileSystem, this.deps.cards, this.deps.scenes).buildNarrative(
       sceneContextPaths(getStoryboardProjectPaths(workspaceRoot)),
       context,
     );

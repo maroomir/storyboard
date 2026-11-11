@@ -1,4 +1,4 @@
-import type { CardRoster, IFileSystem, WorkspaceCards } from "@storyboard/story-engine"
+import type { CardRoster, ElementBundle, IFileSystem, WorkspaceCards } from "@storyboard/story-engine"
 import {
   getStoryboardProjectPaths,
   isBackgroundCard,
@@ -9,6 +9,7 @@ import {
   type CharacterCard,
   type LocationBackgroundCard,
   type NarratorCard,
+  type Statement,
   type StoryboardCard,
   type StoryUri
 } from "@storyboard/story-model"
@@ -28,6 +29,39 @@ function rosterOf(cards: StubCards): CardRoster {
     warnings: [],
     lookup: { slugOf: () => undefined, idOf: () => undefined }
   }
+}
+
+export interface StubCardFact {
+  readonly kind: "character" | "background"
+  readonly slug: string
+  readonly value: string
+  readonly key?: string
+  readonly since?: string
+  readonly until?: string
+  readonly revealFrom?: string
+  readonly knownBy?: readonly string[]
+}
+
+function bundleOfFacts(kind: StubCardFact["kind"], slug: string, facts: readonly StubCardFact[]): ElementBundle {
+  const statements: Statement[] = facts.map(({ kind: _kind, slug: _slug, ...fact }) => ({
+    facet: "fact",
+    ...fact,
+    source: { origin: "author" }
+  }))
+  return { kind, path: `${kind}/${slug}.card`, header: { id: slug, slug, kind }, statements, cardHash: "" } as unknown as ElementBundle
+}
+
+export function stubCardFacts(facts: readonly StubCardFact[], cards: StubCards = {}): WorkspaceCards {
+  const subjects: string[] = [...new Set(facts.map((fact) => `${fact.kind}:${fact.slug}`))]
+  const roster: CardRoster = {
+    ...rosterOf(cards),
+    bundles: subjects.map((subject) => {
+      const [kind, slug] = subject.split(":") as [StubCardFact["kind"], string]
+      return bundleOfFacts(kind, slug, facts.filter((fact) => fact.kind === kind && fact.slug === slug))
+    }),
+    lookup: { slugOf: (id: string) => id, idOf: () => undefined }
+  }
+  return { loadRoster: async () => roster } as unknown as WorkspaceCards
 }
 
 export function stubCards(cards: StubCards = {}): WorkspaceCards {

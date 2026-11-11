@@ -9,7 +9,6 @@ export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWo
     sceneDirectory: paths.sceneDirectory,
     backgroundDirectory: paths.backgroundDirectory,
     draftDirectory: paths.draftDirectory,
-    bibleCanon: paths.bibleCanon,
     chapterSummaries: paths.chapterSummaries,
     storyState: paths.storyState,
     joinPath: (base: StoryUri, ...segments: string[]): StoryUri => joinStoryPath(base, ...segments),

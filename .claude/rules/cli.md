@@ -29,7 +29,7 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 ## Command naming
 
 Every command on a work is `<noun> <verb> [target] [--options]` — two words. The noun is the kind
-of file it touches (`project`, `outline`, `narrator`, `scene`, `draft`, `card`, `canon`, `notes`,
+of file it touches (`project`, `outline`, `narrator`, `scene`, `draft`, `card`, `notes`,
 `manuscript`), always singular, and the verb comes from one vocabulary: `list`/`show` to look,
 `create`/`rename`/`remove`/`set` to change, `generate`/`revise`/`check`/… for AI work,
 `diff`/`promote` for candidates. A kind is an argument, never part of the name
@@ -40,8 +40,8 @@ handler's check and completion. One-word commands (`init`, `setup`, `doctor`, `s
 the prose: generating, revising, showing and checking a draft are all `draft` verbs.
 
 A command's help group follows its noun, so one noun never spreads over two groups: 시작하기 /
-기획 (`project`, `outline`, `narrator`, `novel`) / 씬 / 초안 (`draft`, `state`) / 카드와 정전
-(`card`, `canon`) / 노트 / 원고 / 측정. Old names are not kept as aliases — a rename is a breaking
+기획 (`project`, `outline`, `narrator`, `novel`) / 씬 / 초안 (`draft`, `state`) / 카드
+(`card`) / 노트 / 원고 / 측정. Old names are not kept as aliases — a rename is a breaking
 change recorded in the changelog — and a freed name is not reused for a different action.
 
 Verbs read and write the work through manager verbs, not the file system: reads

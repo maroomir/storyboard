@@ -219,7 +219,7 @@ describe('manuscript export --out', () => {
 });
 
 describe('draft check', () => {
-  it('runs slop locally and skips continuity when no canon fact applies', async () => {
+  it('runs slop locally and skips continuity when no card fact applies', async () => {
     await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
@@ -227,7 +227,7 @@ describe('draft check', () => {
     const continuity = await runJson('draft', 'check', 'continuity', '001-opening');
 
     expect(Array.isArray(slop.data)).toBe(true);
-    expect(continuity).toMatchObject({ ok: true, message: '대조할 정전 사실이 없습니다.' });
+    expect(continuity).toMatchObject({ ok: true, message: '대조할 카드의 사실이 없습니다.' });
   });
 });
 

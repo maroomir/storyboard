@@ -1,4 +1,3 @@
-import type { BibleFact, StoryBible } from '#model/format/bible';
 import type { CharacterCard } from '#model/format/card';
 import { z } from 'zod';
 
@@ -44,76 +43,6 @@ export function renumberStoryStateScene(state: StoryState, rename: SceneRename):
   );
 
   return { throughSceneOrder, sceneInputHashes, entries };
-}
-
-export function rewriteBibleSceneReferences(bible: StoryBible, rename: SceneRename): StoryBible {
-  let changed: boolean = false;
-
-  const facts: BibleFact[] = bible.facts.map((fact) => {
-    const rewritten: BibleFact = rewriteFactSceneReferences(fact, rename);
-    changed ||= rewritten !== fact;
-    return rewritten;
-  });
-
-  return changed ? { ...bible, facts } : bible;
-}
-
-function rewriteFactSceneReferences(fact: BibleFact, rename: SceneRename): BibleFact {
-  const next: BibleFact = { ...fact };
-  let changed: boolean = false;
-
-  const rewrite = <T extends string | number | undefined>(ref: T): T => {
-    const rewritten: T = rewriteSceneReference(ref, rename) as T;
-    changed ||= rewritten !== ref;
-    return rewritten;
-  };
-
-  if (fact.sourceScene !== undefined) {
-    next.sourceScene = rewrite(fact.sourceScene);
-  }
-
-  if (fact.validFrom !== undefined) {
-    next.validFrom = rewrite(fact.validFrom);
-  }
-
-  if (fact.validUntil !== undefined) {
-    next.validUntil = rewrite(fact.validUntil);
-  }
-
-  if (typeof fact.revealFrom === 'object') {
-    next.revealFrom = { ...fact.revealFrom, scene: rewrite(fact.revealFrom.scene) };
-  } else if (fact.revealFrom !== undefined) {
-    next.revealFrom = rewrite(fact.revealFrom);
-  }
-
-  return changed ? next : fact;
-}
-
-const bareOrderTextPattern: RegExp = /^\d+$/;
-
-function rewriteSceneReference(
-  ref: string | number | undefined,
-  rename: SceneRename,
-): string | number | undefined {
-  const { from, to } = rename;
-
-  if (ref === from.stem) {
-    return to.stem;
-  }
-
-  if (typeof ref === 'number') {
-    return ref === from.order ? to.order : ref;
-  }
-
-  if (
-    ref !== undefined &&
-    bareOrderTextPattern.test(ref) &&
-    Number.parseInt(ref, 10) === from.order
-  ) {
-    return String(to.order).padStart(ref.length, '0');
-  }
-
-  return ref;
 }
 
 export function rewriteCharacterArcSceneRefs(

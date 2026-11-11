@@ -14,7 +14,7 @@ export class DraftAugmentCommand implements ICommandHandler {
     rewritesDraft: true,
     group: '초안',
     usage: 'draft augment <stem>',
-    summary: '갱신된 카드·정전을 기존 초안에 녹입니다',
+    summary: '갱신된 카드와 그 사실을 기존 초안에 녹입니다',
     flags: ['lines', 'instruction', 'dry-run'],
   };
 

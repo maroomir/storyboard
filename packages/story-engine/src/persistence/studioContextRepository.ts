@@ -434,7 +434,7 @@ export class StudioContextRepository {
     scene: SceneFile,
   ): Promise<StudioStageCard[]> {
     try {
-      const context: SceneContext = await new SceneContextReader(this.fileSystem, this.cards).build(
+      const context: SceneContext = await new SceneContextReader(this.fileSystem, this.cards, this.scenes).build(
         sceneContextPaths(paths),
         scene,
       );

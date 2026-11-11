@@ -12,7 +12,7 @@ import type { BibleSubjectKind } from '@storyboard/story-model';
 export class CardListCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card list',
-    group: '카드와 정전',
+    group: '카드',
     usage: `card list [${cardCategories.join('|')}]`,
     summary: '인물·배경 카드를 봅니다 (종류를 적으면 그 종류만)',
     examples: ['storyboard card list', 'storyboard card list character --json'],

@@ -1,13 +1,10 @@
 import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
-  parseBible,
   parseDraft,
   parseStoryState,
   parseSceneStem,
   renumberStoryStateScene,
-  rewriteBibleSceneReferences,
-  serializeBible,
   serializeDraft,
   serializeSceneRenameJournal,
   scenePath,
@@ -22,7 +19,6 @@ import {
   type StoryboardProjectPaths,
   type SceneFileNameParts,
   type StoryState,
-  type StoryBible,
   type RevisionPlan,
   type RevisionPlanEntry,
 } from '@storyboard/story-model';
@@ -251,7 +247,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   ): Promise<void> {
     for (const directory of [
       paths.sceneCacheDirectory,
-      paths.bibleCacheDirectory,
       paths.cardCacheDirectory,
       ...memoryScopes.map((scope) => scope.sceneDialogueDirectory),
     ]) {
@@ -292,8 +287,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     for (const scope of memoryScopes) {
       await this.planMemoryScopeRewrites(rewrites, scope, rename);
     }
-
-    await this.addRewrite(rewrites, paths.bibleCanon, (raw) => rewriteBibleText(raw, rename));
 
     await this.addRewrite(
       rewrites,
@@ -401,13 +394,6 @@ function rewriteStoryStateText(raw: string, rename: SceneRename): string | undef
   const renumbered: StoryState = renumberStoryStateScene(state, rename);
 
   return renumbered === state ? undefined : serializeStoryState(renumbered);
-}
-
-function rewriteBibleText(raw: string, rename: SceneRename): string | undefined {
-  const bible: StoryBible = parseBible(raw);
-  const rewritten: StoryBible = rewriteBibleSceneReferences(bible, rename);
-
-  return rewritten === bible ? undefined : serializeBible(rewritten);
 }
 
 function rewriteJsonSceneStems(raw: string, rename: SceneRename): string | undefined {

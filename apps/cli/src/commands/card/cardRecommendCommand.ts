@@ -9,7 +9,7 @@ import type { BibleSubjectKind } from '@storyboard/story-model';
 export class CardRecommendCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'card recommend',
-    group: '카드와 정전',
+    group: '카드',
     usage: `card recommend <${cardCategories.join('|')}>`,
     summary: '카드가 없는 인물·배경을 찾습니다 (읽기 전용)',
     examples: ['storyboard card recommend character'],

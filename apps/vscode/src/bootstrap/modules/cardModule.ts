@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
 
 import { BuildStoryCardsFromScenesCommand } from '@/presentation/commands/buildStoryCardsFromScenesCommand';
-import { CanonDiffCommand } from '@/presentation/commands/canonDiffCommand';
 import { CreateBackgroundCardCommand } from '@/presentation/commands/createBackgroundCardCommand';
 import { CreateCharacterCardCommand } from '@/presentation/commands/createCharacterCardCommand';
-import { PromoteBibleCandidatesCommand } from '@/presentation/commands/promoteBibleCandidatesCommand';
 import { PromoteCardCandidatesCommand } from '@/presentation/commands/promoteCardCandidatesCommand';
 import { RecommendBackgroundCardsCommand } from '@/presentation/commands/recommendBackgroundCardsCommand';
 import { RecommendCharacterCardsCommand } from '@/presentation/commands/recommendCharacterCardsCommand';
@@ -41,7 +39,6 @@ export class CardModule implements IApplicationModule {
       notes,
       interviews,
       logger,
-      project,
       proposalReviewService,
       usageRecorder,
     } = this.platform;
@@ -62,9 +59,7 @@ export class CardModule implements IApplicationModule {
         new BuildStoryCardsFromScenesCommand(cards, proposalReviewService),
         new RenameCharacterCardCommand({ cards }),
         new RenameBackgroundCardCommand({ cards }),
-        new PromoteBibleCandidatesCommand({ logger, cards }),
         new PromoteCardCandidatesCommand({ notes }),
-        new CanonDiffCommand({ logger, project }),
       ]),
       new CardRenameParticipant(logger).register(),
       new CardDiagnosticsProvider({ logger }).register(),

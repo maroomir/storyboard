@@ -201,10 +201,11 @@ export class StoryMemoryAuditor {
         return undefined;
       }
       const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-      const context: SceneContext = await new SceneContextReader(reads, this.request.cards).build(ctxPaths, scene);
+      const context: SceneContext = await new SceneContextReader(reads, this.request.cards, this.request.scenes).build(ctxPaths, scene);
       const bibleFacts: readonly BibleFact[] = await new SceneContextReader(
         reads,
         this.request.cards,
+        this.request.scenes,
       ).resolveBibleFacts(ctxPaths, context);
 
       return computeSceneInputHash({

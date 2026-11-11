@@ -9,6 +9,7 @@ import {
 import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { SceneRoster, WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import type { BundleWarning } from '#engine/persistence/bundles/elementBundleRepository';
+import type { CardFactReader } from '#engine/persistence/bundles/cardFactReader';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { createHash } from 'node:crypto';
 
@@ -37,6 +38,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
     private readonly scenes: WorkspaceScenes,
+    private readonly facts: CardFactReader,
   ) {}
 
   public async load(workspaceRoot: StoryUri): Promise<StoryFeatureSource> {
@@ -57,7 +59,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
         (left, right) => left.order - right.order || left.slug.localeCompare(right.slug),
       ),
       cards,
-      canonText: sourceFiles.canonText?.text ?? '',
+      canonText: (await this.facts.readFactLines(workspaceRoot)).join('\n'),
       snapshots,
     };
   }
@@ -112,27 +114,25 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     roster: CardRoster,
     sceneRoster: SceneRoster,
   ): Promise<StorySourceFiles> {
-    const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
+    const [projectText, sceneFiles, cardFiles] = await Promise.all([
       readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
       readSceneBundleFiles(this.fileSystem, paths, sceneRoster),
       readBundleFiles(this.fileSystem, paths.workspaceRoot, roster),
-      readOptionalText(this.fileSystem, paths.bibleCanon),
     ]);
 
-    return { projectText, sceneFiles, cardFiles, canonText };
+    return { projectText, sceneFiles, cardFiles };
   }
 
   private async snapshotSources(
     paths: StoryboardProjectPaths,
     sourceFiles: StorySourceFiles,
   ): Promise<StoryFileSnapshot[]> {
-    const { projectText, sceneFiles, cardFiles, canonText } = sourceFiles;
+    const { projectText, sceneFiles, cardFiles } = sourceFiles;
 
     return [
       snapshotFile(projectText.uri, projectText.bytes),
       ...sceneFiles.map((file) => snapshotFile(file.uri, file.bytes)),
       ...cardFiles.map((file) => snapshotFile(file.uri, file.bytes)),
-      ...(canonText ? [snapshotFile(canonText.uri, canonText.bytes)] : []),
       await snapshotDirectory(this.fileSystem, paths.sceneDirectory),
       await snapshotDirectory(this.fileSystem, paths.characterDirectory),
       await snapshotDirectory(this.fileSystem, paths.backgroundDirectory),
@@ -151,7 +151,6 @@ interface StorySourceFiles {
   readonly projectText: TextFile;
   readonly sceneFiles: TextFile[];
   readonly cardFiles: TextFile[];
-  readonly canonText: TextFile | undefined;
 }
 
 async function readRequiredText(fs: IFileSystem, uri: StoryUri, label: string): Promise<TextFile> {
