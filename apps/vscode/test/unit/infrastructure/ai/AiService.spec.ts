@@ -84,19 +84,6 @@ describe("StoryboardAiService", () => {
     ])
   })
 
-  it("parses setting facts per character from JSON array output", async () => {
-    const service = createAiService({
-      completionText: '[{"key":"눈동자 색","value":"녹색"},{"key":"나이","value":"17"}]'
-    })
-
-    await expect(service.extractFactsByCharacter("엘리아가 걸어왔다.", ["엘리아"])).resolves.toEqual({
-      엘리아: [
-        { key: "눈동자 색", value: "녹색" },
-        { key: "나이", value: "17" }
-      ]
-    })
-  })
-
   it("parses card candidate fields per character from JSON object output", async () => {
     const service = createAiService({
       completionText:
@@ -113,26 +100,6 @@ describe("StoryboardAiService", () => {
         arc: { summary: "학교에 도착해 친구를 만남" }
       }
     })
-  })
-
-  it("parses approved candidate indices from JSON array output", async () => {
-    const service = createAiService({ completionText: "[0, 2]" })
-
-    await expect(
-      service.verifyCardCandidatesByCharacter("엘리아가 지훈을 만났다.", "엘리아", [
-        "속성 나이: 17",
-        "관계 지훈: 친구",
-        "아크: 학교에 도착"
-      ])
-    ).resolves.toEqual([0, 2])
-  })
-
-  it("returns null when verification output is not a JSON array", async () => {
-    const service = createAiService({ completionText: "확인 불가" })
-
-    await expect(
-      service.verifyCardCandidatesByCharacter("본문", "엘리아", ["속성 나이: 17"])
-    ).resolves.toBeNull()
   })
 
   it("Q8: parses continuity issues and defaults missing severity to high", async () => {

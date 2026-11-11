@@ -46,9 +46,7 @@ export type AiTaskName =
   | 'sceneBeatArbiter'
   | 'sceneBeatJudge'
   | 'traitsExtraction'
-  | 'factExtraction'
   | 'cardFactExtraction'
-  | 'cardFactVerification'
   | 'backgroundFactExtraction'
   | 'grammarCheck'
   | 'continuityCheck'
@@ -100,9 +98,7 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'sceneBeatArbiter', label: '비트 감독 합침' },
   { name: 'sceneBeatJudge', label: '비트 인물 심판' },
   { name: 'traitsExtraction', label: '특성 추출' },
-  { name: 'factExtraction', label: '설정 사실 추출' },
   { name: 'cardFactExtraction', label: '카드 후보 추출' },
-  { name: 'cardFactVerification', label: '카드 후보 검증' },
   { name: 'backgroundFactExtraction', label: '배경 사실 추출' },
   { name: 'grammarCheck', label: '문법 검사' },
   { name: 'continuityCheck', label: '연속성 검사' },

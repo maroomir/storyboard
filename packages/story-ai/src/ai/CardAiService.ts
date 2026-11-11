@@ -1,5 +1,5 @@
 import type { GenerateTextOptions } from '#ai/ai/aiServiceTypes';
-import { toFactCandidate, toPromptMessages } from '#ai/ai/aiResponseCoercion';
+import { toPromptMessages } from '#ai/ai/aiResponseCoercion';
 import { AiTextGateway } from '#ai/ai/AiTextGateway';
 import {
   BackgroundFactExtractionPrompt,
@@ -11,13 +11,11 @@ import {
   coerceCardCandidateExtraction,
   type CardCandidateExtraction,
 } from '#ai/ai/prompts/cardCandidateExtraction';
-import { CardCandidateVerificationPrompt } from '#ai/ai/prompts/cardCandidateVerification';
 import {
   CardRecommendationPrompt,
   coerceCardRecommendations,
   type RecommendedEntity,
 } from '#ai/ai/prompts/cardRecommendation';
-import { FactExtractionPrompt } from '#ai/ai/prompts/factExtraction';
 import { NoteCardConsolidationPrompt } from '#ai/ai/prompts/noteCardConsolidation';
 import { NoteExtractionPrompt } from '#ai/ai/prompts/noteExtraction';
 import { NoteSynthesisPrompt } from '#ai/ai/prompts/noteSynthesis';
@@ -35,7 +33,6 @@ import type {
   UsageAttribution,
   AiTaskName,
   BibleSubjectKind,
-  AttributeCandidate,
 } from '@storyboard/story-model';
 import {
   parseBulletList,
@@ -49,10 +46,6 @@ import {
 
 export type ExtractTraitsByCharacterOptions = GenerateTextOptions & {
   readonly aliases?: readonly string[];
-  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
-};
-
-export type ExtractFactsByCharacterOptions = GenerateTextOptions & {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
 };
 
@@ -94,36 +87,6 @@ export class CardAiService {
         );
 
         return parseBulletList(response.text);
-      },
-    );
-  }
-
-  public async extractFactsByCharacter(
-    draftBody: string,
-    characterNames: readonly string[],
-    options: ExtractFactsByCharacterOptions = {},
-  ): Promise<Record<string, AttributeCandidate[]>> {
-    return this.extractPerCharacter(
-      characterNames,
-      options,
-      FactExtractionPrompt.config,
-      async (name, resolvedOptions, attribution) => {
-        const variant: PromptVariantId = this.gateway.resolvePromptVariant(
-          'factExtraction',
-          resolvedOptions,
-        );
-        const prompt: PromptArtifact = FactExtractionPrompt.build(draftBody, name, variant);
-        const response: AiGenerateResponse = await this.gateway.generate(
-          'factExtraction',
-          toPromptMessages(prompt),
-          {
-            ...resolvedOptions,
-            attribution,
-          },
-        );
-        const parsedArray: unknown[] | null = parseJsonArray(response.text);
-
-        return parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : [];
       },
     );
   }
@@ -267,45 +230,6 @@ export class CardAiService {
       parseJsonObject(response.text),
       response.isTruncated === true,
     );
-  }
-
-  public async verifyCardCandidatesByCharacter(
-    draftBody: string,
-    characterName: string,
-    statements: readonly string[],
-    options: GenerateTextOptions = {},
-  ): Promise<number[] | null> {
-    if (statements.length === 0) return [];
-
-    const variant: PromptVariantId = this.gateway.resolvePromptVariant(
-      'cardFactVerification',
-      options,
-    );
-    const prompt: PromptArtifact = CardCandidateVerificationPrompt.build(
-      draftBody,
-      characterName,
-      statements,
-      variant,
-    );
-    const response: AiGenerateResponse = await this.generateWithDefaults(
-      'cardFactVerification',
-      prompt,
-      CardCandidateVerificationPrompt.config,
-      options,
-    );
-    const parsedArray: unknown[] | null = parseJsonArray(response.text);
-
-    if (!parsedArray) return null;
-
-    const approved: Set<number> = new Set<number>();
-    for (const value of parsedArray) {
-      const index: number = typeof value === 'number' ? value : Number(value);
-      if (Number.isInteger(index) && index >= 0 && index < statements.length) {
-        approved.add(index);
-      }
-    }
-
-    return [...approved];
   }
 
   private async extractPerCharacter<T>(

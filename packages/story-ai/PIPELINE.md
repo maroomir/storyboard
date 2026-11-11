@@ -161,10 +161,8 @@
 | `draftRevision` | 수정 | 되먹임 루프, 1층 ⑦, `draft condense` | 본문 + 담당별 지시문 → 고친 본문 | 0.7 / 4000 |
 | `chapterSummary` | 기억 | 1층 ⑧ | 장의 씬 초안들 → 한 장 요약 | 0.3 / 600 |
 | `storyStateUpdate` | 사후 | 3층, 동기 | 초안 + 이전 원장 → 새 항목(목격자 포함) | 0.2 / 900 |
-| `traitsExtraction` | 사후 | 3층, 백그라운드 | 초안 + 인물 이름 → 성향 | 0.3 / 800 |
-| `factExtraction` | 사후 | 3층, 백그라운드 | 초안 + 인물 이름 → 정전 후보 | 0.2 / 800 |
-| `cardCandidateExtraction` → `cardCandidateVerification` | 사후 | 3층, 백그라운드 | 초안 → 카드 항목 후보 → 통과 여부 | 0.2 / 700, 0 / 200 |
-| `backgroundFactExtraction` | 사후 | 3층, 백그라운드 | 초안 + 배경 이름 → 장소 사실·인물 | 0.2 / 700 |
+| `traitsExtraction` | 수집 | 카드 수집 탭 | 초안 + 인물 이름 → 성향 | 0.3 / 800 |
+| `backgroundFactExtraction` | 수집 | 카드 수집 탭 | 초안 + 배경 이름 → 장소 사실·인물 | 0.2 / 700 |
 
 ### 사람이 부르는 도구 10개
 
