@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest"
 
 import { formatBibleFactLines, serializeCard } from '@storyboard/story-model';
-import { SceneContextReader, type IFileSystem } from '@storyboard/story-engine';
+import {
+  SceneContextReader,
+  type IFileSystem,
+  type WorkspaceCards,
+  type WorkspaceScenes,
+} from '@storyboard/story-engine';
 import { legacyCards, stubCardFacts, type StubCardFact } from "../../stubs/cards"
 import { stubScenes } from "../../stubs/scenes"
 
@@ -12,7 +17,7 @@ function cardDirectoriesOf(_fileSystem: unknown): Parameters<typeof legacyCards>
     joinPath: (base: never, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
 }
-import type { BackgroundCard, CharacterCard, SceneContext, SceneFile } from '@storyboard/story-model';
+import type { BackgroundCard, CharacterCard, SceneContext, SceneFile, StoryStateStatement } from '@storyboard/story-model';
 const eliaCard: CharacterCard = {
   type: "character",
   id: "elia",
@@ -698,6 +703,10 @@ describe("buildNarrativeContext", () => {
   const context: SceneContext = { scene: firstScene, characters: [eliaCard, jihoonCard] }
   const eyeFacts: StubCardFact[] = [{ kind: "character", slug: "elia", key: "눈동자 색", value: "녹색" }]
 
+  function witnessCards(): WorkspaceCards {
+    return stubCardFacts([], { characters: [eliaCard, jihoonCard] })
+  }
+
   it("injects the fact statements of the scene's cards", async () => {
     const fileSystem = new MockFileSystem()
 
@@ -709,18 +718,18 @@ describe("buildNarrativeContext", () => {
     expect(result.prompt).toContain("작가 참고용 배경지식")
   })
 
+  function ledgerScenes(statements: readonly StoryStateStatement[]): WorkspaceScenes {
+    return stubScenes([firstScene], undefined, new Map([[firstScene.stem, { statements }]]))
+  }
+
   it("injects the story state ledger ahead of the setting memo", async () => {
-    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
     const fileSystem = new MockFileSystem()
-    fileSystem.setFile(
-      statePath,
-      "# 이야기 상태\n<!-- through-scene: 1 -->\n## 살아 있는 모티프\n- \"오늘도… 손님이 오실 줄 알았습니다\"\n"
-    )
+    const scenes = ledgerScenes([{ facet: "motif", value: "\"오늘도… 손님이 오실 줄 알았습니다\"" }])
 
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
     const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
 
-    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, stubCardFacts(eyeFacts), stubScenes()).buildNarrative({ ...basePaths, storyState: statePath }, secondContext)
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, stubCardFacts(eyeFacts), scenes).buildNarrative({ ...basePaths, threadId: "main" }, secondContext)
 
     expect(result.prompt).toContain("[이야기 상태]")
     expect(result.prompt).toContain("손님이 오실 줄 알았습니다")
@@ -728,30 +737,27 @@ describe("buildNarrativeContext", () => {
   })
 
   it("hands each character only what it witnessed as its knowledge", async () => {
-    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
     const fileSystem = new MockFileSystem()
-    fileSystem.setFile(
-      statePath,
-      "# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1|elia] 엘리아가 편지를 숨겼다\n- [1|jihoon] 지훈이 열쇠를 주웠다\n"
-    )
+    const scenes = ledgerScenes([
+      { facet: "event", value: "엘리아가 편지를 숨겼다", knownBy: ["elia"] },
+      { facet: "event", value: "지훈이 열쇠를 주웠다", knownBy: ["jihoon"] }
+    ])
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
 
-    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, legacyCards(fileSystem as never, cardDirectoriesOf(fileSystem)), stubScenes()).buildNarrative({ ...basePaths, storyState: statePath }, { scene: secondScene, characters: [eliaCard, jihoonCard] })
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, witnessCards(), scenes).buildNarrative({ ...basePaths, threadId: "main" }, { scene: secondScene, characters: [eliaCard, jihoonCard] })
 
     expect(result.characterKnowledge?.get(eliaCard.name)).toEqual(["엘리아가 편지를 숨겼다"])
     expect(result.characterKnowledge?.get(jihoonCard.name)).toEqual(["지훈이 열쇠를 주웠다"])
   })
 
   it("hands each character the ledger's relation changes that name it", async () => {
-    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
     const fileSystem = new MockFileSystem()
-    fileSystem.setFile(
-      statePath,
-      `# 이야기 상태\n<!-- through-scene: 1 -->\n## 인물 관계와 말투\n- [1] ${eliaCard.name}는 ${jihoonCard.name}에게 이제 반말을 쓴다\n`
-    )
+    const scenes = ledgerScenes([
+      { facet: "relationShift", value: `${eliaCard.name}는 ${jihoonCard.name}에게 이제 반말을 쓴다` }
+    ])
     const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
 
-    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, legacyCards(fileSystem as never, cardDirectoriesOf(fileSystem)), stubScenes()).buildNarrative({ ...basePaths, storyState: statePath }, { scene: secondScene, characters: [eliaCard, jihoonCard] })
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, witnessCards(), scenes).buildNarrative({ ...basePaths, threadId: "main" }, { scene: secondScene, characters: [eliaCard, jihoonCard] })
 
     expect(result.characterRelations?.get(eliaCard.name)).toEqual([
       `${eliaCard.name}는 ${jihoonCard.name}에게 이제 반말을 쓴다`
@@ -760,11 +766,10 @@ describe("buildNarrativeContext", () => {
   })
 
   it("skips the story state ledger for the first scene", async () => {
-    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
     const fileSystem = new MockFileSystem()
-    fileSystem.setFile(statePath, "# 이야기 상태\n## 확정 사실\n- 나중 씬의 상태\n")
+    const scenes = ledgerScenes([{ facet: "event", value: "나중 씬의 상태" }])
 
-    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, legacyCards(fileSystem as never, cardDirectoriesOf(fileSystem)), stubScenes()).buildNarrative({ ...basePaths, storyState: statePath }, context)
+    const result = await new SceneContextReader(fileSystem as unknown as IFileSystem, witnessCards(), scenes).buildNarrative({ ...basePaths, threadId: "main" }, context)
 
     expect(result.prompt ?? "").not.toContain("[이야기 상태]")
   })

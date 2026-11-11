@@ -2,47 +2,10 @@ import type { CharacterCard } from '#model/format/card';
 import { z } from 'zod';
 
 import { parseSceneStem, type SceneFileNameParts } from '#model/format/scene';
-import type { StoryState, StoryStateEntry } from '#model/format/storyState';
 
 export interface SceneRename {
   readonly from: SceneFileNameParts;
   readonly to: SceneFileNameParts;
-}
-
-export function renumberStoryStateScene(state: StoryState, rename: SceneRename): StoryState {
-  const { from, to } = rename;
-
-  const isReferenced: boolean =
-    state.throughSceneOrder === from.order ||
-    state.sceneInputHashes.has(from.order) ||
-    state.entries.some((entry) => entry.throughScene === from.order);
-
-  if (from.order === to.order || !isReferenced) {
-    return state;
-  }
-
-  const renumber = (order: number): number => (order === from.order ? to.order : order);
-  const sceneInputHashes: Map<number, string> = new Map<number, string>();
-
-  for (const [order, hash] of state.sceneInputHashes) {
-    sceneInputHashes.set(renumber(order), hash);
-  }
-
-  const entries: StoryStateEntry[] = state.entries.map(
-    (entry): StoryStateEntry =>
-      entry.throughScene === from.order ? { ...entry, throughScene: to.order } : entry,
-  );
-
-  const sealedOrders: number[] = [
-    ...sceneInputHashes.keys(),
-    ...entries.flatMap((entry) => (entry.throughScene === undefined ? [] : [entry.throughScene])),
-  ];
-  const throughSceneOrder: number = Math.max(
-    state.throughSceneOrder === from.order ? 0 : state.throughSceneOrder,
-    ...sealedOrders,
-  );
-
-  return { throughSceneOrder, sceneInputHashes, entries };
 }
 
 export function rewriteCharacterArcSceneRefs(

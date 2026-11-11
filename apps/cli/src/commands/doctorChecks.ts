@@ -28,7 +28,6 @@ import {
   readInterviewAxesFile,
   readMissingGitignoreEntries,
   requiresApiKey,
-  resolveThreadPaths,
   type AiProviderId,
   type InterviewAxesFile,
   type InterviewCardCoverage,
@@ -40,7 +39,6 @@ import {
   type StoryboardProject,
   type StoryboardProjectPaths,
   type StoryUri,
-  findUnreadableStoryStateLines,
 } from '@storyboard/story-model';
 import { existsSync, readFileSync } from 'fs';
 import { basename } from 'path';
@@ -111,7 +109,6 @@ interface NarrationSurvey {
   readonly unknownThreads: readonly string[];
   readonly focallessNarrators: readonly NarratorCard[];
   readonly narrationlessScenes: readonly string[];
-  readonly unreadableLedgerLines: readonly string[];
 }
 
 type NarrationCheck = (survey: NarrationSurvey) => DoctorCheck[];
@@ -234,26 +231,12 @@ function checkNarrationlessScenes({ narrationlessScenes }: NarrationSurvey): Doc
     : [];
 }
 
-function checkUnreadableLedgerLines({ unreadableLedgerLines }: NarrationSurvey): DoctorCheck[] {
-  return unreadableLedgerLines.length > 0
-    ? [
-        {
-          status: 'warn',
-          label: '이야기 상태',
-          detail: `태그를 읽지 못한 원장 줄이 ${unreadableLedgerLines.length}개 있습니다 (예: ${unreadableLedgerLines[0]}). 그 항목은 시점 필터와 낡음 판정을 받지 못합니다.`,
-          fix: '해당 줄을 `- [<씬 번호>] <내용>` 형태로 고쳐 주세요.',
-        },
-      ]
-    : [];
-}
-
 const narrationChecks: readonly NarrationCheck[] = [
   checkNarrators,
   checkMissingNarrators,
   checkUnknownThreads,
   checkFocallessNarrators,
   checkNarrationlessScenes,
-  checkUnreadableLedgerLines,
 ];
 
 function checkMissingDirectories({ missingDirectories }: WorkspaceSurvey): DoctorCheck[] {
@@ -466,7 +449,6 @@ export class DoctorChecks {
     const project: StoryboardProject | undefined = await this.container.project
       .read(this.container.workspaceRoot)
       .catch(() => undefined);
-    const unreadableLedgerLines: string[] = await this.findUnreadableLedgerLines(project);
     const narrationlessScenes: string[] = await this.findNarrationlessScenes(sceneCards, project);
 
     return {
@@ -475,7 +457,6 @@ export class DoctorChecks {
       unknownThreads: findUnknownThreads(sceneCards, project),
       focallessNarrators: findFocallessNarrators(narrators),
       narrationlessScenes,
-      unreadableLedgerLines,
     };
   }
 
@@ -504,38 +485,7 @@ export class DoctorChecks {
       .map(({ card }) => card.id);
   }
 
-  private async findUnreadableLedgerLines(
-    project: StoryboardProject | undefined,
-  ): Promise<string[]> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(this.container.workspaceRoot);
-    const threadIds: string[] = Object.keys(project?.setting?.threads ?? {});
-    const ledgerPaths: StoryUri[] = [
-      paths.storyState,
-      ...threadIds.map((threadId) => resolveThreadPaths(paths, threadId).storyState),
-    ];
-
-    const lines: string[] = [];
-    for (const ledgerPath of ledgerPaths) {
-      try {
-        const content: string = new TextDecoder().decode(
-          await this.container.fileSystem.readFile(ledgerPath),
-        );
-        lines.push(...findUnreadableStoryStateLines(content));
-      } catch {
-        continue;
-      }
-    }
-
-    return lines;
-  }
-
-  private async storyState(
-    paths: ReturnType<typeof getStoryboardProjectPaths>,
-  ): Promise<DoctorCheck[]> {
-    if (!existsSync(paths.storyState.fsPath)) {
-      return [];
-    }
-
+  private async storyState(): Promise<DoctorCheck[]> {
     const project: StoryboardProject | undefined = await this.container.project
       .read(this.container.workspaceRoot)
       .catch(() => undefined);
@@ -634,7 +584,7 @@ export class DoctorChecks {
       { status: 'ok', label: '워크스페이스', detail: root.fsPath },
       ...runChecks(workspaceLayoutChecks),
       ...this.sceneLengthReach(survey.census.largestSceneTarget),
-      ...(await this.storyState(paths)),
+      ...(await this.storyState()),
       ...(await this.chapterSummaries(paths)),
       ...runChecks(workspaceRepositoryChecks),
       ...(await this.narration(survey.census.cards)),

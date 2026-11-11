@@ -26,6 +26,7 @@ import type { StudioEntity } from '#model/shared/messaging/studio';
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: StoryUri;
+  readonly threadId: string;
   readonly metadataDirectory: StoryUri;
   readonly projectJson: StoryUri;
   readonly structure: StoryUri;
@@ -36,7 +37,6 @@ export interface StoryboardProjectPaths {
   readonly sceneRenameJournal: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
   readonly revisionRoundsDirectory: StoryUri;
-  readonly storyState: StoryUri;
   readonly chapterSummaries: StoryUri;
   readonly sceneDialogueDirectory: StoryUri;
   readonly voiceSeeds: StoryUri;
@@ -96,6 +96,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
 
   return {
     workspaceRoot,
+    threadId: mainThreadId,
     metadataDirectory: resolve(STORYBOARD_RELATIVE_PATHS.metadataDirectory),
     projectJson: resolve(STORYBOARD_RELATIVE_PATHS.projectJson),
     structure: resolve(STORYBOARD_RELATIVE_PATHS.structure),
@@ -106,7 +107,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     sceneRenameJournal: resolve(STORYBOARD_RELATIVE_PATHS.sceneRenameJournal),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
-    storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
     chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
     voiceSeeds: resolve(STORYBOARD_RELATIVE_PATHS.voiceSeeds),
@@ -153,7 +153,7 @@ export function resolveThreadPaths(
 
   return {
     ...paths,
-    storyState: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.storyState),
+    threadId,
     chapterSummaries: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     sceneDialogueDirectory: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
     personaMemoryDirectory: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),

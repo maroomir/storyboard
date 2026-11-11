@@ -67,6 +67,7 @@ export * from '#model/domain/sceneStatus';
 export * from '#model/domain/sceneGroundingDerivation';
 export * from '#model/domain/structureThreads';
 export * from '#model/domain/cardFacts';
+export * from '#model/domain/storyLedger';
 export * from '#model/domain/studio/studioPatch';
 export * from '#model/domain/traitsProcessor';
 export * from '#model/paths/projectDetection';

@@ -29,7 +29,8 @@ import { measureWidth } from '@/terminal/width';
 
 import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
 import { writeCardBundleFromYaml } from './fixtures/cardBundles';
-import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
+import { readSceneState, writeSceneBundleFromYaml, writeSceneState } from './fixtures/sceneBundles';
+import type { SceneStoryState } from '@storyboard/story-model';
 
 let home: string;
 let workspace: string;
@@ -174,7 +175,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(checks.find((check) => check.label === '씬')?.detail).toContain('0개');
   });
 
-  async function writeWorkspaceWithLedger(ledger: string): Promise<void> {
+  async function writeWorkspaceWithLedger(state: SceneStoryState): Promise<void> {
     mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
     writeFileSync(
       join(workspace, '.storyboard', 'project.json'),
@@ -189,11 +190,11 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
       }),
     );
     await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-first\nsummary: 첫 방송을 마친다.\n');
-    writeFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), ledger);
+    writeSceneState(workspace, '001-first', state);
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
-  const unsealedLedger = '# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1] 1화 사실\n';
+  const unsealedLedger: SceneStoryState = { statements: [{ facet: 'event', value: '1화 사실' }] };
 
   async function runCommand(
     verb: string,
@@ -228,9 +229,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
       args: args({ repair: true }),
     });
     expect(repaired.ok).toBe(true);
-    expect(
-      readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8'),
-    ).toContain('<!-- scene-input: 1 sha256:');
+    expect(readSceneState(workspace, '001-first')?.inputHash).toMatch(/^sha256:/);
 
     const sealed = await new DoctorCommand().execute({ container: container(), args: args() });
     expect(checksOf(sealed).find((entry) => entry.label === '이야기 상태')?.status).toBe('ok');

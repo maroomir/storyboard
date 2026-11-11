@@ -1,9 +1,9 @@
+import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import type { AiServices, HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import type { SceneFile, StoryState, StoryUri } from '@storyboard/story-model';
 import {
   draftPath,
   extractDraftBody,
-  readStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
 import {
@@ -110,7 +110,10 @@ export class GenerateStoryStateUseCase {
 
     const { inputs } = loaded;
     if (request.force !== true) {
-      const state: StoryState = await readStoryState(inputs.threadPaths.storyState, this.host.fileSystem);
+      const state: StoryState = await new StoryLedger({
+        scenes: this.host.scenes,
+        cards: this.host.cards,
+      }).read(inputs.threadPaths.workspaceRoot, inputs.threadPaths.threadId);
       if (
         state.sceneInputHashes.has(scene.order) ||
         storyStateSceneOrders(state).includes(scene.order)

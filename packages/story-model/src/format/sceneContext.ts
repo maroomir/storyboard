@@ -12,7 +12,7 @@ export interface SceneContextWorkspacePaths {
   readonly backgroundDirectory: StoryUri;
   readonly draftDirectory: StoryUri;
   readonly chapterSummaries?: StoryUri;
-  readonly storyState?: StoryUri;
+  readonly threadId?: string;
   readonly joinPath: (base: StoryUri, ...pathSegments: string[]) => StoryUri;
 }
 

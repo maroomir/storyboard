@@ -63,7 +63,6 @@ interface LegacyMemoryMove {
 }
 
 const legacyMemoryLocations: readonly LegacyMemoryMove[] = [
-  { legacy: '.storyboard/cache/storyState.md', current: STORYBOARD_RELATIVE_PATHS.storyState },
   { legacy: 'manuscript/SUMMARY.md', current: STORYBOARD_RELATIVE_PATHS.chapterSummaries },
 ];
 

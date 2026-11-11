@@ -10,7 +10,7 @@ export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWo
     backgroundDirectory: paths.backgroundDirectory,
     draftDirectory: paths.draftDirectory,
     chapterSummaries: paths.chapterSummaries,
-    storyState: paths.storyState,
+    threadId: paths.threadId,
     joinPath: (base: StoryUri, ...segments: string[]): StoryUri => joinStoryPath(base, ...segments),
   };
 }

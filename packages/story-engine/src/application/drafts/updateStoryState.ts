@@ -1,8 +1,7 @@
+import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import {
   mergeStoryState,
-  readStoryState,
   recordStoryStateScene,
-  writeStoryState,
   formatStoryStateForPrompt,
   type StoryStateEntry,
 } from '@storyboard/story-model';
@@ -116,7 +115,8 @@ export class StoryStateRecorder {
     const { host, ai } = this.dependencies;
     const { threadPaths, scene, context, inputHash } = inputs;
 
-    const previous: StoryState = await readStoryState(threadPaths.storyState, host.fileSystem);
+    const ledger: StoryLedger = new StoryLedger({ scenes: host.scenes, cards: host.cards });
+    const previous: StoryState = await ledger.read(threadPaths.workspaceRoot, threadPaths.threadId);
     const items: StoryStateUpdateItem[] = await aiService.updateStoryState(
       {
         sceneTitle: scene.stem,
@@ -142,6 +142,6 @@ export class StoryStateRecorder {
         ? recordStoryStateScene(previous, scene.order, inputHash)
         : mergeStoryState(previous, mapping.entries, scene.order, inputHash);
 
-    await writeStoryState(threadPaths.storyState, merged, host.fileSystem);
+    await ledger.write(threadPaths.workspaceRoot, threadPaths.threadId, merged);
   }
 }

@@ -1,17 +1,16 @@
+import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
   deriveSceneGrounding,
   auditStoryState,
   computeSceneInputHash,
   formatStoryStateStaleWarning,
-  readStoryState,
   resealStoryState,
   sceneContextPaths,
   sceneNarrationHashInput,
   sealStoryState,
   serializeStoryState,
   storyStateSceneOrders,
-  writeStoryState,
 } from '@storyboard/story-model';
 import type {
   BibleFact,
@@ -75,9 +74,16 @@ function memoizeFileReads(fileSystem: IFileSystem): IFileSystem {
 export class StoryMemoryAuditor {
   public constructor(private readonly request: StoryStateAuditRequest) {}
 
+  private ledger(): StoryLedger {
+    return new StoryLedger({ scenes: this.request.scenes, cards: this.request.cards });
+  }
+
   public async audit(): Promise<StoryMemoryAudit> {
     const reads: IFileSystem = memoizeFileReads(this.request.fileSystem);
-    const state: StoryState = await readStoryState(this.request.paths.storyState, reads);
+    const state: StoryState = await this.ledger().read(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
+    );
     const currentHashes: Map<number, string> = await this.collectCurrentSceneInputHashes(
       reads,
       storyStateSceneOrders(state),
@@ -100,16 +106,19 @@ export class StoryMemoryAuditor {
       return;
     }
 
-    await writeStoryState(
-      this.request.paths.storyState,
+    await this.ledger().write(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
       audit.audit.state,
-      this.request.fileSystem,
     );
   }
 
   public async seal(): Promise<readonly number[]> {
     const reads: IFileSystem = memoizeFileReads(this.request.fileSystem);
-    const state: StoryState = await readStoryState(this.request.paths.storyState, reads);
+    const state: StoryState = await this.ledger().read(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
+    );
     const unsealedOrders: number[] = storyStateSceneOrders(state).filter(
       (order) => !state.sceneInputHashes.has(order),
     );
@@ -122,10 +131,10 @@ export class StoryMemoryAuditor {
       reads,
       unsealedOrders,
     );
-    await writeStoryState(
-      this.request.paths.storyState,
+    await this.ledger().write(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
       sealStoryState(state, currentHashes),
-      this.request.fileSystem,
     );
 
     return [...currentHashes.keys()].sort((left, right) => left - right);
@@ -133,7 +142,10 @@ export class StoryMemoryAuditor {
 
   public async reseal(sceneOrders?: readonly number[]): Promise<readonly number[]> {
     const reads: IFileSystem = memoizeFileReads(this.request.fileSystem);
-    const state: StoryState = await readStoryState(this.request.paths.storyState, reads);
+    const state: StoryState = await this.ledger().read(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
+    );
     const currentHashes: Map<number, string> = await this.collectCurrentSceneInputHashes(
       reads,
       storyStateSceneOrders(state),
@@ -146,10 +158,10 @@ export class StoryMemoryAuditor {
       return [];
     }
 
-    await writeStoryState(
-      this.request.paths.storyState,
+    await this.ledger().write(
+      this.request.paths.workspaceRoot,
+      this.request.paths.threadId,
       resealStoryState(state, currentHashes, new Set(targets)),
-      this.request.fileSystem,
     );
 
     return targets;

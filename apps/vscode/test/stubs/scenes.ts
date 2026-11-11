@@ -10,6 +10,7 @@ import {
   type SceneBeat,
   type SceneCard,
   type SceneFile,
+  type SceneStoryState,
   type StoryUri
 } from "@storyboard/story-model"
 
@@ -24,7 +25,7 @@ function rosterOf(scenes: readonly SceneFile[]): SceneRoster {
         content: { header: { id: file.stem } },
         entry: {
           scene: file.stem,
-          thread: "main",
+          thread: file.card?.thread ?? "main",
           ...(file.card?.storyTime === undefined ? {} : { storyTime: file.card.storyTime })
         }
       }) as unknown as SceneRosterEntry
@@ -47,11 +48,25 @@ function stemOfSceneUri(sceneUri: StoryUri): string {
   return segment.slice(0, -".card".length)
 }
 
-function scenesOver(load: () => Promise<readonly SceneFile[]>, writeBeats?: WriteStubBeats): WorkspaceScenes {
+export type StubSceneStates = Map<string, SceneStoryState>
+
+function scenesOver(
+  load: () => Promise<readonly SceneFile[]>,
+  writeBeats?: WriteStubBeats,
+  states: StubSceneStates = new Map()
+): WorkspaceScenes {
   const read = async (_root: StoryUri, reference: string): Promise<SceneFile | undefined> =>
     findScene(await load(), reference)
 
   return {
+    readState: async (_root: StoryUri, stem: string) => states.get(stem),
+    writeState: async (_root: StoryUri, stem: string, state: SceneStoryState | undefined) => {
+      if (state === undefined) {
+        states.delete(stem)
+      } else {
+        states.set(stem, state)
+      }
+    },
     loadRoster: async () => rosterOf(await load()),
     find: async (_root: StoryUri, reference: string) => {
       const scene: SceneFile | undefined = findScene(await load(), reference)
@@ -72,8 +87,12 @@ function scenesOver(load: () => Promise<readonly SceneFile[]>, writeBeats?: Writ
   } as unknown as WorkspaceScenes
 }
 
-export function stubScenes(scenes: readonly SceneFile[] = [], writeBeats?: WriteStubBeats): WorkspaceScenes {
-  return scenesOver(async () => scenes, writeBeats)
+export function stubScenes(
+  scenes: readonly SceneFile[] = [],
+  writeBeats?: WriteStubBeats,
+  states?: StubSceneStates
+): WorkspaceScenes {
+  return scenesOver(async () => scenes, writeBeats, states)
 }
 
 type ReadableFileSystem = Pick<IFileSystem, "readFile" | "readDirectory">
@@ -105,10 +124,11 @@ async function readLegacyScenes(fileSystem: ReadableFileSystem, sceneDirectory: 
 export function legacyScenesUnder(
   fileSystem: ReadableFileSystem,
   workspaceRoot: StoryUri,
-  writeBeats?: WriteStubBeats
+  writeBeats?: WriteStubBeats,
+  states?: StubSceneStates
 ): WorkspaceScenes {
   const sceneDirectory: StoryUri = getStoryboardProjectPaths(workspaceRoot).sceneDirectory
-  return scenesOver(() => readLegacyScenes(fileSystem, sceneDirectory), writeBeats)
+  return scenesOver(() => readLegacyScenes(fileSystem, sceneDirectory), writeBeats, states)
 }
 
 const legacyScenePathPattern: RegExp = /\/scene\/([^/]+\.card)$/

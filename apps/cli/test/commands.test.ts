@@ -38,6 +38,7 @@ import { readCardYaml } from './fixtures/cardBundles';
 import {
   listSceneStems,
   readSceneCardYaml,
+  readSceneState,
   writeSceneBundleFromYaml,
 } from './fixtures/sceneBundles';
 
@@ -720,8 +721,8 @@ describe('state generate', () => {
     writeFileSync(join(workspace, 'draft', `${stem}.md`), text);
   }
 
-  function ledger(): string {
-    return readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8');
+  function recordedHash(stem: string): string | undefined {
+    return readSceneState(workspace, stem)?.inputHash;
   }
 
   it('records every scene with a draft in order, and keeps them on a second run', async () => {
@@ -740,9 +741,9 @@ describe('state generate', () => {
       withoutDraft: ['003-third'],
       failures: [],
     });
-    expect(ledger()).toContain('<!-- through-scene: 2 -->');
-    expect(ledger()).toMatch(/<!-- scene-input: 1 sha256:[0-9a-f]{64} -->/);
-    expect(ledger()).toMatch(/<!-- scene-input: 2 sha256:[0-9a-f]{64} -->/);
+    expect(recordedHash('001-first')).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(recordedHash('002-second')).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(readSceneState(workspace, '003-third')).toBeUndefined();
 
     const again = await run('state generate', args(['state', 'generate']));
     expect(again.ok).toBe(true);
@@ -1303,50 +1304,6 @@ describe('scene show', () => {
     );
   }
 
-});
-
-describe('doctor: unreadable ledger lines', () => {
-  function writeLedger(relativePath: string, ...lines: readonly string[]): void {
-    const absolute = join(workspace, ...relativePath.split('/'));
-    mkdirSync(dirname(absolute), { recursive: true });
-    writeFileSync(
-      absolute,
-      ['# 이야기 상태', '<!-- through-scene: 2 -->', '## 확정 사실', ...lines, ''].join('\n'),
-    );
-  }
-
-  it('stays quiet about a ledger it can read', async () => {
-    writeLedger(
-      '.storyboard/memory/storyState.md',
-      '- [1] 사실',
-      '- [2|hana] 사실',
-      '- 태그 없는 사실',
-    );
-
-    const outcome = await run('doctor', args(['doctor']));
-
-    expect(outcome.message).not.toContain('태그를 읽지 못한 원장 줄');
-  });
-
-  it('reports a hand-edited line whose tag no longer parses', async () => {
-    writeLedger('.storyboard/memory/storyState.md', '- [1] 사실', '- [2!!] 망가진 줄');
-
-    const outcome = await run('doctor', args(['doctor']));
-
-    expect(outcome.message).toContain('태그를 읽지 못한 원장 줄이 1개');
-    expect(outcome.message).toContain('[2!!] 망가진 줄');
-  });
-
-  it('looks at the ledger of every declared thread', async () => {
-    await run('project set', args(['project', 'set'], { composition: 'omnibus', episodes: '2' }));
-    writeLedger('.storyboard/memory/storyState.md', '- [1] 사실');
-    writeLedger('.storyboard/memory/threads/ep2/storyState.md', '- [삼] 편 안의 망가진 줄');
-
-    const outcome = await run('doctor', args(['doctor']));
-
-    expect(outcome.message).toContain('태그를 읽지 못한 원장 줄이 1개');
-    expect(outcome.message).toContain('[삼] 편 안의 망가진 줄');
-  });
 });
 
 describe('doctor: interrupted scene rename', () => {

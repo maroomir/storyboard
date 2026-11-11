@@ -1,9 +1,9 @@
+import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import {
   extractDraftBody,
   formatBibleFactLines,
   formatStoryStateForPrompt,
   isStaleChapterSection,
-  readStoryState,
   resolveSceneBackground,
   resolveSceneCharacters,
   selectCharacterKnowledge,
@@ -350,10 +350,13 @@ export class SceneContextReader {
     paths: SceneContextWorkspacePaths,
     currentSceneOrder: number,
   ): Promise<StoryState | undefined> {
-    if (!paths.storyState || currentSceneOrder <= 1) {
+    if (paths.threadId === undefined || currentSceneOrder <= 1) {
       return undefined;
     }
 
-    return await readStoryState(paths.storyState, this.fileSystem);
+    return await new StoryLedger({ scenes: this.scenes, cards: this.cards }).read(
+      paths.workspaceRoot,
+      paths.threadId,
+    );
   }
 }
