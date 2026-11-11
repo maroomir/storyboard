@@ -11,6 +11,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 변경 (호환성 주의)
 
+- **카드 진술을 다루는 CLI 동사가 생겼습니다.** `card set <slug> <facet> "<값>"`·`card unset` 이 `statements.yaml` 에 한 줄을 쓰고 지우며(사람이 답할 수 있는 실행이면 출처 `author`, 아니면 `agent`), `card edit <slug> "<지시>"` 가 스튜디오의 «고치기»로 바로 쓰고 `--propose` 면 세션에 제안과 diff 만 남깁니다. `card remove <slug>` 는 그 카드를 가리키는 곳과 함께 지울 줄을 보여 주고 `--force` 로 함께 정리해 지웁니다. `card show` 는 `--sources`(줄 번호와 출처)·`--history`(세션 기록)를 받고, 카드는 id 대신 slug 로 부릅니다.
 - **`card promote` 가 `card apply` 가 됐습니다.** `card apply [<slug> …]` 가 세션에 남은 카드 제안(노트·인터뷰·스튜디오)을 보여 주고 `statements.yaml` 에 쓰며 `--dry-run` 이면 보여 주기만 합니다. `card discard [<slug> …]` 는 같은 제안을 버립니다(`--change` 는 없어졌습니다). 새 동사 `outline show [--pending]`·`outline apply`·`outline discard` 가 장 계획과 노트가 남긴 시놉시스 후보를 다루고, `status` 가 기다리는 카드 제안과 시놉시스 후보를 «제안» 줄로 알립니다.
 - **0.16 은 0.15 작품을 열지 않습니다.** 작품의 형식 버전(`.storyboard/project.json` 의 `version`)이 `2.0.0` 이 됐고, `1.0.0` 작품은 «0.15 형식»이라고 알리며 거부합니다. 0.15 작품은 0.15.x 로 계속 쓰세요. 변환 스크립트는 없습니다.
 - **실행 잠금이 캐시 DB 로 옮겨 갔습니다.** 한 작품에 쓰는 앱을 하나로 지키는 잠금이 `.storyboard/cache/run.lock` 파일이 아니라 `.storyboard/cache/storyboard.db` 의 표에 있습니다. 확장과 CLI 는 이 DB 를 같은 WebAssembly SQLite 로 엽니다.

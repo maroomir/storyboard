@@ -111,6 +111,24 @@ export interface PendingCardSummary {
   readonly origins: readonly SessionRecord['kind'][];
 }
 
+export interface CardSessionSummary {
+  readonly id: string;
+  readonly kind: SessionRecord['kind'];
+  readonly title: string;
+  readonly openedAt: string;
+  readonly updatedAt: string;
+  readonly pendingCount: number;
+}
+
+function titleOfSession(record: SessionRecord): string {
+  const data: unknown = record.data;
+  const fields: Readonly<Record<string, unknown>> =
+    typeof data === 'object' && data !== null ? (data as Readonly<Record<string, unknown>>) : {};
+  const named: unknown = record.kind === 'absorb' ? fields.location : fields.title;
+
+  return typeof named === 'string' && named.length > 0 ? named : record.kind;
+}
+
 export class CardPendingChangesDesk {
   public constructor(private readonly dependencies: CardPendingChangesDependencies) {}
 
@@ -138,6 +156,31 @@ export class CardPendingChangesDesk {
     }
 
     return summaries;
+  }
+
+  public async listHistory(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<CardPendingResult<readonly CardSessionSummary[]>> {
+    const bundle: ElementBundle | undefined = await this.dependencies.cards.findBundleBySlug(
+      workspaceRoot,
+      slug,
+    );
+    if (bundle === undefined) {
+      return { ok: false, kind: 'missing', message: `카드가 없습니다: ${slug}` };
+    }
+
+    const report: readonly CardSessionSummary[] = (await this.store(workspaceRoot))
+      .listForElement(bundle.header.id)
+      .map((record) => ({
+        id: record.id,
+        kind: record.kind,
+        title: titleOfSession(record),
+        openedAt: record.openedAt,
+        updatedAt: record.updatedAt,
+        pendingCount: record.pendingCount,
+      }));
+    return { ok: true, report };
   }
 
   public async list(

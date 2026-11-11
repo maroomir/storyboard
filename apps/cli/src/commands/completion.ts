@@ -254,6 +254,8 @@ const positionalSlotCompletions: ReadonlyMap<string, PositionalSlotCompletion> =
 >([
   ['<stem>', completeSceneStems],
   ['<id>', completeCardIds],
+  ['<slug>', completeCardIds],
+  ['[<slug>', completeCardIds],
   [`<${cardCategories.join('|')}>`, completeCardCategories],
   [`[${cardCategories.join('|')}]`, completeCardCategories],
   [
