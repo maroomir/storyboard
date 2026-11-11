@@ -2,23 +2,18 @@ import * as vscode from 'vscode';
 
 import {
   parseCardIdFromPath,
-  parseSceneFileName,
   sceneStemPattern,
   draftPath,
   isDirectBackgroundCardFile,
   isDirectCharacterCardFile,
-  isDirectSceneCardFile,
   isDraftMarkdownFile,
+  resolveSceneBundleStem,
+  scenePath,
 } from '@storyboard/story-model';
 
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
-import type {
-  BibleSubjectKind,
-  SceneFileNameParts,
-  StoryUri,
-  StudioTarget,
-} from '@storyboard/story-model';
+import type { BibleSubjectKind, StoryUri, StudioTarget } from '@storyboard/story-model';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 
@@ -68,8 +63,9 @@ export async function computeStudioTarget(focus: StudioFocus | undefined): Promi
     return draftTarget(focus, workspaceFolder);
   }
 
-  if (isDirectSceneCardFile(focus.uri, workspaceFolder)) {
-    return await sceneCardTarget(focus, workspaceFolder);
+  const sceneStem: string | undefined = resolveSceneBundleStem(focus.uri, workspaceFolder);
+  if (sceneStem !== undefined) {
+    return await sceneCardTarget(focus, workspaceFolder, sceneStem);
   }
 
   return cardTarget(focus, workspaceFolder);
@@ -96,21 +92,16 @@ function draftTarget(focus: StudioFocus, workspaceFolder: vscode.WorkspaceFolder
 async function sceneCardTarget(
   focus: StudioFocus,
   workspaceFolder: vscode.WorkspaceFolder,
+  stem: string,
 ): Promise<StudioTarget> {
-  const { uri, hasSelection } = focus;
-  const parts: SceneFileNameParts | undefined = parseSceneFileName(uri.path.split('/').pop() ?? '');
-
-  if (!parts) {
-    return projectTarget(workspaceFolder);
-  }
-
-  const draftUri: StoryUri = draftPath(workspaceFolder.uri, parts.stem);
+  const { hasSelection } = focus;
+  const draftUri: StoryUri = draftPath(workspaceFolder.uri, stem);
 
   return {
     kind: 'scene',
-    label: uri.path.split('/').pop(),
-    entity: { kind: 'scene', key: parts.stem },
-    sceneUri: uri.toString(),
+    label: stem,
+    entity: { kind: 'scene', key: stem },
+    sceneUri: scenePath(workspaceFolder.uri, stem).toString(),
     draftUri: draftUri.toString(),
     hasSelection,
     draftExists: await uriExists(draftUri),
@@ -128,7 +119,7 @@ function cardTarget(focus: StudioFocus, workspaceFolder: vscode.WorkspaceFolder)
 
   return {
     kind: cardKind,
-    label: uri.path.split('/').pop(),
+    label: cardId,
     entity: { kind: cardKind, key: cardId },
     cardUri: uri.toString(),
     hasSelection,

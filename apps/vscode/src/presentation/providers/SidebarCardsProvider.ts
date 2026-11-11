@@ -204,12 +204,12 @@ export const charactersSidebarOptions: SidebarCardsProviderOptions = {
   viewType: sidebarViewIds.characters,
   cardType: 'character',
   title: 'Characters',
-  cardGlob: STORYBOARD_GLOBS.characterCards,
+  cardGlob: STORYBOARD_GLOBS.characterBundleFiles,
 };
 
 export const backgroundsSidebarOptions: SidebarCardsProviderOptions = {
   viewType: sidebarViewIds.backgrounds,
   cardType: 'background',
   title: 'Backgrounds',
-  cardGlob: STORYBOARD_GLOBS.backgroundCards,
+  cardGlob: STORYBOARD_GLOBS.backgroundBundleFiles,
 };

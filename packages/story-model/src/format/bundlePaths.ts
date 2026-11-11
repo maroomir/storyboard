@@ -236,6 +236,20 @@ export function isDirectNarratorCardRelativePath(relativePath: string): boolean 
   return parseElementCardRelativePath('narrator', relativePath) !== undefined;
 }
 
+export function parseSceneBundleStemFromRelativePath(relativePath: string): string | undefined {
+  const segments: readonly string[] = relativePath.replace(/\\/g, '/').split('/');
+  const [directory, bundleDirectory] = segments;
+  const isBundleOrDirectChild: boolean =
+    (segments.length === 2 || segments.length === 3) &&
+    directory === elementKindDirectories.scene;
+
+  return isBundleOrDirectChild &&
+    bundleDirectory !== undefined &&
+    parseBundleDirectoryName('scene', bundleDirectory) !== undefined
+    ? bundleDirectory.slice(0, -STORYBOARD_FILE_EXTENSIONS.card.length)
+    : undefined;
+}
+
 export function parseElementSlugFromCardPath(path: string): string | undefined {
   const segments: readonly string[] = path.replace(/\\/g, '/').split('/');
   const fileName: string | undefined = segments.at(-1);

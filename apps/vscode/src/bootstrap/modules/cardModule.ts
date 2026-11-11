@@ -36,6 +36,7 @@ export class CardModule implements IApplicationModule {
       aiGateway,
       aiProviderRegistry,
       cards,
+      drafts,
       interviews,
       logger,
       proposalReviewService,
@@ -60,7 +61,7 @@ export class CardModule implements IApplicationModule {
         new RenameBackgroundCardCommand({ cards }),
         new PromoteCardCandidatesCommand({ cards }),
       ]),
-      new CardRenameParticipant(logger).register(),
+      new CardRenameParticipant({ cards, drafts, logger }).register(),
       new CardDiagnosticsProvider({ logger }).register(),
       new CardCustomEditorProvider(
         context.extensionUri,

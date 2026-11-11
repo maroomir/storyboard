@@ -74,7 +74,7 @@ export class RelationGraphProvider implements IRelationGraphPanel {
     const storyboardRoot: vscode.Uri | undefined = await resolveStoryboardWorkspaceRoot();
     if (storyboardRoot) {
       const watcher: vscode.FileSystemWatcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(storyboardRoot, STORYBOARD_GLOBS.characterCards),
+        new vscode.RelativePattern(storyboardRoot, STORYBOARD_GLOBS.characterBundleFiles),
       );
       const scheduleRefresh = (): void => {
         void this.refreshWebview();

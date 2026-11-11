@@ -1,70 +1,75 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import {
-  buildCardRenameWorkspaceEdit,
-  parseCardRenameCandidate,
-  validateCardRenameId
-} from "@/infrastructure/vscode/cardRenameEdit"
+import { parseBundleFolderRename, validateCardRenameId } from "@/infrastructure/vscode/bundleFolderRename"
 import { CardRenameParticipant } from "@/presentation/providers/CardRenameParticipant"
-import type { IStoryboardLogger } from '@storyboard/story-engine';
-import {
-  fireWillRenameFiles,
-  FileType,
-  workspace,
-  type WorkspaceEdit as StubWorkspaceEdit,
-  type WorkspaceFolder
-} from "../../../stubs/vscode"
+import type { IStoryboardLogger } from "@storyboard/story-engine"
+import { fireDidRenameFiles, window, workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
-describe("CardRenameParticipant helpers", () => {
-  const workspaceRoot = vscode.Uri.file("/ws/project")
-  const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
+const workspaceRoot = vscode.Uri.file("/ws/project")
+const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
 
-  beforeEach(() => {
-    workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
-      uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
-  })
+beforeEach(() => {
+  workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
+    uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
+})
 
-  it("accepts character card renames within the character directory", () => {
+describe("parseBundleFolderRename", () => {
+  it("reads a character bundle folder rename as a slug change", () => {
     const oldUri = vscode.Uri.file("/ws/project/character/hero.card")
     const newUri = vscode.Uri.file("/ws/project/character/protagonist.card")
 
-    expect(parseCardRenameCandidate(oldUri, newUri)).toEqual({
+    expect(parseBundleFolderRename(oldUri, newUri)).toEqual({
       kind: "character",
       workspaceRoot,
-      oldId: "hero",
-      newId: "protagonist"
+      oldUri,
+      newUri,
+      fromKey: "hero",
+      toKey: "protagonist"
     })
   })
 
-  it("accepts background card renames within the background directory", () => {
-    const oldUri = vscode.Uri.file("/ws/project/background/town.card")
-    const newUri = vscode.Uri.file("/ws/project/background/city.card")
+  it("reads a scene bundle folder rename with its number", () => {
+    const oldUri = vscode.Uri.file("/ws/project/scene/003-rooftop.card")
+    const newUri = vscode.Uri.file("/ws/project/scene/003-roof.card")
 
-    expect(parseCardRenameCandidate(oldUri, newUri)).toEqual({
-      kind: "background",
-      workspaceRoot,
-      oldId: "town",
-      newId: "city"
+    expect(parseBundleFolderRename(oldUri, newUri)).toMatchObject({
+      kind: "scene",
+      fromKey: "003-rooftop",
+      toKey: "003-roof"
     })
   })
 
-  it("ignores non-card files and cross-directory renames", () => {
-    const crossDirOld = vscode.Uri.file("/ws/project/character/hero.card")
-    const crossDirNew = vscode.Uri.file("/ws/project/background/hero.card")
-    const nonCard = vscode.Uri.file("/ws/project/character/readme.txt")
-
-    expect(parseCardRenameCandidate(crossDirOld, crossDirNew)).toBeUndefined()
-    expect(parseCardRenameCandidate(nonCard, crossDirNew)).toBeUndefined()
+  it("ignores files inside a bundle, moves across folders and names that are not bundles", () => {
+    expect(
+      parseBundleFolderRename(
+        vscode.Uri.file("/ws/project/character/hero.card/card.yaml"),
+        vscode.Uri.file("/ws/project/character/hero.card/old.yaml")
+      )
+    ).toBeUndefined()
+    expect(
+      parseBundleFolderRename(
+        vscode.Uri.file("/ws/project/character/hero.card"),
+        vscode.Uri.file("/ws/project/background/hero.card")
+      )
+    ).toBeUndefined()
+    expect(
+      parseBundleFolderRename(
+        vscode.Uri.file("/ws/project/character/hero.card"),
+        vscode.Uri.file("/ws/project/character/Hero Card")
+      )
+    ).toBeUndefined()
   })
 
   it("ignores renames outside the workspace folder", () => {
     workspace.getWorkspaceFolder = (): undefined => undefined
 
-    const oldUri = vscode.Uri.file("/ws/project/character/hero.card")
-    const newUri = vscode.Uri.file("/ws/project/character/protagonist.card")
-
-    expect(parseCardRenameCandidate(oldUri, newUri)).toBeUndefined()
+    expect(
+      parseBundleFolderRename(
+        vscode.Uri.file("/ws/project/character/hero.card"),
+        vscode.Uri.file("/ws/project/character/protagonist.card")
+      )
+    ).toBeUndefined()
   })
 
   it("validates rename ids with cardIdPattern", () => {
@@ -75,85 +80,68 @@ describe("CardRenameParticipant helpers", () => {
   })
 })
 
-describe("buildCardRenameWorkspaceEdit", () => {
-  const workspaceRoot = vscode.Uri.file("/ws/project")
-  const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
+interface ParticipantFixture {
+  readonly participant: CardRenameParticipant
+  readonly cards: { readonly rename: ReturnType<typeof vi.fn> }
+  readonly drafts: { readonly renameScene: ReturnType<typeof vi.fn> }
+}
 
-  beforeEach(() => {
-    workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
-      uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
-    workspace.findFiles = async (): Promise<vscode.Uri[]> => []
-    workspace.fs.stat = async (): Promise<{ type: FileType }> => {
-      throw new Error("not found")
-    }
-  })
+describe("CardRenameParticipant", () => {
+  function createParticipant(renameResult: { ok: boolean; message?: string }): ParticipantFixture {
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const cards = { rename: vi.fn(async () => renameResult) }
+    const drafts = { renameScene: vi.fn(async () => renameResult) }
+    const participant = new CardRenameParticipant({
+      cards: cards as never,
+      drafts: drafts as never,
+      logger: logger as unknown as IStoryboardLogger
+    })
+    return { participant, cards, drafts }
+  }
 
-  it("targets oldUri for the renamed card body text edit", async () => {
-    const oldUri = vscode.Uri.file("/ws/project/character/item.card")
-    const newUri = vscode.Uri.file("/ws/project/character/manjae-jo.card")
-    const cardText = "type: character\nid: item\nname: Item\n"
-
-    workspace.fs.readFile = async (uri): Promise<Uint8Array> => {
-      if (uri.fsPath === oldUri.fsPath) {
-        return new TextEncoder().encode(cardText)
-      }
-      throw new Error(`unexpected read: ${uri.fsPath}`)
-    }
-
-    const edit = await buildCardRenameWorkspaceEdit(oldUri, newUri)
-
-    expect(edit).toBeDefined()
-    const replacements = (edit as vscode.WorkspaceEdit & { getReplacements(): readonly { uri: vscode.Uri; text: string }[] }).getReplacements()
-    const bodyEdit = replacements.find((replacement) => replacement.text.includes("id: manjae-jo"))
-
-    expect(bodyEdit).toBeDefined()
-    expect(bodyEdit?.uri.fsPath).toBe(oldUri.fsPath)
-    expect(bodyEdit?.uri.fsPath).not.toBe(newUri.fsPath)
-  })
-})
-
-describe("CardRenameParticipant.register", () => {
-  const workspaceRoot = vscode.Uri.file("/ws/project")
-  const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
-
-  beforeEach(() => {
-    workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
-      uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
-    workspace.findFiles = async (): Promise<vscode.Uri[]> => []
-    workspace.fs.stat = async (): Promise<{ type: FileType }> => {
-      throw new Error("not found")
-    }
-  })
-
-  it("logs card renames when handling onWillRenameFiles", async () => {
+  it("moves the folder back and renames the card through the engine", async () => {
+    const { participant, cards } = createParticipant({ ok: true })
+    const rename = vi.fn(async () => undefined)
+    workspace.fs.rename = rename
+    const disposable = participant.register()
     const oldUri = vscode.Uri.file("/ws/project/character/hero.card")
     const newUri = vscode.Uri.file("/ws/project/character/protagonist.card")
-    const cardText = "type: character\nid: hero\nname: Hero\n"
-    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-    workspace.fs.readFile = async (uri): Promise<Uint8Array> => {
-      if (uri.fsPath === oldUri.fsPath) {
-        return new TextEncoder().encode(cardText)
-      }
-      throw new Error(`unexpected read: ${uri.fsPath}`)
-    }
+    fireDidRenameFiles({ files: [{ oldUri, newUri }] })
+    await vi.waitFor(() => expect(cards.rename).toHaveBeenCalled())
 
-    new CardRenameParticipant(logger as unknown as IStoryboardLogger).register()
-
-    let waitUntilPromise: Promise<StubWorkspaceEdit | undefined> | undefined
-
-    fireWillRenameFiles({
-      files: [{ oldUri, newUri }],
-      waitUntil(thenable) {
-        waitUntilPromise = thenable
-      }
+    expect(rename).toHaveBeenCalledWith(newUri, oldUri, { overwrite: false })
+    expect(cards.rename).toHaveBeenCalledWith({
+      workspaceRoot,
+      category: "character",
+      fromId: "hero",
+      toId: "protagonist"
     })
+    disposable.dispose()
+  })
 
-    await waitUntilPromise
+  it("renames a scene through the scene verb and warns when the engine refuses", async () => {
+    const { participant, drafts } = createParticipant({ ok: false, message: "번호는 바꿀 수 없습니다." })
+    workspace.fs.rename = vi.fn(async () => undefined)
+    const warn = vi.spyOn(window, "showWarningMessage")
+    const disposable = participant.register()
 
-    expect(logger.info).toHaveBeenCalledWith(
-      `card rename participant: ${oldUri.fsPath} -> ${newUri.fsPath} (n=1)`
-    )
-    expect(logger.info).toHaveBeenCalledWith("card rename participant: applied edits for 1 card(s)")
+    fireDidRenameFiles({
+      files: [
+        {
+          oldUri: vscode.Uri.file("/ws/project/scene/003-rooftop.card"),
+          newUri: vscode.Uri.file("/ws/project/scene/005-rooftop.card")
+        }
+      ]
+    })
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled())
+
+    expect(drafts.renameScene).toHaveBeenCalledWith({
+      workspaceRoot,
+      fromStem: "003-rooftop",
+      toStem: "005-rooftop"
+    })
+    expect(warn.mock.calls[0]?.[0]).toContain("번호는 바꿀 수 없습니다.")
+    disposable.dispose()
   })
 })

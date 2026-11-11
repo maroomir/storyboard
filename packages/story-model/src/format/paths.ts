@@ -66,17 +66,19 @@ export const STORYBOARD_FILE_EXTENSIONS: StoryboardFileExtensions = {
 };
 
 interface StoryboardGlobs {
-  readonly characterCards: string;
-  readonly backgroundCards: string;
-  readonly sceneCards: string;
+  readonly characterBundleFiles: string;
+  readonly backgroundBundleFiles: string;
+  readonly sceneBundleFiles: string;
   readonly draftMarkdown: string;
   readonly anyDraftMarkdown: string;
 }
 
+const bundleYamlExtension: string = '.yaml';
+
 export const STORYBOARD_GLOBS: StoryboardGlobs = {
-  characterCards: `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
-  backgroundCards: `${STORYBOARD_RELATIVE_PATHS.backgroundDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
-  sceneCards: `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}`,
+  characterBundleFiles: `${STORYBOARD_RELATIVE_PATHS.characterDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}/*${bundleYamlExtension}`,
+  backgroundBundleFiles: `${STORYBOARD_RELATIVE_PATHS.backgroundDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}/*${bundleYamlExtension}`,
+  sceneBundleFiles: `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/*${STORYBOARD_FILE_EXTENSIONS.card}/*${bundleYamlExtension}`,
   draftMarkdown: `${STORYBOARD_RELATIVE_PATHS.draftDirectory}/**/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
   anyDraftMarkdown: `**/${STORYBOARD_RELATIVE_PATHS.draftDirectory}/*${STORYBOARD_FILE_EXTENSIONS.draft}`,
 };
