@@ -29,6 +29,8 @@ import {
   type LogTone,
   type TuiSession,
   type TuiSessionOptions,
+  tuiPromptLabels,
+  type TuiMode,
 } from '@/tui/session';
 
 export interface StoryboardTuiProps extends TuiSessionOptions {
@@ -164,7 +166,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   useEffect(() => {
     append(
       'hint',
-      '명령을 그대로 치거나(예: draft generate --all), /help 로 목록을 보세요. Tab 으로 제안을 고르고 /quit 로 나갑니다.',
+      '명령을 그대로 치거나(예: draft generate --all), /help 로 목록을 보세요. Tab 으로 제안을 고르고, 제안이 없을 때 Tab 은 studio> 채팅 모드로 바꿉니다. /quit 로 나갑니다.',
     );
     if (props.header.hint) {
       append('hint', props.header.hint);
@@ -172,9 +174,10 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   }, [append, props.header.hint]);
 
   const [inputValue, setInputValue] = useState('');
+  const [mode, setMode] = useState<TuiMode>('command');
   const suggestions: InputSuggestion[] = useMemo(
-    () => suggestForInput(inputValue, props.cwd),
-    [inputValue, props.cwd],
+    () => suggestForInput(inputValue, props.cwd, mode),
+    [inputValue, props.cwd, mode],
   );
 
   const editor: LineEditorState = useLineEditor({
@@ -190,6 +193,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
     },
     onExit: () => exit(),
     onToggleOutput: () => setIsOutputExpanded((expanded) => !expanded),
+    onToggleMode: () => setMode(session.toggleMode()),
   });
 
   useEffect(() => {
@@ -266,7 +270,9 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
 
         {editor.search === undefined ? (
           <Box paddingX={1}>
-            <Text color={isBusy ? theme.muted : theme.accent}>{isBusy ? '… ' : '❯ '}</Text>
+            <Text color={isBusy ? theme.muted : theme.accent}>
+              {isBusy ? '… ' : `${tuiPromptLabels[mode]} `}
+            </Text>
             <Text>
               {editor.value.slice(0, editor.cursor)}
               <Text inverse>{editor.value[editor.cursor] ?? ' '}</Text>

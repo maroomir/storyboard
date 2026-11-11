@@ -97,6 +97,12 @@ describe('suggestForInput', () => {
     expect(suggestForInput('card show @', cwd).map((s) => s.text)).toEqual(['@01-ambush', '@hana']);
   });
 
+  it('offers the studio slash commands and verbs after a slash in studio mode', () => {
+    expect(suggestForInput('/ap', cwd, 'studio').map((s) => s.text)).toEqual(['/apply', '/apikey']);
+    expect(suggestForInput('/card sh', cwd, 'studio').map((s) => s.line)).toContain('/card show ');
+    expect(suggestForInput('/ap', cwd, 'command').map((s) => s.text)).toEqual([]);
+  });
+
   it('falls back to the closest verbs for a misspelled one', () => {
     expect(suggestForInput('scen genrate', cwd).map((s) => s.text)).toContain('draft generate');
   });
@@ -387,7 +393,7 @@ describe('StoryboardTui', () => {
 
     stdin.write('\t');
     await wait(20);
-    expect(lastFrame()).toContain('❯ config show');
+    expect(lastFrame()).toContain('storyboard> config show');
   });
 
   it('closes the list with Esc, then clears the line with a second Esc', async () => {
@@ -403,11 +409,32 @@ describe('StoryboardTui', () => {
     stdin.write('\u001b');
     await wait(50);
     expect(lastFrame()).not.toContain('Tab 확정');
-    expect(lastFrame()).toContain('❯ config s');
+    expect(lastFrame()).toContain('storyboard> config s');
 
     stdin.write('\u001b');
     await wait(50);
     expect(lastFrame()).not.toContain('config s');
+  });
+
+  it('switches to the studio prompt with Tab and asks for a card to point at', async () => {
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    stdin.write('\t');
+    await wait(20);
+    expect(lastFrame()).toMatch(/^ *studio>\s*$/m);
+
+    await typeKeys(stdin, '말투를 더 퉁명스럽게');
+    await wait(20);
+    stdin.write('\r');
+    await wait(300);
+    expect(lastFrame()).toContain('고칠 카드를 @ 로 가리켜 주세요');
+
+    stdin.write('\t');
+    await wait(20);
+    expect(lastFrame()).toMatch(/^ *storyboard>\s*$/m);
   });
 
   it('keeps a status line under the prompt', async () => {
@@ -426,7 +453,7 @@ describe('StoryboardTui', () => {
     await wait(50);
 
     const lines = (lastFrame() ?? '').split('\n');
-    expect(lines.findIndex((line) => line.includes('❯'))).toBeLessThan(
+    expect(lines.findIndex((line) => line.includes('storyboard>'))).toBeLessThan(
       lines.findIndex((line) => line.includes('«소설 생성» 작업 중')),
     );
     expect(lastFrame()).toContain('/help 도움말');
@@ -479,7 +506,7 @@ describe('StoryboardTui', () => {
 
     stdin.write('\r');
     await wait(50);
-    expect(lastFrame()).toContain('❯ /clear');
+    expect(lastFrame()).toContain('storyboard> /clear');
   });
 
   it('changes a setting through /config with the same write config set makes', async () => {

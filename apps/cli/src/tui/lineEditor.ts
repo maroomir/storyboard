@@ -7,6 +7,7 @@ export interface LineEditorOptions {
   readonly onSubmit: (line: string) => void;
   readonly onExit: () => void;
   readonly onToggleOutput?: () => void;
+  readonly onToggleMode?: () => void;
 }
 
 export interface HistorySearch {
@@ -126,8 +127,12 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
         return;
       }
 
-      if (key.tab && isSuggestionOpen) {
-        replace(options.suggestions[selectedSuggestion] ?? options.suggestions[0] ?? value);
+      if (key.tab) {
+        if (isSuggestionOpen) {
+          replace(options.suggestions[selectedSuggestion] ?? options.suggestions[0] ?? value);
+        } else {
+          options.onToggleMode?.();
+        }
         return;
       }
 

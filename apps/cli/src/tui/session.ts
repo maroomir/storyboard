@@ -43,6 +43,25 @@ interface SlashCommand {
   readonly summary: string;
 }
 
+export type TuiMode = 'command' | 'studio';
+
+export const tuiPromptLabels: Readonly<Record<TuiMode, string>> = {
+  command: 'storyboard>',
+  studio: 'studio>',
+};
+
+export const studioSlashCommands: readonly SlashCommand[] = [
+  { name: '/apply', summary: 'studio>: 가리킨 카드의 제안을 statements.yaml 에 씁니다' },
+  { name: '/discard', summary: 'studio>: 가리킨 카드의 제안을 버립니다' },
+];
+
+const studioModeHelp: readonly string[] = [
+  'Tab 으로 storyboard> 와 studio> 를 오갑니다 (제안 목록이 열려 있으면 Tab 은 제안을 고릅니다).',
+  'studio> 에서 맨 글은 스튜디오로 갑니다. @elia 처럼 카드를 가리키고 고칠 것을 적으세요.',
+  '  / 로 시작하면 명령 모드의 동사 그대로 돕니다 (/card show elia --sources).',
+  '  제안은 /apply 로 받고 /discard 로 버립니다.',
+];
+
 export const slashCommands: readonly SlashCommand[] = [
   { name: '/help', summary: '명령 목록 · /help <명령> 은 그 명령의 옵션' },
   { name: '/doctor', summary: '설정·프로바이더·워크스페이스 점검' },
@@ -107,11 +126,35 @@ function isVerbOrVerbStart(words: string): boolean {
   return commandCatalog.some((spec) => spec.verb === words || spec.verb.startsWith(`${words} `));
 }
 
-export function suggestForInput(input: string, cwd: string = process.cwd()): InputSuggestion[] {
+function suggestStudioSlash(trimmed: string, cwd: string): InputSuggestion[] {
+  const isNamingCommand: boolean = !/\s/.test(trimmed);
+  const named: InputSuggestion[] = isNamingCommand
+    ? [...studioSlashCommands, ...slashCommands]
+        .filter((command) => command.name.startsWith(trimmed))
+        .map((command) => ({ text: command.name, summary: command.summary, line: `${command.name} ` }))
+    : [];
+  const verbs: InputSuggestion[] = suggestForInput(trimmed.slice(1), cwd).map((suggestion) => ({
+    ...suggestion,
+    text: `/${suggestion.text}`,
+    line: `/${suggestion.line}`,
+  }));
+
+  return [...named, ...verbs];
+}
+
+export function suggestForInput(
+  input: string,
+  cwd: string = process.cwd(),
+  mode: TuiMode = 'command',
+): InputSuggestion[] {
   const trimmed: string = input.trimStart();
 
   if (trimmed.length === 0) {
     return [];
+  }
+
+  if (mode === 'studio' && trimmed.startsWith('/')) {
+    return suggestStudioSlash(trimmed, cwd);
   }
 
   if (trimmed.startsWith('/')) {
@@ -169,7 +212,10 @@ export function renderVerbList(): string {
     '  /help <묶음> 은 한 묶음의 명령, /help <명령> 은 한 명령의 옵션',
     '',
     '슬래시 명령',
-    ...slashCommands.map((c) => `  ${c.name.padEnd(12)}${c.summary}`),
+    ...[...slashCommands, ...studioSlashCommands].map((c) => `  ${c.name.padEnd(12)}${c.summary}`),
+    '',
+    '채팅 모드',
+    ...studioModeHelp.map((line) => `  ${line}`),
   ].join('\n');
 }
 
@@ -233,6 +279,16 @@ function describeResultTone(result: DispatchResult): LogTone {
 export interface TuiSession {
   readonly run: (line: string) => Promise<void>;
   readonly interrupt: () => string;
+  readonly toggleMode: () => TuiMode;
+}
+
+function extractMentions(line: string): { readonly mentions: readonly string[]; readonly text: string } {
+  const words: readonly string[] = splitCommandLine(line);
+  const mentions: readonly string[] = words
+    .filter((word) => word.startsWith('@') && word.length > 1)
+    .map((word) => word.slice(1));
+
+  return { mentions, text: words.filter((word) => !word.startsWith('@')).join(' ').trim() };
 }
 
 const canReadlineShareStdinWithTheScreen: boolean = false;
@@ -250,6 +306,8 @@ class StoryboardTuiSession implements TuiSession {
   private pauseRequests: PauseRequests = new PauseRequests();
   private stopShellCommand: (() => void) | undefined = undefined;
   private readonly spending: SpendingEntry[] = [];
+  private mode: TuiMode = 'command';
+  private focusedCard: string | undefined = undefined;
 
   public constructor(
     private readonly options: TuiSessionOptions,
@@ -267,6 +325,11 @@ class StoryboardTuiSession implements TuiSession {
       : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.';
   };
 
+  public readonly toggleMode = (): TuiMode => {
+    this.mode = this.mode === 'command' ? 'studio' : 'command';
+    return this.mode;
+  };
+
   public readonly run = async (line: string): Promise<void> => {
     const trimmed: string = line.trim();
 
@@ -274,10 +337,15 @@ class StoryboardTuiSession implements TuiSession {
       return;
     }
 
-    this.sink.append('input', trimmed);
+    this.sink.append('input', this.mode === 'studio' ? `${tuiPromptLabels.studio} ${trimmed}` : trimmed);
 
     if (trimmed.startsWith('!')) {
       await this.runShellCommand(trimmed.slice(1));
+      return;
+    }
+
+    if (this.mode === 'studio') {
+      await this.runStudioLine(trimmed);
       return;
     }
 
@@ -305,6 +373,43 @@ class StoryboardTuiSession implements TuiSession {
         announce: (line) => sink.append('hint', line),
       }),
     }).dispatch(argv);
+  }
+
+  private async runStudioLine(trimmed: string): Promise<void> {
+    if (trimmed.startsWith('/')) {
+      await this.runStudioSlash(trimmed);
+      return;
+    }
+
+    const { mentions, text } = extractMentions(trimmed);
+    this.focusedCard = mentions.at(-1) ?? this.focusedCard;
+    if (this.focusedCard === undefined) {
+      this.sink.append('hint', '고칠 카드를 @ 로 가리켜 주세요 (예: @elia 말투를 더 퉁명스럽게).');
+      return;
+    }
+    if (text.length === 0) {
+      this.sink.append('hint', `${this.focusedCard} 를 가리켰습니다. 고칠 것을 적어 주세요.`);
+      return;
+    }
+
+    this.show(await this.runArgv(['card', 'edit', this.focusedCard, text, '--propose']));
+    this.sink.append('hint', '/apply 로 적용, /discard 로 버림');
+  }
+
+  private async runStudioSlash(trimmed: string): Promise<void> {
+    const [name] = trimmed.split(/\s+/);
+    const focus: string[] = this.focusedCard === undefined ? [] : [this.focusedCard];
+
+    if (name === '/apply' || name === '/discard') {
+      this.show(await this.runArgv(['card', name.slice(1), ...focus]));
+      return;
+    }
+    if (slashCommands.some((command) => command.name === name)) {
+      await this.runSlashCommand(trimmed);
+      return;
+    }
+
+    await this.runCommandLine(trimmed.slice(1));
   }
 
   private async runShellCommand(command: string): Promise<void> {

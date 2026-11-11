@@ -131,6 +131,13 @@ picks, Esc clears), `/help` lists everything, `/doctor` and `/setup <id>` run th
 or Ctrl+C leaves. `storyboard tui` opens it explicitly; in a pipe it refuses and points back to the
 one-shot form, so agents never end up inside it.
 
+With no suggestion open, Tab switches the prompt between `storyboard>` and `studio>`. In the
+chat mode a plain line goes to the studio: point at a card with `@elia` and say what to change
+(`@elia 말투를 더 퉁명스럽게`); the studio leaves a proposal and its diff, `/apply` writes it and
+`/discard` drops it. A line starting with `/` runs a verb as in the command mode
+(`/card show elia --sources`), and completion follows the prefix — card slugs after `@`, the
+shell's list after `/`.
+
 ![Completion in the interactive screen](docs/screenshots/12-tui-completion.png)
 
 A long run draws a progress rail in place, and one Ctrl+C stops it at the next scene boundary:
