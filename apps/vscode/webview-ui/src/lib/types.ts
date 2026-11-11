@@ -45,6 +45,7 @@ import type {
   InterviewOpening,
   InterviewQuestion,
   InterviewSessionSummary,
+  CardView,
 } from '@storyboard/story-model/contracts';
 
 export type {
@@ -149,13 +150,13 @@ export type { NarratorCard };
 
 export type EditorCard = StoryboardCard | SceneCard | NarratorCard;
 
-export interface CardEditorInitialData {
+export type { CardView, CardViewLine, CardViewSection } from '@storyboard/story-model/contracts';
+
+export interface CardViewerData {
   readonly documentUri: string;
-  readonly rawText: string;
-  readonly card?: EditorCard;
+  readonly view?: CardView;
+  readonly warnings: readonly string[];
   readonly imageUri?: string;
-  readonly characterRoster?: readonly CharacterRosterEntry[];
-  readonly narratorRoster?: readonly NarratorSummary[];
   readonly error?: string;
 }
 

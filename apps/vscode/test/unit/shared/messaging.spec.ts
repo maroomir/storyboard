@@ -22,23 +22,17 @@ describe("storyboard messaging protocol", () => {
     expect(request.payload).toEqual({ type: "character" })
   })
 
-  it("parses cards.writeRaw request", () => {
+  it("parses a card viewer action with an empty payload", () => {
     const request = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,
       type: "request",
-      id: "cards-write-raw-1",
-      method: "cards.writeRaw",
-      payload: {
-        uri: "file:///workspace/character/elia.card",
-        rawText: "type: character\nid: elia\nname: 엘리아\n"
-      }
+      id: "cards-open-text-1",
+      method: "cards.openText",
+      payload: {}
     })
 
-    expect(request.method).toBe("cards.writeRaw")
-    expect(request.payload).toEqual({
-      uri: "file:///workspace/character/elia.card",
-      rawText: "type: character\nid: elia\nname: 엘리아\n"
-    })
+    expect(request.method).toBe("cards.openText")
+    expect(request.payload).toEqual({})
   })
 
   it("parses project.readContract and project.updateContract requests", () => {
@@ -130,7 +124,7 @@ describe("storyboard messaging protocol", () => {
         protocolVersion: storyboardMessageProtocolVersion,
         type: "request",
         id: "request-1",
-        method: "cards.read",
+        method: "cards.open",
         payload: {}
       })
     ).toThrow()

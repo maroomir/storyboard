@@ -16,6 +16,12 @@ export const characterRoles: readonly [CharacterRole, ...CharacterRole[]] = [
   'extra',
 ];
 
+export const characterRoleLabels: Record<CharacterRole, string> = {
+  main: '주연',
+  supporting: '조연',
+  extra: '단역',
+};
+
 export function isCharacterRole(value: string | undefined): value is CharacterRole {
   return value === 'main' || value === 'supporting' || value === 'extra';
 }

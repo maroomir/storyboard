@@ -2,13 +2,8 @@ import { z } from 'zod';
 
 import { characterRoles } from '#model/element/character';
 import { cardSchema, cardTypes, type CardType } from '#model/format/card';
-import { narratorCardSchema } from '#model/format/narrator';
-import { sceneCardSchema } from '#model/format/scene';
-import { cardCollectProposalSchema, type CardCollectProposal } from '#model/shared/cardCollect';
 import { uriStringSchema } from '#model/shared/messaging/atoms';
 import type { StoryboardCard } from '#model/format/card';
-import type { NarratorCard } from '#model/format/narrator';
-import type { SceneCard } from '#model/format/scene';
 
 export interface CardsListRequestPayload {
   type?: CardType;
@@ -16,44 +11,6 @@ export interface CardsListRequestPayload {
 
 export const cardsListRequestPayloadSchema: z.ZodType<CardsListRequestPayload> = z.object({
   type: z.enum(cardTypes).optional(),
-});
-
-export interface CardsReadRequestPayload {
-  uri: string;
-}
-
-export const cardsReadRequestPayloadSchema: z.ZodType<CardsReadRequestPayload> = z.object({
-  uri: uriStringSchema,
-});
-
-type CardFileContent = StoryboardCard | SceneCard | NarratorCard;
-
-const workspaceCardSchema: z.ZodType<CardFileContent> = z.union([
-  cardSchema,
-  sceneCardSchema,
-  narratorCardSchema,
-]);
-
-export interface CardsWriteRequestPayload {
-  uri: string;
-  card: CardFileContent;
-  rawText?: string;
-}
-
-export const cardsWriteRequestPayloadSchema: z.ZodType<CardsWriteRequestPayload> = z.object({
-  uri: uriStringSchema,
-  card: workspaceCardSchema,
-  rawText: z.string().optional(),
-});
-
-export interface CardsWriteRawRequestPayload {
-  uri: string;
-  rawText: string;
-}
-
-export const cardsWriteRawRequestPayloadSchema: z.ZodType<CardsWriteRawRequestPayload> = z.object({
-  uri: uriStringSchema,
-  rawText: z.string(),
 });
 
 export interface CardsCreatePlaceholderRequestPayload {
@@ -80,36 +37,6 @@ export const cardsResolveImageUriRequestPayloadSchema: z.ZodType<CardsResolveIma
     relativePath: z.string().trim().min(1),
   });
 
-export interface CardsCollectRequestPayload {
-  uri: string;
-}
-
-export const cardsCollectRequestPayloadSchema: z.ZodType<CardsCollectRequestPayload> = z.object({
-  uri: uriStringSchema,
-});
-
-export interface CardsApplyCollectRequestPayload {
-  uri: string;
-  accepted: CardCollectProposal[];
-}
-
-export const cardsApplyCollectRequestPayloadSchema: z.ZodType<CardsApplyCollectRequestPayload> =
-  z.object({
-    uri: uriStringSchema,
-    accepted: z.array(cardCollectProposalSchema),
-  });
-
-export interface CardsPreviewCollectRequestPayload {
-  uri: string;
-  accepted: CardCollectProposal[];
-}
-
-export const cardsPreviewCollectRequestPayloadSchema: z.ZodType<CardsPreviewCollectRequestPayload> =
-  z.object({
-    uri: uriStringSchema,
-    accepted: z.array(cardCollectProposalSchema),
-  });
-
 export interface CardsOpenRequestPayload {
   uri: string;
 }
@@ -117,15 +44,6 @@ export interface CardsOpenRequestPayload {
 export const cardsOpenRequestPayloadSchema: z.ZodType<CardsOpenRequestPayload> = z.object({
   uri: uriStringSchema,
 });
-
-export interface CardsStructureSceneRequestPayload {
-  uri: string;
-}
-
-export const cardsStructureSceneRequestPayloadSchema: z.ZodType<CardsStructureSceneRequestPayload> =
-  z.object({
-    uri: uriStringSchema,
-  });
 
 export interface CardsDeleteRequestPayload {
   uri: string;
@@ -167,34 +85,6 @@ export const cardsListResponsePayloadSchema: z.ZodType<CardsListResponsePayload>
   cards: z.array(cardSummarySchema),
 });
 
-export interface CardsReadResponsePayload {
-  card: CardFileContent;
-}
-
-export const cardsReadResponsePayloadSchema: z.ZodType<CardsReadResponsePayload> = z.object({
-  card: workspaceCardSchema,
-});
-
-export interface CardsWriteResponsePayload {
-  card: CardFileContent;
-}
-
-export const cardsWriteResponsePayloadSchema: z.ZodType<CardsWriteResponsePayload> = z.object({
-  card: workspaceCardSchema,
-});
-
-export interface CardsWriteRawResponsePayload {
-  card: CardFileContent;
-  rawText: string;
-}
-
-export const cardsWriteRawResponsePayloadSchema: z.ZodType<CardsWriteRawResponsePayload> = z.object(
-  {
-    card: workspaceCardSchema,
-    rawText: z.string(),
-  },
-);
-
 export interface CardsCreatePlaceholderResponsePayload {
   card: StoryboardCard;
   uri: string;
@@ -215,30 +105,6 @@ export const cardsResolveImageUriResponsePayloadSchema: z.ZodType<CardsResolveIm
     uri: uriStringSchema,
   });
 
-export interface CardsCollectResponsePayload {
-  proposals: CardCollectProposal[];
-}
-
-export const cardsCollectResponsePayloadSchema: z.ZodType<CardsCollectResponsePayload> = z.object({
-  proposals: z.array(cardCollectProposalSchema),
-});
-
-export interface CardsApplyCollectResponsePayload {
-  card: StoryboardCard;
-}
-
-export const cardsApplyCollectResponsePayloadSchema: z.ZodType<CardsApplyCollectResponsePayload> =
-  z.object({
-    card: cardSchema,
-  });
-
-export interface CardsPreviewCollectResponsePayload {
-  [key: string]: never;
-}
-
-export const cardsPreviewCollectResponsePayloadSchema: z.ZodType<CardsPreviewCollectResponsePayload> =
-  z.object({});
-
 export interface SceneStructureProposal {
   purpose?: string;
   conflict?: string;
@@ -257,15 +123,6 @@ export const sceneStructureProposalSchema: z.ZodType<SceneStructureProposal> = z
   neededCanon: z.array(z.string()).optional(),
 });
 
-export interface CardsStructureSceneResponsePayload {
-  proposal: SceneStructureProposal;
-}
-
-export const cardsStructureSceneResponsePayloadSchema: z.ZodType<CardsStructureSceneResponsePayload> =
-  z.object({
-    proposal: sceneStructureProposalSchema,
-  });
-
 export interface CardsOpenResponsePayload {
   [key: string]: never;
 }
@@ -276,3 +133,17 @@ export interface CardsDeleteResponsePayload {
 }
 
 export const cardsDeleteResponsePayloadSchema: z.ZodType<CardsDeleteResponsePayload> = z.object({});
+
+export interface CardsViewerActionRequestPayload {
+  [key: string]: never;
+}
+
+export const cardsViewerActionRequestPayloadSchema: z.ZodType<CardsViewerActionRequestPayload> =
+  z.object({});
+
+export interface CardsViewerActionResponsePayload {
+  [key: string]: never;
+}
+
+export const cardsViewerActionResponsePayloadSchema: z.ZodType<CardsViewerActionResponsePayload> =
+  z.object({});

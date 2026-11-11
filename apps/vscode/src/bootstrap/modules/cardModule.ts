@@ -8,13 +8,9 @@ import { RecommendBackgroundCardsCommand } from '@/presentation/commands/recomme
 import { RecommendCharacterCardsCommand } from '@/presentation/commands/recommendCharacterCardsCommand';
 import { RenameBackgroundCardCommand } from '@/presentation/commands/renameBackgroundCardCommand';
 import { RenameCharacterCardCommand } from '@/presentation/commands/renameCharacterCardCommand';
-import {
-  CardCustomEditorProvider,
-  collectPreviewScheme,
-} from '@/presentation/providers/CardCustomEditorProvider';
+import { CardCustomEditorProvider } from '@/presentation/providers/CardCustomEditorProvider';
 import { CardDiagnosticsProvider } from '@/presentation/providers/CardDiagnosticsProvider';
 import { CardRenameParticipant } from '@/presentation/providers/CardRenameParticipant';
-import { PreviewDocuments } from '@/presentation/providers/previewDocuments';
 import {
   SidebarCardsProvider,
   backgroundsSidebarOptions,
@@ -32,16 +28,8 @@ export class CardModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    const {
-      aiGateway,
-      aiProviderRegistry,
-      cards,
-      drafts,
-      logger,
-      proposalReviewService,
-      usageRecorder,
-    } = this.platform;
-    const collectPreview: PreviewDocuments = new PreviewDocuments(collectPreviewScheme);
+    const { aiProviderRegistry, cards, drafts, logger, proposalReviewService, usageRecorder } =
+      this.platform;
     const sidebarDependencies: ConstructorParameters<typeof SidebarCardsProvider>[1] = {
       aiProviderRegistry,
       cardSidebarRepository: cards.sidebar,
@@ -49,7 +37,6 @@ export class CardModule implements IApplicationModule {
     };
 
     this.disposables.add(
-      collectPreview.register(),
       new CommandRegistrar().register([
         new CreateCharacterCardCommand({ cards }),
         new CreateBackgroundCardCommand({ cards }),
@@ -62,11 +49,7 @@ export class CardModule implements IApplicationModule {
       ]),
       new CardRenameParticipant({ cards, drafts, logger }).register(),
       new CardDiagnosticsProvider({ logger }).register(),
-      new CardCustomEditorProvider(
-        context.extensionUri,
-        { aiGateway, aiProviderRegistry, cards, usageRecorder, logger },
-        collectPreview.store,
-      ).register(),
+      new CardCustomEditorProvider(context.extensionUri, { cards, logger }).register(),
       new SidebarCardsProvider(
         context.extensionUri,
         sidebarDependencies,
