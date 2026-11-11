@@ -38,10 +38,6 @@ export interface StoryboardProjectPaths {
   readonly sceneCacheDirectory: StoryUri;
   readonly revisionRoundsDirectory: StoryUri;
   readonly chapterSummaries: StoryUri;
-  readonly sceneDialogueDirectory: StoryUri;
-  readonly voiceSeeds: StoryUri;
-  readonly personaMemoryDirectory: StoryUri;
-  readonly backgroundMemoryDirectory: StoryUri;
   readonly cardCacheDirectory: StoryUri;
   readonly noteCacheDirectory: StoryUri;
   readonly noteSource: StoryUri;
@@ -108,10 +104,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     revisionRoundsDirectory: resolve(STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory),
     chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
-    sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
-    voiceSeeds: resolve(STORYBOARD_RELATIVE_PATHS.voiceSeeds),
-    personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
-    backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
     noteCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.noteCacheDirectory),
     noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
@@ -155,11 +147,6 @@ export function resolveThreadPaths(
     ...paths,
     threadId,
     chapterSummaries: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
-    sceneDialogueDirectory: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
-    personaMemoryDirectory: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
-    backgroundMemoryDirectory: resolveThreadPath(
-      STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory,
-    ),
   };
 }
 

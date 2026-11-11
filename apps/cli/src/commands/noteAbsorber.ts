@@ -151,7 +151,7 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
 
   if (outcome.seededCharacters.length > 0) {
     lines.push(
-      `노트의 예시 대사를 말투 표본으로 두었습니다 (.storyboard/memory/voiceSeeds.json): ${outcome.seededCharacters.join(', ')}`,
+      `노트의 예시 대사를 말투 표본으로 두었습니다 (인물 번들 memory/main.yaml 의 voiceSample): ${outcome.seededCharacters.join(', ')}`,
     );
   }
 

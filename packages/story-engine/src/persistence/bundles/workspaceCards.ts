@@ -17,6 +17,7 @@ import {
   type CharacterCard,
   type CharacterHeader,
   type ElementBundleContent,
+  type ElementMemory,
   type ElementHeader,
   type ElementKind,
   type ElementSlugLookup,
@@ -30,6 +31,8 @@ import {
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { ElementIndexStore } from '#engine/persistence/cache/elementIndexStore';
+import { BundleFileAccess } from '#engine/persistence/bundles/bundleFileAccess';
+import { ElementMemoryRepository } from '#engine/persistence/bundles/elementMemoryRepository';
 import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import {
   ElementBundleRepository,
@@ -302,6 +305,25 @@ export class WorkspaceCards {
     return joinStoryPath(workspaceRoot, ...renamed.path.split('/'));
   }
 
+  public async readMemory(
+    workspaceRoot: StoryUri,
+    kind: CardBundleKind,
+    slug: string,
+    threadId: string,
+  ): Promise<ElementMemory> {
+    return await this.memoryRepository(workspaceRoot).read(this.bundlePath(kind, slug), threadId);
+  }
+
+  public async writeMemory(
+    workspaceRoot: StoryUri,
+    kind: CardBundleKind,
+    slug: string,
+    threadId: string,
+    memory: ElementMemory,
+  ): Promise<void> {
+    await this.memoryRepository(workspaceRoot).write(this.bundlePath(kind, slug), threadId, memory);
+  }
+
   public bundleUri(workspaceRoot: StoryUri, kind: CardBundleKind, slug: string): StoryUri {
     return joinStoryPath(workspaceRoot, ...this.bundlePath(kind, slug).split('/'));
   }
@@ -333,6 +355,12 @@ export class WorkspaceCards {
       'character',
       card.id,
       planCharacterBundle(card, { ...optionalCurrent(current), newId, lookup, source }),
+    );
+  }
+
+  private memoryRepository(workspaceRoot: StoryUri): ElementMemoryRepository {
+    return new ElementMemoryRepository(
+      new BundleFileAccess({ fileSystem: this.dependencies.fileSystem, workspaceRoot }),
     );
   }
 

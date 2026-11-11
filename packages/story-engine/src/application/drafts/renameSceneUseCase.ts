@@ -12,7 +12,6 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   joinUri,
-  resolveThreadPaths,
   type StoryboardProjectPaths,
   type SceneFileNameParts,
   type RevisionPlan,
@@ -104,9 +103,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   ): Promise<RenameSceneResult> {
     const { from, to } = rename;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
-    const memoryScopes: readonly StoryboardProjectPaths[] = await this.listMemoryScopes(paths);
-    const moves: PlannedWrite[] = await this.planMoves(paths, memoryScopes, rename);
-    const rewrites: PlannedWrite[] = await this.planRewrites(paths, memoryScopes, rename);
+    const moves: PlannedWrite[] = await this.planMoves(paths, rename);
+    const rewrites: PlannedWrite[] = await this.planRewrites(paths, rename);
 
     await this.applyPlannedWrites(paths, rename, moves, rewrites);
     await this.renameRevisionPlanScene(root, rename);
@@ -167,26 +165,15 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     await this.host.fileSystem.delete(paths.sceneRenameJournal);
   }
 
-  private async listMemoryScopes(
-    paths: StoryboardProjectPaths,
-  ): Promise<readonly StoryboardProjectPaths[]> {
-    const threadIds: string[] = (await this.listEntries(paths.threadMemoryDirectory))
-      .filter(([, entry]) => entry.type === 'directory')
-      .map(([name]) => name);
-
-    return [paths, ...threadIds.map((threadId) => resolveThreadPaths(paths, threadId))];
-  }
-
   private async planMoves(
     paths: StoryboardProjectPaths,
-    memoryScopes: readonly StoryboardProjectPaths[],
     rename: SceneRename,
   ): Promise<PlannedWrite[]> {
     const moves: PlannedWrite[] = [];
 
     await this.planDraftMove(moves, paths, rename);
     await this.planDraftHistoryMoves(moves, paths, rename);
-    await this.planCacheFileMoves(moves, paths, memoryScopes, rename);
+    await this.planCacheFileMoves(moves, paths, rename);
     await this.planStudioSessionMoves(moves, paths, rename);
 
     return moves;
@@ -238,13 +225,11 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   private async planCacheFileMoves(
     moves: PlannedWrite[],
     paths: StoryboardProjectPaths,
-    memoryScopes: readonly StoryboardProjectPaths[],
     rename: SceneRename,
   ): Promise<void> {
     for (const directory of [
       paths.sceneCacheDirectory,
       paths.cardCacheDirectory,
-      ...memoryScopes.map((scope) => scope.sceneDialogueDirectory),
     ]) {
       await this.addMove(
         moves,
@@ -275,21 +260,15 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
   private async planRewrites(
     paths: StoryboardProjectPaths,
-    memoryScopes: readonly StoryboardProjectPaths[],
     rename: SceneRename,
   ): Promise<PlannedWrite[]> {
     const rewrites: PlannedWrite[] = [];
-
-    for (const scope of memoryScopes) {
-      await this.planMemoryScopeRewrites(rewrites, scope, rename);
-    }
 
     await this.addRewrite(
       rewrites,
       joinUri(paths.cacheDirectory, 'studio-followups.json'),
       (raw) => rewriteMentionedJsonSceneStems(raw, rename),
     );
-
 
     return rewrites;
   }
@@ -304,21 +283,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     if (rewritten !== undefined && rewritten !== raw) {
       rewrites.push({ to: uri, content: rewritten });
-    }
-  }
-
-  private async planMemoryScopeRewrites(
-    rewrites: PlannedWrite[],
-    scope: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-
-    for (const directory of [scope.personaMemoryDirectory, scope.backgroundMemoryDirectory]) {
-      for (const fileName of await this.listFileNames(directory)) {
-        await this.addRewrite(rewrites, joinUri(directory, fileName), (raw) =>
-          rewriteMentionedJsonSceneStems(raw, rename),
-        );
-      }
     }
   }
 

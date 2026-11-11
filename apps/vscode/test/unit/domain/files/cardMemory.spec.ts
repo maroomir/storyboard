@@ -4,12 +4,6 @@ import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
-  parseBackgroundMemory,
-  parsePersonaMemory,
-  serializeBackgroundMemory,
-  serializePersonaMemory,
-  type BackgroundMemoryRecord,
-  type PersonaMemoryRecord
 } from "@storyboard/story-model"
 
 const eliaCard: CharacterCard = {
@@ -34,18 +28,7 @@ const schoolCard: BackgroundCard = {
 
 const personaPrompt = "persona prompt v1"
 
-describe("persona memory codec", () => {
-  it("serializes and parses a persona memory record", () => {
-    const record: PersonaMemoryRecord = {
-      cardId: "elia",
-      persona: "나는 엘리아다.",
-      updatedThroughScene: "03-classroom",
-      cardHash: computePersonaCardHash(eliaCard, personaPrompt)
-    }
-
-    expect(parsePersonaMemory(serializePersonaMemory(record))).toEqual(record)
-  })
-
+describe("persona card hash", () => {
   it("changes the persona hash when a meaningful card field changes", () => {
     const baseHash = computePersonaCardHash(eliaCard, personaPrompt)
     const renamedHash = computePersonaCardHash({ ...eliaCard, name: "엘리" }, personaPrompt)
@@ -92,18 +75,7 @@ describe("persona memory codec", () => {
   })
 })
 
-describe("background memory codec", () => {
-  it("serializes and parses a background memory record", () => {
-    const record: BackgroundMemoryRecord = {
-      cardId: "school",
-      atmosphere: "낡은 복도에 분필 냄새가 떠돈다.",
-      updatedThroughScene: "03-classroom",
-      cardHash: computeBackgroundCardHash(schoolCard)
-    }
-
-    expect(parseBackgroundMemory(serializeBackgroundMemory(record))).toEqual(record)
-  })
-
+describe("background card hash", () => {
   it("changes the background hash when description changes", () => {
     const baseHash = computeBackgroundCardHash(schoolCard)
     const changedHash = computeBackgroundCardHash({ ...schoolCard, description: ["새 건물"] })

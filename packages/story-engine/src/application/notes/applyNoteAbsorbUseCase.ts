@@ -83,7 +83,11 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       const setting: AppliedNoteSetting = await this.applySetting(request);
       const seededCharacters: string[] = Object.keys(request.plan.voiceSeeds);
       if (seededCharacters.length > 0) {
-        await this.repositories.noteAbsorb.addVoiceSeeds(request.workspaceRoot, request.plan.voiceSeeds);
+        await this.repositories.noteAbsorb.addVoiceSeeds(
+          request.workspaceRoot,
+          request.location,
+          request.plan.voiceSeeds,
+        );
       }
 
       return {
