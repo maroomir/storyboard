@@ -153,6 +153,7 @@
       ],
       "checks": [
         "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/persistence test/unit/infrastructure/persistenceRepositories.spec.ts test/unit/persistence test/unit/domain/files",
+        "npm run test --workspace @storyboard/cli -- test/cache",
         "npm run bvt:golden"
       ]
     },
@@ -183,7 +184,7 @@
         "packages/story-node/**"
       ],
       "checks": [
-        "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/dispatch.test.ts",
+        "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/dispatch.test.ts test/cache",
         "npm run bvt:golden"
       ]
     },
