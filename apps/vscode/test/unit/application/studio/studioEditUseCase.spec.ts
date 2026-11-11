@@ -127,6 +127,18 @@ describe("StudioEditUseCase", () => {
   })
 })
 
+function seedAi(seed: unknown): { readonly ai: never; readonly logger: never } {
+  return {
+    ai: {
+      gateway: {
+        createService: () => ({ extractStudioCardSeed: async () => seed }),
+        getTaskProvider: () => "mock"
+      }
+    } as never,
+    logger: { warn: () => undefined } as never
+  }
+}
+
 describe("StudioCreateUseCase", () => {
   it("creates the card and fills it from the description", async () => {
     const editCalls: unknown[] = []
@@ -136,6 +148,7 @@ describe("StudioCreateUseCase", () => {
       } as unknown as CreateCardUseCase,
       createScene: {} as unknown as CreateSceneUseCase,
       cards: {} as unknown as WorkspaceCards,
+      ...seedAi(undefined),
       edit: {
         execute: async (request: unknown) => {
           editCalls.push(request)
@@ -164,6 +177,7 @@ describe("StudioCreateUseCase", () => {
       createCard: { execute: async () => ({ ok: false, kind: "id-taken", id: "seorin" }) } as unknown as CreateCardUseCase,
       createScene: {} as unknown as CreateSceneUseCase,
       cards: {} as unknown as WorkspaceCards,
+      ...seedAi(undefined),
       edit: {} as unknown as StudioEditUseCase
     })
 
@@ -180,6 +194,37 @@ describe("StudioCreateUseCase", () => {
     ).toMatchObject({ ok: false, kind: "exists" })
   })
 
+  it("names a card from its description when no name or slug is given", async () => {
+    const createRequests: unknown[] = []
+    const builtNames: string[] = []
+    const create = new StudioCreateUseCase({
+      createCard: {
+        execute: async (request: { id: string; buildCard: (id: string) => { name: string } }) => {
+          createRequests.push(request)
+          builtNames.push(request.buildCard(request.id).name)
+          return { ok: true, kind: "created", id: "rina", uri: vscode.Uri.file("/workspace/character/rina.card") }
+        }
+      } as unknown as CreateCardUseCase,
+      createScene: {} as unknown as CreateSceneUseCase,
+      cards: {} as unknown as WorkspaceCards,
+      ...seedAi({ kind: "character", name: "리나", id: "rina" }),
+      edit: {
+        execute: async () => ({ ok: true, kind: "applied", sessionId: "s", summary: "", message: "" })
+      } as unknown as StudioEditUseCase
+    })
+
+    await create.execute({
+      workspaceRoot,
+      kind: "character",
+      description: "열일곱 살 견습 마법사 리나",
+      shouldPropose: false,
+      isValidationEnabled: false
+    })
+
+    expect(createRequests[0]).toMatchObject({ id: "rina", whenIdIsTaken: "number-it" })
+    expect(builtNames).toEqual(["리나"])
+  })
+
   it("gives a card made from a description alone a provisional name and a numbered slug", async () => {
     const createRequests: unknown[] = []
     const builtNames: string[] = []
@@ -193,6 +238,7 @@ describe("StudioCreateUseCase", () => {
       } as unknown as CreateCardUseCase,
       createScene: {} as unknown as CreateSceneUseCase,
       cards: {} as unknown as WorkspaceCards,
+      ...seedAi(undefined),
       edit: {
         execute: async () => ({ ok: true, kind: "applied", sessionId: "s", summary: "", message: "" })
       } as unknown as StudioEditUseCase

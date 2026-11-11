@@ -120,20 +120,11 @@ export class StudioCreateRpc {
     root: vscode.Uri,
     payload: StoryboardRequestPayload<'studio.create'>,
   ): Promise<CreationTarget | undefined> {
-    if (payload.kind === 'scene') {
-      return { kind: 'scene' };
+    if (payload.kind !== undefined) {
+      return { kind: payload.kind };
     }
 
     const seed: StudioCardSeed | undefined = await this.extractSeed(root, payload.description);
-    const isSeedOfKind: boolean =
-      seed !== undefined && (payload.kind === undefined || seedKindOf(seed) === payload.kind);
-
-    if (payload.kind !== undefined) {
-      return isSeedOfKind && seed !== undefined
-        ? { kind: payload.kind, seed }
-        : { kind: payload.kind };
-    }
-
     return seed === undefined ? undefined : { kind: seedKindOf(seed), seed };
   }
 

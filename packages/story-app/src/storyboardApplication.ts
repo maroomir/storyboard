@@ -543,6 +543,8 @@ function buildStudioServices(
       createScene: new CreateSceneUseCase(host),
       edit: studioEditUseCase,
       cards: host.cards,
+      ai,
+      logger: host.logger,
     }),
   };
 }
