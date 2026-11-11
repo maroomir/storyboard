@@ -1,0 +1,7 @@
+id: 3f9a2c1e-6b0d-4e7a-9c11-0d2f5a8b7e44
+slug: elia
+kind: character
+name: 엘리아
+role: main
+attributes: {age: 17, job: 학생}
+aliases: [엘리]

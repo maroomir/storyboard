@@ -1,0 +1,5 @@
+inputHash: sha256:dbe7a1c09f3b4e2d8c7a6b5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d
+statements:
+  - {facet: event, value: 엘리아가 옥상에서 울었다, knownBy: [3f9a2c1e-6b0d-4e7a-9c11-0d2f5a8b7e44, 7b1d2e90-4c3a-4f1b-8d2e-5a6b7c8d9e0f]}
+  - {facet: relationShift, about: 7b1d2e90-4c3a-4f1b-8d2e-5a6b7c8d9e0f, value: '엘리아 → 세라: 회피', knownBy: [3f9a2c1e-6b0d-4e7a-9c11-0d2f5a8b7e44]}
+  - {facet: reveal, value: 세라가 엘리아를 동경한다, knownBy: [7b1d2e90-4c3a-4f1b-8d2e-5a6b7c8d9e0f]}

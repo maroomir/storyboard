@@ -1,0 +1,11 @@
+threads:
+  - id: main
+    title: 본편
+scenes:
+  - scene: 9d41b2c3-4d5e-4f6a-8b7c-1d2e3f4a5b6c
+    thread: main
+    narrator: e1f0a2b3-c4d5-4e6f-8a7b-9c0d1e2f3a4b
+  - scene: c2e8a1b4-9d7c-4e3f-a2b1-0c9d8e7f6a5b
+    thread: main
+    narrator: e1f0a2b3-c4d5-4e6f-8a7b-9c0d1e2f3a4b
+    storyTime: 2

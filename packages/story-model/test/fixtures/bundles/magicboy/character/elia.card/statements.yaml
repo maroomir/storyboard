@@ -1,0 +1,9 @@
+- {facet: description, value: '마른 체구, 교복이 한 치수 크다', source: {origin: studio, session: 8f3a51c0}}
+- {facet: traits, value: 낯선 자리에서 먼저 말을 건다, source: {origin: studio, session: 8f3a51c0}}
+- {facet: traits, value: 거절당하면 웃어넘기고 뒤에서 앓는다, source: {origin: interview, session: 91c0d2e4}}
+- {facet: catchphrases, value: 뭐 어때, source: {origin: studio, session: 8f3a51c0}}
+- {facet: desire, value: 세라에게 인정받고 싶다, source: {origin: studio, session: 8f3a51c0}}
+- {facet: relation, about: 7b1d2e90-4c3a-4f1b-8d2e-5a6b7c8d9e0f, value: '소꿉친구, 지금은 데면데면', source: {origin: studio, session: 8f3a51c0}}
+- {facet: speech, about: 7b1d2e90-4c3a-4f1b-8d2e-5a6b7c8d9e0f, value: '반말, 이름 대신 «야»', source: {origin: interview, session: 91c0d2e4}}
+- {facet: arc, value: 거절을 받아들이는 법을 배운다, source: {origin: studio, session: 8f3a51c0}}
+- {facet: fact, key: 비밀, value: 마법을 쓸 수 있다, revealFrom: c2e8a1b4-9d7c-4e3f-a2b1-0c9d8e7f6a5b, knownBy: [3f9a2c1e-6b0d-4e7a-9c11-0d2f5a8b7e44], keywords: [마법], source: {origin: author, command: card set}}
