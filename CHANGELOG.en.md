@@ -10,6 +10,14 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **0.16 does not open 0.15 works.** A work's format version (`version` in `.storyboard/project.json`) is now `2.0.0`, and a `1.0.0` work is refused with a message that it is in the 0.15 format. Keep using 0.15.x for a 0.15 work; there is no conversion script.
+
+### Internal
+
+- **Laid the groundwork for the studio-centred design.** The statement vocabulary of the four element kinds (character, background, scene, narrator: 21 statement facets with their sections, plus the story state vocabulary), the statement schema, the merge rule that never overwrites the author's lines and each kind's header now live in a new `story-model` layer, `element/`. Added the bundle folder paths (`<kind>/<slug>.card/`, scenes named `NNN-slug` by their three-digit number in the structure order), `.storyboard/structure.yaml` (the threads and the one scene order of the work), scene number derivation and rename planning, the rule that resolves slugs and numbers to uuids, and the bundle file codecs with round-trip fixtures. The engine and both apps still read and write the old files.
+
 ## [0.15.4] - 2026-11-13
 
 ### Fixed
