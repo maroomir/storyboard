@@ -8,6 +8,7 @@ import type { ParsedArguments } from '@/cliArguments';
 import type { IPrompter } from '@/adapters/prompter';
 import { findCommand } from '@/commands/index';
 import { createCliContainer, type CliContainer } from '@/container';
+import { createTuiSession, type LogTone } from '@/tui/session';
 import { readBundleText, writeCardBundleFromYaml } from './fixtures/cardBundles';
 import { writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
@@ -211,5 +212,34 @@ describe('doctor on bundles', () => {
     const found: readonly Check[] = await checks();
     expect(found.find((check) => check.label === '쓰이지 않는 배경')?.detail).toContain('harbor');
     expect(found.find((check) => check.label === '겹치는 별칭')?.detail).toContain('«시장»');
+  });
+});
+
+describe('studio> chat mode', () => {
+  it('sends a line about a card to the studio and takes /discard for its proposal', async () => {
+    const lines: { tone: LogTone; text: string }[] = [];
+    const session = createTuiSession(
+      { version: '0.0.0', cwd: workspace },
+      {
+        append: (tone, text) => void lines.push({ tone, text }),
+        ask: async () => undefined,
+        askText: async () => undefined,
+        setTheme: () => undefined,
+        openReader: () => undefined,
+        setEscapeHint: () => undefined,
+        clear: () => undefined,
+        exit: () => undefined,
+      },
+    );
+
+    expect(session.toggleMode()).toBe('studio');
+    await session.run('@elia 말투를 더 퉁명스럽게');
+    expect(lines.map((line) => line.text)).toContain('/apply 로 적용, /discard 로 버림');
+    expect((await run('card show', args(['card', 'show'], { history: true }, ['elia']))).message).toContain(
+      '스튜디오',
+    );
+
+    await session.run('/card show elia');
+    expect(lines.at(-1)?.text).toContain('엘리아 (elia)');
   });
 });
