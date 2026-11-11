@@ -232,6 +232,21 @@ describe('RemoveSceneUseCase', () => {
     expect(chapterScenes()[0]).not.toContain(walkId);
   });
 
+  it('carries the stem-keyed caches of the scenes behind to their new numbers', async () => {
+    write('.storyboard/cache/scenes/002-walk.json', '{"sceneStem":"002-walk","inputHash":"walk"}\n');
+    write('.storyboard/cache/scenes/003-market.json', '{"sceneStem":"003-market","inputHash":"market"}\n');
+    write('.storyboard/cache/revisions/003-market.json', '{"sceneStem":"003-market","rounds":[]}\n');
+
+    await new RemoveSceneUseCase(hostOf()).execute({ workspaceRoot: root(), scene: '002-walk' });
+
+    expect(JSON.parse(read('.storyboard/cache/scenes/002-market.json'))).toEqual({
+      sceneStem: '002-market',
+      inputHash: 'market',
+    });
+    expect(JSON.parse(read('.storyboard/cache/revisions/002-market.json')).sceneStem).toBe('002-market');
+    expect(existsSync(join(workspace, '.storyboard/cache/scenes/003-market.json'))).toBe(false);
+  });
+
   it('refuses a scene that does not exist', async () => {
     expect(
       await new RemoveSceneUseCase(hostOf()).execute({ workspaceRoot: root(), scene: '9' }),

@@ -22,6 +22,7 @@ import type {
   WorkspaceScenes,
 } from '#engine/persistence/bundles/workspaceScenes';
 import { JournalStore, type SceneRenameJournal } from '#engine/persistence/cache/journalStore';
+import { StemKeyedSceneCaches } from '#engine/persistence/cache/stemKeyedSceneCaches';
 import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 
 export interface SceneRenumbererDependencies {
@@ -116,10 +117,12 @@ export class SceneRenumberer {
     const journals: JournalStore = await this.journals(workspaceRoot);
     await this.applySteps(workspaceRoot, journals, journals.beginSceneRename(steps));
 
-    return listStemChanges(
+    const changes: readonly SceneStemChange[] = listStemChanges(
       stemsById(roster),
       stemsById(await this.dependencies.scenes.loadRoster(workspaceRoot)),
     );
+    await new StemKeyedSceneCaches(this.dependencies.fileSystem).move(workspaceRoot, changes);
+    return changes;
   }
 
   public async listMisnumbered(workspaceRoot: StoryUri): Promise<readonly string[]> {
