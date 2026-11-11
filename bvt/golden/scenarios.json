@@ -17,9 +17,9 @@
       "init": ["--composition", "alternating-pov", "--pov-characters", "hana,jun", "--chapters", "1", "--scenes-per-chapter", "1"]
     },
     {
-      "id": "reopen-0.12.2",
+      "id": "reopen-0.16.0",
       "kind": "reopen",
-      "from": "frozen/0.12.2-linear",
+      "from": "frozen/0.16.0-linear",
       "mayRewrite": []
     }
   ]

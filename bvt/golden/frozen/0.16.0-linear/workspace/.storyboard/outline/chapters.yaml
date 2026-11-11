@@ -1,0 +1,10 @@
+version: 1.0.0
+acts:
+  - id: act-1
+    title: 1막
+    chapters:
+      - id: chapter-1-1
+        title: 1장
+        scenes:
+          - 5098b29b-02eb-46bd-9308-4546066c4b6f
+          - 93b2b227-500c-46bb-987a-a60886270664

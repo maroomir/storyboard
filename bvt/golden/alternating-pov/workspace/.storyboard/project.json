@@ -1,24 +1,17 @@
 {
-  "version": "1.0.0",
-  "id": "77c7be2d-1ec9-4598-8a8c-a0a590bcbb6b",
+  "version": "2.0.0",
+  "id": "87870b9d-c3bc-4ec1-8631-1984f2e45062",
   "name": "골든 alternating-pov",
   "format": "novel",
   "language": "ko",
-  "createdAt": "2026-10-24T01:53:37.419Z",
-  "editor": {
-    "scenePrefixDigits": 2
-  },
+  "createdAt": "2026-11-11T15:53:03.549Z",
+  "editor": {},
   "setting": {
     "tags": [],
     "narration": {
       "defaultNarrator": "hana-pov"
     },
     "composition": "alternating-pov",
-    "threads": {
-      "main": {
-        "title": "본편"
-      }
-    },
     "chapterCount": 1,
     "scenesPerChapter": 1,
     "prohibitions": [],

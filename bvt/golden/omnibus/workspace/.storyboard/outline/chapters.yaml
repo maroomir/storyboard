@@ -6,18 +6,5 @@ acts:
       - id: chapter-1-1
         title: 1장
         scenes:
-          - id: sc-1-1
-            title: 첫 만남
-            purpose: 두 사람이 만난다
-            characters:
-              - hana
-            foreshadowing: []
-            neededCanon: []
-          - id: sc-1-2
-            title: 엇갈림
-            purpose: 오해가 생긴다
-            characters:
-              - hana
-              - jun
-            foreshadowing: []
-            neededCanon: []
+          - 12d18204-a77d-4c61-b806-e130b42cab3f
+          - ffdd9217-bc7a-4a93-b59a-8f9ac4b64315
