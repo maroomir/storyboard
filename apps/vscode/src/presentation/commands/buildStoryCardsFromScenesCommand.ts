@@ -4,18 +4,13 @@ import * as vscode from 'vscode';
 
 import {
   applyStoryCardChanges,
+  type ApplyStoryCardTargetsResult,
   type BuildStoryCardsProposal,
   type StoryCardTarget,
 } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
-import {
-  parseCard,
-  serializeCard,
-  backgroundCardPath,
-  characterCardPath,
-  extractErrorMessage,
-} from '@storyboard/story-model';
-import type { StoryboardCard, CardCollectProposal, StoryUri } from '@storyboard/story-model';
+import { serializeCard, extractErrorMessage } from '@storyboard/story-model';
+import type { StoryboardCard, CardCollectProposal } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 
 interface SelectedChange {
@@ -26,7 +21,7 @@ interface SelectedChange {
 interface PreparedCardChange {
   readonly target: StoryCardTarget;
   readonly card: StoryboardCard;
-  readonly uri: vscode.Uri;
+  readonly currentText?: string;
 }
 
 interface StoryChangePick extends vscode.QuickPickItem {
@@ -43,7 +38,10 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
   public readonly id: string = storyboardCommandIds.cardsBuildFromScenes;
 
   public constructor(
-    private readonly cards: Pick<CardManager, 'buildFromScenes' | 'hasCurrentBuildSources'>,
+    private readonly cards: Pick<
+      CardManager,
+      'buildFromScenes' | 'hasCurrentBuildSources' | 'applyBuildTargets'
+    >,
     private readonly reviewService: ProposalReviewService,
   ) {}
 
@@ -72,10 +70,7 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
     if (selected.length === 0) {
       return;
     }
-    const prepared: PreparedCardChange[] | undefined = await prepareChanges(
-      workspaceRoot,
-      selected,
-    );
+    const prepared: PreparedCardChange[] | undefined = await prepareChanges(selected);
     if (!prepared) {
       return;
     }
@@ -88,7 +83,20 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
       );
       return;
     }
-    await applyChanges(prepared);
+    await this.applyChanges(workspaceRoot, prepared);
+  }
+
+  private async applyChanges(
+    workspaceRoot: vscode.Uri,
+    prepared: readonly PreparedCardChange[],
+  ): Promise<void> {
+    const applied: ApplyStoryCardTargetsResult = await this.cards.applyBuildTargets(
+      workspaceRoot,
+      prepared.map((change) => change.target),
+    );
+    await vscode.window.showInformationMessage(
+      `씬 기반 카드 변경 ${applied.writtenIds.length}개를 적용했습니다.`,
+    );
   }
 
   private async loadProposal(workspaceRoot: vscode.Uri): Promise<BuildStoryCardsProposal> {
@@ -113,7 +121,8 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
   private async confirmChanges(prepared: readonly PreparedCardChange[]): Promise<boolean> {
     await this.reviewService.showDiffs(
       prepared.map((change) => ({
-        original: change.target.isNew ? undefined : change.uri,
+        original: undefined,
+        ...(change.currentText === undefined ? {} : { originalText: change.currentText }),
         proposedText: serializeCard(change.card),
         key: `cards-${change.card.type}-${change.card.id}`,
         label: `${change.card.name} ↔ 카드 제안`,
@@ -126,43 +135,6 @@ export class BuildStoryCardsFromScenesCommand implements IExtensionCommand {
     );
     return confirmation === '적용';
   }
-}
-
-async function applyChanges(prepared: readonly PreparedCardChange[]): Promise<void> {
-  const edit: vscode.WorkspaceEdit = await createCardWorkspaceEdit(prepared);
-  if (!(await vscode.workspace.applyEdit(edit))) {
-    await vscode.window.showErrorMessage(
-      '카드 변경을 적용하지 못했습니다. 파일은 변경되지 않았을 수 있습니다.',
-    );
-    return;
-  }
-  for (const change of prepared) {
-    parseCard(new TextDecoder().decode(await vscode.workspace.fs.readFile(change.uri)));
-  }
-  await vscode.window.showInformationMessage(
-    `씬 기반 카드 변경 ${prepared.length}개를 적용했습니다.`,
-  );
-}
-
-async function createCardWorkspaceEdit(
-  prepared: readonly PreparedCardChange[],
-): Promise<vscode.WorkspaceEdit> {
-  const edit: vscode.WorkspaceEdit = new vscode.WorkspaceEdit();
-  for (const change of prepared) {
-    const text: string = serializeCard(change.card);
-    if (change.target.isNew) {
-      edit.createFile(change.uri, { overwrite: false, ignoreIfExists: false });
-      edit.insert(change.uri, new vscode.Position(0, 0), text);
-      continue;
-    }
-    const document: vscode.TextDocument = await vscode.workspace.openTextDocument(change.uri);
-    edit.replace(
-      change.uri,
-      new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)),
-      text,
-    );
-  }
-  return edit;
 }
 
 async function selectChanges(targets: readonly StoryCardTarget[]): Promise<SelectedChange[]> {
@@ -199,8 +171,20 @@ async function selectChanges(targets: readonly StoryCardTarget[]): Promise<Selec
   );
 }
 
+function narrowTarget(
+  target: StoryCardTarget,
+  proposals: readonly CardCollectProposal[],
+  card: StoryboardCard,
+): StoryCardTarget {
+  return {
+    ...target,
+    card: target.isNew ? card : target.card,
+    requiresIdConfirmation: false,
+    changes: target.changes.filter((change) => proposals.includes(change.proposal)),
+  };
+}
+
 async function prepareChanges(
-  workspaceRoot: vscode.Uri,
   selected: readonly SelectedChange[],
 ): Promise<PreparedCardChange[] | undefined> {
   const byTarget: Map<string, TargetProposals> = new Map<string, TargetProposals>();
@@ -236,11 +220,11 @@ async function prepareChanges(
       card = { ...card, id } as StoryboardCard;
     }
     usedIds.add(card.id);
-    const uri: StoryUri =
-      card.type === 'character'
-        ? characterCardPath(workspaceRoot, card.id)
-        : backgroundCardPath(workspaceRoot, card.id);
-    prepared.push({ target, card, uri });
+    prepared.push({
+      target: narrowTarget(target, proposals, card),
+      card,
+      ...(target.isNew ? {} : { currentText: serializeCard(target.card) }),
+    });
   }
   return prepared;
 }

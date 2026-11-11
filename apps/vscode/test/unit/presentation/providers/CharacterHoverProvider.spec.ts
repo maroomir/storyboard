@@ -12,7 +12,6 @@ describe("CharacterHoverProvider helpers", () => {
       profile: "명랑한 주인공",
       description: ["상황을 빠르게 파악한다."],
       traits: ["침착함", "리더십"],
-      recentDialogues: ["괜찮아, 내가 해볼게."],
       relations: [{ target: "jihoon", type: "friend" }]
     }
 
@@ -24,7 +23,6 @@ describe("CharacterHoverProvider helpers", () => {
     expect(markdown.value).toContain("### 엘리아")
     expect(markdown.value).toContain("명랑한 주인공")
     expect(markdown.value).toContain("침착함")
-    expect(markdown.value).toContain("괜찮아, 내가 해볼게.")
     expect(markdown.value).toContain("관계: 지훈")
   })
 })

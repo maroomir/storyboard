@@ -36,9 +36,11 @@ export class StudioProposalRpc {
           return { shown: false, message: prepared.message };
         }
 
+        const isProjectedCard: boolean = prepared.patchTarget !== 'draft';
         await this.deps.reviewService.showDiffs([
           {
             original: prepared.targetUri as vscode.Uri,
+            ...(isProjectedCard ? { originalText: prepared.baseline } : {}),
             proposedText: prepared.text,
             label: `Studio 제안 · ${prepared.targetFile}`,
             key: `studio:${payload.entity.kind}:${payload.entity.key}`,

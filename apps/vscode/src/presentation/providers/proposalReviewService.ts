@@ -6,6 +6,7 @@ const proposalPreviewScheme: string = 'storyboard-proposal';
 
 export interface ProposalReviewItem {
   readonly original: vscode.Uri | undefined;
+  readonly originalText?: string;
   readonly proposedText: string;
   readonly label: string;
   readonly key: string;
@@ -27,11 +28,16 @@ export class ProposalReviewService implements vscode.Disposable {
         `${proposalPreviewScheme}:${encodeURIComponent(item.key)}`,
       );
       this.store.setContent(proposedUri, item.proposedText);
+      const isTextOriginal: boolean =
+        item.original === undefined || item.originalText !== undefined;
       const originalUri: vscode.Uri =
-        item.original ??
-        vscode.Uri.parse(`${proposalPreviewScheme}:${encodeURIComponent(`${item.key}:empty`)}`);
-      if (!item.original) {
-        this.store.setContent(originalUri, '');
+        isTextOriginal || item.original === undefined
+          ? vscode.Uri.parse(
+              `${proposalPreviewScheme}:${encodeURIComponent(`${item.key}:original`)}`,
+            )
+          : item.original;
+      if (isTextOriginal) {
+        this.store.setContent(originalUri, item.originalText ?? '');
       }
       await vscode.commands.executeCommand('vscode.diff', originalUri, proposedUri, item.label, {
         preview: true,

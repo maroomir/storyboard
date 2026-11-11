@@ -39,14 +39,6 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
     lines.push('', '- 특성', ...character.traits.slice(0, 5).map((trait) => `  - ${trait}`));
   }
 
-  if (character.recentDialogues && character.recentDialogues.length > 0) {
-    lines.push(
-      '',
-      '- 최근 대사',
-      ...character.recentDialogues.slice(-3).map((line) => `  - ${line}`),
-    );
-  }
-
   if (relatedCharacterNames.length > 0) {
     lines.push('', `- 관계: ${relatedCharacterNames.join(', ')}`);
   }
