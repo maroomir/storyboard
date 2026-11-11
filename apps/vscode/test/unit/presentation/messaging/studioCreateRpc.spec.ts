@@ -50,39 +50,42 @@ beforeEach(() => {
 })
 
 describe("studio create rpc", () => {
-  it("creates a card of the asked kind under the name the description gives and opens its viewer", async () => {
-    const { rpc, create } = harness({ kind: "character", name: "엘리아", id: "elia" })
+  it("leaves the name of an asked kind to the engine and opens the viewer it made", async () => {
+    const { rpc, create, extractStudioCardSeed } = harness({ kind: "character", name: "엘리아", id: "elia" })
 
     const result = await rpc.handlers()["studio.create"]({ kind: "character", description: "엘리아. 열일곱 전학생." })
 
-    expect(create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceRoot,
-        kind: "character",
-        name: "엘리아",
-        slug: "elia",
-        whenSlugIsTaken: "number-it",
-        description: "엘리아. 열일곱 전학생.",
-        shouldPropose: false
-      })
-    )
-    expect(result).toEqual({ ok: true, message: "인물 elia 를 만들었어요. 설명으로 채움" })
+    const request = create.mock.calls[0]?.[0] as Record<string, unknown>
+    expect(extractStudioCardSeed).not.toHaveBeenCalled()
+    expect(request).toMatchObject({
+      workspaceRoot,
+      kind: "character",
+      description: "엘리아. 열일곱 전학생.",
+      shouldPropose: false
+    })
+    expect(request.name).toBeUndefined()
+    expect(request.slug).toBeUndefined()
+    expect(result).toEqual({ ok: true, message: "인물 new-character 를 만들었어요. 설명으로 채움" })
     expect(opened[0]).toEqual([
       "vscode.openWith",
-      vscode.Uri.file("/ws/character/elia.card/card.yaml"),
+      vscode.Uri.file("/ws/character/new-character.card/card.yaml"),
       "storyboard.card"
     ])
   })
 
-  it("leaves naming to the engine when no name can be read", async () => {
-    const { rpc, create } = harness(undefined)
+  it("reads the kind and the name from the description when no kind was asked", async () => {
+    const { rpc, create } = harness({ kind: "background", name: "야시장", id: "night-market" })
 
-    await rpc.handlers()["studio.create"]({ kind: "background", description: "자정에 닫는 항구 야시장" })
+    await rpc.handlers()["studio.create"]({ description: "자정에 닫는 항구 야시장" })
 
-    const request = create.mock.calls[0]?.[0] as Record<string, unknown>
-    expect(request).toMatchObject({ kind: "background" })
-    expect(request.name).toBeUndefined()
-    expect(request.slug).toBeUndefined()
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "background",
+        name: "야시장",
+        slug: "night-market",
+        whenSlugIsTaken: "number-it"
+      })
+    )
   })
 
   it("does not ask for a card name when making a scene", async () => {

@@ -2,9 +2,13 @@ import {
   createEmptyCard,
   slugify,
   type StoryUri,
+  type StudioCardSeed,
   type StudioCreatableKind,
   type UsageAttribution,
 } from '@storyboard/story-model';
+
+import type { AiServices } from '#engine/application/engineServices';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 
 import type { IUseCase } from '#engine/application/useCase';
 import type {
@@ -27,6 +31,8 @@ export interface StudioCreateUseCaseDependencies {
   readonly createScene: CreateSceneUseCase;
   readonly edit: StudioEditUseCase;
   readonly cards: WorkspaceCards;
+  readonly ai: AiServices;
+  readonly logger: IStoryboardLogger;
 }
 
 export interface StudioCreateRequest {
@@ -63,6 +69,10 @@ const provisionalCardNames: Readonly<Record<StudioCreatableCardKind, string>> = 
   character: '새 인물',
   background: '새 배경',
 };
+
+type CardIdentityHint = Pick<StudioCreateRequest, 'name' | 'slug' | 'whenSlugIsTaken'>;
+
+const noIdentityHint: CardIdentityHint = {};
 
 interface CardIdentity {
   readonly slug: string;
@@ -135,7 +145,8 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
   private async createCard(request: StudioCreateRequest): Promise<CreatedElement> {
     const kind: StudioCreatableCardKind = request.kind === 'character' ? 'character' : 'background';
     const cardType: 'character' | 'location' = kind === 'character' ? 'character' : 'location';
-    const identity: CardIdentity = resolveCardIdentity(kind, request);
+    const hint: CardIdentityHint = await this.readIdentityFromDescription(kind, request);
+    const identity: CardIdentity = resolveCardIdentity(kind, { ...request, ...hint });
     const result: CreateCardResult = await this.dependencies.createCard.execute({
       workspaceRoot: request.workspaceRoot,
       cardType,
@@ -147,5 +158,38 @@ export class StudioCreateUseCase implements IUseCase<StudioCreateRequest, Studio
     return result.ok
       ? { ok: true, key: result.id, uri: result.uri }
       : { ok: false, kind: 'exists', message: `이미 있는 카드입니다: ${result.id}` };
+  }
+
+  private async readIdentityFromDescription(
+    kind: StudioCreatableCardKind,
+    request: StudioCreateRequest,
+  ): Promise<CardIdentityHint> {
+    const isIdentityGiven: boolean = request.name !== undefined || request.slug !== undefined;
+    if (isIdentityGiven || request.description.trim().length === 0) {
+      return noIdentityHint;
+    }
+
+    const seed: StudioCardSeed | undefined = await this.readSeedOrKeepProvisionalName(request);
+    return seed === undefined || seed.kind !== kind
+      ? noIdentityHint
+      : { name: seed.name, slug: seed.id, whenSlugIsTaken: 'number-it' };
+  }
+
+  private async readSeedOrKeepProvisionalName(
+    request: StudioCreateRequest,
+  ): Promise<StudioCardSeed | undefined> {
+    const { ai, logger } = this.dependencies;
+    try {
+      return await ai.gateway.createService(request.workspaceRoot).extractStudioCardSeed(
+        request.description,
+        {
+          providerId: ai.gateway.getTaskProvider('studioAgent'),
+          ...(request.attribution === undefined ? {} : { attribution: request.attribution }),
+        },
+      );
+    } catch (error) {
+      logger.warn(`설명에서 카드 이름을 읽지 못해 임시 이름으로 만듭니다: ${String(error)}`);
+      return undefined;
+    }
   }
 }
