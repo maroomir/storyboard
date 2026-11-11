@@ -17,13 +17,13 @@
 
 1. 작품 컨셉, 장르, 독자층, 금지 조건을 바탕으로 프로젝트 설계를 만든다.
 2. 로그라인, 시놉시스, 주요 갈등, 결말, 톤, 시점, 문체 규칙을 확정한다.
-3. 캐릭터, 배경, 세계관, 장기 떡밥을 `.card`와 story bible 후보로 만든다.
+3. 캐릭터, 배경, 세계관, 장기 떡밥을 카드 번들(`<종류>/<slug>.card/`)과 그 진술(statements)로 만든다.
 4. 전체 플롯을 act/chapter/scene 단위로 분해하고 각 씬 목표를 생성한다.
-5. 씬별 초안을 생성하되, 이전 본문·canon·캐릭터 상태·미해결 복선을 주입한다.
+5. 씬별 초안을 생성하되, 이전 본문·카드의 사실·캐릭터 상태·미해결 복선을 주입한다.
 6. 장거리 연속성, 캐릭터 음성, 문체, 장면 목적, 중복, 설정 모순을 검사한다.
 7. 문제 구간을 재작성하고 chapter/volume 단위 원고로 조립한다.
 
-따라서 현재 구현은 기존 `scene/*.card → draft/*.md` 수동 흐름을 유지하면서, 작품 계약에서 outline, 씬 시드, 장별 초안·검수·재작성, 조립 원고, 최종 검사·요약까지 이어지는 초기 원클릭 파이프라인을 함께 제공한다. 아직 카드/바이블 자동 생성, 긴 원고의 고급 export, 더 정교한 배치 검수는 후속 확장 대상이다.
+따라서 현재 구현은 기존 `scene/*.card/ → draft/*.md` 수동 흐름을 유지하면서, 작품 계약에서 outline, 씬 시드, 장별 초안·검수·재작성, 조립 원고, 최종 검사·요약까지 이어지는 초기 원클릭 파이프라인을 함께 제공한다. 아직 긴 원고의 고급 export, 더 정교한 배치 검수는 후속 확장 대상이다.
 
 ## 2. 멘탈 모델
 
@@ -32,17 +32,18 @@
   - 멀티 프로젝트, 프로젝트 선택 화면은 존재하지 않는다.
 - **프로젝트 설정 = 생성 계약**.
   - 장르, 국가, 컨셉, 태그, 설명, 독자층, 금지 조건, 목표 분량은 자동 생성 파이프라인의 입력 계약이다.
-  - Storyboard는 계약을 바탕으로 outline, cards, bible, scene seed, draft를 차례로 만든다.
-- **씬 = 파일**.
-  - `scene/01-prologue.card` 한 파일이 한 씬.
-  - 인라인 마커, 가상의 ID 시스템 없음. 파일명이 정렬과 식별을 동시에 책임진다.
-  - 사용자가 직접 쓸 수도 있고, 장편 자동 생성 파이프라인이 outline에서 파생해 만들 수도 있다.
+  - Storyboard는 계약을 바탕으로 outline, cards, scene seed, draft를 차례로 만든다.
+- **씬 = 번들 폴더**.
+  - `scene/001-prologue.card/` 폴더 하나가 한 씬. 번호 `001`은 파일명이 아니라 `.storyboard/structure.yaml`의 씬 순서에서 나온다.
+  - 씬·카드의 정체는 uuid(`card.yaml`의 `id`)이고, 카드끼리의 참조도 uuid다. 폴더 이름(slug)을 바꿔도 고칠 참조가 없다.
+  - 사용자가 스튜디오에서 설명으로 만들 수도 있고, 장편 자동 생성 파이프라인이 outline에서 파생해 만들 수도 있다.
 - **카드 = 자료**.
-  - 캐릭터·배경 정보는 `.card` 파일 한 개에 한 자료. 내부는 YAML, VSCode에서는 커스텀 에디터가 카드 형태로 렌더링.
+  - 캐릭터·배경·서술자 정보는 `<종류>/<slug>.card/` 번들 폴더 하나에 한 자료. `card.yaml`(머리말)과 `statements.yaml`(출처가 붙은 진술)로 나뉜다.
+  - 카드는 동사(`card set`·`card edit`·스튜디오)로 고친다. VSCode의 카드 에디터는 읽기 전용 뷰어이고, 만들기·고치기는 스튜디오로 간다.
   - Characters / Backgrounds 사이드바 목록은 각 자료를 이미지 없는 컴팩트 카드 항목으로 보여 주며, 항목에서 열기와 삭제를 수행할 수 있다.
 - **원고는 생성·검수·재작성되는 산출물**.
-  - `project setting` → outline/card/bible/scene seed → AI 파이프라인 → `draft/*.md` → 검사/재작성 → 조립 원고.
-  - `draft/`는 재생성 가능한 산출물이므로 기본적으로 Git에서 제외한다.
+  - `project setting` → outline/card/scene seed → AI 파이프라인 → `draft/*.md` → 검사/재작성 → 조립 원고.
+  - `draft/`는 Git이 추적하는 읽는 결과물이다(새 작품의 `.gitignore`는 `.storyboard/cache/`와 `manuscript/`만 제외한다).
 - **생성 = 에이전트 협업**.
   - 파이프라인은 역할이 다른 여러 에이전트(콘티·페르소나·드로잉·서술자·설정 키퍼·검수자)를 **결정적 코드**가 순서대로 호출해 진행한다. 자율적으로 도구를 부르는 LLM 루프가 아니라, 각 에이전트는 (역할 + 전용 provider/model + 메모리 + 입출력 계약)을 가진 모듈이다.
   - **카드 = 에이전트**. 캐릭터·배경 카드는 자료이자 그 카드를 연기·묘사하는 에이전트의 정체성이며, 결과는 디스크에 캐싱되어 씬 진행에 따라 진화한다.
@@ -53,66 +54,51 @@
 ```
 MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 프로젝트)
 ├── .storyboard/
-│   ├── project.json              # 프로젝트 메타 (id, name, format, version)
-│   ├── settings.json             # 프로젝트 단위 설정 (선택, git 추적)
-│   ├── bible/                    # 스토리 바이블 정전 설정 (git 추적)
-│   │   └── canon.yaml
+│   ├── project.json              # 작품 계약과 메타 (id, name, format, version 2.0.0, setting)
+│   ├── structure.yaml            # 줄기(threads)와 씬 순서 (씬 uuid·thread·narrator·storyTime)
+│   ├── config.json               # 작품 단위 설정 (선택)
 │   ├── outline/                  # 장편 구조 계획 (git 추적)
 │   │   ├── synopsis.md
-│   │   ├── chapters.yaml
-│   │   └── revision-plan.yaml     # 검수·재작성 이력 (scene 단위)
-│   ├── memory/                   # 재생성 불가능한 AI 기억 (git 추적)
-│   │   ├── personas/             # 캐릭터별 페르소나 기억
-│   │   │   └── elia.json
-│   │   ├── backgrounds/          # 배경별 분위기 기억
-│   │   │   └── school.json
-│   │   ├── dialogue/             # 씬별 대사 사이드카
-│   │   │   └── 01-prologue.json
-│   │   ├── voiceSeeds.json       # 노트에서 옮긴 인물별 예시 대사 (첫 씬의 말투 표본)
-│   │   ├── storyState.md         # 씬 간 이야기 상태 원장
-│   │   └── summaries.md          # 장별 롤링 요약
-│   └── cache/                    # AI 컨텍스트 캐시 (.gitignore)
-│       ├── bible/                # 자동 추출된 설정 사실 후보 (candidate)
-│       │   └── 01-prologue.json
+│   │   └── chapters.yaml
+│   └── cache/                    # 지워도 다시 만드는 캐시 (.gitignore)
+│       ├── storyboard.db         # 캐시 DB: sessions·runs·usage·element_index·lock·findings·journal·chapter_summaries·revision_plans
 │       ├── scenes/               # 씬별 생성 컨텍스트 스냅샷
-│       │   └── 01-prologue.json
-│       ├── revisions/            # 씬별 마지막 감수의 회차 기록 (검사 결과·지시·구간별 반영/기각)
-│       │   └── 01-prologue.json
-│       ├── grounding-gaps.json   # 사실 시트 제안에서 모델이 비워 둔 칸 (씬 본문·사실 시트·인물이 같으면 다시 묻지 않음)
-│       ├── background-conflicts.json # 배경 카드마다 함께 참일 수 없는 두 줄 (카드 줄·프롬프트가 같으면 다시 묻지 않음, doctor 가 읽음)
-│       ├── novel-run.json        # 원클릭 장편 생성 진행/재개 상태
-│       └── run.lock              # 작업 잠금: 지금 이 작품을 고치고 있는 앱 (10초마다 갱신, 45초 끊기거나 같은 기기의 그 프로세스가 없으면 버려진 잠금)
+│       ├── revisions/            # 덮어쓰기 전 초안 (씬 uuid 폴더마다 최근 10개)
+│       └── outline/              # outline generate 가 남긴 씬 계획 (pending-chapters.yaml)
 │
 ├── character/
-│   ├── elia.card                 # YAML, 커스텀 에디터로 렌더
-│   ├── jihoon.card
-│   └── profile/
-│       ├── elia.png
-│       └── jihoon.png
+│   └── elia.card/                # 카드 번들
+│       ├── card.yaml             # 머리말 (id, slug, kind, name, role …)
+│       ├── statements.yaml       # 진술과 그 출처
+│       ├── memory/
+│       │   └── main.yaml         # 줄기별 기억 (persona, cardHash, throughScene, voiceSample)
+│       └── profile.png           # 그림 한 장
 │
 ├── background/
-│   ├── school.card
-│   └── home.card
+│   └── school.card/              # card.yaml · statements.yaml · memory/<줄기>.yaml · 그림
 │
-├── scene/                        # 사용자가 직접 적는 raw 시드
-│   ├── 01-prologue.card
-│   ├── 02-chapter-01.card
-│   └── 03-chapter-02.card
+├── narrator/                     # 이름 붙인 서술자 (선택)
+│   └── elia-pov.card/            # card.yaml · statements.yaml
+│
+├── scene/
+│   ├── 001-prologue.card/        # 번호는 structure.yaml 순서에서 온다
+│   │   ├── card.yaml             # 머리말 (id, slug, kind, title, cast, place …)
+│   │   ├── statements.yaml       # 설계 진술 (purpose, conflict …)
+│   │   ├── beats.yaml            # 비트
+│   │   ├── dialogue.json         # 씬 대사 사이드카
+│   │   ├── state.yaml            # 이 씬이 확정한 이야기 상태 (inputHash + statements)
+│   │   └── summary.md            # 창작자 요약 (선택)
+│   └── 002-chapter-01.card/
 │
 ├── draft/                        # AI 생성 최종 원고 (추적)
-│   ├── 01-prologue.md
-│   ├── 02-chapter-01.md
-│   └── 03-chapter-02.md
-│
-├── .draft/                       # 이전 초안 히스토리 (editor.draft.keepHistory, .gitignore)
-│   └── 01-prologue/
-│       └── 2026-06-07-09-03-rev-01.md
+│   ├── 001-prologue.md
+│   └── 002-chapter-01.md
 │
 ├── manuscript/                   # chapter/volume 조립 원고 (.gitignore)
 │   ├── 01-prologue.md
 │   └── manuscript.md
 │
-├── .gitignore                    # .storyboard/cache/, .draft/, manuscript/
+├── .gitignore                    # .storyboard/cache/, manuscript/
 ├── README.md                     # 프로젝트 자유 노트
 ├── AGENTS.md                     # 코딩 에이전트 지침 (본문은 CLI로만, 없을 때만 생성)
 └── CLAUDE.md                     # `@AGENTS.md` 한 줄 (Claude Code가 읽는 입구)
@@ -123,15 +109,14 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | 폴더 | 역할 | Git 추적 |
 |---|---|---|
 | `.storyboard/` | 프로젝트 메타 + 내부 저장소 | 하위 폴더별 정책 적용 |
-| `.storyboard/bible/` | 스토리 바이블 정전 설정 | 추적 (사람이 확정한 설정) |
-| `.storyboard/outline/` | 장편 시놉시스·챕터·씬 계획·재작성 계획 | 추적 |
-| `.storyboard/memory/` | 재생성 불가능한 AI 기억 (이야기 상태, 페르소나·배경, 대사 사이드카, 장별 요약) | 추적 |
-| `.storyboard/cache/` | 커밋된 입력으로 다시 만들 수 있는 AI 컨텍스트 스냅샷 | 제외 |
-| `character/` | 캐릭터 카드 + 프로필 이미지 | 추적 |
-| `background/` | 배경 카드 | 추적 |
-| `scene/` | 사용자가 작성하는 시드 텍스트 | 추적 |
-| `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
-| `.draft/` | 덮어쓰기 전 이전 초안 히스토리 (`editor.draft.keepHistory` 활성 시) | **제외** (재생성 가능) |
+| `.storyboard/structure.yaml` | 줄기와 씬 순서 | 추적 |
+| `.storyboard/outline/` | 장편 시놉시스·챕터 계획 | 추적 |
+| `.storyboard/cache/` | 캐시 DB·씬 컨텍스트 스냅샷·초안 이전본. 입력에서 다시 만들 수 있다 | 제외 |
+| `character/` | 캐릭터 카드 번들 (진술, 줄기별 기억, 그림) | 추적 |
+| `background/` | 배경 카드 번들 | 추적 |
+| `narrator/` | 서술자 카드 번들 | 추적 |
+| `scene/` | 씬 번들 (설계 진술, 비트, 대사, 이야기 상태, 요약) | 추적 |
+| `draft/` | AI가 생성한 원고 마크다운 | 추적 |
 | `manuscript/` | chapter/volume로 조립한 원고 | **제외** (재생성 가능) |
 | `AGENTS.md`, `CLAUDE.md` | 작품 저장소에서 도는 코딩 에이전트가 본문을 직접 쓰지 않고 `storyboard` CLI를 거치게 하는 지침. 두 앱의 init이 없을 때만 쓰고 `storyboard init --repair`가 빠진 것만 채운다. 작가가 «작품 메모» 절을 채운다 | 추적 |
 
@@ -141,24 +126,22 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "id": "uuid-v4",
   "name": "MagicBoy",
   "format": "novel",
   "language": "ko",
   "createdAt": "2026-05-03T...",
-  "editor": {
-    "scenePrefixDigits": 2,
-    "trackDraft": false
-  }
+  "editor": {},
+  "setting": { "pov": "first", "composition": "linear" }
 }
 ```
 
+- `version`: 작품 형식 버전. 0.16은 `2.0.0`만 연다. `1.0.0` 작품은 «0.15 형식»이라는 메시지와 함께 거부되며, 변환 스크립트는 없다(0.15 작품은 0.15.x로 계속 쓴다).
 - `format`: `novel` | `screenplay` | `play` | `essay` | `poem`
-- `scenePrefixDigits`: 씬 파일명 prefix 자릿수 (기본 2 → `01-...`)
-- `trackDraft`: `true`로 바꾸면 `draft/`도 Git에 포함 (기본 false)
+- 씬 번호는 항상 세 자리이고 구조 순서에서 나오므로 번호 자릿수 설정은 없다.
 
-작품 단위 자동 생성 입력은 `setting`에 둔다. genre/country/concept/tags/description에 더해, **Phase A(생성 계약)**로 독자층(`audience`), 목표 분량(`targetWordCount`), 시점(`pov`: `first` | `third-limited` | `third-omniscient`), 금지 조건(`prohibitions`), 문체 제약(`styleConstraints`), 품질 기준(`qualityCriteria`)을 추가했다. 이 계약 필드는 `Storyboard: Open Settings`의 **작품 계약** 탭에서 편집하며, 원클릭 생성 전 누락·위험 조합을 검증한다. chapter/scene 단위 목표 분량은 `chapters.yaml`의 `targetWordCount`로 둔다.
+작품 단위 자동 생성 입력은 `setting`에 둔다. genre/country/concept/tags/description에 더해, **Phase A(생성 계약)**로 독자층(`audience`), 목표 분량(`targetWordCount`), 시점(`pov`: `first` | `third-limited` | `third-omniscient`), 금지 조건(`prohibitions`), 문체 제약(`styleConstraints`), 품질 기준(`qualityCriteria`)을 추가했다. 이 계약 필드는 `Storyboard: Open Settings`의 **작품 계약** 탭이나 `storyboard project set`으로 편집하며, 원클릭 생성 전 누락·위험 조합을 검증한다. chapter 단위 목표 분량은 `chapters.yaml`의 `targetWordCount`로, 씬 단위 목표 분량은 씬 `card.yaml`의 `targetWordCount`로 둔다.
 
 `setting.craftContract`는 생성 프롬프트에 항상 주입되는 작법 규칙이다. 설정하지 않아도 기본 계약이
 걸리고, 넣은 항목만 덮어쓴다.
@@ -190,7 +173,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 곡선 큰따옴표(`“ ”`)로 못박아 뼈대·대사 다듬기·구간 살붙임 세 프롬프트에 모두 주입한다. 한 작품
 안에서 갈리면 안 되는 규약이라 프로젝트가 끄지 못한다.
 
-씬 목표 분량은 `frontmatter.targetWordCount` → 본문의 `[목표 분량] N자` 마커 →
+씬 목표 분량은 씬 `card.yaml`의 `targetWordCount` → 본문의 `[목표 분량] N자` 마커 →
 `sceneLengthMultiplier` 기반 파생(2,000–20,000자로 클램프) 순으로 정해진다. 파생 단계가 없으면
 목표가 없는 씬은 프롬프트에 분량 제약이 전혀 걸리지 않아 원고가 무한정 늘어난다.
 `sceneLengthMultiplier: 0`으로 두면 종전처럼 제한하지 않는다.
@@ -214,139 +197,110 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 결과가 달라지지 않게 하려는 의도다.
 
 `composition`은 `linear` | `omnibus` | `alternating-pov` | `frame`이며, 고르면 프리셋이 연속성
-줄기(`threads`)와 서술자 카드(§4.2a)를 만든다. `threads`는 `{ "<id>": { "title": string,
-"wraps"?: string[] } }` 모양이고, `wraps`는 액자식에서 외화가 감싸는 내화 줄기다.
-`narration.defaultNarrator`는 이름 붙인 기본 서술자다.
+줄기(`threads`)와 서술자 카드(§4.2a)를 만든다. 줄기 정의(`id`·`title`, 액자식의 외화가 감싸는
+내화 줄기 `wraps`)는 `project.json`이 아니라 `.storyboard/structure.yaml`(§4.1a)에 있다.
+`narration.defaultNarrator`는 이름 붙인 기본 서술자(서술자 카드 slug)이고 `project.json`의 `setting`에 남는다.
 
 ```jsonc
 "setting": {
   "pov": "first",
-  "composition": "omnibus",
-  "threads": { "ep1": { "title": "나룻배" }, "ep2": { "title": "등불" } },
-  "narration": { "defaultNarrator": "hana-first" }
+  "composition": "alternating-pov",
+  "narration": { "defaultNarrator": "hana-pov" }
 }
 ```
 
 줄기는 **연속성의 스코프**다. 이야기 상태 원장(§4.10)·장 요약·직전 씬 맥락·페르소나/배경 기억이
-줄기 안에서만 이어지고, 캐넌(§4.7)만 전역으로 공유된다. 기본 줄기 `main`은 종전 경로를 그대로
-쓰고, 나머지 줄기는 `.storyboard/memory/threads/<id>/` 아래로 내려간다. 씬 번호는 전역으로
-유지되고 원고 조립도 번호순이다.
+줄기 안에서만 이어지고, 카드의 사실(`fact` 진술, §4.7)만 전역으로 공유된다. 줄기에 속한 씬의
+`state.yaml`을 구조 순서로 잇은 것이 그 줄기의 원장이고, 기억은 카드 번들의 `memory/<줄기>.yaml`에
+줄기마다 따로 쌓인다. 씬을 다른 줄기로 옮기면 상태도 따라간다. 씬 번호는 전역으로 유지되고 원고
+조립도 번호순이다. 씬에 줄기를 적지 않으면 기본 줄기 `main`에 놓인다.
 
-### 4.2 `.card` (YAML)
+### 4.1a `.storyboard/structure.yaml` (줄기와 씬 순서)
 
-`.card`의 실제 텍스트 포맷은 YAML이다. VSCode에서는 `CustomTextEditorProvider`로 등록된 커스텀 에디터가 이 YAML을 카드 폼(이미지 + key/value 영역)으로 렌더링한다. 사용자가 텍스트로 직접 편집하고 싶으면 "Open With…"로 일반 텍스트 에디터를 선택할 수도 있다.
-
-캐릭터 예시 (`character/elia.card`):
+작품의 줄기 목록과 **씬의 유일한 순서**를 담는다. 씬 번호(`001`…)와 폴더·초안 이름은 여기서 파생된다.
 
 ```yaml
-type: character
-id: elia
-name: 엘리아
-profile: profile/elia.png
+threads:
+  - id: ep1
+    title: 1편
+  - id: ep2
+    title: 2편
+scenes:
+  - scene: 12d18204-a77d-4c61-b806-e130b42cab3f
+    thread: main
+  - scene: ffdd9217-bc7a-4a93-b59a-8f9ac4b64315
+    thread: main
+```
+
+- `scenes[]`는 씬 uuid·`thread`와 선택 필드 `narrator`(서술자 카드 uuid)·`storyTime`(정수, §4.4의 «서사 시간»)을 가진다.
+- 순서를 바꾸는 동사는 `scene create --after`·`scene move`·`scene remove`이고, 엔진이 폴더와 초안 번호를 다시 매긴다. 도중에 끊기면 캐시 DB의 `journal`로 다음 쓰기 동사나 `init --repair`가 마무리한다.
+- 줄기가 기본 `main` 하나뿐이면 목록은 비어 있는 것으로 읽는다.
+
+### 4.2 카드 번들 (`character/`·`background/`)
+
+캐릭터·배경·서술자 카드는 `<종류>/<slug>.card/` 폴더다. 안의 파일은 모두 YAML이고, 직렬화는 canonical이라(고정 키 순서) 두 앱이 같은 바이트를 쓴다. 폴더 이름의 slug는 `card.yaml`의 `slug`와 같아야 하고, 둘이 다르면 `doctor`가 경고한다.
+
+- `card.yaml`: 머리말. `id`(uuid)·`slug`·`kind`·`name`과 종류별 필드.
+- `statements.yaml`: 진술 목록. 한 줄이 한 진술이고 출처(`source.origin`)가 붙는다.
+- `memory/<줄기>.yaml`: 생성이 쌓는 기억(§4.9). 캐릭터·배경 번들에만 있다.
+- `profile.png`: 그림 한 장.
+
+캐릭터 예시 (`character/hana.card/`):
+
+```yaml
+# card.yaml
+id: b3762d78-6f0b-476a-8419-9f14e1eca60b
+slug: hana
+kind: character
+name: 하나
 role: main
-attributes:
-  age: 17
-  sex: female
-  mbti: ENFJ
-tags:
-  - 용감한
-  - 결단력
-traits:
-  - 활발하게 움직임
-  - 결단력 있는 발언
-description:
-  - 주인공. 학교에 첫 등교한 17세 여학생.
-voice:
-  - 밝고 또렷한 1인칭으로 말한다
-  - 긴장해도 말끝을 흐리지 않는다
-catchphrases:            # 반복돼야 하는 입버릇·러닝개그. voice 의 예시 대사와 달리 복사 금지·반복 제한의 예외. 비트당 1회(generation.catchphrase.perBeatLimit)를 넘으면 초안 경고
-  - 이 몸이 말이야
-desire:
-  - 새 학교에서 진짜 친구를 만들고 싶다
-relations:
-  - target: jihoon
-    type: 친구
-    speech: 반말          # 이 상대에게 쓰는 말투. 인물별 대사 다듬기와 검수가 읽는다
-arc:
-  - stage: 발단
-    summary: 학교에 도착해 새 친구를 만남
-    sceneRef: 01-prologue
-recentDialogues:
-  - "이건 우리가 해낼 수 있어!"
 ```
 
-배경 예시 (`background/school.card`):
-
 ```yaml
-type: location
-id: school
-name: 학교 정문
-aliases:
-  - 학교
-  - 교문
-locationKind: place
-characterIds:
-  - elia
-tags:
-  - 학교
-  - 도시
-time: 아침
-weather: 맑음
-senses:
-  - 멀리서 울리는 등교 종소리
-  - 갓 자른 잔디 냄새
-layout:
-  - 정문은 큰길 쪽 하나뿐이고, 왼쪽 담을 따라 가면 쪽문이 있다
-rules:
-  - 8시 30분이 지나면 정문을 닫고 쪽문으로만 들어온다
-description:
-  - 주인공이 처음 등교하는 고등학교 정문. ...
+# statements.yaml
+- {facet: description, value: 모의 주인공, source: {origin: studio}}
 ```
 
-씬에 배경을 붙이는 방법은 두 가지다. `scene` frontmatter의 `location: <id>`로 명시하거나, 명시가 없으면 본문에서 배경의 `name`·`aliases`가 등장하는지로 자동 탐지한다(캐릭터 탐지와 동일한 방식). 자동 탐지는 가장 구체적인(가장 긴 일치 토큰) 배경 하나를 부착한다. 배경 이름이 "학교 정문"처럼 본문에 그대로 나오지 않을 수 있으므로 `aliases`에 본문 표기형("학교", "교문")을 넣어 두면 탐지가 안정된다.
+- 캐릭터 머리말은 `role`(`main` | `supporting` | `extra`)·`attributes`(`sex`·`age`·`job`)·`aliases`를 가질 수 있다.
+- 배경 머리말은 `aliases`와 `within`(상위 배경의 uuid)을 가질 수 있다.
+- 진술의 facet(`element/`가 소유한 어휘)은 종류마다 정해져 있다. 캐릭터는 `traits`·`catchphrases`·`desire`·`relation`·`speech`·`arc`, 배경은 `tags`·`time`·`weather`·`senses`·`layout`·`rules`, 셋 모두 `description`·`fact`(서술자와 캐릭터는 `voice`도)를 쓴다. `relation`·`speech`는 상대 카드의 uuid를 가리킨다.
+- `catchphrases`는 반복돼야 하는 입버릇이다. `voice`의 예시 대사와 달리 복사 금지·반복 제한의 예외이고, 비트당 1회(`generation.catchphrase.perBeatLimit`)를 넘으면 초안 경고가 난다. `speech`는 그 상대에게 쓰는 말투이며 인물별 대사 다듬기와 검수가 읽는다.
+- 배경의 `layout`(출입구·구역·시선)과 `rules`(이 장소에서 늘 참인 것)는 확정 사실이라 뼈대에 [배치]·[이 장소의 규칙]으로, 살붙임에 배경 사실로 들어간다.
+- 진술 출처(`origin`)는 `author`·`agent`·`studio`·`interview`·`note:<위치>` 등이다. 병합 규칙상 작가의 줄(`author`)은 다른 출처가 덮지 못한다. 출처 확인은 `card show --sources`.
 
-#### 카드 렌더링 (커스텀 에디터)
+씬에 배경을 붙이는 방법은 씬 `card.yaml`의 `place`(배경 카드 uuid)와 비트마다의 `place`다.
 
-- 좌측: 미리보기(캐릭터 프로필 이미지 + 역할/유형 배지)
-- 우측: 탭으로 구성된 편집 영역
-  - **`편집` 탭**: 사용자가 수기로 작성하는 필드만 단일 목록형으로 모은다.
-    - 캐릭터: `name`·`aliases`·`role`·`voice`·`catchphrases`·`desire`·`description`·`tags`·`profile` (`id`는 읽기 전용)
-    - 배경: `name`·`aliases`·`description`·`tags`·`time`·`weather`·`senses`·`layout`·`rules`·`locationKind`(location 한정) (`id`는 읽기 전용). `layout`(출입구·구역·시선)과 `rules`(이 장소에서 늘 참인 것)는 장소의 확정 사실이라 뼈대에 [배치]·[이 장소의 규칙]으로, 살붙임에 배경 사실로 들어간다
-  - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
-  - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
-- 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)
-- 캐릭터 `voice`·`description`과 배경 `description`은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. `편집` 탭에서 항목 추가/삭제로 관리하고, YAML에는 시퀀스로 저장된다.
+#### 카드를 고치는 길
 
-#### 파라미터 입력 주체 (수기 vs AI 자동)
+- **동사로만 고친다.** `card set <slug> <facet> "<값>"`·`card unset`이 한 줄을 쓰고 지우며(출처는 사람이 답할 수 있으면 `author`, 아니면 `agent`), `card edit <slug> "<지시>"`는 스튜디오의 편집으로 바로 쓰거나 `--propose`로 제안만 남긴다. `card create <character|background> "<설명>"`은 설명에서 번들을 채워 만든다.
+- **생성은 진술을 쓰지 않는다.** 초안 생성이 쓰는 것은 번들의 기억(`memory/`)과 씬의 상태(`state.yaml`)뿐이다.
+- **제안은 캐시 세션에 머문다.** 노트 흡수(`notes absorb`)·인터뷰 정리·스튜디오 `--propose`가 남긴 AI 제안은 캐시 DB의 세션에서 `card apply`로 받거나 `card discard`로 버릴 때까지 기다린다. `card promote`는 `card apply`가 되었다.
+- **서술자도 카드다.** `narrator` 명사는 `card`에 합쳐졌다(`card create narrator <slug> --person …`, `card list narrator`).
+- `card remove <slug>`는 그 카드를 가리키는 곳(씬 출연·장소, 다른 카드의 관계, 서술자의 초점, 구조의 서술자·목격자)과 함께 지울 줄을 먼저 보이고, `--force`일 때만 정리하며 번들을 지운다.
+- 폴더 이름(slug)을 바꿔도(`card rename`) 참조가 uuid라 고칠 곳이 없다. 탐색기에서 번들 폴더를 바꾸면 확장이 되돌리고 같은 엔진 동사로 바꾼다.
 
-카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `apps/vscode/docs/card-parameter-impact.md`.
+#### 카드 뷰어 (VSCode)
 
-- **수기 입력(작가 의도·정체성)**: 캐릭터 `id`·`name`·`voice`·`catchphrases`·`aliases`·`role`·`description`·`tags`·`profile`, 배경 `type`·`id`·`name`·`description`·`tags`·`locationKind`.
-- **AI 자동 갱신(이야기 진행으로 누적되는 값)**: 캐릭터 `traits`·`recentDialogues`·`attributes`·`arc`·`relations`, 배경 `characterIds`. 스키마/YAML에는 유지되지만 `편집` 탭에 입력란을 두지 않는다.
-  - `traits`·`recentDialogues`는 `apps/vscode/src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
-  - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/vscode/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
-  - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
-  - 적재 전 자기검증: `cards.candidates.verify` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
-  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`packages/story-model/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
-  - 위 후처리는 모두 `cards.candidates.updateAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
+`**/*.card/card.yaml`을 열면 읽기 전용 뷰어가 뜬다. 번들의 `statements.yaml`을 함께 읽어 머리말 한 줄(역할·나이·별칭, 씬이면 장소·출연)과 facet 섹션별 진술을 보여 준다(관계 줄에는 상대 카드의 이름). 줄마다의 출처는 보이지 않으며(`card show --sources`), 엔진 밖에서 바뀐 파일은 경고와 함께 읽는다. «텍스트로 열기»는 `card.yaml`과 `statements.yaml`을 기본 편집기로 열고, «스튜디오에서 고치기»는 스튜디오로 간다. 카드를 만들고 고치는 일은 스튜디오(사이드바의 «+», 제안의 «적용»·«버림», 인터뷰)가 맡는다.
 
-### 4.2a `.card` (서술자 카드, `narrator/`)
+### 4.2a 서술자 카드 (`narrator/<slug>.card/`)
 
-시점에 이름을 붙인 카드다. 씬 카드의 `narrator`나 `chapters.yaml` 장의 `narrator`가 이 id를 고른다.
-만들지 않아도 되며, 없으면 `setting.pov` 하나가 모든 씬에 적용된다.
+시점에 이름을 붙인 카드다. `structure.yaml`의 씬 `narrator`나 `chapters.yaml` 장의 `narrator`가 이 카드를 고른다.
+만들지 않아도 되며, 없으면 `setting.pov` 하나가 모든 씬에 적용된다. 만들기는 `card create narrator <slug> --person …`.
 
 ```yaml
-type: narrator
-id: hana-first
-name: 하나의 목소리
-person: first          # first | second | third
+# card.yaml
+id: 80ea41fb-f7a9-4800-ac7a-374ea86a4e51
+slug: hana-pov
+kind: narrator
+name: hana의 시점
+person: third          # first | second | third
 knowledge: witnessed   # witnessed | omniscient | retrospective
-tense: past            # past | present (생략 시 past)
-focal: hana            # 초점 인물 카드 id
-voice:
-  - 건조한 단문
-  - 자기 비하 섞인 유머
+tense: past            # past | present (선택, 생략 시 과거형)
+focal: <캐릭터 uuid>    # 선택: 초점 인물
 ```
+
+`statements.yaml`에는 서술 문장의 목소리인 `voice`·`description`·`fact` 진술을 둔다.
 
 - `knowledge`가 `witnessed`면 서술자는 초점 인물이 보거나 듣거나 겪은 것만 서술한다. 이 경계는
   프롬프트 지시, 검수 항목, 그리고 이야기 상태 원장의 목격자 필터(§4.10) 세 곳에서 강제된다.
@@ -354,193 +308,141 @@ voice:
 - `tense`는 `proseConventionLines`가 고정하는 시제를 정한다. 지정하지 않으면 과거형이다.
 - `voice`는 서술 문장의 목소리이며, 검수의 «서술자 목소리 이탈» 항목이 이 값을 기준으로 삼는다.
 
-**해석 순서는 씬 카드 > 장(`chapters.yaml`) > 프로젝트 기본**이다. 초점 인물은 서술자 카드의
-`focal` → 씬의 `povCharacter` 순으로 정해진다. 참조한 서술자 카드가 없으면 조용히 기본값으로
+**해석 순서는 씬(`structure.yaml`의 `narrator`) > 장(`chapters.yaml`) > 프로젝트 기본**이다. 초점 인물은 서술자 카드의
+`focal`이다. 참조한 서술자 카드가 없으면 조용히 기본값으로
 떨어지지 않고 `NarrationError`로 거절한다 — 잘못된 시점으로 초안을 덮어쓰는 것보다 멈추는 편이
 낫기 때문이다. CLI `doctor`가 이 참조를 생성 전에 검사한다.
 
-### 4.3 `.png`
+### 4.3 그림 (`profile.png`)
 
-- 캐릭터 프로필: `character/profile/<id>.png`
-- 카드의 `profile` 필드가 상대 경로로 참조 (캐릭터 카드 한정)
+캐릭터·배경 번들에 `profile.png`가 한 장 있다. 별도 `profile/` 폴더나 `profile` 필드는 없다.
 
-### 4.4 `.card` (씬 카드, `scene/`)
+### 4.4 씬 번들 (`scene/NNN-slug.card/`)
 
-씬도 카드다. 캐릭터·배경과 같은 `.card` 캐리어를 쓰지만 스키마는 `type: scene`으로 구분되며,
-파일명이 순서를 인코딩한다는 점만 다르다.
+씬도 카드 번들이지만 번호가 폴더 이름에 붙는다. 번호는 `structure.yaml`의 순서에서 나오는 세 자리 수이고, slug에는 번호를 붙이지 않는다. 폴더 안은 다음과 같다.
 
-최소 형태 (`scene/01-arrival.card` + `scene/01-arrival.summary.md`):
+| 파일 | 내용 |
+|---|---|
+| `card.yaml` | 머리말: `id`·`slug`·`kind: scene`·`title`, 선택 `cast`(인물 uuid)·`place`(배경 uuid)·`time`·`targetWordCount` |
+| `statements.yaml` | 설계 진술: `purpose`·`conflict`·`twist`·`emotionalShift`·`endState`·`foreshadowing` |
+| `beats.yaml` | 비트 목록 |
+| `dialogue.json` | 씬 대사 사이드카(화자 붙이기 결과) |
+| `state.yaml` | 이 씬이 확정한 이야기 상태(§4.10) |
+| `summary.md` | 창작자 요약 (선택) |
+
 ```yaml
-type: scene
-id: 01-arrival
-summary: 01-arrival.summary.md
-```
-```text
-주인공이 학교에 도착했다. 정문 앞에서 깊게 숨을 들이쉬고,
-친구 지훈을 발견한다.
+# card.yaml
+id: 12d18204-a77d-4c61-b806-e130b42cab3f
+slug: sc-1-1
+kind: scene
+title: 첫 만남
+cast: [b3762d78-6f0b-476a-8419-9f14e1eca60b]
 ```
 
-전체 형태:
 ```yaml
-type: scene
-id: 01-arrival
-title: 학교에 도착하다
-characters:
-  - elia
-  - jihoon
-location: school
-mood: 설렘
-relationStage: 첫 만남, 어색한 거리
-povCharacter: elia
-targetWordCount: 3000
-grounding:
-  incident: ...
-purpose: 주인공을 소개하고 지훈과의 첫 접촉을 만든다
-conflict: 지훈은 아는 척하지 않으려 한다
-twist: 지훈이 먼저 이름을 부른다
-emotionalShift: 긴장 → 안도
-endState: 지훈과 나란히 교문을 통과하는 지점
-foreshadowing:
-  - 전학 이유
-neededCanon:
-  - 학교는 3월에 학기를 시작한다
-beats:
-  - 정문 앞에서 숨을 고르다 지훈을 발견한다
-  - text: 지훈이 먼저 이름을 부르고, 둘은 나란히 교문을 지난다
-    cast: [elia, jihoon]     # 이 비트에 있는 인물(카드 id 또는 이름)
-    place: 교문 앞
-    time: 등교 직전
-summary: 01-arrival.summary.md
+# statements.yaml
+- {facet: purpose, value: 두 사람이 만난다, source: {origin: studio}}
 ```
 
-- **직렬화는 canonical**이다(고정 키 순서, block sequence). 카드와 같은 규칙이라 손으로 쓴 씬은
-  첫 프로그램적 저장에서 정규화된다.
-- 구조 필드는 프롬프트에 넣을 때 기존 씬 시드와 같은 `[목적]`/`[갈등]` 라벨 블록으로 렌더링되므로
-  (`renderSceneCardBody`), 생성 프롬프트 계약은 형식 전환과 무관하게 유지된다.
-- `summary`는 해석 없이 그대로 프롬프트에 붙는 창작자의 자유 메모다. 산문은 카드 옆
-  `scene/<stem>.summary.md`에 두고 카드에는 그 파일명만 적는다 — 창작자가 쓴 사건과 기계가 펼친
-  비트를 파일 단위로 구별하기 위해서다. `parseScene`은 카드와 파일 본문을 함께 받고, 카드 에디터의
-  Summary 칸이 이 파일을 읽고 쓴다. 인라인 산문도 읽히지만
-  새 카드는 파일로 둔다(`scene complete`가 새로 제안하는 씬만 아직 인라인으로 나온다).
-  비어 있는 구조 필드는 카드 에디터의 **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울
-  수 있고, 반영은 비어 있는 필드에만 적용된다(사용자가 적어 둔 값이 항상 이긴다).
+```yaml
+# beats.yaml
+- text: 정문 앞에서 숨을 고르다 지훈을 발견한다
+- text: 지훈이 먼저 이름을 부르고, 둘은 나란히 교문을 지난다
+  cast: [<인물 uuid>, <인물 uuid>]
+  place: <배경 uuid>
+  time: 등교 직전
+```
+
+- 직렬화는 canonical이다(고정 키 순서). 번들의 파일은 동사(`scene create`·`scene plot`·`card set`·스튜디오)로만 바뀐다.
+- 비트의 `cast`·`place`는 uuid이고, 어느 카드에도 맞지 않는 이름은 쓰지 않고 버린다.
+- 구조 진술은 프롬프트에 넣을 때 `[목적]`/`[갈등]` 라벨 블록으로 렌더링된다(`renderSceneCardBody`).
+- `summary.md`는 해석 없이 그대로 프롬프트에 붙는 창작자의 자유 메모다. 창작자가 쓴 사건과 기계가 펼친 비트를 파일 단위로 구별하기 위해 비트와 따로 둔다. 비트와 함께 있으면 `[창작자 요약]` 설계 블록으로 간다.
+- `scene create "<설명>"`이 번들을 만들고 스튜디오가 설명에서 채운다(`--name`만 주면 빈 씬, `--after <씬>`이면 그 뒤에 끼운다). `scene move`·`scene remove`는 뒤 씬의 폴더와 초안을 다시 매긴다. `scene list`는 번호·줄기·제목·상태(초안 없음/초안/낡음)를 한 줄씩 보인다.
 - `beats`는 초안이 따라갈 시간 순 사건 목록이다. 초안 분량의 실질 상한은 씬의 사건 밀도이므로,
-  `draft generate`는 `beats`가 비어 있으면 카드 재료·grounding·summary로 먼저
+  `draft generate`는 `beats`가 비어 있으면 카드 재료·summary로 먼저
   `max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))`개를 뽑아 카드에 쓴다
   (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `generation.beats.auto`로 끔).
   `scene plot` verb와 확장 명령은 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
   비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 사건 재료이고
   `summary`는 `[창작자 요약]` 설계 블록으로 함께 간다.
-- 비트는 문자열이거나 좌표를 단 객체(`text`·`cast`·`place`·`time`)다. 좌표는 사건 줄 아래
+- 비트는 `text`와 선택 좌표(`cast`·`place`·`time`)를 가진 항목이다. 좌표는 사건 줄 아래
   `(출연: … / 장소: … / 시각: …)` 한 줄로 프롬프트에 실리고(출연의 카드 id는 이름으로 바뀐다),
   뼈대는 그 인물만 그 자리에 두고 그 장소·시각에서 사건을 벌인다 — 인물의 등장·퇴장을 뼈대가
   추론하지 않게 하고, 뒤에 오는 «이 비트에서 누가 무엇을 아는가»의 좌표가 된다. 기계가 뽑는 비트
   (`draft generate`의 자동 전개와 `scene plot`)도 좌표를 단다: `sceneBeats`가 비트마다 `cast`·`place`·`time`을
-  돌려주고 엔진이 출연 이름을 카드 id로 옮긴다(`resolveSceneBeats.ts`의 `toSceneBeat`; 맞지 않는 이름은 그대로
-  두어 «비트 출연» 경고가 잡는다). 좌표가 하나도 없는 비트는 문자열로 남는다.
+  돌려주고 엔진이 출연 이름을 카드 uuid로 옮긴다(`resolveSceneBeats.ts`의 `toSceneBeat`; 어느 카드에도 맞지 않는
+  이름은 버려진다). 좌표가 하나도 없는 비트는 `text`만 남는다.
 - 좌표 비트가 있으면 장면 전환(`---`)은 파이프라인이 정한다(`pipeline/sceneBreakPlan.ts`). 다음 비트의
   장소 낱말이 지금 대목의 장소들과 하나도 겹치지 않거나(«집 현관»→«집 거실»은 같은 곳), 시각이
   `generation.sceneBreak.timeJumpMinutes`(기본 60분) 이상 뛰거나 — 시:분이 없으면 시간대 낱말이 바뀌거나 —
   날이 바뀌면 끊는다. 비트의 `break: true|false`가 그 판정보다 앞선다. 뼈대는 사건 목록의 `⟪대목 n⟫` 줄
   앞에만 `---`를 쓰고(그 밖의 `---`는 지워진다), 장면 좌표 장부는 그 대목들이다. 살붙임이 구간의 `---` 수를
-  바꾸면 다시 부르고, 그래도 다르면 뼈대 조각의 자리에 되살린다. 문자열 비트만 있는 씬은 모델 재량이다.
+  바꾸면 다시 부르고, 그래도 다르면 뼈대 조각의 자리에 되살린다. 좌표가 없는 비트만 있는 씬은 모델 재량이다.
 
 #### 서술자와 줄기 (`narrator`·`thread`)
 
-`narrator`는 이 씬이 쓸 서술자 카드 id, `thread`는 이 씬이 속한 연속성 줄기다. 둘 다 생략할 수 있고,
-생략하면 장 → 프로젝트 기본으로 내려간다(`thread`의 기본은 `main`). 아웃라인에서 씬 시드를 만들 때
-장의 `narrator`·`thread`가 씬 카드로 **복사**되므로, 시점 교차는 `chapters.yaml`의 장에 한 줄만
-적으면 표현된다.
+씬의 서술자와 줄기는 씬 번들이 아니라 `structure.yaml`의 씬 항목(`narrator`·`thread`)에 있다. 서술자는
+서술자 카드의 uuid다. 둘 다 생략할 수 있고, 서술자를 생략하면 장 → 프로젝트 기본으로 내려간다(줄기의 기본은
+`main`). 장의 `narrator`·`thread`는 `chapters.yaml`에 적는다.
 
-#### 장면의 경계 (`endState`·`povCharacter`)
+#### 장면의 경계 (`endState`)
 
-씬 카드가 **어디서 멈추는지**와 **누구의 시점인지**를 담지 못하면, 한 씬이 다음 씬 영역까지 진행해
-같은 사건이 두 번 결말나고 한 씬 안에서 여러 인물의 내면이 교차한다.
+씬이 **어디서 멈추는지** 담지 못하면, 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말난다.
 
-- `endState`는 `[이 장면의 종료 지점]` 블록으로 렌더링되며, **그 뒤는 다음 장면의 몫**이라는 문장이
+- `endState` 진술은 `[이 장면의 종료 지점]` 블록으로 렌더링되며, **그 뒤는 다음 장면의 몫**이라는 문장이
   함께 붙는다. 뼈대 단계가 이 값을 직접 받아 사건 배치의 끝을 정한다.
-- `povCharacter`는 `StyleDirective`로 옮겨져 대사·포맷 단계까지 시점 인물 지시로 전달된다. 프로젝트
-  계약의 `pov`(1인칭/3인칭 제한/3인칭 전지)가 **서술의 종류**를 정하면, 이 필드는 그 씬에서 **누구의
-  내면에 들어갈지**를 정한다.
-- 둘 다 비어 있어도 생성은 진행된다(종료 지점이 없으면 뼈대가 요약의 마지막 사건에서 자연히 멈춘다).
-- `endState`는 씬 폼의 **종료 지점** 입력란과 **Summary에서 구조화** 제안 항목에 함께 들어 있다.
-  `povCharacter`는 현재 카드 YAML을 직접 편집해 넣는다(폼 입력란·AI 제안 미노출).
+- 비어 있어도 생성은 진행된다(종료 지점이 없으면 뼈대가 요약의 마지막 사건에서 자연히 멈춘다).
+- 누구의 내면에 들어갈지는 씬이 아니라 서술자 카드의 초점 인물(`focal`)이 정한다(§4.2a).
 
 #### 서사 시간 (`storyTime`)
 
-회상·액자 구성·시간 점프가 있으면 **씬 순번(서술 순서)과 사건 시점(서사 시간)이 어긋난다.** 캐넌의
-`validFrom`/`validUntil`을 씬 순번으로 재면, 20화에서 죽은 인물이 25화 회상에서도 죽은 상태로
-주입된다. 씬 카드의 정수 `storyTime`이 그 씬의 사건 시점이고, 유효 구간은 이 축으로 잰다.
+회상·액자 구성·시간 점프가 있으면 **씬 순번(서술 순서)과 사건 시점(서사 시간)이 어긋난다.** 진술의
+유효 구간을 씬 순번으로 재면, 20화에서 죽은 인물이 25화 회상에서도 죽은 상태로 주입된다.
+`structure.yaml`의 씬 항목에 적는 정수 `storyTime`이 그 씬의 사건 시점이고, 유효 구간은 이 축으로 잰다.
 
 ```yaml
-type: scene
-id: 25-memory
-storyTime: 3        # 25화지만 사건은 3화 시점이다
+scenes:
+  - scene: <씬 uuid>
+    thread: main
+    storyTime: 3        # 25번째 씬이지만 사건은 3화 시점이다
 ```
 
 - **적지 않은 씬은 순번을 서사 시간으로 쓴다.** 순차 전개만 하는 작품은 아무것도 바뀌지 않는다.
-- 구간의 경계(`validFrom: 20-fall`)도 **그 씬의 서사 시간**으로 풀린다. 경계가 회상 씬을 가리켜도
-  뜻이 유지된다.
+- `fact` 진술의 유효 구간(`since`·`until`)도 씬 uuid로 적고 **그 씬의 서사 시간**으로 풀린다.
 - **공개 시점(`revealFrom`)은 여전히 씬 순번으로 잰다.** 회상이라고 독자가 이미 읽은 반전이 다시
   덮이지는 않기 때문이다. 두 축을 다른 자로 재는 것이 이 설계의 핵심이다.
-- 시간축을 쓰는 사실이 하나도 없으면 씬을 읽지 않는다. 비용은 구간을 실제로 쓰는 워크스페이스만 낸다.
+- 시간축을 쓰는 사실이 하나도 없으면 씬을 읽지 않는다.
 
-#### 사실 시트 (`grounding`)
+#### 사실 시트 (grounding): 저장하지 않고 유도한다
 
-씬이 가사·분위기 스케치처럼 추상적이면 생성물도 은유만 남는다. 이를 막기 위해 생성 직전에 씬을 구체적
-사건으로 못박는 4개 사실을 확정하고, 그 결과를 씬 카드에 남긴다.
+생성은 더 이상 모델에게 빈 사건·장소·관계·시각을 제안받아 씬 카드에 쓰지 않는다. 필요할 때 씬에서 유도한다.
 
-```yaml
-type: scene
-id: 07-tonight
-title: 수고했어, 오늘도
-characters:
-  - seoha
-  - doyoon
-grounding:
-  incident: 3년 준비한 임용시험 최종 면접에서 떨어졌다
-  place: 서하의 옥탑방 현관문 앞
-  relation: 반년째 계단에서 인사만 하던 아랫집 이웃
-  time: 11월 말 자정 무렵
-```
+- 사건: 씬 제목과 첫 비트.
+- 장소: 첫 비트의 `place`, 없으면 씬 `place`의 배경 카드 이름.
+- 시각: 첫 비트의 `time`.
+- 어느 것도 저장하지 않으므로, 비트나 카드를 고치면 `inputHash`가 바뀌어 다음 생성에 그대로 반영된다.
+- `generation.grounding.autoApprove` 설정, `sceneGrounding` AI 작업, 승인 프롬프트, 비워 둔 칸의 기록은 없다.
 
-- 비어 있는 필드만 AI가 제안하고, **사용자가 적어 둔 값은 절대 덮어쓰지 않는다.**
-- 4개가 모두 차 있으면 제안 호출 자체를 건너뛴다(추가 비용 없음).
-- 제안을 받았는데도 모델이 비워 둔 칸은 `.storyboard/cache/grounding-gaps.json`에 남긴다. 씬 본문,
-  사실 시트, 인물이 그대로면 다음 실행은 그 칸을 다시 묻지 않는다. 제안 호출이 실패한 경우는 남기지 않는다.
-- 기본값은 제안을 보여 주고 승인·수정을 받는 것이다. `generation.grounding.autoApprove`를 켜면
-  제안을 자동 수락해 원클릭 생성을 유지한다.
-- 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
-  무효화되어 다음 생성에 그대로 반영된다.
-- 씬 카드 직렬화가 canonical이므로 grounding만 바뀌어도 카드 전체가 다시 직렬화된다.
+#### 번호와 이름
 
-#### 파일명 규칙 (강제)
-
-- 패턴: `NN-<slug>.card`
-- `NN`: zero-pad 2자리 정수 (예: `01`, `02`, ..., `99`)
-- `<slug>`: 영소문자, 숫자, 하이픈만 허용
-- 카드의 `id`는 파일명 stem(`NN-<slug>`)과 같아야 한다
-- 잘못된 형식의 파일은 사이드바에 ⚠️ 표시 + 경고 진단 표시
-- `Storyboard: New Scene` 명령은 항상 다음 사용 가능 번호로 자동 생성
-- 이름·번호 변경은 `Storyboard: Rename Scene...` / `storyboard scene rename <stem> --to <stem>`만 지원한다. stem을 이름으로 쓰는 파일(초안, `.draft/` 이력, 요약, 씬·캐넌·카드 후보 캐시, 대사 기억, Studio 세션)을 옮기고, stem이나 번호로 가리키는 참조(이야기 상태 원장, 캐넌의 `sourceScene`·`validFrom`·`validUntil`·`revealFrom`, `revision-plan.yaml`, 사용량 원장, 인물 `arc[].sceneRef`, 페르소나·배경 기억)를 고친다. 다른 씬이 쓰는 번호는 거부한다. 아웃라인은 번호의 위치로 씬과 짝지어지므로 번호가 바뀌면 그 씬의 아웃라인 자리와 장도 바뀐다
-
-#### 구형 `.txt` 씬
-
-v0.6.x 이전 워크스페이스의 `scene/*.txt`는 읽지 않고, 변환 명령도 0.11.5 를 끝으로 없앴다. 그런
-작품은 0.11.5 이하에서 `storyboard scene migrate`로 먼저 `.card`로 옮긴 뒤 올린다.
+- 씬 폴더: `NNN-<slug>.card`. `NNN`은 구조 순서의 세 자리 수이고, slug는 영소문자·숫자·하이픈이며 번호를 붙이지 않는다.
+- 초안: `draft/NNN-<slug>.md`.
+- 순서·번호를 바꾸는 길은 `scene create --after`·`scene move`·`scene remove`뿐이다. 엔진이 뒤 씬의 폴더와 초안을 다시 매기고, 줄이 끊기면 캐시 DB의 `journal`이 마무리한다. 번들 안의 참조가 uuid라 고칠 참조는 없다.
+- `scene rename <stem> --to <새 이름>`은 이름(slug)만 바꾸고 번호 변경은 거부한다.
+- 읽을 수 없는 씬은 경고와 함께 건너뛴다. `doctor`는 uuid가 겹친 폴더, 머리말과 slug가 어긋난 폴더, 구조 순서와 다른 번호의 폴더(`init --repair`가 다시 매김)를 알린다.
 
 ### 4.5 `.md` (출력 원고, `draft/`)
 
-`draft/<scene>.md`는 AI가 생성한다. 사용자가 직접 손볼 수 있고, `Re-generate`를 누르면 덮어써진다.
+`draft/NNN-<slug>.md`는 AI가 생성한다. 사용자가 직접 손볼 수 있고, `Re-generate`를 누르면 덮어써진다.
 
 파일 머리에는 YAML frontmatter가 붙는다. `sceneStem`·`format`·`generatedAt`에 더해, 어떤 도구·AI가 만든 초안인지 추적할 수 있도록 생성 주체를 기록한다(옵셔널 — 없는 구버전 초안도 그대로 읽힌다).
 
 ```yaml
 ---
-sceneStem: 01-prologue
+sceneStem: 001-prologue
 format: novel
 generatedAt: '2026-08-22T12:00:00.000Z'
-generator: storyboard@0.6.1
+generator: storyboard@0.16.0
 providerId: claude
 model: claude-sonnet-5
 warnings:                     # 생성 검증이 잡았으나 재시도로 못 고친 항목 (선택)
@@ -557,13 +459,13 @@ warnings:                     # 생성 검증이 잡았으나 재시도로 못 �
 - `format=play`: 희곡 형식 (지문 + 대사)
 - `format=essay` / `format=poem`: 자유 형식
 
-#### 이전 초안 히스토리 (`.draft/`)
+#### 이전 초안 (캐시의 `revisions/`)
 
-`editor.draft.keepHistory`를 켜면, Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관한다. 시간값은 보관 시점의 로컬 시간이고 `rev-NN`은 해당 씬 폴더에서 1부터 증가한다. 기본값은 꺼짐이며, `.draft/`는 초고에서 다시 만들 수 있는 산출물이라 `.gitignore`로 제외한다(`draft/` 자체는 읽는 결과물이라 추적한다). 보관 실패는 비치명적이라 생성 자체를 막지 않는다(경고 로그만 남김).
+생성·재생성, 손질(`draft edit`·`augment`·`condense`·`expand`), 스튜디오의 초안 적용은 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.storyboard/cache/revisions/<씬 uuid>/`에 보관한다. 씬마다 최근 10개만 남기고 더 오래된 것은 지운다. 항상 보관하므로 켜고 끄는 설정(`editor.draft.keepHistory`)은 없고, 설정 파일에 남은 옛 키는 알 수 없는 키로 경고만 한다. 캐시는 git에 들어가지 않는다.
 
 ### 4.6 `.storyboard/cache/scenes/<scene>.json` (씬별 컨텍스트)
 
-Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **워크스페이스 폴더의 파일**과 이 JSON으로 씬별 파이프라인 컨텍스트를 나누어 저장한다. 위치는 **`.storyboard/cache/scenes/`로 제한**되며 사용자가 직접 만들거나 옮길 수 없다.
+씬별 파이프라인 컨텍스트는 이 JSON으로 캐시에 남긴다. 위치는 **`.storyboard/cache/scenes/`로 제한**되며 사용자가 직접 만들거나 옮길 수 없다. 캐시 전체(`.storyboard/cache/`)는 git 밖이고 지워도 입력에서 다시 만들어진다. 캐시 DB `storyboard.db`(§4.11)와 초안 이전본(`revisions/`)도 같은 캐시 안에 있다.
 
 ```json
 {
@@ -593,181 +495,160 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
   재작성 전 검수가 장면 안 시간·공간 연속성의 기준으로 쓴다
 - 추후 회귀 테스트 자료
 
-씬 입력 hash에는 주입된 정전 설정(아래 4.7)도 포함되어, canon이 바뀌면 하위 씬 캐시가 무효화된다.
+씬 입력 hash에는 씬 번들과 출연·장소 카드의 진술(사실 포함)이 반영되어, 카드의 사실이 바뀌면 그 카드를 쓰는 씬의 캐시가 무효화된다.
 
-### 4.7 `.storyboard/bible/canon.yaml` (스토리 바이블)
+### 4.7 설정 사실: 카드의 `fact` 진술
 
-장편의 장거리 일관성을 위한 **정전(canon) 설정 저장소**다. 사람이 확정한 사실만 담으며 git으로 추적한다.
-씬 생성 시 등장 인물/배경에 해당하는 canon 사실을 골라 파이프라인 컨텍스트(`previousContext`)에 주입하고,
-초안의 `연속성 검사`는 이 설정과 본문이 모순되는 구간을 진단한다. 사실이 선택적 `keywords`를 선언하면, 씬 시드 본문에
-그 키워드가 등장할 때 해당 사실의 subject가 씬 등장 엔티티가 아니어도 추가로 활성화된다(결정적 소문자 부분일치, AI 없음).
-`keywords`가 없으면 기존 등장 엔티티 멤버십 동작과 동일하다.
+별도의 canon/bible 저장소는 없다(`.storyboard/bible/canon.yaml`, 정전 후보 캐시, `canon diff`·`canon promote`는 사라졌다). 장편의 장거리 일관성을 위한 설정 사실은 **캐릭터·배경 카드의 `fact` 진술**이다(`statements.yaml`).
+생성·검수·보충(`draft augment`)·압축(`draft condense`)·원고 검사·씬 완성(`scene complete`)은 씬의 출연·장소 카드에 적힌 사실을 읽어 프롬프트에 주입하고, `연속성 검사`는 이 사실과 본문이 모순되는 구간을 진단한다.
+**카드의 사실만 줄기와 무관하게 전역으로 공유된다.**
 
-```yaml
-version: 1.0.0
-facts:
-  - id: elia-eye-color
-    subject: { kind: character, id: elia }   # character | background
-    key: 눈동자 색
-    value: 녹색
-    status: canon                            # canon | candidate (candidate는 주입/검사 제외)
-    sourceScene: 01-prologue                 # 선택
-    validFrom: 05-awakening                  # 선택: 사실이 '참'이 되는 시점 (NN-slug 또는 씬 번호)
-    validUntil: 20-fall                      # 선택: 사실이 더 이상 참이 아니게 되는 시점
-    revealFrom: 28-reveal                    # 선택: 사실이 '밝혀지는' 시점 — 그 전 씬에는 주입 안 함
-    # revealFrom: { scene: 28-reveal, knownBy: [elia] }   # 인물별 인지: 나머지 등장 인물은 '아직 모름'으로 표시
-    keywords: [붉은 제국, Crimson Empire]      # 선택: 씬 본문에 등장 시 비-엔티티 사실도 활성화
-```
-
-**`validFrom`과 `revealFrom`은 다른 축이다.** `validFrom`은 사실이 참이 되는 시점이므로, 1화부터 참인
-결말 반전(예: "레벨 0은 관리자 키가 봉인된 상태")을 가릴 수 없다. 공개 시점 축이 없으면 그 반전이
-공개 여부와 무관하게 모든 씬 프롬프트에 주입되어 초반 본문에 그대로 누설된다. `revealFrom`은 밝혀지는
-시점을 따로 선언해, `selectInjectedFacts`가 **엔티티 경로와 키워드 경로 양쪽에서** 미도달 사실을
-제외하게 한다. `revealFrom`이 없는 사실은 종전대로 항상 주입된다.
-**인물별 인지 격차**는 `revealFrom: { scene, knownBy }`로 적는다. 독자에게 공개된 뒤에는 사실을 주입하되,
-`knownBy`에 없는 등장 인물을 `(아직 모름: 지훈)`으로 표시한다 — 빼 버리면 서술자까지 모르는 것이 되어
-"A는 알고 B는 모르는" 장면을 쓸 수 없다. `validFrom`/`validUntil`은 씬 카드의 `storyTime`(§4.4)으로,
-`revealFrom`은 씬 순번으로 잰다.
-
-**candidate → canon 흐름**: 초안 생성 시 설정 사실 추출(`factExtraction`)이 등장 인물의 고정 설정을
-`.storyboard/cache/bible/<scene>.json`에 **candidate**로 자동 저장한다. `Storyboard: Promote Bible
-Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승격하면, 그때부터 주입·연속성 검사 대상이 된다.
+- 유효 구간(`since`·`until`)과 공개 시점(`revealFrom`)은 씬 uuid로 적는다. 사실을 아는 인물(`knownBy`)은 인물 uuid다.
+- **유효 구간과 공개 시점은 다른 축이다.** 유효 구간은 사실이 참이 되는 시점이므로 1화부터 참인 결말 반전을 가릴 수 없다. `revealFrom`은 밝혀지는 시점을 따로 선언해 그 전 씬에는 사실을 주입하지 않는다. `revealFrom`이 없는 사실은 항상 주입된다.
+- **인물별 인지 격차**: 독자에게 공개된 뒤에는 사실을 주입하되, `knownBy`에 없는 등장 인물을 «아직 모름»으로 표시한다. 빼 버리면 서술자까지 모르는 것이 되어 «A는 알고 B는 모르는» 장면을 쓸 수 없다.
+- 유효 구간은 `structure.yaml`의 `storyTime`(§4.4)으로, `revealFrom`은 씬 순번으로 잰다.
+- 생성은 사실을 쓰지 않는다. 사실은 작가가(`card set`), 스튜디오가, 혹은 노트 흡수·인터뷰가 남긴 제안을 `card apply`로 받아 카드에 들어간다. 노트가 인물·배경에 대해 적은 설정 사실(출신·내력·능력의 한계·장소의 규칙)은 새 카드에는 곧바로 `fact` 진술로, 기존 카드에는 대기 제안으로 간다.
 
 ### 4.8 `.storyboard/outline/` (장편 구조 계획)
 
 장편 자동 생성은 outline을 명시적 산출물로 저장해야 재시도와 검수가 가능하다.
 
 - `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
-- `chapters.yaml`: act/chapter/scene 구조, chapter/scene 목표 분량, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. 장에는 `narrator`·`thread`를 둘 수 있고, 씬 시드를 만들 때 씬 카드로 복사된다. (`storyboard.outline.generate`가 생성)
-- `revision-plan.yaml`: 검사 결과와 재작성 지시를 scene 단위로 누적. (`storyboard.draft.reviseLoop`·`storyboard.novel.generate`가 기록)
+- `chapters.yaml`: act/chapter 구조, 장의 제목·요약·목표 분량·`narrator`·`thread`, 그리고 장에 속한 씬의 uuid 목록. (`storyboard.outline.generate`가 생성) 씬 하나하나의 계획(목적·갈등·출연·장소 …)은 여기에 없고 씬 번들의 설계 진술이 가지며, 순서는 `structure.yaml`이다.
+- 씬 계획: `outline generate`가 만든 씬 계획은 씬이 생기기 전까지 캐시(`.storyboard/cache/outline/pending-chapters.yaml`)에서 기다린다. `scene seed`(또는 장편 생성의 seeds 단계)가 씬 번들을 만들고 나면 `chapters.yaml`의 장이 씬 uuid를 적는다.
+- 검수·재작성 계획은 더 이상 파일이 아니다. 씬 단위 기록은 캐시 DB의 `revision_plans` 표에 있고 `manuscript review --show`로 본다. 캐시를 지우면 검수를 다시 돌려야 한다.
 
-이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.card`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.card` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
+이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.card/`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. 씬 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다. 노트가 남긴 시놉시스 후보는 `outline show --pending`으로 보고 `outline apply`(가장 새 후보를 `synopsis.md`에 쓰고 나머지는 버림)·`outline discard`로 처리한다.
 
-### 4.8a `.storyboard/cache/cards/<scene>.json` (카드 필드 후보)
+### 4.8a 대기 중인 AI 제안 (캐시 DB의 세션)
 
-bible candidate와 같은 결을 가지는, **캐릭터 카드 필드용** 후보 캐시다. 초안 생성 시 등장 인물별로
-`relations`·`arc`·`attributes`를 AI가 추출(`cardFactExtraction`)해 여기에 적재한다(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`).
-`Storyboard: Promote Card Candidates` 명령으로 작가가 고른 항목만 해당 캐릭터 카드에 병합한다.
-relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고, attributes는 카드에 없는 key만 제안한다(기존 값 비파괴).
-배경 `characterIds`는 후보를 거치지 않고 배경 카드에 결정적으로 직접 기록된다.
+AI가 카드에 대해 낸 제안은 카드를 곧바로 바꾸지 않고 캐시 DB의 `sessions`에 카드의 대기 진술로 남는다. 노트 흡수(위치마다 하나), 인터뷰 정리(출처 `interview`, 카드마다 한 벌), 스튜디오의 `card edit --propose`/`card build --propose`(출처 `studio`)가 이 길을 쓴다. 초안 생성은 제안을 내지 않는다(옛 `.storyboard/cache/cards/<scene>.json`은 없다).
 
-### 4.8b `.storyboard/cache/notes/` (노트 흡수)
+- `card apply [<slug> …]`는 대기 제안을 보이고 `statements.yaml`에 쓴다(`--dry-run`이면 보이기만). `card discard [<slug> …]`는 같은 제안을 버린다. 두 노트가 한 칸에 다른 값을 주면 나중에 흡수한 위치가 이긴다.
+- `status`는 «제안» 줄로 대기 중인 카드 제안과 시놉시스 후보를 알린다. VSCode의 스튜디오는 열린 카드에 «이 카드에 제안 n건이 기다려요» 띠를 보이고 «적용»·«버림»을 둔다.
+
+### 4.8b 노트 흡수 (`notes absorb`)
 
 `storyboard notes absorb`·`init --from-notes`가 Obsidian 볼트, Notion 페이지, Notion «Markdown & CSV» 내보내기
 zip(`notion-export`: 파일·폴더 이름 끝의 32자리 id 를 떼고, 행 페이지가 따로 있는 데이터베이스 CSV 는 건너뛴다)에서
-읽은 것을 둔다. 모두 git 밖의 캐시이며, 워크스페이스에 들어가는 것은 카드·씬·시놉시스뿐이다.
+읽은 것을 둔다. 수집한 노트·정리 계획·모델 응답은 캐시 DB의 흡수 세션에 붙고, 워크스페이스에 들어가는 것은 카드·씬·시놉시스뿐이다.
 
-- `source.json`: 수집한 노트 원문과 출처(트리에서 읽었는지 링크로 따라왔는지), 읽지 못한 노트.
-- `plan.json`: 마지막 정리 계획 — 새 카드, 기존 카드에 대한 변경, 번호를 붙인 씬, 계약·시놉시스 제안, 분류 못한 노트, 원고로 분류된 노트. 씬은 노트 한 장에 하나이고 노트 속 사건은 그 씬의 `beats`가 된다. 이미 문장으로 쓴 원고(`draft`)에서는 인물·배경·작품 정보만 옮기고 씬은 만들지 않는다.
-- `responses.json`: 마지막 정리에서 묶음마다 모델이 돌려준 원문 응답과 그 묶음의 노트 id. 출력 한도에서 잘렸거나(`truncated`) 정리 결과를 찾지 못한(`unparsed`) 묶음은 `failure`로 표시되고, 그 묶음은 경고로 보고된다. 모든 묶음이 실패하면 흡수는 실패(exit 1)로 끝난다.
+- 수집한 노트 원문과 출처(트리에서 읽었는지 링크로 따라왔는지), 읽지 못한 노트.
+- 마지막 정리 계획 — 새 카드, 기존 카드에 대한 변경, 번호를 붙인 씬, 계약·시놉시스 제안, 분류 못한 노트, 원고로 분류된 노트. 씬은 노트 한 장에 하나이고 노트 속 사건은 그 씬의 비트가 된다. 이미 문장으로 쓴 원고(`draft`)에서는 인물·배경·작품 정보만 옮기고 씬은 만들지 않는다.
+- 마지막 정리에서 묶음마다 모델이 돌려준 원문 응답과 그 묶음의 노트 id. 출력 한도에서 잘렸거나(`truncated`) 정리 결과를 찾지 못한(`unparsed`) 묶음은 `failure`로 표시되고, 그 묶음은 경고로 보고된다. 모든 묶음이 실패하면 흡수는 실패(exit 1)로 끝난다.
 - 인물의 성격(`traits`)·태그(`tags`)가 두 묶음 이상에서 읽혔거나 기존 카드에 이미 있으면, 계획을 저장하기 전에 요청 하나로 같은 뜻의 항목을 하나로 줄인다. 모델은 후보 중에서 고르기만 하고 문구를 고치지 못하며, 이 요청이 실패하면 합친 목록 그대로 두고 경고한다. 띄어쓰기·문장부호만 다른 항목은 요청 없이 하나로 본다.
-- `candidates.json`: 이미 있던 카드에 대한 노트의 변경. 흡수 한 번이 출처(`sources[]`: `id`·`location`·`absorbedAt`·`candidates`) 하나이고, 같은 위치를 다시 흡수하면 그 출처만 바뀐다(`--replace-candidates`면 전부). Notion 페이지의 위치는 링크 표기와 관계없이 `https://www.notion.so/<페이지 id>`로 적는다. 이 파일을 읽을 수 없으면 흡수는 AI 요청 전에 파일 경로를 알리며 실패한다. `card promote`는 카드마다 출처를 합쳐 초안 후보(§4.8a)와 함께 반영하고 반영한 항목을 지운다. 노트끼리 값이 다른 칸은 반영하지 않고 남기며, `card discard <id> --change <출처 id>:<변경 id>`로 하나를 버린다. 0.12 형식(최상위 `location`)은 읽지 않는다.
-- 노트가 인물·배경에 대해 적은 설정 사실(`canonFacts`: 출신·내력·능력의 한계·장소의 규칙)은 카드가 아니라 정전 후보로 간다 — 위치마다 `.storyboard/cache/bible/notes-<해시>.json` 한 장(`sceneStem: notes:<위치>`)이고, `canon diff`·`canon promote`가 초안 후보와 함께 다룬다. 같은 위치를 다시 흡수하면 그 장만 바뀐다. 세계관만 적힌 노트는 `setting` 으로 분류되어 «분류 못함»에서 빠진다.
-- `synopsis.candidate.md`: `outline/synopsis.md`가 이미 있을 때 노트에서 만든 시놉시스. `<!-- note-source: <위치> -->` 표시 아래 위치마다 한 단락이고, 같은 위치는 그 단락만 바뀐다.
+- 이미 있던 카드에 대한 노트의 변경은 그 카드의 대기 제안(위치마다 하나)이다(§4.8a). 같은 위치를 다시 흡수하면 그 위치의 제안만 바뀐다. Notion 페이지의 위치는 링크 표기와 관계없이 `https://www.notion.so/<페이지 id>`로 적는다.
+- 노트가 인물·배경에 대해 적은 설정 사실(출신·내력·능력의 한계·장소의 규칙)은 새 카드에는 `fact` 진술로 곧바로, 기존 카드에는 대기 제안으로 간다(§4.7). 세계관만 적힌 노트는 `setting`으로 분류되어 «분류 못함»에서 빠진다.
+- 인물 예시 대사는 인물 번들 `memory/main.yaml`의 `voiceSample`(출처 `note:<위치>`)로 쌓인다.
+- 시놉시스: `outline/synopsis.md`가 이미 있으면 노트에서 만든 시놉시스는 흡수 세션의 후보로 기다린다(§4.8).
 
-### 4.9 `.storyboard/memory/personas/`·`backgrounds/` (에이전트 영속 메모리)
+### 4.9 `<종류>/<slug>.card/memory/<줄기>.yaml` (에이전트 영속 메모리)
 
-> 페르소나 메모리(`personas/`)와 배경 메모리(`backgrounds/`) 모두 구현됨(Phase G-2·G-4).
+> 페르소나 메모리와 배경 메모리 모두 구현됨(Phase G-2·G-4). 위치는 카드 번들 안이다(0.15의 `.storyboard/memory/personas/`·`backgrounds/`는 없다).
 
-카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다. 페르소나 캐시는 draft 생성 시 `buildPersonas` 단계가, 배경 분위기 묘사 캐시는 대화 생성 직전 드로잉 단계가 카드 단위로 먼저 조회하고, 캐시가 없거나 `cardHash`가 어긋날 때만 새로 생성·저장한다.
+카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다. 페르소나 캐시는 draft 생성 시 `buildPersonas` 단계가, 배경 분위기 묘사 캐시는 대화 생성 직전 드로잉 단계가 카드 단위로 먼저 조회하고, 캐시가 없거나 `cardHash`가 어긋날 때만 새로 생성·저장한다. 기억은 줄기마다 따로 쌓이고, 기본 줄기는 `main.yaml`이다.
 
-```json
-// .storyboard/memory/personas/<character-id>.json
-{ "cardId": "elia", "persona": "<1인칭 페르소나>", "updatedThroughScene": "03-...", "cardHash": "sha256:..." }
-// .storyboard/memory/backgrounds/<background-id>.json
-{ "cardId": "school", "atmosphere": "<장소·시대 분위기 묘사>", "updatedThroughScene": "03-...", "cardHash": "sha256:..." }
+```yaml
+# character/hana.card/memory/main.yaml
+throughScene: 12d18204-a77d-4c61-b806-e130b42cab3f
+cardHash: sha256:8efbb5b7…
+persona: |-
+  <1인칭 페르소나>
 ```
 
-`cardHash`로 카드가 바뀌면 무효화하고, `updatedThroughScene`이 지금 만드는 씬과 같거나 뒤면 **되감아 버린다** — 아직 오지 않은 씬의 정보를 담고 있고, 그 씬을 다시 만든다면 기억이 전제한 판본이 폐기되기 때문이다(원장 §4.10의 되감기와 같은 판정). 씬 번호를 읽을 수 없는 기억은 근거가 없으므로 그대로 쓴다. 씬 단위 캐시(4.6)는 그대로 두고, 이 캐시는 **카드 단위**로 분리해 부분 재생성(§8 라우팅)의 입력으로 쓴다.
+- `persona`(캐릭터)·분위기 묘사(배경), `cardHash`, `throughScene`(이 기억이 닿은 씬 uuid)이 기본 필드다.
+- 노트 흡수의 인물 예시 대사는 같은 파일에 `voiceSample`(출처 `note:<위치>`)로 쌓이고 첫 씬의 말투 표본이 된다.
 
-### 4.10 `.storyboard/memory/storyState.md` (이야기 상태 원장)
+`cardHash`로 카드가 바뀌면 무효화하고, `throughScene`이 지금 만드는 씬과 같거나 뒤면 **되감아 버린다** — 아직 오지 않은 씬의 정보를 담고 있고, 그 씬을 다시 만든다면 기억이 전제한 판본이 폐기되기 때문이다(원장 §4.10의 되감기와 같은 판정). 씬 번호를 읽을 수 없는 기억은 근거가 없으므로 그대로 쓴다. 씬 단위 캐시(4.6)는 그대로 두고, 이 캐시는 **카드 단위**로 분리해 부분 재생성(§8 라우팅)의 입력으로 쓴다.
 
-항목은 `- [<씬 번호>|<목격자 id들>] <사실>` 형태로 적힌다. 목격자는 그 사실이 확립된 씬에 있던
-인물이며, `witnessed` 서술자의 초점 인물이 목격자에 없으면 그 항목은 프롬프트 주입에서 빠진다 —
-화자가 없던 자리의 일을 아는 것이 시점 이탈이기 때문이다. 목격자가 적히지 않은 구 버전 항목
-(`- [12] …`, `- …`)은 판정할 수 없으므로 그대로 통과시킨다. 줄기가 여럿이면 이 파일은 줄기별로
-`.storyboard/memory/threads/<id>/storyState.md`에 놓인다.
+### 4.10 `scene/NNN-slug.card/state.yaml` (이야기 상태 원장)
+
+원장은 한 파일이 아니라 씬 번들마다 하나씩 있는 `state.yaml`이다. 각 씬은 그 씬에서 확정된 항목(`event`·`relationShift`·`reveal`·`motif`)과 그 입력 해시(`inputHash`), 그리고 앞선 씬이 다시 쓰인 뒤라 낡았다는 표시(`stale`)를 자기 번들에 가진다. 줄기의 원장은 그 줄기에 속한 씬의 `state.yaml`을 `structure.yaml` 순서로 이은 것이라, 씬을 다른 줄기로 옮기면 상태도 따라간다. 항목을 아는 인물은 이름이 아니라 인물 uuid(`knownBy`)로 적는다.
+
+```yaml
+# 막 생성한 씬의 state.yaml
+inputHash: sha256:f7352e78…
+statements: []
+```
 
 씬 사이의 기억이 직전 드래프트 꼬리 1,000자뿐이면, 앞 화가 확립한 사실·관계·공개된 정보가 다음 씬에
-전달되지 않고 **씬 경계마다 상태가 리셋된다.** 그 결과 인물의 상태가 역전되고(정지 여부), 이미 공개한
-정보가 다시 처음처럼 공개되며(같은 로그의 3중 공개), 같은 사건이 두 번 결말난다. 이 원장은 그 리셋을
+전달되지 않고 **씬 경계마다 상태가 리셋된다.** 그 결과 인물의 상태가 역전되고, 이미 공개한
+정보가 다시 처음처럼 공개되며, 같은 사건이 두 번 결말난다. 이 원장은 그 리셋을
 막기 위한 **씬 간 누적 상태**다.
 
-```markdown
-# 이야기 상태
-<!-- through-scene: 7 -->
-<!-- scene-input: 2 sha256:… -->
-<!-- scene-input: 3 sha256:… -->
-## 확정 사실
-- [2] 브로크의 대장간은 광장 북쪽 골목 끝에 있다
-## 인물 관계와 말투
-- [1] 브로크는 이준을 «손님»이라 부르고 반말을 쓴다
-## 공개된 정보
-- [3] 이준은 NPC가 반 박자 멈춘 것을 자신만 봤다는 사실을 알았다
-## 살아 있는 모티프
-- [1] 물웅덩이에 비친 상
-```
-
-- **네 항목**(확정 사실 / 인물 관계와 말투 / 공개된 정보 / 살아 있는 모티프)으로 나뉘고, 섹션당 24개로
-  상한을 둔다. 무한정 늘어나면 프롬프트 예산을 잠식한다.
-- 항목마다 **확립된 씬 번호**를 `- [N] 내용`으로 기록한다. 번호가 없는 구버전 항목은 항상 유효한 것으로
-  본다.
-- 프롬프트 주입과 연속성 검사 기준 **모두 현재 씬보다 앞선 항목만** 본다. 번호가 없으면 32씬 중 5화를
+- 항목은 네 종류(`event` 확정 사실 / `relationShift` 관계·말투 변화 / `reveal` 공개된 정보 / `motif` 살아 있는 모티프)다.
+- 프롬프트 주입과 연속성 검사 기준 **모두 현재 씬보다 앞선 항목만** 본다. 그렇지 않으면 32씬 중 5화를
   재생성할 때 결말까지의 전개가 통째로 주입되는 스포일러 누출이 생긴다.
-- 같은 씬을 다시 생성하면 **그 씬이 앞서 남긴 항목만 걷어내고** 새로 쌓는다. 재생성이 멱등해지고,
-  폐기된 옛 판본의 항목이 뒤 씬으로 계속 전달되지 않는다.
+- 같은 씬을 다시 생성하면 그 씬의 `state.yaml`을 새로 쓴다. 재생성이 멱등해지고, 폐기된 옛 판본의 항목이 뒤 씬으로 계속 전달되지 않는다.
 - 갱신은 백그라운드 큐가 아니라 **씬 저장 경로에서 `await`한다** — 다음 씬이 곧바로 읽기 때문이다.
   갱신 실패는 경고로만 처리하고 저장 자체를 막지 않는다.
-- 원장은 `[이야기 상태]`로 `[설정 메모]`(canon)보다 **앞에** 주입되며, 자기 상태를 되먹지 않도록 첫
+- 원장은 `[이야기 상태]`로 설정 사실(§4.7)보다 **앞에** 주입되며, 자기 상태를 되먹지 않도록 첫
   씬에는 주입하지 않는다.
 - 항목이 오염되면 이후 모든 씬 프롬프트로 퍼지므로, 다른 문자 체계가 섞인 항목은 원장에 들어가기 전에
   거부한다(§4.5의 초안 검증과 같은 판별기).
+- `state.yaml`은 스키마로 읽는다. 읽을 수 없는 항목을 따로 알리던 doctor 검사는 없다.
+- 초안은 있는데 상태가 비어 있으면 `state generate`로 초안에서 세운다.
 
 #### 무효화 (낡은 항목 판정)
 
-원장 항목은 **그것을 낳은 씬의 입력**(씬 본문·인물/배경 카드·확정 사실·format·구분자·grounding)에
+원장 항목은 **그것을 낳은 씬의 입력**(씬 본문·인물/배경 카드·확정 사실·format)에
 매여 있다. 카드나 씬을 고친 뒤 그 씬을 다시 생성하지 않으면 원장만 옛 전제를 붙들고 있게 되고, 그
 사실이 다음 씬 프롬프트로 들어가 새 설정과 충돌한다. 페르소나 기억에는 `cardHash` 게이트가 있으나
 원장에는 없던 비대칭을 메우는 장치다.
 
-- 씬마다 `<!-- scene-input: N <씬 캐시와 같은 computeSceneInputHash> -->`를 기록한다.
-- **두 가지로 낡음을 판정한다.** ① 기록된 해시가 지금 계산한 해시와 다르면(카드·씬을 고쳤거나 씬
-  파일이 사라졌으면) 그 씬의 항목이 낡는다. ② 씬 N을 다시 생성하면 **N보다 뒤 항목이 낡는다**(되감기)
+- 씬마다 `state.yaml`의 `inputHash`에 그 씬의 입력 해시를 기록한다(씬 캐시와 같은 해시).
+- **두 가지로 낡음을 판정한다.** ① 기록된 해시가 지금 계산한 해시와 다르면(카드·씬을 고쳤거나 씬이
+  사라졌으면) 그 씬의 항목이 낡는다. ② 씬 N을 다시 생성하면 **N보다 뒤 항목이 낡는다**(되감기)
   — 폐기된 판본을 전제로 뽑힌 것이기 때문이다.
-- 낡은 항목은 **지우지 않고 `- [22!] 내용`으로 표시**한다. 사람이 원장에서 무엇이 버려졌는지 볼 수
-  있어야 하고, 그 씬을 다시 생성하면 통째로 갈아 끼워지며 표시도 사라진다.
+- 낡은 항목은 **지우지 않고 `stale`로 표시**한다. 사람이 무엇이 버려졌는지 볼 수
+  있어야 하고, 그 씬을 다시 생성하면 `state.yaml`이 갈아 끼워지며 표시도 사라진다.
 - 표시된 항목은 **프롬프트에서만 빠진다.** 생성 결과 warnings에 `씬 22~32`처럼 범위로 보고하되,
   **현재 씬보다 앞의 것만** 보고한다 — 뒤 항목은 어차피 주입되지 않으므로, 32씬을 순서대로 다시 만드는
   동안 매 씬 경고가 뜨면 진짜 경고가 묻힌다.
-- **해시가 없는 씬(0.8 이전 원장)은 유효로 본다.** 대조할 근거가 없다고 사실을 버리는 쪽이 더 나쁘다.
-  `storyboard doctor`가 봉인 대상으로 보고하고 `storyboard init --repair`가 그 시점의 카드·씬으로
-  봉인한다 — 그 뒤에 고친 것부터 낡음으로 잡힌다.
+- 카드를 고친 뒤 초안이 여전히 맞으면 `storyboard state reseal`이 그 시점의 카드·씬으로 해시를 다시 봉인하고,
+  아니면 `draft generate <씬> --force`로 다시 만든다. `storyboard doctor`가 낡은 씬을 알려 준다.
 - 감사는 생성 경로(`sceneGenerationInputs`)에서 서사 컨텍스트를 만들기 **전에** 돈다. 표시를 먼저
-  원장에 써야 곧이어 원장을 읽는 `buildNarrativeContext`가 그 항목을 뺀다. 수정(revise)은 원장을 읽기만
-  하므로 파일에 남은 표시를 그대로 따른다.
+  쓴 뒤 원장을 읽어야 그 항목이 빠진다. 수정(revise)은 원장을 읽기만
+  하므로 남은 표시를 그대로 따른다.
+
+### 4.11 `.storyboard/cache/storyboard.db` (캐시 DB)
+
+작품 하나에 캐시 DB 하나다. 두 앱이 같은 WebAssembly SQLite(`node-sqlite3-wasm`)로 연다. git이 추적하지 않고, 지워도 입력(카드·씬·초안)에서 다시 만들어진다.
+
+| 표 | 담는 것 |
+|---|---|
+| `sessions` | 스튜디오 대화(카드·씬 uuid별, 캐시를 지울 때까지 모두 보관)와 인터뷰 세션, 노트 흡수 세션, 대기 중인 제안 |
+| `runs` | 중단된 장편 생성이 이어 갈 진행 상태 |
+| `usage` | 호출마다의 사용량 원장(CLI와 확장 모두 기록) |
+| `element_index` | 카드·씬 인덱스 |
+| `lock` | 작품 하나에 쓰는 앱 하나만 두는 실행 잠금(확장이나 다른 CLI가 쥐고 있으면 쓰기 동사는 exit 1) |
+| `findings` | 점검 기록(사실 시트 대신 배경 카드 줄끼리의 상충 판정 등). 입력이 같으면 다시 묻지 않는다 |
+| `journal` | 씬 번호를 다시 매기는 단계의 기록. 끊기면 다음 쓰기 동사나 `init --repair`가 마무리한다 |
+| `chapter_summaries` | 줄기별 장 요약. 초안이 바뀌면 낡은 요약은 지워진다 |
+| `revision_plans` | 씬 단위 검수·재작성 계획 |
+
+장 요약이 빠져 있으면(캐시를 지웠거나 낡은 요약을 지웠다면) 앞 장들을 씬 초안을 쓰기 직전에 다시 요약한다. `draft generate --all`과 `novel generate`의 실행 확인은 다시 만들 요약 수를 알린다.
 
 ## 5. 명령어 (확정)
 
 | 명령어 ID | 표시 이름 | 동작 |
 |---|---|---|
 | `storyboard.init` | `Storyboard: Initialize Project` | 빈 폴더에 디렉토리·`.storyboard/project.json`·.gitignore·README 생성 |
-| `storyboard.character.create` | `Storyboard: Create Character` | 새 `.card` + 빈 프로필 placeholder |
-| `storyboard.background.create` | `Storyboard: Create Background` | 새 `.card` (location 기본) 생성 후 열기 |
-| `storyboard.scene.create` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.card` 생성 후 열기 |
-| `storyboard.scene.rename` | `Storyboard: Rename Scene...` | 씬 stem·번호를 바꾸고 파생 파일과 참조를 함께 옮김 |
+| `storyboard.character.create` | `Storyboard: Create Character` | 스튜디오가 «어떤 캐릭터를 만드시겠어요?»를 묻고, 설명 하나로 `character/<slug>.card/` 번들을 만들어 채운 뒤 뷰어로 연다 |
+| `storyboard.background.create` | `Storyboard: Create Background` | 같은 방식으로 `background/<slug>.card/` 번들을 만들어 연다 |
+| `storyboard.scene.create` | `Storyboard: New Scene` | 설명으로 `scene/NNN-<slug>.card/` 번들을 만들고 스튜디오가 채운다 |
+| `storyboard.scene.rename` | `Storyboard: Rename Scene...` | 씬 이름(slug)을 바꾼다 (번호는 구조 순서에서 나오므로 바꾸지 않음) |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
 | `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline→characters→seeds→장별 draft/검수→조립→검사→요약 전체 실행(모드 선택·재개) |
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
-| `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.card` 생성 |
+| `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | 씬 계획 → `scene/NNN-slug.card/` 번들 생성 |
 | `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
 | `storyboard.manuscript.review` | `Storyboard: Review Manuscript` | 조립한 원고를 장 단위 창으로 continuity·비평 검사해 `manuscript/REVIEW.md` 보고서 생성 |
-| `storyboard.manuscript.summaries` | `Storyboard: Summarize Chapters` | 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성 |
-| `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
+| `storyboard.manuscript.summaries` | `Storyboard: Summarize Chapters` | 장별 AI 요약을 캐시 DB의 `chapter_summaries`에 만들고 새 편집기 탭에 보여 줌 |
+| `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 카드의 `fact` 진술·이야기 상태와 대조해 설정 모순 진단 |
 | `storyboard.draft.reviseLoop` | `Storyboard: Review & Revise Draft (Current Scene)` | 초안을 연속성·비평으로 검사하고 차단 이슈를 재작성으로 고치는 루프 |
-| `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
-| `storyboard.cards.promoteCandidates` | `Storyboard: Promote Card Candidates` | 자동 추출된 카드 후보(관계·아크·속성)를 골라 캐릭터 카드에 병합 |
-| `storyboard.bible.canonDiff` | `Storyboard: Canon Diff Report` | 미승격 설정 후보를 `canon.yaml`과 대조해 `manuscript/CANON.md` 보고서 생성 |
+| `storyboard.cards.buildFromScenes` | `Storyboard: Build Story Cards from Scenes` | 씬에서 카드 변경을 제안받아 고른 것만 `statements.yaml`에 씀 (출처 `studio`) |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Character Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | 조립 원고(`manuscript/manuscript.md`)를 Markdown/TXT로 내보내기 (PDF/DOCX 후속) |
@@ -807,7 +688,6 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 - `tasks.<taskName>.provider`·`tasks.<taskName>.model`: 작업별 provider·모델 오버라이드. 모델만 있고 provider가 없는 항목은 무시된다. CLI는 `config set|unset`으로 다룬다.
 - `revise.loop.afterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
 - `editor.grammar.realtime`: 기본 `false`
-- `editor.scene.prefixDigits`: 기본 `2`
 - `revise.loop.maxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
 - `budget.run.limitUsd`: 장편 생성 1회 실행의 AI 비용 상한(USD, 0.01 단위), 기본 `0`(제한 없음). 넘으면 파이프라인의 `shouldPause`가 켜져 진행 중인 씬까지 마치고 `paused`로 멈추며, 다시 실행하면 이어 간다. 요금이 없는 호출(로컬 모델)은 상한에 걸리지 않는다. 호스트마다 컴포지션 루트에서 사용량 싱크를 `UsageMeter`로 한 번 감싸고, 실행마다 세션을 열어 쓴 비용을 잰다.
 - `generation.section.outputLimit`: 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수, 기본 `7000`. 목표 분량을 이 값으로 나눠 구간 수가 정해지므로, **낮추면 호출이 늘고 분량이 늘어난다.** 프롬프트의 목표 글자 수 지시는 실측에서 무력했고(비단조), 분량을 실제로 움직이는 손잡이는 호출 수다. 모델·목표 분량에 따라 최적값이 다르므로 설정으로 열어 둔다.
@@ -899,13 +779,13 @@ buildPersonas
 호출의 첫 사건을 받아 그 사이만 쓰고, 종료 지점은 마지막 호출만 받는다. 미달·되풀이는 그 호출만
 다시 부르고 경고는 `뼈대 n/m:`으로 남는다. 짧은 씬과 문자열 비트만 있는 씬은 종전대로 한 호출이다.
 뼈대마다 커버리지 프롬프트(`sceneCoverage`)가 비트 목록과 대조해 **빠진 사건**을 찾고, 빠졌으면 그 사건을
-지목해 다시 부르며 끝내 빠지면 `뼈대:` 경고로 남긴다(카드의 grounding 이 장면 뒷부분만 적은 씬에서 뼈대가
+지목해 다시 부르며 끝내 빠지면 `뼈대:` 경고로 남긴다(사실 시트가 장면 뒷부분만 적은 씬에서 뼈대가
 앞 비트를 통째로 버린 실측, #117). 글자 겹침으로는 판정할 수 없어 호출 하나를 더 쓴다.
 
 **2. 대사 다듬기(`sceneDialoguePolish`)** — 뼈대는 사건 배치와 대사 작성을 동시에 하느라 말투가
 뭉개진다. 이 단계는 **인물 하나에 호출 하나**다: 뼈대의 따옴표 대사마다 `⟨n⟩` 번호를 달아 보내고,
 각 호출은 그 인물의 페르소나·입버릇·말투 표본(앞선 초안의 그 인물 대사, 모자라면 `notes absorb`가
-`voiceSeeds.json`에 옮긴 노트의 예시 대사로 채운다)·상대별 말투(`relations[].speech`)·**이 씬 이전에 아는
+인물 번들 `memory/main.yaml`의 `voiceSample`로 옮긴 노트의 예시 대사로 채운다)·상대별 말투(`relations[].speech`)·**이 씬 이전에 아는
 것**(원장의 목격자 태그로 고른 항목)·**관계 변화**(원장의 관계 항목 중 그 인물이 나오는 최근 것 —
 카드의 상대별 말투와 어긋나면 이쪽이 나중 상태다)만 받아 자기 대사를 번호로 가리켜 돌려준다. 다른
 인물은 이름과 카드 `voice`의 첫 줄만 «닮지 말아야 할 말투»로 받고, 페르소나·아는 것은 그 인물의
@@ -959,13 +839,13 @@ buildPersonas
 `actBeats`를 적어야 돈다. 2026-10 「게릴라」 01(42비트·5인) 실측에서 호출 235건(기존의 약 5배), 모델 시간
 70분으로 기존 뼈대 초안을 블라인드 28 vs 19·29 vs 16(/30)으로 이겼고 분량은 목표의 95%였다.
 
-**씬 간 재료는 뼈대 단계에만 주입한다.** 이야기 상태 원장(§4.10)·캐넌(§4.7)·이전 씬 맥락은 사건을
+**씬 간 재료는 뼈대 단계에만 주입한다.** 이야기 상태 원장(§4.10)·카드의 사실(§4.7)·이전 씬 맥락은 사건을
 정하는 뼈대만 본다. 살붙임이 설정을 다시 보면 묘사가 새 설정을 끌어들일 여지만 생긴다. 예외는 **이
 씬의 배경 카드가 적은 공간 사실**(묘사·감각·시각·날씨)이다 — 이것은 새 설정이 아니라 이미 확정된
 설정이고, 뼈대만 보고 살을 붙이면 공간이 흔한 집·거리의 기본값으로 일반화됐다. 살붙임은 그것을
 `[공간 사실]`로 받는다. 카드의 줄끼리 함께 참일 수 없으면(노트 흡수가 남긴 «소파에서 잔다»와 «자기
 방이 있다») `checkBackgroundFacts` 단계가 카드마다 한 번 판정해 초안 경고로 알리고, 그 짝을 뼈대와
-살붙임에 따로 실어 사건에 맞는 하나만 쓰게 한다. 판정은 `background-conflicts.json`에 남아
+살붙임에 따로 실어 사건에 맞는 하나만 쓰게 한다. 판정은 캐시 DB의 `findings` 표에 남아
 `doctor`가 AI 호출 없이 읽는다.
 
 **대목 좌표는 장부로 넘긴다.** 뼈대는 장면 첫 줄과 `---` 다음 줄에 그 대목의 좌표를
@@ -985,7 +865,7 @@ buildPersonas
 | **페르소나(Persona)** | 캐릭터 카드별 대사·내면. 카드 = 에이전트 | 중간 | `buildPersonas`·`polishSceneDialogue`(§8.0의 2단계) |
 | **드로잉(Setting)** | 배경 카드별 장소·시대 분위기/감각 묘사 | 중간 | `describeBackground`(backgroundDescription 작업)로 분위기 묘사 생성→대화에 주입, `backgrounds/` 메모리 캐싱 |
 | **서술자/문체(Narrator)** | 뼈대를 일관된 시점·시제·문체의 산문으로 직조 | 중간~최상급 | `expandSceneSection`(§8.0의 3단계)·`applyGenreFormat` |
-| **설정 키퍼(Canon Keeper)** | 책 전체 사실 일관성. `canon.yaml`·이야기 상태 원장 소유, 후보 사실 추출/검증 | 중간 | bible/`checkContinuity`·`storyStateUpdate`(§4.10). 검수자와 분리(씬 품질 ≠ 전체 세계 일관성) |
+| **설정 키퍼(Canon Keeper)** | 책 전체 사실 일관성. 카드의 `fact` 진술·이야기 상태 원장 소유 | 중간 | `checkContinuity`·`storyStateUpdate`(§4.10). 검수자와 분리(씬 품질 ≠ 전체 세계 일관성) |
 | **검수자(Reviewer)** | draft candidate 품질 점검, Pass/Fail 판정, 이슈 리포트 | 최상급 | `reviseDraftWorkflow`·`critiqueDraft` |
 | **교열(Copy Editor)** | 오탈자·맞춤법. 검수자가 직접 고치는 경량 작업 | 저가 | `grammarCheck` |
 
@@ -1035,8 +915,8 @@ ReviewIssue {
 
 ### Phase C: Scene Seed Factory (초기 구현)
 
-- outline을 chapter/scene 단위로 분해해 `scene/*.card`를 자동 생성한다.
-- 씬마다 목적, 갈등(`conflict`), 반전(`twist`), 감정 변화, 회수할 복선, 필요한 설정 사실(`neededCanon`)을 `chapters.yaml`에 담고 시드 본문에 반영한다.
+- outline을 chapter/scene 단위로 분해해 `scene/*.card/` 번들을 자동 생성한다.
+- 씬마다 목적, 갈등(`conflict`), 반전(`twist`), 감정 변화, 회수할 복선은 씬 번들의 설계 진술로 담는다.
 - 기존 `Generate All Drafts`는 자동 생성된 씬 시드도 그대로 처리한다.
 
 ### Phase D: Autonomous Draft Loop (초기 구현)
@@ -1046,7 +926,7 @@ ReviewIssue {
 - 작품 계약의 문체 제약(`styleConstraints`)과 품질 기준(`qualityCriteria`)을 비평 프롬프트에 반영한다.
 - 비용, 토큰, provider, 모델 선택을 작업별로(`draftCritique`/`draftRevision`/`continuityCheck`) 사용량 원장에 기록한다.
 - 씬 생성 자체를 §8.0의 뼈대 → 다듬기 → 살붙임 → 기계 검증 구조로 재구성했다. 비트 단위 독립 생성이 만들던 재등장·재도입·경계 초과 결함을 구조에서 제거하고, 남는 위반은 초안 헤더 `warnings`로 노출한다.
-- 씬 간 연속성 재료를 갖췄다: 이야기 상태 원장(§4.10), 캐넌 공개 시점 게이트(`revealFrom`), 씬 카드의 종료 지점·시점 인물. 연속성 검사 기준도 canon 단독에서 **canon + 원장의 검사 가능한 항목**으로 넓혔다(모티프는 권고이므로 제외).
+- 씬 간 연속성 재료를 갖췄다: 이야기 상태 원장(§4.10), 사실의 공개 시점 게이트(`revealFrom`), 씬의 종료 지점과 서술자 카드의 초점 인물. 연속성 검사 기준도 카드의 사실 단독에서 **사실 + 원장의 검사 가능한 항목**으로 넓혔다(모티프는 권고이므로 제외).
 - 분량 미달은 별도 보충 단계가 아니라 §8.0의 `too-short` 검증이 담당한다. 구간 결과가 목표의 절반에 못 미치면 사유를 붙여 다시 확장하고, 남으면 경고로 노출한다. 사용자가 직접 부르는 «카드 기반 보충»(`draftAugment`)은 이와 별개의 편집 경로이며, 여기에도 작법 계약이 주입된다.
 - 전체 씬 배치 검수와 grammar 통합, 생성 직후 자동 체이닝은 Phase F에서 다룬다.
 
@@ -1054,24 +934,17 @@ ReviewIssue {
 
 - `chapters.yaml` 순서로 `draft/*.md`를 chapter별 파일과 전체 volume 파일(`manuscript/`)로 결정적으로 조립한다(`storyboard.manuscript.assemble`).
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
-- 조립한 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
+- 조립한 원고를 카드의 사실 기준 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
   검사는 **장을 창으로 삼아** 돈다 — 한 장의 본문에 앞 장들의 요약(§4.10의 낡음 표시를 제외한 것)을
   `[설정]` 줄로 실어 장마다 연속성·비평 한 쌍을 호출한다. 전권을 한 호출에 넣으면 뒤로 갈수록 모델의
   주의가 옅어져 30만 자 한복판의 모순이 검출되지 않는다. 이슈의 offset은 그 장 본문 기준이 되지만,
   보고서와 재작성 라우팅은 `<!-- scene: <stem> -->` 주석으로 씬을 짚으므로 영향이 없다.
 - 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
-- 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 8000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
-- 요약은 **그 장의 초안에서 나온 것**이므로 초안이 바뀌면 낡는다. 원장(§4.10)과 같은 판정을 쓴다 —
-  섹션마다 `<!-- chapter-input: sha256:… -->`로 그 장 본문의 해시를 남기고, 지금 조립한 장 본문의
-  해시와 다르면 `stale`을 덧붙여 표시한다. 표시된 장은 **지우지 않고 프롬프트에서만 빠지며**, 생성
-  결과 warnings와 `storyboard doctor`가 다시 요약할 장을 알린다. 모든 장이 낡으면 요약을 통째로
-  건너뛰고 이전 초안 꼬리로 돌아간다 — 파일 머리말만 남은 요약은 꼬리보다 못하다. 해시가 없는 0.8
-  이전 요약은 대조할 근거가 없으므로 유효로 두고 `doctor`가 다시 요약할 대상으로만 보고한다.
-- 원클릭 실행에서는 이 요약을 **장마다** 갱신한다. 한 장의 초안·검수가 끝나면 그 장만 요약해
-  기존 파일에 `## <장 제목>` 섹션 단위로 병합하므로, 다음 장은 «지금까지의 줄거리»를 받고 시작한다.
+- 장별 AI 요약과 이전 장 recap을 캐시 DB의 `chapter_summaries` 표(줄기별 행)에 생성한다(`storyboard.manuscript.summaries`). 이후 씬 생성(order > 1)은 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 8000자)을 read-only로 우선 사용한다. 요약이 없으면 기존 1000자 tail 동작과 동일하다. 확장의 «Summarize Chapters»는 요약을 파일이 아니라 새 편집기 탭에 보여 준다.
+- 요약은 **그 장의 초안에서 나온 것**이므로 초안이 바뀌면 낡는다. 낡은 요약은 표시하지 않고 **지워지며**, 지워진(또는 캐시를 지워 없는) 앞 장의 요약은 씬 초안을 쓰기 직전에 다시 만든다(이미 최신인 초안은 건드리지 않는다). `draft generate --all`과 `novel generate`의 실행 확인(TUI)은 다시 만들 요약 수를 알린다. 모든 장이 낡아 요약이 하나도 없으면 이전 초안 꼬리로 돌아간다.
+- 원클릭 실행에서는 이 요약을 **장마다** 갱신한다. 한 장의 초안·검수가 끝나면 그 장만 요약하므로, 다음 장은 «지금까지의 줄거리»를 받고 시작한다.
   마지막 summaries 단계는 그대로 남아 전체를 다시 요약한다. 요약이 예산을 넘으면 앞을 잘라내지 않고
   **오래된 장부터 제목+한 줄로 압축**한다 — 앞을 자르면 장거리 복선이 확립된 도입부가 통째로 사라진다.
-- 미승격 설정 후보(candidate)를 canon과 대조해 `manuscript/CANON.md`로 정리한다(`storyboard.bible.canonDiff`).
 
 ### Phase F: One-Click Novel (초기 구현)
 
@@ -1082,7 +955,7 @@ ReviewIssue {
   `revise.loop.maxIterations` 회까지 되풀이한다. 씬을 특정하지 못한 이슈는 재작성 대상이 아니며 보고서의
   «재작성 결과»에 건수로 남는다. 재작성이 넘겨받는 이슈는 씬 단위 검사가 볼 수 없는 장거리 모순이라,
   수정 루프의 첫 회차 검사 결과에 합쳐져 들어간다.
-- 실패·중단 시 단계·장 진행 상태를 `.storyboard/cache/novel-run.json`(재시작 가능한 작업 큐)에 남기고, 다시 실행하면 중단 지점부터 재개한다.
+- 실패·중단 시 단계·장 진행 상태를 캐시 DB의 `runs` 표(재시작 가능한 작업 큐)에 남기고, 다시 실행하면 중단 지점부터 재개한다.
 - 사용자는 전체 자동 실행, outline 승인 후 실행, chapter별 승인 실행, 최종 검사 후 재작성 승인
   실행(`review-approval`) 중 하나를 고를 수 있다. CLI는 무인 실행이라 항상 `auto`다.
 - 문서 export(PDF/DOCX)와 매우 긴 원고의 분할 검사는 후속에서 다룬다.
@@ -1092,9 +965,9 @@ ReviewIssue {
 §8의 협업 모델을 단계적으로 구현한다.
 
 - **G-1 에이전트 명명·격상**: 기존 파이프라인 단계를 §8.1 카탈로그의 에이전트로 명명·정합(코드 동작 변경 없음, 문서/역할 정리).
-- **G-2 카드 단위 영속 메모리**: 페르소나/배경을 `.storyboard/memory/personas/`·`backgrounds/`(4.9)에 카드 단위로 캐싱하고 `cardHash`로 무효화. 매 씬 재생성 의존 해소.
+- **G-2 카드 단위 영속 메모리**: 페르소나/배경을 카드 번들의 `memory/<줄기>.yaml`(4.9)에 카드 단위로 캐싱하고 `cardHash`로 무효화. 매 씬 재생성 의존 해소.
 - **G-3 검수 이슈 라우팅**: `ReviewIssue.target`(§8.3)과 결정적 `category→agent` 매핑을 도입해, 검수 이슈를 해당 에이전트의 부분 재생성으로 라우팅. 전역 이슈만 전체 재작성으로 폴백.
-- **G-4 드로잉 에이전트 능동 묘사**: 배경을 사실 주입에서 장소·시대 분위기 묘사 생성으로 확장. 구현됨 — `backgroundDescription` 작업으로 분위기를 생성해 대화 컨텍스트에 주입하고 `backgrounds/` 메모리(4.9)에 `cardHash` 무효화로 캐싱한다.
+- **G-4 드로잉 에이전트 능동 묘사**: 배경을 사실 주입에서 장소·시대 분위기 묘사 생성으로 확장. 구현됨 — `backgroundDescription` 작업으로 분위기를 생성해 대화 컨텍스트에 주입하고 배경 번들의 `memory/`(4.9)에 `cardHash` 무효화로 캐싱한다.
 
 ## 10. 환경
 
@@ -1133,7 +1006,8 @@ CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test
 
 ```text
 packages/story-model/src/
-  format/         # 워크스페이스 파일 포맷: 스키마·코덱·경로 규약
+  element/        # 요소 어휘: 네 종류(캐릭터·배경·씬·서술자), 진술 facet·섹션, 진술 스키마와 병합 규칙, 종류별 머리말
+  format/         # 워크스페이스 파일 포맷: 스키마·코덱·경로 규약(번들 폴더, structure.yaml)
   contracts/      # AI 계약·카탈로그
   shared/         # 앱 간 RPC·카드 계약
   domain/         # runtime-agnostic policies·file records
@@ -1170,8 +1044,8 @@ apps/vscode/src/extension.ts
   공유 패키지의 `vscode`·앱 import 금지.
 - `apps/cli`: 레이어 방향과 순환 금지. 엔진의 파이프라인 조립 심볼
   (`scripts/architecture/runner.mjs`의 `refusePipelineAssembly`) import도 거부한다(생성 루프의 두 번째 사본 방지).
-- `packages/story-model`: 자체 레이어 방향 — `format` 은 자기만, `contracts` 는 `contracts`/`format` 만,
-  이어서 `shared`·`domain`·`paths` 는 각각 자기보다 앞선 것만 import 한다. 순환도 막는다.
+- `packages/story-model`: 자체 레이어 방향 — `element` 는 자기만, `format` 은 `format`/`element` 만,
+  `contracts` 는 `contracts`/`format`/`element` 만, 이어서 `shared`·`domain`·`paths` 는 각각 자기보다 앞선 것만 import 한다. 순환도 막는다.
 - `packages/story-engine`: `pipeline`·`ports`·`ai` 는 자기 폴더(와 다른 패키지)만 import 한다. 순환도 막는다.
   `persistence` 와 `application` 은 설계상 상호 의존이라(application 이 리포지터리 포트를 선언하고
   persistence 가 구현한다) 둘 사이에는 순서를 두지 않는다.

@@ -101,8 +101,13 @@ npm run build
 
 1. 유효한 `scene/*.card`를 둘 이상 만들고 Studio를 연다. 다른 파일이 활성화되어도 **다음으로 추천**에 **이야기 완결**·**씬 기반 카드 구성**이 보이는지 확인한다.
 2. **이야기 완결**을 승인한다. 연속 prefix 선택, 빈 문서와의 diff, 최종 확인을 거쳐 새 씬만 추가되는지 확인한다. 기존 씬의 내용과 파일명은 바뀌면 안 된다.
-3. **씬 기반 카드 구성**을 승인한다. 필드별 QuickPick에서 일부만 고르고 카드 YAML diff를 확인한 뒤 적용한다. 신규 한국어 이름 카드에는 고유 ID 입력 상자가 뜨고 profile PNG가 생기지 않아야 한다.
+3. **씬 기반 카드 구성**을 승인한다. QuickPick에서 일부만 고르고 지금 카드와 제안된 카드를 견준 diff를 확인한 뒤 적용한다. 고른 변경만 해당 번들의 `statements.yaml`에 쓰이고(`card.yaml` 은 깨지지 않음), 신규 한국어 이름 카드에는 고유 ID 입력 상자가 뜨고 profile PNG가 생기지 않아야 한다.
 4. diff를 연 뒤 씬 또는 카드 하나를 수정하고 적용한다. 변경이 중단되고 다시 제안하라는 메시지가 보여야 한다.
+
+### 3c. 0.15 형식 작품
+
+1. 0.15 형식으로 만든 작품 폴더(`.storyboard/project.json` 의 `version` 이 `1.0.0`)를 연다.
+2. Storyboard 명령을 실행하면 «0.15 형식»이라는 안내와 함께 거절되고 아무 파일도 바뀌지 않아야 한다(변환 없음).
 
 ### 4. 캐릭터·배경 카드 추가
 
@@ -146,8 +151,8 @@ npm run build
 - `draft/` 아래에 대응하는 `.md` 파일이 생기거나 갱신된다.
 - 진행 알림/로그에 치명적 오류만 없으면 된다(첫 실행은 시간이 걸릴 수 있음).
 - 진행 알림이 **`페르소나 준비` → `장면 뼈대 잡기` → `대사 다듬기` → `구간 살붙임 N/M`** 순서로 바뀐다. 목표 분량이 7,000자 이하인 짧은 씬은 살붙임이 `1/1`로 한 번만 돈다.
-- 두 번째 씬부터는 `.storyboard/memory/storyState.md`가 생기고, `<!-- through-scene: N -->`과 `- [N] 내용` 형식의 항목이 쌓인다.
-- 생성한 초안의 frontmatter에 `warnings`가 붙었다면 [`GUIDE.md`](GUIDE.md) §12의 읽는 법대로 해당 구간을 확인한다. 경고가 있어도 본문은 정상 출력되어야 한다.
+- 생성이 끝난 씬 번들(`scene/NNN-slug.card/`)에 `state.yaml`이 생기고, 확정 항목(`event`·`relationShift`·`reveal`·`motif`)과 `inputHash`가 적힌다. 두 번째 씬부터는 앞 씬의 상태가 프롬프트에 들어간다.
+- 생성한 초안의 frontmatter에 `warnings`가 붙었다면 [`GUIDE.md`](GUIDE.md) §11의 읽는 법대로 해당 구간을 확인한다. 경고가 있어도 본문은 정상 출력되어야 한다.
 
 **명령 팔레트로 동일 동작**
 
@@ -160,7 +165,7 @@ npm run build
 3. 입력창에 작업을 적어 보내거나 **다음으로 추천** 항목을 눌러 제안을 받은 뒤 **`적용`**으로 실행한다:
    - "다시 생성" → **재생성**
    - "문법 봐줘" → **문법 검사**(진단 squiggle 생성 또는 갱신)
-   - "연속성 확인" → **연속성 검사**(canon이 있으면 설정 모순 진단 생성 또는 갱신)
+   - "연속성 확인" → **연속성 검사**(씬 인물·장소 카드에 `fact` 진술이 있으면 설정 모순 진단 생성 또는 갱신)
    - 본문에서 영역을 선택한 뒤 "확장" / "선택 영역 보충" → 선택 영역을 치환/보충(영역 없이 요청하면 먼저 선택하라고 안내)
    - 영역 선택 후 "더 긴장감 있게" 같은 지시문 → **선택 영역 편집**
 4. 제안에서 **`취소`**를 누르면 실행되지 않는지 확인한다.
@@ -169,7 +174,7 @@ npm run build
 ### 7a. 캐릭터 Hover 카드
 
 1. `draft/*.md` 본문에서 등장 캐릭터 이름 위에 마우스를 올린다.
-2. Hover 카드에 캐릭터 요약(특성/최근 대사/관계)이 표시되는지 확인한다.
+2. Hover 카드에 캐릭터 요약(특성/관계)이 표시되는지 확인한다.
 
 **성공 기준**
 
@@ -186,7 +191,7 @@ npm run build
 **성공 기준**
 
 - 초안이 필요 시 재작성된다.
-- `.storyboard/outline/revision-plan.yaml`에 scene stem, 검사 시각, 재작성 횟수, 남은 차단 이슈, 지시가 기록된다.
+- 캐시 DB(`.storyboard/cache/storyboard.db`)의 수정 계획에 scene stem, 검사 시각, 재작성 횟수, 남은 차단 이슈, 지시가 기록된다(`storyboard manuscript review --show`로 볼 수 있음). `.storyboard/outline/revision-plan.yaml` 파일은 생기지 않는다.
 - Output에 API 키·토큰 원문이 노출되지 않는다.
 
 ### 7c. 이전 초안 판본
@@ -213,8 +218,8 @@ npm run build
 
 1. **`Storyboard: Open Settings`** → **작품 계약** 탭에서 장르, 독자층, 시점, 목표 분량을 채운다.
 2. **`Storyboard: Generate Novel Outline`** 실행 → `.storyboard/outline/synopsis.md`와 `chapters.yaml`가 생성되고 `synopsis.md`가 열리는지 확인한다.
-3. `chapters.yaml`에 chapter/scene `targetWordCount`, scene `conflict`, `twist`, `neededCanon`이 포함될 수 있는지 확인한다.
-4. **`Storyboard: Generate Scene Seeds`** 실행 → `scene/NN-slug.card` 파일이 생성되고 첫 씬이 열리는지 확인한다.
+3. `chapters.yaml`에 장의 제목·요약·분량·서술자·줄기가 있고, 씬 계획(목적·갈등 …)은 없는지 확인한다(씬 계획은 시드가 끝날 때까지 캐시에 기다린다).
+4. **`Storyboard: Generate Scene Seeds`** 실행 → `scene/NNN-slug.card/` 번들이 생성되고(설계 진술은 `statements.yaml`, 비트는 `beats.yaml`) 첫 씬이 열리는지, `.storyboard/structure.yaml`에 씬 순서가 적히고 `chapters.yaml`에 씬 uuid가 적히는지 확인한다.
 
 **성공 기준**: 필수 계약 필드가 비어 있을 때는 설정 열기 안내가 나오며, 채운 뒤에는 outline과 씬 시드가 재현 가능한 파일로 저장된다.
 
@@ -223,19 +228,18 @@ npm run build
 1. 위 **8a**의 작품 계약 필드를 채운 프로젝트에서 **`Storyboard: Generate Novel`** 실행.
 2. 실행 모드 QuickPick(전체 자동 / 아웃라인 승인 후 진행 / 장별 승인 후 진행)이 뜨는지 확인한다.
 3. 아웃라인 승인 또는 장별 승인 모드에서 확인 다이얼로그가 의도한 지점에 뜨는지 확인한다.
-4. 진행 중 취소 후 다시 실행하면 `.storyboard/cache/novel-run.json`을 바탕으로 이어서 진행 선택지가 보이는지 확인한다.
+4. 진행 중 취소 후 다시 실행하면 캐시 DB(`.storyboard/cache/storyboard.db`)의 진행 상태를 바탕으로 이어서 진행 선택지가 보이는지 확인한다.
 
-**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`, `FORESHADOWING.md`와 `.storyboard/memory/summaries.md`가 생성된다. high 이슈가 있었다면 `REVIEW.md`의 «재작성 결과»에 재작성한 씬 목록이 있고, 그 씬의 `.draft/`에 재작성 전 판본이 남는다.
+**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`와 `FORESHADOWING.md`가 생성되며 장별 요약이 캐시 DB에 쌓인다(`.storyboard/memory/` 폴더는 생기지 않는다). high 이슈가 있었다면 `REVIEW.md`의 «재작성 결과»에 재작성한 씬 목록이 있고, 그 씬의 `.storyboard/cache/revisions/<씬 uuid>/`에 재작성 전 판본이 남는다.
 
 ### 8c. 장편 산출물 명령 (선택)
 
-조립 원고·설정 후보가 있는 프로젝트에서 확인한다.
+조립 원고가 있는 프로젝트에서 확인한다.
 
 1. **`Storyboard: Assemble Manuscript`** 실행 → `manuscript/NN-chapter.md`, `manuscript/manuscript.md`, `manuscript/FORESHADOWING.md`가 생성되는지 확인한다.
-2. **`Storyboard: Review Manuscript`** 실행 → `manuscript/REVIEW.md`가 생성되고 설정 모순·비평 요약이 표시되는지 확인한다.
-3. **`Storyboard: Summarize Chapters`** 실행 → `.storyboard/memory/summaries.md`에 장별 요약과 이전 장 recap이 표시되는지 확인한다. 이후 2번째 이상 씬을 재생성하면 이전 장면 컨텍스트가 raw tail 대신 이 롤링 요약에서 오는지(요약 파일이 없을 때와 비교) 확인한다. 원클릭 생성에서는 장마다 요약이 갱신되므로, 2장 생성 전에 `.storyboard/memory/summaries.md`에 1장 섹션이 이미 있는지 확인한다.
-4. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
-5. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
+2. **`Storyboard: Review Manuscript`** 실행 → `manuscript/REVIEW.md`가 생성되고 카드 사실과의 모순·비평 요약이 표시되는지 확인한다.
+3. **`Storyboard: Summarize Chapters`** 실행 → 장별 요약과 이전 장 recap이 새 편집기 창에 표시되는지 확인한다(파일은 생기지 않고, 요약은 캐시 DB의 `chapter_summaries`에 저장된다). 이후 2번째 이상 씬을 재생성하면 이전 장면 컨텍스트가 raw tail 대신 이 롤링 요약에서 오는지 확인한다. 원클릭 생성에서는 장마다 요약이 갱신된다. 캐시를 비운 뒤 초안을 생성하면 앞 장 요약을 먼저 다시 만드는지도 본다.
+4. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
 
 ### 9. 관계 그래프
 

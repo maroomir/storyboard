@@ -1,8 +1,9 @@
 # 역할 프롬프트가 한 편의 작품을 완성하는 길
 
-`packages/story-ai/src/ai/prompts/resources/`의 역할 프롬프트 37개가 어느 순서로 불리고, 무엇을
+`packages/story-ai/src/ai/prompts/resources/`의 역할 프롬프트 36개가 어느 순서로 불리고, 무엇을
 읽고, 무엇을 파일로 남겨 다음 역할에 넘기는지를 정리한 문서다. 2026-10-08, v0.12.3 `main`의
-코드를 직접 따라가며 그렸다. 스테이지 카탈로그(`sceneStageCatalog`, `novelStageCatalog`), 되먹임
+코드를 직접 따라가며 그렸고, 파일 위치와 이름은 0.16 형식(카드·씬 번들, 캐시 DB)에 맞춰 고쳤다.
+스테이지 카탈로그(`sceneStageCatalog`, `novelStageCatalog`), 되먹임
 루프(`reviseLoop.ts`), 사후 갱신기(`PostGenerationUpdateManager`)의 실제 호출 관계를 반영한다.
 
 한 줄로 요약하면 **"역할 프롬프트를 가진 다단계 파이프라인"이지 "자율 에이전트들의 협업"은
@@ -28,14 +29,14 @@
 
 | # | 스테이지 | 부르는 프롬프트 | 읽는 것 | 남기는 것 |
 |---|---|---|---|---|
-| ① | `outline` 아웃라인 | `outlineSynopsis` → `chapterPlan` | 프로젝트 계약(장르·톤·시놉시스 씨앗·장 수), 인물 요약 | `outline/synopsis.md`, `outline/chapters.yaml` |
-| ② | `characters` 인물 카드 | `outlineCharacters` | 계약 + 시놉시스 + 출연진 | `character/*.card` (이미 있는 카드는 건너뜀) |
-| ③ | `seeds` 씬 시드 | 없음 (코드) | `chapters.yaml`의 씬 목록 | `scene/NNN-*.card` (있는 카드는 건너뜀) |
-| ④ | `chapters` 장별 초안·검수 | 2층 전체 + 되먹임 루프 | 씬 카드 하나씩 | `draft/NNN-*.md`, 3층의 기억 갱신, 검수 기록 |
+| ① | `outline` 아웃라인 | `outlineSynopsis` → `chapterPlan` | 프로젝트 계약(장르·톤·시놉시스 씨앗·장 수), 인물 요약 | `.storyboard/outline/synopsis.md`, `.storyboard/outline/chapters.yaml`; 씬 계획은 씬이 생길 때까지 캐시(`.storyboard/cache/outline/pending-chapters.yaml`)에서 대기 |
+| ② | `characters` 인물 카드 | `outlineCharacters` | 계약 + 시놉시스 + 출연진 | `character/<slug>.card/` 번들 (이미 있는 카드는 건너뜀) |
+| ③ | `seeds` 씬 시드 | 없음 (코드) | 대기 중인 씬 계획 | `scene/NNN-<slug>.card/` 번들과 `.storyboard/structure.yaml`의 씬 순서 (있는 씬은 건너뜀); 그 뒤 `chapters.yaml`의 장이 씬 uuid를 적음 |
+| ④ | `chapters` 장별 초안·검수 | 2층 전체 + 되먹임 루프 | 씬 번들 하나씩 | `draft/NNN-*.md`, 3층의 기억 갱신, 검수 기록(캐시 DB의 `revision_plans`) |
 | ⑤ | `assemble` 원고 조립 | 없음 (코드) | `draft/*.md` 번호순 | `manuscript.md` |
-| ⑥ | `review` 원고 최종 검사 | `continuityCheck`, `draftCritique` (장 창마다) | 조립 원고 + 장 요약 + 캐넌 | `review.md`, high 지적을 씬별로 묶은 목록 |
+| ⑥ | `review` 원고 최종 검사 | `continuityCheck`, `draftCritique` (장 창마다) | 조립 원고 + 장 요약 + 카드의 사실 | `review.md`, high 지적을 씬별로 묶은 목록 |
 | ⑦ | `revise-from-review` 재작성 | `draftRevision` (되먹임 루프 1회전) | ⑥의 지적을 씨앗 이슈로 | 해당 씬의 `draft/*.md` 덮어씀, 바뀐 초안이 있으면 ⑤를 다시, 그 뒤 ⑥을 한 번 더; ⑥에 high 가 남으면 `revise.loop.maxIterations` 회까지 되풀이 |
-| ⑧ | `summaries` 장별 요약 | `chapterSummary` (장마다) | 장의 씬 초안들 | `.storyboard/memory/chapter-summaries.md` |
+| ⑧ | `summaries` 장별 요약 | `chapterSummary` (장마다) | 장의 씬 초안들 | 캐시 DB `.storyboard/cache/storyboard.db`의 `chapter_summaries` |
 
 알아 둘 점:
 
@@ -59,36 +60,40 @@
 
 `sceneGenerationInputs.ts`와 `story-model`의 `sceneContext.ts`가 모은다.
 
-- `scene/NNN.card`: 의도, 비트, 근거(장소·시간·동기), 등장 인물·배경 id
-- 등장 인물·배경 카드 전문
-- `bible/canon.md`의 사실 줄
-- `memory/story-state.md` 이야기 상태 원장. `witnessed` 서술자의 초점 인물이 항목의 목격자에
-  없으면 그 항목은 빠진다(지식 경계).
+- `scene/NNN-slug.card/`: 설계 진술(`statements.yaml`), 비트(`beats.yaml`, 출연·장소·시각 좌표 포함),
+  요약(`summary.md`), 머리말의 출연 인물·장소 배경(uuid). 사건·장소·시각의 사실 시트는 저장되지 않고
+  제목·비트에서 그때그때 유도한다.
+- 등장 인물·배경 카드 번들(머리말 + 진술)
+- 등장 인물·배경 카드의 `fact` 진술(설정 사실)
+- 이야기 상태 원장: 줄기에 속한 앞 씬들의 `state.yaml`을 구조 순서로 이은 것. `witnessed` 서술자의 초점
+  인물이 항목의 목격자(`knownBy`)에 없으면 그 항목은 빠진다(지식 경계).
 - 직전 씬의 꼬리(같은 줄기의 직전 씬) + 장 요약
-- 서술자 카드·시점·줄기(씬 카드 > `chapters.yaml`의 장 > 프로젝트 기본)
+- 서술자 카드·시점·줄기(`structure.yaml`의 씬 > `chapters.yaml`의 장 > 프로젝트 기본)
 - 프로젝트 계약의 문체 제약·장르·품질 기준
 - craft contract(텔링 금지, 모티프 반복 한도, 상투적 몸짓 금지 목록, 밀도 규칙)
 
-### 전처리: 카드의 빈칸 채우기
+### 전처리: 비트 채우기
 
-두 프롬프트가 7단계보다 먼저, 씬 카드 자체를 고친다. 카드에 이미 값이 있으면 부르지 않는다.
+한 프롬프트가 7단계보다 먼저 씬 번들을 고친다. 비트가 이미 있으면 부르지 않는다.
 
 | 프롬프트 | 하는 일 |
 |---|---|
-| `sceneGrounding` (0.7) | 비어 있는 장소·시간·동기를 제안한다. 사람이 승인하면 카드에 저장하고, 승인 없이 쓴 값은 gap 기록으로 남긴다. |
-| `sceneBeats` (0.7) | 비트가 없으면 제안해 카드에 쓴다. |
+| `sceneBeats` (0.7) | 비트가 없으면 제안해 씬 번들의 `beats.yaml`에 쓴다. |
+
+0.16부터 `sceneGrounding`은 없다. 사건·장소·시각은 AI에게 제안받아 카드에 쓰지 않고, 제목·첫 비트·장소
+카드에서 유도한다.
 
 ### 7단계
 
 | # | 스테이지 | 프롬프트 | 하는 일 |
 |---|---|---|---|
-| 1 | `buildPersonas` 인물 기억 | `personaGeneration` (0.7) | 등장 인물마다 그 인물의 1인칭 기억·태도를 만든다. 카드별로 캐시되어 다음 씬은 다시 부르지 않는다. 줄기가 있으면 줄기별 캐시다. |
+| 1 | `buildPersonas` 인물 기억 | `personaGeneration` (0.7) | 등장 인물마다 그 인물의 1인칭 기억·태도를 만든다. 카드 번들의 `memory/<줄기>.yaml`에 캐시되어 다음 씬은 다시 부르지 않는다. 줄기마다 따로 쌓는다. |
 | 2 | `describeBackground` 배경 묘사 | `backgroundDescription` (0.7) | 배경 카드마다 분위기 묘사를 만든다. 직전 초안에 그 배경의 발췌가 있으면 그것을 쓰고 호출을 생략한다. |
 | 3 | `collectVoiceSamples` 말투 표본 | 없음 (코드) | 앞 초안들의 화자 기록에서 인물별 대사 표본을 뽑아 둔다. |
 | 4 | `draftSkeleton` 뼈대 | `sceneSkeleton` (0.7) | 입력 전부 + 1·2·3의 산출물을 받아 비트를 따라 씬 전체를 목표 분량의 일부(뼈대 비율)로 먼저 쓴다. 가장 비싼 호출이라 코드 검증에 실패해도 **한 번만** 사유를 붙여 다시 부르고, 둘 다 위반이면 가벼운 쪽을 남긴다. |
 | 5 | `polishDialogue` 대사 다듬기 | `sceneDialoguePolish` (0.8) | 말투 표본과 카드 보이스로 대사만 손본다. 선택 단계이고, 실패하면 뼈대를 그대로 쓴다. |
 | 6 | `expandSection` 살붙임 | `sceneSectionExpansion` (0.75) | 뼈대를 구간으로 자르고, 구간마다 앞 구간을 보여 주며 목표 길이로 확장한다. 구간×(1+재시도) 회 호출하고, 겹침·탈락·반복을 코드로 검증한다. |
-| 7 | `attributeDialogue` 화자 붙이기 | `sceneDialogueAttribution` (0) | 완성 초안의 대사마다 화자를 붙여 대사 기록을 남긴다. 이 기록이 다음 씬의 3단계 말투 표본이 된다. |
+| 7 | `attributeDialogue` 화자 붙이기 | `sceneDialogueAttribution` (0) | 완성 초안의 대사마다 화자를 붙여 씬 번들의 `dialogue.json`에 대사 기록을 남긴다. 이 기록이 다음 씬의 3단계 말투 표본이 된다. |
 
 산출물은 `draft/NNN-*.md`와 입력 해시·제공자를 적은 캐시다. 같은 입력이면 캐시 적중으로 다시
 생성하지 않는다.
@@ -103,7 +108,7 @@
 생성이 아니라 그 뒤의 별도 루프다. `revise.maxIterations` 회까지 돈다.
 
 1. **검사**: `continuityCheck` (0.1)와 `draftCritique` (0.2)를 **동시에** 부른다. 연속성 검사는
-   캐넌·원장의 사실 줄과 본문을 맞추고, 비평은 voice / purpose / repetition 세 관점만 본다.
+   카드의 사실·원장의 사실 줄과 본문을 맞추고, 비평은 voice / purpose / repetition 세 관점만 본다.
    첫 회전에는 1층 ⑥이 넘긴 씨앗 이슈도 합친다.
 2. **라우팅**: 지적마다 담당을 정한다. `reviewRouting.ts`의 네 담당 `canon` / `persona` /
    `narrator` / `setting`과 카드 id로 묶고, 어디에도 속하지 않으면 전역 지시로 둔다.
@@ -128,28 +133,28 @@
 
 | 추출기 | 호출 | 읽는 것 → 쓰는 곳 | 다음 씬에 실리는 때 |
 |---|---|---|---|
-| `storyStateUpdate` (0.2) | 동기, 씬마다 1회 | 초안 + 이전 원장 → `memory/[threads/<id>/]story-state.md`에 `- [씬번호\|목격자,…] 사실` 항목을 덧붙임 | 즉시 |
+| `storyStateUpdate` (0.2) | 동기, 씬마다 1회 | 초안 + 이전 원장 → 그 씬 번들의 `state.yaml`에 항목(`event`·`relationShift`·`reveal`·`motif`)을 목격자(`knownBy`, 인물 uuid)와 함께 씀 | 즉시 |
 
-줄기(`setting.threads`)가 있으면 원장·장 요약·페르소나 기억은 줄기별로 나뉘고 **캐넌만 전역**으로
+줄기(`.storyboard/structure.yaml`의 `threads`)가 있으면 원장(줄기에 속한 씬의 `state.yaml`을 구조 순서로
+이은 것)·장 요약·페르소나 기억은 줄기별로 나뉘고 **카드의 사실(`fact` 진술)만 전역**으로
 공유된다. 씬 번호는 전역이고 원고 조립도 번호순이다.
 
 ## 역할 프롬프트 전체 명단
 
-37개 중 파이프라인이 자동으로 부르는 것은 19개다. 나머지는 사람이 명령으로 부르는 도구이거나
+36개 중 파이프라인이 자동으로 부르는 것은 18개다. 나머지는 사람이 명령으로 부르는 도구이거나
 노트 흡수·스튜디오 같은 별도 경로에 속한다. 온도와 상한은 리소스 파일 front-matter의 값이다.
 프롬프트 본문은 `prompts/<key>.md`를 `~/.storyboard` 또는 워크스페이스 `.storyboard`에 두면
 작가가 바꿀 수 있고, 리소스를 고친 뒤에는 `npm run build:prompts --workspace @storyboard/story-ai`를
 돌려야 한다.
 
-### 자동 파이프라인이 부르는 19개
+### 자동 파이프라인이 부르는 18개
 
 | 프롬프트 | 층 | 부르는 곳 | 읽는 것 → 내놓는 것 | 온도 / 상한 |
 |---|---|---|---|---|
 | `outlineSynopsis` | 기획 | 1층 ① | 프로젝트 계약 → 시놉시스 | 0.7 / 2000 |
 | `chapterPlan` | 기획 | 1층 ① | 계약 + 시놉시스 + 인물 요약 → 장·씬 계획 | 0.6 / 4000 |
 | `outlineCharacters` | 기획 | 1층 ② | 계약 + 시놉시스 + 출연진 → 인물 카드 초안 | 0.6 / 2000 |
-| `sceneGrounding` | 기획 | 2층 전처리 | 씬 카드 빈칸 → 장소·시간·동기 제안 | 0.7 / 600 |
-| `sceneBeats` | 기획 | 2층 전처리 | 비트 없는 씬 카드 → 비트 목록 | 0.7 / 1500 |
+| `sceneBeats` | 기획 | 2층 전처리 | 비트 없는 씬 번들 → 비트 목록 | 0.7 / 1500 |
 | `personaGeneration` | 기억 | 2층 1 | 인물 카드 → 1인칭 기억·태도 | 0.7 / 500 |
 | `backgroundDescription` | 기억 | 2층 2 | 배경 카드 → 분위기 묘사 | 0.7 / 400 |
 | `sceneSkeleton` | 집필 | 2층 4 | 입력 전부 + 페르소나·배경 → 씬 뼈대 | 0.7 / 8000 |
@@ -177,7 +182,7 @@
 | `draftCondense` | 스튜디오 도구 | 줄이기. CLI의 `draft condense`는 `draftRevision`을 쓴다. | 0.4 / 4000 |
 | `genreFormatting` | `draft format` | 장르 관습(웹소설 줄바꿈 등)으로 재포맷 | 0.5 / 12000 |
 | `cardRecommendation` | `card collect` 계열 | 원고에서 카드 만들 만한 인물·장소 추천 | 0.2 / 700 |
-| `sceneStructure` | 에디터의 카드 편집기 | 씬 카드 빈칸(복선·필요 캐넌 등) 제안 | 0.7 / 700 |
+| `sceneStructure` | 호출하는 화면 없음 (0.16에서 카드 편집기의 구조화 제안이 사라짐; 프롬프트 리소스는 남아 있음) | 씬 카드 빈칸(복선 등) 제안 | 0.7 / 700 |
 | `situationExtraction` | 커버리지 하네스 | 본문에서 상황 목록 추출 | 0.3 / 1000 |
 | `inlineCompletion` | 에디터 인라인 완성 | 커서 뒤 짧은 이어쓰기 | 0.5 / 120 |
 
@@ -195,14 +200,14 @@
 
 ## 한 장으로 다시 읽으면
 
-- **역할은 37개지만 자동으로 도는 것은 19개**이고, 그 19개가 세 층(소설·씬·기억)에 고정된
+- **역할은 36개지만 자동으로 도는 것은 18개**이고, 그 19개가 세 층(소설·씬·기억)에 고정된
   순서로 꽂혀 있다.
 - **역할 사이의 통신 수단은 파일이다.** 시놉시스·장 계획·씬 카드·초안·원장·요약이 각각 한
   역할의 출력이자 다음 역할의 입력이고, 그래서 어느 단계든 파일을 고치고 다시 돌릴 수 있다.
 - **판단은 세 군데에만 있다.** 뼈대·살붙임의 코드 검증 재시도, 되먹임 루프의 검사 → 라우팅 →
   재작성, 그리고 1층 ⑥ → ⑦의 1회전. 셋 다 횟수와 멈춤 조건이 코드와 설정에 박혀 있다.
-- **기억은 두 속도로 흐른다.** 이야기 상태 원장은 씬이 끝나는 즉시 다음 씬에 실리고, 성향을
-  뺀 정전·카드 후보는 사람이 승격할 때까지 캐시에 머문다.
+- **기억은 두 속도로 흐른다.** 이야기 상태 원장은 씬이 끝나는 즉시 다음 씬에 실린다. 카드에 대한 AI 제안(노트 흡수·인터뷰·스튜디오)은
+  생성이 아니라 그 경로들이 남기며, 사람이 `card apply`로 받을 때까지 캐시 세션에 머문다.
 - **현재 구조에 없는 것**: 역할들끼리 대화하거나 서로의 결과를 반박하는 루프, 무엇을 다음에 할지
   스스로 정하는 오케스트레이터, 역할마다 다른 도구 접근 권한. 모델은 설정에서 task 단위로 바꿀
   수 있다.

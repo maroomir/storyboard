@@ -39,7 +39,16 @@ workspace: draft through `storyboard` verbs instead of writing `draft/*.md` by h
 code, ask before changing the contract, the budget or the model. Existing files are never
 overwritten; fill in its last section with the work's own notes.
 
-`doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
+A work is plain files in the repository: `.storyboard/project.json` (the contract),
+`.storyboard/structure.yaml` (threads and the scene order), `.storyboard/outline/`, one bundle
+folder per card — `character/<slug>.card/`, `background/<slug>.card/`, `narrator/<slug>.card/`,
+`scene/NNN-slug.card/` — each with a `card.yaml` header and a `statements.yaml` of sourced
+statements, and `draft/NNN-slug.md`. Bundles change through verbs, not by hand. Everything
+generated (usage, runs, the run lock, chapter summaries, studio sessions, draft revisions) lives in
+one git-ignored database, `.storyboard/cache/storyboard.db`. 0.16 does not open a 0.15 work: it
+reports «0.15 형식» and refuses, and there is no conversion — keep using 0.15.x for that work.
+
+`doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, a stale `.gitignore` block, bundles it cannot parse or that share a uuid. It also checks the story-state
 ledger (the scene bundles' `state.yaml`) against the current cards and scenes: entries whose
 scene has been edited since are reported as stale, and generation drops them from the prompt until
 you regenerate that scene. When the edit was one you do not want redrafted — beats added to a card
@@ -51,9 +60,10 @@ in number order, skipping the scenes the ledger already carries (`--force` recor
 again and, like regenerating a draft, marks the entries of later scenes stale). The chapter summaries (in the cache database) are checked the
 same way against the drafts they were written from, and `storyboard manuscript summarize` refreshes
 the ones that no longer match. `storyboard init --repair` restores the directories, `.gitignore` and any missing agent guide
-(`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one) and seals a
-pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
-stale. `doctor` also counts the scenes without beats (fix: `scene plot --all`), warns when a scene
+(`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one), finishes an
+interrupted scene renumbering, gives a new uuid to the later of two folders that share one, renumbers
+scene folders out of structure order, and seals the ledger of scenes that have none against today's
+cards and scenes, so edits made after the repair are what count as stale. `doctor` also counts the scenes without beats (fix: `scene plot --all`), warns when a scene
 card's place points at a unit its chapter's outline puts in another building (`3동 704호` against
 `7동 704호`), and it warns
 when the configured model cannot reach the largest scene target — measured, not guessed, and silent
@@ -68,16 +78,17 @@ terminal width, and a mistyped verb suggests the closest real ones. `-v` prints 
 ## Commands
 
 Every command on a work is `<noun> <verb> [target] [--options]`, two words. The noun is the kind of
-file it touches — `project`, `outline`, `narrator`, `scene`, `draft`, `card`, `notes`,
+file it touches — `project`, `outline`, `scene`, `draft`, `card`, `notes`,
 `manuscript` — always singular, and the verb comes from one small vocabulary: `list` and `show` to
-look, `create` / `rename` / `remove` / `set` to change, `generate` / `revise` / `check` and the like
-for AI work, `diff` / `promote` for candidates. A kind is an argument, never part of the name:
-`card create character`, `draft check slop 01-intro`, `notes connect notion`. One-word commands
+look, `create` / `rename` / `move` / `remove` / `set` to change, `generate` / `revise` / `check` and
+the like for AI work, `apply` / `discard` for proposals. A kind is an argument, never part of the
+name: `card create character`, `card create narrator`, `draft check slop 001-intro`,
+`notes connect notion`. The old `narrator` noun is gone; narrators are cards. One-word commands
 (`init`, `setup`, `doctor`, `status`, `help`, `tui`, `completion`) are about the machine or the
 session rather than a file of the work.
 
 `scene` is the scene card and `draft` is the prose written from it: `scene list|show|create|rename|
-seed|plot|complete` against `draft generate|revise|show|edit|augment|condense|expand|format|
+move|remove|seed|plot|complete` against `draft generate|revise|show|edit|augment|condense|expand|format|
 check`. `storyboard --help` groups the commands the same way: 시작하기, 기획, 씬, 초안, 카드,
 노트, 원고, 측정.
 
@@ -88,7 +99,7 @@ storyboard scene list             # number · thread · title · state (초안 �
 storyboard scene create "옥상에서 둘이 처음 마주친다" --name rooftop --after 2   # the studio fills it; --after inserts and renumbers
 storyboard scene move rooftop --after 5   # folders and drafts behind it are renumbered (001-…, 002-…)
 storyboard scene remove 003-detour  # the bundle, its draft and revisions; the scenes behind close the gap
-storyboard draft show 01-intro    # the draft's body on stdout
+storyboard draft show 001-intro   # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
 storyboard card show hana         # one card, found by slug (--sources: each line's origin, --history: its sessions)
 storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal, tui, or --step --json)
@@ -228,9 +239,9 @@ storyboard card create narrator hana-first --person first --focal hana --voice "
 storyboard card list narrator
 ```
 
-만든 뒤 씬 카드의 `narrator:` 에 그 id 를 적으면 그 씬만 그 시점으로 생성된다. 장 단위로 바꾸려면
-`.storyboard/outline/chapters.yaml` 의 장에 `narrator:` 를 적는다 — 씬 시드를 만들 때 씬 카드로
-복사되고, 씬 카드의 값이 장의 값을 이긴다.
+씬의 서술자는 `.storyboard/structure.yaml` 의 씬 항목(`narrator`)에 있어서 그 씬만 그 시점으로
+생성된다. 장 단위로 바꾸려면 `.storyboard/outline/chapters.yaml` 의 장에 `narrator:` 를 적는다.
+씬의 값이 장의 값을 이긴다.
 
 구성은 프리셋으로 고른다. 프리셋이 연속성 줄기(`threads`)와 서술자 카드를 대신 만든다:
 
@@ -241,7 +252,7 @@ storyboard project set --composition alternating-pov --pov-characters hana,jun -
 
 - `linear` — 지금까지의 동작. 줄기 하나.
 - `omnibus` — 편마다 독립된 사건과 결말. 이야기 상태·장 요약·직전 씬 맥락이 편 안에서만 이어지고,
-  캐넌만 공유한다.
+  카드의 사실(`fact` 진술)만 공유한다.
 - `alternating-pov` — 인물마다 서술자 카드를 만들고 장마다 번갈아 배정한다.
 - `frame` — 외화가 내화를 감싸고, 외화는 첫 장과 마지막 장에 놓인다.
 
@@ -249,20 +260,20 @@ storyboard project set --composition alternating-pov --pov-characters hana,jun -
 작품 계약에 없는 줄기는 `doctor` 가 미리 잡는다:
 
 ```bash
-storyboard scene show 03-night-market
+storyboard scene show 003-night-market
 ```
 
-A scene's file name is its key: the draft, the summary, the caches, the
-dialogue memory and the studio sessions are all named after the stem, and the story-state ledger
-and canon refer to it by stem or by number. `scene rename` moves and rewrites all of them together.
-It refuses a number another scene already holds, so to insert a scene, move the later scenes up
-first, starting from the last one. A new number also gives the scene the outline slot and chapter
-that number maps to.
-If a rename is cut off partway, `doctor` reports it. While the old card is still there, run the
-same `scene rename` it names again to finish. Files with the old name and no card can be deleted.
+A scene is a folder, `scene/NNN-slug.card/`, and its draft is `draft/NNN-slug.md`. The three-digit
+number is not typed by hand: it comes from the scene's place in `.storyboard/structure.yaml`. Every
+verb that takes a scene accepts `003-night-market`, `3` or `night-market`. `scene rename` changes
+only the slug and moves the draft along; asking it to change the number is refused. To reorder,
+use `scene create --after`, `scene move` and `scene remove`, which renumber the folders and drafts
+behind them.
+If a renumbering is cut off partway, `doctor` reports it, and the next scene-writing verb (or
+`init --repair`) finishes it.
 
 ```bash
-storyboard scene rename 03-night-market --to 04-night-market
+storyboard scene rename 003-night-market --to 003-moon-market
 ```
 
 Notes kept in Obsidian or Notion come in with `notes absorb`. It reads a vault folder (or one note)
@@ -291,10 +302,11 @@ storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8
 storyboard notes absorb ~/Downloads/Export-달의문.zip --yes
 ```
 
-`card build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
-without touching the tree. A new card whose name yields no ascii id is reported rather than filed
-under a guessed id — create it with `card create background "학교 3층 끝의 방송실" --name "방송실" --id broadcast-room`
-and run `card build` again.
+`card build` reads the scenes and writes the cards they imply; with `--propose`, changes to cards
+that already exist wait as proposals for `card apply`. `scene complete` writes its proposal too.
+Pass `--dry-run` to see the proposal without touching the tree. A new card whose name yields no
+ascii id is reported rather than filed under a guessed id — create it with
+`card create background "학교 3층 끝의 방송실" --name "방송실" --id broadcast-room` and run `card build` again.
 
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
 forces them for pipes). Color appears only at a terminal; pipes, `--json`, `NO_COLOR` and
@@ -303,7 +315,7 @@ forces them for pipes). Color appears only at a terminal; pipes, `--json`, `NO_C
 
 A draft is only as long as the events its scene card carries, so `draft generate` first expands
 the card's `beats` when it has none — from the structured fields, the grounding facts and the
-summary in `scene/<stem>.summary.md` (staying inside that summary when there is one) — and writes
+summary in the bundle's `summary.md` (staying inside that summary when there is one) — and writes
 them to the card before drafting. `scene plot <stem> | --all` runs that step on its own so you can
 read the beats before spending a generation: `--dry-run` only prints the proposal, `--all` picks the
 scenes without beats, and existing beats are regenerated only with `--force`. The count is
@@ -399,7 +411,7 @@ them to `config.json` / `secrets.json`, or run `storyboard setup` again.
 
 ## Generated text and provider policies
 
-- **Check what the AI asserts.** Drafts, revisions, review notes and story-bible suggestions are
+- **Check what the AI asserts.** Drafts, revisions, review notes and card suggestions are
   model output. Treat any factual claim in them (history, geography, medicine, law, real people or
   places) as unverified until you have checked it yourself. If you hand this app to other writers,
   pass this notice on to them.

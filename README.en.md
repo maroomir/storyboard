@@ -7,7 +7,7 @@ project contract (genre, audience, point of view, length) and goes through chara
 cards, a synopsis and chapter plan, scene seeds, scene drafts, review and revision, and manuscript
 assembly. Every step is a file in the work's repository, so any stage can be inspected, undone and
 rerun. The core is not one giant prompt but scene-by-scene generation that is fed the previous
-prose, the canon, and a story-state ledger.
+prose, the facts written on the cards, and a story-state ledger.
 
 Two apps share one engine. A work is a git repository, and the AI key is the writer's own
 (`~/.storyboard/secrets.json`). Claude Max subscribers can create that key with the monthly API
@@ -37,13 +37,19 @@ code --install-extension storyboard-vscode-*.vsix
 ```bash
 storyboard init --title "Night Passage" --genre mystery --pov third-limited --target-words 300000
 storyboard setup                      # provider and key (claude, openai, google, grok, ollama)
+storyboard card create character "a taciturn seventeen-year-old archer, Hana"   # one line → a card the studio fills
 storyboard outline generate           # contract → synopsis and chapter plan
-storyboard scene seed                 # chapter plan → scene/*.card
+storyboard scene seed                 # chapter plan → scene/NNN-slug.card/
 storyboard scene plot --all           # event beats for every scene
-storyboard draft generate 01-prologue # skeleton → dialogue → section expansion → checks → review and revise
-storyboard draft check continuity 01-prologue
-storyboard manuscript assemble        # draft/*.md → manuscript
+storyboard draft generate 001-prologue # skeleton → dialogue → section expansion → checks → review and revise
+storyboard draft check continuity 001-prologue
+storyboard manuscript assemble        # draft/NNN-slug.md → manuscript
 ```
+
+Cards and scenes are bundle folders, `<kind>/<slug>.card/` (a `card.yaml` header plus a
+`statements.yaml` of statements), and a scene's number comes from its place in
+`.storyboard/structure.yaml`. A scene can be named `001-prologue`, `1` or `prologue`. A 0.15 work is
+not opened (there is no conversion); keep using 0.15.x for it.
 
 `storyboard novel generate` runs all of it without approvals. When the run budget
 (`budget.run.limitUsd`) is reached it finishes the scene in progress and stops; running it again

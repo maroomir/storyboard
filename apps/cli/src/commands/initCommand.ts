@@ -102,7 +102,7 @@ export class InitCommand implements ICommandHandler {
     group: '시작하기',
     usage: 'init --title <name> | init --repair',
     summary:
-      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받고, git 저장소가 아니면 git init 도 합니다 — 첫 커밋은 직접). --repair 는 0.8 이전 워크스페이스의 발판을 보수하고 이야기 상태 원장을 봉인합니다',
+      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받고, git 저장소가 아니면 git init 도 합니다 — 첫 커밋은 직접). --repair 는 빠진 폴더·.gitignore·AGENTS.md 를 채우고, 끊긴 씬 번호 매기기를 끝내고, 복사된 uuid 와 씬 폴더 번호를 고치고, 이야기 상태 원장을 봉인합니다',
     flags: [
       'title',
       'repair',

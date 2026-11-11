@@ -5,7 +5,7 @@ English: [`README.en.md`](README.en.md)
 Storyboard는 장편 소설 한 권을 **검증 가능한 작은 단계**로 나누어 쓰는 도구입니다. 작품 계약(장르·독자·
 시점·분량)에서 시작해 인물·배경 카드, 시놉시스와 장 계획, 씬 시드, 씬별 초안, 검수와 재작성, 원고
 조립까지 이어지고, 모든 단계가 작품 저장소 안의 파일로 남아 되돌리고 다시 돌릴 수 있습니다. 거대한
-프롬프트 한 번이 아니라, 이전 본문·정전(canon)·이야기 상태 원장을 주입받는 씬 단위 생성이 핵심입니다.
+프롬프트 한 번이 아니라, 이전 본문·카드에 적힌 사실·이야기 상태 원장을 주입받는 씬 단위 생성이 핵심입니다.
 
 두 앱이 같은 엔진을 씁니다. 작품 저장소는 git 저장소이고, AI 키는 사용자 본인의 것(`~/.storyboard/secrets.json`)입니다.
 Claude Max 구독자는 구독에 포함된 월 API 크레딧으로 키를 만들 수 있습니다: [`API_KEY_GUIDE.md`](API_KEY_GUIDE.md).
@@ -36,13 +36,18 @@ code --install-extension storyboard-vscode-*.vsix
 ```bash
 storyboard init --title "밤의 항해" --genre 미스터리 --pov third-limited --target-words 300000
 storyboard setup                      # 프로바이더와 키 (claude, openai, google, grok, ollama)
+storyboard card create character "무뚝뚝한 열일곱 살 궁수 하나"   # 설명 한 줄 → 스튜디오가 채운 카드
 storyboard outline generate           # 계약 → 시놉시스·장 계획
-storyboard scene seed                 # 장 계획 → scene/*.card
+storyboard scene seed                 # 장 계획 → scene/NNN-slug.card/
 storyboard scene plot --all           # 씬마다 사건 비트
-storyboard draft generate 01-prologue # 뼈대 → 대사 → 구간 확장 → 기계 검증 → 검수·재작성
-storyboard draft check continuity 01-prologue
-storyboard manuscript assemble        # draft/*.md → 원고
+storyboard draft generate 001-prologue # 뼈대 → 대사 → 구간 확장 → 기계 검증 → 검수·재작성
+storyboard draft check continuity 001-prologue
+storyboard manuscript assemble        # draft/NNN-slug.md → 원고
 ```
+
+카드와 씬은 `<종류>/<slug>.card/` 번들 폴더(`card.yaml` 머리말 + `statements.yaml` 진술)이고, 씬 번호는
+`.storyboard/structure.yaml`의 순서에서 나옵니다. 씬은 `001-prologue`, `1`, `prologue` 어느 것으로도 부를
+수 있습니다. 0.15 형식 작품은 열리지 않으니(변환 없음) 그 작품은 0.15.x로 계속 쓰세요.
 
 `storyboard novel generate`는 이 전체를 승인 없이 한 번에 돌립니다. 예산 상한(`budget.run.limitUsd`)에
 닿으면 진행 중인 씬까지 마치고 멈추며, 다시 실행하면 이어서 갑니다. 실패하거나 프로세스가 끊긴 실행도 다시 돌리면 이어 갑니다. 터미널에서는 이어 갈지 처음부터 할지 묻고,
