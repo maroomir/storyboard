@@ -677,6 +677,19 @@ describe("GenerateDraftUseCase", () => {
       })
     })
 
+    it("derives the incident from the beats it just proposed, as the next run reading them will", async () => {
+      const dependencies = createBeatsDependencies({
+        scene: { ...beatScene, frontmatter: { targetWordCount: 3000, title: "첫 만남" } } as never
+      })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
+        context: { scene: { frontmatter: { grounding: { incident: "첫 만남: 첫 비트" } } } }
+      })
+    })
+
     it("keeps existing beats and skips the proposal", async () => {
       const writeBeats = vi.fn(async () => undefined)
       const dependencies = createBeatsDependencies({
