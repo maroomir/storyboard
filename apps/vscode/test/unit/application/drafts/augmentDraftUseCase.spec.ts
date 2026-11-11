@@ -51,7 +51,7 @@ function createUseCase(): {
       createTestHost({
         fileSystem: stubFileSystem,
         logger: { error: vi.fn(), warn: vi.fn() } as never,
-        configBridge: { isKeepDraftHistoryEnabled: () => false } as never,
+        configBridge: {} as never,
         scenes: { readByUri: (...args: unknown[]): unknown => readSceneFileMock(...args) } as never,
       }),
       createTestAi({ gateway: gateway as never }),

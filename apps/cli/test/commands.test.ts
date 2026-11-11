@@ -1492,17 +1492,9 @@ describe('draft edit and draft augment', () => {
   it.each([
     ['draft augment', {}],
     ['draft edit', { instruction: '더 짧게' }],
-  ] as const)('%s keeps the previous draft only when keepHistory is on', async (verb, flags) => {
+  ] as const)('%s keeps the previous draft as a revision', async (verb, flags) => {
     await writeSceneWithDraft();
 
-    await run(verb, args(verb.split(' '), flags, ['001-night-market']));
-
-    expect(await historyCount()).toBe(0);
-
-    writeFileSync(
-      join(home, 'config.json'),
-      JSON.stringify({ 'ai.provider.default': 'mock', 'editor.draft.keepHistory': true }),
-    );
     await run(verb, args(verb.split(' '), flags, ['001-night-market']));
 
     expect(await historyCount()).toBe(1);

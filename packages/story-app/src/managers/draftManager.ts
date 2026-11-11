@@ -221,12 +221,12 @@ export class DraftManager {
     return this.deps.augmentDraftUseCase.applyAugmentedDraft(request);
   }
 
-  public archiveDraftWhenHistoryIsKept(
+  public archiveDraft(
     workspaceRoot: StoryUri,
     sceneStem: string,
     draftUri?: StoryUri,
   ): Promise<string | undefined> {
-    return this.deps.draftHistoryArchiver.archiveWhenHistoryIsKept(
+    return this.deps.draftHistoryArchiver.archive(
       workspaceRoot,
       sceneStem,
       draftUri,

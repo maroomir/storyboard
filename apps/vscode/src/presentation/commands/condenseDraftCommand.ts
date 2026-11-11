@@ -21,7 +21,7 @@ import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentSt
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 export interface CondenseDraftCommandDependencies {
-  readonly drafts: Pick<DraftManager, 'condense' | 'archiveDraftWhenHistoryIsKept'>;
+  readonly drafts: Pick<DraftManager, 'condense' | 'archiveDraft'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -190,7 +190,7 @@ export class CondenseDraftCommand implements IExtensionCommand {
 
   private async archiveDraftBeforeApply(target: CondenseTarget): Promise<void> {
     try {
-      await this.dependencies.drafts.archiveDraftWhenHistoryIsKept(
+      await this.dependencies.drafts.archiveDraft(
         target.workspaceFolder.uri,
         target.draft.sceneStem,
         target.editor.document.uri,

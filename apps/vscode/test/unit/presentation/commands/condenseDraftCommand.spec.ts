@@ -84,15 +84,15 @@ describe('condense draft command', () => {
   it('archives the open document when its file name differs from the front matter scene', async () => {
     const archiver: DraftHistoryArchiver = new DraftHistoryArchiver({
       fileSystem: vscodeFileSystem,
-      configBridge: { isKeepDraftHistoryEnabled: (): boolean => true },
+      configBridge: {},
       scenes: stubScenes([{ stem: '01-intro', order: 1, orderText: '01', slug: 'intro', frontmatter: {}, body: '' } as never]),
     } as unknown as HostAdapters);
     const command: CondenseDraftCommand = new CondenseDraftCommand(
       {
         drafts: {
           condense: async () => ({ kind: 'condensed', ok: true, text: '짧은 본문' }),
-          archiveDraftWhenHistoryIsKept: (root, stem, draftUri) =>
-            archiver.archiveWhenHistoryIsKept(root, stem, draftUri),
+          archiveDraft: (root, stem, draftUri) =>
+            archiver.archive(root, stem, draftUri),
         },
         logger: { warn: (): void => undefined } as never,
       },

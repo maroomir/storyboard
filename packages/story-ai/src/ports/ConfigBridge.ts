@@ -482,10 +482,6 @@ export class ConfigBridge {
     return this.readIntegerSetting('generation.section.outputLimit', profileLimit);
   }
 
-  public isKeepDraftHistoryEnabled(): boolean {
-    return this.readBooleanSetting('editor.draft.keepHistory');
-  }
-
   public getDraftSceneBreakSeparator(): string | undefined {
     const configuration: StoryboardConfigurationLike = this.dependencies.getConfiguration();
 

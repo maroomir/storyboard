@@ -157,7 +157,6 @@ interface ConfigBridgeStub {
   readonly isAiContextCondenseEnabled: () => boolean
   readonly getSectionOutputLimit: () => number
   readonly getSceneGenerationTuning: () => Record<string, number>
-  readonly isKeepDraftHistoryEnabled: () => boolean
 }
 
 function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBridgeStub {
@@ -169,7 +168,6 @@ function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBr
     isAiContextCondenseEnabled: () => false,
     getSectionOutputLimit: () => 7000,
     getSceneGenerationTuning: () => ({}),
-    isKeepDraftHistoryEnabled: () => false,
     ...overrides
   }
 }
@@ -477,12 +475,10 @@ describe("GenerateDraftUseCase", () => {
   })
 
   describe("draft history archiving", () => {
-    it("archives the previous draft through archiveExistingDraft when keep-draft-history is enabled", async () => {
+    it("archives the previous draft through archiveExistingDraft", async () => {
       archiveExistingDraftMock.mockResolvedValueOnce("2026-01-01-00-00-rev-01.md")
       const fileSystem = { ...stubFileSystem, exists: uriExistsMock, marker: "fs" }
-      const dependencies = withFileSystem(createDependencies({
-          configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => true })
-        }), fileSystem)
+      const dependencies = withFileSystem(createDependencies({}), fileSystem)
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
@@ -502,9 +498,8 @@ describe("GenerateDraftUseCase", () => {
       expect(typeof archiveArgs.resolveArchiveUri).toBe("function")
     })
 
-    it("does not archive the previous draft when keep-draft-history is disabled and the draft is our own", async () => {
+    it("archives the previous draft even when the draft is our own", async () => {
       const dependencies = withFileSystem(createDependencies({
-          configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
           sceneCacheRepository: createSceneCacheRepository({
             read: vi.fn(async () => ({ inputHash: "sha256:0", bodyHash: ourDraftBodyHash }))
           })
@@ -513,13 +508,12 @@ describe("GenerateDraftUseCase", () => {
       const result = await execute(dependencies, createRequest({ force: true }))
 
       expect(result.kind).toBe("generated")
-      expect(archiveExistingDraftMock).not.toHaveBeenCalled()
+      expect(archiveExistingDraftMock).toHaveBeenCalledOnce()
     })
 
-    it("archives a draft it did not write even when keep-draft-history is disabled", async () => {
+    it("archives a draft it did not write, with a warning", async () => {
       const logger = createLogger()
       const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
         logger
       })
 
@@ -532,7 +526,6 @@ describe("GenerateDraftUseCase", () => {
 
     it("archives a draft whose body no longer matches the recorded hash", async () => {
       const dependencies = withFileSystem(createDependencies({
-          configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
           sceneCacheRepository: createSceneCacheRepository({
             read: vi.fn(async () => ({ inputHash: "sha256:0", bodyHash: computeDraftBodyHash("다른 본문") }))
           })
@@ -589,7 +582,6 @@ describe("GenerateDraftUseCase", () => {
       const logger = createLogger()
       const draftRepository = createDraftRepository()
       const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => true }),
         logger,
         draftRepository
       })

@@ -234,7 +234,7 @@ describe("createSettingsRpcHandlers", () => {
   })
 
   it("reports where each value came from and where a write landed", async () => {
-    const configuration = new Map<string, unknown>([["ai.provider.default", "codex"], ["editor.draft.keepHistory", true]])
+    const configuration = new Map<string, unknown>([["ai.provider.default", "codex"], ["editor.grammar.realtime", true]])
     const registry = createTestRegistry(configuration, new Map())
     const secretStore = new SecretStore(new FakeSecretStorage(new Map()))
     const configBridge = new ConfigBridge({
@@ -242,7 +242,7 @@ describe("createSettingsRpcHandlers", () => {
         get: <T>(section: string, defaultValue: T): T =>
           (configuration.has(section) ? configuration.get(section) : defaultValue) as T,
         inspect: <T>(section: string): { globalValue?: T; workspaceValue?: T } =>
-          section === "editor.draft.keepHistory"
+          section === "editor.grammar.realtime"
             ? { workspaceValue: configuration.get(section) as T }
             : { globalValue: configuration.get(section) as T | undefined },
         update: async (section, value): Promise<void> => {
@@ -255,16 +255,16 @@ describe("createSettingsRpcHandlers", () => {
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
     expect(snapshot.origins["ai.provider.default"]).toBe("user")
-    expect(snapshot.origins["editor.draft.keepHistory"]).toBe("workspace")
+    expect(snapshot.origins["editor.grammar.realtime"]).toBe("workspace")
     expect(snapshot.origins["revise.loop.maxIterations"]).toBe("default")
     expect(snapshot.configFiles).toEqual(configFiles())
-    expect(snapshot.settingValues["editor.draft.keepHistory"]).toBe(true)
+    expect(snapshot.settingValues["editor.grammar.realtime"]).toBe(true)
     expect(snapshot.settingValues["revise.loop.maxIterations"]).toBe(2)
     expect(snapshot.settingCatalog.map((entry) => entry.key)).toContain("editor.studio.validation")
 
-    const saved = await handlers["settings.updateSettingValue"]!({ key: "editor.draft.keepHistory", value: false }, {} as never)
+    const saved = await handlers["settings.updateSettingValue"]!({ key: "editor.grammar.realtime", value: false }, {} as never)
     expect(saved).toEqual({ origin: "workspace", file: "/work/novel/.storyboard/config.json" })
-    expect(configuration.get("editor.draft.keepHistory")).toBe(false)
+    expect(configuration.get("editor.grammar.realtime")).toBe(false)
 
     const savedDefault = await handlers["settings.updateDefaultProvider"]!({ providerId: "mock" }, {} as never)
     expect(savedDefault).toEqual({ origin: "user", file: "/home/me/.storyboard/config.json" })
@@ -278,7 +278,7 @@ describe("createSettingsRpcHandlers", () => {
     expect(
       settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "revise.loop.maxIterations", value: 3 }).success
     ).toBe(true)
-    expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "editor.draft.keepHistory", value: "yes" }).success).toBe(false)
+    expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "editor.grammar.realtime", value: "yes" }).success).toBe(false)
   })
 
   it("writes and deletes API keys via secrets RPC", async () => {

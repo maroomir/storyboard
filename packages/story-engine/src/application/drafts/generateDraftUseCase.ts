@@ -162,14 +162,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     }
   }
 
-  private async maybeArchiveExistingDraft(
-    inputs: SceneGenerationInputs,
-    force: boolean,
-  ): Promise<void> {
-    if (!force && !this.host.configBridge.isKeepDraftHistoryEnabled()) {
-      return;
-    }
-
+  private async archiveExistingDraft(inputs: SceneGenerationInputs): Promise<void> {
     try {
       await new DraftHistoryArchiver(this.host).archive(
         inputs.workspaceFolder.uri,
@@ -264,10 +257,10 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     const isOurs: boolean = await this.isDraftOursToOverwrite(inputs);
     if (!isOurs) {
       this.host.logger.warn(
-        `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${inputs.scene.stem}`,
+        `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 판본으로 보관합니다: ${inputs.scene.stem}`,
       );
     }
-    await this.maybeArchiveExistingDraft(inputs, !isOurs);
+    await this.archiveExistingDraft(inputs);
   }
 
   private async saveDialogueRecord(

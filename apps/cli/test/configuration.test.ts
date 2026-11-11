@@ -46,7 +46,7 @@ describe('CLI configuration precedence', () => {
   it('lets the workspace file win key by key', () => {
     const user = write('user.json', {
       'ai.provider.default': 'openai',
-      editor: { draft: { keepHistory: true } },
+      editor: { grammar: { realtime: true } },
     });
     const workspace = write('workspace.json', { 'ai.provider.default': 'mock' });
 
@@ -56,7 +56,7 @@ describe('CLI configuration precedence', () => {
     });
 
     expect(configuration.get('ai.provider.default', undefined)).toBe('mock');
-    expect(configuration.get('editor.draft.keepHistory', undefined)).toBe(true);
+    expect(configuration.get('editor.grammar.realtime', undefined)).toBe(true);
   });
 
   it('replaces a section outright when a flag overrides it', () => {

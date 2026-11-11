@@ -97,10 +97,6 @@ export class AugmentDraftUseCase {
   }
 
   public async applyAugmentedDraft(request: ApplyAugmentedDraftRequest): Promise<void> {
-    if (!this.host.configBridge.isKeepDraftHistoryEnabled()) {
-      return;
-    }
-
     try {
       await new DraftHistoryArchiver(this.host).archive(
         request.workspaceRoot,

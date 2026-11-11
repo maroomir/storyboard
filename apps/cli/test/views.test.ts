@@ -272,11 +272,7 @@ describe('draft check', () => {
 });
 
 describe('draft expand', () => {
-  it('keeps the version it started from as a revision when keepHistory is on', async () => {
-    writeFileSync(
-      join(home, 'config.json'),
-      JSON.stringify({ 'ai.provider.default': 'mock', 'editor.draft.keepHistory': true }),
-    );
+  it('keeps the version it started from as a revision', async () => {
     await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.\n\n하나는 우산을 접었다.');
 

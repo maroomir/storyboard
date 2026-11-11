@@ -93,10 +93,9 @@ const followUpCalls: {
 
 const archivedDrafts: string[] = []
 
-const configBridge = { isKeepDraftHistoryEnabled: (): boolean => keepDraftHistory }
+const configBridge = {}
 const harnessLogger = { warn: (): void => undefined }
 
-let keepDraftHistory = false
 
 const followUpRepository = {
   list: async (): Promise<never[]> => [],
@@ -168,7 +167,6 @@ async function send(
 }
 
 beforeEach((): void => {
-  keepDraftHistory = false
   archivedDrafts.length = 0
   shownDiffs.length = 0
   followUpCalls.added.length = 0
@@ -488,9 +486,7 @@ describe("studio proposal draft history", () => {
       baselineHash: hashBaseline(draftText)
     })
 
-  it("archives the previous draft when keepHistory is on", async () => {
-    keepDraftHistory = true
-
+  it("archives the previous draft before applying", async () => {
     await send(bridgeWith(), "studio.proposal.apply", { entity: sceneEntity, turn: draftTurn() })
 
     const archived = [...files.keys()].filter((path) => path.includes("/.storyboard/cache/revisions/"))
@@ -498,15 +494,7 @@ describe("studio proposal draft history", () => {
     expect(files.get(archived[0] as string)).toBe(draftText)
   })
 
-  it("writes no archive when keepHistory is off", async () => {
-    await send(bridgeWith(), "studio.proposal.apply", { entity: sceneEntity, turn: draftTurn() })
-
-    expect([...files.keys()].filter((path) => path.includes("/.storyboard/cache/revisions/"))).toEqual([])
-  })
-
   it("never archives for a card apply", async () => {
-    keepDraftHistory = true
-
     await send(bridgeWith(), "studio.proposal.apply", {
       entity: characterEntity,
       turn: proposalTurn()

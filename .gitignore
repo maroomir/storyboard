@@ -36,11 +36,6 @@ coverage/
 .npm/
 .pnpm-store/
 
-# Storyboard sample files
-character/.sample.card
-background/.sample.card
-scene/.sample.txt
-
 # Documentation
 docs/upgrade-feature
 docs/refactor
