@@ -10,11 +10,7 @@ interface StoryboardRelativePaths {
   readonly sceneRenameJournal: string;
   readonly sceneCacheDirectory: string;
   readonly chapterSummaries: string;
-  readonly sceneDialogueDirectory: string;
   readonly revisionRoundsDirectory: string;
-  readonly voiceSeeds: string;
-  readonly personaMemoryDirectory: string;
-  readonly backgroundMemoryDirectory: string;
   readonly cardCacheDirectory: string;
   readonly noteCacheDirectory: string;
   readonly noteSource: string;
@@ -57,10 +53,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   sceneCacheDirectory: '.storyboard/cache/scenes',
   revisionRoundsDirectory: '.storyboard/cache/revisions',
   chapterSummaries: '.storyboard/memory/summaries.md',
-  sceneDialogueDirectory: '.storyboard/memory/dialogue',
-  voiceSeeds: '.storyboard/memory/voiceSeeds.json',
-  personaMemoryDirectory: '.storyboard/memory/personas',
-  backgroundMemoryDirectory: '.storyboard/memory/backgrounds',
   cardCacheDirectory: '.storyboard/cache/cards',
   noteCacheDirectory: '.storyboard/cache/notes',
   noteSource: '.storyboard/cache/notes/source.json',

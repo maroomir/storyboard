@@ -303,8 +303,8 @@ describe('notes absorb', () => {
     expect(outcome.message).toContain("storyboard project set --genre '해양 미스터리'");
 
     expect(
-      JSON.parse(readFileSync(join(workspace, '.storyboard', 'memory', 'voiceSeeds.json'), 'utf8')),
-    ).toEqual({ characters: { hana: ['만조엔 문이 열려. 난 봤어.'] } });
+      readFileSync(join(workspace, 'character', 'hana.card', 'memory', 'main.yaml'), 'utf8'),
+    ).toContain('만조엔 문이 열려. 난 봤어.');
     expect(outcome.message).toContain('노트의 예시 대사를 말투 표본으로 두었습니다');
     expect(existsSync(join(workspace, '.storyboard', 'bible'))).toBe(false);
   });

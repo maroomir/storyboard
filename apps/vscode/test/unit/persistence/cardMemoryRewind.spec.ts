@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
-import { BackgroundMemoryStore, PersonaMemoryStore } from '@storyboard/story-engine';
+import {
+  BackgroundMemoryStore,
+  PersonaMemoryStore,
+  type CardMemoryStoreDependencies,
+  type WorkspaceCards,
+} from '@storyboard/story-engine';
 import { promptResourceFingerprint, promptResources } from '@storyboard/story-ai';
 import {
   getStoryboardProjectPaths,
@@ -9,56 +14,10 @@ import {
   computePersonaCardHash,
   type BackgroundCard,
   type CharacterCard,
+  type ElementMemory,
+  type SceneFile,
 } from '@storyboard/story-model';
-import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
-
-class MemoryWorkspace implements IFileSystem {
-  private readonly files = new Map<string, string>();
-
-  public write(path: string, content: string): void {
-    this.files.set(path, content);
-  }
-
-  public async readFile(uri: { path: string }): Promise<Uint8Array> {
-    const content = this.files.get(uri.path);
-
-    if (content === undefined) {
-      throw new Error(`ENOENT: ${uri.path}`);
-    }
-
-    return new TextEncoder().encode(content);
-  }
-
-  public async writeFile(uri: { path: string }, content: Uint8Array): Promise<void> {
-    this.files.set(uri.path, new TextDecoder().decode(content));
-  }
-
-  public async createDirectory(): Promise<void> {}
-
-  public async exists(uri: { path: string }): Promise<boolean> {
-    return this.files.has(uri.path);
-  }
-
-  public async listFileNames(): Promise<string[]> {
-    return [];
-  }
-
-  public async readDirectory(): Promise<FileSystemDirectoryEntry[]> {
-    return [];
-  }
-
-  public async delete(uri: { path: string }): Promise<void> {
-    this.files.delete(uri.path);
-  }
-
-  public async modifiedTime(): Promise<number> {
-    return 0;
-  }
-
-  public async isRealPathInside(): Promise<boolean> {
-    return true;
-  }
-}
+import { stubScenes } from '../../stubs/scenes';
 
 const paths = getStoryboardProjectPaths(vscode.Uri.file('/workspace'));
 
@@ -76,78 +35,92 @@ const background = {
   attributes: {},
 } as unknown as BackgroundCard;
 
-describe('card memory rewind', () => {
-  let fileSystem: MemoryWorkspace;
+function sceneAt(order: number, slug: string): SceneFile {
+  const orderText: string = String(order).padStart(3, '0');
+  return { stem: `${orderText}-${slug}`, order, orderText, slug, frontmatter: {}, body: '' } as SceneFile;
+}
 
-  const writePersona = (updatedThroughScene: string): void => {
-    fileSystem.write(
-      `${paths.personaMemoryDirectory.path}/elia.json`,
-      JSON.stringify({
-        cardId: 'elia',
-        persona: '저장된 페르소나',
-        updatedThroughScene,
-        cardHash: computePersonaCardHash(character, promptResourceFingerprint('personaGeneration')),
-      }),
-    );
+const scenes = stubScenes([sceneAt(2, 'second'), sceneAt(4, 'fourth'), sceneAt(5, 'fifth'), sceneAt(30, 'final')]);
+
+describe('card memory rewind', () => {
+  let memories: Map<string, ElementMemory>;
+  let dependencies: CardMemoryStoreDependencies;
+
+  const writePersona = (throughScene: string): void => {
+    memories.set('character:elia:main', {
+      persona: '저장된 페르소나',
+      throughScene,
+      cardHash: computePersonaCardHash(character, promptResourceFingerprint('personaGeneration')),
+    });
   };
 
-  const writeBackground = (updatedThroughScene: string): void => {
-    fileSystem.write(
-      `${paths.backgroundMemoryDirectory.path}/school.json`,
-      JSON.stringify({
-        cardId: 'school',
-        atmosphere: '저장된 분위기',
-        updatedThroughScene,
-        cardHash: computeBackgroundCardHash(background),
-      }),
-    );
+  const writeBackground = (throughScene: string): void => {
+    memories.set('background:school:main', {
+      persona: '저장된 분위기',
+      throughScene,
+      cardHash: computeBackgroundCardHash(background),
+    });
   };
 
   beforeEach(() => {
-    fileSystem = new MemoryWorkspace();
+    memories = new Map();
+    const cards = {
+      readMemory: async (_root: unknown, kind: string, slug: string, threadId: string): Promise<ElementMemory> =>
+        memories.get(`${kind}:${slug}:${threadId}`) ?? {},
+      writeMemory: async (
+        _root: unknown,
+        kind: string,
+        slug: string,
+        threadId: string,
+        memory: ElementMemory,
+      ): Promise<void> => {
+        memories.set(`${kind}:${slug}:${threadId}`, memory);
+      },
+    } as unknown as WorkspaceCards;
+    dependencies = { fileSystem: {} as never, cards, scenes };
   });
 
   it('reuses a persona that stopped before the scene being written', async () => {
-    writePersona('04-fourth');
+    writePersona('004-fourth');
 
-    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(dependencies, paths, '005-fifth');
 
     expect(await store.load(character)).toBe('저장된 페르소나');
   });
 
   it('drops a persona that already ran past the scene being rewritten', async () => {
-    writePersona('30-final');
+    writePersona('030-final');
 
-    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(dependencies, paths, '005-fifth');
 
     expect(await store.load(character)).toBeUndefined();
   });
 
   it('drops a persona saved by the very scene being generated again', async () => {
-    writePersona('05-fifth');
+    writePersona('005-fifth');
 
-    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(dependencies, paths, '005-fifth');
 
     expect(await store.load(character)).toBeUndefined();
   });
 
-  it('keeps a persona whose scene name carries no order to compare', async () => {
-    writePersona('legacy-memory');
+  it('keeps a persona whose scene is no longer in the structure', async () => {
+    writePersona('gone-scene');
 
-    const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
+    const store = new PersonaMemoryStore(dependencies, paths, '005-fifth');
 
     expect(await store.load(character)).toBe('저장된 페르소나');
   });
 
   it('drops a persona made with a persona prompt that has since been reworded', async () => {
-    writePersona('04-fourth');
+    writePersona('004-fourth');
     promptResources.override(
       'personaGeneration',
       '---\ntemperature: 0.7\nmaxTokens: 500\n---\n## system\n고친 문구\n\n## user\n{{name}}\n',
     );
 
     try {
-      const store = new PersonaMemoryStore(fileSystem, paths, '05-fifth');
+      const store = new PersonaMemoryStore(dependencies, paths, '005-fifth');
 
       expect(await store.load(character)).toBeUndefined();
     } finally {
@@ -155,14 +128,21 @@ describe('card memory rewind', () => {
     }
   });
 
-  it('rewinds background atmosphere on the same rule', async () => {
-    writeBackground('30-final');
+  it('saves the persona with the scene it went through into the thread memory', async () => {
+    const store = new PersonaMemoryStore(dependencies, paths, '005-fifth');
 
-    const ahead = new BackgroundMemoryStore(fileSystem, paths, '05-fifth');
+    await store.save(character, '새 페르소나');
+
+    expect(memories.get('character:elia:main')).toMatchObject({ persona: '새 페르소나', throughScene: '005-fifth' });
+  });
+
+  it('rewinds background atmosphere on the same rule', async () => {
+    writeBackground('030-final');
+    const ahead = new BackgroundMemoryStore(dependencies, paths, '005-fifth');
     expect(await ahead.load(background)).toBeUndefined();
 
-    writeBackground('02-second');
-    const behind = new BackgroundMemoryStore(fileSystem, paths, '05-fifth');
+    writeBackground('002-second');
+    const behind = new BackgroundMemoryStore(dependencies, paths, '005-fifth');
     expect(await behind.load(background)).toBe('저장된 분위기');
   });
 });

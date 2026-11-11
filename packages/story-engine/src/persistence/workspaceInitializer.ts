@@ -9,7 +9,7 @@ import {
   type StoryboardProjectPaths,
   type StoryUri,
 } from '@storyboard/story-model';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import { createDefaultProjectJson } from '#engine/persistence/projectJson';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
@@ -64,21 +64,6 @@ interface LegacyMemoryMove {
 
 const legacyMemoryLocations: readonly LegacyMemoryMove[] = [
   { legacy: 'manuscript/SUMMARY.md', current: STORYBOARD_RELATIVE_PATHS.chapterSummaries },
-];
-
-const legacyMemoryDirectories: readonly LegacyMemoryMove[] = [
-  {
-    legacy: '.storyboard/cache/dialogue',
-    current: STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory,
-  },
-  {
-    legacy: '.storyboard/cache/personas',
-    current: STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory,
-  },
-  {
-    legacy: '.storyboard/cache/backgrounds',
-    current: STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory,
-  },
 ];
 
 function resolveRelative(workspaceRoot: StoryUri, relativePath: string): StoryUri {
@@ -215,48 +200,7 @@ export class WorkspaceInitializer {
       await this.fileSystem.delete(legacyUri);
     }
 
-    for (const location of legacyMemoryDirectories) {
-      const legacyUri: StoryUri = resolveRelative(workspaceRoot, location.legacy);
-      if (!(await this.fileSystem.exists(legacyUri))) {
-        continue;
-      }
-
-      const currentUri: StoryUri = resolveRelative(workspaceRoot, location.current);
-      movedPaths.push(...(await this.moveDirectoryFiles(legacyUri, currentUri, location.current)));
-      await this.fileSystem.delete(legacyUri);
-    }
-
     return { movedPaths };
   }
 
-  private async moveDirectoryFiles(
-    legacyUri: StoryUri,
-    currentUri: StoryUri,
-    currentRelativePath: string,
-  ): Promise<string[]> {
-    const entries: FileSystemDirectoryEntry[] = await this.fileSystem.readDirectory(legacyUri);
-    const fileNames: string[] = entries
-      .filter(([, stat]) => stat.type === 'file')
-      .map(([name]) => name);
-    if (fileNames.length === 0) {
-      return [];
-    }
-
-    await this.fileSystem.createDirectory(currentUri);
-
-    const moved: string[] = [];
-    for (const fileName of fileNames) {
-      const legacyFileUri: StoryUri = joinStoryPath(legacyUri, fileName);
-      const targetUri: StoryUri = joinStoryPath(currentUri, fileName);
-
-      if (!(await this.fileSystem.exists(targetUri))) {
-        await this.fileSystem.writeFile(targetUri, await this.fileSystem.readFile(legacyFileUri));
-        moved.push(`${currentRelativePath}/${fileName}`);
-      }
-
-      await this.fileSystem.delete(legacyFileUri);
-    }
-
-    return moved;
-  }
 }

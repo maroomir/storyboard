@@ -8,10 +8,8 @@ import {
   type StoryboardCard,
   type StoryboardProject,
   getStoryboardProjectPaths,
-  mergeVoiceSeeds,
+  mainThreadId,
   noteCandidateFileSchema,
-  readVoiceSeedsFile,
-  writeVoiceSeedsFile,
   STORYBOARD_RELATIVE_PATHS,
   type NoteBundle,
   type NoteCandidateFile,
@@ -27,8 +25,9 @@ import type {
   BibleSubjectKind,
   NoteAbsorbPlan,
   StatementSource,
+  ElementMemory,
   StoryboardProjectPaths,
-  VoiceSeeds,
+  VoiceSampleLine,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
@@ -174,15 +173,29 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
 
   public async addVoiceSeeds(
     workspaceRoot: StoryUri,
+    location: string,
     seeds: Readonly<Record<string, readonly string[]>>,
   ): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    const existing: VoiceSeeds = (await this.fileSystem.exists(paths.voiceSeeds))
-      ? await readVoiceSeedsFile(paths.voiceSeeds, this.fileSystem)
-      : { characters: {} };
-
-    await this.fileSystem.createDirectory(paths.memoryDirectory);
-    await writeVoiceSeedsFile(paths.voiceSeeds, this.fileSystem, mergeVoiceSeeds(existing, seeds));
+    for (const [characterId, lines] of Object.entries(seeds)) {
+      const memory: ElementMemory = await this.cards.readMemory(
+        workspaceRoot,
+        'character',
+        characterId,
+        mainThreadId,
+      );
+      const known: Set<string> = new Set((memory.voiceSample ?? []).map((sample) => sample.text));
+      const added: VoiceSampleLine[] = [];
+      for (const text of lines.map((line) => line.trim())) {
+        if (text.length > 0 && !known.has(text)) {
+          known.add(text);
+          added.push({ text, source: `note:${location}` });
+        }
+      }
+      await this.cards.writeMemory(workspaceRoot, 'character', characterId, mainThreadId, {
+        ...memory,
+        voiceSample: [...(memory.voiceSample ?? []), ...added],
+      });
+    }
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {

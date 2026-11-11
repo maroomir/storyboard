@@ -103,30 +103,11 @@ beforeEach(async () => {
     `.storyboard/cache/scenes/${fromStem}.json`,
     `${JSON.stringify({ sceneStem: fromStem, inputHash: 'sha256:x' }, null, 2)}\n`,
   );
-  write(
-    `.storyboard/memory/threads/side/dialogue/${fromStem}.json`,
-    `${JSON.stringify({ sceneStem: fromStem, lines: [] }, null, 2)}\n`,
-  );
+  write(`scene/${fromStem}.card/dialogue.json`, `${JSON.stringify({ sceneStem: fromStem, turns: [] })}\n`);
+  write(`scene/${fromStem}.card/state.yaml`, 'statements:\n  - {facet: event, value: 야시장은 자정에 닫는다.}\n');
   write(
     `.storyboard/cache/studio-sessions/scene/${fromStem}/s1.json`,
     `${JSON.stringify({ entity: { kind: 'scene', key: fromStem } }, null, 2)}\n`,
-  );
-  write(
-    '.storyboard/memory/storyState.md',
-    [
-      '# 이야기 상태',
-      '<!-- through-scene: 5 -->',
-      `<!-- scene-input: 3 sha256:${'a'.repeat(64)} -->`,
-      `<!-- scene-input: 5 sha256:${'b'.repeat(64)} -->`,
-      '## 확정 사실',
-      '- [3|hana] 야시장은 자정에 닫는다.',
-      '- [5] 새벽이 온다.',
-      '',
-    ].join('\n'),
-  );
-  write(
-    '.storyboard/memory/personas/hana.json',
-    `${JSON.stringify({ cardId: 'hana', updatedThroughScene: fromStem }, null, 2)}\n`,
   );
 });
 
@@ -158,24 +139,19 @@ describe('RenameSceneUseCase', () => {
     expect(JSON.parse(read('.storyboard/cache/scenes/003-moon-market.json')).sceneStem).toBe(
       '003-moon-market',
     );
-    expect(
-      JSON.parse(read('.storyboard/memory/threads/side/dialogue/003-moon-market.json')).sceneStem,
-    ).toBe('003-moon-market');
+    expect(read('scene/003-moon-market.card/dialogue.json')).toContain('turns');
     expect(
       JSON.parse(read('.storyboard/cache/studio-sessions/scene/003-moon-market/s1.json')).entity,
     ).toEqual({ kind: 'scene', key: '003-moon-market' });
     expect(has(`.storyboard/cache/studio-sessions/scene/${fromStem}`)).toBe(false);
   });
 
-  it('keeps the ledger and follows the stem in memory', async () => {
-    const before = read('.storyboard/memory/storyState.md');
+  it('carries the scene state along with the bundle', async () => {
+    const before = read(`scene/${fromStem}.card/state.yaml`);
 
     await rename('003-moon-market');
 
-    expect(read('.storyboard/memory/storyState.md')).toBe(before);
-    expect(JSON.parse(read('.storyboard/memory/personas/hana.json')).updatedThroughScene).toBe(
-      '003-moon-market',
-    );
+    expect(read('scene/003-moon-market.card/state.yaml')).toBe(before);
   });
 
   it('refuses a number change and leaves the workspace untouched', async () => {

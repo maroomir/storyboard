@@ -79,28 +79,13 @@ function migrate(fileSystem: InMemoryFileSystem): Promise<MemoryMigrationResult>
 }
 
 describe('migrateLegacyMemory', () => {
-  it('moves every legacy memory location under .storyboard/memory/', async () => {
-    const fileSystem = new InMemoryFileSystem({
-      '.storyboard/cache/personas/elia.json': '{"persona":1}',
-      '.storyboard/cache/backgrounds/school.json': '{"background":1}',
-      '.storyboard/cache/dialogue/01-prologue.json': '{"dialogue":1}',
-      'manuscript/SUMMARY.md': '요약',
-    });
+  it('moves the legacy chapter summaries under .storyboard/memory/', async () => {
+    const fileSystem = new InMemoryFileSystem({ 'manuscript/SUMMARY.md': '요약' });
 
     const { movedPaths } = await migrate(fileSystem);
 
-    expect(fileSystem.snapshot()).toEqual({
-      '.storyboard/memory/personas/elia.json': '{"persona":1}',
-      '.storyboard/memory/backgrounds/school.json': '{"background":1}',
-      '.storyboard/memory/dialogue/01-prologue.json': '{"dialogue":1}',
-      '.storyboard/memory/summaries.md': '요약',
-    });
-    expect([...movedPaths].sort()).toEqual([
-      '.storyboard/memory/backgrounds/school.json',
-      '.storyboard/memory/dialogue/01-prologue.json',
-      '.storyboard/memory/personas/elia.json',
-      '.storyboard/memory/summaries.md',
-    ]);
+    expect(fileSystem.snapshot()).toEqual({ '.storyboard/memory/summaries.md': '요약' });
+    expect(movedPaths).toEqual(['.storyboard/memory/summaries.md']);
   });
 
   it('keeps the current memory and drops the legacy copy when both exist', async () => {
@@ -116,9 +101,7 @@ describe('migrateLegacyMemory', () => {
   });
 
   it('reports nothing on a second run', async () => {
-    const fileSystem = new InMemoryFileSystem({
-      '.storyboard/cache/personas/elia.json': '{"persona":1}',
-    });
+    const fileSystem = new InMemoryFileSystem({ 'manuscript/SUMMARY.md': '요약' });
 
     await migrate(fileSystem);
     const { movedPaths } = await migrate(fileSystem);

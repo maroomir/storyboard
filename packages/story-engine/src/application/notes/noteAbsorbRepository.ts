@@ -51,6 +51,7 @@ export interface INoteAbsorbRepository {
   saveSynopsisCandidate(workspaceRoot: StoryUri, text: string): Promise<void>;
   addVoiceSeeds(
     workspaceRoot: StoryUri,
+    location: string,
     seeds: Readonly<Record<string, readonly string[]>>,
   ): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;

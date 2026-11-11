@@ -20,7 +20,6 @@ import {
   groupNotesIntoChunks,
   listKnownNoteEntities,
   measureNoteAbsorbWorkload,
-  mergeVoiceSeeds,
   noteChunkCharacterLimit,
   type NoteDocument,
   parseScene,
@@ -1302,11 +1301,5 @@ describe('note voice seeds (#105-14)', () => {
       });
 
     expect(plan.voiceSeeds).toEqual({ hana: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'] });
-  });
-
-  it('adds only new lines to the seeds already on disk', () => {
-    expect(
-      mergeVoiceSeeds({ characters: { hana: ['하나'] } }, { hana: ['하나', ' 둘 '], jun: ['셋'] }),
-    ).toEqual({ characters: { hana: ['하나', '둘'], jun: ['셋'] } });
   });
 });

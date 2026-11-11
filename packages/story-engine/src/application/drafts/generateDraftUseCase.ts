@@ -280,7 +280,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     pipelineResult: RunSceneGenerationPipelineResult,
   ): Promise<void> {
     if (pipelineResult.dialogueRecord) {
-      await new SceneDialogueStore(this.host.fileSystem, threadPaths).save(
+      await new SceneDialogueStore(this.host, threadPaths).save(
         pipelineResult.dialogueRecord,
       );
     }
@@ -379,13 +379,13 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       useContextCondense: this.host.configBridge.isAiContextCondenseEnabled(),
       sectionOutputLimit: this.host.configBridge.getSectionOutputLimit(),
       tuning: this.host.configBridge.getSceneGenerationTuning(),
-      personaStore: new PersonaMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
-      backgroundStore: new BackgroundMemoryStore(this.host.fileSystem, threadPaths, scene.stem),
+      personaStore: new PersonaMemoryStore(this.host, threadPaths, scene.stem),
+      backgroundStore: new BackgroundMemoryStore(this.host, threadPaths, scene.stem),
       backgroundFactConflictStore: new BackgroundFactConflictStore(
         this.host.caches,
         paths.workspaceRoot,
       ),
-      dialogueCorpus: new SceneDialogueStore(this.host.fileSystem, threadPaths),
+      dialogueCorpus: new SceneDialogueStore(this.host, threadPaths),
       backgroundRecentExcerpt,
     });
   }

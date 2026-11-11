@@ -22,6 +22,7 @@ import {
   type SceneFile,
   type SceneHeader,
   type SceneProjectionLookup,
+  type SceneDialogueRecord,
   type SceneStoryState,
   type StatementSource,
   type StoryStructure,
@@ -233,6 +234,29 @@ export class WorkspaceScenes {
     if (await this.dependencies.fileSystem.exists(stateUri)) {
       await this.dependencies.fileSystem.delete(stateUri);
     }
+  }
+
+  public async readDialogue(
+    workspaceRoot: StoryUri,
+    stem: string,
+  ): Promise<SceneDialogueRecord | undefined> {
+    const found: SceneRosterEntry | undefined = await this.find(workspaceRoot, stem);
+    return found === undefined
+      ? undefined
+      : await this.bundleFiles(workspaceRoot).readDialogue(found.path);
+  }
+
+  public async writeDialogue(
+    workspaceRoot: StoryUri,
+    stem: string,
+    record: SceneDialogueRecord,
+  ): Promise<void> {
+    const found: SceneRosterEntry | undefined = await this.find(workspaceRoot, stem);
+    if (found === undefined) {
+      throw new Error(`씬이 없습니다: ${stem}`);
+    }
+
+    await this.bundleFiles(workspaceRoot).writeDialogue(found.path, record);
   }
 
   public sceneUri(workspaceRoot: StoryUri, stem: string): StoryUri {
