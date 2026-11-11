@@ -88,9 +88,7 @@ interface SceneCacheProviders {
   sceneBeatArbiter?: AiProviderId;
   sceneBeatJudge?: AiProviderId;
   traitsExtraction?: AiProviderId;
-  factExtraction?: AiProviderId;
   cardFactExtraction?: AiProviderId;
-  cardFactVerification?: AiProviderId;
   backgroundFactExtraction?: AiProviderId;
   grammarCheck?: AiProviderId;
   continuityCheck?: AiProviderId;

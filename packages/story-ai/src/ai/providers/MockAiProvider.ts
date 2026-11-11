@@ -246,7 +246,6 @@ const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuil
     ['- 상황을 관찰하고 차분하게 반응함', '- 대화 속에서 감정을 분명하게 드러냄'].join('\n'),
   grammarCheck: createMockGrammarIssues,
   continuityCheck: (): string => '[]',
-  factExtraction: (): string => '[]',
   cardFactExtraction: (): string =>
     JSON.stringify({ attributes: [], relations: [], arc: { summary: '' } }),
   backgroundFactConflicts: (): string => JSON.stringify({ conflicts: [] }),
@@ -265,7 +264,6 @@ const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuil
     JSON.stringify({ notes: [], entities: [], scenes: [], premise: [] }),
   noteSynthesis: (): string => JSON.stringify({ setting: {}, synopsis: {} }),
   noteCardConsolidation: (): string => JSON.stringify({ cards: [] }),
-  cardFactVerification: (): string => '[]',
   sceneGrounding: (): string =>
     JSON.stringify({
       incident: '모의 사건',

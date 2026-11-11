@@ -1,4 +1,4 @@
-import type { AiMessage, AttributeCandidate, Severity, UsageAttribution } from '@storyboard/story-model';
+import type { AiMessage, Severity, UsageAttribution } from '@storyboard/story-model';
 import type { PromptArtifact } from '#ai/ai/prompts/types';
 
 type UntypedFields = Readonly<Record<string, unknown>>;
@@ -82,27 +82,6 @@ export function toGrammarIssue(value: unknown): GrammarIssue[] {
       reason: candidate.reason,
     },
   ];
-}
-
-export function toFactCandidate(value: unknown): AttributeCandidate[] {
-  if (!value || typeof value !== 'object') {
-    return [];
-  }
-
-  const candidate: UntypedFields = value as UntypedFields;
-
-  if (typeof candidate.key !== 'string' || typeof candidate.value !== 'string') {
-    return [];
-  }
-
-  const key: string = candidate.key.trim();
-  const factValue: string = candidate.value.trim();
-
-  if (key.length === 0 || factValue.length === 0) {
-    return [];
-  }
-
-  return [{ key, value: factValue }];
 }
 
 export function toContinuityIssue(value: unknown): ContinuityIssue[] {

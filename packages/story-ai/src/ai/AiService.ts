@@ -20,7 +20,6 @@ import type {
   StoryStateUpdateItem,
   AiMessageRole,
   BibleSubjectKind,
-  AttributeCandidate,
 } from '@storyboard/story-model';
 import {
   coerceChapterPlan,
@@ -36,7 +35,6 @@ import { AiTextGateway } from '#ai/ai/AiTextGateway';
 import {
   CardAiService,
   type ExtractCardCandidatesByCharacterOptions,
-  type ExtractFactsByCharacterOptions,
   type ExtractTraitsByCharacterOptions,
 } from '#ai/ai/CardAiService';
 import {
@@ -100,7 +98,6 @@ export type {
 
 export type {
   ExtractCardCandidatesByCharacterOptions,
-  ExtractFactsByCharacterOptions,
   ExtractTraitsByCharacterOptions,
 } from '#ai/ai/CardAiService';
 export type {
@@ -274,14 +271,6 @@ export class StoryboardAiService {
     return this.cardAiService.extractTraitsByCharacter(draftBody, characterNames, options);
   }
 
-  public async extractFactsByCharacter(
-    draftBody: string,
-    characterNames: readonly string[],
-    options: ExtractFactsByCharacterOptions = {},
-  ): Promise<Record<string, AttributeCandidate[]>> {
-    return this.cardAiService.extractFactsByCharacter(draftBody, characterNames, options);
-  }
-
   public async extractCardCandidatesByCharacter(
     draftBody: string,
     characterNames: readonly string[],
@@ -328,20 +317,6 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<NoteConsolidationResult> {
     return this.cardAiService.consolidateNoteCards(targets, options);
-  }
-
-  public async verifyCardCandidatesByCharacter(
-    draftBody: string,
-    characterName: string,
-    statements: readonly string[],
-    options: GenerateTextOptions = {},
-  ): Promise<number[] | null> {
-    return this.cardAiService.verifyCardCandidatesByCharacter(
-      draftBody,
-      characterName,
-      statements,
-      options,
-    );
   }
 
   public async checkGrammar(
