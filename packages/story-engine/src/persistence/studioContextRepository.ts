@@ -46,7 +46,7 @@ import type {
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
-import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
+import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes, WrittenScene } from '#engine/persistence/bundles/workspaceScenes';
 
 export interface StudioEntityContext {
@@ -62,6 +62,12 @@ export interface StudioEntityContext {
 export type StudioSceneFocus = 'card' | 'draft';
 
 type DraftFacts = Pick<StudioSceneStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
+
+function describeRosterLine(label: string, card: StoryboardCard): string {
+  const aliases: readonly string[] = card.aliases ?? [];
+  const aliasText: string = aliases.length === 0 ? '' : ` (별칭: ${aliases.join(', ')})`;
+  return `- ${label} ${card.id}: ${card.name}${aliasText}`;
+}
 
 const missingDraftNote: string =
   '이 씬에는 아직 초안이 없다. 초안을 만들기 전에는 고칠 대상이 없으니 propose하지 말고 say로 알려라.';
@@ -294,7 +300,7 @@ export class StudioContextRepository {
         targetUri: sceneUri,
         patchTarget: 'sceneCard',
         baseline: sceneText,
-        context,
+        context: [context, '', await this.describeCardRoster(workspaceRoot)].join('\n'),
       };
     }
 
@@ -307,6 +313,19 @@ export class StudioContextRepository {
       baseline: draftText,
       context,
     };
+  }
+
+  private async describeCardRoster(workspaceRoot: StoryUri): Promise<string> {
+    const roster: CardRoster = await this.cards.loadRoster(workspaceRoot);
+    const lines: string[] = [
+      ...roster.characters.map((card) => describeRosterLine('인물', card)),
+      ...roster.backgrounds.map((card) => describeRosterLine('배경', card)),
+    ];
+
+    return [
+      '[작품의 카드: characters·location 에 쓸 수 있는 id]',
+      lines.length === 0 ? '(아직 인물·배경 카드가 없다)' : lines.join('\n'),
+    ].join('\n');
   }
 
   private async readScenesFeaturingCard(

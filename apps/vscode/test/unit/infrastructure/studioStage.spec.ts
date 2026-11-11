@@ -281,3 +281,18 @@ describe("readStudioStage for card entities", () => {
     expect(stage).toBeUndefined()
   })
 })
+
+describe("studio scene card context", () => {
+  it("lists the work's characters and places by id, so a scene made from a description can name its cast", async () => {
+    stubWorkspace({
+      "/workspace/scene/01-intro.card": sceneText,
+      "/workspace/character/ri-na.card": ["type: character", "id: ri-na", "name: 리나", "role: main", "aliases:", "  - 견습생"].join("\n"),
+      "/workspace/background/astel-tower.card": ["type: location", "id: astel-tower", "name: 아스텔 마탑"].join("\n")
+    })
+
+    const context = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles), stubSummaries(), historyOf()).readEntityContext(workspaceRoot, { kind: "scene", key: "01-intro" }, "card")
+
+    expect(context?.context).toContain("- 인물 ri-na: 리나 (별칭: 견습생)")
+    expect(context?.context).toContain("- 배경 astel-tower: 아스텔 마탑")
+  })
+})
