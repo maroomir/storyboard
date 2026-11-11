@@ -9,7 +9,6 @@ import type {
   IProjectRepository,
   ISceneBatchRepository,
   ISceneCacheRepository,
-  ISceneGroundingGapRepository,
   ISceneRepository,
 } from '#engine/application/drafts/draftRepositories';
 import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
@@ -65,7 +64,6 @@ export interface WorkspaceRepositories {
   readonly sceneBatches: ISceneBatchRepository;
   readonly sceneSeeds: ISceneSeedRepository;
   readonly sceneCache: ISceneCacheRepository;
-  readonly sceneGroundingGaps: ISceneGroundingGapRepository;
   readonly sceneSidebar: ISceneSidebarRepository;
   readonly project: IProjectRepository;
   readonly outline: IOutlineRepository;

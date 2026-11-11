@@ -18,7 +18,6 @@ import { BackgroundFactConflictsPrompt } from '#ai/ai/prompts/backgroundFactConf
 import { GenreFormattingPrompt } from '#ai/ai/prompts/genreFormatting';
 import { PersonaGenerationPrompt } from '#ai/ai/prompts/personaGeneration';
 import { SceneBeatsPrompt } from '#ai/ai/prompts/sceneBeats';
-import { SceneGroundingPrompt } from '#ai/ai/prompts/sceneGrounding';
 import { SceneSkeletonPrompt, type SceneSkeletonInput } from '#ai/ai/prompts/sceneSkeleton';
 import {
   coerceBeatProposal,
@@ -60,10 +59,7 @@ import {
   readBackgroundFactConflictResponse,
   type BackgroundFactConflict,
   sceneGroundingLines,
-  sceneGroundingFieldKeys,
-  sceneGroundingFieldLabels,
   type SceneGrounding,
-  type SceneGroundingFieldKey,
 isSceneStructureListField,
 } from '@storyboard/story-model';
 import {
@@ -91,38 +87,6 @@ export class SceneAiService {
     const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
     return parsedArray ? parsedArray.flatMap((item) => toSituationWithCharacters(item)) : [];
-  }
-
-  public async proposeSceneGrounding(
-    input: {
-      readonly sceneBody: string;
-      readonly missingFields: readonly SceneGroundingFieldKey[];
-      readonly characterNames: readonly string[];
-      readonly knownGrounding?: SceneGrounding;
-    },
-    options: GenerateTextOptions = {},
-  ): Promise<SceneGrounding> {
-    if (input.missingFields.length === 0) {
-      return {};
-    }
-
-    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneGrounding', options);
-    const prompt: PromptArtifact = SceneGroundingPrompt.build(
-      {
-        sceneBody: input.sceneBody,
-        missingFields: input.missingFields,
-        characterNames: input.characterNames,
-        knownGrounding: describeKnownGrounding(input.knownGrounding),
-      },
-      variant,
-    );
-    const response: AiGenerateResponse = await this.gateway.generate('sceneGrounding', toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? SceneGroundingPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? SceneGroundingPrompt.config.maxTokens,
-    });
-
-    return toSceneGrounding(parseJsonObject(response.text), input.missingFields);
   }
 
   public async proposeSceneBeats(
@@ -381,17 +345,6 @@ export class SceneAiService {
   }
 }
 
-function describeKnownGrounding(grounding: SceneGrounding | undefined): string[] {
-  if (!grounding) {
-    return [];
-  }
-
-  return sceneGroundingFieldKeys.flatMap((key) => {
-    const value: string | undefined = grounding[key]?.trim();
-    return value ? [`- ${sceneGroundingFieldLabels[key]}: ${value}`] : [];
-  });
-}
-
 function toSceneStructureProposal(
   parsed: Record<string, unknown> | null,
   requestedFields: readonly SceneStructureFieldKey[],
@@ -427,23 +380,3 @@ function toSceneStructureProposal(
   return proposal;
 }
 
-function toSceneGrounding(
-  parsed: Record<string, unknown> | null,
-  requestedFields: readonly SceneGroundingFieldKey[],
-): SceneGrounding {
-  if (!parsed) {
-    return {};
-  }
-
-  const grounding: Record<string, string> = {};
-
-  for (const key of requestedFields) {
-    const value: unknown = parsed[key];
-
-    if (typeof value === 'string' && value.trim().length > 0) {
-      grounding[key] = value.trim();
-    }
-  }
-
-  return grounding;
-}

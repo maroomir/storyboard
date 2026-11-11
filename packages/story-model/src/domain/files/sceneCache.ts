@@ -71,7 +71,6 @@ const sceneCacheBackgroundSnapshotSchema: z.ZodType<SceneCacheBackgroundSnapshot
 
 const aiProviderIdSchema: z.ZodType<AiProviderId> = z.enum(aiProviderIds);
 interface SceneCacheProviders {
-  sceneGrounding?: AiProviderId;
   sceneBeats?: AiProviderId;
   sceneStructure?: AiProviderId;
   situationExtraction?: AiProviderId;

@@ -46,7 +46,6 @@ export interface ScenesWithDrafts {
 }
 
 const recordedSceneInputsRequest: SceneGenerationInputsRequest = {
-  skipSceneGrounding: true,
   skipSceneBeats: true,
   suppressLoggerPanel: true,
 };

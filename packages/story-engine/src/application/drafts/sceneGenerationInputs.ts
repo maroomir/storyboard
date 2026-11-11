@@ -1,5 +1,6 @@
 import { SceneContextReader } from '#engine/persistence/sceneContextReader';
 import {
+  deriveSceneGrounding,
   hasStoryboardProjectAt,
   sceneContextPaths,
   formatBibleFactLines,
@@ -42,7 +43,6 @@ import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '#engine/pipeline/sceneGenerationPolicies';
 import type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
 import { SceneBeatsResolver } from '#engine/application/drafts/resolveSceneBeats';
-import { SceneGroundingResolver, type SceneGroundingOutcome } from '#engine/application/drafts/resolveSceneGrounding';
 import { StoryMemoryAuditor, type StoryMemoryAudit } from '#engine/application/drafts/storyMemoryAuditor';
 import {
   ChapterMemoryAuditor,
@@ -77,7 +77,7 @@ export type WorkflowFailureRequest = Pick<GenerateDraftRequest, 'suppressLoggerP
 
 export type SceneGenerationInputsRequest = Pick<
   GenerateDraftRequest,
-  'skipSceneGrounding' | 'confirmSceneGrounding' | 'skipSceneBeats' | 'suppressLoggerPanel'
+  'skipSceneBeats' | 'suppressLoggerPanel'
 >;
 
 export interface SceneGenerationInputsLoaderDependencies {
@@ -162,12 +162,10 @@ interface SceneThreadSetup {
 }
 
 export class SceneGenerationInputsLoader {
-  private readonly groundingResolver: SceneGroundingResolver;
   private readonly beatsResolver: SceneBeatsResolver;
   private readonly failureReporter: WorkflowFailureReporter;
 
   public constructor(private readonly dependencies: SceneGenerationInputsLoaderDependencies) {
-    this.groundingResolver = new SceneGroundingResolver(dependencies);
     this.beatsResolver = new SceneBeatsResolver(dependencies);
     this.failureReporter = new WorkflowFailureReporter(dependencies.host.logger);
   }
@@ -379,20 +377,19 @@ export class SceneGenerationInputsLoader {
     builtContext: SceneContext,
     request: SceneGenerationInputsRequest,
   ): Promise<SceneFile | undefined> {
-    const characterNames: string[] = builtContext.characters.map((character) => character.name);
-    const grounded: SceneGroundingOutcome = await this.groundingResolver.resolve(
-      { workspaceRoot: paths.workspaceRoot, sceneUri, scene: rawScene, characterNames },
-      request,
-    );
-    if (grounded.kind === 'cancelled') {
-      return undefined;
-    }
+    const groundedScene: SceneFile = {
+      ...rawScene,
+      frontmatter: {
+        ...rawScene.frontmatter,
+        grounding: deriveSceneGrounding(rawScene, builtContext.background),
+      },
+    };
 
     return request.skipSceneBeats
-      ? grounded.scene
+      ? groundedScene
       : await this.beatsResolver.resolve(
           { workspaceRoot: paths.workspaceRoot, sceneUri },
-          grounded.scene,
+          groundedScene,
           builtContext.characters,
         );
   }

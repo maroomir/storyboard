@@ -264,13 +264,6 @@ const mockResponseBuilders: Readonly<Partial<Record<AiTaskName, MockResponseBuil
     JSON.stringify({ notes: [], entities: [], scenes: [], premise: [] }),
   noteSynthesis: (): string => JSON.stringify({ setting: {}, synopsis: {} }),
   noteCardConsolidation: (): string => JSON.stringify({ cards: [] }),
-  sceneGrounding: (): string =>
-    JSON.stringify({
-      incident: '모의 사건',
-      place: '모의 장소',
-      relation: '모의 관계',
-      time: '모의 시점',
-    }),
   sceneBeats: (): string => JSON.stringify(['모의 비트 하나', '모의 비트 둘', '모의 비트 셋']),
   sceneStructure: createMockSceneStructure,
   outlineSynopsis: (): string =>

@@ -453,10 +453,6 @@ export class ConfigBridge {
     return this.readDecimalSetting('budget.run.limitUsd');
   }
 
-  public isSceneGroundingAutoApproveEnabled(): boolean {
-    return this.readBooleanSetting('generation.grounding.autoApprove');
-  }
-
   public isAutoBeatsEnabled(): boolean {
     return this.readBooleanSetting('generation.beats.auto');
   }

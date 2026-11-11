@@ -1626,10 +1626,8 @@ describe('spend of the calls that prepare a scene', () => {
       args: args(['scene', 'plot'], { force: true }, ['01-night-market']),
     });
 
-    const setupCalls = roots.filter((call) => ['sceneGrounding', 'sceneBeats'].includes(call.taskName));
-    expect(new Set(setupCalls.map((call) => call.taskName))).toEqual(
-      new Set(['sceneGrounding', 'sceneBeats']),
-    );
+    const setupCalls = roots.filter((call) => call.taskName === 'sceneBeats');
+    expect(new Set(setupCalls.map((call) => call.taskName))).toEqual(new Set(['sceneBeats']));
     const workspaceRootPath: string = (recording.workspaceRoot as { fsPath: string }).fsPath;
     expect(setupCalls.map((call) => call.root)).toEqual(setupCalls.map(() => workspaceRootPath));
   });
