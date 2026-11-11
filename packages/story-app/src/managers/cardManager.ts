@@ -43,11 +43,17 @@ import type {
   ProposeStoryCardTargetsResult,
   CardSessionSummary,
   ElementBundle,
+  BundleReading,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
+  BundleFileError,
   backgroundCardPath,
+  buildCardView,
   characterCardPath,
+  getElementDisplayName,
+  type CardView,
+  type ElementKind,
   type BackgroundFactConflict,
   type CardCollectProposal,
   type NarratorCard,
@@ -64,6 +70,15 @@ export interface CardReading {
   readonly uri: StoryUri;
   readonly card: StoryboardCard;
 }
+
+export type CardViewReading =
+  | {
+      readonly ok: true;
+      readonly view: CardView;
+      readonly bundlePath: string;
+      readonly warnings: readonly string[];
+    }
+  | { readonly ok: false; readonly message: string };
 
 export interface BackgroundFactConflictReport {
   readonly cardId: string;
@@ -180,6 +195,36 @@ export class CardManager {
 
   public readBundle(workspaceRoot: StoryUri, slug: string): Promise<ElementBundle | undefined> {
     return this.deps.cards.findBundleBySlug(workspaceRoot, slug);
+  }
+
+  public async readView(
+    workspaceRoot: StoryUri,
+    kind: ElementKind,
+    directoryName: string,
+  ): Promise<CardViewReading> {
+    let reading: BundleReading;
+    try {
+      reading = await this.deps.cards.readBundleAt(workspaceRoot, kind, directoryName);
+    } catch (error) {
+      if (error instanceof BundleFileError) {
+        return { ok: false, message: error.message };
+      }
+      throw error;
+    }
+
+    const namesById: ReadonlyMap<string, string> = new Map(
+      (await this.deps.cards.loadRoster(workspaceRoot)).bundles.map((bundle) => [
+        bundle.header.id,
+        getElementDisplayName(bundle.header),
+      ]),
+    );
+
+    return {
+      ok: true,
+      view: buildCardView(reading.bundle, { nameOf: (elementId) => namesById.get(elementId) }),
+      bundlePath: reading.bundle.path,
+      warnings: reading.warnings.map((warning) => warning.message),
+    };
   }
 
   public async slugOfElement(workspaceRoot: StoryUri, elementId: string): Promise<string | undefined> {

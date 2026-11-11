@@ -1,5 +1,6 @@
 export * from '#model/shared/catalogs';
 export * from '#model/shared/cardCollect';
+export * from '#model/shared/cardView';
 export * from '#model/shared/disposableHandle';
 export * from '#model/shared/jsonRepair';
 export * from '#model/shared/messaging/index';

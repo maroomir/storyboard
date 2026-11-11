@@ -39,6 +39,7 @@ import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches'
 import {
   ElementBundleRepository,
   type BundleListing,
+  type BundleReading,
   type BundleWarning,
   type ElementBundle,
 } from '#engine/persistence/bundles/elementBundleRepository';
@@ -367,6 +368,14 @@ export class WorkspaceCards {
     return (await this.loadRoster(workspaceRoot)).bundles.find(
       (bundle) => bundle.header.slug === slug,
     );
+  }
+
+  public async readBundleAt(
+    workspaceRoot: StoryUri,
+    kind: ElementKind,
+    directoryName: string,
+  ): Promise<BundleReading> {
+    return await (await this.openRepository(workspaceRoot)).readBundle(kind, directoryName);
   }
 
   public async rewriteBundle(

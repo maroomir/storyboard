@@ -1,6 +1,6 @@
 import { readPayloadFields, type PayloadFields } from '@webview/lib/payloadFields';
 import type {
-  CardEditorInitialData,
+  CardViewerData,
   SceneListItem,
   SidebarCardsInitialData,
   SidebarScenesInitialData,
@@ -33,16 +33,12 @@ export function createRequestId(): string {
   return crypto.randomUUID();
 }
 
-export function parseCardEditorInitialData(value: unknown): CardEditorInitialData {
-  if (isCardEditorInitialData(value)) {
+export function parseCardViewerData(value: unknown): CardViewerData {
+  if (isCardViewerData(value)) {
     return value;
   }
 
-  return {
-    documentUri: '',
-    rawText: '',
-    error: '초기 카드 데이터를 읽을 수 없습니다.',
-  };
+  return { documentUri: '', warnings: [], error: '카드 데이터를 읽을 수 없습니다.' };
 }
 
 const emptyUsageSummary: UsageSummaryByEntity = {
@@ -370,13 +366,11 @@ export function parseProgressPayload(payload: unknown): StudioChatStage {
     : 'idle';
 }
 
-function isCardEditorInitialData(value: unknown): value is CardEditorInitialData {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
+function isCardViewerData(value: unknown): value is CardViewerData {
+  const fields: PayloadFields = readPayloadFields(value);
+  const hasView: boolean = fields.view === undefined || typeof fields.view === 'object';
 
-  const candidate: Partial<CardEditorInitialData> = value as Partial<CardEditorInitialData>;
-  return typeof candidate.documentUri === 'string' && typeof candidate.rawText === 'string';
+  return typeof fields.documentUri === 'string' && Array.isArray(fields.warnings) && hasView;
 }
 
 export function parseUsageChangedPayload(payload: unknown): UsageSummaryByEntity {

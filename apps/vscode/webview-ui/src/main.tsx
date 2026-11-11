@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import '@webview/lib/types';
-import { CardEditor } from '@webview/components/editor/CardEditor';
+import { CardViewer } from '@webview/components/card/CardViewer';
 import {
   parseRelationGraphInitialData,
   RelationGraph,
@@ -13,7 +13,7 @@ import { SidebarPlaceholder } from '@webview/components/sidebar/Placeholder';
 import { ScenesSidebar } from '@webview/components/sidebar/ScenesSidebar';
 import { StudioSidebar } from '@webview/components/sidebar/StudioSidebar';
 import {
-  parseCardEditorInitialData,
+  parseCardViewerData,
   parseSidebarCardsInitialData,
   parseSidebarScenesInitialData,
   parseStudioInitialData,
@@ -21,10 +21,8 @@ import {
 import './styles.css';
 
 function App(): React.ReactElement {
-  if (window.__STORYBOARD_VIEW__ === 'card-editor') {
-    return (
-      <CardEditor initialData={parseCardEditorInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
-    );
+  if (window.__STORYBOARD_VIEW__ === 'card-viewer') {
+    return <CardViewer initialData={parseCardViewerData(window.__STORYBOARD_INITIAL_DATA__)} />;
   }
 
   if (window.__STORYBOARD_VIEW__ === 'cards-sidebar') {

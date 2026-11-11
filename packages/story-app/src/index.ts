@@ -8,6 +8,7 @@ export {
   type CardManagerDependencies,
   type BackgroundFactConflictReport,
   type CardReading,
+  type CardViewReading,
 } from '#app/managers/cardManager';
 export {
   DraftManager,

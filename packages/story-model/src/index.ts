@@ -76,6 +76,7 @@ export * from '#model/paths/projectPaths';
 export * from '#model/paths/sceneContextPaths';
 export * from '#model/paths/storyUri';
 export * from '#model/shared/cardCollect';
+export * from '#model/shared/cardView';
 export * from '#model/shared/disposableHandle';
 export * from '#model/shared/jsonRepair';
 export * from '#model/shared/noteAbsorb';
