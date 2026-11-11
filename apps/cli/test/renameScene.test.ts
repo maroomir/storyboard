@@ -104,10 +104,6 @@ beforeEach(async () => {
   );
   write(`scene/${fromStem}.card/dialogue.json`, `${JSON.stringify({ sceneStem: fromStem, turns: [] })}\n`);
   write(`scene/${fromStem}.card/state.yaml`, 'statements:\n  - {facet: event, value: 야시장은 자정에 닫는다.}\n');
-  write(
-    `.storyboard/cache/studio-sessions/scene/${fromStem}/s1.json`,
-    `${JSON.stringify({ entity: { kind: 'scene', key: fromStem } }, null, 2)}\n`,
-  );
 });
 
 afterEach(async () => {
@@ -135,10 +131,6 @@ describe('RenameSceneUseCase', () => {
       '003-moon-market',
     );
     expect(read('scene/003-moon-market.card/dialogue.json')).toContain('turns');
-    expect(
-      JSON.parse(read('.storyboard/cache/studio-sessions/scene/003-moon-market/s1.json')).entity,
-    ).toEqual({ kind: 'scene', key: '003-moon-market' });
-    expect(has(`.storyboard/cache/studio-sessions/scene/${fromStem}`)).toBe(false);
   });
 
   it('carries the scene state along with the bundle', async () => {

@@ -19,8 +19,6 @@ import {
 import { mainThreadId } from '#model/format/project';
 import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from '#model/paths/storyUri';
 
-import type { StudioEntity } from '#model/shared/messaging/studio';
-
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: StoryUri;
@@ -43,7 +41,6 @@ export interface StoryboardProjectPaths {
   readonly interviewCandidates: StoryUri;
   readonly noteSynopsisCandidate: StoryUri;
   readonly noteExtractionResponses: StoryUri;
-  readonly studioSessionDirectory: StoryUri;
   readonly outlineDirectory: StoryUri;
   readonly outlineSynopsis: StoryUri;
   readonly outlineChapters: StoryUri;
@@ -101,7 +98,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     ...resolveInterviewPaths(resolve),
     noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
     noteExtractionResponses: resolve(STORYBOARD_RELATIVE_PATHS.noteExtractionResponses),
-    studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
     outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),
     outlineSynopsis: resolve(STORYBOARD_RELATIVE_PATHS.outlineSynopsis),
     outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),
@@ -157,21 +153,6 @@ const safeEntityKeyPattern: RegExp = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 
 export function isSafeStudioEntityKey(key: string): boolean {
   return safeEntityKeyPattern.test(key);
-}
-
-export function studioSessionEntityDirectory(
-  workspaceRoot: StoryUri,
-  entity: StudioEntity,
-): StoryUri | undefined {
-  if (!isSafeStudioEntityKey(entity.key)) {
-    return undefined;
-  }
-
-  return joinStoryPath(
-    getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory,
-    entity.kind,
-    entity.key,
-  );
 }
 
 export function isDirectCharacterCardFile(

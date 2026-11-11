@@ -42,7 +42,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   public constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly sessionRepository: IStudioSessionRepository,
-    private readonly studio: Pick<StudioManager, 'chat' | 'context'>,
+    private readonly studio: Pick<
+      StudioManager,
+      'chat' | 'context' | 'prepareProposal' | 'applyProposal'
+    >,
     private readonly aiGateway: AiGateway,
     private readonly cards: Pick<CardManager, 'collectProposals' | 'create' | 'read'>,
     private readonly toolDiagnostics: StudioToolDiagnostics,
@@ -153,12 +156,8 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       }).handlers(),
       ...new StudioProposalRpc({
         reviewService: this.reviewService,
-        followUpRepository: this.followUpRepository,
-        drafts: this.documents.drafts,
         studio: this.studio,
-        logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
-        createFollowUpId: () => crypto.randomUUID(),
       }).handlers(),
       ...new StudioFollowUpRpc({
         repository: this.followUpRepository,

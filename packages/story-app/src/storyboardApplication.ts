@@ -49,6 +49,9 @@ import {
   DraftHistoryArchiver,
   ReviseDraftUseCase,
   RenameSceneUseCase,
+  StudioProposalApplier,
+  StudioEditUseCase,
+  StudioCreateUseCase,
   MoveSceneUseCase,
   RemoveSceneUseCase,
   SaveDraftEditUseCase,
@@ -189,6 +192,9 @@ interface EngineGraph {
   readonly studioContextRepository: StudioContextRepository;
   readonly studioSessionRepository: StudioSessionRepository;
   readonly studioFollowUpRepository: StudioFollowUpRepository;
+  readonly studioProposalApplier: StudioProposalApplier;
+  readonly studioEditUseCase: StudioEditUseCase;
+  readonly studioCreateUseCase: StudioCreateUseCase;
   readonly cardCollectRepository: CardCollectRepository;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly chapterSummaryRefresher: ChapterSummaryRefresher;
@@ -426,21 +432,78 @@ function buildServices(
     reviseDraftUseCase,
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
-    studioChatUseCase: new StudioChatUseCase(host, ai),
-    studioContextRepository: new StudioContextRepository(
-      fileSystem,
-      revisionPlanRecorder,
-      cards,
-      scenes,
-      summaries,
-      new DraftHistoryArchiver(host),
-    ),
-    studioSessionRepository: new StudioSessionRepository(fileSystem),
-    studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
+    ...buildStudioServices(host, ai, { revisionPlanRecorder, summaries, repositories }),
     cardCollectRepository: new CardCollectRepository(fileSystem, cards),
     summarizeChaptersUseCase,
     chapterSummaryRefresher,
     updateProjectContractUseCase: new UpdateProjectContractUseCase(host),
+  };
+}
+
+interface StudioServices {
+  readonly studioChatUseCase: StudioChatUseCase;
+  readonly studioContextRepository: StudioContextRepository;
+  readonly studioSessionRepository: StudioSessionRepository;
+  readonly studioFollowUpRepository: StudioFollowUpRepository;
+  readonly studioProposalApplier: StudioProposalApplier;
+  readonly studioEditUseCase: StudioEditUseCase;
+  readonly studioCreateUseCase: StudioCreateUseCase;
+}
+
+interface StudioServiceInputs {
+  readonly revisionPlanRecorder: RevisionPlanRecorder;
+  readonly summaries: ChapterSummaryLedger;
+  readonly repositories: WorkspaceRepositories;
+}
+
+function buildStudioServices(
+  host: HostAdapters,
+  ai: AiServices,
+  inputs: StudioServiceInputs,
+): StudioServices {
+  const studioChatUseCase: StudioChatUseCase = new StudioChatUseCase(host, ai);
+  const studioContextRepository: StudioContextRepository = new StudioContextRepository(
+    host.fileSystem,
+    inputs.revisionPlanRecorder,
+    host.cards,
+    host.scenes,
+    inputs.summaries,
+    new DraftHistoryArchiver(host),
+  );
+  const studioSessionRepository: StudioSessionRepository = new StudioSessionRepository({
+    caches: host.caches,
+    cards: host.cards,
+    scenes: host.scenes,
+  });
+  const studioFollowUpRepository: StudioFollowUpRepository = new StudioFollowUpRepository(
+    host.fileSystem,
+  );
+  const studioProposalApplier: StudioProposalApplier = new StudioProposalApplier({
+    fileSystem: host.fileSystem,
+    logger: host.logger,
+    context: studioContextRepository,
+    followUps: studioFollowUpRepository,
+    revisions: new DraftHistoryArchiver(host),
+  });
+  const studioEditUseCase: StudioEditUseCase = new StudioEditUseCase({
+    chat: studioChatUseCase,
+    context: studioContextRepository,
+    sessions: studioSessionRepository,
+    applier: studioProposalApplier,
+  });
+
+  return {
+    studioChatUseCase,
+    studioContextRepository,
+    studioSessionRepository,
+    studioFollowUpRepository,
+    studioProposalApplier,
+    studioEditUseCase,
+    studioCreateUseCase: new StudioCreateUseCase({
+      createCard: new CreateCardUseCase(inputs.repositories),
+      createScene: new CreateSceneUseCase(host),
+      edit: studioEditUseCase,
+    }),
   };
 }
 

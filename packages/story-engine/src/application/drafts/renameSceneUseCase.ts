@@ -15,7 +15,6 @@ import {
   type RevisionPlanEntry,
 } from '@storyboard/story-model';
 
-import type { FileSystemDirectoryEntry } from '#engine/ports/fileSystem';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 
 export interface RenameSceneRequest {
@@ -178,7 +177,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     await this.host.scenes.writeSlug(paths.workspaceRoot, rename.from.stem, rename.to.slug);
     await new SceneRenumberer(this.host).renumber(paths.workspaceRoot);
-    await this.deleteEmptyDirectories(paths, rename);
   }
 
   private async planMoves(
@@ -188,7 +186,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     const moves: PlannedWrite[] = [];
 
     await this.planCacheFileMoves(moves, paths, rename);
-    await this.planStudioSessionMoves(moves, paths, rename);
 
     return moves;
   }
@@ -224,24 +221,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
   }
 
-  private async planStudioSessionMoves(
-    moves: PlannedWrite[],
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-    const sessionsFrom: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', rename.from.stem);
-    const sessionsTo: StoryUri = joinUri(paths.studioSessionDirectory, 'scene', rename.to.stem);
-
-    for (const fileName of await this.listFileNames(sessionsFrom)) {
-      await this.addMove(
-        moves,
-        joinUri(sessionsFrom, fileName),
-        joinUri(sessionsTo, fileName),
-        (raw) => rewriteJsonSceneStemsOrKeep(raw, rename),
-      );
-    }
-  }
-
   private async planRewrites(
     paths: StoryboardProjectPaths,
     rename: SceneRename,
@@ -270,40 +249,12 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
   }
 
-  private async deleteEmptyDirectories(
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-    for (const directory of [
-      joinUri(paths.studioSessionDirectory, 'scene', rename.from.stem),
-    ]) {
-      if (
-        (await this.host.fileSystem.exists(directory)) &&
-        (await this.listEntries(directory)).length === 0
-      ) {
-        await this.host.fileSystem.delete(directory);
-      }
-    }
-  }
-
   private async readTextIfExists(uri: StoryUri): Promise<string | undefined> {
     if (!(await this.host.fileSystem.exists(uri))) {
       return undefined;
     }
 
     return new TextDecoder().decode(await this.host.fileSystem.readFile(uri));
-  }
-
-  private async listFileNames(directory: StoryUri): Promise<readonly string[]> {
-    return (await this.host.fileSystem.exists(directory))
-      ? await this.host.fileSystem.listFileNames(directory)
-      : [];
-  }
-
-  private async listEntries(directory: StoryUri): Promise<FileSystemDirectoryEntry[]> {
-    return (await this.host.fileSystem.exists(directory))
-      ? await this.host.fileSystem.readDirectory(directory)
-      : [];
   }
 }
 

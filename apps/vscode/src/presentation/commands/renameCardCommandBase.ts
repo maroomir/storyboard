@@ -7,12 +7,10 @@ import type { RenameCardResult } from '@storyboard/story-engine';
 import {
   getStoryboardProjectPaths,
   parseCardIdFromPath,
-  studioSessionEntityDirectory,
-  type StoryUri,
   type StoryboardProjectPaths,
   type BibleSubjectKind,
 } from '@storyboard/story-model';
-import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 
 export interface RenameCardCommandDependencies {
   readonly cards: Pick<CardManager, 'rename'>;
@@ -69,36 +67,6 @@ export abstract class RenameCardCommandBase implements IExtensionCommand {
     if (!renamed.ok) {
       await vscode.window.showWarningMessage(renamed.message);
       return;
-    }
-
-    await this.moveStudioSessions(workspaceFolder.uri, kind, oldId, newId);
-  }
-
-  private async moveStudioSessions(
-    workspaceRoot: vscode.Uri,
-    kind: BibleSubjectKind,
-    oldId: string,
-    newId: string,
-  ): Promise<void> {
-    const source: StoryUri | undefined = studioSessionEntityDirectory(workspaceRoot, {
-      kind,
-      key: oldId,
-    });
-    const destination: StoryUri | undefined = studioSessionEntityDirectory(workspaceRoot, {
-      kind,
-      key: newId,
-    });
-
-    if (!source || !destination || !(await uriExists(source))) {
-      return;
-    }
-
-    try {
-      await vscode.workspace.fs.rename(source, destination, { overwrite: false });
-    } catch {
-      await vscode.window.showWarningMessage(
-        `카드는 rename되었지만 Studio 대화 기록을 옮기지 못했습니다: ${oldId}`,
-      );
     }
   }
 
