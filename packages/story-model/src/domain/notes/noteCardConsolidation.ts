@@ -6,7 +6,7 @@ import type {
   NoteSharedAlias,
 } from '#model/contracts/noteConsolidation';
 import type { StoryboardCard } from '#model/format/card';
-import { normalizeCardListText } from '#model/domain/cardCollect';
+import { normalizeCardListText } from '#model/element/statementText';
 import type { CardCollectProposal } from '#model/shared/cardCollect';
 
 import type { NoteAbsorbPlan, NoteCardPlan } from '#model/domain/notes/noteAbsorbPlan';

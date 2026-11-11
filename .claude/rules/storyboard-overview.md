@@ -16,7 +16,7 @@ The apps share `packages/story-engine` and know nothing about each other. Only t
 | `apps/cli` | `@storyboard/cli` | Command line app (`storyboard`). The headline product and reference implementation; other AI agents drive Storyboard through it. |
 | `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: use cases, repositories over the host ports, post-generation updaters, and both pipelines (`application/novel`, `pipeline/`). |
 | `packages/story-app` | `@storyboard/story-app` | The shared composition root: `StoryboardApplication` takes a host's six adapters and builds every repository, use case and the novel pipeline once. It exposes one manager per domain — `drafts`, `manuscript`, `cards`, `novel`, `project`, `workspace`, `studio`, `notes` — and the apps speak only to those. |
-| `packages/story-model` | `@storyboard/story-model` | Everything the other packages agree on, with no I/O: the workspace file format (`format/`: schemas, codecs, path conventions, the shared round-trip fixtures), the AI contracts and catalogs (`contracts/`), the RPC and card contracts (`shared/`), pure policies and file records (`domain/`) and project path rules (`paths/`). Its `/contracts` entry is the one browser-safe entry. |
+| `packages/story-model` | `@storyboard/story-model` | Everything the other packages agree on, with no I/O: the element vocabulary (`element/`: the four element kinds, their statement facets and sections, the statement schema and its merge rule), the workspace file format (`format/`: schemas, codecs, path conventions, the shared round-trip fixtures), the AI contracts and catalogs (`contracts/`), the RPC and card contracts (`shared/`), pure policies and file records (`domain/`) and project path rules (`paths/`). Its `/contracts` entry is the one browser-safe entry. |
 | `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, and the `SecretStore`/`ConfigBridge` ports. |
 | `packages/story-config` | `@storyboard/story-config` | The shared home `~/.storyboard`: `config.json` layers (home ← workspace `.storyboard/config.json`), the 0600 `secrets.json`, and file watchers. Every app reads settings through it. |
 | `packages/story-node` | `@storyboard/story-node` | Node host adapters shared by every app that runs on Node: `NodeFileSystem` (temp-file-then-rename writes) and `NodeWorkspaceLocator` (one workspace, containment test). |
@@ -90,9 +90,9 @@ What each check actually enforces, so a green run is not read as more than it is
   if it imports the engine's pipeline assembly symbols (`refusePipelineAssembly` in
   `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. Both
   apps fail when they construct an engine class (`refuseEngineConstruction`).
-- `packages/story-model` — its own layer direction: `format` may import only itself, `contracts`
-  only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; plus
-  no cycles.
+- `packages/story-model` — its own layer direction: `element` may import only itself, `format` only
+  `format`/`element`, `contracts` only `contracts`/`format`/`element`, then `shared`, `domain` and
+  `paths` each only what is before them; plus no cycles.
 - `packages/story-engine` — `pipeline`, `ports` and `ai` may each import only themselves (and other
   packages); plus no cycles. `persistence` and `application` are a mutually dependent pair by design
   (application declares the repository ports, persistence implements them), so no order is imposed

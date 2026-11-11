@@ -6,16 +6,10 @@ import type {
   StoryboardCard,
 } from '#model/format/card';
 import type { CardCollectProposal } from '#model/shared/cardCollect';
+import { normalizeCardListText } from '#model/element/statementText';
 
 function addUnique(list: readonly string[], value: string): string[] {
   return list.includes(value) ? [...list] : [...list, value];
-}
-
-export function normalizeCardListText(value: string): string {
-  return value
-    .normalize('NFC')
-    .toLocaleLowerCase('ko')
-    .replace(/[^\p{L}\p{N}]+/gu, '');
 }
 
 function hasCardListText(list: readonly string[], value: string): boolean {
