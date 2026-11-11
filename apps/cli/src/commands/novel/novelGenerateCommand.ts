@@ -3,7 +3,7 @@ import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import type { IPrompter } from '@/adapters/prompter';
 import { flagString } from '@/cliArguments';
-import { WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
+import { describeMissingChapterSummaries, WorkspaceInput, cancelledBeforeRun } from '@/commands/workspaceInput';
 import type { NovelRunResult } from '@storyboard/story-app';
 import { novelStageLabel, resolveNovelPipelinePlan } from '@storyboard/story-engine';
 import {
@@ -71,6 +71,7 @@ export class NovelGenerateCommand implements ICommandHandler {
         `작품  ${status.project.name}`,
         `지금  씬 ${status.scenes.total}개 · 초안 ${status.drafts.ready}개`,
         '기획부터 원고 조립까지 이어서 돌립니다 (Esc 로 씬 경계에서 멈춤)',
+        ...describeMissingChapterSummaries(status),
       ],
     }));
 

@@ -1,3 +1,4 @@
+import { ChapterSummaryRefresher } from '#engine/application/manuscript/chapterSummaryRefresher';
 import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
 import type {
   AiServices,
@@ -60,6 +61,7 @@ export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/applicat
 export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
   private readonly inputsLoader: SceneGenerationInputsLoader;
   private readonly storyStateRecorder: StoryStateRecorder;
+  private readonly summaryRefresher: ChapterSummaryRefresher;
   private readonly failureReporter: WorkflowFailureReporter;
 
   public constructor(
@@ -68,6 +70,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     private readonly repositories: WorkspaceRepositories,
   ) {
     this.inputsLoader = new SceneGenerationInputsLoader({ host, ai, repositories });
+    this.summaryRefresher = new ChapterSummaryRefresher({ host, ai, repositories });
     this.storyStateRecorder = new StoryStateRecorder({ host, ai });
     this.failureReporter = new WorkflowFailureReporter(host.logger);
   }
@@ -440,6 +443,24 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       return await this.openCachedDraft(inputs.draftUri);
     }
 
-    return await this.runAndPersistDraft(inputs, request);
+    const refreshed: SceneGenerationInputsResult = await this.refreshChapterSummaries(
+      inputs,
+      request,
+    );
+    return refreshed.ok ? await this.runAndPersistDraft(refreshed.inputs, request) : refreshed.result;
+  }
+
+  private async refreshChapterSummaries(
+    inputs: SceneGenerationInputs,
+    request: GenerateDraftRequest,
+  ): Promise<SceneGenerationInputsResult> {
+    const summarizedCount: number = await this.summaryRefresher.refreshBefore(
+      inputs.paths.workspaceRoot,
+      inputs.scene.order,
+    );
+
+    return summarizedCount === 0
+      ? { ok: true, inputs }
+      : await this.inputsLoader.load(request.sceneUri, request);
   }
 }

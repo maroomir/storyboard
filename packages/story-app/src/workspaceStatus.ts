@@ -18,6 +18,7 @@ import type { CardManager } from '#app/managers/cardManager';
 import type { DraftManager, DraftReading } from '#app/managers/draftManager';
 import type { ProjectManager } from '#app/managers/projectManager';
 import type { InterviewManager } from '#app/managers/interviewManager';
+import type { ManuscriptManager } from '#app/managers/manuscriptManager';
 
 export type WorkspaceNextStep =
   | 'fill-contract'
@@ -70,6 +71,7 @@ export interface WorkspaceStatus {
   readonly scenes: { readonly total: number };
   readonly drafts: WorkspaceDraftCounts;
   readonly manuscript: WorkspaceManuscriptStatus;
+  readonly chapterSummaries: { readonly missing: number };
   readonly nextStep: WorkspaceNextStep;
   readonly interviews: readonly InterviewCardCoverage[];
 }
@@ -81,6 +83,7 @@ export interface DescribeWorkspaceStatusInput {
   readonly cards: CardManager;
   readonly project: ProjectManager;
   readonly interviews?: InterviewManager;
+  readonly manuscript?: ManuscriptManager;
 }
 
 async function describeOutline(
@@ -141,7 +144,7 @@ async function countCards(
 export async function describeWorkspaceStatus(
   input: DescribeWorkspaceStatusInput,
 ): Promise<WorkspaceStatus> {
-  const { workspaceRoot, fileSystem, drafts, cards, project: projects, interviews } = input;
+  const { workspaceRoot, fileSystem, drafts, cards, project: projects, interviews, manuscript: manuscripts } = input;
   const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
 
   const project: StoryboardProject = await projects.read(workspaceRoot);
@@ -159,6 +162,9 @@ export async function describeWorkspaceStatus(
     scenes: { total: scenes.length },
     drafts: draftCounts,
     manuscript,
+    chapterSummaries: {
+      missing: (await manuscripts?.listMissingChapterSummaries(workspaceRoot))?.length ?? 0,
+    },
     interviews: await suggestInterviews(interviews, workspaceRoot, draftCounts),
     nextStep: chooseNextStep({
       hasMissingContract: missingContract.length > 0,

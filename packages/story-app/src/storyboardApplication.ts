@@ -30,6 +30,7 @@ import {
   CardFactReader,
   ChapterOutlineStore,
   ChapterSummaryLedger,
+  ChapterSummaryRefresher,
   NarratorCardRepository,
   NoteAbsorbRepository,
   NoteSourceProvider,
@@ -186,6 +187,7 @@ interface EngineGraph {
   readonly studioFollowUpRepository: StudioFollowUpRepository;
   readonly cardCollectRepository: CardCollectRepository;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
+  readonly chapterSummaryRefresher: ChapterSummaryRefresher;
   readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
 }
 
@@ -269,6 +271,7 @@ export class StoryboardApplication {
       cards: this.cards,
       project: this.project,
       interviews: this.interviews,
+      manuscript: this.manuscript,
     });
   }
 
@@ -337,6 +340,11 @@ function buildServices(
     ai,
     repositories,
   );
+  const chapterSummaryRefresher: ChapterSummaryRefresher = new ChapterSummaryRefresher({
+    host,
+    ai,
+    repositories,
+  });
   const generateDraftUseCase: GenerateDraftUseCase = new GenerateDraftUseCase(
     host,
     ai,
@@ -423,6 +431,7 @@ function buildServices(
     studioFollowUpRepository: new StudioFollowUpRepository(fileSystem),
     cardCollectRepository: new CardCollectRepository(fileSystem, cards),
     summarizeChaptersUseCase,
+    chapterSummaryRefresher,
     updateProjectContractUseCase: new UpdateProjectContractUseCase(host),
   };
 }
