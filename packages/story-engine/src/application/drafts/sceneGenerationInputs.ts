@@ -389,7 +389,10 @@ export class SceneGenerationInputsLoader {
       groundedScene,
       builtContext.characters,
     );
-    return withDerivedGrounding(beatScene, builtContext.background);
+    return withDerivedGrounding(
+      { ...beatScene, frontmatter: rawScene.frontmatter },
+      builtContext.background,
+    );
   }
 
   private async resolveSceneThreadSetup(
