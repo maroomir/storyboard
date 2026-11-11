@@ -20,11 +20,11 @@ All harness and test commands below run from `apps/vscode` (the harness include 
 ## Inputs
 
 - workspace path (a Storyboard project dir with `scene/`, `gt/`, `character/`, `background/`, `.storyboard/project.json`)
-- scene file name `NN-slug.card`; its gt is `gt/NN-slug.md`
+- scene bundle `scene/NNN-slug.card/`; its gt is `gt/NNN-slug.md`
 
 ## Invariants (non-negotiable)
 
-- **Source `scene/*.card` is IMMUTABLE.** Never edit or augment it. Quality must come from the pipeline (`apps/vscode/src/`) + the workspace cards.
+- **The source scene bundle (`scene/NNN-slug.card/`) is IMMUTABLE.** Never edit or augment it. Quality must come from the pipeline (`apps/vscode/src/`) + the workspace cards.
 - **gt is the evaluation ORACLE only.** It may inform character/background cards, but must NEVER be injected into generation prompts.
 - **Provider:** claude (Sonnet 5) default. Every provider is metered, so each iteration costs real money — say so before a full regeneration. Switch with `SCENE_PROVIDER=openai|google`.
 - **Every `apps/vscode/src/` change is tested** by the test-engineer; **commit per validated feature, never batch**. Branch first if on `main`.
@@ -39,8 +39,8 @@ All harness and test commands below run from `apps/vscode` (the harness include 
 
 ## Loop
 
-1. **Generate** (writes `draft/NN-slug.md`):
-   `npm run cli:build && node apps/cli/dist/index.js draft generate <NN-slug> --workspace <ws> --force --provider claude --model claude-sonnet-5`
+1. **Generate** (writes `draft/NNN-slug.md`):
+   `npm run cli:build && node apps/cli/dist/index.js draft generate <NNN-slug> --workspace <ws> --force --provider claude --model claude-sonnet-5`
    Back up each iteration to `<ws>/draft-history/` before regenerating.
 2. **Objective coverage:**
    `cd apps/vscode && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts coverageCheck`

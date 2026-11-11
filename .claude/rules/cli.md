@@ -29,10 +29,9 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 ## Command naming
 
 Every command on a work is `<noun> <verb> [target] [--options]` — two words. The noun is the kind
-of file it touches (`project`, `outline`, `narrator`, `scene`, `draft`, `card`, `notes`,
-`manuscript`), always singular, and the verb comes from one vocabulary: `list`/`show` to look,
-`create`/`rename`/`remove`/`set` to change, `generate`/`revise`/`check`/… for AI work,
-`diff`/`promote` for candidates. A kind is an argument, never part of the name
+of file it touches (`project`, `outline`, `scene`, `draft`, `card`, `notes`, `manuscript`), always singular, and the verb comes from one vocabulary: `list`/`show` to look,
+`create`/`rename`/`move`/`remove`/`set`/`unset`/`edit` to change, `generate`/`revise`/`check`/… for AI work,
+`apply`/`discard` for proposals waiting in a session. A kind is an argument, never part of the name
 (`card create character`, `draft check slop <stem>`, `notes connect notion`); the lists of kinds
 (`cardCategories`, `draftCheckKinds`, `noteSources`) live in the catalog and feed the usage line, the
 handler's check and completion. One-word commands (`init`, `setup`, `doctor`, `status`, `help`,
@@ -40,8 +39,8 @@ handler's check and completion. One-word commands (`init`, `setup`, `doctor`, `s
 the prose: generating, revising, showing and checking a draft are all `draft` verbs.
 
 A command's help group follows its noun, so one noun never spreads over two groups: 시작하기 /
-기획 (`project`, `outline`, `narrator`, `novel`) / 씬 / 초안 (`draft`, `state`) / 카드
-(`card`) / 노트 / 원고 / 측정. Old names are not kept as aliases — a rename is a breaking
+기획 (`project`, `outline`, `novel`) / 씬 / 초안 (`draft`, `state`) / 카드
+(`card`, 서술자 카드도) / 노트 / 원고 / 측정. Old names are not kept as aliases — a rename is a breaking
 change recorded in the changelog — and a freed name is not reused for a different action.
 
 Verbs read and write the work through manager verbs, not the file system: reads
@@ -51,6 +50,8 @@ Verbs read and write the work through manager verbs, not the file system: reads
 each), `drafts.readScene`, `drafts.resolveSceneNarration`/`resolveSceneThread`; writes
 `drafts.createScene`, `novel.seedScenes`, `project.updateContract`, `workspace.resealStoryState`,
 `cards.create`, `cards.rename`, `cards.createNarrator`/`removeNarrator`,
+`cards.setStatement`/`unsetStatement`, `cards.remove`, `cards.applyPending`/`discardPending`,
+`studio.create`/`studio.edit`, `drafts.moveScene`/`removeScene`,
 `cards.applyBuildTargets`, `novel.applyCompletedScenes`, `drafts.saveEdit` and
 `manuscript.writeExport`; checks `drafts.check` (the extension's diagnostics call the same one).
 What stays in the CLI is the terminal's input form — flags turned into a request, `--lines`
@@ -147,7 +148,7 @@ and the instance list in `apps/cli/src/commands/index.ts` is where those specs a
 
 ## Narration verbs
 
-`narrator create|list|show|remove`가 서술자 카드를 다루고, `init`·`project set`의 `--composition`이
+`card create narrator <slug> --person …`·`card list narrator`·`card show|remove <slug>`가 서술자 카드를 다루고(`narrator` 명사는 `card`로 합쳐졌다), `init`·`project set`의 `--composition`이
 구성 프리셋을 적용한다(프리셋이 줄기와 서술자 카드를 만든다). `scene show <stem>`은 해석된
 시점·줄기를 한 줄로 보여 주고, `doctor`는 카드 없는 서술자 참조를 실패로, 계약에 없는 줄기와
 초점 없는 1·2인칭 서술자, 어느 인물 카드와도 맞지 않는 비트 출연(`cast`), 씬 카드의 장소(`grounding.place`·
@@ -160,8 +161,7 @@ and the instance list in `apps/cli/src/commands/index.ts` is where those specs a
 
 `card interview <id>` is the one interview verb for characters and backgrounds alike (the card id
 decides which). Without `container.prompter` it runs only as `--step --json`, one step per call,
-so an agent can relay each question to the writer (below); otherwise it fails with exit 1. It takes no run lock — it writes only the interview cache and the candidate
-file, and `card promote` is the verb that writes cards. The loop is the terminal's: `start` → repeat
+so an agent can relay each question to the writer (below); otherwise it fails with exit 1. It takes no run lock — it writes only its session in the cache DB (`.storyboard/cache/storyboard.db`); the distilled lines wait there as the card's pending statements (origin `interview`) and `card apply` is the verb that writes them to `statements.yaml`. The loop is the terminal's: `start` → repeat
 `next` → `choose` (the options plus 직접 쓰기 / 건너뛰기 / 여기까지) → `answer` → on a written
 answer, one `choose` to confirm the value the engine read (or rename it) → `finish`. Every step is a
 manager verb on `container.interviews` and the session state is in the engine's cache file, so
@@ -173,15 +173,13 @@ is asked again. Each beat question is told who is present (the beat's `cast`, or
 written), and when an option of a cast-written beat names or addresses a partner who is not there it
 is asked once more. It is also told the scene's focal character (the resolved narration's `focal`) and
 whether the beat names the character at all, so an action stays with whoever does it and the
-question asks for the character's reaction instead. `finish` distils the whole card and replaces the card's one interview source
-(`interview:<cardId>`), so repeated sessions never duplicate candidates; a session that ends with
-no answer distils nothing and leaves the candidates as they are. `--scenes` narrows the beats (stems, or `3..5` by
+question asks for the character's reaction instead. `finish` distils the whole card and replaces the card's pending interview lines, so repeated sessions never duplicate proposals; a session that ends with no answer distils nothing and leaves the proposals as they are. `--scenes` narrows the beats (stems, or `3..5` by
 order) and is passed with every step; `--limit` caps the answers; `--reset-axes` empties the axis
 vocabulary and every working model. `status` adds an `인터뷰` line from `WorkspaceStatus.interviews` (`describeInterviewHint`),
 `doctor` lists cards with undecided axes as info, warns when the contract changed after the
-axes were drawn, and fails on a working-model file it cannot read, naming the file and going on with
-the other checks (`status` keeps a warning line for the same file); `card promote --dry-run` labels
-interview candidates `인터뷰에서`.
+axes were drawn, and fails on a working model it cannot read, naming it «캐시 DB 의 <card> 인터뷰
+세션» and going on with the other checks (`status` keeps a warning line for the same session);
+`card apply --dry-run` labels interview proposals `인터뷰`.
 
 `--step --json` is the agent's form of the same loop, in `InterviewStepRunner`
 (`commands/card/interviewStepRunner.ts`). One call does one step and prints a `state`: `question`
@@ -210,24 +208,22 @@ contract and a synopsis — one scene card per note, its events as beats; a pers
 the notes go verbatim to the character bundle's `memory/main.yaml` as `voiceSample`, the voice samples of the first scene; prose already written
 (`draft`) gives cards and the contract but never a scene. What it cannot place is reported and never
 written; two candidates of one field that contradict each other both stay, with a warning naming
-them (a one-shot verb asks nothing). Nothing that exists
-is overwritten: a card that exists gets candidates in `.storyboard/cache/notes/candidates.json`,
-which `card promote` applies; an existing synopsis gets a section in
-`synopsis.candidate.md`. Both accumulate per note location (a Notion page is its id, however it
-was linked) — absorbing a location again replaces only its share, and `--replace-candidates` starts
-over; a candidate file that cannot be read stops the verb before the paid step. `card promote` merges a card's candidates
-across locations and holds back a slot the notes give different values, until
-`card discard <id> --change <ref>` drops all but one (`card discard` also drops whole cards'
-candidates). The contract is only proposed (`project set …`), except that
+them (a one-shot verb asks nothing). A new card is written at once (the setting facts the notes give it as `fact` statements).
+Nothing that exists is overwritten: what the notes say about an existing card waits as that card's
+pending proposal in its absorb session (cache DB), which `card apply` writes and `card discard`
+drops, and a synopsis candidate waits in the absorb session for `outline apply`/`outline discard`.
+Both accumulate per note location (a Notion page is its id, however it was linked) — absorbing a
+location again replaces only its share, and `--replace-candidates` starts over. Where two locations
+give one slot different values, the location absorbed last wins. The contract is only proposed (`project set …`), except that
 `init --from-notes` fills the empty fields of the work it just made. Scenes follow the last scene
 number in the order the notes were read — the model never reorders them. A person is asked before
 the paid step and before writing; without a TTY the verb stops at the estimate unless `--yes` is
 given, and `--dry-run` stops at the plan. The Notion integration token lives in `secrets.json`
-(`notes connect notion`). The collected notes, the plan and each model response (`responses.json`)
-stay in the git-ignored cache. A request cut at the output limit or without a readable result is a
+(`notes connect notion`). The collected notes, the plan and each model response are attached to the absorb session in the
+git-ignored cache DB. A request cut at the output limit or without a readable result is a
 warning naming its notes, and when no request could be read the verb fails rather than report an
-empty plan. List items that differ only in spacing or punctuation are one item (absorb, `card
-promote` share that rule); a card (person or place) whose lists were read
+empty plan. List items that differ only in spacing or punctuation are one item (absorb and `card apply` share
+that rule); a card (person or place) whose lists were read
 in more than one request, or whose card already has some, gets one more request that keeps one
 wording per meaning in its aliases, traits, tags, description, voice, desire and senses — chosen
 from the candidates, never rewritten — and when it fails the merged lists stand with a warning. An
@@ -242,9 +238,10 @@ up to three per extraction request.
 
 ## Editor-only surface
 
-Inline completion, hover, the `.card` custom editor and the relation graph are editor chrome, not
-capabilities — they have no terminal form. What is portable is the *ability* behind a provider: the
-three diagnostics become `draft check <kind>`, the card editor becomes card CRUD verbs. Do not add an
+Inline completion, hover, the read-only card viewer (the custom editor on `*.card/card.yaml`) and
+the relation graph are editor chrome, not capabilities — they have no terminal form. What is
+portable is the *ability* behind a provider: the three diagnostics become `draft check <kind>`, the
+viewer becomes `card show`, and the studio's card changes become `card create|set|unset|edit|apply`. Do not add an
 entry to the parity test's editor-only list without that argument holding.
 
 ## Interactive screen (`apps/cli/src/tui`)
@@ -259,8 +256,11 @@ to start without a TTY so agents never end up inside it.
 Around the prompt it reads, on start and after every command, a `WorkspaceView` (`tui/workspaceView.ts`):
 the run-lock holder through `RunGate.describeHolder` for the status line, and `describeWorkspace` for
 the dashboard, whose next command comes from the same `nextStepCommands` the `status` verb uses.
-Completion at the prompt is `computeCompletions` — the shell's list — so a new flag or kind needs no
-TUI change.
+Completion at the prompt is `computeCompletions` — the shell's list — so a new flag or kind needs no TUI change.
+With no suggestion open, Tab switches the prompt between `storyboard>` (command mode) and
+`studio>` (chat mode): a plain line there is a studio proposal for the card `@slug` names
+(`card edit --propose`), `/apply` and `/discard` take or drop it, a line starting with `/` runs a
+command-mode verb, and completion offers card slugs after `@` and the shell's list after `/`.
 
 ## Shell completion (`apps/cli/src/commands/completion.ts`)
 

@@ -2,7 +2,7 @@
 
 `storyboard` is a VSCode extension intended to become a one-click long-form novel generation IDE: it should plan, draft, review, revise, and assemble a full manuscript from project-level creative constraints.
 
-The current implementation is still smaller than that target. Treat `scene/*.card → draft/*.md`, cards with their fact statements, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
+The current implementation is still smaller than that target. Treat `scene/NNN-slug.card/ → draft/NNN-slug.md`, cards with their fact statements, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
 The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json` and **one version for the whole repo**, held in the root manifest and mirrored into the apps by `npm run version:sync`.
 
@@ -26,8 +26,8 @@ tsconfig `paths`, esbuild `alias`, and vitest `alias` — three places, all of w
 The root `scripts/architecture/check-workspace.mjs` (run first by the root `npm run lint`) enforces
 that no package imports `vscode` or an app module.
 
-Both apps write through the same codecs, so a card edited in the editor or from the terminal
-serializes to identical bytes — the shared fixtures in
+Both apps write through the same codecs, so a card the extension writes and one the terminal
+writes serialize to identical bytes — the shared fixtures in
 `packages/story-model/test/fixtures/` are the round-trip guard for that claim.
 
 ## Current Architecture
