@@ -89,6 +89,7 @@ storyboard draft show 01-intro    # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
 storyboard card show hana         # one card, found by slug (--sources: each line's origin, --history: its sessions)
 storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal, tui, or --step --json)
+storyboard card create character "무뚝뚝한 열일곱 살 궁수 하나" --id hana   # a filled bundle; --dry-run only shows the lines
 storyboard card set hana traits "몰리면 먼저 웃는다"   # one line in statements.yaml, the writer's own
 storyboard card edit hana "말투를 더 퉁명스럽게"        # the studio's edit; --propose leaves a proposal and a diff
 storyboard card apply hana        # take what waits in hana's sessions (card discard drops it)
@@ -213,8 +214,8 @@ writer's own choices: an agent passes only the number the writer picked or the w
 서술자에 이름을 붙인다:
 
 ```bash
-storyboard narrator create hana-first --person first --focal hana --voice "건조한 단문"
-storyboard narrator list
+storyboard card create narrator hana-first --person first --focal hana --voice "건조한 단문"
+storyboard card list narrator
 ```
 
 만든 뒤 씬 카드의 `narrator:` 에 그 id 를 적으면 그 씬만 그 시점으로 생성된다. 장 단위로 바꾸려면
@@ -282,7 +283,7 @@ storyboard notes absorb ~/Downloads/Export-달의문.zip --yes
 
 `card build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
 without touching the tree. A new card whose name yields no ascii id is reported rather than filed
-under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`
+under a guessed id — create it with `card create background "학교 3층 끝의 방송실" --name "방송실" --id broadcast-room`
 and run `card build` again.
 
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`

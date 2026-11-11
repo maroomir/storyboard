@@ -11,7 +11,13 @@ import type {
   CardSessionSummary,
   ElementBundle,
 } from '@storyboard/story-engine';
-import { serializeCard, type Statement, type StoryUri } from '@storyboard/story-model';
+import {
+  serializeCard,
+  type NarratorCard,
+  type Statement,
+  type StoryUri,
+} from '@storyboard/story-model';
+import { describeCard, toNarratorData } from '@/commands/card/narratorViews';
 
 const sessionKindLabels: Readonly<Record<CardSessionSummary['kind'], string>> = {
   studio: '스튜디오',
@@ -52,7 +58,7 @@ export class CardShowCommand implements ICommandHandler {
   private async showCard(container: CliContainer, slug: string): Promise<CommandOutcome> {
     const reading: CardReading | undefined = await container.cards.read(container.workspaceRoot, slug);
     if (reading === undefined) {
-      return failure(`카드를 찾을 수 없습니다: ${slug}`);
+      return await this.showNarrator(container, slug);
     }
 
     return success(
@@ -67,6 +73,24 @@ export class CardShowCommand implements ICommandHandler {
         path: (reading.uri as StoryUri).fsPath,
         card: reading.card,
       },
+    );
+  }
+
+  private async showNarrator(container: CliContainer, slug: string): Promise<CommandOutcome> {
+    const narrator: NarratorCard | undefined = (
+      await container.cards.listNarrators(container.workspaceRoot)
+    ).get(slug);
+    if (narrator === undefined) {
+      return failure(`카드를 찾을 수 없습니다: ${slug}`);
+    }
+
+    return success(
+      [
+        `${narrator.name} (${narrator.id}) — 서술자`,
+        describeCard(narrator),
+        ...(narrator.voice && narrator.voice.length > 0 ? [`목소리: ${narrator.voice.join(' / ')}`] : []),
+      ].join('\n'),
+      toNarratorData(narrator),
     );
   }
 

@@ -135,6 +135,7 @@ describe("StudioCreateUseCase", () => {
         execute: async () => ({ ok: true, kind: "created", id: "seorin", uri: vscode.Uri.file("/workspace/character/seorin.card") })
       } as unknown as CreateCardUseCase,
       createScene: {} as unknown as CreateSceneUseCase,
+      cards: {} as unknown as WorkspaceCards,
       edit: {
         execute: async (request: unknown) => {
           editCalls.push(request)
@@ -162,6 +163,7 @@ describe("StudioCreateUseCase", () => {
     const create = new StudioCreateUseCase({
       createCard: { execute: async () => ({ ok: false, kind: "id-taken", id: "seorin" }) } as unknown as CreateCardUseCase,
       createScene: {} as unknown as CreateSceneUseCase,
+      cards: {} as unknown as WorkspaceCards,
       edit: {} as unknown as StudioEditUseCase
     })
 

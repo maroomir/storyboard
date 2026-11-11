@@ -111,7 +111,7 @@ describe('dispatch', () => {
       ['scene seeds', 'scene seed'],
       ['scene beats', 'scene plot'],
       ['cards build', 'card build'],
-      ['narrator add', 'narrator create'],
+      ['narrator add', 'card create narrator'],
       ['manuscript summaries', 'manuscript summarize'],
     ];
     const tails = ['01', '--all', '01 --provider openai --all'];

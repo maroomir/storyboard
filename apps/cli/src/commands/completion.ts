@@ -21,6 +21,7 @@ import {
 import { commandCatalog, findCommandSpec } from '@/commands/index';
 import {
   cardCategories,
+  cardKinds,
   completionShells,
   draftCheckKinds,
   findFlagSpec,
@@ -258,6 +259,8 @@ const positionalSlotCompletions: ReadonlyMap<string, PositionalSlotCompletion> =
   ['[<slug>', completeCardIds],
   [`<${cardCategories.join('|')}>`, completeCardCategories],
   [`[${cardCategories.join('|')}]`, completeCardCategories],
+  [`<${cardKinds.join('|')}>`, (): Completion[] => choiceCompletions(cardKinds, '카드 종류')],
+  [`[${cardKinds.join('|')}]`, (): Completion[] => choiceCompletions(cardKinds, '카드 종류')],
   [
     `<${draftCheckKinds.join('|')}>`,
     (): Completion[] => choiceCompletions(draftCheckKinds, '검사'),
