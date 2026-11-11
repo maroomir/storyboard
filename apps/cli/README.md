@@ -250,9 +250,10 @@ Notes kept in Obsidian or Notion come in with `notes absorb`. It reads a vault f
 or a Notion page with everything under it, plus the notes they link to one step away, and sorts
 them into character and background cards, scene cards and a synopsis. It shows the cost estimate
 first and asks before writing; an agent passes `--yes`, and `--dry-run` stops at the plan. Cards
-that already exist are never overwritten — what the notes add to them waits for `card promote`,
-and absorbing more notes adds to what is waiting rather than replacing it. Where two notes give one
-slot different values, `card promote` holds it back and `card discard <id> --change <ref>` keeps one.
+that already exist are never overwritten — what the notes add to them waits in the card's session
+for `card promote`, and absorbing more notes adds to what is waiting rather than replacing it. Where
+two notes give one slot different values, the note absorbed last wins when the proposals are applied;
+`card discard <id>` drops a card's waiting proposals.
 The other direction is `notes export
 <folder>`: cards, scenes and the synopsis as a Markdown folder (`인물/`, `배경/`, `씬/`,
 `시놉시스.md`) with front matter ids and `[[wiki links]]`, for Obsidian or a Notion Markdown import;

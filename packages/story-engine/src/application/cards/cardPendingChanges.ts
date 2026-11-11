@@ -1,8 +1,11 @@
 import {
   mergeStatements,
   parseStudioSession,
+  readPendingHeader,
   readPendingStatements,
+  replacePendingHeader,
   replacePendingStatements,
+  type PendingHeaderChange,
   serializeStudioSession,
   type Statement,
   type StatementMergeResult,
@@ -56,6 +59,7 @@ interface PendingSession {
   readonly record: SessionRecord;
   readonly studio?: StudioSession;
   readonly statements: readonly Statement[];
+  readonly header?: PendingHeaderChange;
 }
 
 function isPendingProposal(turn: StudioChatTurn): turn is StudioProposalTurn {
@@ -83,14 +87,16 @@ function describeChange(session: PendingSession): readonly PendingCardChange[] {
       summary: turn.summary,
       statements: [],
     }));
+  const headerKeys: readonly string[] = Object.keys(session.header ?? {});
+  const lineCount: number = session.statements.length + headerKeys.length;
   const statements: readonly PendingCardChange[] =
-    session.statements.length === 0
+    lineCount === 0
       ? []
       : [
           {
             sessionId: session.record.id,
             origin: session.record.kind,
-            summary: `${session.statements.length}줄`,
+            summary: `${lineCount}줄`,
             statements: session.statements,
           },
         ];
@@ -98,8 +104,41 @@ function describeChange(session: PendingSession): readonly PendingCardChange[] {
   return [...proposals, ...statements];
 }
 
+export interface PendingCardSummary {
+  readonly slug: string;
+  readonly name: string;
+  readonly changeCount: number;
+  readonly origins: readonly SessionRecord['kind'][];
+}
+
 export class CardPendingChangesDesk {
   public constructor(private readonly dependencies: CardPendingChangesDependencies) {}
+
+  public async listCards(workspaceRoot: StoryUri): Promise<readonly PendingCardSummary[]> {
+    const elementIds: ReadonlySet<string> = new Set(
+      (await this.store(workspaceRoot))
+        .listWithPending()
+        .flatMap((record) => (record.elementId === undefined ? [] : [record.elementId])),
+    );
+    const bundles: readonly ElementBundle[] = (
+      await this.dependencies.cards.loadRoster(workspaceRoot)
+    ).bundles.filter((bundle) => elementIds.has(bundle.header.id));
+    const summaries: PendingCardSummary[] = [];
+
+    for (const bundle of bundles) {
+      const changes: readonly PendingCardChange[] = (
+        await this.loadPendingSessions(workspaceRoot, bundle)
+      ).flatMap(describeChange);
+      summaries.push({
+        slug: bundle.header.slug,
+        name: 'name' in bundle.header ? String(bundle.header.name) : bundle.header.slug,
+        changeCount: changes.length,
+        origins: [...new Set(changes.map((change) => change.origin))],
+      });
+    }
+
+    return summaries;
+  }
 
   public async list(
     workspaceRoot: StoryUri,
@@ -214,7 +253,7 @@ export class CardPendingChangesDesk {
     session: PendingSession,
     report: { applied: number; heldByAuthor: Statement[] },
   ): Promise<void> {
-    if (session.statements.length === 0) {
+    if (session.statements.length === 0 && session.header === undefined) {
       return;
     }
 
@@ -228,10 +267,11 @@ export class CardPendingChangesDesk {
 
     const merged: StatementMergeResult = mergeStatements(current.statements, session.statements);
     await this.dependencies.cards.rewriteBundle(workspaceRoot, current, {
-      header: current.header,
+      header: { ...current.header, ...(session.header ?? {}) } as ElementBundle['header'],
       statements: merged.statements,
     });
-    report.applied += merged.added.length + merged.replaced.length;
+    report.applied +=
+      merged.added.length + merged.replaced.length + Object.keys(session.header ?? {}).length;
     report.heldByAuthor.push(...merged.heldByAuthor);
     this.clearStatements(store, session);
   }
@@ -262,7 +302,7 @@ export class CardPendingChangesDesk {
 
   private clearStatements(store: SessionStore, session: PendingSession): void {
     store.update(session.record.id, {
-      data: replacePendingStatements(session.record.data, []),
+      data: replacePendingHeader(replacePendingStatements(session.record.data, []), undefined),
       pendingCount: 0,
     });
   }
@@ -276,10 +316,12 @@ export class CardPendingChangesDesk {
       .filter((record) => record.pendingCount > 0)
       .map((record) => {
         const studio: StudioSession | undefined = readStudio(record);
+        const header: PendingHeaderChange | undefined = readPendingHeader(record.data);
         return {
           record,
           ...(studio === undefined ? {} : { studio }),
           statements: readPendingStatements(record.data),
+          ...(header === undefined ? {} : { header }),
         };
       });
   }

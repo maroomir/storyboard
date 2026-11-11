@@ -1147,7 +1147,7 @@ describe('PlanNoteAbsorbUseCase', () => {
       } as unknown as IStoryFeatureRepository, noteAbsorb: {
         loadCandidates: async () => ({ kind: 'none' }),
         savePlan: async () => undefined,
-        saveExtractionResponses: async (_root: unknown, responses: NoteExtractionResponse[]) => {
+        saveExtractionResponses: async (_root: unknown, _location: string, responses: NoteExtractionResponse[]) => {
           savedResponses.push(responses);
         },
       } as unknown as INoteAbsorbRepository }));
@@ -1172,7 +1172,7 @@ describe('PlanNoteAbsorbUseCase', () => {
 
     expect(result.ok).toBe(true);
     expect(result.ok && result.plan.warnings[0]).toContain('노트 묶음 1/2 (첫째)은 응답이 출력 한도에서 잘려');
-    expect(result.ok && result.plan.warnings[1]).toContain('.storyboard/cache/notes/responses.json');
+    expect(result.ok && result.plan.warnings[1]).toContain('캐시 DB 의 흡수 세션');
     expect(warnings).toHaveLength(1);
     expect(savedResponses).toEqual([
       [
@@ -1278,7 +1278,7 @@ describe('PlanNoteAbsorbUseCase', () => {
 
     expect(result.ok).toBe(false);
     expect(!result.ok && result.message).toBe(
-      '노트 묶음 2개를 모두 읽지 못했습니다. 모델의 원문 응답은 .storyboard/cache/notes/responses.json 에 있습니다.',
+      '노트 묶음 2개를 모두 읽지 못했습니다. 모델의 원문 응답은 캐시 DB 의 흡수 세션에 있습니다.',
     );
     expect(warnings[1]).toContain('응답에서 정리 결과(JSON)를 찾지 못해');
     expect(savedResponses).toHaveLength(1);

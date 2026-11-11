@@ -2,26 +2,22 @@ import { storyboardCommandIds } from '@/contributionIds';
 import type { IExtensionCommand } from '@/presentation/commands/extensionCommand';
 import * as vscode from 'vscode';
 
-import type { NoteManager } from '@storyboard/story-app';
-import type {
-  PrepareNoteCandidatePromotionResult,
-  PromoteNoteCandidatesResult,
-} from '@storyboard/story-engine';
-import type { MergedNoteCardCandidate } from '@storyboard/story-model';
+import type { CardManager } from '@storyboard/story-app';
+import type { PendingCardSummary } from '@storyboard/story-engine';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 
 type CandidateQuickPickItem = vscode.QuickPickItem & {
-  readonly candidate: MergedNoteCardCandidate;
+  readonly card: PendingCardSummary;
 };
 
-type NoteCandidateManager = Pick<NoteManager, 'prepareCandidatePromotion' | 'promoteCandidates'>;
+type PendingCardManager = Pick<CardManager, 'listPendingCards' | 'applyPending'>;
 
 export class PromoteCardCandidatesCommand implements IExtensionCommand {
   public readonly id: string = storyboardCommandIds.cardsPromoteCandidates;
 
   public constructor(
     private readonly dependencies: {
-      readonly notes: NoteCandidateManager;
+      readonly cards: PendingCardManager;
     },
   ) {}
 
@@ -32,24 +28,23 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
       return;
     }
 
-    const notePreparation: PrepareNoteCandidatePromotionResult =
-      await this.dependencies.notes.prepareCandidatePromotion(folder.uri);
+    const pending: readonly PendingCardSummary[] = await this.dependencies.cards.listPendingCards(
+      folder.uri,
+    );
 
-    if (notePreparation.kind !== 'ready') {
+    if (pending.length === 0) {
       await vscode.window.showInformationMessage(
-        notePreparation.kind === 'no_candidates'
-          ? '승격할 카드 후보가 없습니다. 먼저 노트를 흡수하거나 인터뷰를 마쳐 주세요.'
-          : '새로 승격할 후보가 없습니다. 이미 모두 카드에 반영되어 있습니다.',
+        '반영할 카드 제안이 없습니다. 먼저 노트를 흡수하거나 인터뷰를 마쳐 주세요.',
       );
       return;
     }
 
     const picked: CandidateQuickPickItem[] | undefined = await vscode.window.showQuickPick(
-      createCandidatePicks(notePreparation),
+      createCandidatePicks(pending),
       {
         canPickMany: true,
-        title: '카드에 반영할 후보 선택',
-        placeHolder: '캐릭터 카드에 추가할 관계·아크·속성을 선택하세요.',
+        title: '카드에 반영할 제안 선택',
+        placeHolder: '제안을 반영할 카드를 선택하세요.',
       },
     );
 
@@ -57,20 +52,21 @@ export class PromoteCardCandidatesCommand implements IExtensionCommand {
       return;
     }
 
-    const noteResult: PromoteNoteCandidatesResult = await this.promotePicked(folder, picked);
-    await vscode.window.showInformationMessage(
-      `후보 ${picked.length}개를 카드 ${noteResult.updatedCardIds.length}개에 반영했습니다.`,
-    );
+    await this.applyPicked(folder, picked);
+    await vscode.window.showInformationMessage(`카드 ${picked.length}개에 제안을 반영했습니다.`);
   }
 
-  private async promotePicked(
+  private async applyPicked(
     folder: vscode.WorkspaceFolder,
     picked: readonly CandidateQuickPickItem[],
-  ): Promise<PromoteNoteCandidatesResult> {
-    const pickedNotes: MergedNoteCardCandidate[] = picked.map((entry) => entry.candidate);
-    return await vscode.window.withProgress(
+  ): Promise<void> {
+    await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: '카드에 반영 중…' },
-      async () => await this.dependencies.notes.promoteCandidates(folder.uri, pickedNotes),
+      async () => {
+        for (const entry of picked) {
+          await this.dependencies.cards.applyPending(folder.uri, entry.card.slug);
+        }
+      },
     );
   }
 }
@@ -91,16 +87,10 @@ async function resolveProjectFolder(): Promise<vscode.WorkspaceFolder | undefine
   return folder;
 }
 
-function createCandidatePicks(
-  notePreparation: Extract<PrepareNoteCandidatePromotionResult, { readonly kind: 'ready' }>,
-): CandidateQuickPickItem[] {
-  return notePreparation.candidates.map((candidate) => ({
-    label: `${candidate.cardId} (${candidate.name}) — 노트의 변경 ${candidate.changes.length}건`,
-    description: `노트 · ${candidate.locations.join(', ')}${
-      candidate.conflicts.length > 0
-        ? ` · 값이 갈리는 칸 ${candidate.conflicts.length}개는 남습니다`
-        : ''
-    }`,
-    candidate,
+function createCandidatePicks(pending: readonly PendingCardSummary[]): CandidateQuickPickItem[] {
+  return pending.map((card) => ({
+    label: `${card.slug} (${card.name}) — 제안 ${card.changeCount}건`,
+    description: card.origins.join(', '),
+    card,
   }));
 }

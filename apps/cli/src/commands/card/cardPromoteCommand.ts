@@ -1,20 +1,23 @@
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
-import { describeNoteConflicts } from '@/commands/card/cardViews';
 import { flagBoolean } from '@/cliArguments';
 import { describeNothingToPromote, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
 import type {
-  PrepareNoteCandidatePromotionResult,
-  PromoteNoteCandidatesResult,
+  CardPendingApplyReport,
+  CardPendingResult,
+  PendingCardSummary,
 } from '@storyboard/story-engine';
-import type { MergedNoteCardCandidate } from '@storyboard/story-model';
 
-interface PromotionCandidates {
-  readonly noteCandidates: readonly MergedNoteCardCandidate[];
-  readonly conflictedCards: readonly MergedNoteCardCandidate[];
-  readonly conflictLines: readonly string[];
+const originLabels: Readonly<Record<PendingCardSummary['origins'][number], string>> = {
+  absorb: '노트에서',
+  interview: '인터뷰에서',
+  studio: '스튜디오에서',
+};
+
+function describeOrigins(summary: PendingCardSummary): string {
+  return summary.origins.map((origin) => originLabels[origin]).join('·');
 }
 
 export class CardPromoteCommand implements ICommandHandler {
@@ -23,83 +26,61 @@ export class CardPromoteCommand implements ICommandHandler {
     writesWorkspace: true,
     group: '카드',
     usage: 'card promote',
-    summary: '노트·인터뷰에서 나온 카드 후보를 반영합니다',
+    summary: '노트·인터뷰·스튜디오가 남긴 카드 제안을 반영합니다',
     flags: ['dry-run'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const preparedNotes: PrepareNoteCandidatePromotionResult =
-      await container.notes.prepareCandidatePromotion(container.workspaceRoot);
+    const pending: readonly PendingCardSummary[] = await container.cards.listPendingCards(
+      container.workspaceRoot,
+    );
 
-    if (preparedNotes.kind !== 'ready') {
-      return success(describeNothingToPromote(preparedNotes.kind), { kind: preparedNotes.kind });
+    if (pending.length === 0) {
+      return success(describeNothingToPromote('no_candidates'), { kind: 'no_candidates' });
     }
 
-    const candidates: PromotionCandidates = collectPromotionCandidates(preparedNotes);
-
     return flagBoolean(args.flags, 'dry-run')
-      ? describePromotionPreview(candidates)
-      : this.promoteCandidates(container, candidates);
+      ? describePromotionPreview(pending)
+      : this.applyPending(container, pending);
   }
 
-  private async promoteCandidates(
+  private async applyPending(
     container: CliContainer,
-    { noteCandidates, conflictedCards, conflictLines }: PromotionCandidates,
+    pending: readonly PendingCardSummary[],
   ): Promise<CommandOutcome> {
-    const noteResult: PromoteNoteCandidatesResult | undefined =
-      noteCandidates.length > 0
-        ? await container.notes.promoteCandidates(container.workspaceRoot, noteCandidates)
-        : undefined;
-    const updatedCardCount: number = noteResult?.updatedCardIds.length ?? 0;
+    const reports: CardPendingApplyReport[] = [];
+    for (const card of pending) {
+      const applied: CardPendingResult<CardPendingApplyReport> = await container.cards.applyPending(
+        container.workspaceRoot,
+        card.slug,
+      );
+      if (applied.ok) {
+        reports.push(applied.report);
+      }
+    }
+
+    const heldLines: readonly string[] = reports
+      .flatMap((report) => report.heldByAuthor)
+      .map((line) => `  작가가 쓴 줄이라 두었습니다: ${line.facet} ${line.value}`);
+    const failureLines: readonly string[] = reports
+      .flatMap((report) => report.failures)
+      .map((message) => `  적용하지 못했습니다: ${message}`);
 
     return success(
-      [`카드 ${updatedCardCount}개를 갱신했습니다.`, ...conflictLines].join('\n'),
-      { notes: noteResult ?? null, conflicts: conflictedCards },
+      [`카드 ${pending.length}개를 갱신했습니다.`, ...heldLines, ...failureLines].join('\n'),
+      { cards: pending.map((card) => card.slug), reports },
     );
   }
 }
 
-function collectPromotionCandidates(
-  preparedNotes: PrepareNoteCandidatePromotionResult,
-): PromotionCandidates {
-  const noteCandidates: readonly MergedNoteCardCandidate[] =
-    preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
-  const conflictedCards: MergedNoteCardCandidate[] = [
-    ...noteCandidates,
-    ...(preparedNotes.kind === 'ready' ? preparedNotes.heldCards : []),
-  ].filter((candidate) => candidate.conflicts.length > 0);
-
-  return {
-    noteCandidates,
-    conflictedCards,
-    conflictLines: describeNoteConflicts(conflictedCards),
-  };
-}
-
-function describeCandidateOrigin(candidate: MergedNoteCardCandidate): string {
-  const isInterview = (location: string): boolean => location.startsWith('interview:');
-
-  if (candidate.locations.every(isInterview)) {
-    return '인터뷰에서';
-  }
-
-  return candidate.locations.some(isInterview) ? '노트·인터뷰에서' : '노트에서';
-}
-
-function describePromotionPreview({
-  noteCandidates,
-  conflictedCards,
-  conflictLines,
-}: PromotionCandidates): CommandOutcome {
+function describePromotionPreview(pending: readonly PendingCardSummary[]): CommandOutcome {
   return success(
     [
-      `승격 후보 ${noteCandidates.length}건`,
-      ...noteCandidates.map(
-        (candidate) =>
-          `  ${describeCandidateOrigin(candidate)}  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건 ← ${candidate.locations.join(', ')}`,
+      `승격 후보 ${pending.length}건`,
+      ...pending.map(
+        (card) => `  ${describeOrigins(card)}  ${card.slug} (${card.name}) 변경 ${card.changeCount}건`,
       ),
-      ...conflictLines,
     ].join('\n'),
-    { notes: noteCandidates, conflicts: conflictedCards },
+    { cards: pending },
   );
 }

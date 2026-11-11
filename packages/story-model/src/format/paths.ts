@@ -8,12 +8,6 @@ interface StoryboardRelativePaths {
   readonly sceneCacheDirectory: string;
   readonly revisionRoundsDirectory: string;
   readonly cardCacheDirectory: string;
-  readonly noteCacheDirectory: string;
-  readonly noteSource: string;
-  readonly notePlan: string;
-  readonly noteCandidates: string;
-  readonly noteSynopsisCandidate: string;
-  readonly noteExtractionResponses: string;
   readonly outlineDirectory: string;
   readonly outlineSynopsis: string;
   readonly outlineChapters: string;
@@ -40,12 +34,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   sceneCacheDirectory: '.storyboard/cache/scenes',
   revisionRoundsDirectory: '.storyboard/cache/revisions',
   cardCacheDirectory: '.storyboard/cache/cards',
-  noteCacheDirectory: '.storyboard/cache/notes',
-  noteSource: '.storyboard/cache/notes/source.json',
-  notePlan: '.storyboard/cache/notes/plan.json',
-  noteCandidates: '.storyboard/cache/notes/candidates.json',
-  noteSynopsisCandidate: '.storyboard/cache/notes/synopsis.candidate.md',
-  noteExtractionResponses: '.storyboard/cache/notes/responses.json',
   outlineDirectory: '.storyboard/outline',
   outlineSynopsis: '.storyboard/outline/synopsis.md',
   outlineChapters: '.storyboard/outline/chapters.yaml',

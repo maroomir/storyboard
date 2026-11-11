@@ -22,10 +22,16 @@ import { slugify } from '#model/format/slug';
 import { formatNumberedSceneStem } from '#model/format/bundlePaths';
 import { normalizeEntityName } from '#model/format/entityName';
 
+export interface NoteCardFact {
+  readonly key: string;
+  readonly value: string;
+}
+
 export interface NoteCardPlan {
   readonly card: StoryboardCard;
   readonly isNew: boolean;
   readonly changes: readonly CardCollectProposal[];
+  readonly facts: readonly NoteCardFact[];
   readonly sourceNotes: readonly string[];
   readonly aliasReadCounts: Readonly<Record<string, number>>;
 }
@@ -467,13 +473,18 @@ function toCardChanges(entry: ResolvedEntity, characters: CardNameIndex): CardCo
 
 function planCardChanges(entry: ResolvedEntity, characters: CardNameIndex): NoteCardPlan[] {
   const changes: CardCollectProposal[] = toCardChanges(entry, characters);
+  const facts: readonly NoteCardFact[] = entry.entity.canonFacts.map(({ key, value }) => ({
+    key,
+    value,
+  }));
 
-  return entry.isNew || changes.length > 0
+  return entry.isNew || changes.length > 0 || facts.length > 0
     ? [
         {
           card: entry.card,
           isNew: entry.isNew,
           changes,
+          facts,
           sourceNotes: entry.entity.sourceNotes,
           aliasReadCounts: countAliasReads(entry.readings),
         },

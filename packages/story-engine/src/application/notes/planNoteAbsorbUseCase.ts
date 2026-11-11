@@ -27,7 +27,6 @@ import {
   type NoteConsolidatedLists,
   groupNoteConsolidationTargets,
   selectNoteConsolidationTargets,
-  STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
 import type {
   NoteDocument,
@@ -54,6 +53,8 @@ export interface NoteAbsorbEstimate extends NoteAbsorbWorkload {
   readonly model: string;
   readonly costCeilingUsd?: number;
 }
+
+const notesResponsesHint: string = '모델의 원문 응답은 캐시 DB 의 흡수 세션에 있습니다.';
 
 export interface PlanNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;
@@ -199,16 +200,18 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     workspaceRoot: StoryUri,
     bundle: NoteBundle,
   ): Promise<PlanNoteAbsorbResult> {
-    await this.repositories.noteAbsorb.loadCandidates(workspaceRoot);
-
     const source: StoryFeatureSource = await this.repositories.storyFeatures.load(workspaceRoot);
     const aiService: StoryboardAiService = this.ai.gateway.createService(workspaceRoot);
     const chunks: NoteDocument[][] = groupNotesIntoChunks(bundle.notes);
     const tally: NoteExtractionTally = await this.extractChunks(aiService, chunks, source.cards);
 
-    await this.repositories.noteAbsorb.saveExtractionResponses(workspaceRoot, tally.getResponses());
+    await this.repositories.noteAbsorb.saveExtractionResponses(
+      workspaceRoot,
+      bundle.location,
+      tally.getResponses(),
+    );
 
-    const responsesHint: string = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
+    const responsesHint: string = notesResponsesHint;
 
     if (tally.hasFailedEveryChunk(chunks.length)) {
       return failedResult(
@@ -234,7 +237,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       responsesHint,
     );
 
-    await this.repositories.noteAbsorb.savePlan(workspaceRoot, checkedPlan);
+    await this.repositories.noteAbsorb.savePlan(workspaceRoot, bundle.location, checkedPlan);
 
     return { ok: true as const, plan: checkedPlan };
   }

@@ -14,7 +14,7 @@ describe("absorbNotes command", () => {
   let handler: (() => Promise<void>) | undefined
   const bundle = { kind: "obsidian", location: "/vault/달의 문", collectedAt: "2026-10-24T00:00:00.000Z", notes: [], skipped: [] }
   const plan = {
-    cards: [{ card: { type: "character", id: "hana", name: "하나" }, isNew: true, changes: [], sourceNotes: [], aliasReadCounts: {} }],
+    cards: [{ card: { type: "character", id: "hana", name: "하나" }, isNew: true, changes: [], facts: [], sourceNotes: [], aliasReadCounts: {} }],
     scenes: [],
     skippedScenes: [],
     setting: {},
