@@ -1,11 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import {
-  parseSceneCard,
-  parseSceneFileName,
+  bundleFileNames,
+  parseBundleDirectoryName,
+  parseElementCard,
+  parseStatementsFile,
   type AiProviderId,
-  type SceneCard,
-  type SceneFileNameParts,
+  type ElementHeader,
+  type Statement,
 } from '@storyboard/story-model';
 import type { PromptVariantId } from '@storyboard/story-ai';
 import {
@@ -55,31 +57,13 @@ const axisGenre: string = 'axis';
 
 export async function readTrackScenes(genreRoot: string): Promise<readonly TrackScene[]> {
   const sceneDirectory: string = join(genreRoot, 'scene');
-  const names: string[] = (await readdir(sceneDirectory)).filter((name) =>
-    parseSceneFileName(name),
+  const names: string[] = (await readdir(sceneDirectory)).filter(
+    (name) => parseBundleDirectoryName('scene', name) !== undefined,
   );
   const scenes: TrackScene[] = [];
 
   for (const name of names.sort()) {
-    const parts: SceneFileNameParts | undefined = parseSceneFileName(name);
-    const card: SceneCard = parseSceneCard(await readFile(join(sceneDirectory, name), 'utf8'));
-
-    if (parts === undefined) {
-      continue;
-    }
-
-    if (card.targetWordCount === undefined) {
-      throw new Error(
-        `${name} 에 targetWordCount 가 없습니다. 트랙 카드는 목표 분량을 적어야 합니다.`,
-      );
-    }
-
-    scenes.push({
-      sceneStem: parts.stem,
-      targetLength: card.targetWordCount,
-      title: card.title ?? parts.stem,
-      purpose: card.purpose ?? '',
-    });
+    scenes.push(await readTrackScene(join(sceneDirectory, name), name));
   }
 
   if (scenes.length === 0) {
@@ -87,6 +71,33 @@ export async function readTrackScenes(genreRoot: string): Promise<readonly Track
   }
 
   return scenes;
+}
+
+async function readTrackScene(bundleDirectory: string, name: string): Promise<TrackScene> {
+  const header: ElementHeader = parseElementCard(
+    'scene',
+    await readFile(join(bundleDirectory, bundleFileNames.card), 'utf8'),
+    name,
+  );
+  const statements: readonly Statement[] = parseStatementsFile(
+    await readFile(join(bundleDirectory, bundleFileNames.statements), 'utf8'),
+    name,
+  );
+  const targetWordCount: number | undefined =
+    header.kind === 'scene' ? header.targetWordCount : undefined;
+
+  if (targetWordCount === undefined) {
+    throw new Error(
+      `${name} 에 targetWordCount 가 없습니다. 트랙 카드는 목표 분량을 적어야 합니다.`,
+    );
+  }
+
+  return {
+    sceneStem: basename(name, '.card'),
+    targetLength: targetWordCount,
+    title: header.kind === 'scene' ? header.title : name,
+    purpose: statements.find((statement) => statement.facet === 'purpose')?.value ?? '',
+  };
 }
 
 export async function readAxisFloors(
@@ -112,7 +123,10 @@ export async function readCharacterNames(genreRoot: string): Promise<readonly st
   let files: string[];
 
   try {
-    files = (await readdir(directory)).filter((name) => name.endsWith('.card')).sort();
+    files = (await readdir(directory))
+      .filter((name) => parseBundleDirectoryName('character', name) !== undefined)
+      .map((name) => join(name, bundleFileNames.card))
+      .sort();
   } catch {
     return [];
   }

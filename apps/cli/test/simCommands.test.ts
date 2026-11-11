@@ -10,6 +10,7 @@ import { readRuns } from '@storyboard/story-sim';
 import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
+import { writeTrackScene } from './fixtures/trackScenes';
 
 let home: string;
 let track: string;
@@ -46,11 +47,8 @@ beforeEach(() => {
   const genre = join(track, 'track', 'chain', 'thriller');
   mkdirSync(join(genre, 'scene'), { recursive: true });
   mkdirSync(join(genre, 'floor'), { recursive: true });
-  writeFileSync(
-    join(genre, 'scene', '01-a.card'),
-    'type: scene\nid: 01-a\ntitle: 첫 씬\ntargetWordCount: 3000\nsummary: 문을 연다.\n',
-  );
-  writeFileSync(join(genre, 'floor', '01-a.md'), '망가진 원고');
+  writeTrackScene(genre, { stem: '001-a', title: '첫 씬', targetWordCount: 3000 });
+  writeFileSync(join(genre, 'floor', '001-a.md'), '망가진 원고');
 });
 
 afterEach(() => {
@@ -144,10 +142,7 @@ describe('sim run', () => {
 
 describe('track reading', () => {
   it('refuses a scene card that carries no target length', async () => {
-    writeFileSync(
-      join(track, 'track', 'chain', 'thriller', 'scene', '02-b.card'),
-      'type: scene\nid: 02-b\ntitle: 둘\nsummary: 비가 온다.\n',
-    );
+    writeTrackScene(join(track, 'track', 'chain', 'thriller'), { stem: '002-b', title: '둘' });
 
     await expect(run('sim run', { track, genre: 'thriller' })).rejects.toThrow(/targetWordCount/);
   });
@@ -172,12 +167,9 @@ describe('axis track', () => {
     const axis = join(track, 'track', 'axis');
     mkdirSync(join(axis, 'scene'), { recursive: true });
     mkdirSync(join(axis, 'floor'), { recursive: true });
-    writeFileSync(
-      join(axis, 'scene', '01-baseline.card'),
-      'type: scene\nid: 01-baseline\ntitle: 표지\npurpose: 기준선\ntargetWordCount: 3000\nsummary: 문을 연다.\n',
-    );
+    writeTrackScene(axis, { stem: '001-baseline', title: '표지', targetWordCount: 3000, purpose: '기준선' });
     if (withFloors) {
-      writeFileSync(join(axis, 'floor', '01-baseline.md'), '망가진 원고');
+      writeFileSync(join(axis, 'floor', '001-baseline.md'), '망가진 원고');
     }
   }
 
