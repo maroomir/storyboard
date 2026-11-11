@@ -10,6 +10,7 @@ import { RenameCharacterCardCommand } from '@/presentation/commands/renameCharac
 import { CardCustomEditorProvider } from '@/presentation/providers/CardCustomEditorProvider';
 import { CardDiagnosticsProvider } from '@/presentation/providers/CardDiagnosticsProvider';
 import { CardRenameParticipant } from '@/presentation/providers/CardRenameParticipant';
+import { CardRemovalPrompt } from '@/presentation/providers/cardRemovalPrompt';
 import {
   SidebarCardsProvider,
   backgroundsSidebarOptions,
@@ -33,6 +34,7 @@ export class CardModule implements IApplicationModule {
       drafts,
       logger,
       proposalReviewService,
+      runGate,
       studioLauncher,
       usageRecorder,
     } = this.platform;
@@ -40,6 +42,7 @@ export class CardModule implements IApplicationModule {
       aiProviderRegistry,
       cardSidebarRepository: cards.sidebar,
       usageRecorder,
+      removalPrompt: new CardRemovalPrompt({ cards, runGate }),
     };
 
     this.disposables.add(

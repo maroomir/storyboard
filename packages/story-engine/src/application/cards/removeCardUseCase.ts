@@ -40,6 +40,7 @@ export interface RemoveCardRequest {
   readonly workspaceRoot: StoryUri;
   readonly slug: string;
   readonly shouldForce: boolean;
+  readonly isPreview?: boolean;
 }
 
 export interface CardRemovalLine {
@@ -55,7 +56,7 @@ export interface CardRemovalPlan {
 }
 
 export type RemoveCardResult =
-  | { readonly ok: true; readonly kind: 'removed'; readonly plan: CardRemovalPlan }
+  | { readonly ok: true; readonly kind: 'removed' | 'previewed'; readonly plan: CardRemovalPlan }
   | {
       readonly ok: false;
       readonly kind: 'referenced';
@@ -111,6 +112,10 @@ export class RemoveCardUseCase implements IUseCase<RemoveCardRequest, RemoveCard
       referencingPaths: work.referencingPaths,
       droppedLines: work.droppedLines,
     };
+    if (request.isPreview === true) {
+      return { ok: true, kind: 'previewed', plan };
+    }
+
     const isReferenced: boolean = work.referencingPaths.length > 0;
     if (isReferenced && !request.shouldForce) {
       return {

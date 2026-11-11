@@ -153,6 +153,19 @@ describe('RemoveCardUseCase', () => {
     expect(await cards.findBundleBySlug(root(), 'sera')).toBeDefined();
   });
 
+  it('only plans the removal when previewing, even with nothing referring to the card', async () => {
+    const result = await new RemoveCardUseCase({ cards, scenes, caches }).execute({
+      workspaceRoot: root(),
+      slug: 'sera',
+      shouldForce: true,
+      isPreview: true,
+    });
+
+    expect(result).toMatchObject({ ok: true, kind: 'previewed' });
+    expect(await cards.findBundleBySlug(root(), 'sera')).toBeDefined();
+    expect(readSceneState(workspace, '001-rooftop')?.statements).toHaveLength(2);
+  });
+
   it('removes the card and cleans its cast, relations and witnesses when forced', async () => {
     const result = await new RemoveCardUseCase({ cards, scenes, caches }).execute({
       workspaceRoot: root(),
