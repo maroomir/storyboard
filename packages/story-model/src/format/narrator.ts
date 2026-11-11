@@ -1,43 +1,14 @@
 import { z } from 'zod';
 
+import {
+  narrativeTenses,
+  narratorKnowledges,
+  narratorPersons,
+  type NarrativeTense,
+  type NarratorKnowledge,
+  type NarratorPerson,
+} from '#model/element/narrator';
 import { pointOfViews, type PointOfView } from '#model/format/project';
-
-export type NarratorPerson = 'first' | 'second' | 'third';
-
-export const narratorPersons: readonly [NarratorPerson, ...NarratorPerson[]] = [
-  'first',
-  'second',
-  'third',
-];
-
-export type NarratorKnowledge = 'witnessed' | 'omniscient' | 'retrospective';
-
-export const narratorKnowledges: readonly [NarratorKnowledge, ...NarratorKnowledge[]] = [
-  'witnessed',
-  'omniscient',
-  'retrospective',
-];
-
-export type NarrativeTense = 'past' | 'present';
-
-export const narrativeTenses: readonly [NarrativeTense, ...NarrativeTense[]] = ['past', 'present'];
-
-export const narratorPersonLabels: Record<NarratorPerson, string> = {
-  first: '1인칭',
-  second: '2인칭',
-  third: '3인칭',
-};
-
-export const narratorKnowledgeLabels: Record<NarratorKnowledge, string> = {
-  witnessed: '목격 범위',
-  omniscient: '전지',
-  retrospective: '회고',
-};
-
-export const narrativeTenseLabels: Record<NarrativeTense, string> = {
-  past: '과거형',
-  present: '현재형',
-};
 
 const narratorIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { uriStringSchema } from '#model/shared/messaging/atoms';
-import type { CharacterRole, RelationLink } from '#model/format/card';
+import type { CharacterRole } from '#model/element/character';
+import type { RelationLink } from '#model/format/card';
 
 export interface RelationsListRequestPayload {
   [key: string]: never;

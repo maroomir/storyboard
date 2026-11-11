@@ -1,3 +1,11 @@
+import { z } from 'zod';
+
+import {
+  elementIdSchema,
+  elementSlugSchema,
+  headerTextListSchema,
+  headerTextSchema,
+} from '#model/element/elementId';
 import type { ElementDefinition } from '#model/element/facet';
 
 export type BackgroundFacetId = 'tags' | 'time' | 'weather' | 'senses' | 'layout' | 'rules';
@@ -68,3 +76,23 @@ export const backgroundElement: ElementDefinition<BackgroundFacetId> = {
     },
   ],
 };
+
+export interface BackgroundHeader {
+  readonly id: string;
+  readonly slug: string;
+  readonly kind: 'background';
+  readonly name: string;
+  readonly aliases?: readonly string[];
+  readonly within?: string;
+}
+
+export const backgroundHeaderSchema: z.ZodType<BackgroundHeader> = z
+  .object({
+    id: elementIdSchema,
+    slug: elementSlugSchema,
+    kind: z.literal('background'),
+    name: headerTextSchema,
+    aliases: headerTextListSchema.optional(),
+    within: elementIdSchema.optional(),
+  })
+  .strict();
