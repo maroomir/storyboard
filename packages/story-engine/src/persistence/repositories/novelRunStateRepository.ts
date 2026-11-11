@@ -1,25 +1,21 @@
+import { getStoryboardProjectPaths } from '@storyboard/story-model';
+import type { NovelRunState, StoryboardProject, StoryUri } from '@storyboard/story-model';
+
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
-import type { StoryUri, StoryboardProject, StoryboardProjectPaths } from '@storyboard/story-model';
+import { RunStore } from '#engine/persistence/cache/runStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { INovelRunStateRepository } from '#engine/application/novel/novelPipeline';
-import {
-  getStoryboardProjectPaths,
-  readNovelRunState,
-  type NovelRunState,
-  writeNovelRunState,
-} from '@storyboard/story-model';
 
 export class NovelRunStateRepository implements INovelRunStateRepository {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+  public constructor(
+    private readonly fileSystem: IFileSystem,
+    private readonly caches: WorkspaceCaches,
+  ) {}
 
   public async readExisting(workspaceRoot: StoryUri): Promise<NovelRunState | undefined> {
-    const { novelRunState } = getStoryboardProjectPaths(workspaceRoot);
-    if (!(await this.fileSystem.exists(novelRunState))) {
-      return undefined;
-    }
-
     try {
-      return await readNovelRunState(novelRunState, this.fileSystem);
+      return (await this.openStore(workspaceRoot)).findLatestNovelRun();
     } catch {
       return undefined;
     }
@@ -32,8 +28,10 @@ export class NovelRunStateRepository implements INovelRunStateRepository {
   }
 
   public async save(workspaceRoot: StoryUri, state: NovelRunState): Promise<void> {
-    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.cacheDirectory);
-    await writeNovelRunState(paths.novelRunState, this.fileSystem, state);
+    (await this.openStore(workspaceRoot)).saveNovelRun(state);
+  }
+
+  private async openStore(workspaceRoot: StoryUri): Promise<RunStore> {
+    return new RunStore(await this.caches.open(workspaceRoot));
   }
 }

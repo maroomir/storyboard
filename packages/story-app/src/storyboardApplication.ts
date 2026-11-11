@@ -432,7 +432,7 @@ function buildWorkspaceRepositories(
     project: new ProjectRepository(fileSystem),
     outline,
     novelOutline: outline,
-    novelRunState: new NovelRunStateRepository(fileSystem),
+    novelRunState: new NovelRunStateRepository(fileSystem, host.caches),
     novelReviews: new NovelReviewRepository(fileSystem),
     manuscriptAssembly,
     chapterSummaries: manuscriptAssembly,
