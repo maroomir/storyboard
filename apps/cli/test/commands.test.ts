@@ -23,12 +23,13 @@ import {
 } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
 import type { GenerateAndReviseDraftRequest } from '@storyboard/story-app';
 
 import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
+
+import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/runLockFixture';
 
 let home: string;
 let workspace: string;
@@ -1716,13 +1717,16 @@ describe('novel generate again', () => {
 
     expect((await lookup())?.status).toBe('running');
 
-    await acquireWorkspaceRunLock({
-      fileSystem: app.fileSystem,
-      workspaceRoot: app.workspaceRoot,
-      holder: { owner: 'vscode', label: '장편 생성', pid: 1, hostname: 'test' },
+    const caches = createWorkspaceCaches();
+    await createWorkspaceRunLocks(caches).acquire(app.workspaceRoot, {
+      owner: 'vscode',
+      label: '장편 생성',
+      pid: 1,
+      hostname: 'test',
     });
 
     expect(await lookup()).toBeUndefined();
+    await caches.closeAll();
   });
 
   it('starts over without rebuilding the outline or the scene cards that exist', async () => {

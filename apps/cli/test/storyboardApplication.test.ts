@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import { NodeUri } from '@storyboard/story-model';
-import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
+import { MemorySqlDatabaseHost, NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 
 function createApplication(): StoryboardApplication {
   return new StoryboardApplication(
@@ -19,6 +19,7 @@ function createApplication(): StoryboardApplication {
       configBridge: new ConfigBridge({
         getConfiguration: () => ({ get: <T>(_section: string, defaultValue: T): T => defaultValue }),
       }),
+      sqlDatabaseHost: new MemorySqlDatabaseHost(),
     },
     { generator: 'storyboard@0.0.0-test' },
   );

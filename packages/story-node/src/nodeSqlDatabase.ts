@@ -13,6 +13,8 @@ interface LoadedSqliteModule {
   readonly Database?: SqliteModule['Database'];
 }
 
+const inMemoryDatabaseName: string = ':memory:';
+
 const orphanedDatabaseLockAgeMs: number = 60_000;
 
 const databaseLockSuffix: string = '.lock';
@@ -80,5 +82,13 @@ export class NodeSqlDatabaseHost implements ISqlDatabaseHost {
     const databaseClass: SqliteModule['Database'] = await loadDatabaseClass();
 
     return new NodeSqlDatabase(new databaseClass(databasePath));
+  }
+}
+
+export class MemorySqlDatabaseHost implements ISqlDatabaseHost {
+  public async open(): Promise<ISqlDatabase> {
+    const databaseClass: SqliteModule['Database'] = await loadDatabaseClass();
+
+    return new NodeSqlDatabase(new databaseClass(inMemoryDatabaseName));
   }
 }

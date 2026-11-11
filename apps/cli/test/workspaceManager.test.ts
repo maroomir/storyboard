@@ -5,23 +5,26 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunGate, WorkspaceManager } from '@storyboard/story-app';
 import { ConfigBridge } from '@storyboard/story-ai';
-import {
-  createWorkspaceRunLockRecord,
-  NodeUri,
-  serializeWorkspaceRunLock,
-  STORYBOARD_RELATIVE_PATHS,
-} from '@storyboard/story-model';
+import type { WorkspaceCaches } from '@storyboard/story-engine';
+import { NodeUri, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
+
+import {
+  createWorkspaceCaches,
+  createWorkspaceRunLocks,
+  plantRunLock,
+} from './fixtures/runLockFixture';
 
 let directory: string;
 let warnings: string[];
+let caches: WorkspaceCaches;
 
 function createManager(): WorkspaceManager {
   const fileSystem = new NodeFileSystem();
 
   return new WorkspaceManager({
     fileSystem,
-    runGate: new RunGate({ fileSystem, owner: 'cli' }),
+    runGate: new RunGate({ runLocks: createWorkspaceRunLocks(caches), owner: 'cli' }),
     logger: {
       info: () => undefined,
       warn: (message: string) => warnings.push(message),
@@ -38,6 +41,7 @@ function createManager(): WorkspaceManager {
 beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), 'storyboard-workspace-'));
   warnings = [];
+  caches = createWorkspaceCaches();
 });
 
 function writeLegacyStoryState(): void {
@@ -45,19 +49,17 @@ function writeLegacyStoryState(): void {
   writeFileSync(join(directory, '.storyboard', 'cache', 'storyState.md'), '- [1] 옛 원장\n');
 }
 
-function holdRunLockFromAnotherApp(): void {
-  const record = createWorkspaceRunLockRecord(
+async function holdRunLockFromAnotherApp(): Promise<void> {
+  await plantRunLock(
+    caches,
+    directory,
     { owner: 'vscode', label: '소설 생성', pid: 1, hostname: 'elsewhere' },
-    'extension-token',
     new Date(),
-  );
-  writeFileSync(
-    join(directory, STORYBOARD_RELATIVE_PATHS.runLock),
-    serializeWorkspaceRunLock(record),
   );
 }
 
-afterEach(() => {
+afterEach(async () => {
+  await caches.closeAll();
   rmSync(directory, { recursive: true, force: true });
 });
 
@@ -76,7 +78,7 @@ describe('WorkspaceManager', () => {
 
   it('leaves legacy memory in place while another app holds the run lock', async () => {
     writeLegacyStoryState();
-    holdRunLockFromAnotherApp();
+    await holdRunLockFromAnotherApp();
 
     const report = await createManager().prepare(NodeUri.file(directory));
 

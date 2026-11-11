@@ -40,6 +40,7 @@ import type {
   ICardWriterRepository,
 } from '#engine/application/cards/cardRepositories';
 import type { IBibleCandidateRepository } from '#engine/application/project/bibleRepositories';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 
 export interface HostAdapters {
   readonly fileSystem: IFileSystem;
@@ -48,6 +49,7 @@ export interface HostAdapters {
   readonly configBridge: ConfigBridge;
   readonly secretStore: SecretStore;
   readonly generator: string;
+  readonly caches: WorkspaceCaches;
 }
 
 export interface AiServices {

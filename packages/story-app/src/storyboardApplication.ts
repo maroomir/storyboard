@@ -65,7 +65,10 @@ import {
   SummarizeChaptersUseCase,
   UpdateProjectContractUseCase,
   UsageMeter,
+  WorkspaceCaches,
+  WorkspaceRunLocks,
   type IFileSystem,
+  type ISqlDatabaseHost,
   type IStoryboardLogger,
   type IUsageSink,
   type IWorkspaceLocator,
@@ -110,6 +113,7 @@ export interface StoryboardApplicationDependencies {
   readonly logger: IStoryboardLogger;
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
+  readonly sqlDatabaseHost: ISqlDatabaseHost;
   readonly usageLedger?: IUsageSink;
   readonly resourceRoots?: readonly StoryUri[];
   readonly fetch?: NoteHttpFetch;
@@ -128,6 +132,8 @@ interface EngineGraph {
   readonly secretStore: SecretStore;
   readonly fileSystem: IFileSystem;
   readonly logger: IStoryboardLogger;
+  readonly caches: WorkspaceCaches;
+  readonly runLocks: WorkspaceRunLocks;
   readonly usageMeter: UsageMeter;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
@@ -201,6 +207,7 @@ export class StoryboardApplication {
   public readonly fileSystem: IFileSystem;
   public readonly usageMeter: UsageMeter;
   public readonly postGenerationUpdates: PostGenerationUpdateManager;
+  private readonly caches: WorkspaceCaches;
   public constructor(
     dependencies: StoryboardApplicationDependencies,
     options: StoryboardApplicationOptions,
@@ -215,7 +222,7 @@ export class StoryboardApplication {
     this.notes = new NoteManager(services);
     this.interviews = new InterviewManager(services);
     this.project = new ProjectManager(services);
-    this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
+    this.runGate = new RunGate({ runLocks: services.runLocks, owner: options.lockOwner });
     this.resourceRoots = dependencies.resourceRoots ?? [];
     this.workspace = new WorkspaceManager({
       fileSystem: services.fileSystem,
@@ -232,6 +239,7 @@ export class StoryboardApplication {
     this.fileSystem = services.fileSystem;
     this.usageMeter = services.usageMeter;
     this.postGenerationUpdates = services.postGenerationUpdates;
+    this.caches = services.caches;
   }
 
   public loadResourceOverrides(): Promise<ResourceOverrideReport> {
@@ -259,8 +267,9 @@ export class StoryboardApplication {
     });
   }
 
-  public dispose(): void {
+  public async dispose(): Promise<void> {
     this.postGenerationUpdates.dispose();
+    await this.caches.closeAll();
   }
 }
 
@@ -283,6 +292,11 @@ function buildServices(
   );
   const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
   const postGenerationUpdates: PostGenerationUpdateManager = new PostGenerationUpdateManager();
+  const caches: WorkspaceCaches = new WorkspaceCaches({
+    host: dependencies.sqlDatabaseHost,
+    fileSystem,
+  });
+  const runLocks: WorkspaceRunLocks = new WorkspaceRunLocks({ caches });
 
   const host: HostAdapters = {
     fileSystem,
@@ -291,6 +305,7 @@ function buildServices(
     configBridge,
     secretStore,
     generator,
+    caches,
   };
   const ai: AiServices = { gateway: aiGateway, providerRegistry: aiProviderRegistry, usageSink };
   const repositories: WorkspaceRepositories = buildWorkspaceRepositories(
@@ -325,6 +340,8 @@ function buildServices(
     secretStore,
     fileSystem,
     logger,
+    caches,
+    runLocks,
     usageMeter,
     postGenerationUpdates,
     bibleCandidateRepository: repositories.bibleCandidates,

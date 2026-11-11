@@ -5,6 +5,7 @@ import * as esbuild from 'esbuild';
 
 import { aliasesFromTsconfig } from '../../scripts/aliases.mjs';
 import { writeRuntimeManifest } from '../../scripts/runtimeManifest.mjs';
+import { copySqliteWasm } from '../../scripts/sqliteWasm.mjs';
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,7 +31,10 @@ await esbuild.build({
     js: [
       '#!/usr/bin/env node',
       "import { createRequire as __storyboardCreateRequire } from 'node:module';",
+      "import { dirname as __storyboardDirname } from 'node:path';",
+      "import { fileURLToPath as __storyboardFileURLToPath } from 'node:url';",
       'const require = __storyboardCreateRequire(import.meta.url);',
+      'const __dirname = __storyboardDirname(__storyboardFileURLToPath(import.meta.url));',
     ].join('\n'),
   },
   alias: {
@@ -38,6 +42,8 @@ await esbuild.build({
     'react-devtools-core': path.join(packageRoot, 'scripts/stubs/react-devtools-core.js'),
   },
 });
+
+copySqliteWasm(path.join(packageRoot, 'dist'));
 
 // The CLI bundle has no externals; the manifest still ships so both tarballs have the same shape.
 writeRuntimeManifest(packageRoot, []);

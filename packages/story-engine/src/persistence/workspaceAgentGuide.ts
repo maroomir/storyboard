@@ -18,7 +18,7 @@ export function createWorkspaceAgentGuide(): string {
   작품 계약(\`.storyboard/project.json\`)은 \`storyboard project set\`으로만 바꾼다.
 - **설정·프로바이더·모델·예산은 바꾸지 마라.** \`storyboard config set\`, \`storyboard setup\`,
   \`storyboard apikey set\`은 사람이 한다.
-- 한 워크스페이스에 쓰기 프로세스는 하나다. 실행 잠금(\`.storyboard/cache/run.lock\`)에 막히면
+- 한 워크스페이스에 쓰기 프로세스는 하나다. 실행 잠금(\`.storyboard/cache/storyboard.db\`)에 막히면
   기다리지 말고 보고하라.
 - push 여부는 아래 «작품 메모»의 규칙을 따른다. 적혀 있지 않으면 push하지 않는다.
 

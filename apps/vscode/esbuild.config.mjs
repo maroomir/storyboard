@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 import * as esbuild from "esbuild"
 
 import { aliasesFromTsconfig } from "../../scripts/aliases.mjs"
+import { copySqliteWasm } from "../../scripts/sqliteWasm.mjs"
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url))
 const isWatchMode = process.argv.includes("--watch")
@@ -22,6 +23,8 @@ const extensionConfig = {
   target: "node18",
   alias: aliasesFromTsconfig(path.join(packageRoot, "tsconfig.json"))
 }
+
+copySqliteWasm(path.join(packageRoot, "out"))
 
 if (isWatchMode) {
   const context = await esbuild.context(extensionConfig)

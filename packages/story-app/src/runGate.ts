@@ -1,11 +1,6 @@
 import { hostname } from 'node:os';
 
-import {
-  acquireWorkspaceRunLock,
-  readWorkspaceRunLock,
-  type AcquireWorkspaceRunLockResult,
-  type IFileSystem,
-} from '@storyboard/story-engine';
+import type { AcquireWorkspaceRunLockResult, WorkspaceRunLocks } from '@storyboard/story-engine';
 import {
   describeWorkspaceRunLockHolder,
   type WorkspaceRunLockOwner,
@@ -14,7 +9,7 @@ import {
 import type { StoryUri } from '@storyboard/story-model';
 
 export interface RunGateDependencies {
-  readonly fileSystem: IFileSystem;
+  readonly runLocks: WorkspaceRunLocks;
   readonly owner: WorkspaceRunLockOwner;
 }
 
@@ -26,18 +21,17 @@ export class RunGate {
   public constructor(private readonly deps: RunGateDependencies) {}
 
   private acquire(workspaceRoot: StoryUri, label: string): Promise<AcquireWorkspaceRunLockResult> {
-    return acquireWorkspaceRunLock({
-      fileSystem: this.deps.fileSystem,
-      workspaceRoot,
-      holder: { owner: this.deps.owner, label, pid: process.pid, hostname: hostname() },
+    return this.deps.runLocks.acquire(workspaceRoot, {
+      owner: this.deps.owner,
+      label,
+      pid: process.pid,
+      hostname: hostname(),
     });
   }
 
   public async describeHolder(workspaceRoot: StoryUri): Promise<string | undefined> {
-    const holder: WorkspaceRunLockRecord | undefined = await readWorkspaceRunLock({
-      fileSystem: this.deps.fileSystem,
-      workspaceRoot,
-    });
+    const holder: WorkspaceRunLockRecord | undefined =
+      await this.deps.runLocks.readHolder(workspaceRoot);
     return holder === undefined ? undefined : describeWorkspaceRunLockHolder(holder);
   }
 

@@ -13,6 +13,7 @@ after the first public release.
 ### Changed (breaking)
 
 - **0.16 does not open 0.15 works.** A work's format version (`version` in `.storyboard/project.json`) is now `2.0.0`, and a `1.0.0` work is refused with a message that it is in the 0.15 format. Keep using 0.15.x for a 0.15 work; there is no conversion script.
+- **The run lock moved into the cache database.** The lock that keeps one writing app per work is now a table of `.storyboard/cache/storyboard.db` rather than the file `.storyboard/cache/run.lock`. The extension and the CLI open that database through the same WebAssembly SQLite.
 
 ### Internal
 
