@@ -1,0 +1,6 @@
+throughScene: c2e8a1b4-9d7c-4e3f-a2b1-0c9d8e7f6a5b
+cardHash: sha256:dbe7a1c09f3b4e2d8c7a6b5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d
+persona: 나는 먼저 말을 걸지만, 거절당하면 웃어넘긴다.
+voiceSample:
+  - {text: '야, 같이 가.', source: draft:002}
+  - {text: 뭐 어때., source: note:obsidian/elia.md}

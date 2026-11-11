@@ -72,9 +72,9 @@ const statementShape = {
     (value) => typeof value === 'string' && isStatementFacetId(value),
     { message: '알 수 없는 진술 facet 입니다.' },
   ),
-  value: trimmedTextSchema,
   key: trimmedTextSchema.optional(),
   about: elementIdSchema.optional(),
+  value: trimmedTextSchema,
   since: elementIdSchema.optional(),
   until: elementIdSchema.optional(),
   revealFrom: elementIdSchema.optional(),
@@ -131,8 +131,8 @@ export const storyStateStatementSchema: z.ZodType<StoryStateStatement> = z
       (value) => typeof value === 'string' && isStoryStateFacetId(value),
       { message: '알 수 없는 상태 facet 입니다.' },
     ),
-    value: trimmedTextSchema,
     about: elementIdSchema.optional(),
+    value: trimmedTextSchema,
     knownBy: z.array(elementIdSchema).readonly().optional(),
   })
   .strict()
