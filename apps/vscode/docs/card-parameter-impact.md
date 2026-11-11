@@ -1,99 +1,111 @@
-# 카드 파라미터 영향도 리포트 (draft 생성 기준)
+# 카드 진술 영향도 리포트 (draft 생성 기준)
 
-작성일: 2026-06-23
-대상: `CharacterCard` / `BackgroundCard`의 각 필드가 **draft 생성**에 실제로 얼마나 기여하는가
-배경: guerrila `01-first-meeting` 씬을 gt 수준으로 끌어올리는 9차 반복 튜닝 과정에서, 어떤 카드 파라미터가 결과를 움직이고 어떤 것이 무의미했는지 코드로 검증한 결과.
+대상: 번들 카드(`character/<slug>.card/`, `background/<slug>.card/`, `scene/NNN-slug.card/`)의 머리말과 진술 facet이 **draft 생성**에 어디로 닿는가.
+기준: 0.16 형식. 0.15의 카드 필드(`recentDialogues`, `tags`, `locationKind`, `characterIds` 등)는 없어졌고, 카드는 `card.yaml`(머리말)과 `statements.yaml`(진술)로 갈립니다.
 
 ## TL;DR
 
-- **카드 데이터를 draft 생성에 쓰는 핵심 프롬프트는 `PersonaGenerationPrompt`**이며, 거기서 읽는 character 필드는 `name` · `voice` · `description` · `desire` · `role` · `attributes` · `traits`(앞 10개) **7개**다. 배경은 `BackgroundDescriptionPrompt`(드로잉)가 `name`·`description`·`time`·`weather`·`senses`·`tags`를 읽는다. (2026-06-25: `attributes`(`속성:`)·`desire`(`목표:`)·배경 `time`/`weather`/`senses` 주입 추가 — 이전 character는 5개였다.)
-- `aliases`는 인물 **탐지/스코핑**에만, `background.description` / `background.tags`는 **씬에 `frontmatter.location`이 있어 배경이 부착될 때만** 쓰인다.
-- guerrila의 씬은 frontmatter가 비어 있어(`---\n---`) 배경이 부착되지 않았다 → 당시 **모든 background 필드는 생성에 0의 영향**이었다. **(2026-06-25 갱신: 배경 `name`/`aliases` 자동 탐지가 추가되어, 본문에 배경 표기형이 등장하면 frontmatter 없이도 부착된다. `aliases`를 채운 배경은 더 이상 dead가 아니다.)**
-- `relations` · `arc` · `recentDialogues` · `profile` · character `tags`는 **어떤 생성 프롬프트에서도 참조되지 않는다**(UI·그래프·hover·스냅샷 전용).
+- 카드의 내용은 **진술**입니다. 한 줄이 `{facet, value, about?, key?, source}` 이고, facet이 어디에 쓰일지를 정합니다.
+- 생성 프롬프트로 가는 길은 둘입니다. 인물 페르소나(`PersonaGenerationPrompt`)와 배경 묘사(`BackgroundDescriptionPrompt`)가 카드를 한 덩어리로 읽고, 뼈대·대사 다듬기·구간 살붙임은 입버릇·상대별 말투·배경의 배치·규칙을 따로 받습니다.
+- 인물의 `relation`(관계)과 `arc`(변화)는 생성 프롬프트에 들어가지 않습니다. 관계 그래프·뷰어·인터뷰용입니다. 관계 중 상대별 말투(`speech`)만 대사 다듬기에 들어갑니다.
+- 인물·배경이 씬에 붙는 방식: 인물은 씬의 출연(`cast`)과 비트의 `cast`, 본문에 나온 이름·별칭으로 찾고, 배경은 씬의 장소(`place`)가 가리키는 카드를 쓰되 없으면 본문에 나온 이름·별칭으로 찾습니다.
+- 씬의 설계 facet(목적·갈등·반전·감정 변화)이 생성 프롬프트에 닿는 길은 확인하지 못했습니다(아래 «씬»). 확인된 것은 종료 지점(`endState`)이 뼈대에 들어간다는 것입니다.
 
-## 검증 방법
+## 머리말과 진술
 
-데이터 흐름: `card 파일 → buildSceneContext → PersonaGenerationPrompt → 페르소나 문자열 → PersonaDialoguePrompt → GenreFormatting`.
-카드 필드가 텍스트로 들어가는 지점은 **persona 생성 한 곳**뿐이다.
-
-핵심 근거 (코드 위치):
-
-- `packages/story-ai/src/ai/prompts/personaGeneration.ts` — character에서 **`name`, `voice`, `description`, `role`, `attributes`(키 정렬), `traits`(slice 0,10)** 사용.
-- `packages/story-ai/src/ai/prompts/sceneSkeleton.ts`·`sceneSectionExpansion.ts` — `background.description`(과 살붙임의 `senses`·`time`·`weather`)을 사용.
-- `packages/story-model/src/format/sceneContext.ts` — `name` + `aliases`로 인물 **탐지**.
-- `packages/story-engine/src/pipeline/sceneGenerationPipeline.ts` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
-- `packages/story-model/src/format/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
-
-## 영향력 높은 파라미터
-
-카드 필드 중 생성에 닿는 것은 사실상 8개다(배경 부착 필드는 조건부).
-
-| 순위 | 파라미터 | 경로 | 영향 |
-|---|---|---|---|
-| 1 | **`voice`** | personaGeneration "목소리·말투" | 최대 레버. 화자의 화법·어조 전체를 좌우(만재 허세체, 은하 직설). |
-| 2 | **`aliases`** | 탐지 + 스코핑 | 임계. 없으면 인물이 씬에 아예 포함되지 않음(소스가 약칭만 쓸 때). |
-| 3 | **`name`** | 탐지 · 대사 화자 귀속 | 정체성. |
-| 4 | **`traits`** | personaGeneration "특징"(앞 10개) | 행동 패턴. |
-| 5 | **`description`** | personaGeneration "설명" | 인물 한 줄 맥락. |
-| 6 | **`role`** | personaGeneration "역할" | 약함(한 줄). |
-| 7 | **`attributes`** | personaGeneration "속성"(키 정렬) | 성별·나이·MBTI 등 압축 프라이어(2026-06-25 추가). |
-| 8 | **`desire`** | personaGeneration "목표" | 인물 동기·목표(2026-06-25 추가). |
-| 9 | `background.description` | backgroundDescription/sceneSkeleton | location/자동탐지 부착 시에만. |
-| 10 | **`background.time`·`weather`·`senses`** | backgroundDescription "시간/날씨/감각" | 드로잉 감각 묘사 입력(2026-06-25 추가), 부착 시에만. |
-| 11 | `background.tags` | backgroundDescription | 부착 시에만, 미미. |
-
-> 참고 — 실제로 가장 큰 생성 레버는 **카드 밖**에 있다: `setting.pov`, `setting.styleConstraints`, `setting.genre`(→ styleDirective), `scene.frontmatter.relationStage` / `characters` / `location`. 카드 슬림화와 별개로 이쪽이 품질에 더 크게 작용한다.
-
-## 영향력 없는 파라미터 (생성 경로에서 참조 0)
-
-| 파라미터 | 생성 | 다른 기능에서의 사용처(삭제 시 영향) |
+| 종류 | 머리말(`card.yaml`) | 진술 facet (섹션) |
 |---|---|---|
-| **`relations`** | 0 | 관계 그래프(`relationGraphData`), hover, id 리네임(`cardReferenceRewriter`) |
-| **`arc`** | 0 | 카드 에디터 UI(`CardEditor.tsx`, `ArcField.tsx`) |
-| **`recentDialogues`** | 0 | hover, **traits-updater가 자동 기록**(생성은 안 읽음) |
-| **`profile`** | 0 | 캐릭터 이미지(`CardCustomEditorProvider`), hover |
-| character **`tags`** | 0 | `sceneCache` 스냅샷, UI (persona엔 `traits`만 들어감) |
-| `background.characterIds` | 0 | — |
-| `background.locationKind` | 0 | 구조용 |
-| `arc.sceneRef` / `relations.type` (하위필드) | 0 | 그래프 · UI |
-| (이 프로젝트) **모든 background 필드** | 0→조건부 | 과거 `frontmatter.location` 부재로 미부착. 2026-06-25 자동 탐지 추가 후, 본문에 `name`/`aliases` 등장 시 부착 |
+| 인물 | `id` `slug` `kind` `name` `role`(주연/조연/단역) `attributes`(`sex` `age` `job`) `aliases` | `traits`(성격) `desire`(성격) `catchphrases`(말투) `voice`(말투) `relation`(관계) `speech`(관계) `arc`(변화) `description`(묘사) `fact`(사실) |
+| 배경 | `id` `slug` `kind` `name` `aliases` `within` | `tags` `time` `weather`(분위기) `senses`(감각) `layout`(배치) `rules`(규칙) `description`(묘사) `fact`(사실) |
+| 씬 | `id` `slug` `kind` `title` `cast` `place` `time` `targetWordCount` | `purpose` `conflict` `twist` `emotionalShift` `endState`(설계) `foreshadowing`(복선) |
+| 서술자 | `id` `slug` `kind` `name` `person` `knowledge` `tense` `focal` | `voice`(말투) `description`(묘사) `fact`(사실) |
+
+- `relation`과 `speech`는 상대를 `about`(카드 uuid)로 가리킵니다. 상대 카드를 개명해도 고칠 곳이 없습니다.
+- `fact`는 `key`가 붙을 수 있는 사실 줄이고, 카드끼리만이 아니라 작품 전체가 공유합니다.
+- 진술마다 `source`(`author` / `agent` / `studio` / `interview`)가 남고, 작가의 줄(`author`)은 에이전트가 덮지 못합니다. 줄과 출처는 `storyboard card show <slug> --sources`로 봅니다.
+- 그림은 인물·배경 번들 안의 `profile.png` 하나입니다. 페르소나·배경 기억은 번들의 `memory/<줄기>.yaml`입니다.
+
+각 facet의 소비자(`consumers`)는 `packages/story-model/src/element/` 의 `character.ts` `background.ts` `scene.ts` `commonFacets.ts` 가 적어 둡니다.
+
+## 인물 진술이 닿는 곳
+
+| facet | 생성 | 그 밖의 사용처 |
+|---|---|---|
+| `voice` | 페르소나 «목소리·말투», 대사 다듬기 | 인터뷰 |
+| `description` | 페르소나 «설명» | 인터뷰 |
+| `desire` | 페르소나 «목표» | 인터뷰 |
+| `traits` | 페르소나 «특징»(앞 10개) | 인터뷰 |
+| 머리말 `role` · `attributes` | 페르소나 «역할»·«속성» | 뷰어 머리말 |
+| `catchphrases` | 뼈대·대사 다듬기·살붙임에서 «입버릇 — 대목 하나에 통틀어 한 번까지», 반복 제한에서 제외 | — |
+| `speech` | 대사 다듬기·뼈대·살붙임의 «상대별 말투» | 인터뷰(상대별 말투 질문) |
+| `relation` | 0 | 관계 그래프, 뷰어, 카드 삭제 시 참조 정리 |
+| `arc` | 0 | 뷰어 |
+| `fact` | 그 씬의 인물 사실로 주입, 연속성 검사 | 지식 경계 |
+| 머리말 `aliases` | 인물 탐지와 상황별 페르소나 스코핑 | — |
+
+- 인물이 씬에 붙으려면 출연(`cast`)이나 비트의 `cast`에 있거나 본문에 이름·별칭이 나와야 합니다. 별칭이 약칭을 덮지 않으면 그 인물은 씬에서 빠질 수 있습니다.
+- 상태 필드(`traits` `desire` `description` `voice`)는 모든 씬 프롬프트에 함께 읽힙니다. 뒷부분 줄거리가 거기에 적히면 앞 씬이 결말을 흘립니다. 변하는 것은 `arc`에 적습니다(생성에 들어가지 않아 안전합니다).
+- `voice`는 말투의 설명입니다. 예시 대사는 복사되지 않습니다. 반복돼야 하는 입버릇은 `catchphrases`에 적습니다.
+
+## 배경 진술이 닿는 곳
+
+배경은 씬에 붙었을 때만 생성에 닿습니다. 씬의 장소(`place`)가 그 카드를 가리키거나, 본문에 이름·별칭이 나오면(가장 긴 일치 하나) 붙습니다.
+
+| facet | 생성 |
+|---|---|
+| `description` `time` `weather` `senses` `tags` | 배경 묘사(`BackgroundDescriptionPrompt`)의 입력. 그 결과가 뼈대에 들어갑니다 |
+| `layout` `rules` | 뼈대 프롬프트의 «배치»·«규칙» |
+| `fact` | 그 씬의 장소 사실로 주입, 연속성 검사 |
+| 머리말 `aliases` | 본문에서 배경을 찾는 표기형 |
+| 머리말 `within` | 생성에는 쓰이지 않고, 뷰어 머리말에 «<상위 장소> 안»으로 보입니다 |
+
+0.15의 `locationKind`와 `characterIds`는 없어졌습니다. 어느 씬의 장소도 아닌 배경은 `doctor`가 안내로 알립니다.
+
+## 씬
+
+씬은 번들 하나에 파일이 여럿입니다.
+
+| 파일 | 내용 |
+|---|---|
+| `card.yaml` | 제목·출연(`cast`)·장소(`place`)·시간·목표 분량 |
+| `statements.yaml` | 설계 진술(목적·갈등·반전·감정 변화·종료 지점·회수할 복선) |
+| `beats.yaml` | 비트 `{text, cast?, place?, time?}` (출연·장소는 카드 참조) |
+| `dialogue.json` | 씬 대사 |
+| `state.yaml` | 이 씬에서 확정된 이야기 상태(`event` `relationShift` `reveal` `motif`)와 입력 해시 |
+| `summary.md` | 씬 요약 |
+
+- 생성의 중심은 **비트**입니다. 뼈대가 비트의 `text`를 서사 원천으로 받고, 비트의 `cast`·`place`·`time`이 좌표가 됩니다.
+- `purpose` `conflict` `twist` `emotionalShift`는 씬 본문의 `[목적]`·`[갈등]`·`[반전]`·`[감정 변화]` 블록이 되어(`sceneProjection.ts` → `renderSceneCardBody`) 비트 전개와 초안 프롬프트에 함께 들어갑니다.
+- `endState`는 뼈대(마지막 구간)에 들어가 씬이 다음 씬 영역으로 넘어가지 않게 합니다.
+- `foreshadowing`은 원고 조립(`manuscriptAssembly`) 소비자로 적혀 있습니다.
+- 0.15의 `summary`(→ `summary.md`), `povCharacter`, `mood`, `relationStage`(→ `state.yaml`의 `relationShift`)는 씬 필드가 아닙니다. 사실 시트(사건·장소·시점·관계)와 `neededCanon`은 저장하지 않고 카드에서 파생합니다.
+- 시점은 씬 → 장(`chapters.yaml`) → 프로젝트 순으로 풀리고, 서술자와 줄기는 `.storyboard/structure.yaml`에 있습니다.
 
 ## 권고
 
-1. **생성 품질 투자처는 좁다**: `voice` · `aliases` · `traits` · `description`(+`name`/`role`)에만 집중하면 된다. 나머지 카드 필드를 채우는 것은 draft 품질에 무의미하다.
-2. **삭제는 노이즈 제거가 아니다**: 위 "영향력 없는" 필드는 애초에 프롬프트에 주입되지 않으므로, 채워도 생성에 노이즈를 더하지 않는다. 즉 *지운다고 draft가 좋아지지 않는다*. 지우는 동기는 "스키마/입력 작업 단순화"여야 한다.
-3. **하드 삭제 비용**: `relations`(그래프) · `arc`(에디터) · `recentDialogues`(hover/자동기록) · `attributes`/`profile`/`tags`(UI/스냅샷)는 다른 코드가 읽는다. 스키마에서 제거하려면 그 UI/그래프/hover/sceneCache 코드도 함께 정리해야 한다.
-4. **무비용 축소**: 생성 목적의 채움을 중단하는 것은 즉시 무비용(draft 영향 0). 진짜 스키마 슬림화는 별도 리팩터링 과제로 분리할 것.
-5. **background 자동 탐지(2026-06-25 구현됨)**: 이제 `frontmatter.location`이 없어도 본문에서 배경 `name`/`aliases`를 탐지해 부착한다. 배경 `aliases`에 본문 표기형을 넣으면 `description`/`tags`가 생성에 닿는다. 소스 씬을 고치지 않고도 배경을 살릴 수 있다.
+1. **생성 품질에 닿는 칸은 좁다**: 인물은 `voice` `description` `desire` `traits`와 `catchphrases` `speech`, 배경은 `description` `senses` `layout` `rules`, 씬은 비트와 `endState`입니다.
+2. **관계와 변화는 생성 밖이다**: `relation`·`arc`를 채워도 draft는 변하지 않습니다. 말투가 필요하면 `speech`에 적습니다.
+3. **사실은 `fact` 진술로 한 곳에 적는다**: 따로 정전(canon) 파일은 없습니다. 장편에서 일관돼야 하는 설정은 그 인물·장소 카드의 `fact`입니다.
+4. **카드는 동사로 고친다**: `card set`·`card edit`·스튜디오·인터뷰·노트 흡수가 `statements.yaml`을 씁니다. 파일을 손으로 고치면 «엔진 밖에서 바뀐 카드» 경고와 함께 읽힙니다.
 
-## 입력 주체 분류 (수기 vs AI 자동)
+## 입력 주체
 
-생성 영향도와 별개로, 각 필드를 **누가 채우는가**로 나눈다. 카드 에디터(`webview-ui`)는 이 분류를 따른다:
-수기 필드는 `편집` 탭에 단일 목록형으로 노출하고, AI 자동 필드는 스키마/YAML에 유지하되 입력란을 두지 않는다.
+진술의 `source`가 누가 채웠는지를 말합니다. 스튜디오 뷰어는 줄의 출처를 싣지 않고, 터미널의 `card show --sources`가 줄 번호와 출처를 보입니다.
 
-| 구분 | 캐릭터 | 배경 |
-|---|---|---|
-| **수기 입력** (작가 의도·정체성) | `id`(읽기전용)·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile` | `type`·`id`(읽기전용)·`name`·`description`·`tags`·`locationKind`(location) |
-| **AI 자동 갱신** (이야기 진행 누적) | `traits`·`recentDialogues`·`attributes`·`arc`·`relations` | `characterIds` |
+| 출처 | 들어오는 길 |
+|---|---|
+| `author` | `card set`(사람이 답할 수 있는 실행) |
+| `agent` | `card set`(에이전트 실행) |
+| `studio` | 스튜디오의 만들기·고치기, «씬 기반 카드 구성», `card build` |
+| `interview` | 인터뷰 증류(카드의 기다리는 제안으로 남았다가 «적용») |
 
-`voice`·`description`(캐릭터)와 `description`(배경)은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. 프롬프트·해시 등 텍스트가 필요한 경계에서는 `joinCardText`로 결합하므로 하류 계약은 문자열을 유지한다.
+생성은 카드에 쓰지 않습니다. 초안을 만든 뒤 특성·최근 대사·등장 인물을 카드에 쌓던 일과 그 후보 승격은 없어졌습니다.
 
-자동 갱신은 `storyboard.draft.updateCardsAfterGenerate`(기본 off)가 켜진 경우에만 동작하며, 방식은 두 가지다.
+## 부록: 코드 사용처
 
-| 필드 | 자동화 방식 | 코드 |
-|---|---|---|
-| `traits`·`recentDialogues` | 카드에 직접 기록(append) | `src/infrastructure/ai/traitsUpdater.ts` |
-| 배경 `characterIds` | 부착 배경 카드에 등장 인물 id를 결정적 append | `src/infrastructure/ai/backgroundCharacterUpdater.ts` |
-| `attributes`·`arc`·`relations` | AI 추출 → `.storyboard/cache/cards/<scene>.json` 후보 → `Promote Card Candidates`로 승격 | `src/infrastructure/ai/cardCandidateUpdater.ts`, `src/domain/cardCandidatePromotion.ts` |
-
-- `arc`·`relations`는 카드 에디터 `AI 기록` 탭에서 **읽기 전용 시각화**(아크 곡선·관계 미리보기)로 표시된다.
-- 환각 완화: 후보는 승격 게이트를 거치고, relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
-- 추출 후 자기검증: `storyboard.draft.verifyCardCandidates`(기본 on)가 켜지면, 캐시에 적재하기 전에 각 후보가 본문에 명시되었는지 인물별 1회 재확인해 명시된 항목만 남긴다(검증 호출 실패 시에는 추출 결과를 그대로 유지). 인물당 검증 호출 1회가 추가된다.
-- 승격 후 정리: `Promote Card Candidates`로 카드에 반영된 후보는 캐시(`.storyboard/cache/cards/<scene>.json`)에서 제거되고, 남은 후보가 없는 파일은 삭제된다. 같은 항목이 다음 승격 목록에 다시 뜨지 않는다(bible 후보는 보존되는 것과 대비된다).
-
-## 부록: 필드별 코드 사용처 요약
-
-- 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `desire`, `role`, `attributes`, `traits`
-- 생성(배경, 조건부): `backgroundDescription.ts` → `name`, `description`, `time`, `weather`, `senses`, `tags`; 결과 분위기는 `sceneSkeleton.ts`에 주입
-- 탐지/스코핑: `sceneContext.ts`, `sceneGenerationPipeline.ts` → `name`, `aliases`
-- UI/그래프/hover/스냅샷 전용(생성 무관): `relations`, `arc`, `recentDialogues`, `profile`, character `tags`, `background.characterIds`, `background.locationKind`
+- 페르소나: `packages/story-ai/src/ai/prompts/personaGeneration.ts` → `name` `voice` `description` `desire` `role` `attributes` `traits`
+- 배경 묘사: `backgroundDescription.ts` → `name` `description` `time` `weather` `senses` `tags`; 뼈대의 `layout`·`rules`는 `sceneSkeleton.ts`
+- 입버릇·상대별 말투: `characterCatchphrases.ts` `sceneBeatBlocks.ts` `sceneDialoguePolish.ts`, 상대별 말투 조립은 `packages/story-engine/src/pipeline/scene/characterVoices.ts`
+- 인물 탐지·스코핑: `packages/story-model/src/format/sceneContext.ts`, `packages/story-engine/src/pipeline/beatActors.ts`
+- 번들 ↔ 카드 투영: `packages/story-model/src/domain/cardProjection.ts`
+- facet 어휘: `packages/story-model/src/element/`

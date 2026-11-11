@@ -16,7 +16,7 @@
       <rect x="256" y="40" width="190" height="96" rx="4" fill="#e3eef6" stroke="#2f6f9f" stroke-width="1.5"/>
       <text x="268" y="60" font-weight="600" font-size="13">② characters 인물 카드</text>
       <text x="268" y="80" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">outlineCharacters</text>
-      <text x="268" y="110" font-size="11" fill="#6b655a">→ character/*.card</text>
+      <text x="268" y="110" font-size="11" fill="#6b655a">→ character/*.card/ 번들</text>
       <text x="268" y="124" font-size="11" fill="#6b655a">  (있는 카드는 건너뜀)</text>
     </g>
     <line x1="446" y1="88" x2="488" y2="88" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
@@ -24,8 +24,8 @@
       <rect x="492" y="40" width="190" height="96" rx="4" fill="#e3eef6" stroke="#2f6f9f" stroke-width="1.5" stroke-dasharray="5 3"/>
       <text x="504" y="60" font-weight="600" font-size="13">③ seeds 씬 시드</text>
       <text x="504" y="80" font-size="11">AI 호출 없음 (코드)</text>
-      <text x="504" y="110" font-size="11" fill="#6b655a">chapters.yaml의 씬마다</text>
-      <text x="504" y="124" font-size="11" fill="#6b655a">→ scene/NNN-*.card</text>
+      <text x="504" y="110" font-size="11" fill="#6b655a">씬 계획의 씬마다</text>
+      <text x="504" y="124" font-size="11" fill="#6b655a">→ scene/NNN-*.card/ 번들</text>
     </g>
     <line x1="682" y1="88" x2="724" y2="88" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
     <g>
@@ -53,7 +53,7 @@
       <text x="872" y="196" font-weight="600" font-size="13">⑥ review 원고 최종 검사</text>
       <text x="872" y="216" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">continuityCheck  (장 창마다)</text>
       <text x="872" y="232" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">draftCritique    (장 창마다)</text>
-      <text x="872" y="256" font-size="11" fill="#6b655a">입력: 원고 + 장 요약 + 캐넌</text>
+      <text x="872" y="256" font-size="11" fill="#6b655a">입력: 원고 + 장 요약 + 카드의 사실</text>
       <text x="872" y="272" font-size="11" fill="#6b655a">→ review.md, high 지적은 씬별로 묶음</text>
     </g>
     <line x1="860" y1="231" x2="818" y2="231" stroke="#221f1a" stroke-width="1.5" marker-end="url(#a1)"/>
@@ -74,8 +74,8 @@
       <rect x="300" y="176" width="216" height="110" rx="4" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="1.5"/>
       <text x="312" y="196" font-weight="600" font-size="13">⑧ summaries 장별 요약</text>
       <text x="312" y="216" font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace" font-size="11">chapterSummary  (장마다)</text>
-      <text x="312" y="244" font-size="11" fill="#6b655a">→ .storyboard/memory/</text>
-      <text x="312" y="260" font-size="11" fill="#6b655a">   chapter-summaries.md</text>
+      <text x="312" y="244" font-size="11" fill="#6b655a">→ 캐시 DB</text>
+      <text x="312" y="260" font-size="11" fill="#6b655a">   chapter_summaries 표</text>
       <text x="312" y="276" font-size="11" fill="#6b655a">다음 생성의 "지금까지 이야기"</text>
     </g>
     <!-- summaries feeding back to chapters -->
@@ -84,6 +84,6 @@
     <text x="640" y="172" font-size="10" fill="#6a7f2f" text-anchor="middle">장 요약은 다음 씬 프롬프트의 맥락으로 되돌아감</text>
     <!-- memory stripe -->
     <rect x="20" y="360" width="1200" height="28" rx="3" fill="#ebf0dc" stroke="#6a7f2f" stroke-width="1"/>
-    <text x="620" y="378" font-size="11" text-anchor="middle">공유 기억: character/·background/ 카드, bible/canon.md, memory/story-state.md(이야기 상태 원장), chapter-summaries.md — 모든 단계가 읽고, 3층이 씁니다</text>
+    <text x="620" y="378" font-size="11" text-anchor="middle">공유 기억: character/·background/ 카드 번들(진술·memory/), scene/*.card/state.yaml(이야기 상태 원장), 캐시 DB의 chapter_summaries — 모든 단계가 읽고, 3층이 씁니다</text>
   </g>
 </svg>
