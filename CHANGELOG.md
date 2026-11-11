@@ -29,10 +29,12 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **장별 요약을 커밋하지 않습니다.** `.storyboard/memory/summaries.md`(와 줄기별 사본)가 캐시 DB 의 `chapter_summaries` 표로 내려갔습니다. 초안이 바뀌어 낡은 요약은 표시하는 대신 지워지고, 확장의 «Summarize Chapters» 는 요약을 파일 대신 새 편집기 창으로 보여 줍니다. 이로써 `.storyboard/memory/` 폴더는 쓰이지 않고, `init` 이 그 폴더와 `character/profile/` 을 만들지 않으며, 0.8 이전 작품의 기억을 옮기던 일도 없어졌습니다.
 - **장 요약이 비어 있으면 초안을 쓰기 전에 다시 만듭니다.** 캐시를 비웠거나 낡아 지워진 앞 장의 요약이 없으면, 씬 초안을 만들기 직전에 그 장들을 먼저 요약합니다(이미 최신인 초안은 건드리지 않음). `draft generate --all`·`novel generate` 의 진행 확인(TUI)에 «장 요약 N개를 다시 요약합니다»가 함께 나옵니다. 그만큼 유료 호출이 늘어납니다.
 - **초안 판본이 캐시로 내려갔습니다.** 덮어쓰기 전 초안(`editor.draft.keepHistory`)이 `.draft/<씬>/` 대신 `.storyboard/cache/revisions/<씬 uuid>/` 에 씬마다 최근 10판까지 남고, 그보다 오래된 판은 지워집니다. 씬 이름을 바꿔도 판본은 옮길 것이 없습니다. 새 작품의 `.gitignore` 에서 `.draft/` 줄이 빠졌습니다.
+- **씬 번호를 다시 매기는 저널이 캐시 DB 로 옮겨 갔습니다.** 씬 폴더와 초안의 이름을 바꾸는 단계가 `.storyboard/cache/scene-rename.json` 대신 캐시 DB 의 `journal` 표에 적히고, 끊긴 작업은 다음 씬 쓰기 동사나 `init --repair` 가 이어서 끝냅니다. doctor 는 끊긴 저널을 «씬 번호 다시 매기기» 실패로 알립니다.
 
 ### 내부
 
 - **스튜디오 중심 설계의 토대를 놓았습니다.** 요소 네 종류(인물·배경·씬·서술자)의 진술 어휘(진술 facet 21개와 섹션, 상태 어휘)와 진술 스키마, 작가 줄을 덮지 않는 병합 규칙, 종류별 머리말을 `story-model` 의 새 층 `element/` 에 두었습니다. 번들 폴더 경로(`<종류>/<slug>.card/`, 씬은 구조 순서에서 나온 세 자리 번호 `NNN-slug`), `.storyboard/structure.yaml`(줄기와 작품 전체의 씬 순서), 씬 번호 파생과 개명 계획, slug·번호를 uuid 로 푸는 규칙, 번들 파일 코덱과 왕복 fixture 를 더했습니다. 영구층으로 캐시 DB `.storyboard/cache/storyboard.db`(아홉 표와 schema_version, 두 앱이 함께 쓰는 WebAssembly SQLite), 번들 단위 저장소(엔진 밖에서 바뀐 카드는 경고하고 읽고, 복사된 uuid 의 폴더에는 쓰지 않음), 기억·비트·상태 파일과 구조 순서로 잇는 줄기 원장, 씬 uuid 아래 최근 10판의 초안 판본을 더했습니다. 아직 엔진과 두 앱은 옛 파일을 읽고 씁니다.
+- **씬 끼우기·옮기기·지우기를 엔진에 더했습니다.** 매니저 동사 `drafts.moveScene`(다른 씬 뒤로, 그 씬의 장으로)·`drafts.removeScene`(번들·초안·판본·씬 캐시를 지움)과 `drafts.createScene` 의 `after` 가 구조 파일을 고치고 뒤 씬들의 번호를 저널로 다시 매깁니다. CLI 동사는 아직 없습니다.
 
 ## [0.15.4] - 2026-11-13
 

@@ -163,33 +163,47 @@ export class WorkspaceScenes {
     return scene;
   }
 
-  public async renameSlug(workspaceRoot: StoryUri, stem: string, slug: string): Promise<string> {
+  public async writeSlug(workspaceRoot: StoryUri, stem: string, slug: string): Promise<void> {
     const found: SceneRosterEntry | undefined = await this.find(workspaceRoot, stem);
     if (found === undefined) {
       throw new Error(`씬이 없습니다: ${stem}`);
     }
 
-    const directoryName: string = formatBundleDirectoryName('scene', {
-      slug,
-      sceneNumber: found.file.order,
-    });
-    const fromUri: StoryUri = joinStoryPath(workspaceRoot, ...found.path.split('/'));
-    const toUri: StoryUri = joinStoryPath(
-      workspaceRoot,
-      STORYBOARD_RELATIVE_PATHS.sceneDirectory,
-      directoryName,
-    );
     this.rosters.clear();
-    await this.copyDirectory(fromUri, toUri);
-    await this.dependencies.fileSystem.delete(fromUri);
-    (await this.openIndex(workspaceRoot)).remove(found.path);
     await (await this.openRepository(workspaceRoot)).writeBundle('scene', {
-      directoryName,
+      directoryName: directoryNameOf(found.path),
       header: { ...found.content.header, slug },
       statements: found.content.statements,
     });
+  }
 
-    return stemOfDirectory(directoryName);
+  public async readStructure(workspaceRoot: StoryUri): Promise<StoryStructure> {
+    return (await this.structureRepository(workspaceRoot).read()) ?? emptyStructure();
+  }
+
+  public async writeStructure(workspaceRoot: StoryUri, structure: StoryStructure): Promise<void> {
+    this.rosters.clear();
+    await this.structureRepository(workspaceRoot).write(structure);
+  }
+
+  public async relocateBundle(
+    workspaceRoot: StoryUri,
+    fromRelativePath: string,
+    toRelativePath: string,
+  ): Promise<void> {
+    this.rosters.clear();
+    const fromUri: StoryUri = joinStoryPath(workspaceRoot, ...fromRelativePath.split('/'));
+    await this.copyDirectory(fromUri, joinStoryPath(workspaceRoot, ...toRelativePath.split('/')));
+    await this.dependencies.fileSystem.delete(fromUri);
+    (await this.openIndex(workspaceRoot)).remove(fromRelativePath);
+  }
+
+  public async removeBundle(workspaceRoot: StoryUri, relativePath: string): Promise<void> {
+    this.rosters.clear();
+    await this.dependencies.fileSystem.delete(
+      joinStoryPath(workspaceRoot, ...relativePath.split('/')),
+    );
+    (await this.openIndex(workspaceRoot)).remove(relativePath);
   }
 
   public async writeBeatsByUri(sceneUri: StoryUri, beats: readonly SceneBeat[]): Promise<void> {

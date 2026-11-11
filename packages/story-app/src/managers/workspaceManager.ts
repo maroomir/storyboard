@@ -12,6 +12,9 @@ import {
   type WorkspaceCards,
   type WorkspaceScenes,
   type ChapterSummaryLedger,
+  SceneRenumberer,
+  type SceneRenameJournal,
+  type WorkspaceCaches,
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import {
@@ -32,11 +35,13 @@ export interface WorkspaceManagerDependencies {
   readonly cards: WorkspaceCards;
   readonly scenes: WorkspaceScenes;
   readonly summaries: ChapterSummaryLedger;
+  readonly caches: WorkspaceCaches;
 }
 
 export interface WorkspaceRepairResult {
   readonly addedAgentGuides: readonly string[];
   readonly sealedSceneOrders: readonly number[];
+  readonly hasResumedSceneRenumbering: boolean;
 }
 
 const nothingSealedWhileTheProjectIsUnreadable: readonly number[] = [];
@@ -54,6 +59,9 @@ export class WorkspaceManager {
 
     await initializer.createDirectories(paths);
     await initializer.ensureGitignore(paths.gitignore);
+    const hasResumedSceneRenumbering: boolean = await this.createSceneRenumberer().resume(
+      workspaceRoot,
+    );
     const addedAgentGuides: string[] = await initializer.writeAgentGuidesIfMissing(paths);
     const project: StoryboardProject | undefined = await this.readProject(paths).catch(
       () => undefined,
@@ -63,7 +71,21 @@ export class WorkspaceManager {
         ? nothingSealedWhileTheProjectIsUnreadable
         : await this.createStoryMemoryAuditor(paths, project).seal();
 
-    return { addedAgentGuides, sealedSceneOrders };
+    return { addedAgentGuides, sealedSceneOrders, hasResumedSceneRenumbering };
+  }
+
+  public findUnfinishedSceneRenumbering(
+    workspaceRoot: StoryUri,
+  ): Promise<SceneRenameJournal | undefined> {
+    return this.createSceneRenumberer().findUnfinished(workspaceRoot);
+  }
+
+  private createSceneRenumberer(): SceneRenumberer {
+    return new SceneRenumberer({
+      fileSystem: this.deps.fileSystem,
+      caches: this.deps.caches,
+      scenes: this.deps.scenes,
+    });
   }
 
   public async prepare(_workspaceRoot: StoryUri): Promise<ResourceOverrideReport> {

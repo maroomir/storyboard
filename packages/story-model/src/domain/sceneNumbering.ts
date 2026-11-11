@@ -182,3 +182,7 @@ export function expectedSceneDirectoryName(
     ? undefined
     : formatBundleDirectoryName('scene', { slug, sceneNumber });
 }
+
+export function isSceneRenameHoldingPath(relativePath: string): boolean {
+  return (relativePath.split('/').at(-1) ?? relativePath).startsWith(renamingPrefix);
+}

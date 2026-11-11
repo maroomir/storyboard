@@ -6,7 +6,9 @@ import {
   outlineOfChapterPlan,
   parseChapterOutline,
   parseChapterPlan,
+  placeSceneAfterInOutline,
   projectChapterPlan,
+  removeSceneFromOutline,
   scenePlanOfScene,
   serializeChapterOutline,
   serializeChapterPlan,
@@ -86,6 +88,36 @@ export class ChapterOutlineStore {
     );
     if (await this.dependencies.fileSystem.exists(paths.pendingChapterPlan)) {
       await this.dependencies.fileSystem.delete(paths.pendingChapterPlan);
+    }
+  }
+
+  public async removeScene(workspaceRoot: StoryUri, sceneId: string): Promise<void> {
+    await this.rewriteOutline(workspaceRoot, (outline) => removeSceneFromOutline(outline, sceneId));
+  }
+
+  public async placeSceneAfter(
+    workspaceRoot: StoryUri,
+    sceneId: string,
+    afterSceneId: string | undefined,
+  ): Promise<void> {
+    await this.rewriteOutline(workspaceRoot, (outline) =>
+      placeSceneAfterInOutline(outline, sceneId, afterSceneId),
+    );
+  }
+
+  private async rewriteOutline(
+    workspaceRoot: StoryUri,
+    transform: (outline: ChapterOutline) => ChapterOutline,
+  ): Promise<void> {
+    const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
+    if (!(await this.dependencies.fileSystem.exists(paths.outlineChapters))) {
+      return;
+    }
+
+    const outline: ChapterOutline = parseChapterOutline(await this.readText(paths.outlineChapters));
+    const rewritten: ChapterOutline = transform(outline);
+    if (rewritten !== outline) {
+      await this.writeText(paths.outlineChapters, serializeChapterOutline(rewritten));
     }
   }
 

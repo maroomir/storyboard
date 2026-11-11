@@ -160,12 +160,10 @@ describe('RenameSceneUseCase', () => {
 
   it('finishes a rename that was cut off by running it again', async () => {
     expect(await rename('003-moon-market', new FailingFileSystem(2))).toMatchObject({ ok: false });
-    expect(has('.storyboard/cache/scene-rename.json')).toBe(true);
     expect(has(`scene/${fromStem}.card`)).toBe(true);
 
     expect(await rename('003-moon-market')).toMatchObject({ ok: true, kind: 'renamed' });
     expect(has(`scene/${fromStem}.card`)).toBe(false);
-    expect(has('.storyboard/cache/scene-rename.json')).toBe(false);
     expect(has(`draft/${fromStem}.md`)).toBe(false);
     expect(parseDraft(read('draft/003-moon-market.md')).sceneStem).toBe('003-moon-market');
   });

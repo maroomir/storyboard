@@ -86,3 +86,61 @@ export function serializeChapterOutline(outline: ChapterOutline): string {
     sortKeys: false,
   });
 }
+
+function mapOutlineChapters(
+  outline: ChapterOutline,
+  transform: (chapter: ChapterOutlineChapter) => ChapterOutlineChapter,
+): ChapterOutline {
+  return {
+    ...outline,
+    acts: outline.acts.map((act) => ({ ...act, chapters: act.chapters.map(transform) })),
+  };
+}
+
+function isSceneListed(outline: ChapterOutline, sceneId: string): boolean {
+  return outline.acts.some((act) =>
+    act.chapters.some((chapter) => chapter.scenes.includes(sceneId)),
+  );
+}
+
+export function removeSceneFromOutline(outline: ChapterOutline, sceneId: string): ChapterOutline {
+  return mapOutlineChapters(outline, (chapter) => ({
+    ...chapter,
+    scenes: chapter.scenes.filter((id) => id !== sceneId),
+  }));
+}
+
+function prependToFirstChapter(outline: ChapterOutline, sceneId: string): ChapterOutline {
+  let isPlaced: boolean = false;
+
+  return mapOutlineChapters(outline, (chapter) => {
+    if (isPlaced) {
+      return chapter;
+    }
+
+    isPlaced = true;
+    return { ...chapter, scenes: [sceneId, ...chapter.scenes] };
+  });
+}
+
+export function placeSceneAfterInOutline(
+  outline: ChapterOutline,
+  sceneId: string,
+  afterSceneId: string | undefined,
+): ChapterOutline {
+  const isTargetListed: boolean =
+    afterSceneId === undefined || isSceneListed(outline, afterSceneId);
+  if (!isSceneListed(outline, sceneId) || !isTargetListed) {
+    return outline;
+  }
+
+  const withoutScene: ChapterOutline = removeSceneFromOutline(outline, sceneId);
+  if (afterSceneId === undefined) {
+    return prependToFirstChapter(withoutScene, sceneId);
+  }
+
+  return mapOutlineChapters(withoutScene, (chapter) => ({
+    ...chapter,
+    scenes: chapter.scenes.flatMap((id) => (id === afterSceneId ? [id, sceneId] : [id])),
+  }));
+}
