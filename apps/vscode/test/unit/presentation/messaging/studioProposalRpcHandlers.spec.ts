@@ -4,9 +4,11 @@ import * as vscode from "vscode"
 import { createMemoryRevisionPlans } from "../../../stubs/caches"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import type { StudioManager } from "@storyboard/story-app"
 import {
   DraftHistoryArchiver,
   StudioContextRepository,
+  StudioProposalApplier,
   hashBaseline,
   type HostAdapters
 } from "@storyboard/story-engine"
@@ -109,21 +111,41 @@ const followUpRepository = {
   }
 }
 
+function createStudioProposals(): Pick<StudioManager, "prepareProposal" | "applyProposal"> {
+  const fileStore = (): Record<string, string> => Object.fromEntries(files)
+  const writeFile = (path: string, text: string): void => void files.set(path, text)
+  const applier = new StudioProposalApplier({
+    fileSystem: vscodeFileSystem,
+    logger: harnessLogger,
+    context: new StudioContextRepository(
+      vscodeFileSystem,
+      createMemoryRevisionPlans(),
+      cardsFromFiles(fileStore, writeFile),
+      scenesFromFiles(fileStore, writeFile)
+    ),
+    followUps: followUpRepository,
+    revisions: new DraftHistoryArchiver({
+      fileSystem: vscodeFileSystem,
+      configBridge,
+      scenes: scenesFromFiles(fileStore)
+    } as unknown as HostAdapters),
+    createFollowUpId: (): string => "follow-1"
+  })
+
+  return {
+    prepareProposal: (root, entity, turn) => applier.prepare(root, entity, turn),
+    applyProposal: (root, entity, turn) => applier.apply(root, entity, turn)
+  }
+}
+
 function bridgeWith(): FakeWebview {
   const webview = new FakeWebview()
   createWebviewBridge(
     webview,
     new StudioProposalRpc({
       reviewService,
-      followUpRepository,
-      drafts: {
-        archiveDraftWhenHistoryIsKept: (root, stem): Promise<string | undefined> =>
-          new DraftHistoryArchiver({ fileSystem: vscodeFileSystem, configBridge, scenes: scenesFromFiles(() => Object.fromEntries(files)) } as unknown as HostAdapters).archiveWhenHistoryIsKept(root, stem)
-      },
-      studio: { context: new StudioContextRepository(vscodeFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text)), scenesFromFiles(() => Object.fromEntries(files), (path, text) => void files.set(path, text))) },
-      logger: harnessLogger,
-      getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot,
-      createFollowUpId: (): string => "follow-1"
+      studio: createStudioProposals(),
+      getProjectRoot: async (): Promise<typeof workspaceRoot> => workspaceRoot
     }).handlers()
   )
   return webview
@@ -168,6 +190,15 @@ beforeEach((): void => {
 
   vi.spyOn(vscode.workspace.fs, "writeFile").mockImplementation(async (uri, content) => {
     files.set(String((uri as { fsPath: string }).fsPath), new TextDecoder().decode(content))
+  })
+
+  vi.spyOn(vscode.workspace.fs, "rename").mockImplementation(async (source, target) => {
+    const sourcePath = String((source as { fsPath: string }).fsPath)
+    const content = files.get(sourcePath)
+    if (content !== undefined) {
+      files.delete(sourcePath)
+      files.set(String((target as { fsPath: string }).fsPath), content)
+    }
   })
 
   vi.spyOn(vscode.workspace.fs, "stat").mockImplementation(async (uri) => {

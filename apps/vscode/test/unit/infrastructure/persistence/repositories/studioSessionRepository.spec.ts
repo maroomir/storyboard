@@ -1,204 +1,138 @@
-import { stubFileSystem as engineFileSystem } from "../../../../stubs/fileSystem"
+import { createMemoryCaches } from "../../../../stubs/caches"
 import * as vscode from "vscode"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 
-import { StudioSessionRepository } from "@storyboard/story-engine"
+import {
+  SessionStore,
+  StudioSessionRepository,
+  type WorkspaceCaches,
+  type WorkspaceCards,
+  type WorkspaceScenes
+} from "@storyboard/story-engine"
 import type { StudioChatTurn, StudioEntity } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
-const sessionRoot = "/workspace/.storyboard/cache/studio-sessions"
 
 const characterEntity: StudioEntity = { kind: "character", key: "seorin" }
-const sceneEntity: StudioEntity = { kind: "scene", key: "01-intro" }
+const sceneEntity: StudioEntity = { kind: "scene", key: "001-intro" }
 
 const turns: StudioChatTurn[] = [{ id: "u1", role: "user", text: "과거사 보강해줘" }]
 
-let files: Map<string, string>
+const cardIds: Map<string, string> = new Map([
+  ["character:seorin", "card-uuid-1"],
+  ["character:seo-rin", "card-uuid-1"]
+])
 
-function stubFileSystem(): void {
-  files = new Map()
+const cards = {
+  loadRoster: async (): Promise<unknown> => ({ lookup: { idOf: (kind: string, slug: string) => cardIds.get(`${kind}:${slug}`) } })
+} as unknown as WorkspaceCards
 
-  vi.spyOn(vscode.workspace.fs, "createDirectory").mockImplementation(async () => undefined)
+const scenes = {
+  find: async (_root: unknown, key: string) =>
+    key === "001-intro" ? { content: { header: { id: "scene-uuid-1" } } } : undefined
+} as unknown as WorkspaceScenes
 
-  vi.spyOn(vscode.workspace.fs, "writeFile").mockImplementation(async (uri, content) => {
-    files.set(String((uri as { fsPath: string }).fsPath), new TextDecoder().decode(content))
-  })
+let caches: WorkspaceCaches
 
-  vi.spyOn(vscode.workspace.fs, "readFile").mockImplementation(async (uri) => {
-    const content = files.get(String((uri as { fsPath: string }).fsPath))
-    if (content === undefined) {
-      throw new Error("missing")
-    }
-    return new TextEncoder().encode(content)
-  })
+function createRepository(): StudioSessionRepository {
+  return new StudioSessionRepository({ caches, cards, scenes })
+}
 
-  vi.spyOn(vscode.workspace.fs, "delete").mockImplementation(async (uri) => {
-    files.delete(String((uri as { fsPath: string }).fsPath))
-  })
+function pendingProposal(): StudioChatTurn {
+  return {
+    id: "p1",
+    role: "assistant",
+    kind: "proposal",
+    summary: "역할 변경",
+    targetFile: "character/seorin.card",
+    patch: { target: "card", changes: [{ field: "role", value: "supporting" }] },
+    baselineHash: "sha256:x",
+    validation: { state: "pass", warnings: [] },
+    status: "pending"
+  } as StudioChatTurn
+}
 
-  vi.spyOn(vscode.workspace.fs, "readDirectory").mockImplementation(async (uri) => {
-    const prefix = `${String((uri as { fsPath: string }).fsPath)}/`
-
-    return [...files.keys()]
-      .filter((path) => path.startsWith(prefix) && !path.slice(prefix.length).includes("/"))
-      .map((path): [string, number] => [path.slice(prefix.length), 1])
+async function saveSession(
+  repository: StudioSessionRepository,
+  id: string,
+  entity: StudioEntity = characterEntity,
+  sessionTurns: StudioChatTurn[] = turns
+): Promise<void> {
+  await repository.save(workspaceRoot, {
+    id,
+    entity,
+    createdAt: "2026-08-01T00:00:00.000Z",
+    hasAppliedChanges: false,
+    turns: sessionTurns
   })
 }
 
 beforeEach((): void => {
-  stubFileSystem()
-})
-
-afterEach((): void => {
-  vi.restoreAllMocks()
+  caches = createMemoryCaches()
 })
 
 describe("StudioSessionRepository", () => {
-  it("stores a session under its entity directory", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
-
-    await repository.save(workspaceRoot, {
-      id: "s1",
-      entity: characterEntity,
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns
-    })
-
-    expect([...files.keys()]).toEqual([`${sessionRoot}/character/seorin/s1.json`])
-  })
-
   it("keeps each entity's sessions apart", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+    const repository = createRepository()
 
-    await repository.save(workspaceRoot, {
-      id: "s1",
-      entity: characterEntity,
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns
-    })
-    await repository.save(workspaceRoot, {
-      id: "s2",
-      entity: sceneEntity,
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns
-    })
+    await saveSession(repository, "s1")
+    await saveSession(repository, "s2", sceneEntity)
 
     expect(await repository.list(workspaceRoot, characterEntity)).toHaveLength(1)
     expect((await repository.list(workspaceRoot, sceneEntity))[0]?.id).toBe("s2")
   })
 
-  it("refuses an entity key that could escape the sessions directory", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+  it("finds a card's sessions after the card is renamed", async () => {
+    const repository = createRepository()
 
-    await repository.save(workspaceRoot, {
-      id: "s1",
-      entity: { kind: "character", key: "../../escape" },
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns
-    })
+    await saveSession(repository, "s1")
 
-    expect(files.size).toBe(0)
+    expect(
+      (await repository.list(workspaceRoot, { kind: "character", key: "seo-rin" })).map((session) => session.id)
+    ).toEqual(["s1"])
   })
 
-  it("refuses a session id that could escape the entity directory", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+  it("stores nothing for an entity that is no card or scene", async () => {
+    const repository = createRepository()
 
-    await repository.save(workspaceRoot, {
-      id: "../escape",
-      entity: characterEntity,
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns
-    })
+    await saveSession(repository, "s1", { kind: "character", key: "nobody" })
 
-    expect(files.size).toBe(0)
+    expect(await repository.list(workspaceRoot, { kind: "character", key: "nobody" })).toEqual([])
   })
 
   it("loads the newest session for an entity", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+    const repository = createRepository()
 
-    await repository.save(workspaceRoot, {
-      id: "old",
-      entity: characterEntity,
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns
-    })
+    await saveSession(repository, "old")
     await new Promise((resolve) => setTimeout(resolve, 2))
-    await repository.save(workspaceRoot, {
-      id: "new",
-      entity: characterEntity,
-      createdAt: "2026-08-02T00:00:00.000Z",
-      hasAppliedChanges: false,
-      turns: [{ id: "u2", role: "user", text: "말투 다듬어줘" }]
-    })
+    await saveSession(repository, "new", characterEntity, [{ id: "u2", role: "user", text: "말투 다듬어줘" }])
 
     expect((await repository.loadLatest(workspaceRoot, characterEntity))?.id).toBe("new")
   })
 
   it("reports nothing for an entity with no sessions", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+    const repository = createRepository()
 
     expect(await repository.loadLatest(workspaceRoot, sceneEntity)).toBeUndefined()
     expect(await repository.list(workspaceRoot, sceneEntity)).toEqual([])
   })
 
-  it("prunes the oldest unapplied sessions past the keep budget", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+  it("keeps every session until the cache is cleared", async () => {
+    const repository = createRepository()
 
     for (let index = 0; index < 12; index += 1) {
-      await repository.save(workspaceRoot, {
-        id: `s${index}`,
-        entity: characterEntity,
-        createdAt: "2026-08-01T00:00:00.000Z",
-        hasAppliedChanges: false,
-        turns
-      })
-      await new Promise((resolve) => setTimeout(resolve, 2))
+      await saveSession(repository, `s${index}`)
     }
 
-    const remaining = await repository.list(workspaceRoot, characterEntity)
-
-    expect(remaining).toHaveLength(10)
-    expect(remaining.map((session) => session.id)).not.toContain("s0")
+    expect(await repository.list(workspaceRoot, characterEntity)).toHaveLength(12)
   })
 
-  it("never prunes a session whose proposal was applied", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
+  it("counts the proposals still waiting in a session", async () => {
+    const repository = createRepository()
 
-    await repository.save(workspaceRoot, {
-      id: "applied",
-      entity: characterEntity,
-      createdAt: "2026-08-01T00:00:00.000Z",
-      hasAppliedChanges: true,
-      turns
-    })
+    await saveSession(repository, "s1", characterEntity, [...turns, pendingProposal()])
 
-    for (let index = 0; index < 12; index += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 2))
-      await repository.save(workspaceRoot, {
-        id: `s${index}`,
-        entity: characterEntity,
-        createdAt: "2026-08-01T00:00:00.000Z",
-        hasAppliedChanges: false,
-        turns
-      })
-    }
-
-    const remaining = await repository.list(workspaceRoot, characterEntity)
-
-    expect(remaining.map((session) => session.id)).toContain("applied")
-    expect(remaining).toHaveLength(11)
-  })
-
-  it("skips a session file that does not parse", async () => {
-    const repository = new StudioSessionRepository(engineFileSystem)
-    files.set(`${sessionRoot}/character/seorin/broken.json`, "{ not json")
-
-    expect(await repository.list(workspaceRoot, characterEntity)).toEqual([])
+    const pending = new SessionStore(await caches.open(workspaceRoot)).listWithPending()
+    expect(pending.map((record) => [record.id, record.pendingCount])).toEqual([["s1", 1]])
   })
 })

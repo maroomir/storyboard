@@ -14,7 +14,6 @@ interface StoryboardRelativePaths {
   readonly noteCandidates: string;
   readonly noteSynopsisCandidate: string;
   readonly noteExtractionResponses: string;
-  readonly studioSessionDirectory: string;
   readonly interviewCacheDirectory: string;
   readonly interviewWorkingModelDirectory: string;
   readonly interviewAxes: string;
@@ -51,7 +50,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   noteCandidates: '.storyboard/cache/notes/candidates.json',
   noteSynopsisCandidate: '.storyboard/cache/notes/synopsis.candidate.md',
   noteExtractionResponses: '.storyboard/cache/notes/responses.json',
-  studioSessionDirectory: '.storyboard/cache/studio-sessions',
   interviewCacheDirectory: '.storyboard/cache/interviews',
   interviewWorkingModelDirectory: '.storyboard/cache/interviews/cards',
   interviewAxes: '.storyboard/cache/interviews/axes.json',

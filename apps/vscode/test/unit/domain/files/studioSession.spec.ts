@@ -3,9 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   deriveStudioSessionTitle,
   parseStudioSession,
-  selectSessionsToPrune,
   serializeStudioSession,
-  type PrunableStudioSession,
   type StudioSession
 } from "@storyboard/story-model"
 import type { StudioChatTurn } from "@storyboard/story-model"
@@ -58,49 +56,5 @@ describe("deriveStudioSessionTitle", () => {
 
   it("falls back when there is no user turn", () => {
     expect(deriveStudioSessionTitle([])).toBe("새 대화")
-  })
-})
-
-describe("selectSessionsToPrune", () => {
-  function unappliedSessions(count: number): PrunableStudioSession[] {
-    return Array.from({ length: count }, (_, index) => ({
-      id: `s-${index}`,
-      updatedAt: `2026-07-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`,
-      hasAppliedChanges: false
-    }))
-  }
-
-  it("keeps the newest 10 unapplied sessions by updatedAt", () => {
-    const pruned = selectSessionsToPrune(unappliedSessions(14))
-
-    expect(pruned).toHaveLength(4)
-    expect(pruned).toContain("s-0")
-    expect(pruned).not.toContain("s-13")
-  })
-
-  it("never prunes a session whose proposal was applied", () => {
-    const sessions: PrunableStudioSession[] = [
-      ...unappliedSessions(12),
-      {
-        id: "applied",
-        updatedAt: "2020-01-01T00:00:00.000Z",
-        hasAppliedChanges: true
-      }
-    ]
-
-    expect(selectSessionsToPrune(sessions)).not.toContain("applied")
-  })
-
-  it("does not count applied sessions against the keep budget", () => {
-    const sessions: PrunableStudioSession[] = [
-      ...unappliedSessions(10),
-      ...Array.from({ length: 5 }, (_, index) => ({
-        id: `applied-${index}`,
-        updatedAt: `2026-08-0${index + 1}T00:00:00.000Z`,
-        hasAppliedChanges: true
-      }))
-    ]
-
-    expect(selectSessionsToPrune(sessions)).toEqual([])
   })
 })

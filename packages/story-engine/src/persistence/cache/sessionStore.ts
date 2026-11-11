@@ -25,6 +25,15 @@ export interface OpenSessionRequest {
   readonly pendingCount?: number;
 }
 
+export interface SaveSessionRequest {
+  readonly id: string;
+  readonly kind: SessionKind;
+  readonly elementId?: string;
+  readonly openedAt: string;
+  readonly data: unknown;
+  readonly pendingCount: number;
+}
+
 export interface UpdateSessionRequest {
   readonly data: unknown;
   readonly pendingCount: number;
@@ -98,6 +107,27 @@ export class SessionStore {
     );
 
     return record;
+  }
+
+  public save(request: SaveSessionRequest): void {
+    this.database.run(
+      `INSERT INTO sessions (id, kind, element_id, opened_at, updated_at, closed_at, pending_count, data)
+       VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         element_id = excluded.element_id,
+         updated_at = excluded.updated_at,
+         pending_count = excluded.pending_count,
+         data = excluded.data`,
+      [
+        request.id,
+        request.kind,
+        request.elementId ?? null,
+        request.openedAt,
+        this.now().toISOString(),
+        request.pendingCount,
+        JSON.stringify(request.data),
+      ],
+    );
   }
 
   public update(sessionId: string, request: UpdateSessionRequest): void {

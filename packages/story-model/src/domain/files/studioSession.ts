@@ -5,7 +5,6 @@ import {
   studioEntitySchema,
   type StudioChatTurn,
   type StudioEntity,
-  type StudioSessionSummary,
   type StudioUserTurn,
 } from '#model/shared/messaging/studio';
 
@@ -66,18 +65,4 @@ export function deriveStudioSessionTitle(turns: readonly StudioChatTurn[]): stri
   return text.length > studioSessionTitleMaxLength
     ? `${text.slice(0, studioSessionTitleMaxLength)}…`
     : text;
-}
-
-export type PrunableStudioSession = Pick<StudioSessionSummary, 'id' | 'updatedAt'> &
-  Pick<StudioSession, 'hasAppliedChanges'>;
-
-export function selectSessionsToPrune(
-  sessions: readonly PrunableStudioSession[],
-  keep = 10,
-): readonly string[] {
-  return sessions
-    .filter((session) => !session.hasAppliedChanges)
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-    .slice(keep)
-    .map((session) => session.id);
 }
