@@ -8,9 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { foldLines, StoryboardTui } from '@/tui/app';
 import { findHistoryMatch } from '@/tui/lineEditor';
-import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
 import { NodeUri, serializeDraft } from '@storyboard/story-model';
-import { NodeFileSystem } from '@storyboard/story-node';
 
 import { CommandDispatcher } from '@/commands/commandDispatcher';
 import { canShowWordmark, storyboardWordmark } from '@/terminal/banner';
@@ -30,6 +28,8 @@ import { runShellCommand } from '@/adapters/shellCommand';
 import { describeSpending, splitCommandLine, suggestForInput } from '@/tui/session';
 import { loadTuiThemeName, saveTuiThemeName } from '@/tui/tuiTheme';
 import { selectVisibleWindow } from '@/tui/suggestionList';
+
+import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/runLockFixture';
 
 let home: string;
 let cwd: string;
@@ -138,14 +138,17 @@ describe('readWorkspaceView', () => {
     }).dispatch(['init', '--title', '잠금']);
     expect((await readWorkspaceView(cwd, '0')).lockHolder).toBeUndefined();
 
-    const acquired = await acquireWorkspaceRunLock({
-      fileSystem: new NodeFileSystem(),
-      workspaceRoot: NodeUri.file(cwd),
-      holder: { owner: 'vscode', label: '소설 생성', pid: process.pid, hostname: 'here' },
+    const caches = createWorkspaceCaches();
+    const acquired = await createWorkspaceRunLocks(caches).acquire(NodeUri.file(cwd), {
+      owner: 'vscode',
+      label: '소설 생성',
+      pid: process.pid,
+      hostname: 'here',
     });
     expect(acquired.ok).toBe(true);
 
     expect((await readWorkspaceView(cwd, '0')).lockHolder).toContain('VSCode 확장');
+    await caches.closeAll();
   });
 
   it('reads the work status a home screen shows', async () => {

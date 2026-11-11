@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import { type IStoryboardLogger } from '@storyboard/story-engine';
 import { StoryboardApplication } from '@storyboard/story-app';
+import { NodeSqlDatabaseHost } from '@storyboard/story-node';
 import {
   ConfigBridge,
   killRunningCliChildren,
@@ -93,6 +94,7 @@ export class PlatformModule implements IApplicationModule {
         logger,
         secretStore,
         configBridge,
+        sqlDatabaseHost: new NodeSqlDatabaseHost(),
         usageLedger: usageRecorder,
         resourceRoots: [
           vscode.Uri.file(homeStores.paths.home),

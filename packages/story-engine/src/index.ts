@@ -99,6 +99,7 @@ export * from '#engine/persistence/cache/runLockStore';
 export * from '#engine/persistence/cache/runStore';
 export * from '#engine/persistence/cache/sessionStore';
 export * from '#engine/persistence/cache/usageStore';
+export * from '#engine/persistence/cache/workspaceCaches';
 export * from '#engine/persistence/cardCacheWorkspace';
 export * from '#engine/persistence/notes/noteSourceProvider';
 export * from '#engine/persistence/notes/notionExportNoteSource';

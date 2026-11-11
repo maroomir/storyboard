@@ -1,7 +1,5 @@
 import {
   isRunBudgetExceeded,
-  readWorkspaceRunLock,
-  type IFileSystem,
   type ApplyCompletedScenesResult,
   type ApplyStoryProposals,
   type CompletedStoryScene,
@@ -21,6 +19,7 @@ import {
   type StoryFileSnapshot,
   type UsageMeter,
   type UsageMeterSession,
+  type WorkspaceRunLocks,
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import {
@@ -41,7 +40,7 @@ export interface NovelManagerDependencies {
   readonly novelRunStateRepository: INovelRunStateRepository;
   readonly configBridge: ConfigBridge;
   readonly usageMeter: UsageMeter;
-  readonly fileSystem: IFileSystem;
+  readonly runLocks: WorkspaceRunLocks;
 }
 
 export interface NovelRunRequest extends Omit<NovelPipelineRunOptions, 'reviseMaxIterations'> {
@@ -121,10 +120,8 @@ export class NovelManager {
       return state;
     }
 
-    const holder: WorkspaceRunLockRecord | undefined = await readWorkspaceRunLock({
-      fileSystem: this.deps.fileSystem,
-      workspaceRoot,
-    });
+    const holder: WorkspaceRunLockRecord | undefined =
+      await this.deps.runLocks.readHolder(workspaceRoot);
 
     return holder === undefined ? state : undefined;
   }

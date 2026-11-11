@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 type WorkspaceRunLockVersion = 1;
 
 const workspaceRunLockVersion: WorkspaceRunLockVersion = 1;
@@ -31,43 +29,6 @@ export interface WorkspaceRunLockRecord extends WorkspaceRunLockHolder {
   readonly token: string;
   readonly acquiredAt: string;
   readonly heartbeatAt: string;
-}
-
-interface WorkspaceRunLock {
-  version: 1;
-  token: string;
-  owner: WorkspaceRunLockOwner;
-  label: string;
-  pid: number;
-  hostname: string;
-  acquiredAt: string;
-  heartbeatAt: string;
-}
-
-const workspaceRunLockSchema: z.ZodType<WorkspaceRunLock> = z.object({
-  version: z.literal(workspaceRunLockVersion),
-  token: z.string().min(1),
-  owner: z.enum(workspaceRunLockOwners),
-  label: z.string(),
-  pid: z.number().int(),
-  hostname: z.string(),
-  acquiredAt: z.string().datetime(),
-  heartbeatAt: z.string().datetime(),
-});
-
-export function parseWorkspaceRunLock(raw: string): WorkspaceRunLockRecord | undefined {
-  try {
-    const parsed: z.ZodSafeParseResult<WorkspaceRunLock> = workspaceRunLockSchema.safeParse(
-      JSON.parse(raw),
-    );
-    return parsed.success ? parsed.data : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-export function serializeWorkspaceRunLock(record: WorkspaceRunLockRecord): string {
-  return `${JSON.stringify(workspaceRunLockSchema.parse(record), null, 2)}\n`;
 }
 
 export function createWorkspaceRunLockRecord(

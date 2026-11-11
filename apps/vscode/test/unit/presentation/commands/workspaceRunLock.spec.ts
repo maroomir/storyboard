@@ -1,37 +1,32 @@
 import * as vscode from "vscode"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import {
-  createWorkspaceRunLockRecord,
-  getStoryboardProjectPaths,
-  serializeWorkspaceRunLock,
-} from "@storyboard/story-model"
-import { type IFileSystem } from "@storyboard/story-engine"
+import { WorkspaceCaches, WorkspaceRunLocks, type IFileSystem } from "@storyboard/story-engine"
 import { RunGate } from "@storyboard/story-app"
+import { MemorySqlDatabaseHost } from "@storyboard/story-node"
 import { runHoldingWorkspaceLock } from "@/presentation/commands/workspaceRunLock"
 
 const workspaceRoot = vscode.Uri.file("/ws")
-const lockPath = getStoryboardProjectPaths(workspaceRoot as never).runLock.fsPath
 
-function createMemoryFileSystem(): IFileSystem & { readonly files: Map<string, Uint8Array> } {
-  const files = new Map<string, Uint8Array>()
-
+function createMemoryFileSystem(): IFileSystem {
   return {
-    files,
     readFile: async (uri): Promise<Uint8Array> => {
-      const content = files.get(uri.fsPath)
-      if (!content) throw new Error(`missing ${uri.fsPath}`)
-      return content
+      throw new Error(`missing ${uri.fsPath}`)
     },
-    writeFile: async (uri, content) => void files.set(uri.fsPath, content),
+    writeFile: async () => undefined,
     createDirectory: async () => undefined,
-    exists: async (uri) => files.has(uri.fsPath),
+    exists: async () => false,
     listFileNames: async () => [],
     readDirectory: async () => [],
-    delete: async (uri) => void files.delete(uri.fsPath),
+    delete: async () => undefined,
     modifiedTime: async () => 0,
     isRealPathInside: async () => true
   }
+}
+
+function createRunLocks(): WorkspaceRunLocks {
+  const caches = new WorkspaceCaches({ host: new MemorySqlDatabaseHost(), fileSystem: createMemoryFileSystem() })
+  return new WorkspaceRunLocks({ caches })
 }
 
 afterEach(() => {
@@ -40,29 +35,25 @@ afterEach(() => {
 
 describe("runHoldingWorkspaceLock", () => {
   it("holds the lock while the command runs and releases it afterwards", async () => {
-    const fileSystem = createMemoryFileSystem()
+    const runLocks = createRunLocks()
     let wasHeldDuringRun = false
 
-    await runHoldingWorkspaceLock(new RunGate({ fileSystem, owner: "vscode" }), workspaceRoot, "장편 생성", async () => {
-      wasHeldDuringRun = fileSystem.files.has(lockPath)
+    await runHoldingWorkspaceLock(new RunGate({ runLocks, owner: "vscode" }), workspaceRoot, "장편 생성", async () => {
+      wasHeldDuringRun = (await runLocks.readHolder(workspaceRoot))?.owner === "vscode"
     })
 
     expect(wasHeldDuringRun).toBe(true)
-    expect(fileSystem.files.has(lockPath)).toBe(false)
+    expect(await runLocks.readHolder(workspaceRoot)).toBeUndefined()
   })
 
   it("does not run and warns when another app holds the workspace", async () => {
-    const fileSystem = createMemoryFileSystem()
-    const record = createWorkspaceRunLockRecord(
-      { owner: "cli", label: "장편 생성", pid: 1, hostname: "writer" },
-      "cli-token",
-      new Date()
-    )
-    fileSystem.files.set(lockPath, new TextEncoder().encode(serializeWorkspaceRunLock(record)))
+    const runLocks = createRunLocks()
+    const acquired = await runLocks.acquire(workspaceRoot, { owner: "cli", label: "장편 생성", pid: 1, hostname: "writer" })
+    expect(acquired.ok).toBe(true)
     const warn = vi.spyOn(vscode.window, "showWarningMessage")
     const run = vi.fn(async () => undefined)
 
-    await runHoldingWorkspaceLock(new RunGate({ fileSystem, owner: "vscode" }), workspaceRoot, "초안 생성", run)
+    await runHoldingWorkspaceLock(new RunGate({ runLocks, owner: "vscode" }), workspaceRoot, "초안 생성", run)
 
     expect(run).not.toHaveBeenCalled()
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("CLI이(가) «장편 생성»"))

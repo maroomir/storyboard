@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { hostname } from 'node:os';
 
 import {
   createWorkspaceRunLockRecord,
@@ -12,11 +13,30 @@ import {
 
 import type { SqlRow } from '#engine/ports/sqlDatabase';
 import type { CacheDatabase } from '#engine/persistence/cache/cacheDatabase';
-import {
-  isHolderGoneFromThisMachine,
-  type AcquireWorkspaceRunLockResult,
-  type WorkspaceRunLock,
-} from '#engine/persistence/workspaceRunLock';
+
+export interface WorkspaceRunLock {
+  readonly record: WorkspaceRunLockRecord;
+  release(): Promise<void>;
+}
+
+export type AcquireWorkspaceRunLockResult =
+  | { readonly ok: true; readonly lock: WorkspaceRunLock }
+  | { readonly ok: false; readonly heldBy: WorkspaceRunLockRecord };
+
+const errorCodeOfProcessWithoutPermission: string = 'EPERM';
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === errorCodeOfProcessWithoutPermission;
+  }
+}
+
+export function isHolderGoneFromThisMachine(record: WorkspaceRunLockRecord): boolean {
+  return record.hostname === hostname() && !isProcessAlive(record.pid);
+}
 
 export interface RunLockStoreDependencies {
   readonly database: CacheDatabase;

@@ -33,7 +33,6 @@ export interface StoryboardProjectPaths {
   readonly threadMemoryDirectory: StoryUri;
   readonly usageLedger: StoryUri;
   readonly novelRunState: StoryUri;
-  readonly runLock: StoryUri;
   readonly sceneRenameJournal: StoryUri;
   readonly sceneGroundingGaps: StoryUri;
   readonly backgroundFactConflicts: StoryUri;
@@ -115,7 +114,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     threadMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory),
     usageLedger: resolve(STORYBOARD_RELATIVE_PATHS.usageLedger),
     novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
-    runLock: resolve(STORYBOARD_RELATIVE_PATHS.runLock),
     sceneRenameJournal: resolve(STORYBOARD_RELATIVE_PATHS.sceneRenameJournal),
     sceneGroundingGaps: resolve(STORYBOARD_RELATIVE_PATHS.sceneGroundingGaps),
     backgroundFactConflicts: resolve(STORYBOARD_RELATIVE_PATHS.backgroundFactConflicts),

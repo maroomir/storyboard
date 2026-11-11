@@ -24,7 +24,7 @@ import {
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
-import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
+import { NodeFileSystem, NodeSqlDatabaseHost, NodeWorkspaceLocator } from '@storyboard/story-node';
 import { PauseRequests } from '@/adapters/pauseRequests';
 import type { IPrompter } from '@/adapters/prompter';
 import { LineRunProgress, type IRunProgress } from '@/adapters/runProgress';
@@ -168,6 +168,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       logger: options.logger,
       secretStore,
       configBridge,
+      sqlDatabaseHost: new NodeSqlDatabaseHost(),
       ...(options.usageSink === undefined ? {} : { usageLedger: options.usageSink }),
       resourceRoots: [
         NodeUri.file(homePaths.home),

@@ -5,44 +5,51 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunGate } from '@storyboard/story-app';
-import { acquireWorkspaceRunLock, type AcquireWorkspaceRunLockResult } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths, NodeUri } from '@storyboard/story-model';
-import { NodeFileSystem } from '@storyboard/story-node';
+import type { AcquireWorkspaceRunLockResult, WorkspaceCaches } from '@storyboard/story-engine';
+import { NodeUri } from '@storyboard/story-model';
+
+import {
+  createWorkspaceCaches,
+  createWorkspaceRunLocks,
+  readRunLockToken,
+} from './fixtures/runLockFixture';
 
 let workspace: string;
+let caches: WorkspaceCaches;
 
 beforeEach(() => {
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-run-gate-'));
+  caches = createWorkspaceCaches();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await caches.closeAll();
   rmSync(workspace, { recursive: true, force: true });
 });
 
 describe('RunGate', () => {
   it('holds the workspace while the work runs and releases it afterwards', async () => {
-    const fileSystem = new NodeFileSystem();
     const root = NodeUri.file(workspace);
-    const gate = new RunGate({ fileSystem, owner: 'cli' });
-    const lockUri = getStoryboardProjectPaths(root).runLock;
+    const gate = new RunGate({ runLocks: createWorkspaceRunLocks(caches), owner: 'cli' });
 
     const held = await gate.hold(root, 'storyboard novel generate', async () => {
-      return await fileSystem.exists(lockUri);
+      return await readRunLockToken(caches, workspace);
     });
 
-    expect(held).toEqual({ ok: true, value: true });
-    expect(await fileSystem.exists(lockUri)).toBe(false);
+    expect(held.ok && typeof held.value === 'string').toBe(true);
+    expect(await readRunLockToken(caches, workspace)).toBeUndefined();
   });
 
   it('refuses while another app holds the workspace and names that holder', async () => {
-    const fileSystem = new NodeFileSystem();
     const root = NodeUri.file(workspace);
-    const cli = new RunGate({ fileSystem, owner: 'cli' });
+    const runLocks = createWorkspaceRunLocks(caches);
+    const cli = new RunGate({ runLocks, owner: 'cli' });
 
-    const acquired: AcquireWorkspaceRunLockResult = await acquireWorkspaceRunLock({
-      fileSystem,
-      workspaceRoot: root,
-      holder: { owner: 'vscode', label: '장편 생성', pid: 1, hostname: 'elsewhere' },
+    const acquired: AcquireWorkspaceRunLockResult = await runLocks.acquire(root, {
+      owner: 'vscode',
+      label: '장편 생성',
+      pid: 1,
+      hostname: 'elsewhere',
     });
     expect(acquired.ok).toBe(true);
 
