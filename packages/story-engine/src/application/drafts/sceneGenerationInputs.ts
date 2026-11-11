@@ -448,6 +448,7 @@ export class SceneGenerationInputsLoader {
 
     const chapterAuditor: ChapterMemoryAuditor = new ChapterMemoryAuditor({
       fileSystem,
+      scenes,
       paths: threadPaths,
     });
     const chapterAudit: ChapterMemoryAudit = await chapterAuditor.audit();

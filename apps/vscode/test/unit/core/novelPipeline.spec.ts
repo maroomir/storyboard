@@ -232,6 +232,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
         hasChapterPlan: async (): Promise<boolean> => false,
         loadCharacterBriefs: async (): Promise<unknown[]> => [{ id: 'hero', name: '주인공' }],
         loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
+        recordSeeded: async (): Promise<void> => undefined,
         loadSynopsis: async (): Promise<undefined> => undefined,
         saveSynopsis: async (): Promise<void> => saveSynopsisMock(),
         save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, 'outline'),

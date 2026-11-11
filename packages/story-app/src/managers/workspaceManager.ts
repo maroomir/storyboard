@@ -103,6 +103,7 @@ export class WorkspaceManager {
   public auditChapterMemory(workspaceRoot: StoryUri): Promise<ChapterMemoryAudit> {
     return new ChapterMemoryAuditor({
       fileSystem: this.deps.fileSystem,
+      scenes: this.deps.scenes,
       paths: getStoryboardProjectPaths(workspaceRoot),
     }).audit();
   }

@@ -1,8 +1,8 @@
+import type { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import {
   joinStoryPath,
   type StoryUri,
-  readChapterPlanFile,
   getStoryboardProjectPaths,
   parseChapterSummariesMarkdown,
   type ChapterSummary,
@@ -37,6 +37,7 @@ export class ManuscriptAssemblyRepository
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly facts: CardFactReader,
+    private readonly chapters: ChapterOutlineStore,
   ) {}
 
   public async hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean> {
@@ -68,7 +69,7 @@ export class ManuscriptAssemblyRepository
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder] = await Promise.all([
       new ProjectRepository(this.fileSystem).read(paths.projectJson),
-      readChapterPlanFile(paths.outlineChapters, this.fileSystem),
+      this.chapters.load(workspaceRoot),
       new DraftRepository(this.fileSystem).collectByOrder(
         paths,
         logger ?? { warn: (): void => undefined },
@@ -85,7 +86,7 @@ export class ManuscriptAssemblyRepository
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder, canonFactLines, chapterSummaries] = await Promise.all([
       new ProjectRepository(this.fileSystem).read(paths.projectJson),
-      readChapterPlanFile(paths.outlineChapters, this.fileSystem),
+      this.chapters.load(workspaceRoot),
       new DraftRepository(this.fileSystem).collectByOrder(paths, logger),
       this.facts.readFactLines(workspaceRoot),
       this.loadFreshChapterSummaries(workspaceRoot),

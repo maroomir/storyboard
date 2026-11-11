@@ -1,3 +1,5 @@
+import { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
+import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import {
   assembleManuscript,
   auditChapterSummaries,
@@ -5,7 +7,6 @@ import {
   computeDraftBodyHash,
   formatChapterSummaryStaleWarning,
   parseChapterSummariesMarkdown,
-  readChapterPlanFile,
 } from '@storyboard/story-model';
 import type {
   AssembledManuscript,
@@ -20,6 +21,7 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 
 export interface ChapterSummaryAuditRequest {
   readonly fileSystem: IFileSystem;
+  readonly scenes: WorkspaceScenes;
   readonly paths: StoryboardProjectPaths;
 }
 
@@ -101,9 +103,9 @@ export class ChapterMemoryAuditor {
   }
 
   public async collectCurrentChapterHashes(projectName: string): Promise<Map<string, string>> {
-    const { fileSystem, paths } = this.request;
+    const { fileSystem, paths, scenes } = this.request;
     const [plan, draftsByOrder] = await Promise.all([
-      readChapterPlanFile(paths.outlineChapters, fileSystem),
+      new ChapterOutlineStore({ fileSystem, scenes }).load(paths.workspaceRoot),
       new DraftRepository(fileSystem).collectByOrder(paths, { warn: (): void => undefined }),
     ]);
     const manuscript: AssembledManuscript = assembleManuscript({

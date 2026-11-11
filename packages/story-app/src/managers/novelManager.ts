@@ -10,6 +10,7 @@ import {
   type GenerateOutlineResult,
   type GenerateOutlineUseCase,
   type INovelRunStateRepository,
+  type INovelOutlineRepository,
   type NovelPipeline,
   type NovelPipelineResult,
   type NovelPipelineRunOptions,
@@ -25,6 +26,7 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import {
   isResumable,
   type NovelRunState,
+  type ChapterPlan,
   type StoryUri,
   type UsageAmount,
   type UsageCacheAmount,
@@ -38,6 +40,7 @@ export interface NovelManagerDependencies {
   readonly seedScenesUseCase: SeedScenesUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly novelOutline: INovelOutlineRepository;
   readonly configBridge: ConfigBridge;
   readonly usageMeter: UsageMeter;
   readonly runLocks: WorkspaceRunLocks;
@@ -128,6 +131,12 @@ export class NovelManager {
 
   public generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResult> {
     return this.deps.generateOutlineUseCase.execute(request);
+  }
+
+  public async readChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan | undefined> {
+    return (await this.deps.novelOutline.hasChapterPlan(workspaceRoot))
+      ? await this.deps.novelOutline.loadChapterPlan(workspaceRoot)
+      : undefined;
   }
 
   public seedScenes(request: SeedScenesRequest): Promise<SeedScenesResult> {
