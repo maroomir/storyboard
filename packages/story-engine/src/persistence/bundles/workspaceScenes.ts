@@ -206,6 +206,14 @@ export class WorkspaceScenes {
     (await this.openIndex(workspaceRoot)).remove(relativePath);
   }
 
+  public async rewriteContent(
+    workspaceRoot: StoryUri,
+    entry: SceneRosterEntry,
+    content: SceneBundleContent,
+  ): Promise<void> {
+    await this.writeContent(workspaceRoot, directoryNameOf(entry.path), content);
+  }
+
   public async writeBeatsByUri(sceneUri: StoryUri, beats: readonly SceneBeat[]): Promise<void> {
     const location: SceneUriParts | undefined = splitSceneUri(sceneUri);
     if (location === undefined) {

@@ -61,6 +61,8 @@ export * from '#model/domain/notes/notionBlocks';
 export * from '#model/domain/novelRunPlan';
 export * from '#model/domain/outlineAddressConflicts';
 export * from '#model/domain/sceneNumbering';
+export * from '#model/domain/cardRemoval';
+export * from '#model/domain/sessionPending';
 export * from '#model/domain/sceneProjection';
 export * from '#model/domain/sceneSeedFactory';
 export * from '#model/domain/sceneStatus';

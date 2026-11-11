@@ -26,6 +26,19 @@ import type {
   CardCollectRepository,
   WorkspaceCaches,
   WorkspaceCards,
+  SetCardStatementRequest,
+  SetCardStatementResult,
+  SetCardStatementUseCase,
+  UnsetCardStatementRequest,
+  UnsetCardStatementResult,
+  UnsetCardStatementUseCase,
+  RemoveCardRequest,
+  RemoveCardResult,
+  RemoveCardUseCase,
+  CardPendingChangesDesk,
+  CardPendingResult,
+  CardPendingApplyReport,
+  PendingCardChanges,
 } from '@storyboard/story-engine';
 import { BackgroundFactConflictStore } from '@storyboard/story-engine';
 import {
@@ -67,6 +80,10 @@ export interface CardManagerDependencies {
   readonly fileSystem: IFileSystem;
   readonly caches: WorkspaceCaches;
   readonly cards: WorkspaceCards;
+  readonly setCardStatementUseCase: SetCardStatementUseCase;
+  readonly unsetCardStatementUseCase: UnsetCardStatementUseCase;
+  readonly removeCardUseCase: RemoveCardUseCase;
+  readonly cardPendingChanges: CardPendingChangesDesk;
 }
 
 export class CardManager {
@@ -143,6 +160,39 @@ export class CardManager {
 
   public create(request: CreateCardRequest): Promise<CreateCardResult> {
     return this.deps.createCardUseCase.execute(request);
+  }
+
+  public setStatement(request: SetCardStatementRequest): Promise<SetCardStatementResult> {
+    return this.deps.setCardStatementUseCase.execute(request);
+  }
+
+  public unsetStatement(request: UnsetCardStatementRequest): Promise<UnsetCardStatementResult> {
+    return this.deps.unsetCardStatementUseCase.execute(request);
+  }
+
+  public remove(request: RemoveCardRequest): Promise<RemoveCardResult> {
+    return this.deps.removeCardUseCase.execute(request);
+  }
+
+  public listPending(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<CardPendingResult<PendingCardChanges>> {
+    return this.deps.cardPendingChanges.list(workspaceRoot, slug);
+  }
+
+  public applyPending(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<CardPendingResult<CardPendingApplyReport>> {
+    return this.deps.cardPendingChanges.apply(workspaceRoot, slug);
+  }
+
+  public discardPending(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<CardPendingResult<{ readonly discarded: number }>> {
+    return this.deps.cardPendingChanges.discard(workspaceRoot, slug);
   }
 
   public rename(request: RenameCardRequest): Promise<RenameCardResult> {

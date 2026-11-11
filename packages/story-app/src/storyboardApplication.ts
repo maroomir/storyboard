@@ -52,6 +52,10 @@ import {
   StudioProposalApplier,
   StudioEditUseCase,
   StudioCreateUseCase,
+  SetCardStatementUseCase,
+  UnsetCardStatementUseCase,
+  RemoveCardUseCase,
+  CardPendingChangesDesk,
   MoveSceneUseCase,
   RemoveSceneUseCase,
   SaveDraftEditUseCase,
@@ -195,6 +199,10 @@ interface EngineGraph {
   readonly studioProposalApplier: StudioProposalApplier;
   readonly studioEditUseCase: StudioEditUseCase;
   readonly studioCreateUseCase: StudioCreateUseCase;
+  readonly setCardStatementUseCase: SetCardStatementUseCase;
+  readonly unsetCardStatementUseCase: UnsetCardStatementUseCase;
+  readonly removeCardUseCase: RemoveCardUseCase;
+  readonly cardPendingChanges: CardPendingChangesDesk;
   readonly cardCollectRepository: CardCollectRepository;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly chapterSummaryRefresher: ChapterSummaryRefresher;
@@ -433,6 +441,9 @@ function buildServices(
     saveDraftEditUseCase: new SaveDraftEditUseCase(host),
     seedScenesUseCase: new SeedScenesUseCase(host, repositories),
     ...buildStudioServices(host, ai, { revisionPlanRecorder, summaries, repositories }),
+    setCardStatementUseCase: new SetCardStatementUseCase(cards),
+    unsetCardStatementUseCase: new UnsetCardStatementUseCase(cards),
+    removeCardUseCase: new RemoveCardUseCase({ cards, scenes, caches }),
     cardCollectRepository: new CardCollectRepository(fileSystem, cards),
     summarizeChaptersUseCase,
     chapterSummaryRefresher,
@@ -448,6 +459,7 @@ interface StudioServices {
   readonly studioProposalApplier: StudioProposalApplier;
   readonly studioEditUseCase: StudioEditUseCase;
   readonly studioCreateUseCase: StudioCreateUseCase;
+  readonly cardPendingChanges: CardPendingChangesDesk;
 }
 
 interface StudioServiceInputs {
@@ -499,6 +511,11 @@ function buildStudioServices(
     studioFollowUpRepository,
     studioProposalApplier,
     studioEditUseCase,
+    cardPendingChanges: new CardPendingChangesDesk({
+      cards: host.cards,
+      caches: host.caches,
+      applier: studioProposalApplier,
+    }),
     studioCreateUseCase: new StudioCreateUseCase({
       createCard: new CreateCardUseCase(inputs.repositories),
       createScene: new CreateSceneUseCase(host),

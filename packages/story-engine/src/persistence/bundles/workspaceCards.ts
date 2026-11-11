@@ -305,6 +305,28 @@ export class WorkspaceCards {
     return joinStoryPath(workspaceRoot, ...renamed.path.split('/'));
   }
 
+  public async findBundleBySlug(
+    workspaceRoot: StoryUri,
+    slug: string,
+  ): Promise<ElementBundle | undefined> {
+    return (await this.loadRoster(workspaceRoot)).bundles.find(
+      (bundle) => bundle.header.slug === slug,
+    );
+  }
+
+  public async rewriteBundle(
+    workspaceRoot: StoryUri,
+    bundle: ElementBundle,
+    content: Pick<ElementBundle, 'header' | 'statements'>,
+  ): Promise<void> {
+    this.rosters.clear();
+    await (await this.openRepository(workspaceRoot)).writeBundle(bundle.header.kind, {
+      directoryName: bundle.path.split('/').at(-1) ?? bundle.path,
+      header: content.header,
+      statements: content.statements,
+    });
+  }
+
   public async readMemory(
     workspaceRoot: StoryUri,
     kind: CardBundleKind,
