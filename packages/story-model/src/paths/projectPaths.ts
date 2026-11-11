@@ -26,6 +26,8 @@ export interface StoryboardProjectPaths {
   readonly workspaceRoot: StoryUri;
   readonly metadataDirectory: StoryUri;
   readonly projectJson: StoryUri;
+  readonly structure: StoryUri;
+  readonly cacheDatabase: StoryUri;
   readonly cacheDirectory: StoryUri;
   readonly memoryDirectory: StoryUri;
   readonly threadMemoryDirectory: StoryUri;
@@ -106,6 +108,8 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     workspaceRoot,
     metadataDirectory: resolve(STORYBOARD_RELATIVE_PATHS.metadataDirectory),
     projectJson: resolve(STORYBOARD_RELATIVE_PATHS.projectJson),
+    structure: resolve(STORYBOARD_RELATIVE_PATHS.structure),
+    cacheDatabase: resolve(STORYBOARD_RELATIVE_PATHS.cacheDatabase),
     cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
     memoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.memoryDirectory),
     threadMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory),
