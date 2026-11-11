@@ -43,6 +43,20 @@ describe("structure file", () => {
     expect(serializeStoryStructure(parseStoryStructure(text, "structure.yaml"))).toBe(text)
   })
 
+  it("places a scene with no declared thread in the implicit main thread", () => {
+    const omnibus = `threads:
+  - id: ep1
+    title: 1편
+scenes:
+  - scene: ${arrival}
+    thread: main
+  - scene: ${letter}
+    thread: ep1
+`
+
+    expect(parseStoryStructure(omnibus).scenes.map((entry) => entry.thread)).toEqual(["main", "ep1"])
+  })
+
   it("names the file and the problem when the structure does not hold together", () => {
     const cases = [
       `threads: []\nscenes: []\n`,
