@@ -225,7 +225,7 @@ export class SceneGenerationInputsLoader {
         inputHash,
         warnings: contextResult.warnings,
         draftUri: draftPath(workspaceFolder.uri, scene.stem),
-        cacheUri: sceneCacheFilePath(paths, scene.stem),
+        cacheUri: sceneCacheFilePath(paths, scene),
       },
     };
   }

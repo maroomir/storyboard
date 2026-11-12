@@ -52,18 +52,15 @@ describe('draft revisions', () => {
     expect(revisions.at(-1)).toBe('2026-11-11-09-30-rev-12.md');
   });
 
-  it('clears the revisions and the intermediate outputs of a removed scene', async () => {
+  it('clears the revisions of a removed scene', async () => {
     const workspace: string = workspaces.create();
     mkdirSync(join(workspace, 'draft'));
     writeFileSync(join(workspace, 'draft/002-rooftop.md'), '옥상');
     const store: DraftRevisionStore = openStore(workspace);
     await store.keepBeforeOverwrite(rooftop, 'draft/002-rooftop.md');
-    mkdirSync(join(workspace, '.storyboard/cache/scenes', rooftop), { recursive: true });
 
     await store.removeAll(rooftop);
-    await store.clearSceneCache(rooftop);
 
     expect(await store.list(rooftop)).toEqual([]);
-    expect(existsSync(join(workspace, '.storyboard/cache/scenes', rooftop))).toBe(false);
   });
 });

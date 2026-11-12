@@ -17,7 +17,6 @@ import {
 } from '#engine/persistence/bundles/sceneRenumberer';
 import type { SceneRosterEntry } from '#engine/persistence/bundles/workspaceScenes';
 import type { CardRoster } from '#engine/persistence/bundles/workspaceCards';
-import { StemKeyedSceneCaches } from '#engine/persistence/cache/stemKeyedSceneCaches';
 
 export interface RemoveSceneRequest {
   readonly workspaceRoot: StoryUri;
@@ -102,7 +101,6 @@ export class RemoveSceneUseCase implements IUseCase<RemoveSceneRequest, RemoveSc
     const sceneId: string = removing.content.header.id;
 
     await this.host.scenes.removeBundle(root, removing.path);
-    await new StemKeyedSceneCaches(this.host.fileSystem).remove(root, removing.file.stem);
     for (const uri of [
       draftPath(root, removing.file.stem),
       joinStoryPath(root, ...draftRevisionRelativeDirectory(sceneId).split('/')),

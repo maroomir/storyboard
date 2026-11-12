@@ -243,7 +243,7 @@ describe("ReviseDraftUseCase", () => {
     expect(result.rounds.map((round) => round.round)).toEqual([1, 2])
     expect(result.rounds[0]?.rewrite?.acceptedSections).toEqual([0])
     const [uri, content] = fileWriteMock.mock.calls.at(-1) ?? []
-    expect(String((uri as { path: string }).path)).toContain(".storyboard/cache/revisions/01-scene.json")
+    expect(String((uri as { path: string }).path)).toContain(".storyboard/cache/scenes/01-scene/revise-rounds.json")
     const record = JSON.parse(new TextDecoder().decode(content)) as { rounds: unknown[] }
     expect(record.rounds).toHaveLength(2)
     expect(loggerInfoMock.mock.calls.map((call) => call[0])).toEqual([

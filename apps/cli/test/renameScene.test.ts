@@ -98,10 +98,6 @@ beforeEach(async () => {
     'type: scene\nid: 004-dawn\n',
   ]);
   write(`draft/${fromStem}.md`, draftFor(fromStem, '등불 아래.\n'));
-  write(
-    `.storyboard/cache/scenes/${fromStem}.json`,
-    `${JSON.stringify({ sceneStem: fromStem, inputHash: 'sha256:x' }, null, 2)}\n`,
-  );
   write(`scene/${fromStem}.card/dialogue.json`, `${JSON.stringify({ sceneStem: fromStem, turns: [] })}\n`);
   write(`scene/${fromStem}.card/state.yaml`, 'statements:\n  - {facet: event, value: 야시장은 자정에 닫는다.}\n');
 });
@@ -127,9 +123,6 @@ describe('RenameSceneUseCase', () => {
       body: '등불 아래.\n',
     });
     expect(has(`draft/${fromStem}.md`)).toBe(false);
-    expect(JSON.parse(read('.storyboard/cache/scenes/003-moon-market.json')).sceneStem).toBe(
-      '003-moon-market',
-    );
     expect(read('scene/003-moon-market.card/dialogue.json')).toContain('turns');
   });
 

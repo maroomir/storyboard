@@ -51,6 +51,7 @@ import {
   type SceneGenerationInputs,
   type SceneGenerationInputsResult,
 } from '#engine/application/drafts/sceneGenerationInputs';
+import { sceneCacheDirectoryPath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IUseCase } from '#engine/application/useCase';
 import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
 
@@ -190,7 +191,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     this.logDialoguePolish(scene.stem, pipelineResult);
     const draft: Draft = this.createGeneratedDraft(inputs, pipelineResult);
 
-    await this.repositories.sceneCache.ensureDirectory(paths.sceneCacheDirectory);
+    await this.repositories.sceneCache.ensureDirectory(sceneCacheDirectoryPath(paths, scene));
 
     request.onSaving?.();
 

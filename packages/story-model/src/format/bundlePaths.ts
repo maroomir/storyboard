@@ -164,6 +164,14 @@ export function sceneCacheRelativeDirectory(sceneId: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory}/${sceneId}`;
 }
 
+export function sceneGenerationCacheRelativePath(sceneId: string): string {
+  return `${sceneCacheRelativeDirectory(sceneId)}/generation.json`;
+}
+
+export function sceneReviseRoundsRelativePath(sceneId: string): string {
+  return `${sceneCacheRelativeDirectory(sceneId)}/revise-rounds.json`;
+}
+
 export function draftRevisionRelativeDirectory(sceneId: string): string {
   return `${STORYBOARD_RELATIVE_PATHS.revisionRoundsDirectory}/${sceneId}`;
 }
