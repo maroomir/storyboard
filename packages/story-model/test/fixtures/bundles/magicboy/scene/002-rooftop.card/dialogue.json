@@ -1,0 +1,16 @@
+{
+  "sceneStem": "002-rooftop",
+  "bodyHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "turns": [
+    {
+      "index": 1,
+      "speaker": "3f9a2c1e-6b0d-4e7a-9c11-0d2f5a8b7e44",
+      "text": "여기 올라와도 돼?"
+    },
+    {
+      "index": 2,
+      "speaker": "7b1d2e90-4c3a-4f1b-8d2e-5a6b7c8d9e0f",
+      "text": "문은 늘 열려 있어."
+    }
+  ]
+}
