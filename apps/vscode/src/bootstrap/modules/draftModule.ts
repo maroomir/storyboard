@@ -39,6 +39,7 @@ export class DraftModule implements IApplicationModule {
     const {
       aiProviderRegistry,
       aiGateway,
+      cards,
       configBridge,
       drafts,
       runGate,
@@ -88,7 +89,7 @@ export class DraftModule implements IApplicationModule {
         ...continuity.commands,
         ...slop.commands,
       ]),
-      new CharacterHoverProvider().register(),
+      new CharacterHoverProvider({ cards }).register(),
       new DraftInlineCompletionProvider({ aiGateway, configBridge, drafts }).register(),
       grammar.register(),
       continuity.register(),
