@@ -324,7 +324,7 @@ function buildServices(
     fileSystem,
   });
   const runLocks: WorkspaceRunLocks = new WorkspaceRunLocks({ caches });
-  const cards: WorkspaceCards = new WorkspaceCards({ fileSystem, caches });
+  const cards: WorkspaceCards = new WorkspaceCards({ fileSystem, caches, logger });
   const scenes: WorkspaceScenes = new WorkspaceScenes({ fileSystem, caches, cards });
   const summaries: ChapterSummaryLedger = new ChapterSummaryLedger({
     fileSystem,

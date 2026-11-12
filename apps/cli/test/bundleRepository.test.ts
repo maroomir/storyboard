@@ -9,12 +9,15 @@ import {
   ElementBundleRepository,
   ElementIndexStore,
   StructureRepository,
+  WorkspaceCards,
   type ElementBundle,
+  type WorkspaceCaches,
 } from '@storyboard/story-engine';
 import { BundleFileError, NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 import { TemporaryWorkspaces } from './fixtures/cacheWorkspace';
+import { createWorkspaceCaches } from './fixtures/workspaceCacheFixture';
 
 const magicBoy: string = fileURLToPath(new URL('../../../packages/story-model/test/fixtures/bundles/magicboy/', import.meta.url));
 const workspaces: TemporaryWorkspaces = new TemporaryWorkspaces();
@@ -151,5 +154,44 @@ describe('structure repository', () => {
 
     const empty: StructureRepository = new StructureRepository({ fileSystem, workspaceRoot: NodeUri.file(workspaces.create()) });
     expect(await empty.read()).toBeUndefined();
+  });
+});
+
+describe('workspace cards and bundle warnings (A7)', () => {
+  async function openCards(): Promise<{ workspace: string; cards: WorkspaceCards; warned: string[] }> {
+    const workspace: string = workspaces.create('storyboard-cards-warn-');
+    cpSync(magicBoy, workspace, { recursive: true });
+    const caches: WorkspaceCaches = createWorkspaceCaches();
+    const warned: string[] = [];
+    const logger = { info: (): void => undefined, warn: (message: string): void => void warned.push(message), error: (): void => undefined, show: (): void => undefined };
+    return { workspace, cards: new WorkspaceCards({ fileSystem, caches, logger }), warned };
+  }
+
+  it('says once that a card changed outside the engine and still lists it for doctor', async () => {
+    const { workspace, cards, warned } = await openCards();
+    const root = NodeUri.file(workspace);
+    await cards.loadRoster(root);
+    appendFileSync(join(workspace, 'character/elia.card/statements.yaml'), '- {facet: traits, value: 손으로 더한 줄, source: {origin: author}}\n');
+
+    await cards.loadRoster(root);
+
+    expect(warned.filter((message) => message.includes('엔진 밖'))).toHaveLength(1);
+    expect((await cards.listWarnings(root)).map((warning) => warning.kind)).toContain('changed-outside-engine');
+  });
+
+  it('warns a reading verb about a copied uuid', async () => {
+    const { workspace, cards, warned } = await openCards();
+    cpSync(join(workspace, 'character/elia.card'), join(workspace, 'character/elia-copy.card'), { recursive: true });
+
+    await cards.loadRoster(NodeUri.file(workspace));
+
+    expect(warned.some((message) => message.includes('같은 uuid'))).toBe(true);
+  });
+
+  it('fails naming the file when the card asked for cannot be read', async () => {
+    const { workspace, cards } = await openCards();
+    appendFileSync(join(workspace, 'character/elia.card/statements.yaml'), '- {facet: nonsense\n');
+
+    await expect(cards.findCard(NodeUri.file(workspace), 'elia')).rejects.toThrow('character/elia.card/statements.yaml');
   });
 });
