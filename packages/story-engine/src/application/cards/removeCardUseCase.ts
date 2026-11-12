@@ -144,7 +144,7 @@ export class RemoveCardUseCase implements IUseCase<RemoveCardRequest, RemoveCard
     const session: StudioSession = {
       version: studioSessionVersion,
       id: randomUUID(),
-      entity: { kind: kind === 'character' ? 'character' : 'background', key: slug },
+      entity: { kind, key: slug },
       createdAt: removedAt,
       updatedAt: removedAt,
       title: `${slug} 삭제`,

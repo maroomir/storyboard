@@ -22,6 +22,7 @@ function entityTargetFile(entity: StudioEntity): string | undefined {
   switch (entity.kind) {
     case 'character':
     case 'background':
+    case 'narrator':
       return `${entity.kind}/${entity.key}.card`;
     case 'scene':
       return `scene/${entity.key}.card`;

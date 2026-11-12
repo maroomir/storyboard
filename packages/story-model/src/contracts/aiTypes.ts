@@ -71,7 +71,7 @@ export interface AiGenerateResponse {
   readonly isTruncated?: boolean;
 }
 
-export type EntityKind = 'scene' | 'character' | 'background' | 'project';
+export type EntityKind = 'scene' | 'character' | 'background' | 'narrator' | 'project';
 
 export interface EntityRef {
   readonly kind: EntityKind;
