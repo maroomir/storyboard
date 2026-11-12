@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  narrationStyleLines,
   buildStyleDirective,
   describeNarration,
   narrativeStyleLines,
@@ -188,6 +189,20 @@ describe("prompt injection", () => {
 })
 
 describe("narration rendering", () => {
+  it("states the narrator card's facts beside its voice in every narration block", () => {
+    const narration = resolveNarration({
+      sceneNarrator: "old-hana",
+      narrators: new Map([
+        ["old-hana", { type: "narrator", id: "old-hana", name: "늙은 하나", person: "first", knowledge: "retrospective", voice: ["담담하다"], facts: ["회고 시점: 사건 10년 뒤"] }]
+      ])
+    })
+
+    expect(narration?.facts).toEqual(["회고 시점: 사건 10년 뒤"])
+    expect(narrationStyleLines(narration).some((line) => line.startsWith("서술자에 관한 사실:") && line.includes("사건 10년 뒤"))).toBe(true)
+    expect(narrativeStyleLines({ narration }).some((line) => line.startsWith("서술자에 관한 사실:"))).toBe(true)
+    expect(narrationStyleLines(resolveNarration({ pov: "first" })).some((line) => line.startsWith("서술자에 관한 사실:"))).toBe(false)
+  })
+
   it("states the knowledge boundary for each knowledge kind", () => {
     const witnessed = narrativeStyleLines({ narration: { person: "first", knowledge: "witnessed" } })
     expect(witnessed.some((line) => line.includes("알 수 없는 사실을 단정하지 마라"))).toBe(true)

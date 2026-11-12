@@ -150,6 +150,12 @@ function narrationVoiceLine(narration: NarrationDirective): string | undefined {
     : undefined;
 }
 
+function narrationFactsLine(narration: NarrationDirective): string | undefined {
+  return narration.facts && narration.facts.length > 0
+    ? `서술자에 관한 사실: ${narration.facts.join(' / ')} — 서술이 이 사실과 어긋나지 않게 하라.`
+    : undefined;
+}
+
 export function describeNarration(narration: NarrationDirective): string {
   const parts: string[] = [
     narration.person ? narratorPersonLabels[narration.person] : undefined,
@@ -198,6 +204,7 @@ export function narrationStyleLines(narration: NarrationDirective | undefined): 
     narrationPersonLine(narration),
     narrationKnowledgeLine(narration),
     narrationVoiceLine(narration),
+    narrationFactsLine(narration),
   ].filter((line): line is string => Boolean(line));
 }
 
@@ -212,6 +219,7 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
     narration ? narrationPersonLine(narration) : undefined,
     narration ? narrationKnowledgeLine(narration) : undefined,
     narration ? narrationVoiceLine(narration) : undefined,
+    narration ? narrationFactsLine(narration) : undefined,
     genreLine(directive),
     styleConstraintLine(directive),
     prohibitionLine(directive),

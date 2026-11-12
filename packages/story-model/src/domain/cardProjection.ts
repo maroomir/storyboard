@@ -181,6 +181,11 @@ export function projectNarratorCard(
     header.focal === undefined ? undefined : lookup.slugOf(header.focal);
   const description: string[] | undefined = optionalList(listValuesOf(statements, 'description'));
   const voice: string[] | undefined = optionalList(listValuesOf(statements, 'voice'));
+  const facts: string[] | undefined = optionalList(
+    statements
+      .filter((statement) => statement.facet === 'fact')
+      .map((statement) => (statement.key === undefined ? statement.value : `${statement.key}: ${statement.value}`)),
+  );
 
   return {
     type: 'narrator',
@@ -192,6 +197,7 @@ export function projectNarratorCard(
     ...(focal === undefined ? {} : { focal }),
     ...(description === undefined ? {} : { description }),
     ...(voice === undefined ? {} : { voice }),
+    ...(facts === undefined ? {} : { facts }),
   };
 }
 

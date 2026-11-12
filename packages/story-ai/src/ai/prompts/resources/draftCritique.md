@@ -51,6 +51,11 @@ category는 voice|purpose|repetition, severity는 high|low. comment에는 무엇
 {{narratorVoice}}
 
 {{/narratorVoice}}
+{{#narratorFacts}}
+[서술자 사실]
+{{narratorFacts}}
+
+{{/narratorFacts}}
 {{#genre}}
 [장르·톤]
 {{genre}}
