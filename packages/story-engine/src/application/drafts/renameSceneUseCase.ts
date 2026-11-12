@@ -1,7 +1,9 @@
 import { SceneRenumberer } from '#engine/persistence/bundles/sceneRenumberer';
+import type { SceneRosterEntry } from '#engine/persistence/bundles/workspaceScenes';
 import { RevisionPlanRecorder } from '#engine/persistence/revisionPlanRecorder';
 import type { HostAdapters } from '#engine/application/engineServices';
 import {
+  isSceneSlug,
   parseSceneStem,
   scenePath,
   type SceneRename,
@@ -19,8 +21,8 @@ import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/applicat
 
 export interface RenameSceneRequest {
   readonly workspaceRoot: StoryUri;
-  readonly fromStem: string;
-  readonly toStem: string;
+  readonly scene: string;
+  readonly to: string;
 }
 
 export type RenameSceneResult =
@@ -53,6 +55,19 @@ const sceneStemFieldNames: Set<string> = new Set([
 ]);
 const sceneEntityKeyFieldNames: Set<string> = new Set(['id', 'key']);
 
+function resolveRenameTarget(
+  from: SceneFileNameParts,
+  target: string,
+): SceneFileNameParts | undefined {
+  const numbered: SceneFileNameParts | undefined = parseSceneStem(target);
+  if (numbered !== undefined) {
+    const isSameNumber: boolean = numbered.order === from.order;
+    return isSameNumber ? parseSceneStem(`${from.orderText}-${numbered.slug}`) : numbered;
+  }
+
+  return isSceneSlug(target) ? parseSceneStem(`${from.orderText}-${target}`) : undefined;
+}
+
 export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSceneResult> {
   public constructor(private readonly host: HostAdapters) {}
 
@@ -61,14 +76,21 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   }
 
   private async rename(request: RenameSceneRequest): Promise<RenameSceneResult> {
-    const from: SceneFileNameParts | undefined = parseSceneStem(request.fromStem);
-    const to: SceneFileNameParts | undefined = parseSceneStem(request.toStem);
+    const root: StoryUri = request.workspaceRoot;
+    await new SceneRenumberer(this.host).resume(root);
 
-    if (from === undefined || to === undefined) {
+    const found: SceneRosterEntry | undefined = await this.host.scenes.find(root, request.scene);
+    const from: SceneFileNameParts | undefined = parseSceneStem(found?.file.stem ?? request.scene);
+    if (from === undefined) {
+      return { ok: false, kind: 'missing', message: `씬이 없습니다: ${request.scene}` };
+    }
+
+    const to: SceneFileNameParts | undefined = resolveRenameTarget(from, request.to.trim());
+    if (to === undefined) {
       return {
         ok: false,
         kind: 'invalid-stem',
-        message: '씬 이름은 NNN-slug 형식이어야 합니다 (예: 003-night-market).',
+        message: '새 이름은 slug(영문 소문자·숫자·하이픈, 예: moon-market)여야 합니다. 번호는 엔진이 붙입니다.',
       };
     }
 
@@ -84,10 +106,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       };
     }
 
-    const root: StoryUri = request.workspaceRoot;
-    await new SceneRenumberer(this.host).resume(root);
-
-    if ((await this.host.scenes.find(root, from.stem)) === undefined) {
+    if (found === undefined) {
       return await this.finishOrRefuseMissing(root, { from, to });
     }
 

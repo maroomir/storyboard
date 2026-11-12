@@ -428,7 +428,7 @@ scenes:
 - 씬 폴더: `NNN-<slug>.card`. `NNN`은 구조 순서의 세 자리 수이고, slug는 영소문자·숫자·하이픈이며 번호를 붙이지 않는다.
 - 초안: `draft/NNN-<slug>.md`.
 - 순서·번호를 바꾸는 길은 `scene create --after`·`scene move`·`scene remove`뿐이다. 엔진이 뒤 씬의 폴더와 초안을 다시 매기고, 줄이 끊기면 캐시 DB의 `journal`이 마무리한다. 번들 안의 참조가 uuid라 고칠 참조는 없다.
-- `scene rename <stem> --to <새 이름>`은 이름(slug)만 바꾸고 번호 변경은 거부한다.
+- `scene rename <씬> --to <slug>`은 씬을 번호-slug·번호·slug 로 받고 새 이름은 slug 로 받아 번호는 그대로 둔다(같은 번호의 `NNN-slug` 도 받고, 다른 번호는 거부한다).
 - 읽을 수 없는 씬은 경고와 함께 건너뛴다. `doctor`는 uuid가 겹친 폴더, 머리말과 slug가 어긋난 폴더, 구조 순서와 다른 번호의 폴더(`init --repair`가 다시 매김)를 알린다.
 
 ### 4.5 `.md` (출력 원고, `draft/`)

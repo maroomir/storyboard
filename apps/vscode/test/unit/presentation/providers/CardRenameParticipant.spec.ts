@@ -138,8 +138,8 @@ describe("CardRenameParticipant", () => {
 
     expect(drafts.renameScene).toHaveBeenCalledWith({
       workspaceRoot,
-      fromStem: "003-rooftop",
-      toStem: "005-rooftop"
+      scene: "003-rooftop",
+      to: "005-rooftop"
     })
     expect(warn.mock.calls[0]?.[0]).toContain("번호는 바꿀 수 없습니다.")
     disposable.dispose()
