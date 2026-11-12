@@ -6,10 +6,8 @@ import type {
 import {
   chooseUpcomingScenes,
   collectBeatSituations,
-  computeInterviewCardHash,
   describeBeatSituation,
   isAxisDecided,
-  listCardAnsweredAxisIds,
   listOpenAxes,
   otherPlaceTokens,
   unseenValueIds,
@@ -42,7 +40,9 @@ import type {
 import {
   addNoteCandidateSource,
   cardCollectProposalId,
+  computeBackgroundCardHash,
   computeInterviewContractHash,
+  computePersonaCardHash,
   getStoryboardProjectPaths,
   scenePath,
   serializeCard,
@@ -103,7 +103,6 @@ export interface InterviewSessionRequest {
   readonly card?: StoryboardCard;
   readonly sessionId: string;
   readonly sceneStems?: readonly string[];
-  readonly shouldAskKnown?: boolean;
 }
 
 export interface InterviewResumeRequest {
@@ -184,6 +183,12 @@ function countSessionAnswers(model: InterviewWorkingModel, sessionId: string): n
 
 function cardTypeOf(card: StoryboardCard): BibleSubjectKind {
   return card.type === 'character' ? 'character' : 'background';
+}
+
+function cardHashOf(card: StoryboardCard): string {
+  return card.type === 'character'
+    ? computePersonaCardHash(card, 'interview')
+    : computeBackgroundCardHash(card);
 }
 
 function addTally(
@@ -296,25 +301,6 @@ function describeRelationSpeech(context: InterviewContext): string[] {
   );
 }
 
-function listDistillableCardLines(card: StoryboardCard): string[] {
-  const fields: readonly (readonly [field: string, lines: readonly string[] | undefined])[] =
-    card.type === 'character'
-      ? [
-          ['traits', card.traits],
-          ['voice', card.voice],
-          ['desire', card.desire],
-          ['description', card.description],
-        ]
-      : [
-          ['layout', card.layout],
-          ['rules', card.rules],
-          ['senses', card.senses],
-          ['description', card.description],
-        ];
-
-  return fields.flatMap(([field, lines]) => (lines ?? []).map((line) => `${field}: ${line}`));
-}
-
 const minimumQuestionOptions: number = 2;
 
 function hasOptionAddressingAbsentPartner(
@@ -377,11 +363,9 @@ export class InterviewSessionUseCase {
       }
 
       const sessionId: string = this.now().toISOString().replace(/[-:.TZ]/g, '').slice(0, sessionIdTimestampDigits);
-      const context: InterviewContext = await this.ensureCardAnswers(
-        await this.forgetUnansweredQuestions(
-          request.workspaceRoot,
-          await this.loadContext(request.workspaceRoot, card, request.sceneStems, sessionId),
-        ),
+      const context: InterviewContext = await this.forgetUnansweredQuestions(
+        request.workspaceRoot,
+        await this.loadContext(request.workspaceRoot, card, request.sceneStems, sessionId),
       );
 
       return { ok: true, opening: await this.describeOpening(request.workspaceRoot, sessionId, context) };
@@ -494,17 +478,13 @@ export class InterviewSessionUseCase {
       return undefined;
     }
 
-    const relationTarget: string | undefined = this.pickRelationTarget(context, {
-      shouldAskKnown: request.shouldAskKnown === true,
-    });
+    const relationTarget: string | undefined = this.pickRelationTarget(context);
     if (relationTarget !== undefined) {
       return this.askRelationSpeech(request, context, relationTarget);
     }
 
-    const cardAnsweredAxisIds: ReadonlySet<string> = listCardAnsweredAxisIds(model, context.card);
     const openAxes: readonly InterviewAxis[] = context.axes.filter(
-      (axis) =>
-        !cardAnsweredAxisIds.has(axis.id) && !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight),
+      (axis) => !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight),
     );
     const nextBeat: BeatToAsk | undefined = this.pickNextBeat(context, openAxes);
     const offBeatCount: number = sessionRecords.filter(
@@ -567,10 +547,7 @@ export class InterviewSessionUseCase {
     return leastAsked;
   }
 
-  private pickRelationTarget(
-    context: InterviewContext,
-    options: { readonly shouldAskKnown: boolean },
-  ): string | undefined {
+  private pickRelationTarget(context: InterviewContext): string | undefined {
     if (context.card.type !== 'character') {
       return undefined;
     }
@@ -588,7 +565,6 @@ export class InterviewSessionUseCase {
     );
 
     return (context.card.relations ?? [])
-      .filter((relation) => options.shouldAskKnown || (relation.speech?.trim() ?? '').length === 0)
       .map((relation) => relation.target)
       .find((target) => !asked.has(target) && present.has(target));
   }
@@ -937,13 +913,9 @@ export class InterviewSessionUseCase {
     sessionRecords: readonly InterviewRecord[],
   ): string[] {
     const { model, tuning, axes } = context;
-    const cardAnsweredAxisIds: ReadonlySet<string> = listCardAnsweredAxisIds(model, context.card);
 
     return axes
       .filter((axis) => {
-        if (cardAnsweredAxisIds.has(axis.id)) {
-          return false;
-        }
         const isTouched: boolean =
           model.tallies[axis.id] !== undefined ||
           sessionRecords.some((record) => record.axisId === axis.id);
@@ -963,7 +935,6 @@ export class InterviewSessionUseCase {
         cardType: context.cardType,
         name: context.card.name,
         cardText: serializeCard(context.card),
-        existingLines: listDistillableCardLines(context.card),
         summary: context.model.summary,
         tallies: decidedLines,
         choices: context.model.records
@@ -1284,7 +1255,6 @@ export class InterviewSessionUseCase {
         context.model.tallies,
         context.tuning.distillMinimumWeight,
         situations,
-        listCardAnsweredAxisIds(context.model, context.card),
       ),
       upcomingSceneStems: [...new Set(context.scenes.map((scene) => scene.stem))],
     };
@@ -1474,7 +1444,7 @@ export class InterviewSessionUseCase {
     cardType: BibleSubjectKind,
     sessionId: string,
   ): Promise<InterviewWorkingModel> {
-    const cardHash: string = computeInterviewCardHash(card);
+    const cardHash: string = cardHashOf(card);
     const existing: InterviewWorkingModel | undefined =
       await this.repositories.interviews.loadWorkingModel(workspaceRoot, card.id);
 
@@ -1497,27 +1467,6 @@ export class InterviewSessionUseCase {
     void sessionId;
 
     return fresh;
-  }
-
-  private async ensureCardAnswers(context: InterviewContext): Promise<InterviewContext> {
-    const cardHash: string = computeInterviewCardHash(context.card);
-    if (context.model.cardAnswers?.cardHash === cardHash) {
-      return context;
-    }
-
-    const valueIdByAxis: Record<string, string> = await context.ai.findInterviewCardAnswers(
-      {
-        cardType: context.cardType,
-        name: context.card.name,
-        cardText: serializeCard(context.card),
-        axes: context.axes,
-      },
-      { attribution: context.attribution },
-    );
-    const model: InterviewWorkingModel = { ...context.model, cardAnswers: { cardHash, valueIdByAxis } };
-    await this.saveModel(context.workspaceRoot, model);
-
-    return { ...context, model };
   }
 
   private async isContractStale(workspaceRoot: StoryUri, context: InterviewContext): Promise<boolean> {

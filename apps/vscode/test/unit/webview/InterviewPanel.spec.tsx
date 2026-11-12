@@ -116,19 +116,6 @@ describe("InterviewPanel", () => {
     expect(statuses.at(-1)).toContain("카드 후보 2건")
   })
 
-  it("asks for the speech the card already has on every next call when started that way", async () => {
-    const postMessage = vi.fn()
-    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
-    render(<InterviewPanel card={card} documentUri="file:///ws/character/hana.card" vscodeApi={{ postMessage } as never} />)
-
-    fireEvent.click(screen.getByRole("button", { name: "적힌 호칭도 다시 묻기" }))
-    await respond(postMessage, "interviews.start", { opening })
-    await respond(postMessage, "interviews.next", { question })
-    expect(await screen.findByText("하나의 첫 반응은?")).toBeTruthy()
-
-    expect(requestsFor(postMessage, "interviews.next")).toEqual([expect.objectContaining({ sessionId: "s1", shouldAskKnown: true })])
-  })
-
   it("warns when the contract changed after the axes were drawn and can redraw them", async () => {
     const postMessage = vi.fn()
     vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))

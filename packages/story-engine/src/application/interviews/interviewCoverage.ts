@@ -1,13 +1,10 @@
 import {
-  computeBackgroundCardHash,
-  computePersonaCardHash,
   normalizeCardListText,
   sceneBeatText,
   type InterviewAxis,
   type InterviewBeatSituation,
   type InterviewOpenAxis,
   type InterviewTallies,
-  type InterviewWorkingModel,
   type SceneBeat,
   type SceneFile,
   type SceneListItem,
@@ -147,33 +144,14 @@ export function unseenValueIds(tallies: InterviewTallies, axis: InterviewAxis): 
   return axis.values.filter((value) => (seen[value.id] ?? 0) === 0).map((value) => value.id);
 }
 
-export function computeInterviewCardHash(card: StoryboardCard): string {
-  return card.type === 'character'
-    ? computePersonaCardHash(card, 'interview')
-    : computeBackgroundCardHash(card);
-}
-
-export function listCardAnsweredAxisIds(
-  model: InterviewWorkingModel | undefined,
-  card: StoryboardCard,
-): ReadonlySet<string> {
-  const answers: InterviewWorkingModel['cardAnswers'] = model?.cardAnswers;
-  if (answers === undefined || answers.cardHash !== computeInterviewCardHash(card)) {
-    return new Set<string>();
-  }
-
-  return new Set<string>(Object.keys(answers.valueIdByAxis));
-}
-
 export function listOpenAxes(
   axes: readonly InterviewAxis[],
   tallies: InterviewTallies,
   minimumWeight: number,
   beatSituations: readonly InterviewBeatSituation[],
-  cardAnsweredAxisIds: ReadonlySet<string>,
 ): InterviewOpenAxis[] {
   return axes
-    .filter((axis) => !cardAnsweredAxisIds.has(axis.id) && !isAxisDecided(tallies, axis.id, minimumWeight))
+    .filter((axis) => !isAxisDecided(tallies, axis.id, minimumWeight))
     .map((axis) => ({ axisId: axis.id, axisLabel: axis.label, beatSituations }));
 }
 

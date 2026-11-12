@@ -395,7 +395,6 @@ export class InterviewStepRunner {
         cardId: request.cardId,
         sessionId: opening.sessionId,
         ...(request.sceneStems === undefined ? {} : { sceneStems: request.sceneStems }),
-        ...(flagBoolean(request.flags, 'ask-known') ? { shouldAskKnown: true } : {}),
       },
     };
   }
