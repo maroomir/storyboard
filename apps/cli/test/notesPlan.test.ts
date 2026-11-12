@@ -14,6 +14,7 @@ import {
   type NoteConsolidationTarget,
   buildNoteAbsorbPlan,
   describeNoteSource,
+  listCharactersAtPlace,
   type NoteAbsorbPlan,
   type NoteConsolidationResult,
   readNoteConsolidationResponse,
@@ -1326,5 +1327,17 @@ describe('note source labels (A1)', () => {
     expect(describeNoteSource('obsidian', undefined)).toBe('note:obsidian');
     expect(describeNoteSource('notion', 'a1b2c3')).toBe('note:notion');
     expect(describeNoteSource('notion-export', '인물/엘리아.md')).toBe('note:notion');
+  });
+});
+
+describe('characters at a place (A6)', () => {
+  it('collects the cast of the scenes set there and of the beats placed there, in scene order', () => {
+    const harbor = { type: 'location', locationKind: 'place', id: 'harbor', name: '항구', aliases: ['부두'], description: [], characterIds: [], tags: [] } as const;
+    const scenes = [
+      { stem: '002-b', order: 2, card: { type: 'scene', id: '002-b', location: 'harbor', characters: ['jun', 'hana'] } },
+      { stem: '001-a', order: 1, card: { type: 'scene', id: '001-a', location: 'tower', beats: [{ text: '부두로 간다', place: '부두', cast: ['mira'] }, '혼자 남는다'] } },
+    ] as never;
+
+    expect(listCharactersAtPlace(harbor as never, scenes)).toEqual(['mira', 'jun', 'hana']);
   });
 });

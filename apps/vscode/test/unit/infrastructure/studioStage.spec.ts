@@ -296,3 +296,17 @@ describe("studio scene card context", () => {
     expect(context?.context).toContain("- 배경 astel-tower: 아스텔 마탑")
   })
 })
+
+describe("studio background card context", () => {
+  it("shows the characters the scenes put at the place, derived rather than stored", async () => {
+    stubWorkspace({
+      "/workspace/scene/01-intro.card": ["type: scene", "id: 01-intro", "title: 첫 등교", "location: harbor", "characters:", "  - ri-na"].join("\n"),
+      "/workspace/character/ri-na.card": ["type: character", "id: ri-na", "name: 리나", "role: main"].join("\n"),
+      "/workspace/background/harbor.card": ["type: location", "id: harbor", "name: 항구"].join("\n")
+    })
+
+    const context = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles), stubSummaries(), historyOf()).readEntityContext(workspaceRoot, { kind: "background", key: "harbor" }, "card")
+
+    expect(context?.baseline).toContain("characterIds:\n  - ri-na")
+  })
+})
