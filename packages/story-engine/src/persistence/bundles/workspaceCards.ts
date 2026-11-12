@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  BundleFileError,
   bundleFileNames,
   bundleRelativePath,
   elementKindDirectories,
@@ -32,6 +33,7 @@ import {
 } from '@storyboard/story-model';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import { ElementIndexStore } from '#engine/persistence/cache/elementIndexStore';
 import { BundleFileAccess } from '#engine/persistence/bundles/bundleFileAccess';
 import { ElementMemoryRepository } from '#engine/persistence/bundles/elementMemoryRepository';
@@ -47,6 +49,7 @@ import {
 export interface WorkspaceCardsDependencies {
   readonly fileSystem: IFileSystem;
   readonly caches: WorkspaceCaches;
+  readonly logger?: IStoryboardLogger;
 }
 
 export interface CardRoster {
@@ -132,6 +135,16 @@ interface PlannedCard {
   readonly content: ElementBundleContent<ElementHeader>;
 }
 
+const reportedWarningKinds: ReadonlySet<BundleWarning['kind']> = new Set([
+  'changed-outside-engine',
+  'unreadable',
+  'copied-id',
+]);
+
+function isUnreadableBundleOf(warning: BundleWarning, slug: string): boolean {
+  return warning.kind === 'unreadable' && warning.paths.some((path) => path.includes(`/${slug}.card/`));
+}
+
 interface CachedRoster {
   readonly fingerprint: string;
   readonly roster: CardRoster;
@@ -139,6 +152,7 @@ interface CachedRoster {
 
 export class WorkspaceCards {
   private readonly rosters: Map<string, CachedRoster> = new Map();
+  private readonly outsideChanges: Map<string, readonly BundleWarning[]> = new Map();
 
   public constructor(private readonly dependencies: WorkspaceCardsDependencies) {}
 
@@ -166,6 +180,7 @@ export class WorkspaceCards {
       kinds,
     );
     const lookup: ElementSlugLookup = createLookup(listing.bundles);
+    this.reportWarnings(workspaceRoot, listing.warnings);
 
     return {
       characters: listing.bundles
@@ -181,6 +196,27 @@ export class WorkspaceCards {
       warnings: listing.warnings,
       lookup,
     };
+  }
+
+  private reportWarnings(workspaceRoot: StoryUri, warnings: readonly BundleWarning[]): void {
+    for (const warning of warnings.filter((item) => reportedWarningKinds.has(item.kind))) {
+      this.dependencies.logger?.warn(warning.message);
+    }
+
+    const outside: readonly BundleWarning[] = warnings.filter((item) => item.kind === 'changed-outside-engine');
+    if (outside.length > 0) {
+      const key: string = workspaceRoot.toString();
+      this.outsideChanges.set(key, [...(this.outsideChanges.get(key) ?? []), ...outside]);
+    }
+  }
+
+  private throwIfUnreadable(roster: CardRoster, slug: string): void {
+    const unreadable: BundleWarning | undefined = roster.warnings.find((warning) =>
+      isUnreadableBundleOf(warning, slug),
+    );
+    if (unreadable !== undefined) {
+      throw new BundleFileError('invalid-shape', unreadable.paths[0] ?? slug, unreadable.message);
+    }
   }
 
   private async fingerprintBundles(
@@ -211,11 +247,14 @@ export class WorkspaceCards {
 
   public async findCard(workspaceRoot: StoryUri, slug: string): Promise<StoryboardCard | undefined> {
     const roster: CardRoster = await this.loadRoster(workspaceRoot, ['character', 'background']);
+    const card: StoryboardCard | undefined =
+      roster.characters.find((candidate) => candidate.id === slug) ??
+      roster.backgrounds.find((candidate) => candidate.id === slug);
+    if (card === undefined) {
+      this.throwIfUnreadable(roster, slug);
+    }
 
-    return (
-      roster.characters.find((card) => card.id === slug) ??
-      roster.backgrounds.find((card) => card.id === slug)
-    );
+    return card;
   }
 
   public async exists(workspaceRoot: StoryUri, kind: CardBundleKind, slug: string): Promise<boolean> {
@@ -319,7 +358,16 @@ export class WorkspaceCards {
   }
 
   public async listWarnings(workspaceRoot: StoryUri): Promise<readonly BundleWarning[]> {
-    return (await (await this.openRepository(workspaceRoot)).listBundles(elementKinds)).warnings;
+    const fresh: readonly BundleWarning[] = (
+      await (await this.openRepository(workspaceRoot)).listBundles(elementKinds)
+    ).warnings;
+    const key: string = workspaceRoot.toString();
+    const seenOutside: readonly BundleWarning[] = (this.outsideChanges.get(key) ?? []).filter(
+      (kept) => !fresh.some((warning) => warning.message === kept.message),
+    );
+    this.outsideChanges.delete(key);
+
+    return [...seenOutside, ...fresh];
   }
 
   public async reassignCopiedIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
@@ -365,9 +413,13 @@ export class WorkspaceCards {
     workspaceRoot: StoryUri,
     slug: string,
   ): Promise<ElementBundle | undefined> {
-    return (await this.loadRoster(workspaceRoot)).bundles.find(
-      (bundle) => bundle.header.slug === slug,
-    );
+    const roster: CardRoster = await this.loadRoster(workspaceRoot);
+    const bundle: ElementBundle | undefined = roster.bundles.find((candidate) => candidate.header.slug === slug);
+    if (bundle === undefined) {
+      this.throwIfUnreadable(roster, slug);
+    }
+
+    return bundle;
   }
 
   public async readBundleAt(

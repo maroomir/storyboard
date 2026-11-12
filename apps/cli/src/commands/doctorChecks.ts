@@ -320,9 +320,14 @@ const bundleWarningLabels: Readonly<Record<BundleWarning['kind'], string>> = {
   unreadable: '읽지 못한 번들',
 };
 
+const sceneBundlePrefix: string = 'scene/';
+
 function describeBundleWarning(warning: BundleWarning): DoctorCheck[] {
   if (warning.kind === 'unreadable') {
-    return [];
+    const isSceneBundle: boolean = warning.paths.every((path) => path.startsWith(sceneBundlePrefix));
+    return isSceneBundle
+      ? []
+      : [{ status: 'fail', label: bundleWarningLabels.unreadable, detail: warning.message }];
   }
 
   const isCopiedId: boolean = warning.kind === 'copied-id';
