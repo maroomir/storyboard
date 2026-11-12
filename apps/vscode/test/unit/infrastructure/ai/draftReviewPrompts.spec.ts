@@ -57,7 +57,7 @@ describe("DraftCritiquePrompt", () => {
       {
         ...input,
         styleDirective: {
-          narration: { person: "first", knowledge: "witnessed", voice: ["건조한 단문"] },
+          narration: { person: "first", knowledge: "witnessed", voice: ["건조한 단문"], facts: ["회고 시점: 사건 10년 뒤"] },
           genre: "허세 코미디"
         }
       },
@@ -68,6 +68,8 @@ describe("DraftCritiquePrompt", () => {
     expect(userText(artifact)).toContain("1인칭 · 목격 범위")
     expect(userText(artifact)).toContain("[서술자 목소리]")
     expect(userText(artifact)).toContain("건조한 단문")
+    expect(userText(artifact)).toContain("[서술자 사실]")
+    expect(userText(artifact)).toContain("사건 10년 뒤")
     expect(artifact.system).not.toContain("관계 단계")
   })
 

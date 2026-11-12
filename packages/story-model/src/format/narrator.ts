@@ -22,6 +22,7 @@ export interface NarratorCard {
   focal?: string;
   description?: string[];
   voice?: string[];
+  facts?: string[];
 }
 
 export const narratorCardSchema: z.ZodType<NarratorCard> = z.object({
@@ -36,6 +37,7 @@ export const narratorCardSchema: z.ZodType<NarratorCard> = z.object({
   focal: z.string().trim().min(1).optional(),
   description: z.array(z.string().trim().min(1)).optional(),
   voice: z.array(z.string().trim().min(1)).optional(),
+  facts: z.array(z.string().trim().min(1)).optional(),
 });
 
 export interface NarrationDirective {
@@ -44,6 +46,7 @@ export interface NarrationDirective {
   readonly tense?: NarrativeTense;
   readonly focal?: string;
   readonly voice?: readonly string[];
+  readonly facts?: readonly string[];
   readonly narratorId?: string;
 }
 
@@ -95,6 +98,7 @@ export function resolveNarration(sources: NarrationSources): NarrationDirective 
       tense: narrator.tense ?? 'past',
       focal,
       voice: narrator.voice && narrator.voice.length > 0 ? narrator.voice : undefined,
+      facts: narrator.facts && narrator.facts.length > 0 ? narrator.facts : undefined,
       narratorId: narrator.id,
     });
   }

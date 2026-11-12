@@ -154,8 +154,6 @@ function projectStatement(kind: ElementKind, statement: Statement): unknown {
   return { card: projectCard(kind, statements), facts }
 }
 
-const narratorFactsAwaitingTheirSubjectKind = ["narrator fact"]
-
 describe("facet projections", () => {
   it("carries every facet a kind declares into what the prompts read", () => {
     const unprojected = elementKinds.flatMap((kind) =>
@@ -165,6 +163,6 @@ describe("facet projections", () => {
       }),
     )
 
-    expect(unprojected).toEqual(narratorFactsAwaitingTheirSubjectKind)
+    expect(unprojected).toEqual([])
   })
 })
