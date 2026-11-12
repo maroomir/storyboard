@@ -20,6 +20,7 @@ export interface NarratorCard {
   knowledge: NarratorKnowledge;
   tense?: NarrativeTense;
   focal?: string;
+  description?: string[];
   voice?: string[];
 }
 
@@ -33,6 +34,7 @@ export const narratorCardSchema: z.ZodType<NarratorCard> = z.object({
   knowledge: z.enum(narratorKnowledges),
   tense: z.enum(narrativeTenses).optional(),
   focal: z.string().trim().min(1).optional(),
+  description: z.array(z.string().trim().min(1)).optional(),
   voice: z.array(z.string().trim().min(1)).optional(),
 });
 

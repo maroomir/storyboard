@@ -14,6 +14,7 @@ const narrator: NarratorInterviewVoice = {
   knowledge: "목격 범위",
   tense: "과거형",
   focal: "하나",
+  description: ["하나의 어깨 너머에 붙어 있다"],
   voice: ["감정은 사물로 비춘다"]
 }
 

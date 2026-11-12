@@ -4,6 +4,15 @@ import {
   cardSectionLabels,
   elementDefinitions,
   elementKinds,
+  projectBackgroundCard,
+  projectCardFacts,
+  projectCharacterCard,
+  projectNarratorCard,
+  projectSceneCard,
+  type ElementKind,
+  type ElementSlugLookup,
+  type Statement,
+  type StatementFacetId,
   getStatementFacetRow,
   isStatementFacetId,
   isStatementFacetOf,
@@ -92,5 +101,70 @@ describe("facet consumers", () => {
     for (const facetId of ["purpose", "conflict", "emotionalShift", "endState"] as const) {
       expect(getStatementFacetRow(facetId).consumers).toContain("sceneDesign")
     }
+  })
+})
+
+const partnerId = "partner-uuid"
+const projectionLookup: ElementSlugLookup & { nameOf: (id: string) => string | undefined } = {
+  slugOf: (id) => (id === partnerId ? "partner" : undefined),
+  idOf: () => partnerId,
+  nameOf: () => undefined,
+}
+
+function markerOf(kind: ElementKind, facet: StatementFacetId): string {
+  return `marker-${kind}-${facet}`
+}
+
+function statementFor(kind: ElementKind, facet: StatementFacetId): Statement {
+  const row = getStatementFacetRow(facet)
+  return {
+    facet,
+    value: markerOf(kind, facet),
+    ...(row.about === "required" ? { about: partnerId } : {}),
+    source: { origin: "author" },
+  }
+}
+
+function projectCard(kind: ElementKind, statements: readonly Statement[]): unknown {
+  switch (kind) {
+    case "character":
+      return projectCharacterCard({ header: { id: "c", slug: "c", kind, name: "C" }, statements }, projectionLookup)
+    case "background":
+      return projectBackgroundCard({ header: { id: "b", slug: "b", kind, name: "B" }, statements })
+    case "narrator":
+      return projectNarratorCard(
+        { header: { id: "n", slug: "n", kind, name: "N", person: "first", knowledge: "witnessed" }, statements },
+        projectionLookup,
+      )
+    case "scene":
+      return projectSceneCard(
+        { header: { id: "s", slug: "s", kind, title: "S" }, statements, beats: [] },
+        { stem: "001-s", number: 1 },
+        projectionLookup,
+      )
+  }
+}
+
+function projectStatement(kind: ElementKind, statement: Statement): unknown {
+  const statements: readonly Statement[] = [statement]
+  const facts: unknown = projectCardFacts([{ kind, slug: "subject", statements }], {
+    sceneOrderOf: () => undefined,
+    characterSlugOf: () => undefined,
+  })
+  return { card: projectCard(kind, statements), facts }
+}
+
+const narratorFactsAwaitingTheirSubjectKind = ["narrator fact"]
+
+describe("facet projections", () => {
+  it("carries every facet a kind declares into what the prompts read", () => {
+    const unprojected = elementKinds.flatMap((kind) =>
+      listStatementFacetsOf(kind).flatMap((row) => {
+        const projected = JSON.stringify(projectStatement(kind, statementFor(kind, row.id)))
+        return projected.includes(markerOf(kind, row.id)) ? [] : [`${kind} ${row.id}`]
+      }),
+    )
+
+    expect(unprojected).toEqual(narratorFactsAwaitingTheirSubjectKind)
   })
 })

@@ -6,6 +6,7 @@ export interface NarratorInterviewVoice {
   readonly knowledge: string;
   readonly tense?: string;
   readonly focal?: string;
+  readonly description: readonly string[];
   readonly voice: readonly string[];
 }
 
@@ -16,6 +17,8 @@ export function narratorView(narrator: NarratorInterviewVoice): Record<string, T
     knowledge: narrator.knowledge,
     tense: narrator.tense,
     focal: narrator.focal,
+    hasDescription: narrator.description.length > 0,
+    description: narrator.description,
     hasVoice: narrator.voice.length > 0,
     voice: narrator.voice,
   };
