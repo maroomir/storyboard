@@ -78,7 +78,7 @@
 - `purpose` `conflict` `twist` `emotionalShift`는 씬 본문의 `[목적]`·`[갈등]`·`[반전]`·`[감정 변화]` 블록이 되어(`sceneProjection.ts` → `renderSceneCardBody`) 비트 전개와 초안 프롬프트에 함께 들어갑니다.
 - `endState`는 뼈대(마지막 구간)에 들어가 씬이 다음 씬 영역으로 넘어가지 않게 합니다.
 - `foreshadowing`은 원고 조립(`manuscriptAssembly`) 소비자로 적혀 있습니다.
-- 0.15의 `summary`(→ `summary.md`), `povCharacter`, `mood`, `relationStage`(→ `state.yaml`의 `relationShift`)는 씬 필드가 아닙니다. 사실 시트(사건·장소·시점·관계)와 `neededCanon`은 저장하지 않고 카드에서 파생합니다.
+- 0.15의 `summary`(→ `summary.md`), `povCharacter`, `mood`, `relationStage`(→ `state.yaml`의 `relationShift`)는 씬 필드가 아닙니다. 사실 시트(사건·장소·시점)와 `neededCanon`은 저장하지 않고 카드에서 파생합니다.
 - 시점은 씬 → 장(`chapters.yaml`) → 프로젝트 순으로 풀리고, 서술자와 줄기는 `.storyboard/structure.yaml`에 있습니다.
 
 ## 권고

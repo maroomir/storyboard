@@ -39,8 +39,7 @@ describe("scene file codec", () => {
       frontmatter: {
         title: "프롤로그",
         characters: ["sample"],
-        location: "sample",
-        mood: "시작"
+        location: "sample"
       },
       body: "샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다.\n"
     })
@@ -171,23 +170,20 @@ function readFixtureScene(fixtureName: string): string {
   return readFileSync(join(scenesFixtureDirectory, fixtureName), "utf8")
 }
 
-describe("scene card endState and povCharacter", () => {
+describe("scene card endState", () => {
   const cardText = [
     "type: scene",
     "id: 07-auction",
-    "povCharacter: 한이준",
     "endState: 발키리 일행이 경매홀에 들어서는 순간까지",
     "purpose: 기록 조각의 단서를 손에 넣는다",
     "summary: 이준과 채린이 경매장에 들어선다.",
     ""
   ].join("\n")
 
-  it("parses both fields and exposes povCharacter on the frontmatter view", () => {
+  it("parses the end state", () => {
     const scene = parseScene(cardText, "07-auction.card")
 
     expect(scene.card.endState).toBe("발키리 일행이 경매홀에 들어서는 순간까지")
-    expect(scene.card.povCharacter).toBe("한이준")
-    expect(scene.frontmatter.povCharacter).toBe("한이준")
   })
 
   it("renders the end state as a prompt block that forbids overrunning it", () => {
@@ -198,19 +194,17 @@ describe("scene card endState and povCharacter", () => {
     expect(scene.body).toContain("다음 장면의 몫이므로 쓰지 마라")
   })
 
-  it("round-trips both fields through serialization", () => {
+  it("round-trips the end state through serialization", () => {
     const scene = parseScene(cardText, "07-auction.card")
     const reparsed = parseScene(serializeSceneCard(scene.card), "07-auction.card")
 
     expect(reparsed.card.endState).toBe(scene.card.endState)
-    expect(reparsed.card.povCharacter).toBe(scene.card.povCharacter)
   })
 
   it("omits the end state block when the field is absent", () => {
     const scene = parseScene("type: scene\nid: 01-a\nsummary: 본문\n", "01-a.card")
 
     expect(scene.body).not.toContain("[이 장면의 종료 지점]")
-    expect(scene.frontmatter.povCharacter).toBeUndefined()
   })
 })
 

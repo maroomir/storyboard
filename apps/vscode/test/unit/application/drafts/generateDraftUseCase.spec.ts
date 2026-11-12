@@ -107,7 +107,6 @@ const sceneBackgroundCard = {
   description: [],
   characterIds: [],
   tags: [],
-  locationKind: "place"
 }
 
 const aiServiceStub = {
@@ -609,11 +608,11 @@ describe("GenerateDraftUseCase", () => {
       })
     })
 
-    it("builds the incident from the title and the first beat, and keeps what the card states", async () => {
+    it("builds the incident from the title and the first beat", async () => {
       const titledScene = {
         ...fakeScene,
         card: { type: "scene", id: "01-intro", beats: [{ text: "준서가 문을 연다", time: "새벽" }] },
-        frontmatter: { title: "첫 만남", grounding: { relation: "어색한 동료" } }
+        frontmatter: { title: "첫 만남" }
       }
       const dependencies = createDependencies({
         sceneRepository: { read: vi.fn(async () => titledScene), writeBeats: vi.fn(async () => undefined) }
@@ -625,7 +624,7 @@ describe("GenerateDraftUseCase", () => {
         context: {
           scene: {
             frontmatter: {
-              grounding: { incident: "첫 만남: 준서가 문을 연다", place: "카페", time: "새벽", relation: "어색한 동료" }
+              grounding: { incident: "첫 만남: 준서가 문을 연다", place: "카페", time: "새벽" }
             }
           }
         }

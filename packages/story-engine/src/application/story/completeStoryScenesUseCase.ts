@@ -18,7 +18,7 @@ const FULL_SCENE_CONTEXT_LIMIT: number = 120_000;
 const SUMMARY_CHUNK_SIZE: number = 40_000;
 
 interface CompletionResponse {
-  scenes: { slug: string; title: string; characterIds: string[]; body: string; resolvedThreads: string[]; openThreads: string[]; locationId?: string | undefined; mood?: string | undefined; relationStage?: string | undefined; }[];
+  scenes: { slug: string; title: string; characterIds: string[]; body: string; resolvedThreads: string[]; openThreads: string[]; locationId?: string | undefined; }[];
   centralQuestion?: string;
   climaxChoice?: string;
 }
@@ -31,8 +31,6 @@ const completionResponseSchema: z.ZodType<CompletionResponse> = z.object({
         title: z.string().trim().min(1),
         characterIds: z.array(z.string().trim().min(1)),
         locationId: z.string().trim().min(1).optional(),
-        mood: z.string().trim().min(1).optional(),
-        relationStage: z.string().trim().min(1).optional(),
         body: z.string().trim().min(1),
         resolvedThreads: z.array(z.string().trim().min(1)).default([]),
         openThreads: z.array(z.string().trim().min(1)).default([]),
@@ -242,8 +240,6 @@ function createSceneCard(stem: string, candidate: CompletionScene): SceneCard {
     title: candidate.title,
     ...(candidate.characterIds.length > 0 ? { characters: candidate.characterIds } : {}),
     ...(candidate.locationId ? { location: candidate.locationId } : {}),
-    ...(candidate.mood ? { mood: candidate.mood } : {}),
-    ...(candidate.relationStage ? { relationStage: candidate.relationStage } : {}),
     summary: candidate.body.trim(),
   };
 }
@@ -256,8 +252,6 @@ function completionResponseShape(): Record<string, unknown> {
         title: 'string',
         characterIds: ['existing-character-id'],
         locationId: 'existing-background-id optional',
-        mood: 'optional',
-        relationStage: 'optional',
         body: 'scene source body',
         resolvedThreads: ['string'],
         openThreads: ['string'],

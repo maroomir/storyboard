@@ -465,7 +465,7 @@ exports[`StudioAgentPrompt golden > renders a scene card edit 1`] = `
 
 [씬 카드 수정]
 - 고칠 수 있는 필드는 title, summary, purpose, conflict, twist, emotionalShift, endState, foreshadowing, characters, location 다.
-- id, grounding, targetWordCount, povCharacter, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.
+- id, grounding, targetWordCount, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.
 - characters에는 인물 카드 id 배열을, location에는 배경 카드 id 하나를 준다. 자료나 lookup으로 실재를 확인한 카드 id만 넣어라 — 없는 id는 적용 단계에서 거부된다. 설명문에 나온 인물의 카드가 없으면 채우지 말고 say나 followUps로 알려라.
 - foreshadowing과 characters는 문자열 배열, 나머지는 문자열이다.
 - 목록형 필드는 유지할 항목까지 포함한 전체 목록을 준다. 빠뜨린 항목은 삭제된다.
@@ -531,7 +531,7 @@ exports[`StudioAgentPrompt golden > renders a scene card edit 2`] = `
 
 [씬 카드 수정]
 - 고칠 수 있는 필드는 title, summary, purpose, conflict, twist, emotionalShift, endState, foreshadowing, characters, location 다.
-- id, grounding, targetWordCount, povCharacter, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.
+- id, grounding, targetWordCount, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.
 - characters에는 인물 카드 id 배열을, location에는 배경 카드 id 하나를 준다. 자료나 lookup으로 실재를 확인한 카드 id만 넣어라 — 없는 id는 적용 단계에서 거부된다. 설명문에 나온 인물의 카드가 없으면 채우지 말고 say나 followUps로 알려라.
 - foreshadowing과 characters는 문자열 배열, 나머지는 문자열이다.
 - 목록형 필드는 유지할 항목까지 포함한 전체 목록을 준다. 빠뜨린 항목은 삭제된다.
@@ -585,7 +585,7 @@ exports[`StudioAgentPrompt golden > renders a scene card edit 3`] = `
 
 [씬 카드 수정]
 - 고칠 수 있는 필드는 title, summary, purpose, conflict, twist, emotionalShift, endState, foreshadowing, characters, location 다.
-- id, grounding, targetWordCount, povCharacter, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.
+- id, grounding, targetWordCount, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.
 - characters에는 인물 카드 id 배열을, location에는 배경 카드 id 하나를 준다. 자료나 lookup으로 실재를 확인한 카드 id만 넣어라 — 없는 id는 적용 단계에서 거부된다. 설명문에 나온 인물의 카드가 없으면 채우지 말고 say나 followUps로 알려라.
 - foreshadowing과 characters는 문자열 배열, 나머지는 문자열이다.
 - 목록형 필드는 유지할 항목까지 포함한 전체 목록을 준다. 빠뜨린 항목은 삭제된다.

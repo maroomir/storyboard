@@ -81,13 +81,12 @@ export interface NarrationSources {
   readonly chapterNarrator?: string;
   readonly defaultNarrator?: string;
   readonly pov?: PointOfView;
-  readonly focalFallback?: string;
   readonly narrators?: ReadonlyMap<string, NarratorCard>;
 }
 
 export function resolveNarration(sources: NarrationSources): NarrationDirective | undefined {
   const narrator: NarratorCard | undefined = resolveNarratorCard(sources);
-  const focal: string | undefined = narrator?.focal ?? trimmed(sources.focalFallback);
+  const focal: string | undefined = narrator?.focal;
 
   if (narrator) {
     return compact({

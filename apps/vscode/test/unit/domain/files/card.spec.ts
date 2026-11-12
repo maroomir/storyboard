@@ -108,7 +108,6 @@ describe('card file codec', () => {
       id: 'school',
       name: '학교 정문',
       aliases: ['학교', '교문'],
-      locationKind: 'place',
       description: [],
       characterIds: [],
       tags: [],
@@ -144,7 +143,6 @@ describe('card file codec', () => {
       type: 'location',
       id: 'school',
       name: '학교 정문',
-      locationKind: 'place',
       description: [],
       characterIds: [],
       tags: [],
@@ -168,7 +166,6 @@ describe('card file codec', () => {
       type: 'location',
       id: 'tavern',
       name: '미감',
-      locationKind: 'place',
       description: [],
       characterIds: [],
       tags: [],
@@ -195,7 +192,6 @@ describe('card file codec', () => {
       traits: ['허세 섞인 단언'],
       relations: [{ target: 'eunha', type: '라이벌' }],
       arc: [{ stage: '발단', summary: '첫 등장', sceneRef: '01-first-meeting' }],
-      recentDialogues: ['내가 누군지 아나?'],
     };
 
     const reparsed = parseCard(serializeCard(card));
@@ -208,7 +204,6 @@ describe('card file codec', () => {
       expect(reparsed.arc).toEqual([
         { stage: '발단', summary: '첫 등장', sceneRef: '01-first-meeting' },
       ]);
-      expect(reparsed.recentDialogues).toEqual(['내가 누군지 아나?']);
     }
   });
 

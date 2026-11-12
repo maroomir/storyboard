@@ -21,8 +21,7 @@ describe("SceneDialoguePolishPrompt golden", () => {
       narration: { tense: "present", focal: "하나" },
       genre: "무협",
       styleConstraints: ["짧은 문장"],
-      prohibitions: ["욕설"],
-      relationStage: "경계"
+      prohibitions: ["욕설"]
     }
   }
   const bare: SceneDialoguePolishInput = {

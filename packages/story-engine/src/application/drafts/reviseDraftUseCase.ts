@@ -31,7 +31,6 @@ import {
   scenePath,
   serializeDraft,
   readDraftFile,
-  resolveNarration,
   writeDraftFile,
   resolveSceneTargetLength,
   buildStyleDirective,
@@ -91,7 +90,7 @@ async function resolveReviseNarration(
     return {
       threadPaths: paths,
       previousSceneOrder: undefined,
-      narration: resolveNarration({ focalFallback: scene.frontmatter.povCharacter }),
+      narration: undefined,
     };
   }
 
@@ -360,7 +359,6 @@ function buildReviseLoopContext(
     qualityCriteria: setting?.qualityCriteria ?? [],
     styleDirective: buildStyleDirective(
       setting,
-      scene.frontmatter.relationStage,
       scene.frontmatter.targetWordCount,
       scene.body,
       sources.reviseNarration.narration,

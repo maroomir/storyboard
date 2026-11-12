@@ -16,7 +16,6 @@ describe("SceneSectionExpansionPrompt golden", () => {
       genre: "스릴러",
       styleConstraints: ["짧은 문장"],
       prohibitions: ["욕설"],
-      relationStage: "경계",
       targetWordCount: 4000,
       craftContract: { banTelling: false, motifRepeatLimit: 2, stockGestureBlacklist: [] }
     }

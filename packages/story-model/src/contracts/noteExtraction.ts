@@ -156,7 +156,6 @@ export interface NoteExtractionScene {
   characterNames: string[] | never[];
   slug?: string;
   locationName?: string;
-  mood?: string;
   purpose?: string;
   sourceNote?: string;
 }
@@ -168,7 +167,6 @@ const noteSceneSchema: z.ZodType<NoteExtractionScene> = z.object({
   beats: textList(),
   characterNames: textList(),
   locationName: optionalText,
-  mood: optionalText,
   purpose: optionalText,
   sourceNote: optionalText,
 });

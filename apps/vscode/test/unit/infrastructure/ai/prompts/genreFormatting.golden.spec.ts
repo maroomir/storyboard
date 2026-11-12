@@ -17,7 +17,6 @@ describe("GenreFormattingPrompt golden", () => {
     genre: "허세 코미디",
     styleConstraints: ["간결체", "은유 절제"],
     prohibitions: ["무근거 부활 금지"],
-    relationStage: "경계",
     targetWordCount: 12000,
     craftContract: {
       banTelling: false,

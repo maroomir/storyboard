@@ -149,15 +149,6 @@ describe('resolveSceneNarration', () => {
     expect(narration).toMatchObject({ narratorId: 'hana-first', person: 'first', focal: 'hana' });
   });
 
-  it("falls back to the scene's point-of-view character for a narrator card with no focal", async () => {
-    const narration = await new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).resolveNarration(paths, sceneOf(
-        'type: scene\nid: 02-alley\nnarrator: jun-omniscient\npovCharacter: jun\nsummary: 골목.\n',
-        '02-alley.card',
-      ), projectWith({}), {});
-
-    expect(narration?.focal).toBe('jun');
-  });
-
   it('refuses a scene naming a narrator that has no card', async () => {
     await expect(
       new SceneNarrationResolver(workspaceFileSystem, cardsOf(workspaceFileSystem), stubScenes()).resolveNarration(paths, sceneOf('type: scene\nid: 02-alley\nnarrator: ghost\nsummary: 골목.\n', '02-alley.card'), projectWith({}), {}),

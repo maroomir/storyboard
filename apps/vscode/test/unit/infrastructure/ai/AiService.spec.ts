@@ -35,7 +35,6 @@ describe("StoryboardAiService", () => {
         traits: ["용감함"],
         relations: [],
         arc: [],
-        recentDialogues: []
       })
     ).resolves.toBe("나는 엘리아다.")
   })
@@ -48,7 +47,6 @@ describe("StoryboardAiService", () => {
         type: "location",
         id: "school-hall",
         name: "복도",
-        locationKind: "place",
         description: ["낡은 복도"],
         characterIds: [],
         tags: ["학교"]

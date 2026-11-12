@@ -27,7 +27,6 @@ describe("SceneSkeletonPrompt golden", () => {
     style: {
       narration: { person: "first", knowledge: "witnessed", tense: "present", focal: "하나", voice: ["건조한 단문"] },
       genre: "로맨스",
-      relationStage: "냉전",
       craftContract: { banTelling: false, actionClarity: true }
     },
     targetLength: 2500,

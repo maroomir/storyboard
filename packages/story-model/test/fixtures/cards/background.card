@@ -22,4 +22,3 @@ layout:
   - 정문 안쪽 경비실 창으로 운동장까지 보인다
 rules:
   - 8시 30분이 지나면 정문을 닫고 쪽문으로만 들어온다
-locationKind: place

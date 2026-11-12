@@ -33,7 +33,6 @@ const library: LocationBackgroundCard = {
   characterIds: [],
   tags: [],
   weather: '비',
-  locationKind: 'place',
 };
 
 describe('applyCardCollectProposals (character)', () => {
@@ -44,11 +43,9 @@ describe('applyCardCollectProposals (character)', () => {
       proposal({ kind: 'trait', value: '용감함' }),
       proposal({ kind: 'trait', value: '신중함' }),
       proposal({ kind: 'alias', value: '별칭 엘리아' }),
-      proposal({ kind: 'tag', value: '기억' }),
       proposal({ kind: 'relation', target: 'jihun', type: '소꿉친구' }),
       proposal({ kind: 'relation', target: 'mina', type: 'rival' }),
       proposal({ kind: 'arc', summary: '각성', sceneRef: '03-scene' }),
-      proposal({ kind: 'recentDialogue', value: '안녕' }),
       proposal({ kind: 'descriptionLine', value: '주인공' }),
       proposal({ kind: 'voiceLine', value: '또박또박한 존댓말' }),
       proposal({ kind: 'desireLine', value: '진실을 밝히고 싶다' }),
@@ -57,13 +54,11 @@ describe('applyCardCollectProposals (character)', () => {
     expect(result.attributes).toEqual({ age: '99', height: '170' });
     expect(result.traits).toEqual(['용감함', '신중함']);
     expect(result.aliases).toEqual(['별칭 엘리아']);
-    expect(result.tags).toEqual(['기억']);
     expect(result.relations).toEqual([
       { target: 'jihun', type: '소꿉친구' },
       { target: 'mina', type: 'rival' },
     ]);
     expect(result.arc).toEqual([{ stage: '03-scene', summary: '각성', sceneRef: '03-scene' }]);
-    expect(result.recentDialogues).toEqual(['안녕']);
     expect(result.description).toEqual(['주인공']);
     expect(result.voice).toEqual(['또박또박한 존댓말']);
     expect(result.desire).toEqual(['진실을 밝히고 싶다']);

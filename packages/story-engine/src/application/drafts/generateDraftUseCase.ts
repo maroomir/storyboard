@@ -384,7 +384,6 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
     return buildStyleDirective(
       project.setting,
-      scene.frontmatter.relationStage,
       scene.frontmatter.targetWordCount,
       scene.body,
       inputs.narration,

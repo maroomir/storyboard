@@ -7,9 +7,6 @@ attributes:
   age: 17
   sex: female
   mbti: ENFJ
-tags:
-  - 용감한
-  - 결단력
 traits:
   - 활발하게 움직임
   - 결단력 있는 발언
@@ -25,5 +22,3 @@ arc:
   - stage: 발단
     summary: 학교에 도착해 새 친구를 만남
     sceneRef: 01-prologue
-recentDialogues:
-  - 이건 우리가 해낼 수 있어!

@@ -48,16 +48,12 @@ export interface SceneInputHashInput {
 export interface SceneNarrationHashInput {
   readonly narrator?: string;
   readonly thread?: string;
-  readonly povCharacter?: string;
 }
 
 export function sceneNarrationHashInput(scene: SceneFile): SceneNarrationHashInput | undefined {
   const narration: SceneNarrationHashInput = {
     ...(scene.card.narrator === undefined ? {} : { narrator: scene.card.narrator }),
     ...(scene.card.thread === undefined ? {} : { thread: scene.card.thread }),
-    ...(scene.frontmatter.povCharacter === undefined
-      ? {}
-      : { povCharacter: scene.frontmatter.povCharacter }),
   };
 
   return Object.keys(narration).length > 0 ? narration : undefined;
@@ -191,11 +187,11 @@ function digestBibleFacts(
 function hasNarrationInput(narration: SceneNarrationHashInput | undefined): boolean {
   return (
     narration !== undefined &&
-    (narration.narrator !== undefined ||
-      narration.thread !== undefined ||
-      narration.povCharacter !== undefined)
+    (narration.narrator !== undefined || narration.thread !== undefined)
   );
 }
+
+const retiredCharacterListHashValue: readonly string[] = [];
 
 function hasRelationSpeech(relations: CharacterCard['relations']): boolean {
   return (relations ?? []).some((relation) => relation.speech !== undefined);
@@ -208,13 +204,13 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       id: character.id,
       name: character.name,
       role: character.role,
-      tags: character.tags ?? [],
+      tags: retiredCharacterListHashValue,
       traits: character.traits ?? [],
       voice: joinCardText(character.voice),
       description: joinCardText(character.description),
       desire: joinCardText(character.desire),
       attributes: formatCardAttributes(character.attributes),
-      recentDialogues: character.recentDialogues ?? [],
+      recentDialogues: retiredCharacterListHashValue,
       ...(character.catchphrases && character.catchphrases.length > 0
         ? { catchphrases: character.catchphrases }
         : {}),

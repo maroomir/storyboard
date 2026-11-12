@@ -66,7 +66,6 @@ describe("scene projection", () => {
         location: "school",
         thread: "jun",
         purpose: "엘리아가 처음 무너진다",
-        mood: "서늘함",
         beats: ["엘리아가 옥상 문을 민다", { text: "세라가 먼저 와 있다", cast: ["세라", "모르는 이"], place: "학교", time: "방과 후" }]
       },
       {

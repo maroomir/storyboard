@@ -186,7 +186,6 @@ export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, 
               newCharacterRoles: ['main', 'supporting', 'extra'],
               uncertainRole: 'extra',
               newBackgroundType: 'location',
-              newBackgroundLocationKind: 'place',
               noFactDeletion: true,
               sourceScenesMustBeFromThisChunk: true,
             },
@@ -387,7 +386,6 @@ function buildNewCard(
     type: 'location',
     id,
     name: entity.name,
-    locationKind: 'place',
     description: [],
     characterIds: [],
     tags: [],
@@ -419,7 +417,6 @@ function toChanges(
 ): StoryCardChange[] {
   const drafts: CardCollectProposalDraft[] = [
     ...entity.aliases.map((value) => ({ kind: 'alias' as const, value })),
-    ...entity.tags.map((value) => ({ kind: 'tag' as const, value })),
     ...entity.description.map((value) => ({ kind: 'descriptionLine' as const, value })),
   ];
   if (card.type === 'character') {
@@ -444,6 +441,7 @@ function toChanges(
       });
     }
   } else {
+    drafts.push(...entity.tags.map((value) => ({ kind: 'tag' as const, value })));
     drafts.push(...entity.senses.map((value) => ({ kind: 'sense' as const, value })));
     if (entity.time) {
       drafts.push({ kind: 'scalar', field: 'time', after: entity.time });

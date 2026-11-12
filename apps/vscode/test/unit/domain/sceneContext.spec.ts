@@ -37,7 +37,6 @@ const schoolBg: BackgroundCard = {
   type: "location",
   id: "school",
   name: "학교 정문",
-  locationKind: "place",
   description: [],
   characterIds: [],
   tags: []
@@ -306,7 +305,6 @@ describe("sceneContext", () => {
       type: "location",
       id: "city",
       name: "도시",
-      locationKind: "place",
       description: [],
       characterIds: [],
       tags: []
@@ -350,7 +348,6 @@ describe("sceneContext", () => {
       type: "location",
       id: "harbor",
       name: "항구",
-      locationKind: "place",
       description: [],
       characterIds: [],
       tags: []
@@ -386,7 +383,6 @@ describe("sceneContext", () => {
       type: "location",
       id: "sample",
       name: "샘플 배경",
-      locationKind: "place",
       description: [],
       characterIds: [],
       tags: []

@@ -86,9 +86,6 @@ export class SceneNarrationResolver {
         : { chapterNarrator: chapterDefaults.narrator }),
       ...(defaultNarrator === undefined ? {} : { defaultNarrator }),
       ...(setting?.pov === undefined ? {} : { pov: setting.pov }),
-      ...(scene.frontmatter.povCharacter === undefined
-        ? {}
-        : { focalFallback: scene.frontmatter.povCharacter }),
       ...(referencesNarratorCard
         ? {
             narrators: await new NarratorCardRepository(this.cards).list(paths.workspaceRoot),

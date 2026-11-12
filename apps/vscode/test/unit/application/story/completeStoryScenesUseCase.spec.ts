@@ -45,7 +45,6 @@ function source(): StoryFeatureSource {
         type: 'location',
         id: 'workshop',
         name: '세공소',
-        locationKind: 'place',
         description: [],
         characterIds: [],
         tags: [],

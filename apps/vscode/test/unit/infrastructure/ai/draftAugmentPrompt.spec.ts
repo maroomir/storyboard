@@ -106,7 +106,6 @@ describe("formatAugmentCards", () => {
     type: "location",
     id: "school-hall",
     name: "학교 복도",
-    locationKind: "place",
     description: ["낡은 복도"],
     characterIds: [],
     tags: ["학교"],

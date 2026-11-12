@@ -43,7 +43,6 @@ export type CardCollectProposal =
   | { kind: 'trait'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'alias'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'tag'; value: string; id: string; sourceScenes: string[] }
-  | { kind: 'recentDialogue'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'descriptionLine'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'voiceLine'; value: string; id: string; sourceScenes: string[] }
   | { kind: 'desireLine'; value: string; id: string; sourceScenes: string[] }
@@ -96,11 +95,6 @@ export const cardCollectProposalSchema: z.ZodType<CardCollectProposal> = z.discr
     z.object({ ...proposalBaseFields, kind: z.literal('trait'), value: z.string().min(1) }),
     z.object({ ...proposalBaseFields, kind: z.literal('alias'), value: z.string().min(1) }),
     z.object({ ...proposalBaseFields, kind: z.literal('tag'), value: z.string().min(1) }),
-    z.object({
-      ...proposalBaseFields,
-      kind: z.literal('recentDialogue'),
-      value: z.string().min(1),
-    }),
     z.object({
       ...proposalBaseFields,
       kind: z.literal('descriptionLine'),

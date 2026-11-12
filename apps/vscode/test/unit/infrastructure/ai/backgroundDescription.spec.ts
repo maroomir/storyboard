@@ -6,7 +6,6 @@ const baseBackground: Background = {
   type: "location",
   id: "school",
   name: "학교 정문",
-  locationKind: "place",
   description: [],
   characterIds: [],
   tags: []
