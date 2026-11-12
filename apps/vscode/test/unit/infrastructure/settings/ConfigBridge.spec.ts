@@ -350,7 +350,7 @@ describe("ConfigBridge", () => {
     expect(targets).toEqual([["providers.openai.model", 2], ["ai.provider.default", 1]])
     expect(configBridge.getValueOrigin("providers.openai.model")).toBe("workspace")
     expect(configBridge.getValueOrigin("ai.provider.default")).toBe("user")
-    expect(configBridge.getValueOrigin("editor.draft.keepHistory")).toBe("default")
+    expect(configBridge.getValueOrigin("generation.sceneBreak.enabled")).toBe("default")
   })
 })
 

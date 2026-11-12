@@ -23,13 +23,11 @@ const legacySettingMigrations: readonly LegacySettingMigration[] = [
   { legacy: 'grammar.realtimeEnabled', home: 'editor.grammar.realtime' },
   { legacy: 'slop.realtimeEnabled', home: 'editor.slop.realtime' },
   { legacy: 'ai.contextCondenseEnabled', home: 'generation.context.condense' },
-  { legacy: 'scene.prefixDigits', home: 'editor.scene.prefixDigits' },
   { legacy: 'draft.reviseMaxIterations', home: 'revise.loop.maxIterations' },
   { legacy: 'draft.reviseAfterGenerate', home: 'revise.loop.afterGenerate' },
   { legacy: 'draft.reviseScoreThreshold', home: 'revise.loop.scoreThreshold' },
   { legacy: 'draft.maxCompressionPercent', home: 'revise.length.maxCompressionPercent' },
   { legacy: 'studio.validation', home: 'editor.studio.validation' },
-  { legacy: 'draft.keepHistory', home: 'editor.draft.keepHistory' },
   { legacy: 'draft.sceneBreakEnabled', home: 'generation.sceneBreak.enabled' },
   { legacy: 'draft.sceneBreakSeparator', home: 'generation.sceneBreak.separator' },
 ];

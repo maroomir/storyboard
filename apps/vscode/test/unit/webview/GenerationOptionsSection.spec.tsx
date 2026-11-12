@@ -18,13 +18,13 @@ function createSnapshot(): SettingsReadSnapshot {
     taskAssignments: {},
     modelCatalog: {} as SettingsReadSnapshot["modelCatalog"],
     taskCatalog: [],
-    origins: { "editor.draft.keepHistory": "workspace", "budget.run.limitUsd": "user" },
+    origins: { "generation.sceneBreak.enabled": "workspace", "budget.run.limitUsd": "user" },
     configFiles: { user: "/home/me/.storyboard/config.json", workspace: "/work/novel/.storyboard/config.json" },
     settingCatalog: [
       {
-        key: "editor.draft.keepHistory",
-        label: "이전 초안 보관",
-        description: "덮어쓰기 전에 남깁니다.",
+        key: "generation.sceneBreak.enabled",
+        label: "장면 구분 넣기",
+        description: "장면 사이에 구분 줄을 넣습니다.",
         kind: "boolean",
         defaultValue: false,
         group: "생성"
@@ -50,7 +50,7 @@ function createSnapshot(): SettingsReadSnapshot {
         group: "예산"
       }
     ],
-    settingValues: { "editor.draft.keepHistory": true, "revise.loop.maxIterations": 2, "budget.run.limitUsd": 5 }
+    settingValues: { "generation.sceneBreak.enabled": true, "revise.loop.maxIterations": 2, "budget.run.limitUsd": 5 }
   }
 }
 
@@ -66,13 +66,13 @@ describe("GenerationOptionsSection", () => {
     expect(screen.getByText("이 작품")).toBeTruthy()
     expect(screen.getByText("기본값")).toBeTruthy()
 
-    const toggle = screen.getByLabelText(/이전 초안 보관/) as HTMLInputElement
+    const toggle = screen.getByLabelText(/장면 구분 넣기/) as HTMLInputElement
     expect(toggle.checked).toBe(true)
     fireEvent.click(toggle)
 
-    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "editor.draft.keepHistory", value: false })
+    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "generation.sceneBreak.enabled", value: false })
     await waitFor(() => {
-      expect(onSaved).toHaveBeenCalledWith("이전 초안 보관", {
+      expect(onSaved).toHaveBeenCalledWith("장면 구분 넣기", {
         origin: "workspace",
         file: "/work/novel/.storyboard/config.json"
       })

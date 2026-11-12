@@ -6,6 +6,7 @@ import {
   type LegacyVscodeConfigurationLike
 } from "@/infrastructure/settings/migrateVscodeSettings"
 import type { StoryboardConfigurationLike, StoryboardSecretStorageLike } from "@storyboard/story-ai"
+import { validateConfigSettings } from "@storyboard/story-config"
 
 interface Layers {
   user: Map<string, unknown>
@@ -55,10 +56,33 @@ function createSecrets(initial: Record<string, string>): StoryboardSecretStorage
 }
 
 describe("migrateVscodeSettingsToHome", () => {
+  it("moves every legacy setting to a key config.json still reads", async () => {
+    const legacy: Layers = { user: new Map(legacyVscodeSettingKeys.map((key) => [key, true])), workspace: new Map() }
+    const home: Layers = { user: new Map(), workspace: new Map() }
+
+    const result = await migrateVscodeSettingsToHome({
+      vscodeConfiguration: createLegacyConfiguration(legacy),
+      vscodeSecrets: createSecrets({}),
+      homeConfiguration: createHomeConfiguration(home),
+      homeSecrets: createSecrets({}),
+      hasWorkspaceConfigFile: true
+    })
+    const isReadByConfig = (key: string): boolean => {
+      try {
+        return validateConfigSettings("config.json", { [key]: Symbol("probe") }).length === 0
+      } catch {
+        return true
+      }
+    }
+
+    expect(result.movedSettings.length).toBeGreaterThan(0)
+    expect(result.movedSettings.filter((key) => key !== "tasks" && !isReadByConfig(key))).toEqual([])
+  })
+
   it("copies each scope into the matching config layer and clears the VSCode value", async () => {
     const legacy: Layers = {
       user: new Map<string, unknown>([["defaultProvider", "codex"], ["tasks", { sceneDraft: { provider: "codex" } }]]),
-      workspace: new Map<string, unknown>([["draft.keepHistory", true]])
+      workspace: new Map<string, unknown>([["draft.sceneBreakEnabled", true]])
     }
     const home: Layers = { user: new Map(), workspace: new Map() }
 
@@ -70,10 +94,10 @@ describe("migrateVscodeSettingsToHome", () => {
       hasWorkspaceConfigFile: true
     })
 
-    expect(result.movedSettings).toEqual(["ai.provider.default", "tasks", "editor.draft.keepHistory"])
+    expect(result.movedSettings).toEqual(["ai.provider.default", "tasks", "generation.sceneBreak.enabled"])
     expect(home.user.get("ai.provider.default")).toBe("codex")
     expect(home.user.get("tasks")).toEqual({ sceneDraft: { provider: "codex" } })
-    expect(home.workspace.get("editor.draft.keepHistory")).toBe(true)
+    expect(home.workspace.get("generation.sceneBreak.enabled")).toBe(true)
     expect(legacy.user.size).toBe(0)
     expect(legacy.workspace.size).toBe(0)
   })
@@ -95,7 +119,7 @@ describe("migrateVscodeSettingsToHome", () => {
   })
 
   it("leaves workspace-scoped values alone when there is no workspace to write to", async () => {
-    const legacy: Layers = { user: new Map(), workspace: new Map([["draft.keepHistory", true]]) }
+    const legacy: Layers = { user: new Map(), workspace: new Map([["draft.sceneBreakEnabled", true]]) }
     const home: Layers = { user: new Map(), workspace: new Map() }
 
     const result = await migrateVscodeSettingsToHome({
@@ -107,7 +131,7 @@ describe("migrateVscodeSettingsToHome", () => {
     })
 
     expect(result.movedSettings).toEqual([])
-    expect(legacy.workspace.get("draft.keepHistory")).toBe(true)
+    expect(legacy.workspace.get("draft.sceneBreakEnabled")).toBe(true)
   })
 
   it("moves API keys out of VSCode secret storage without overwriting the shared file", async () => {

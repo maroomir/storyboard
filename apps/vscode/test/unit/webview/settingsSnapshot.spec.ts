@@ -33,9 +33,9 @@ function buildValidSnapshot(): SettingsReadSnapshot {
     origins: { defaultProvider: "user" },
     configFiles: { user: "/home/me/.storyboard/config.json" },
     settingCatalog: [
-      { key: "editor.draft.keepHistory", label: "이전 초안 보관", description: "", kind: "boolean", defaultValue: false, group: "생성" }
+      { key: "generation.sceneBreak.enabled", label: "장면 구분 넣기", description: "", kind: "boolean", defaultValue: false, group: "생성" }
     ],
-    settingValues: { "editor.draft.keepHistory": false }
+    settingValues: { "generation.sceneBreak.enabled": false }
   } as SettingsReadSnapshot
 }
 
