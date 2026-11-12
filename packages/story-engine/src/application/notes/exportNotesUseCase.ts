@@ -1,6 +1,5 @@
 import type { HostAdapters, WorkspaceRepositories } from '#engine/application/engineServices';
 import {
-  getStoryboardProjectPaths,
   joinStoryPath,
   sceneBeatText,
   serializeSynopsisMarkdown,
@@ -75,7 +74,7 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
       }
 
       for (const scene of source.scenes) {
-        const summary: string | undefined = await this.readSceneSummary(request.workspaceRoot, scene);
+        const summary: string | undefined = scene.summaryText;
         await write(noteExportFolders.scenes, `${scene.stem}.md`, renderSceneNote(scene, nameOf, summary));
       }
 
@@ -85,23 +84,6 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
 
       return { ok: true as const, written };
     });
-  }
-
-  private async readSceneSummary(workspaceRoot: StoryUri, scene: SceneFile): Promise<string | undefined> {
-    if (scene.summaryText !== undefined) {
-      return scene.summaryText;
-    }
-    const reference: string | undefined = scene.card.summary;
-    if (reference === undefined) {
-      return undefined;
-    }
-    if (!/\.md$/i.test(reference)) {
-      return reference;
-    }
-    const uri: StoryUri = joinStoryPath(getStoryboardProjectPaths(workspaceRoot).sceneDirectory, reference);
-    return (await this.host.fileSystem.exists(uri))
-      ? new TextDecoder().decode(await this.host.fileSystem.readFile(uri))
-      : undefined;
   }
 }
 
