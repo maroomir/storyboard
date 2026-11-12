@@ -48,6 +48,7 @@ export {
   type ParameterReport,
 } from '#app/parameterRegistry';
 export {
+  countSummariesToRebuild,
   describeWorkspaceStatus,
   workspaceNextSteps,
   type DescribeWorkspaceStatusInput,
