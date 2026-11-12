@@ -265,15 +265,16 @@ storyboard scene show 003-night-market
 
 A scene is a folder, `scene/NNN-slug.card/`, and its draft is `draft/NNN-slug.md`. The three-digit
 number is not typed by hand: it comes from the scene's place in `.storyboard/structure.yaml`. Every
-verb that takes a scene accepts `003-night-market`, `3` or `night-market`. `scene rename` changes
-only the slug and moves the draft along; asking it to change the number is refused. To reorder,
+verb that takes a scene accepts `003-night-market`, `3` or `night-market`. `scene rename <scene> --to <slug>` takes the scene the same way and a bare slug for the new name
+(the engine keeps the number); it moves the bundle and the draft along, and a different number is
+refused. To reorder,
 use `scene create --after`, `scene move` and `scene remove`, which renumber the folders and drafts
 behind them.
 If a renumbering is cut off partway, `doctor` reports it, and the next scene-writing verb (or
 `init --repair`) finishes it.
 
 ```bash
-storyboard scene rename 003-night-market --to 003-moon-market
+storyboard scene rename night-market --to moon-market   # or: scene rename 3 --to moon-market
 ```
 
 Notes kept in Obsidian or Notion come in with `notes absorb`. It reads a vault folder (or one note)

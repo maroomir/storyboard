@@ -44,6 +44,7 @@ function has(relativePath: string): boolean {
 function rename(
   toStem: string,
   fileSystem: NodeFileSystem = new NodeFileSystem(),
+  scene: string = fromStem,
 ): ReturnType<RenameSceneUseCase['execute']> {
   const scenes: WorkspaceScenes = new WorkspaceScenes({
     fileSystem,
@@ -54,8 +55,8 @@ function rename(
     createTestHost({ fileSystem, logger: silentLogger, caches, scenes }),
   ).execute({
     workspaceRoot: NodeUri.file(workspace),
-    fromStem,
-    toStem,
+    scene,
+    to: toStem,
   });
 }
 
@@ -153,7 +154,20 @@ describe('RenameSceneUseCase', () => {
     expect(parseDraft(read('draft/003-moon-market.md')).sceneStem).toBe('003-moon-market');
   });
 
+  it('finds the scene by number or slug and takes a bare slug for the new name', async () => {
+    expect(await rename('moon-market', new NodeFileSystem(), '3')).toMatchObject({
+      ok: true,
+      fromStem,
+      toStem: '003-moon-market',
+    });
+    expect(await rename('night-market', new NodeFileSystem(), 'moon-market')).toMatchObject({
+      ok: true,
+      toStem: '003-night-market',
+    });
+  });
+
   it('refuses a malformed stem and a missing scene', async () => {
+    expect(await rename('Night Market!')).toMatchObject({ ok: false, kind: 'invalid-stem' });
     expect(await rename('night-market')).toMatchObject({ ok: false, kind: 'invalid-stem' });
     expect(await rename(fromStem)).toMatchObject({ ok: false, kind: 'invalid-stem' });
 

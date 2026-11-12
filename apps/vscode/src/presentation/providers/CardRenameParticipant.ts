@@ -54,8 +54,8 @@ export class CardRenameParticipant {
     if (rename.kind === 'scene') {
       const renamed: RenameSceneResult = await this.dependencies.drafts.renameScene({
         workspaceRoot: rename.workspaceRoot,
-        fromStem: rename.fromKey,
-        toStem: rename.toKey,
+        scene: rename.fromKey,
+        to: rename.toKey,
       });
       return renamed.ok ? { ok: true } : { ok: false, message: renamed.message };
     }

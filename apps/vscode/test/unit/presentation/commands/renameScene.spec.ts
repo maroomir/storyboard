@@ -33,7 +33,7 @@ describe("renameScene command", () => {
       throw new Error("not found")
     }
 
-    window.showInputBox = vi.fn(async () => "004-night-market")
+    window.showInputBox = vi.fn(async () => "moon-market")
     window.showWarningMessage = vi.fn(async () => undefined)
     window.showErrorMessage = vi.fn(async () => undefined)
     window.showInformationMessage = vi.fn(async () => undefined)
@@ -51,8 +51,8 @@ describe("renameScene command", () => {
       ok: true,
       kind: "renamed",
       fromStem: "003-night-market",
-      toStem: "004-night-market",
-      movedFiles: ["scene/004-night-market.card"],
+      toStem: "003-moon-market",
+      movedFiles: ["scene/003-moon-market.card"],
       rewrittenFiles: [],
     })
 
@@ -62,9 +62,10 @@ describe("renameScene command", () => {
     expect(hold).toHaveBeenCalledOnce()
     expect(renameScene).toHaveBeenCalledWith({
       workspaceRoot,
-      fromStem: "003-night-market",
-      toStem: "004-night-market",
+      scene: "003-night-market",
+      to: "moon-market",
     })
+    expect(window.showInputBox).toHaveBeenCalledWith(expect.objectContaining({ value: "night-market" }))
     expect(window.showInformationMessage).toHaveBeenCalledOnce()
   })
 

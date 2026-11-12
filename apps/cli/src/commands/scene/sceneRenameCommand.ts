@@ -10,24 +10,24 @@ export class SceneRenameCommand implements ICommandHandler {
     verb: 'scene rename',
     writesWorkspace: true,
     group: '씬',
-    usage: 'scene rename <stem> --to <stem>',
-    summary: '씬 이름(slug)을 바꾸고 초안·기억의 참조를 함께 옮깁니다',
+    usage: 'scene rename <씬> --to <slug>',
+    summary: '씬 이름(slug)을 바꾸고 번호 붙은 폴더·초안과 참조를 함께 옮깁니다 (씬은 번호-slug·번호·slug, 번호는 그대로)',
     flags: ['to'],
-    examples: ['storyboard scene rename 003-night-market --to 003-moon-market'],
+    examples: ['storyboard scene rename night-market --to moon-market', 'storyboard scene rename 3 --to moon-market'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {
-    const fromStem: string | undefined = args.positionals[0];
-    const toStem: string | undefined = flagString(args.flags, 'to');
+    const scene: string | undefined = args.positionals[0];
+    const to: string | undefined = flagString(args.flags, 'to');
 
-    if (fromStem === undefined || toStem === undefined) {
-      return failure('바꿀 씬과 --to <새 이름> 을 지정해 주세요.');
+    if (scene === undefined || to === undefined) {
+      return failure('바꿀 씬과 --to <새 slug> 를 지정해 주세요.');
     }
 
     const sceneRename: RenameSceneResult = await container.drafts.renameScene({
       workspaceRoot: container.workspaceRoot,
-      fromStem,
-      toStem,
+      scene,
+      to,
     });
 
     if (!sceneRename.ok) {

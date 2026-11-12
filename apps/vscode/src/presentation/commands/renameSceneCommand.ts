@@ -7,6 +7,7 @@ import {
   getStoryboardProjectPaths,
   sceneCardPath,
   parseSceneFileName,
+  isSceneSlug,
   parseSceneStem,
 } from '@storyboard/story-model';
 import {
@@ -39,9 +40,10 @@ export class RenameSceneCommand implements IExtensionCommand {
       return;
     }
 
-    const toStem: string | undefined = await askForNewSceneStem(target.fromStem);
+    const currentSlug: string = parseSceneStem(target.fromStem)?.slug ?? target.fromStem;
+    const toSlug: string | undefined = await askForNewSceneSlug(currentSlug);
 
-    if (!toStem || toStem.trim() === target.fromStem) {
+    if (!toSlug || toSlug.trim() === currentSlug) {
       return;
     }
 
@@ -49,18 +51,18 @@ export class RenameSceneCommand implements IExtensionCommand {
       this.dependencies.runGate,
       target.workspaceRoot,
       '씬 이름 변경',
-      () => this.renameScene(target, toStem.trim()),
+      () => this.renameScene(target, toSlug.trim()),
     );
   }
 
   private async renameScene(
     { workspaceRoot, fromStem }: TargetScene,
-    toStem: string,
+    toSlug: string,
   ): Promise<void> {
     const sceneRename: RenameSceneResult = await this.dependencies.drafts.renameScene({
       workspaceRoot,
-      fromStem,
-      toStem,
+      scene: fromStem,
+      to: toSlug,
     });
 
     if (!sceneRename.ok) {
@@ -144,16 +146,23 @@ interface TargetScene {
   readonly fromStem: string;
 }
 
-async function askForNewSceneStem(fromStem: string): Promise<string | undefined> {
+const sceneSlugInputPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
+
+function validateSceneSlugInput(value: string): string | undefined {
+  const slug: string = value.trim();
+  const isSlug: boolean = sceneSlugInputPattern.test(slug) && isSceneSlug(slug);
+  return isSlug
+    ? undefined
+    : '`moon-market` 처럼 영문 소문자·숫자·하이픈이어야 합니다(번호는 붙이지 않음).';
+}
+
+async function askForNewSceneSlug(currentSlug: string): Promise<string | undefined> {
   return await vscode.window.showInputBox({
     title: '씬 이름 변경',
     prompt:
-      '새 이름을 NNN-slug 형식으로 입력하세요. 번호는 그대로 두고 slug 만 바꿉니다. 번호 붙은 폴더와 초안 이름이 함께 바뀝니다.',
-    value: fromStem,
+      '새 slug 를 입력하세요. 번호는 엔진이 그대로 붙이고, 번호 붙은 폴더와 초안 이름이 함께 바뀝니다.',
+    value: currentSlug,
     ignoreFocusOut: true,
-    validateInput: (value) =>
-      parseSceneStem(value.trim()) === undefined
-        ? '`003-night-market` 처럼 번호-영문 소문자 형식이어야 합니다.'
-        : undefined,
+    validateInput: validateSceneSlugInput,
   });
 }
