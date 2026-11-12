@@ -12,6 +12,10 @@ The extension source is fully migrated into the layered structure below; the leg
 
 Keep changes incremental and preserve behavior.
 
+Treat `scene/NNN-slug.card/ → draft/NNN-slug.md`, cards with their fact statements, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
+
+Both apps write through the same codecs, so a card the extension writes and one the terminal writes serialize to identical bytes — the shared fixtures in `packages/story-model/test/fixtures/` are the round-trip guard for that claim.
+
 ## Source of Truth
 
 Apply this priority when instructions conflict:

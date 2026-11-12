@@ -9,6 +9,7 @@ alwaysApply: true
 
 - `storyboard` is a VSCode extension. Cline (a local checkout) is a **reference for patterns only**—do not copy implementation blindly or treat Cline as a dependency contract.
 - Prefer **incremental scaffolding**; keep the first version smaller than Cline’s mature stack unless the user asks for more.
+- Treat `scene/NNN-slug.card/ → draft/NNN-slug.md`, cards with their fact statements, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
 ## Source of truth
 
@@ -75,6 +76,7 @@ The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with
 
 ```text
 packages/story-model/src/     # model ← ai ← engine ← app
+  element/        # Element kinds, statement facets and sections, the statement schema
   format/         # Workspace file format: schemas, codecs, path conventions
   contracts/      # AI contracts and catalogs
   shared/         # RPC and card contracts
@@ -92,7 +94,11 @@ apps/vscode/src/bootstrap/         # Lifecycle and feature modules; the DI graph
 apps/vscode/src/presentation/      # Commands, providers, webview RPC (VS Code I/O only)
 apps/vscode/src/infrastructure/    # VSCode adapters: fs, settings, secrets, usage
 apps/cli/src/                      # adapters/ then commands/ (verb definitions)
+packages/story-app/src/            # StoryboardApplication and one manager per domain
+packages/story-node/src/           # Node fs, workspace locator, cache database (.storyboard/cache/storyboard.db)
 ```
+
+Both apps write through the same codecs, so a card the extension writes and one the terminal writes serialize to identical bytes — the shared fixtures in `packages/story-model/test/fixtures/` are the round-trip guard for that claim.
 
 The root `scripts/architecture/check-workspace.mjs` (first step of the root `npm run lint`) enforces: every shared package stays free of `vscode`, app imports and another package's `#` internal prefix, never imports its own entry file or a folder `index` through its prefix (an entry file or barrel gathering barrels, and an import with no bindings, are exempt), addresses its own modules through its prefix rather than a relative path, and every owned literal (`OWNED_LITERALS`) stays in its owner file. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles. `packages/story-model` enforces its own layer direction (`element` ← `format` ← `contracts` ← `shared` ← `domain` ← `paths`), and `packages/story-engine` keeps `pipeline`, `ports` and `ai` to themselves, with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
 
