@@ -162,7 +162,7 @@ More screens: [GUIDE.md](GUIDE.md).
 ```bash
 storyboard init --title "시그널" --genre "하이틴 로맨스" --audience "10~20대" \
   --pov third-limited --target-words 480000 --chapters 8 --scenes-per-chapter 4
-storyboard outline generate
+storyboard outline generate        # also writes the cards of the characters the plan names
 storyboard scene seed
 storyboard scene plot 001-scene-1-1 --dry-run
 storyboard draft generate 001-scene-1-1 --force
