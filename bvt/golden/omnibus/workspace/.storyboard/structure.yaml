@@ -4,7 +4,7 @@ threads:
   - id: ep2
     title: 2편
 scenes:
-  - scene: 12d18204-a77d-4c61-b806-e130b42cab3f
+  - scene: 0ed57d28-0850-4693-b5b0-b2d1cfeee1b2
     thread: main
-  - scene: ffdd9217-bc7a-4a93-b59a-8f9ac4b64315
+  - scene: f4369d99-830e-446c-904d-01ad6688bdf9
     thread: main
