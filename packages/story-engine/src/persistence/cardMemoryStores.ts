@@ -2,9 +2,11 @@ import {
   computeBackgroundCardHash,
   computeDraftBodyHash,
   computePersonaCardHash,
+  formatSceneNumber,
   joinStoryPath,
   mainThreadId,
   parseDraft,
+  parseNumberedSceneStem,
   readDraftFile,
   type BackgroundCard,
   type CharacterCard,
@@ -29,6 +31,18 @@ import type {
   IPersonaMemoryStore,
   ISceneDialogueStore,
 } from '#engine/pipeline/memoryStore';
+import { selectRepresentativeDialogue } from '#engine/pipeline/dialogueCorpus';
+
+const noteVoiceSourcePrefix: string = 'note:';
+
+function draftVoiceSourceOf(sceneStem: string): string | undefined {
+  const sceneNumber: number | undefined = parseNumberedSceneStem(sceneStem)?.number;
+  return sceneNumber === undefined ? undefined : `draft:${formatSceneNumber(sceneNumber)}`;
+}
+
+function isNoteVoiceSample(sample: VoiceSampleLine): boolean {
+  return sample.source.startsWith(noteVoiceSourcePrefix);
+}
 
 export interface CardMemoryStoreDependencies {
   readonly fileSystem: IFileSystem;
@@ -177,6 +191,7 @@ export class SceneDialogueStore implements ISceneDialogueStore {
 
   public async save(record: SceneDialogueRecord): Promise<void> {
     await this.dependencies.scenes.writeDialogue(this.paths.workspaceRoot, record.sceneStem, record);
+    await this.keepVoiceSamples(record);
   }
 
   public async loadCorpus(): Promise<readonly SceneDialogueRecord[]> {
@@ -214,12 +229,43 @@ export class SceneDialogueStore implements ISceneDialogueStore {
             mainThreadId,
           )
         ).voiceSample ?? [];
-      if (samples.length > 0) {
-        characters[card.id] = samples.map((sample) => sample.text);
+      const noteSamples: readonly VoiceSampleLine[] = samples.filter(isNoteVoiceSample);
+      if (noteSamples.length > 0) {
+        characters[card.id] = noteSamples.map((sample) => sample.text);
       }
     }
 
     return { characters };
+  }
+
+  private async keepVoiceSamples(record: SceneDialogueRecord): Promise<void> {
+    const source: string | undefined = draftVoiceSourceOf(record.sceneStem);
+    if (source === undefined) {
+      return;
+    }
+
+    const { workspaceRoot, threadId } = this.paths;
+    const roster: CardRoster = await this.dependencies.cards.loadRoster(workspaceRoot);
+    for (const character of roster.characters) {
+      const lines: readonly string[] = selectRepresentativeDialogue([record], character.id, '');
+      const memory: ElementMemory = await this.dependencies.cards.readMemory(
+        workspaceRoot,
+        'character',
+        character.id,
+        threadId,
+      );
+      const previous: readonly VoiceSampleLine[] = memory.voiceSample ?? [];
+      const others: readonly VoiceSampleLine[] = previous.filter((sample) => sample.source !== source);
+      const hasNothingToChange: boolean = lines.length === 0 && others.length === previous.length;
+      if (hasNothingToChange) {
+        continue;
+      }
+
+      await this.dependencies.cards.writeMemory(workspaceRoot, 'character', character.id, threadId, {
+        ...memory,
+        voiceSample: [...others, ...lines.map((text): VoiceSampleLine => ({ text, source }))],
+      });
+    }
   }
 
   private async reconcileWithDraft(
