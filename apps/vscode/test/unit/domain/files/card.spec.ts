@@ -191,7 +191,7 @@ describe('card file codec', () => {
       attributes: { age: 18 },
       traits: ['허세 섞인 단언'],
       relations: [{ target: 'eunha', type: '라이벌' }],
-      arc: [{ stage: '발단', summary: '첫 등장', sceneRef: '01-first-meeting' }],
+      arc: '첫 등장',
     };
 
     const reparsed = parseCard(serializeCard(card));
@@ -201,9 +201,7 @@ describe('card file codec', () => {
       expect(reparsed.attributes).toEqual({ age: 18 });
       expect(reparsed.traits).toEqual(['허세 섞인 단언']);
       expect(reparsed.relations).toEqual([{ target: 'eunha', type: '라이벌' }]);
-      expect(reparsed.arc).toEqual([
-        { stage: '발단', summary: '첫 등장', sceneRef: '01-first-meeting' },
-      ]);
+      expect(reparsed.arc).toBe('첫 등장');
     }
   });
 

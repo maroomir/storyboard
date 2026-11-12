@@ -62,7 +62,7 @@ describe("card projection", () => {
       traits: ["낯선 자리에서 먼저 말을 건다", "거절당하면 웃어넘긴다"],
       catchphrases: ["뭐 어때"],
       relations: [{ target: "sera", type: "소꿉친구", speech: "반말" }],
-      arc: [{ stage: "변화", summary: "거절을 받아들이는 법을 배운다" }]
+      arc: "거절을 받아들이는 법을 배운다"
     })
   })
 

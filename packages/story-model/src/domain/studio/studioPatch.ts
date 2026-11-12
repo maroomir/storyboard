@@ -1,4 +1,3 @@
-import { getStatementFacetRow } from '#model/element/facetCatalog';
 import { cardSchema, type StoryboardCard } from '#model/format/card';
 import { parseCard, serializeCard } from '#model/format/files/card';
 import { parseSceneCard, serializeSceneCard } from '#model/format/files/scene';
@@ -30,8 +29,6 @@ const entityCardTextListFields: ReadonlySet<string> = new Set([
   'layout',
   'rules',
 ]);
-
-const arcField: string = 'arc';
 
 const editableSceneCardFields: Set<string> = new Set([
   'title',
@@ -148,13 +145,6 @@ function acceptScalarForListField(change: StudioCardFieldChange): StudioCardFiel
 
   if (entityCardTextListFields.has(change.field)) {
     return { ...change, value: splitIntoLines(change.value) };
-  }
-
-  if (change.field === arcField) {
-    return {
-      ...change,
-      value: [{ stage: getStatementFacetRow('arc').label, summary: change.value.trim() }],
-    };
   }
 
   return change;

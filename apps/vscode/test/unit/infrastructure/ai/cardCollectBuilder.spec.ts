@@ -70,7 +70,7 @@ describe("buildCardCollectProposals (character)", () => {
     expect(attribute).toMatchObject({ key: "height", value: "170" })
     expect([...(attribute?.sourceScenes ?? [])].sort()).toEqual(["01", "02"])
 
-    expect(proposals.filter((proposal) => proposal.kind === "arc")).toHaveLength(2)
+    expect(proposals.filter((proposal) => proposal.kind === "arc")).toHaveLength(1)
     expect(proposals.filter((proposal) => proposal.kind === "trait")).toHaveLength(1)
     expect(proposals.find((proposal) => proposal.kind === "descriptionLine")).toMatchObject({ value: "은빛 머리의 소녀" })
     expect(proposals.find((proposal) => proposal.kind === "voiceLine")).toMatchObject({ value: "또박또박한 존댓말" })

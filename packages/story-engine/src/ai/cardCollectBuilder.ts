@@ -117,7 +117,7 @@ function resolveBefore(card: StoryboardCard, partial: PartialProposal): string |
       return (card.relations ?? []).find((relation) => relation.target === partial.target)?.type;
     }
     if (partial.kind === 'arc') {
-      return (card.arc ?? []).find((entry) => entry.sceneRef === partial.sceneRef)?.summary;
+      return card.arc;
     }
     return undefined;
   }
@@ -172,11 +172,7 @@ function addCandidateProposals(
     accumulator.add(sceneStem, { kind: 'desireLine', value: line });
   }
   if (candidate.arc?.summary) {
-    accumulator.add(sceneStem, {
-      kind: 'arc',
-      summary: candidate.arc.summary,
-      sceneRef: sceneStem,
-    });
+    accumulator.add(sceneStem, { kind: 'arc', summary: candidate.arc.summary });
   }
 }
 

@@ -143,7 +143,7 @@ function describeCollectProposal(proposal: CardCollectProposal): string {
     case 'relationSpeech':
       return `- 말투 ${proposal.target}: ${proposal.speech}${sources}`;
     case 'arc':
-      return `- 아크 ${proposal.sceneRef}: ${proposal.summary}${sources}`;
+      return `- 아크: ${proposal.summary}${sources}`;
     case 'scalar':
       return `- ${proposal.field}: ${proposal.after}${sources}`;
     default:

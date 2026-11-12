@@ -45,7 +45,7 @@ describe('applyCardCollectProposals (character)', () => {
       proposal({ kind: 'alias', value: '별칭 엘리아' }),
       proposal({ kind: 'relation', target: 'jihun', type: '소꿉친구' }),
       proposal({ kind: 'relation', target: 'mina', type: 'rival' }),
-      proposal({ kind: 'arc', summary: '각성', sceneRef: '03-scene' }),
+      proposal({ kind: 'arc', summary: '각성' }),
       proposal({ kind: 'descriptionLine', value: '주인공' }),
       proposal({ kind: 'voiceLine', value: '또박또박한 존댓말' }),
       proposal({ kind: 'desireLine', value: '진실을 밝히고 싶다' }),
@@ -58,7 +58,7 @@ describe('applyCardCollectProposals (character)', () => {
       { target: 'jihun', type: '소꿉친구' },
       { target: 'mina', type: 'rival' },
     ]);
-    expect(result.arc).toEqual([{ stage: '03-scene', summary: '각성', sceneRef: '03-scene' }]);
+    expect(result.arc).toBe('각성');
     expect(result.description).toEqual(['주인공']);
     expect(result.voice).toEqual(['또박또박한 존댓말']);
     expect(result.desire).toEqual(['진실을 밝히고 싶다']);

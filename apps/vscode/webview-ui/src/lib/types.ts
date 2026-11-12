@@ -1,5 +1,4 @@
 import type {
-  CharacterArc,
   RelationLink,
   StudioValidationVerdict,
   SceneGrounding,
@@ -55,7 +54,6 @@ export type {
   InterviewOpening,
   InterviewQuestion,
   InterviewSessionSummary,
-  CharacterArc,
   SceneGrounding,
   NarratorSummary,
   CharacterRosterEntry,
@@ -116,7 +114,7 @@ export interface StoryboardCard {
   readonly tags?: readonly string[];
   readonly traits?: readonly string[];
   readonly relations?: readonly RelationLink[];
-  readonly arc?: readonly CharacterArc[];
+  readonly arc?: string;
 }
 
 export interface SceneCard {
