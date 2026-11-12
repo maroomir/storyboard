@@ -11,6 +11,15 @@ describe('VscodeFileSystem', () => {
     vi.restoreAllMocks();
   });
 
+  it('deletes a bundle folder with its contents, as the Node host does', async () => {
+    const deleteEntry = vi.fn(async (): Promise<void> => undefined);
+    workspaceFileSystem.delete = deleteEntry;
+
+    await new VscodeFileSystem().delete(vscode.Uri.file('/workspace/scene/001-gate.card'));
+
+    expect(deleteEntry).toHaveBeenCalledWith(expect.anything(), { recursive: true, useTrash: false });
+  });
+
   it('adapts VS Code file operations to the application port', async () => {
     const uri = vscode.Uri.file('/workspace/file.txt');
     const bytes = new Uint8Array([1, 2, 3]);
