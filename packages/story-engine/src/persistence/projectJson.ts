@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ProjectFormat, StoryboardProject } from '@storyboard/story-model';
 import {
+  assertNoRetiredProjectFields,
   assertSupportedProjectVersion,
   storyboardProjectSchema,
   storyboardProjectVersion,
@@ -27,6 +28,7 @@ export function createDefaultProjectJson(input: CreateProjectJsonInput): Storybo
 export function parseProjectJson(rawProjectJson: string): StoryboardProject {
   const rawProject: unknown = JSON.parse(rawProjectJson);
   assertSupportedProjectVersion(rawProject);
+  assertNoRetiredProjectFields(rawProject);
 
   return storyboardProjectSchema.parse(rawProject);
 }

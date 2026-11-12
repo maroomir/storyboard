@@ -97,7 +97,7 @@ function projectWith(setting: object): StoryboardProject {
     format: 'novel',
     language: 'ko',
     createdAt: '2026-09-07T00:00:00.000Z',
-    editor: { scenePrefixDigits: 2 },
+    editor: {},
     setting: { tags: [], prohibitions: [], styleConstraints: [], qualityCriteria: [], ...setting },
   };
 }

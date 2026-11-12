@@ -16,7 +16,7 @@ function project(): ReturnType<typeof parseProjectJson> {
       format: "novel",
       language: "ko",
       createdAt: "2026-05-13T08:00:00.000Z",
-      editor: { scenePrefixDigits: 2 },
+      editor: {},
       setting: { genre: "fantasy", audience: "adult", pov: "third-limited", targetWordCount: 50000 }
     })
   )
@@ -38,7 +38,7 @@ describe("GenerateOutlineUseCase", () => {
             format: "novel",
             language: "ko",
             createdAt: "2026-05-13T08:00:00.000Z",
-            editor: { scenePrefixDigits: 2 }
+            editor: {}
           })
         )
       )

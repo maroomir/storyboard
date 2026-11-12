@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { ProjectVersionError, assertSupportedProjectVersion, storyboardProjectVersion } from "@storyboard/story-model"
+import { ProjectFieldError, ProjectVersionError, assertSupportedProjectVersion, storyboardProjectVersion } from "@storyboard/story-model"
 import { createDefaultProjectJson, parseProjectJson, serializeProjectJson } from "@storyboard/story-engine"
 
 describe("project format version", () => {
@@ -28,5 +28,25 @@ describe("project format version", () => {
       expect((error as ProjectVersionError).code).toBe("unknown-version")
     }
     expect(() => assertSupportedProjectVersion({})).toThrow(ProjectVersionError)
+  })
+
+  it("refuses the project fields 0.16 moved out of project.json, naming where they live", () => {
+    const project = createDefaultProjectJson({ name: "줄기" })
+    const withThreads = JSON.stringify({ ...project, setting: { tags: [], prohibitions: [], styleConstraints: [], qualityCriteria: [], threads: { ep1: { title: "1화" } } } })
+    const withPrefixDigits = JSON.stringify({ ...project, editor: { scenePrefixDigits: 2 } })
+
+    expect(() => parseProjectJson(withThreads)).toThrow(ProjectFieldError)
+    expect(() => parseProjectJson(withThreads)).toThrow(/structure\.yaml/)
+    expect(() => parseProjectJson(withPrefixDigits)).toThrow(/세 자리/)
+  })
+
+  it("never writes the threads the in-memory setting carries", () => {
+    const project = createDefaultProjectJson({ name: "줄기" })
+    const written = serializeProjectJson({
+      ...project,
+      setting: { tags: [], prohibitions: [], styleConstraints: [], qualityCriteria: [], threads: { ep1: { title: "1화" } } }
+    })
+
+    expect(written).not.toContain("threads")
   })
 })

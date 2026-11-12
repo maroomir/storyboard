@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ContinuityIssueLike, DraftCritiqueIssue, StyleDirective } from '@storyboard/story-model';
 import {
+  serializeStoryStructure,
   createDraft,
   NodeUri,
   serializeDraft,
@@ -134,8 +135,17 @@ function threadedWorkspace(): InMemoryFileSystem {
         styleConstraints: [],
         qualityCriteria: [],
         pov: 'third-omniscient',
-        threads: { ep1: { title: '나룻배' }, ep2: { title: '등불' } },
       },
+    }),
+  );
+  fs.put(
+    '/w/.storyboard/structure.yaml',
+    serializeStoryStructure({
+      threads: [
+        { id: 'ep1', title: '나룻배' },
+        { id: 'ep2', title: '등불' },
+      ],
+      scenes: [],
     }),
   );
   fs.put(

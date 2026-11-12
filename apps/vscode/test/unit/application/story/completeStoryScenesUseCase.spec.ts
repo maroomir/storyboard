@@ -19,7 +19,7 @@ function source(): StoryFeatureSource {
       format: 'novel',
       language: 'ko',
       createdAt: '2026-07-19',
-      editor: { scenePrefixDigits: 2 },
+      editor: {},
     },
     scenes: [
       {
