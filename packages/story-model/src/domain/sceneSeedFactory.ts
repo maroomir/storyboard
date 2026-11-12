@@ -1,5 +1,4 @@
 import { flattenChapterPlan } from '#model/format/outline';
-import { serializeSceneCard } from '#model/format/files/scene';
 import type { ChapterPlan, FlatChapterScene, ScenePlan } from '#model/format/outline';
 import type { SceneCard } from '#model/format/scene';
 import { reserveUniqueSlug, slugify } from '#model/format/slug';
@@ -8,7 +7,7 @@ import { formatNumberedSceneStem } from '#model/format/bundlePaths';
 export interface GeneratedSceneSeed {
   readonly stem: string;
   readonly fileName: string;
-  readonly content: string;
+  readonly card: SceneCard;
 }
 
 export function buildSceneSeeds(plan: ChapterPlan): GeneratedSceneSeed[] {
@@ -23,7 +22,7 @@ export function buildSceneSeeds(plan: ChapterPlan): GeneratedSceneSeed[] {
     return {
       stem,
       fileName: `${stem}.card`,
-      content: serializeSceneCard(buildSceneSeedCard(stem, flatScene)),
+      card: buildSceneSeedCard(stem, flatScene),
     };
   });
 }

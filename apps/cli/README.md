@@ -101,7 +101,7 @@ storyboard scene move rooftop --after 5   # folders and drafts behind it are ren
 storyboard scene remove 003-detour  # the bundle, its draft and revisions; the scenes behind close the gap
 storyboard draft show 001-intro   # the draft's body on stdout
 storyboard card list character    # cards of one kind (leave the kind out for both)
-storyboard card show hana         # one card, found by slug (--sources: each line's origin, --history: its sessions)
+storyboard card show hana         # one card by slug: its header and numbered statements (--sources: each line's origin, --history: its sessions)
 storyboard card interview hana    # ask the writer how 하나 acts in the next scenes (terminal, tui, or --step --json)
 storyboard card create character "무뚝뚝한 열일곱 살 궁수 하나" --id hana   # a filled bundle; --dry-run only shows the lines
 storyboard card set hana traits "몰리면 먼저 웃는다"   # one line in statements.yaml, the writer's own

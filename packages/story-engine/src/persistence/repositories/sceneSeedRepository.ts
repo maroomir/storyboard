@@ -1,5 +1,4 @@
 import {
-  parseSceneCard,
   parseSceneFileName,
   type GeneratedSceneSeed,
   type StatementSource,
@@ -19,7 +18,7 @@ export class SceneSeedRepository implements ISceneSeedRepository {
   ): Promise<void> {
     for (const seed of seeds) {
       const slug: string | undefined = parseSceneFileName(seed.fileName)?.slug;
-      await this.scenes.writeCard(workspaceRoot, parseSceneCard(seed.content), {
+      await this.scenes.writeCard(workspaceRoot, seed.card, {
         source: seedSource,
         ...(slug === undefined ? {} : { slug }),
       });

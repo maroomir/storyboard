@@ -93,6 +93,19 @@ describe('card set and card unset', () => {
     expect(sources.message).toMatch(/speech →sera: 반말 {2}← agent · card set/);
   });
 
+  it('shows the header facts and the statements numbered as --sources numbers them', async () => {
+    await run('card set', args(['card', 'set'], {}, ['elia', 'traits', '몰리면 먼저 웃는다']));
+    await run('card set', args(['card', 'set'], { about: 'sera' }, ['elia', 'speech', '반말']));
+
+    const shown = await run('card show', args(['card', 'show'], {}, ['elia']));
+
+    expect(shown.ok, shown.message).toBe(true);
+    expect(shown.message).toMatch(/^.+ \(elia\) — 인물/);
+    expect(shown.message).toMatch(/^ +\d+ {2}traits: 몰리면 먼저 웃는다$/m);
+    expect(shown.message).toMatch(/^ +\d+ {2}speech →sera: 반말$/m);
+    expect(shown.message).not.toContain('type: character');
+  });
+
   it('refuses a facet the card does not have and removes a line by its facet', async () => {
     const refused = await run('card set', args(['card', 'set'], {}, ['elia', 'layout', '창가']));
     expect(refused.ok).toBe(false);
