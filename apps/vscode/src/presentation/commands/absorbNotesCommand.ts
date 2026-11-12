@@ -158,6 +158,7 @@ export class AbsorbNotesCommand implements IExtensionCommand {
           workspaceRoot: folder.uri,
           plan,
           location: bundle.location,
+          sourceKind: bundle.kind,
           shouldFillContract: false,
           shouldReplaceCandidates: false,
         }),

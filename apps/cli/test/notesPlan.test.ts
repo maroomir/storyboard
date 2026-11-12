@@ -13,6 +13,7 @@ import {
   groupNoteConsolidationTargets,
   type NoteConsolidationTarget,
   buildNoteAbsorbPlan,
+  describeNoteSource,
   type NoteAbsorbPlan,
   type NoteConsolidationResult,
   readNoteConsolidationResponse,
@@ -1286,20 +1287,44 @@ describe('PlanNoteAbsorbUseCase', () => {
 });
 
 describe('note voice seeds (#105-14)', () => {
-  it('keeps each character\'s quoted lines by card id, joined across readings', () => {
+  it('keeps each character\'s quoted lines by card id, joined across readings, with the note that quotes them', () => {
     const plan = buildNoteAbsorbPlan({
-      notes: [note('하나.md'), note('하나-2.md')],
+      notes: [note('하나.md', '하나: "바다는 거짓말 안 해."'), note('하나-2.md', '하나: "등대는 내가 지켜."')],
       extractions: [
-        extraction({ entities: [entity({ name: '하나', suggestedId: 'hana', sampleLines: ['바다는 거짓말 안 해.'] })] }),
         extraction({
-          entities: [entity({ name: '하나', sampleLines: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'] })],
+          entities: [
+            entity({ name: '하나', suggestedId: 'hana', sampleLines: ['바다는 거짓말 안 해.'], sourceNotes: ['하나.md'] }),
+          ],
+        }),
+        extraction({
+          entities: [
+            entity({
+              name: '하나',
+              sampleLines: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'],
+              sourceNotes: ['하나-2.md'],
+            }),
+          ],
         }),
       ],
       synthesis: emptyNoteSynthesis,
       cards: [],
       scenes: [],
-      });
+    });
 
-    expect(plan.voiceSeeds).toEqual({ hana: ['바다는 거짓말 안 해.', '등대는 내가 지켜.'] });
+    expect(plan.voiceSeeds).toEqual({
+      hana: [
+        { text: '바다는 거짓말 안 해.', noteId: '하나.md' },
+        { text: '등대는 내가 지켜.', noteId: '하나-2.md' },
+      ],
+    });
+  });
+});
+
+describe('note source labels (A1)', () => {
+  it('names an Obsidian note by its vault path and a Notion page by its kind alone', () => {
+    expect(describeNoteSource('obsidian', '인물/엘리아.md')).toBe('note:obsidian/인물/엘리아.md');
+    expect(describeNoteSource('obsidian', undefined)).toBe('note:obsidian');
+    expect(describeNoteSource('notion', 'a1b2c3')).toBe('note:notion');
+    expect(describeNoteSource('notion-export', '인물/엘리아.md')).toBe('note:notion');
   });
 });

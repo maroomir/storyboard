@@ -7,6 +7,7 @@ import type {
   SkippedNote,
   NoteCardFact,
   NoteCardPlan,
+  NoteSourceKind,
   Statement,
   StatementSource,
   StoryboardProject,
@@ -14,7 +15,11 @@ import type {
 } from '@storyboard/story-model';
 
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import { applyCardCollectProposals, mergeStatements } from '@storyboard/story-model';
+import {
+  applyCardCollectProposals,
+  describeNoteSource,
+  mergeStatements,
+} from '@storyboard/story-model';
 import type { ElementBundle } from '#engine/persistence/bundles/elementBundleRepository';
 import type { PlannedCardChanges } from '#engine/persistence/bundles/workspaceCards';
 
@@ -29,6 +34,7 @@ export interface ApplyNoteAbsorbRequest {
   readonly workspaceRoot: StoryUri;
   readonly plan: NoteAbsorbPlan;
   readonly location: string;
+  readonly sourceKind: NoteSourceKind;
   readonly shouldFillContract: boolean;
   readonly shouldReplaceCandidates: boolean;
 }
@@ -87,7 +93,7 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       if (seededCharacters.length > 0) {
         await this.repositories.noteAbsorb.addVoiceSeeds(
           request.workspaceRoot,
-          request.location,
+          request.sourceKind,
           request.plan.voiceSeeds,
         );
       }
@@ -138,9 +144,8 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     request: ApplyNoteAbsorbRequest,
     entries: readonly NoteCardPlan[],
   ): Promise<void> {
-    const source: StatementSource = this.absorbSource(request.location);
-
     for (const entry of entries.filter((item) => item.facts.length > 0)) {
+      const source: StatementSource = this.absorbSource(request, entry);
       const bundle: ElementBundle | undefined = await this.host.cards.findBundleBySlug(
         request.workspaceRoot,
         entry.card.id,
@@ -160,10 +165,10 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     entries: readonly NoteCardPlan[],
   ): Promise<string[]> {
     const { workspaceRoot, location } = request;
-    const source: StatementSource = this.absorbSource(location);
     const candidateCards: string[] = [];
 
     for (const entry of entries) {
+      const source: StatementSource = this.absorbSource(request, entry);
       const current: StoryboardCard | undefined = await this.host.cards.findCard(
         workspaceRoot,
         entry.card.id,
@@ -195,8 +200,12 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     return candidateCards;
   }
 
-  private absorbSource(location: string): StatementSource {
-    return { origin: 'studio', command: 'notes absorb', session: location };
+  private absorbSource(request: ApplyNoteAbsorbRequest, entry: NoteCardPlan): StatementSource {
+    return {
+      origin: 'studio',
+      command: 'notes absorb',
+      session: describeNoteSource(request.sourceKind, entry.sourceNotes[0]),
+    };
   }
 
   private async applyScenes(request: ApplyNoteAbsorbRequest): Promise<AppliedNoteScenes> {

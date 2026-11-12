@@ -42,3 +42,20 @@ export async function readAbsorbPending(workspace: string, slug: string): Promis
       .flatMap((record) => readPendingStatements(record.data));
   });
 }
+
+export async function readAbsorbPendingLocations(workspace: string, slug: string): Promise<readonly string[]> {
+  return await withCaches(async (caches) => {
+    const root: NodeUri = NodeUri.file(workspace);
+    const bundle = await createWorkspaceCards(caches).findBundleBySlug(root, slug);
+    if (bundle === undefined) {
+      return [];
+    }
+    return new SessionStore(await caches.open(root))
+      .listForElement(bundle.header.id)
+      .filter((record) => record.kind === 'absorb' && record.pendingCount > 0)
+      .flatMap((record) => {
+        const location: unknown = (record.data as AbsorbSessionSnapshot).location;
+        return typeof location === 'string' ? [location] : [];
+      });
+  });
+}

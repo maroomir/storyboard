@@ -8,6 +8,16 @@ export const noteSourceKinds: readonly [NoteSourceKind, ...NoteSourceKind[]] = [
   'notion-export',
 ];
 
+const noteSourcePrefix: string = 'note:';
+
+export function describeNoteSource(kind: NoteSourceKind, noteId: string | undefined): string {
+  if (kind !== 'obsidian') {
+    return `${noteSourcePrefix}notion`;
+  }
+
+  return noteId === undefined ? `${noteSourcePrefix}obsidian` : `${noteSourcePrefix}obsidian/${noteId}`;
+}
+
 export type NoteOrigin = 'tree' | 'link';
 
 export const noteOrigins: readonly [NoteOrigin, ...NoteOrigin[]] = ['tree', 'link'];

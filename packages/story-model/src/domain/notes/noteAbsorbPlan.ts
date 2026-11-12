@@ -47,6 +47,11 @@ export interface UnclassifiedNote {
   readonly title: string;
 }
 
+export interface NoteVoiceSeed {
+  readonly text: string;
+  readonly noteId?: string;
+}
+
 export interface NoteAbsorbPlan {
   readonly cards: readonly NoteCardPlan[];
   readonly scenes: readonly NoteScenePlan[];
@@ -55,7 +60,7 @@ export interface NoteAbsorbPlan {
   readonly synopsis?: OutlineSynopsis;
   readonly unclassifiedNotes: readonly UnclassifiedNote[];
   readonly draftNotes: readonly UnclassifiedNote[];
-  readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
+  readonly voiceSeeds: Readonly<Record<string, readonly NoteVoiceSeed[]>>;
   readonly warnings: readonly string[];
 }
 
@@ -492,22 +497,44 @@ function planCardChanges(entry: ResolvedEntity, characters: CardNameIndex): Note
     : [];
 }
 
-function collectVoiceSeeds(resolved: readonly ResolvedEntity[]): Record<string, string[]> {
+function findQuotingNote(
+  line: string,
+  sourceNotes: readonly string[],
+  notesById: ReadonlyMap<string, NoteDocument>,
+): string | undefined {
+  return sourceNotes.find((id) => notesById.get(id)?.body.includes(line)) ?? sourceNotes[0];
+}
+
+function collectVoiceSeeds(
+  resolved: readonly ResolvedEntity[],
+  notesById: ReadonlyMap<string, NoteDocument>,
+): Record<string, NoteVoiceSeed[]> {
   return Object.fromEntries(
     resolved
       .filter((entry) => entry.entity.type === 'character' && entry.entity.sampleLines.length > 0)
-      .map((entry) => [entry.card.id, entry.entity.sampleLines]),
+      .map((entry) => [
+        entry.card.id,
+        entry.entity.sampleLines.map((text): NoteVoiceSeed => {
+          const noteId: string | undefined = findQuotingNote(
+            text,
+            entry.entity.sourceNotes,
+            notesById,
+          );
+          return noteId === undefined ? { text } : { text, noteId };
+        }),
+      ]),
   );
 }
 
 function planCards(
   entities: readonly MergedEntity[],
   cards: readonly StoryboardCard[],
+  notes: readonly NoteDocument[],
 ): {
   readonly plans: NoteCardPlan[];
   readonly characters: CardNameIndex;
   readonly backgrounds: CardNameIndex;
-  readonly voiceSeeds: Readonly<Record<string, readonly string[]>>;
+  readonly voiceSeeds: Readonly<Record<string, readonly NoteVoiceSeed[]>>;
 } {
   const characters: CardNameIndex = new CardNameIndex('character');
   const backgrounds: CardNameIndex = new CardNameIndex('background');
@@ -535,7 +562,7 @@ function planCards(
     plans,
     characters,
     backgrounds,
-    voiceSeeds: collectVoiceSeeds(resolved),
+    voiceSeeds: collectVoiceSeeds(resolved, new Map(notes.map((note) => [note.id, note]))),
   };
 }
 
@@ -784,7 +811,7 @@ function toSynopsis(synthesis: NoteSynthesis): OutlineSynopsis | undefined {
 
 export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan {
   const entities: MergedEntity[] = mergeEntities(input.extractions.flatMap((extraction) => extraction.entities));
-  const cards: ReturnType<typeof planCards> = planCards(entities, input.cards);
+  const cards: ReturnType<typeof planCards> = planCards(entities, input.cards, input.notes);
   const scenes: ReturnType<typeof planScenes> = planScenes(input, cards.characters, cards.backgrounds);
   const synopsis: OutlineSynopsis | undefined = toSynopsis(input.synthesis);
 

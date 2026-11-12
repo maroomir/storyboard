@@ -266,7 +266,7 @@ role: main
 - 진술의 facet(`element/`가 소유한 어휘)은 종류마다 정해져 있다. 캐릭터는 `traits`·`catchphrases`·`desire`·`relation`·`speech`·`arc`, 배경은 `tags`·`time`·`weather`·`senses`·`layout`·`rules`, 셋 모두 `description`·`fact`(서술자와 캐릭터는 `voice`도)를 쓴다. `relation`·`speech`는 상대 카드의 uuid를 가리킨다.
 - `catchphrases`는 반복돼야 하는 입버릇이다. `voice`의 예시 대사와 달리 복사 금지·반복 제한의 예외이고, 비트당 1회(`generation.catchphrase.perBeatLimit`)를 넘으면 초안 경고가 난다. `speech`는 그 상대에게 쓰는 말투이며 인물별 대사 다듬기와 검수가 읽는다.
 - 배경의 `layout`(출입구·구역·시선)과 `rules`(이 장소에서 늘 참인 것)는 확정 사실이라 뼈대에 [배치]·[이 장소의 규칙]으로, 살붙임에 배경 사실로 들어간다.
-- 진술 출처(`origin`)는 `author`·`agent`·`studio`·`interview`·`note:<위치>` 등이다. 병합 규칙상 작가의 줄(`author`)은 다른 출처가 덮지 못한다. 출처 확인은 `card show --sources`.
+- 진술 출처(`origin`)는 `author`·`agent`·`studio`·`interview` 넷이다. 노트 흡수가 쓴 줄은 `studio` 에 `command: notes absorb` 와 그 카드의 첫 출처 노트(`session: note:obsidian/<볼트 기준 경로>`, Notion 은 `note:notion`)를 단다. 병합 규칙상 작가의 줄(`author`)은 다른 출처가 덮지 못한다. 출처 확인은 `card show --sources`.
 
 씬에 배경을 붙이는 방법은 씬 `card.yaml`의 `place`(배경 카드 uuid)와 비트마다의 `place`다.
 
@@ -539,7 +539,7 @@ zip(`notion-export`: 파일·폴더 이름 끝의 32자리 id 를 떼고, 행 �
 - 인물의 성격(`traits`)·태그(`tags`)가 두 묶음 이상에서 읽혔거나 기존 카드에 이미 있으면, 계획을 저장하기 전에 요청 하나로 같은 뜻의 항목을 하나로 줄인다. 모델은 후보 중에서 고르기만 하고 문구를 고치지 못하며, 이 요청이 실패하면 합친 목록 그대로 두고 경고한다. 띄어쓰기·문장부호만 다른 항목은 요청 없이 하나로 본다.
 - 이미 있던 카드에 대한 노트의 변경은 그 카드의 대기 제안(위치마다 하나)이다(§4.8a). 같은 위치를 다시 흡수하면 그 위치의 제안만 바뀐다. Notion 페이지의 위치는 링크 표기와 관계없이 `https://www.notion.so/<페이지 id>`로 적는다.
 - 노트가 인물·배경에 대해 적은 설정 사실(출신·내력·능력의 한계·장소의 규칙)은 새 카드에는 `fact` 진술로 곧바로, 기존 카드에는 대기 제안으로 간다(§4.7). 세계관만 적힌 노트는 `setting`으로 분류되어 «분류 못함»에서 빠진다.
-- 인물 예시 대사는 인물 번들 `memory/main.yaml`의 `voiceSample`(출처 `note:<위치>`)로 쌓인다.
+- 인물 예시 대사는 인물 번들 `memory/main.yaml`의 `voiceSample`로 쌓인다. 출처는 그 대사를 담은 노트다(`note:obsidian/인물/엘리아.md`, Notion 은 페이지를 적지 않고 `note:notion`). 개인 경로·URL·Notion id 는 커밋되는 파일에 남지 않는다.
 - 시놉시스: `outline/synopsis.md`가 이미 있으면 노트에서 만든 시놉시스는 흡수 세션의 후보로 기다린다(§4.8).
 
 ### 4.9 `<종류>/<slug>.card/memory/<줄기>.yaml` (에이전트 영속 메모리)
@@ -557,7 +557,7 @@ persona: |-
 ```
 
 - `persona`(캐릭터)·분위기 묘사(배경), `cardHash`, `throughScene`(이 기억이 닿은 씬 uuid)이 기본 필드다.
-- 노트 흡수의 인물 예시 대사는 같은 파일에 `voiceSample`(출처 `note:<위치>`)로 쌓이고 첫 씬의 말투 표본이 된다.
+- 노트 흡수의 인물 예시 대사는 같은 파일에 `voiceSample`(출처 `note:obsidian/<볼트 기준 경로>` 또는 `note:notion`)로 쌓이고 첫 씬의 말투 표본이 된다.
 
 `cardHash`로 카드가 바뀌면 무효화하고, `throughScene`이 지금 만드는 씬과 같거나 뒤면 **되감아 버린다** — 아직 오지 않은 씬의 정보를 담고 있고, 그 씬을 다시 만든다면 기억이 전제한 판본이 폐기되기 때문이다(원장 §4.10의 되감기와 같은 판정). 씬 번호를 읽을 수 없는 기억은 근거가 없으므로 그대로 쓴다. 씬 단위 캐시(4.6)는 그대로 두고, 이 캐시는 **카드 단위**로 분리해 부분 재생성(§8 라우팅)의 입력으로 쓴다.
 

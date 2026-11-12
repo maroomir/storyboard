@@ -87,6 +87,7 @@ describe("absorbNotes command", () => {
       workspaceRoot,
       plan,
       location: bundle.location,
+      sourceKind: "obsidian",
       shouldFillContract: false,
       shouldReplaceCandidates: false
     })
