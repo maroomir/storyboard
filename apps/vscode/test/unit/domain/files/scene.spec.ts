@@ -1,7 +1,3 @@
-import { readFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
-import { join } from "node:path"
-
 import { describe, expect, it } from "vitest"
 
 import {
@@ -17,7 +13,12 @@ import {
   serializeSceneCard,
   SceneParseError
 } from '@storyboard/story-model';
-const scenesFixtureDirectory = fileURLToPath(new URL("../../../../../../packages/story-model/test/fixtures/scenes/", import.meta.url))
+const sceneFixtures: Readonly<Record<string, string>> = {
+  "01-prologue.card": "type: scene\nid: 01-prologue\ntitle: 프롤로그\ncharacters:\n  - sample\nlocation: sample\nsummary: 샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다.\n",
+  "02-no-frontmatter.card": "type: scene\nid: 02-no-frontmatter\nsummary: |-\n  두 번째 장면은 frontmatter 없이 시작한다.\n\n  샘플 캐릭터는 조용히 다음 장소로 이동한다.\n",
+  "03-summary-file.card": "type: scene\nid: 03-summary-file\ntitle: 파일 요약\ntargetWordCount: 3000\nsummary: 03-summary-file.summary.md\nbeats:\n  - 샘플 캐릭터가 방송실 문을 연다.\n  - 책상 위에 낯선 사연 엽서가 놓여 있다.\n",
+  "04-beat-coordinates.card": "type: scene\nid: 04-beat-coordinates\ntitle: 좌표 비트\ncharacters:\n  - elia\n  - jihoon\nbeats:\n  - text: 엘리아가 정문 앞에서 숨을 고른다.\n    cast:\n      - elia\n    place: 교문 앞\n    time: 등교 직전\n  - 지훈이 먼저 이름을 부른다.\n  - text: 둘은 나란히 교문을 지난다.\n    cast:\n      - elia\n      - jihoon\n",
+}
 
 describe("scene file codec", () => {
   it("parses a scene card into frontmatter view and prompt body", () => {
@@ -164,7 +165,7 @@ describe("resolveSceneOrder", () => {
 })
 
 function readFixtureScene(fixtureName: string): string {
-  return readFileSync(join(scenesFixtureDirectory, fixtureName), "utf8")
+  return sceneFixtures[fixtureName] ?? ""
 }
 
 describe("scene card endState", () => {

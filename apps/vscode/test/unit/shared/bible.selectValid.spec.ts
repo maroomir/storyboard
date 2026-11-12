@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { selectBibleFacts, selectInjectedFacts, selectValidBibleFacts } from '@storyboard/story-model';
+import { selectInjectedFacts } from '@storyboard/story-model';
 import type { BibleFact, BibleFactStatus, BibleFactSubject, StoryBible } from '@storyboard/story-model';
 
 const elia: BibleFactSubject = { kind: "character", id: "elia" }
@@ -44,10 +44,10 @@ function bibleOf(facts: BibleFact[]): StoryBible {
 }
 
 function selectIds(bible: StoryBible, sceneOrder: number, subjects: readonly BibleFactSubject[] = [elia]): string[] {
-  return selectValidBibleFacts(bible, subjects, sceneOrder).map((fact) => fact.id)
+  return selectInjectedFacts(bible, subjects, "", sceneOrder).map((fact) => fact.id)
 }
 
-describe("selectValidBibleFacts — QAS-1 version selection at scene order", () => {
+describe("selected facts — QAS-1 version selection at scene order", () => {
   const bible = bibleOf([
     armFact("A", "멀쩡함", { validUntil: 3 }),
     armFact("B", "의수", { validFrom: 4 })
@@ -76,7 +76,7 @@ describe("selectValidBibleFacts — QAS-1 version selection at scene order", () 
   })
 })
 
-describe("selectValidBibleFacts — QAS-2 latest-wins on overlap", () => {
+describe("selected facts — QAS-2 latest-wins on overlap", () => {
   it("returns the version with the higher validFrom on overlap", () => {
     const facts = [
       armFact("A", "초기", { validFrom: 1, validUntil: 10 }),
@@ -106,7 +106,7 @@ describe("selectValidBibleFacts — QAS-2 latest-wins on overlap", () => {
   })
 })
 
-describe("selectValidBibleFacts — QAS-4 open-ended ranges", () => {
+describe("selected facts — QAS-4 open-ended ranges", () => {
   it("includes a from-only fact at and after its start, excludes before", () => {
     const bible = bibleOf([armFact("from", "의수", { validFrom: 5 })])
 
@@ -131,7 +131,7 @@ describe("selectValidBibleFacts — QAS-4 open-ended ranges", () => {
   })
 })
 
-describe("selectValidBibleFacts — QAS-6a inverted range", () => {
+describe("selected facts — QAS-6a inverted range", () => {
   it("never matches and never throws for an inverted range", () => {
     const bible = bibleOf([armFact("inverted", "의수", { validFrom: 8, validUntil: 5 })])
 
@@ -141,36 +141,7 @@ describe("selectValidBibleFacts — QAS-6a inverted range", () => {
   })
 })
 
-describe("selectValidBibleFacts — QAS-3b legacy parity", () => {
-  const legacy: StoryBible = {
-    version: "1.0.0",
-    facts: [
-      { id: "f1", subject: { kind: "character", id: "elia" }, key: "눈동자 색", value: "녹색", status: "canon" },
-      { id: "f2", subject: { kind: "character", id: "jihoon" }, key: "키", value: "180cm", status: "canon" },
-      { id: "f3", subject: { kind: "character", id: "elia" }, key: "취미", value: "검술", status: "candidate" },
-      { id: "f4", subject: { kind: "background", id: "school" }, key: "위치", value: "도시 외곽", status: "canon" }
-    ]
-  }
-  const subjectSets: BibleFactSubject[][] = [
-    [{ kind: "character", id: "elia" }],
-    [
-      { kind: "character", id: "jihoon" },
-      { kind: "background", id: "school" }
-    ]
-  ]
-
-  it("matches selectBibleFacts by id for every subject set and scene order", () => {
-    for (const subjects of subjectSets) {
-      const legacyIds = selectBibleFacts(legacy, subjects).map((fact) => fact.id)
-
-      for (const sceneOrder of [1, 25, 50]) {
-        expect(selectValidBibleFacts(legacy, subjects, sceneOrder).map((fact) => fact.id)).toEqual(legacyIds)
-      }
-    }
-  })
-})
-
-describe("selectValidBibleFacts — filtering rules", () => {
+describe("selected facts — filtering rules", () => {
   it("excludes candidate-status facts even when valid at the scene", () => {
     const bible = bibleOf([{ ...armFact("cand", "의수", { validFrom: 1 }), status: "candidate" }])
 
@@ -188,11 +159,11 @@ describe("selectValidBibleFacts — filtering rules", () => {
   it("returns an empty array when no subjects are requested", () => {
     const bible = bibleOf([armFact("A", "멀쩡함", {})])
 
-    expect(selectValidBibleFacts(bible, [], 5)).toEqual([])
+    expect(selectInjectedFacts(bible, [], "", 5)).toEqual([])
   })
 })
 
-describe("selectValidBibleFacts — string and numeric bounds resolve identically", () => {
+describe("selected facts — string and numeric bounds resolve identically", () => {
   it("treats a NN-slug validFrom like its numeric order", () => {
     const stringBound = bibleOf([armFact("stem", "의수", { validFrom: "04-the-fall" })])
     const numericBound = bibleOf([armFact("num", "의수", { validFrom: 4 })])
@@ -246,7 +217,7 @@ describe("selectInjectedFacts", () => {
       factOf({ id: "e1", subject: elia, key: "눈", value: "녹색" }),
       factOf({ id: "e2", subject: elia, key: "키", value: "170cm", validFrom: 1 })
     ])
-    const entityIds = selectValidBibleFacts(bible, [elia], 5).map((fact) => fact.id)
+    const entityIds = selectInjectedFacts(bible, [elia], "", 5).map((fact) => fact.id)
 
     for (const sceneText of ["", "no keyword here", "Crimson Empire"]) {
       expect(injectedIds(bible, sceneText, 5, [elia])).toEqual(entityIds)
@@ -364,38 +335,6 @@ describe("selectInjectedFacts", () => {
 
     expect(injectedIds(bible, "", 1, [elia])).not.toContain("ce")
     expect(injectedIds(bible, "   ", 1, [elia])).not.toContain("ce")
-  })
-
-  it("QAS-C5-11: matches selectValidBibleFacts exactly for keyword-free bibles", () => {
-    const subjectA: BibleFactSubject = { kind: "character", id: "elia" }
-    const subjectB: BibleFactSubject = { kind: "background", id: "school" }
-    const bibles: StoryBible[] = [
-      bibleOf([
-        factOf({ id: "a1", subject: subjectA, key: "눈", value: "녹색" }),
-        factOf({ id: "a2", subject: subjectA, key: "팔", value: "멀쩡함", validUntil: 3 }),
-        factOf({ id: "a3", subject: subjectA, key: "팔", value: "의수", validFrom: 4 }),
-        factOf({ id: "b1", subject: subjectB, key: "위치", value: "외곽" })
-      ]),
-      bibleOf([
-        factOf({ id: "c1", subject: subjectB, key: "분위기", value: "고요", validFrom: 10, validUntil: 40 }),
-        factOf({ id: "c2", subject: subjectA, key: "직업", value: "기사" }),
-        factOf({ id: "c3", subject: subjectA, key: "직업", value: "여왕", validFrom: 30 })
-      ])
-    ]
-    const subjectSets: BibleFactSubject[][] = [[subjectA], [subjectA, subjectB], [subjectB]]
-    const sceneTexts = ["", "empire and crimson and school", "무작위 텍스트 elia school"]
-
-    for (const bible of bibles) {
-      for (const subjects of subjectSets) {
-        for (const sceneOrder of [1, 25, 50]) {
-          for (const sceneText of sceneTexts) {
-            const injected = selectInjectedFacts(bible, subjects, sceneText, sceneOrder).map((fact) => fact.id)
-            const valid = selectValidBibleFacts(bible, subjects, sceneOrder).map((fact) => fact.id)
-            expect(injected).toEqual(valid)
-          }
-        }
-      }
-    }
   })
 
   it("QAS-C5-13: source stays vscode-free and AI-free, and calls are deterministic", () => {

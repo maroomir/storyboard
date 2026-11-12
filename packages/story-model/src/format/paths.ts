@@ -7,7 +7,6 @@ interface StoryboardRelativePaths {
   readonly cacheDirectory: string;
   readonly sceneCacheDirectory: string;
   readonly revisionRoundsDirectory: string;
-  readonly cardCacheDirectory: string;
   readonly outlineDirectory: string;
   readonly outlineSynopsis: string;
   readonly outlineChapters: string;
@@ -33,7 +32,6 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   cacheDirectory: '.storyboard/cache',
   sceneCacheDirectory: '.storyboard/cache/scenes',
   revisionRoundsDirectory: '.storyboard/cache/revisions',
-  cardCacheDirectory: '.storyboard/cache/cards',
   outlineDirectory: '.storyboard/outline',
   outlineSynopsis: '.storyboard/outline/synopsis.md',
   outlineChapters: '.storyboard/outline/chapters.yaml',
@@ -55,14 +53,12 @@ interface StoryboardFileExtensions {
   readonly card: string;
   readonly draft: string;
   readonly profileImage: string;
-  readonly legacyScene: string;
 }
 
 export const STORYBOARD_FILE_EXTENSIONS: StoryboardFileExtensions = {
   card: '.card',
   draft: '.md',
   profileImage: '.png',
-  legacyScene: '.txt',
 };
 
 interface StoryboardGlobs {
@@ -121,8 +117,4 @@ export function isDraftMarkdownRelativePath(relativePath: string): boolean {
 
 export function isDirectSceneCardRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.sceneDirectory, STORYBOARD_FILE_EXTENSIONS.card);
-}
-
-export function isLegacySceneTextRelativePath(relativePath: string): boolean {
-  return isDirectChildWithExtension(relativePath, STORYBOARD_RELATIVE_PATHS.sceneDirectory, STORYBOARD_FILE_EXTENSIONS.legacyScene);
 }

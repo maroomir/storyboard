@@ -1,7 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -12,12 +8,8 @@ import {
   type NarratorCard,
 } from '@storyboard/story-model';
 
-const cardsFixtureDirectory = fileURLToPath(
-  new URL('../../../../../packages/story-model/test/fixtures/cards/', import.meta.url),
-);
-const scenesFixtureDirectory = fileURLToPath(
-  new URL('../../../../../packages/story-model/test/fixtures/scenes/', import.meta.url),
-);
+const narratorFixture: string = "type: narrator\nid: hana-first\nname: 하나의 목소리\nperson: first\nknowledge: witnessed\ntense: past\nfocal: hana\nvoice:\n  - 건조한 단문\n  - 자기 비하 섞인 유머\n";
+const narratedSceneFixture: string = "type: scene\nid: 03-narrated\ntitle: 등불\ncharacters:\n  - hana\nlocation: night-market\nnarrator: hana-first\nthread: ep2\nsummary: 하나가 등불 아래에서 준을 기다린다.\n";
 
 const hanaFirst: NarratorCard = {
   type: 'narrator',
@@ -45,13 +37,13 @@ const narrators = new Map([
 
 describe('narrator card codec', () => {
   it('reads the narrator fixture', () => {
-    const rawCard = readFileSync(join(cardsFixtureDirectory, 'narrator.card'), 'utf8');
+    const rawCard = narratorFixture;
 
     expect(parseNarratorCard(rawCard)).toMatchObject({ type: 'narrator' });
   });
 
   it('reads narrator and thread from a scene card', () => {
-    const rawScene = readFileSync(join(scenesFixtureDirectory, '03-narrated.card'), 'utf8');
+    const rawScene = narratedSceneFixture;
 
     const scene = parseScene(rawScene, '03-narrated.card');
 

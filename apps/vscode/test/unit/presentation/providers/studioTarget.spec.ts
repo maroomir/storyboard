@@ -107,7 +107,7 @@ describe("computeStudioTarget", () => {
   })
 
   it("falls back to the project for a card file that is not a bundle", async () => {
-    const target = await computeStudioTarget(editorAt("/workspace/story/character/.sample.card"))
+    const target = await computeStudioTarget(editorAt("/workspace/story/character/seorin.card"))
 
     expect(target.kind).toBe("project")
     expect(target.entity).toEqual({ kind: "project", key: "project" })
@@ -115,7 +115,7 @@ describe("computeStudioTarget", () => {
 
   it("does not treat nested card files as card targets", async () => {
     const target = await computeStudioTarget(
-      editorAt("/workspace/story/character/profile/seorin.card")
+      editorAt("/workspace/story/character/archive/seorin.card")
     )
 
     expect(target.kind).toBe("project")

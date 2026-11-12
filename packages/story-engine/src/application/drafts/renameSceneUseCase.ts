@@ -42,7 +42,6 @@ export type RenameSceneResult =
   | UseCaseFailure;
 
 interface PlannedWrite {
-  readonly from?: StoryUri;
   readonly to: StoryUri;
   readonly content: string | Uint8Array;
 }
@@ -120,10 +119,9 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     const { from, to } = rename;
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(root);
     const hasDraft: boolean = await this.host.fileSystem.exists(draftPath(root, from.stem));
-    const moves: PlannedWrite[] = await this.planMoves(paths, rename);
     const rewrites: PlannedWrite[] = await this.planRewrites(paths, rename);
 
-    await this.applyPlannedWrites(paths, rename, moves, rewrites);
+    await this.applyPlannedWrites(paths, rename, rewrites);
     await this.renameRevisionPlanScene(root, rename);
 
     return {
@@ -134,7 +132,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       movedFiles: [
         relativePath(root, scenePath(root, to.stem)),
         ...(hasDraft ? [relativePath(root, draftPath(root, to.stem))] : []),
-        ...moves.map((move) => relativePath(root, move.to)),
       ],
       rewrittenFiles: rewrites.map((rewrite) => relativePath(root, rewrite.to)),
     };
@@ -181,60 +178,14 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   private async applyPlannedWrites(
     paths: StoryboardProjectPaths,
     rename: SceneRename,
-    moves: readonly PlannedWrite[],
     rewrites: readonly PlannedWrite[],
   ): Promise<void> {
-    for (const write of [...moves, ...rewrites]) {
+    for (const write of rewrites) {
       await this.host.fileSystem.writeFile(write.to, toBytes(write.content));
-    }
-
-    for (const move of moves) {
-      if (move.from !== undefined) {
-        await this.host.fileSystem.delete(move.from);
-      }
     }
 
     await this.host.scenes.writeSlug(paths.workspaceRoot, rename.from.stem, rename.to.slug);
     await new SceneRenumberer(this.host).renumber(paths.workspaceRoot);
-  }
-
-  private async planMoves(
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<PlannedWrite[]> {
-    const moves: PlannedWrite[] = [];
-
-    await this.planCacheFileMoves(moves, paths, rename);
-
-    return moves;
-  }
-
-  private async addMove(
-    moves: PlannedWrite[],
-    source: StoryUri,
-    target: StoryUri,
-    transform: (raw: string) => string,
-  ): Promise<void> {
-    const raw: string | undefined = await this.readTextIfExists(source);
-
-    if (raw !== undefined) {
-      moves.push({ from: source, to: target, content: transform(raw) });
-    }
-  }
-
-  private async planCacheFileMoves(
-    moves: PlannedWrite[],
-    paths: StoryboardProjectPaths,
-    rename: SceneRename,
-  ): Promise<void> {
-    for (const directory of [paths.cardCacheDirectory]) {
-      await this.addMove(
-        moves,
-        stemFileUri(directory, rename.from.stem, '.json'),
-        stemFileUri(directory, rename.to.stem, '.json'),
-        (raw) => rewriteJsonSceneStemsOrKeep(raw, rename),
-      );
-    }
   }
 
   private async planRewrites(
@@ -274,16 +225,8 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   }
 }
 
-function stemFileUri(directory: StoryUri, stem: string, extension: string): StoryUri {
-  return joinUri(directory, `${stem}${extension}`);
-}
-
 function mentionsFromStem(raw: string, rename: SceneRename): boolean {
   return raw.includes(rename.from.stem);
-}
-
-function rewriteJsonSceneStemsOrKeep(raw: string, rename: SceneRename): string {
-  return rewriteJsonSceneStems(raw, rename) ?? raw;
 }
 
 function rewriteMentionedJsonSceneStems(raw: string, rename: SceneRename): string | undefined {
