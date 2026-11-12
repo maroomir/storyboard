@@ -49,7 +49,7 @@ describe("GenerateOutlineUseCase", () => {
     expect(gateway.createService).not.toHaveBeenCalled()
   })
 
-  it("saves generated synopsis and chapter plan", async () => {
+  it("saves generated synopsis and chapter plan, then writes the cards its cast still lacks", async () => {
     const repository: IOutlineRepository = {
       hasExisting: vi.fn(async () => false),
       loadCharacterBriefs: vi.fn(async () => []),
@@ -57,13 +57,44 @@ describe("GenerateOutlineUseCase", () => {
       loadProject: vi.fn(async () => project()),
       save: vi.fn(async () => ({}) as never)
     }
+    const chapterPlan = {
+      version: "1.0.0",
+      acts: [
+        {
+          id: "act-1",
+          title: "1막",
+          chapters: [
+            {
+              id: "chapter-1",
+              title: "1장",
+              scenes: [{ id: "harbor", title: "항구", purpose: "만난다", characters: ["hana", "jun"], foreshadowing: [] }]
+            }
+          ]
+        }
+      ]
+    }
     const service = {
       generateOutlineSynopsis: vi.fn(async () => ({})),
-      generateChapterPlan: vi.fn(async () => ({}))
+      generateChapterPlan: vi.fn(async () => chapterPlan),
+      generateOutlineCharacters: vi.fn(async () => [{ id: "hana", name: "하나", description: ["항구 사람"] }])
     }
-    const result = await new GenerateOutlineUseCase(createTestHost({ logger: { error: () => undefined } as never }), createTestAi({ gateway: { createService: () => service } as never }), createTestRepositories({ outline: repository })).execute({ workspaceRoot: {} as never, overwrite: false })
+    const novelOutline = {
+      loadCharacterBriefs: vi.fn(async () => [{ id: "jun", name: "준" }]),
+      loadSynopsis: vi.fn(async () => undefined)
+    }
+    const cardWriter = { exists: vi.fn(async () => false), write: vi.fn(async () => undefined) }
+    const result = await new GenerateOutlineUseCase(
+      createTestHost({ logger: { error: () => undefined } as never }),
+      createTestAi({ gateway: { createService: () => service } as never }),
+      createTestRepositories({ outline: repository, novelOutline: novelOutline as never, cardWriter: cardWriter as never })
+    ).execute({ workspaceRoot: {} as never, overwrite: false })
+
     expect(result).toEqual(expect.objectContaining({ kind: "generated", ok: true }))
     expect(repository.save).toHaveBeenCalledOnce()
+    expect(service.generateOutlineCharacters).toHaveBeenCalledWith(expect.anything(), expect.anything(), [
+      { id: "hana", sceneTitles: ["항구"] }
+    ])
+    expect(cardWriter.write).toHaveBeenCalledWith({}, expect.objectContaining({ id: "hana", name: "하나" }))
   })
 
   it("refuses a generated chapter plan whose chapter count is not the contract's", async () => {

@@ -23,7 +23,7 @@ export class OutlineGenerateCommand implements ICommandHandler {
     writesWorkspace: true,
     group: '기획',
     usage: 'outline generate',
-    summary: '작품 계약에서 시놉시스와 챕터 계획을 만듭니다',
+    summary: '작품 계약에서 시놉시스와 챕터 계획을 만들고, 계획에 나오지만 카드가 없는 인물의 카드를 만듭니다',
     flags: ['force'],
   };
 

@@ -17,6 +17,10 @@ import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import { validateGenerationContract, toOutlineBrief } from '@storyboard/story-model';
 import { refuseChapterCountMismatch } from '#engine/application/novel/chapterPlanContract';
 import type { StoryboardAiService } from '@storyboard/story-ai';
+import {
+  PlanCastCardWriter,
+  type PlanCastCardReport,
+} from '#engine/application/novel/planCastCardWriter';
 
 export type GenerateOutlineOptions = {
   readonly onProgress?: (message: string) => void;
@@ -88,9 +92,38 @@ export class GenerateOutlineUseCase implements IUseCase<
           synopsis,
           chapterPlan,
         );
+        await this.writePlanCast(workspaceRoot, project, chapterPlan, aiService, options);
 
         return { kind: 'generated', ok: true, synopsisUri };
       },
     );
+  }
+
+  private async writePlanCast(
+    workspaceRoot: StoryUri,
+    project: StoryboardProject,
+    plan: ChapterPlan,
+    aiService: StoryboardAiService,
+    options: GenerateOutlineOptions,
+  ): Promise<void> {
+    options.onProgress?.('인물 카드 확인 중…');
+    const report: PlanCastCardReport = await new PlanCastCardWriter({
+      novelOutline: this.repositories.novelOutline,
+      cardWriter: this.repositories.cardWriter,
+    }).writeMissingCards({ workspaceRoot, project, plan, aiService });
+
+    if (report.writtenCount > 0) {
+      options.onProgress?.(`인물 카드 ${report.writtenCount}장을 만들었습니다.`);
+    }
+    if (report.missingIds.length > 0) {
+      options.onProgress?.(
+        `모델이 카드를 돌려주지 않은 인물이 있습니다: ${report.missingIds.join(', ')}. 카드를 직접 만들어 주세요.`,
+      );
+    }
+    if (report.unusableIds.length > 0) {
+      options.onProgress?.(
+        `카드 이름이 될 수 없는 인물 id 라 카드를 만들지 않았습니다: ${report.unusableIds.join(', ')}. outline/chapters.yaml 의 id 를 영소문자로 고쳐 주세요.`,
+      );
+    }
   }
 }

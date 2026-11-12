@@ -379,6 +379,18 @@ describe('scene create and scene seed', () => {
     expect(await readSceneCardYaml(workspace, '002-scene-2')).toContain('id: 002-scene-2');
   });
 
+  it('keeps the planned cast when scenes are seeded right after outline generate', async () => {
+    await run('project set', args(['project', 'set'], { genre: '미스터리', audience: '성인', pov: 'third-limited', 'target-words': '6000', chapters: '1', 'scenes-per-chapter': '2', concept: '짧은 작품' }));
+
+    const outline = await run('outline generate', args(['outline', 'generate'], { yes: true }));
+    const seeded = await run('scene seed', args(['scene', 'seed']));
+
+    expect(outline.ok, outline.message).toBe(true);
+    expect(seeded.ok, seeded.message).toBe(true);
+    expect(existsSync(join(workspace, 'character', 'hana.card'))).toBe(true);
+    expect(await readSceneCardYaml(workspace, listSceneStems(workspace)[0] ?? '')).toContain('characters:');
+  });
+
   it('seeds scenes from the chapter plan and refuses to overwrite without --force', async () => {
     const missing = await run('scene seed', args(['scene', 'seed']));
     expect(missing.ok).toBe(false);
