@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 export const sceneFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
 export const sceneStemPattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
-export const sceneSummaryFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
 
 export type SceneGroundingFieldKey = 'incident' | 'place' | 'time';
 
@@ -196,43 +195,6 @@ export interface SceneFile {
   readonly frontmatter: SceneFrontmatter;
   readonly body: string;
   readonly summaryText?: string;
-}
-
-export function sceneSummaryFileName(stem: string): string {
-  return `${stem}.summary.md`;
-}
-
-export function sceneSummaryReference(summary: string | undefined): string | undefined {
-  const trimmed: string | undefined = summary?.trim();
-  return trimmed !== undefined && sceneSummaryFileNamePattern.test(trimmed) ? trimmed : undefined;
-}
-
-export function isSceneSummaryReference(summary: string | undefined): boolean {
-  return sceneSummaryReference(summary) !== undefined;
-}
-
-export function isInlineSceneSummary(summary: string | undefined): boolean {
-  return summary !== undefined && summary.trim().length > 0 && !isSceneSummaryReference(summary);
-}
-
-export interface SceneSummaryExtraction {
-  readonly card: SceneCard;
-  readonly summaryFileName: string;
-  readonly summaryText: string;
-}
-
-export function extractInlineSceneSummary(card: SceneCard): SceneSummaryExtraction | undefined {
-  if (card.summary === undefined || !isInlineSceneSummary(card.summary)) {
-    return undefined;
-  }
-
-  const summaryFileName: string = sceneSummaryFileName(card.id);
-
-  return {
-    card: { ...card, summary: summaryFileName },
-    summaryFileName,
-    summaryText: `${card.summary.trim()}\n`,
-  };
 }
 
 export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {

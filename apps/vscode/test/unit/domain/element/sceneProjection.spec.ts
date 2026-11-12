@@ -51,6 +51,7 @@ describe("scene projection", () => {
       storyTime: 3,
       purpose: "엘리아가 처음 무너진다",
       foreshadowing: ["손끝이 떨린다"],
+      summary: "방과 후 옥상.",
       beats: [{ text: "엘리아가 옥상 문을 민다" }, { text: "세라가 먼저 와 있다", cast: ["elia", "sera"], place: "학교", time: "방과 후" }]
     })
     expect(scene.body).toContain("방과 후 옥상.")

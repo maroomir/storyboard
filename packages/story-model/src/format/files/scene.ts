@@ -2,7 +2,6 @@ import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
 import {
-  isSceneSummaryReference,
   parseSceneFileName,
   renderSceneCardBody,
   sceneCardSchema,
@@ -52,8 +51,7 @@ function toSceneFile(
   card: SceneCard,
   summaryText: string | undefined,
 ): SceneFile {
-  const resolvedSummary: string | undefined =
-    summaryText ?? (isSceneSummaryReference(card.summary) ? undefined : card.summary);
+  const resolvedSummary: string | undefined = summaryText ?? card.summary;
 
   return {
     ...fileNameParts,

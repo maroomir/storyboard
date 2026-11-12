@@ -11,7 +11,6 @@ import { formatSceneNumber } from '#model/format/bundlePaths';
 import { mainThreadId } from '#model/format/project';
 import {
   renderSceneCardBody,
-  sceneSummaryReference,
   toSceneFrontmatter,
   type SceneBeat,
   type SceneBeatDetail,
@@ -97,6 +96,9 @@ export function projectSceneCard(
   lookup: SceneProjectionLookup,
 ): SceneCard {
   const { header, statements, beats } = content;
+  const trimmedSummary: string | undefined = content.summaryText?.trim();
+  const summary: string | undefined =
+    trimmedSummary === undefined || trimmedSummary.length === 0 ? undefined : trimmedSummary;
   const characters: string[] = slugsOf(header.cast, lookup);
   const location: string | undefined =
     header.place === undefined ? undefined : lookup.slugOf(header.place);
@@ -120,6 +122,7 @@ export function projectSceneCard(
     ...(header.targetWordCount === undefined ? {} : { targetWordCount: header.targetWordCount }),
     ...scalars,
     ...(foreshadowing.length > 0 ? { foreshadowing } : {}),
+    ...(summary === undefined ? {} : { summary }),
     ...(beats.length > 0 ? { beats: beats.map((beat) => projectBeat(beat, lookup)) } : {}),
   };
 }
@@ -240,9 +243,7 @@ function reconcileSceneStatements(
 
 function inlineSummaryOf(card: SceneCard): string | undefined {
   const summary: string | undefined = card.summary?.trim();
-  return summary === undefined || summary.length === 0 || sceneSummaryReference(summary) !== undefined
-    ? undefined
-    : `${summary}\n`;
+  return summary === undefined || summary.length === 0 ? undefined : `${summary}\n`;
 }
 
 export function planSceneBundle(card: SceneCard, request: PlanSceneBundleRequest): PlannedSceneBundle {

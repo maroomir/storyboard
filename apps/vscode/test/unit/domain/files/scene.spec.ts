@@ -6,17 +6,14 @@ import { describe, expect, it } from "vitest"
 
 import {
   canonicalizeSceneCardText,
-  extractInlineSceneSummary,
   extractSceneNarrativeSource,
   findUnknownBeatCast,
   splitSceneNarrativeSource,
-  isInlineSceneSummary,
   parseScene,
   parseSceneFileName,
   parseSceneStem,
   renderSceneCardBody,
   resolveSceneOrder,
-  sceneSummaryReference,
   serializeSceneCard,
   SceneParseError
 } from '@storyboard/story-model';
@@ -341,34 +338,6 @@ describe("scene summary file and beats", () => {
     const scene = parseScene("type: scene\nid: 04-a\nsummary: 04-a.summary.md\n", "04-a.card", "파일 산문\n")
 
     expect(scene.body).toBe("파일 산문\n")
-  })
-
-  it("does not treat a summary reference as narrative when no file text is supplied", () => {
-    const scene = parseScene("type: scene\nid: 04-a\nsummary: 04-a.summary.md\n", "04-a.card")
-
-    expect(scene.body).toBe("")
-    expect(scene.summaryText).toBeUndefined()
-  })
-
-  it("distinguishes a file reference from inline prose", () => {
-    expect(sceneSummaryReference(" 01-a.summary.md ")).toBe("01-a.summary.md")
-    expect(sceneSummaryReference("01-a.summary.md 를 본다")).toBeUndefined()
-    expect(isInlineSceneSummary("01-a.summary.md")).toBe(false)
-    expect(isInlineSceneSummary("산문")).toBe(true)
-    expect(isInlineSceneSummary("  ")).toBe(false)
-    expect(isInlineSceneSummary(undefined)).toBe(false)
-  })
-
-  it("extracts inline prose into a summary file reference", () => {
-    const extraction = extractInlineSceneSummary({ type: "scene", id: "01-a", summary: "산문 한 줄\n" })
-
-    expect(extraction).toEqual({
-      card: { type: "scene", id: "01-a", summary: "01-a.summary.md" },
-      summaryFileName: "01-a.summary.md",
-      summaryText: "산문 한 줄\n"
-    })
-    expect(extractInlineSceneSummary({ type: "scene", id: "01-a", summary: "01-a.summary.md" })).toBeUndefined()
-    expect(extractInlineSceneSummary({ type: "scene", id: "01-a" })).toBeUndefined()
   })
 })
 

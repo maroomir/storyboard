@@ -1344,6 +1344,15 @@ describe('scene show', () => {
     expect(outcome.message).toContain('줄기: main');
   });
 
+  it('shows the summary the scene bundle keeps in summary.md', async () => {
+    await writeSceneBundleFromYaml(workspace, 'type: scene\nid: 001-harbor\nsummary: 새벽 항구에서 둘이 마주친다.\n');
+
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['001-harbor']));
+
+    expect(existsSync(join(workspace, 'scene', '001-harbor.card', 'summary.md'))).toBe(true);
+    expect(outcome.message).toContain('새벽 항구에서 둘이 마주친다.');
+  });
+
   it('reports the narrator card a scene names', async () => {
     await run(
       'card create',
