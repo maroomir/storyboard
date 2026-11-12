@@ -5,25 +5,32 @@ import { cardCategoryLabels } from '@/commands/card/cardViews';
 import { flagBoolean } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
-import type { CardReading } from '@storyboard/story-app';
+import type { CardReading, CardViewReading } from '@storyboard/story-app';
 import type {
   CardPendingResult,
   CardSessionSummary,
   ElementBundle,
 } from '@storyboard/story-engine';
-import {
-  serializeCard,
-  type NarratorCard,
-  type Statement,
-  type StoryUri,
-} from '@storyboard/story-model';
-import { describeCard, toNarratorData } from '@/commands/card/narratorViews';
+import type { ElementKind, NarratorCard, Statement, StoryUri } from '@storyboard/story-model';
+import { toNarratorData } from '@/commands/card/narratorViews';
+import { posix } from 'node:path';
 
 const sessionKindLabels: Readonly<Record<CardSessionSummary['kind'], string>> = {
   studio: '스튜디오',
   interview: '인터뷰',
   absorb: '노트 흡수',
 };
+
+type CardKind = Exclude<ElementKind, 'scene'>;
+
+const cardKindLabels: Readonly<Record<CardKind, string>> = {
+  ...cardCategoryLabels,
+  narrator: '서술자',
+};
+
+interface StatementLineOptions {
+  readonly shouldShowSources: boolean;
+}
 
 function describeSource(statement: Statement): string {
   const { origin, command, session } = statement.source;
@@ -56,42 +63,59 @@ export class CardShowCommand implements ICommandHandler {
   }
 
   private async showCard(container: CliContainer, slug: string): Promise<CommandOutcome> {
-    const reading: CardReading | undefined = await container.cards.read(container.workspaceRoot, slug);
-    if (reading === undefined) {
-      return await this.showNarrator(container, slug);
-    }
-
-    return success(
-      [
-        `${reading.card.name} (${reading.card.id}) — ${cardCategoryLabels[reading.category]}`,
-        '',
-        serializeCard(reading.card).trimEnd(),
-      ].join('\n'),
-      {
-        category: reading.category,
-        id: reading.card.id,
-        path: (reading.uri as StoryUri).fsPath,
-        card: reading.card,
-      },
+    const bundle: ElementBundle | undefined = await container.cards.readBundle(
+      container.workspaceRoot,
+      slug,
     );
-  }
-
-  private async showNarrator(container: CliContainer, slug: string): Promise<CommandOutcome> {
-    const narrator: NarratorCard | undefined = (
-      await container.cards.listNarrators(container.workspaceRoot)
-    ).get(slug);
-    if (narrator === undefined) {
+    if (bundle === undefined) {
       return failure(`카드를 찾을 수 없습니다: ${slug}`);
     }
 
+    const kind: CardKind = bundle.header.kind as CardKind;
+    const reading: CardViewReading = await container.cards.readView(
+      container.workspaceRoot,
+      kind,
+      posix.basename(bundle.path),
+    );
+    if (!reading.ok) {
+      return failure(reading.message);
+    }
+
+    const statementLines: string[] = await this.describeStatementLines(container, bundle.statements, {
+      shouldShowSources: false,
+    });
     return success(
       [
-        `${narrator.name} (${narrator.id}) — 서술자`,
-        describeCard(narrator),
-        ...(narrator.voice && narrator.voice.length > 0 ? [`목소리: ${narrator.voice.join(' / ')}`] : []),
+        `${reading.view.name} (${slug}) — ${cardKindLabels[kind]}`,
+        ...(reading.view.facts.length > 0 ? [reading.view.facts.join(' · ')] : []),
+        '',
+        ...(statementLines.length > 0 ? statementLines : ['(진술 없음)']),
       ].join('\n'),
-      toNarratorData(narrator),
+      { ...(await this.describeCardData(container, kind, slug)), statements: bundle.statements },
     );
+  }
+
+  private async describeCardData(
+    container: CliContainer,
+    kind: CardKind,
+    slug: string,
+  ): Promise<Readonly<Record<string, unknown>>> {
+    if (kind === 'narrator') {
+      const narrator: NarratorCard | undefined = (
+        await container.cards.listNarrators(container.workspaceRoot)
+      ).get(slug);
+      return narrator === undefined ? {} : toNarratorData(narrator);
+    }
+
+    const reading: CardReading | undefined = await container.cards.read(container.workspaceRoot, slug);
+    return reading === undefined
+      ? {}
+      : {
+          category: reading.category,
+          id: reading.card.id,
+          path: (reading.uri as StoryUri).fsPath,
+          card: reading.card,
+        };
   }
 
   private async showSources(container: CliContainer, slug: string): Promise<CommandOutcome> {
@@ -103,15 +127,27 @@ export class CardShowCommand implements ICommandHandler {
       return failure(`카드를 찾을 수 없습니다: ${slug}`);
     }
 
-    const lines: string[] = [];
-    for (const [index, statement] of bundle.statements.entries()) {
-      lines.push(`${String(index + 1).padStart(3)}  ${await this.describeSlot(container, statement)}: ${statement.value}  ← ${describeSource(statement)}`);
-    }
+    const lines: string[] = await this.describeStatementLines(container, bundle.statements, {
+      shouldShowSources: true,
+    });
 
     return success([`${bundle.path}/statements.yaml`, ...lines].join('\n'), {
       path: bundle.path,
       statements: bundle.statements,
     });
+  }
+
+  private async describeStatementLines(
+    container: CliContainer,
+    statements: readonly Statement[],
+    options: StatementLineOptions,
+  ): Promise<string[]> {
+    const lines: string[] = [];
+    for (const [index, statement] of statements.entries()) {
+      const source: string = options.shouldShowSources ? `  ← ${describeSource(statement)}` : '';
+      lines.push(`${String(index + 1).padStart(3)}  ${await this.describeSlot(container, statement)}: ${statement.value}${source}`);
+    }
+    return lines;
   }
 
   private async describeSlot(container: CliContainer, statement: Statement): Promise<string> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildSceneSeeds, extractSceneNarrativeSource, parseScene } from "@storyboard/story-model"
+import { buildSceneSeeds, extractSceneNarrativeSource, parseScene, serializeSceneCard } from "@storyboard/story-model"
 import type { ChapterPlan } from '@storyboard/story-model';
 const plan: ChapterPlan = {
   version: "1.0.0",
@@ -62,7 +62,7 @@ describe("buildSceneSeeds", () => {
 
   it("produces valid scene cards with frontmatter view and seed body", () => {
     const [first] = buildSceneSeeds(plan)
-    const scene = parseScene(first.content, first.fileName)
+    const scene = parseScene(serializeSceneCard(first.card), first.fileName)
 
     expect(scene.frontmatter.title).toBe("도착")
     expect(scene.frontmatter.characters).toEqual(["elia", "jihoon"])
@@ -105,7 +105,7 @@ describe("buildSceneSeeds", () => {
     }
 
     const [seed] = buildSceneSeeds(richPlan)
-    const scene = parseScene(seed.content, seed.fileName)
+    const scene = parseScene(serializeSceneCard(seed.card), seed.fileName)
 
     expect(scene.body).toContain("[갈등]\n엘리아 대 지훈")
     expect(scene.body).toContain("[반전]\n지훈이 형이었다")
@@ -117,7 +117,7 @@ describe("buildSceneSeeds", () => {
 
   it("omits optional frontmatter and sections when the plan lacks them", () => {
     const seeds = buildSceneSeeds(plan)
-    const rumor = parseScene(seeds[2].content, seeds[2].fileName)
+    const rumor = parseScene(serializeSceneCard(seeds[2].card), seeds[2].fileName)
 
     expect(rumor.frontmatter.characters).toBeUndefined()
     expect(rumor.frontmatter.location).toBeUndefined()
@@ -127,7 +127,7 @@ describe("buildSceneSeeds", () => {
 
   it("leaves summary empty so the plan sections survive as the narrative source", () => {
     const [first] = buildSceneSeeds(plan)
-    const scene = parseScene(first.content, first.fileName)
+    const scene = parseScene(serializeSceneCard(first.card), first.fileName)
 
     expect(scene.frontmatter.summary).toBeUndefined()
     expect(extractSceneNarrativeSource(scene.body)).toContain("주인공 소개")
