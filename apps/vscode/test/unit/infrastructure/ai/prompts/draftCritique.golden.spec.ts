@@ -13,8 +13,7 @@ describe("DraftCritiquePrompt golden", () => {
     qualityCriteria: ["갈등이 드러난다", "감각 묘사가 있다"],
     styleDirective: {
       narration: { person: "third", knowledge: "witnessed", focal: "엘리아", tense: "past", voice: ["건조하다", "냉소적이다"] },
-      genre: "누아르",
-      relationStage: "재회"
+      genre: "누아르"
     },
     hasSceneMarkers: true
   }

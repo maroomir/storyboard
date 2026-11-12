@@ -122,14 +122,11 @@ function pickSceneSettingFields(card: SceneCard): Partial<SceneCard> {
     ...(card.title === undefined ? {} : { title: card.title }),
     ...(card.characters === undefined ? {} : { characters: card.characters }),
     ...(card.location === undefined ? {} : { location: card.location }),
-    ...(card.mood === undefined ? {} : { mood: card.mood }),
-    ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
   };
 }
 
 function pickSceneNarrationFields(card: SceneCard): Partial<SceneCard> {
   return {
-    ...(card.povCharacter === undefined ? {} : { povCharacter: card.povCharacter }),
     ...(card.narrator === undefined ? {} : { narrator: card.narrator }),
     ...(card.thread === undefined ? {} : { thread: card.thread }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),

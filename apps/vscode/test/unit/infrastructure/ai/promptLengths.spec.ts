@@ -22,7 +22,6 @@ describe("prompt length dump", () => {
     traits: ["용감함", "신중함"],
     relations: [],
     arc: [],
-    recentDialogues: []
   }
 
 

@@ -319,7 +319,6 @@ function createNewCard(entity: NoteExtractionEntity, id: string): StoryboardCard
     type: 'location',
     id,
     name: entity.name,
-    locationKind: 'place',
     description: [],
     characterIds: [],
     tags: [],
@@ -371,7 +370,6 @@ function toProposalDrafts(
   const { entity, card } = resolved;
   const drafts: CardCollectProposalDraft[] = [
     ...entity.aliases.map((value) => ({ kind: 'alias' as const, value })),
-    ...entity.tags.map((value) => ({ kind: 'tag' as const, value })),
     ...entity.description.map((value) => ({ kind: 'descriptionLine' as const, value })),
   ];
 
@@ -394,6 +392,7 @@ function toProposalDrafts(
     return drafts;
   }
 
+  drafts.push(...entity.tags.map((value) => ({ kind: 'tag' as const, value })));
   drafts.push(...entity.senses.map((value) => ({ kind: 'sense' as const, value })));
 
   if (entity.time !== undefined) {
@@ -705,7 +704,6 @@ class NoteScenePlanner {
       title: scene.title,
       ...(characterIds.length > 0 ? { characters: characterIds } : {}),
       ...(locationId === undefined ? {} : { location: locationId }),
-      ...(scene.mood === undefined ? {} : { mood: scene.mood }),
       ...(scene.purpose === undefined ? {} : { purpose: scene.purpose }),
       summary: scene.summary,
       ...(scene.beats.length > 0 ? { beats: scene.beats } : {}),

@@ -203,7 +203,7 @@ function checkFocallessNarrators({ focallessNarrators }: NarrationSurvey): Docto
         {
           status: 'warn',
           label: '서술자 초점',
-          detail: `초점 인물이 없는 1·2인칭 서술자가 있습니다 (${focallessNarrators.map((narrator) => narrator.id).join(', ')}). 씬의 povCharacter 가 없으면 화자가 정해지지 않습니다.`,
+          detail: `초점 인물이 없는 1·2인칭 서술자가 있습니다 (${focallessNarrators.map((narrator) => narrator.id).join(', ')}). 서술자 카드에 초점 인물(--focal)을 정해 주세요.`,
         },
       ]
     : [];
@@ -660,7 +660,7 @@ export class DoctorChecks {
         const addressed: CardReading | undefined = readings.find(
           (other) =>
             other.card.id !== card.id &&
-            [other.card.name, ...(other.card.aliases ?? []), ...(other.card.tags ?? [])].includes(catchphrase),
+            [other.card.name, ...(other.card.aliases ?? []), ...(other.card.type === 'location' ? other.card.tags : [])].includes(catchphrase),
         );
         if (addressed !== undefined && !speeches.includes(catchphrase)) {
           checks.push({

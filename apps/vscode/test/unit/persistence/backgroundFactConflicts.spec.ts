@@ -12,7 +12,6 @@ const condo: BackgroundCard = {
   type: 'location',
   id: 'condo',
   name: '해외 콘도',
-  locationKind: 'place',
   description: [sofa, room, '거실 통창 너머 바다'],
   characterIds: [],
   tags: [],

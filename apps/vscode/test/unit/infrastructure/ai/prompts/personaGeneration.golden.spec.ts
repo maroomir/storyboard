@@ -20,7 +20,6 @@ describe("PersonaGenerationPrompt golden", () => {
     genre: "청춘",
     styleConstraints: ["간결체"],
     prohibitions: ["무근거 부활 금지"],
-    relationStage: "경계",
     targetWordCount: 3000
   }
 

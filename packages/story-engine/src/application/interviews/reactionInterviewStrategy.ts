@@ -58,6 +58,7 @@ import {
   scenePath,
   serializeCard,
   shouldProposeCardCollect,
+  deriveSceneGrounding,
   type BibleSubjectKind,
   type CardCollectProposal,
   type CardCollectProposalDraft,
@@ -215,9 +216,7 @@ function writtenAnswers(records: readonly InterviewRecord[], axes: readonly Inte
 function describeSceneKind(scene: SceneFile): string {
   const parts: string[] = [
     scene.card.title ?? scene.stem,
-    scene.card.grounding?.incident ?? scene.card.purpose,
-    scene.card.relationStage === undefined ? undefined : `관계: ${scene.card.relationStage}`,
-    scene.card.mood === undefined ? undefined : `분위기: ${scene.card.mood}`,
+    deriveSceneGrounding(scene, undefined).incident ?? scene.card.purpose,
   ].filter((part): part is string => part !== undefined && part.trim().length > 0);
 
   return parts.join(' — ');

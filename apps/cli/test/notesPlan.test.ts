@@ -418,7 +418,7 @@ describe('buildNoteAbsorbPlan', () => {
             entity({
               name: '조만재',
               traits: ['허세가  심함.', '고집이 세다'],
-              tags: ['허세', '허세남'],
+              voice: ['허세', '허세남'],
               sourceNotes: ['b.md'],
             }),
           ],
@@ -431,7 +431,7 @@ describe('buildNoteAbsorbPlan', () => {
       '허세가 심함',
       '고집이 세다',
     ]);
-    expect(changes.filter((change) => change.kind === 'tag').map((change) => change.value)).toEqual([
+    expect(changes.filter((change) => change.kind === 'voiceLine').map((change) => change.value)).toEqual([
       '허세',
       '허세남',
     ]);
@@ -673,7 +673,7 @@ describe('note card consolidation', () => {
   const twoReadings = planOf(
     [],
     [{ suggestedId: 'jo-manjae', traits: ['허세가 심함', '백과사전을 즐겨 읽음'], sourceNotes: ['a.md'] }],
-    [{ traits: ['허세를 부린다', '백과사전을 탐독함'], tags: ['허세남'], sourceNotes: ['b.md'] }],
+    [{ traits: ['허세를 부린다', '백과사전을 탐독함'], voice: ['허세남'], sourceNotes: ['b.md'] }],
   );
 
   it('asks only about a card read in more than one request or already holding a list', () => {
@@ -685,7 +685,7 @@ describe('note card consolidation', () => {
         existing: {},
         candidates: {
           traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허세를 부린다', '백과사전을 탐독함'],
-          tags: ['허세남'],
+          voice: ['허세남'],
         },
         sharedAliases: [],
       },
@@ -885,12 +885,12 @@ describe('note card consolidation', () => {
         values: {},
         groups: {
           traits: [['허세가 심함', '허세를 부린다'], ['백과사전을 즐겨 읽음', '백과사전을 탐독함'], ['허풍쟁이']],
-          tags: [['허세남']],
+          voice: [['허세남']],
         },
       },
     ]);
 
-    expect(valuesOf(plan, 'jo-manjae')).toEqual(['허세남', '허세가 심함', '백과사전을 즐겨 읽음']);
+    expect(valuesOf(plan, 'jo-manjae')).toEqual(['허세가 심함', '백과사전을 즐겨 읽음', '허세남']);
   });
 
   it('keeps a list of a new card the answer empties or leaves out, and drops an existing card it empties', () => {
@@ -988,7 +988,7 @@ describe('note card consolidation', () => {
           {
             id: 'jo-manjae',
             traits: [['허세가 심함', '허세를 부린다'], ['백과사전을 즐겨 읽음', '백과사전을 탐독함', '지어낸 말']],
-            tags: ['허세남'],
+            voice: ['허세남'],
           },
         ],
       },
@@ -998,20 +998,20 @@ describe('note card consolidation', () => {
 
     expect(answer.consolidated[0]).toEqual({
       cardId: 'jo-manjae',
-      values: { tags: ['허세남'] },
+      values: { voice: ['허세남'] },
       groups: { traits: [['허세가 심함', '허세를 부린다'], ['백과사전을 즐겨 읽음', '백과사전을 탐독함', '지어낸 말']] },
     });
     expect(valuesOf(applyNoteConsolidation(twoReadings, targets, answer.consolidated).plan, 'jo-manjae')).toEqual([
-      '허세남',
       '허세가 심함',
       '백과사전을 즐겨 읽음',
+      '허세남',
     ]);
     expect(valuesOf(applyNoteConsolidation(twoReadings, targets, nothingGrouped.consolidated).plan, 'jo-manjae')).toEqual([
-      '허세남',
       '허세가 심함',
       '백과사전을 즐겨 읽음',
       '허세를 부린다',
       '백과사전을 탐독함',
+      '허세남',
     ]);
   });
 
@@ -1332,7 +1332,7 @@ describe('note source labels (A1)', () => {
 
 describe('characters at a place (A6)', () => {
   it('collects the cast of the scenes set there and of the beats placed there, in scene order', () => {
-    const harbor = { type: 'location', locationKind: 'place', id: 'harbor', name: '항구', aliases: ['부두'], description: [], characterIds: [], tags: [] } as const;
+    const harbor = { type: 'location', id: 'harbor', name: '항구', aliases: ['부두'], description: [], characterIds: [], tags: [] } as const;
     const scenes = [
       { stem: '002-b', order: 2, card: { type: 'scene', id: '002-b', location: 'harbor', characters: ['jun', 'hana'] } },
       { stem: '001-a', order: 1, card: { type: 'scene', id: '001-a', location: 'tower', beats: [{ text: '부두로 간다', place: '부두', cast: ['mira'] }, '혼자 남는다'] } },

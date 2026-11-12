@@ -4,9 +4,9 @@ import { characterRoles, type CharacterRole } from '#model/element/character';
 
 export const cardIdPattern: RegExp = /^[a-z0-9][a-z0-9-]*$/;
 
-export type CardType = 'character' | 'location' | 'temporal' | 'social';
+export type CardType = 'character' | 'location';
 
-export const cardTypes: readonly CardType[] = ['character', 'location', 'temporal', 'social'];
+export const cardTypes: readonly CardType[] = ['character', 'location'];
 
 export const characterRoleSchema: z.ZodType<CharacterRole | undefined> = z.preprocess(
   (value) => {
@@ -95,7 +95,6 @@ export interface CharacterCard {
   role?: CharacterRole;
   attributes?: Record<string, string | number | boolean | null>;
   aliases?: string[];
-  tags?: string[];
   traits?: string[];
   description?: string[];
   voice?: string[];
@@ -103,7 +102,6 @@ export interface CharacterCard {
   desire?: string[];
   relations?: CharacterRelation[];
   arc?: CharacterArc[];
-  recentDialogues?: string[];
 }
 
 interface BackgroundCardFields {
@@ -120,22 +118,11 @@ interface BackgroundCardFields {
   rules?: string[];
 }
 
-export type LocationKind = 'place' | 'affiliation';
-
 export interface LocationBackgroundCard extends BackgroundCardFields {
   type: 'location';
-  locationKind: LocationKind;
 }
 
-export interface TemporalBackgroundCard extends BackgroundCardFields {
-  type: 'temporal';
-}
-
-export interface SocialBackgroundCard extends BackgroundCardFields {
-  type: 'social';
-}
-
-export type BackgroundCard = LocationBackgroundCard | TemporalBackgroundCard | SocialBackgroundCard;
+export type BackgroundCard = LocationBackgroundCard;
 
 export type StoryboardCard = CharacterCard | BackgroundCard;
 
@@ -147,7 +134,6 @@ const characterCardShape = {
   role: characterRoleSchema,
   attributes: z.record(z.string(), cardAttributeValueSchema).optional(),
   aliases: stringListSchema.optional(),
-  tags: stringListSchema.optional(),
   traits: stringListSchema.optional(),
   description: stringListSchema.optional(),
   voice: stringListSchema.optional(),
@@ -155,7 +141,6 @@ const characterCardShape = {
   desire: stringListSchema.optional(),
   relations: z.array(characterRelationSchema).optional(),
   arc: z.array(characterArcSchema).optional(),
-  recentDialogues: stringListSchema.optional(),
 } satisfies z.ZodRawShape;
 
 const backgroundBaseShape = {
@@ -175,24 +160,11 @@ const backgroundBaseShape = {
 const locationBackgroundShape = {
   type: z.literal('location'),
   ...backgroundBaseShape,
-  locationKind: z.enum(['place', 'affiliation']).default('place'),
-} satisfies z.ZodRawShape;
-
-const temporalBackgroundShape = {
-  type: z.literal('temporal'),
-  ...backgroundBaseShape,
-} satisfies z.ZodRawShape;
-
-const socialBackgroundShape = {
-  type: z.literal('social'),
-  ...backgroundBaseShape,
 } satisfies z.ZodRawShape;
 
 export const cardSchema: z.ZodType<StoryboardCard> = z.discriminatedUnion('type', [
   z.object(characterCardShape),
   z.object(locationBackgroundShape),
-  z.object(temporalBackgroundShape),
-  z.object(socialBackgroundShape),
 ]);
 
 export function isCardType(value: string): value is CardType {
@@ -200,7 +172,7 @@ export function isCardType(value: string): value is CardType {
 }
 
 export function isBackgroundCard(card: StoryboardCard): card is BackgroundCard {
-  return card.type === 'location' || card.type === 'temporal' || card.type === 'social';
+  return card.type === 'location';
 }
 
 export function joinCardText(value: readonly string[] | undefined): string {

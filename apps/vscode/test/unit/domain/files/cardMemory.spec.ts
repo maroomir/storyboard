@@ -20,7 +20,6 @@ const schoolCard: BackgroundCard = {
   type: "location",
   id: "school",
   name: "학교",
-  locationKind: "place",
   characterIds: [],
   tags: ["일상"],
   description: ["낡은 복도와 교실"]

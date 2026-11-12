@@ -236,7 +236,7 @@ describe("studio proposal rpc handlers", () => {
   })
 
   it("refuses to apply when the file changed after the proposal", async () => {
-    files.set("/workspace/character/seorin.card", `${cardText}\ntags:\n  - 추가됨`)
+    files.set("/workspace/character/seorin.card", `${cardText}\ntraits:\n  - 추가됨`)
 
     const response = await send(bridgeWith(), "studio.proposal.apply", {
       entity: characterEntity,
@@ -299,7 +299,7 @@ describe("studio proposal rpc handlers", () => {
   })
 
   it("shows no diff when the proposal cannot be prepared", async () => {
-    files.set("/workspace/character/seorin.card", `${cardText}\ntags:\n  - 추가됨`)
+    files.set("/workspace/character/seorin.card", `${cardText}\ntraits:\n  - 추가됨`)
 
     await send(bridgeWith(), "studio.proposal.preview", {
       entity: characterEntity,
@@ -376,7 +376,7 @@ describe("studio proposal rpc handlers for scene cards", () => {
   })
 
   it("refuses a scene card proposal once the card changed", async () => {
-    files.set("/workspace/scene/01-intro.card", `${sceneText}\nmood: 서늘함`)
+    files.set("/workspace/scene/01-intro.card", `${sceneText}\npurpose: 서늘함`)
 
     const response = await send(bridgeWith(), "studio.proposal.apply", {
       entity: sceneEntity,
@@ -428,7 +428,7 @@ describe("studio proposal follow-ups", () => {
   })
 
   it("records nothing when the proposal was refused", async () => {
-    files.set("/workspace/character/seorin.card", `${cardText}\ntags:\n  - 추가됨`)
+    files.set("/workspace/character/seorin.card", `${cardText}\ntraits:\n  - 추가됨`)
 
     await send(bridgeWith(), "studio.proposal.apply", {
       entity: characterEntity,
@@ -462,7 +462,7 @@ describe("studio proposal path safety", () => {
   })
 
   it("reports why a preview could not be shown instead of doing nothing", async () => {
-    files.set("/workspace/character/seorin.card", `${cardText}\ntags:\n  - 추가됨`)
+    files.set("/workspace/character/seorin.card", `${cardText}\ntraits:\n  - 추가됨`)
 
     const response = await send(bridgeWith(), "studio.proposal.preview", {
       entity: characterEntity,

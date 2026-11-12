@@ -30,20 +30,11 @@ function attributeValueAsString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : String(value);
 }
 
-type CharacterListField =
-  | 'traits'
-  | 'recentDialogues'
-  | 'description'
-  | 'voice'
-  | 'desire'
-  | 'aliases'
-  | 'tags';
+type CharacterListField = 'traits' | 'description' | 'voice' | 'desire' | 'aliases';
 
 type CharacterListProposalKind =
   | 'trait'
   | 'alias'
-  | 'tag'
-  | 'recentDialogue'
   | 'descriptionLine'
   | 'voiceLine'
   | 'desireLine';
@@ -56,8 +47,6 @@ type ArcProposal = Extract<CardCollectProposal, { kind: 'arc' }>;
 const characterListFieldByKind: Readonly<Record<CharacterListProposalKind, CharacterListField>> = {
   trait: 'traits',
   alias: 'aliases',
-  tag: 'tags',
-  recentDialogue: 'recentDialogues',
   descriptionLine: 'description',
   voiceLine: 'voice',
   desireLine: 'desire',
@@ -65,12 +54,10 @@ const characterListFieldByKind: Readonly<Record<CharacterListProposalKind, Chara
 
 const characterListFieldsInCardOrder: readonly CharacterListField[] = [
   'traits',
-  'recentDialogues',
   'description',
   'voice',
   'desire',
   'aliases',
-  'tags',
 ];
 
 function isCharacterListProposal(proposal: CardCollectProposal): proposal is CharacterListProposal {
@@ -89,12 +76,10 @@ class CharacterCardEdit {
     this.arc = [...(card.arc ?? [])];
     this.lists = {
       traits: [...(card.traits ?? [])],
-      recentDialogues: [...(card.recentDialogues ?? [])],
       description: [...(card.description ?? [])],
       voice: [...(card.voice ?? [])],
       desire: [...(card.desire ?? [])],
       aliases: [...(card.aliases ?? [])],
-      tags: [...(card.tags ?? [])],
     };
   }
 

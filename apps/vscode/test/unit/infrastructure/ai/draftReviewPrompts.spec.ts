@@ -52,14 +52,13 @@ describe("DraftCritiquePrompt", () => {
     expect(userText(artifact)).toContain("말투: 짧은 존댓말")
   })
 
-  it("includes narration and relation stage from the style directive", () => {
+  it("includes narration from the style directive", () => {
     const artifact = DraftCritiquePrompt.build(
       {
         ...input,
         styleDirective: {
           narration: { person: "first", knowledge: "witnessed", voice: ["건조한 단문"] },
-          genre: "허세 코미디",
-          relationStage: "적대적 첫 만남"
+          genre: "허세 코미디"
         }
       },
       "generic"
@@ -69,9 +68,7 @@ describe("DraftCritiquePrompt", () => {
     expect(userText(artifact)).toContain("1인칭 · 목격 범위")
     expect(userText(artifact)).toContain("[서술자 목소리]")
     expect(userText(artifact)).toContain("건조한 단문")
-    expect(userText(artifact)).toContain("[관계 단계]")
-    expect(userText(artifact)).toContain("적대적 첫 만남")
-    expect(artifact.system).toContain("관계 단계")
+    expect(artifact.system).not.toContain("관계 단계")
   })
 
   it("keeps the xs system block shorter than generic", () => {

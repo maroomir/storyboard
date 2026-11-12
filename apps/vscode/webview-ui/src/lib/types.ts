@@ -37,7 +37,6 @@ import type {
   StudioTarget,
   NarratorCard,
   SceneBeat,
-  LocationKind,
   InterviewAnswerInput,
   InterviewAnswerOutcome,
   InterviewClassification,
@@ -107,7 +106,6 @@ export interface StoryboardCard {
   readonly voice?: readonly string[];
   readonly catchphrases?: readonly string[];
   readonly desire?: readonly string[];
-  readonly locationKind?: LocationKind;
   readonly time?: string;
   readonly weather?: string;
   readonly senses?: readonly string[];
@@ -119,7 +117,6 @@ export interface StoryboardCard {
   readonly traits?: readonly string[];
   readonly relations?: readonly RelationLink[];
   readonly arc?: readonly CharacterArc[];
-  readonly recentDialogues?: readonly string[];
 }
 
 export interface SceneCard {
@@ -128,9 +125,6 @@ export interface SceneCard {
   readonly title?: string;
   readonly characters?: readonly string[];
   readonly location?: string;
-  readonly mood?: string;
-  readonly relationStage?: string;
-  readonly povCharacter?: string;
   readonly narrator?: string;
   readonly thread?: string;
   readonly targetWordCount?: number;

@@ -39,7 +39,7 @@ const fieldByKind: Map<ListKind, NoteConsolidatedField> = new Map(
 );
 
 const fieldsByCardKind: Readonly<Record<CardKind, readonly NoteConsolidatedField[]>> = {
-  character: ['aliases', 'traits', 'tags', 'description', 'voice', 'desire'],
+  character: ['aliases', 'traits', 'description', 'voice', 'desire'],
   background: ['aliases', 'description', 'senses', 'tags'],
 };
 

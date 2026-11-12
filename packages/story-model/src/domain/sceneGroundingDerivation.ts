@@ -46,17 +46,15 @@ export function deriveSceneGrounding(
   background: BackgroundCard | undefined,
 ): SceneGrounding {
   const firstBeat: ReturnType<typeof firstBeatDetail> = firstBeatDetail(scene.card.beats);
-  const explicit: SceneGrounding = scene.frontmatter.grounding ?? {};
   const derived: SceneGrounding = {
     incident: deriveIncident(scene),
     place: firstBeat.place ?? background?.name,
     time: firstBeat.time,
-    relation: scene.frontmatter.relationStage,
   };
 
   return Object.fromEntries(
     sceneGroundingFieldKeys.flatMap((key) => {
-      const value: string | undefined = nonEmpty(explicit[key]) ?? nonEmpty(derived[key]);
+      const value: string | undefined = nonEmpty(derived[key]);
       return value === undefined ? [] : [[key, value]];
     }),
   );

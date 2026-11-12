@@ -69,7 +69,7 @@ beforeEach(async () => {
   writeCardBundleFromYaml(workspace, 'type: character\nid: elia\nname: 엘리아\nrole: main\n');
   writeCardBundleFromYaml(
     workspace,
-    'type: location\nid: gate\nname: 학교 정문\nlocationKind: place\ndescription:\n  - 아침의 교문.\n',
+    'type: location\nid: gate\nname: 학교 정문\ndescription:\n  - 아침의 교문.\n',
   );
   await writeSceneBundleFromYaml(
     workspace,

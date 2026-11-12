@@ -13,7 +13,6 @@ const background: BackgroundCard = {
   type: "location",
   id: "town",
   name: "마을",
-  locationKind: "place",
   characterIds: ["hero", "ally"],
   tags: [],
   description: []

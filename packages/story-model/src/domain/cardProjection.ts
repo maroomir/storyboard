@@ -161,7 +161,6 @@ export function projectBackgroundCard(
 
   return {
     type: 'location',
-    locationKind: 'place',
     id: header.slug,
     name: header.name,
     ...(header.aliases === undefined ? {} : { aliases: [...header.aliases] }),

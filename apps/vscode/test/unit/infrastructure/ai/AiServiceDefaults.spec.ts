@@ -75,7 +75,6 @@ describe("StoryboardAiService temperature/maxTokens contract", () => {
       traits: ["용감함"],
       relations: [],
       arc: [],
-      recentDialogues: []
     }
 
     it("createCharacterPersona with no options sends undefined temperature/maxTokens for personaGeneration", async () => {

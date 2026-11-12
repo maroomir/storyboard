@@ -26,7 +26,6 @@ const tavern: LocationBackgroundCard = {
   description: [],
   characterIds: [],
   tags: [],
-  locationKind: 'place',
 };
 
 function scene(stem: string, card: Partial<SceneFile['card']>): SceneFile {

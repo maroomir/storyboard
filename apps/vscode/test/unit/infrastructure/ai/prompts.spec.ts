@@ -16,7 +16,6 @@ describe("AI prompts", () => {
     traits: ["용감함"],
     relations: [],
     arc: [],
-    recentDialogues: []
   }
 
 

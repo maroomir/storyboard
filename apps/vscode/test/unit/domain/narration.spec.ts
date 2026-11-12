@@ -91,10 +91,6 @@ describe('resolveNarration', () => {
     });
   });
 
-  it('keeps the scene focal character when only a focal is known', () => {
-    expect(resolveNarration({ focalFallback: 'hana' })).toEqual({ focal: 'hana' });
-  });
-
   it('prefers the scene narrator over the chapter and project defaults', () => {
     const directive = resolveNarration({
       sceneNarrator: 'hana-first',
@@ -115,16 +111,6 @@ describe('resolveNarration', () => {
     });
 
     expect(directive).toMatchObject({ narratorId: 'jun-third', knowledge: 'omniscient' });
-  });
-
-  it('uses the scene focal when the narrator card names none', () => {
-    const directive = resolveNarration({
-      sceneNarrator: 'jun-third',
-      focalFallback: 'jun',
-      narrators,
-    });
-
-    expect(directive).toMatchObject({ focal: 'jun' });
   });
 
   it('defaults a narrator card without a tense to past tense', () => {

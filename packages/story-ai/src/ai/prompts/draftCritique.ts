@@ -36,7 +36,6 @@ export const DraftCritiquePrompt: PromptModule<
         narration: narration ? describeNarration(narration) : undefined,
         narratorVoice: narration?.voice?.join('\n'),
         genre: input.styleDirective?.genre,
-        relationStage: input.styleDirective?.relationStage,
         qualityCriteria: input.qualityCriteria?.join('\n'),
         characterCards: input.characterCards?.join('\n\n'),
         body: input.body,

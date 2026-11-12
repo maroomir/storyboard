@@ -356,7 +356,6 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
       type: "location",
       id: "condo",
       name: "해외 콘도",
-      locationKind: "place",
       description: ["12층", "거실 통창 너머 바다"],
       characterIds: [],
       tags: [],
@@ -415,7 +414,6 @@ describe("runSceneGenerationPipeline — 배경 사실 점검", () => {
     type: "location",
     id: "condo",
     name: "해외 콘도",
-    locationKind: "place",
     description: ["손님은 거실 소파에서 잔다", "손님에게 자기 방이 있다", "거실 통창 너머 바다"],
     characterIds: [],
     tags: []
@@ -1841,7 +1839,6 @@ describe("배경 묘사 갱신", () => {
     type: "location",
     id: "grey-market",
     name: "회색시장",
-    locationKind: "place",
     characterIds: [],
     description: ["안개가 낀 무허가 시장"]
   } as BackgroundCard

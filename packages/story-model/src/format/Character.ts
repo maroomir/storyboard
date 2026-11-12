@@ -10,13 +10,11 @@ export function createEmptyCharacter(id: string, name: string): Character {
     profile: `profile/${id}.png`,
     role: 'main',
     attributes: {},
-    tags: [],
     traits: [],
     description: [],
     voice: [],
     desire: [],
     relations: [],
     arc: [],
-    recentDialogues: [],
   };
 }

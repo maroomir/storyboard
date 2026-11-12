@@ -46,7 +46,6 @@ describe("buildStyleDirective", () => {
       settingOf({ genre: "허세 코미디", styleConstraints: ["1인칭 독백 위주"] }),
       undefined,
       undefined,
-      undefined,
       resolveNarration({ pov: "first" })
     )
     expect(directive).toEqual({
@@ -73,20 +72,8 @@ describe("buildStyleDirective", () => {
     expect(withoutProhibitions?.prohibitions).toBeUndefined()
   })
 
-  it("carries the focal character resolved from the scene card", () => {
-    const directive = buildStyleDirective(
-      settingOf({ genre: "게임 판타지" }),
-      undefined,
-      undefined,
-      undefined,
-      resolveNarration({ focalFallback: "한이준" })
-    )
-    expect(directive?.narration?.focal).toBe("한이준")
-  })
-
-  it("drops a blank focal character", () => {
-    expect(resolveNarration({ focalFallback: "  " })).toBeUndefined()
-    expect(buildStyleDirective(undefined, undefined, undefined, undefined, undefined)).toBeUndefined()
+  it("returns undefined when every input is empty", () => {
+    expect(buildStyleDirective(undefined, undefined, undefined, undefined)).toBeUndefined()
   })
 
   it("returns a directive from prohibitions alone", () => {
@@ -95,26 +82,14 @@ describe("buildStyleDirective", () => {
     ])
   })
 
-  it("includes relationStage from scene metadata", () => {
-    expect(buildStyleDirective(settingOf({ genre: "로맨스" }), "적대적 첫 만남")?.relationStage).toBe("적대적 첫 만남")
-  })
-
-  it("returns a directive from relationStage alone, without setting", () => {
-    expect(buildStyleDirective(undefined, "연인")?.relationStage).toBe("연인")
-  })
-
-  it("drops a blank relationStage", () => {
-    expect(buildStyleDirective(undefined, "   ")).toBeUndefined()
-  })
-
   it("returns a directive from targetWordCount alone, without setting", () => {
-    expect(buildStyleDirective(undefined, undefined, 3000)?.targetWordCount).toBe(3000)
+    expect(buildStyleDirective(undefined, 3000)?.targetWordCount).toBe(3000)
   })
 
   it("drops a non-positive or non-integer targetWordCount", () => {
-    expect(buildStyleDirective(undefined, undefined, 0)).toBeUndefined()
-    expect(buildStyleDirective(undefined, undefined, -100)).toBeUndefined()
-    expect(buildStyleDirective(undefined, undefined, 1500.5)).toBeUndefined()
+    expect(buildStyleDirective(undefined, 0)).toBeUndefined()
+    expect(buildStyleDirective(undefined, -100)).toBeUndefined()
+    expect(buildStyleDirective(undefined, 1500.5)).toBeUndefined()
   })
 })
 
@@ -124,11 +99,10 @@ describe("style lines", () => {
     genre: "로맨스",
     styleConstraints: ["간결체"],
     prohibitions: ["무근거 부활 금지"],
-    relationStage: "적대적 첫 만남",
     targetWordCount: 3000
   }
 
-  it("narrativeStyleLines includes narration, genre, style constraints, prohibitions, relation stage, and length", () => {
+  it("narrativeStyleLines includes narration, genre, style constraints, prohibitions, and length", () => {
     const lines = narrativeStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(true)
     expect(lines.some((line) => line.includes("직접 보거나 듣거나 겪은 것만"))).toBe(true)
@@ -137,11 +111,10 @@ describe("style lines", () => {
     expect(lines).toContain("문체 제약: 간결체")
     expect(lines.some((line) => line.includes("금지 규칙") && line.includes("무근거 부활 금지"))).toBe(true)
     expect(lines.some((line) => line.includes("시점 인물") && line.includes("한이준"))).toBe(true)
-    expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
     expect(lines.some((line) => line.includes("목표 분량") && line.includes("3,000자"))).toBe(true)
   })
 
-  it("voiceStyleLines omits narration and length but keeps genre, style, prohibitions, and relation stage", () => {
+  it("voiceStyleLines omits narration and length but keeps genre, style, and prohibitions", () => {
     const lines = voiceStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(false)
     expect(lines.some((line) => line.startsWith("서술자의 목소리:"))).toBe(false)
@@ -149,7 +122,6 @@ describe("style lines", () => {
     expect(lines).toContain("문체 제약: 간결체")
     expect(lines.some((line) => line.includes("금지 규칙") && line.includes("무근거 부활 금지"))).toBe(true)
     expect(lines.some((line) => line.includes("시점 인물") && line.includes("한이준"))).toBe(true)
-    expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
     expect(lines.some((line) => line.includes("목표 분량"))).toBe(false)
   })
 
@@ -192,16 +164,14 @@ describe("prompt injection", () => {
     expect(persona.system).not.toContain("서술 시점:")
   })
 
-  it("persona generation leaves out the scene's focal character and relation stage", () => {
+  it("persona generation leaves out the scene's focal character", () => {
     const sceneDirective: StyleDirective = {
       ...directive,
-      narration: { ...resolveNarration({ pov: "first" }), focal: "조만재" },
-      relationStage: "냉전"
+      narration: { ...resolveNarration({ pov: "first" }), focal: "조만재" }
     }
     const persona = PersonaGenerationPrompt.build({ ...character, id: "eunha", name: "정은하" }, "generic", sceneDirective)
     expect(persona.system).not.toContain("이 장면의 시점 인물:")
     expect(persona.system).not.toContain("조만재")
-    expect(persona.system).not.toContain("관계 단계")
     expect(persona.system).toContain("이 인물의 1인칭으로 쓴다")
   })
 

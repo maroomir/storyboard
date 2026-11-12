@@ -4,28 +4,25 @@ export const sceneFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/
 export const sceneStemPattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
 export const sceneSummaryFileNamePattern: RegExp = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
 
-export type SceneGroundingFieldKey = 'incident' | 'place' | 'relation' | 'time';
+export type SceneGroundingFieldKey = 'incident' | 'place' | 'time';
 
-export const sceneGroundingFieldKeys: readonly [SceneGroundingFieldKey, ...SceneGroundingFieldKey[]] = ['incident', 'place', 'relation', 'time'];
+export const sceneGroundingFieldKeys: readonly [SceneGroundingFieldKey, ...SceneGroundingFieldKey[]] = ['incident', 'place', 'time'];
 
 export interface SceneGrounding {
   incident?: string;
   place?: string;
-  relation?: string;
   time?: string;
 }
 
 export const sceneGroundingSchema: z.ZodType<SceneGrounding> = z.object({
   incident: z.string().trim().min(1).optional(),
   place: z.string().trim().min(1).optional(),
-  relation: z.string().trim().min(1).optional(),
   time: z.string().trim().min(1).optional(),
 });
 
 export const sceneGroundingFieldLabels: Readonly<Record<SceneGroundingFieldKey, string>> = {
   incident: '사건',
   place: '장소',
-  relation: '관계',
   time: '시점',
 };
 
@@ -115,9 +112,6 @@ export interface SceneFrontmatter {
   title?: string;
   characters?: string[];
   location?: string;
-  mood?: string;
-  relationStage?: string;
-  povCharacter?: string;
   narrator?: string;
   thread?: string;
   targetWordCount?: number;
@@ -131,9 +125,6 @@ export const sceneFrontmatterSchema: z.ZodType<SceneFrontmatter> = z
     title: z.string().trim().min(1).optional(),
     characters: z.array(z.string().trim().min(1)).optional(),
     location: z.string().trim().min(1).optional(),
-    mood: z.string().trim().min(1).optional(),
-    relationStage: z.string().trim().min(1).optional(),
-    povCharacter: z.string().trim().min(1).optional(),
     narrator: z.string().trim().min(1).optional(),
     thread: z.string().trim().min(1).optional(),
     targetWordCount: z.number().int().positive().optional(),
@@ -148,9 +139,6 @@ export interface SceneCard {
   title?: string;
   characters?: string[];
   location?: string;
-  mood?: string;
-  relationStage?: string;
-  povCharacter?: string;
   narrator?: string;
   thread?: string;
   targetWordCount?: number;
@@ -175,9 +163,6 @@ export const sceneCardSchema: z.ZodType<SceneCard> = z.object({
   title: z.string().trim().min(1).optional(),
   characters: z.array(z.string().trim().min(1)).optional(),
   location: z.string().trim().min(1).optional(),
-  mood: z.string().trim().min(1).optional(),
-  relationStage: z.string().trim().min(1).optional(),
-  povCharacter: z.string().trim().min(1).optional(),
   narrator: z.string().trim().min(1).optional(),
   thread: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
@@ -255,9 +240,6 @@ export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
     ...(card.title === undefined ? {} : { title: card.title }),
     ...(card.characters === undefined ? {} : { characters: card.characters }),
     ...(card.location === undefined ? {} : { location: card.location }),
-    ...(card.mood === undefined ? {} : { mood: card.mood }),
-    ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
-    ...(card.povCharacter === undefined ? {} : { povCharacter: card.povCharacter }),
     ...(card.narrator === undefined ? {} : { narrator: card.narrator }),
     ...(card.thread === undefined ? {} : { thread: card.thread }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),

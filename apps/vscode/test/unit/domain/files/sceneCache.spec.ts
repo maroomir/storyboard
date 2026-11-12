@@ -16,16 +16,13 @@ const sampleCharacter: CharacterCard = {
   name: "샘플 캐릭터",
   role: "main",
   traits: ["호기심이 많음"],
-  tags: ["샘플"],
-  description: ["테스트 캐릭터"],
-  recentDialogues: ["시작해볼까?"]
+  description: ["테스트 캐릭터"]
 }
 
 const sampleBackground: BackgroundCard = {
   type: "location",
   id: "sample",
   name: "샘플 배경",
-  locationKind: "place",
   characterIds: [],
   tags: ["샘플"],
   description: ["테스트 배경"]
@@ -254,13 +251,6 @@ describe("scene input hash: narration fields", () => {
     expect(after).not.toBe(before)
   })
 
-  it("changes the hash when the focal character changes", () => {
-    const before = computeSceneInputHash({ ...base, narration: { povCharacter: "hana" } })
-    const after = computeSceneInputHash({ ...base, narration: { povCharacter: "jun" } })
-
-    expect(after).not.toBe(before)
-  })
-
   it("keeps the pre-narration hash when the scene uses none of the fields", () => {
     const legacy = computeSceneInputHash(base)
 
@@ -270,14 +260,13 @@ describe("scene input hash: narration fields", () => {
 
   it("derives the digest input from the scene card and frontmatter", () => {
     const scene = parseScene(
-      "type: scene\nid: 01-dock\nnarrator: hana-first\nthread: ep2\npovCharacter: hana\nsummary: 사건.\n",
+      "type: scene\nid: 01-dock\nnarrator: hana-first\nthread: ep2\nsummary: 사건.\n",
       "01-dock.card"
     )
 
     expect(sceneNarrationHashInput(scene)).toEqual({
       narrator: "hana-first",
-      thread: "ep2",
-      povCharacter: "hana"
+      thread: "ep2"
     })
   })
 

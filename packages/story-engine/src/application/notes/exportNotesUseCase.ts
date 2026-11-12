@@ -169,7 +169,6 @@ export function renderCharacterNote(card: CharacterCard, nameOf: (id: string) =>
       'storyboard-type': 'character',
       role: card.role,
       aliases: card.aliases,
-      tags: card.tags,
     }),
     `# ${card.name}`,
     '',
@@ -191,7 +190,6 @@ export function renderBackgroundNote(card: BackgroundCard, nameOf: (id: string) 
       'storyboard-id': card.id,
       'storyboard-type': card.type,
       aliases: card.aliases,
-      tags: card.tags,
       time: card.time,
       weather: card.weather,
     }),
@@ -214,7 +212,6 @@ export function renderSceneNote(
   const beats: string[] = (card.beats ?? []).map((beat) => sceneBeatText(beat));
   const details: string[] = [
     card.purpose === undefined ? undefined : `목적: ${card.purpose}`,
-    card.mood === undefined ? undefined : `분위기: ${card.mood}`,
     card.conflict === undefined ? undefined : `갈등: ${card.conflict}`,
     card.endState === undefined ? undefined : `끝 상태: ${card.endState}`,
   ].filter((line): line is string => line !== undefined);
