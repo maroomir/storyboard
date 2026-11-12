@@ -28,7 +28,7 @@ describe('toOutlineBrief', () => {
       format: 'novel',
       language: 'ko',
       createdAt: '2026-06-17T00:00:00.000Z',
-      editor: { scenePrefixDigits: 2 },
+      editor: {},
       setting: {
         genre: '판타지',
         tags: ['학원'],
@@ -58,7 +58,7 @@ describe('toOutlineBrief', () => {
       format: 'novel',
       language: 'ko',
       createdAt: '2026-06-17T00:00:00.000Z',
-      editor: { scenePrefixDigits: 2 },
+      editor: {},
     };
 
     expect(toOutlineBrief(project)).toMatchObject({ tags: [], prohibitions: [], genre: undefined });

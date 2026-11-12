@@ -95,7 +95,7 @@ const fakeProject = {
   format: "novel",
   language: "ko",
   createdAt: new Date().toISOString(),
-  editor: { scenePrefixDigits: 2 }
+  editor: {}
 }
 
 const primaryCharacterCard = { type: "character", id: "juseo", name: "준서", role: "main" }

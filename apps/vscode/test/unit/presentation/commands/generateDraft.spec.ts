@@ -124,7 +124,7 @@ const fakeProject = {
   format: "novel",
   language: "ko",
   createdAt: new Date().toISOString(),
-  editor: { scenePrefixDigits: 2 }
+  editor: {}
 }
 
 describe("generateDraftForWorkspaceSceneWorkflow failure reporting", () => {

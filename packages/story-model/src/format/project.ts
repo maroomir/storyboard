@@ -19,6 +19,51 @@ export class ProjectVersionError extends Error {
   }
 }
 
+export type ProjectFieldErrorCode = 'retired-field';
+
+export class ProjectFieldError extends Error {
+  public constructor(
+    public readonly code: ProjectFieldErrorCode,
+    public readonly field: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ProjectFieldError';
+  }
+}
+
+interface RetiredProjectField {
+  readonly section: 'setting' | 'editor';
+  readonly key: string;
+  readonly whereItLivesNow: string;
+}
+
+const retiredProjectFields: readonly RetiredProjectField[] = [
+  { section: 'setting', key: 'threads', whereItLivesNow: '줄기는 .storyboard/structure.yaml 의 threads 에 적습니다' },
+  { section: 'editor', key: 'scenePrefixDigits', whereItLivesNow: '씬 번호는 언제나 세 자리입니다' },
+];
+
+function readSection(rawProject: unknown, section: RetiredProjectField['section']): unknown {
+  return typeof rawProject === 'object' && rawProject !== null && section in rawProject
+    ? (rawProject as Readonly<Record<string, unknown>>)[section]
+    : undefined;
+}
+
+export function assertNoRetiredProjectFields(rawProject: unknown): void {
+  for (const retired of retiredProjectFields) {
+    const section: unknown = readSection(rawProject, retired.section);
+    const hasRetiredKey: boolean =
+      typeof section === 'object' && section !== null && retired.key in section;
+    if (hasRetiredKey) {
+      throw new ProjectFieldError(
+        'retired-field',
+        `${retired.section}.${retired.key}`,
+        `project.json 의 ${retired.section}.${retired.key} 는 0.16 에서 없어졌습니다. ${retired.whereItLivesNow}. 이 줄을 지우고 다시 실행하세요.`,
+      );
+    }
+  }
+}
+
 function readVersionField(rawProject: unknown): unknown {
   return typeof rawProject === 'object' && rawProject !== null && 'version' in rawProject
     ? rawProject.version
@@ -146,11 +191,6 @@ export interface StoryThreadEntry {
   readonly wraps?: readonly string[];
 }
 
-export const storyThreadSchema: z.ZodType<StoryThread> = z.object({
-  title: z.string().trim().min(1),
-  wraps: z.array(z.string().trim().min(1)).readonly().optional(),
-});
-
 export const mainThreadId: string = 'main';
 
 export interface ProjectNarration {
@@ -192,7 +232,6 @@ export const projectSettingSchema: z.ZodType<ProjectSetting> = z.object({
   pov: z.enum(pointOfViews).optional(),
   narration: projectNarrationSchema.optional(),
   composition: z.enum(compositionKinds).optional(),
-  threads: z.record(z.string().trim().min(1), storyThreadSchema).readonly().optional(),
   chapterCount: z.number().int().positive().optional(),
   scenesPerChapter: z.number().int().positive().optional(),
   prohibitions: z.array(z.string()).default([]),
