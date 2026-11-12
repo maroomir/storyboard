@@ -10,6 +10,7 @@ import {
 const elia = "3f9a2c1e-6b0d-4e7a-9c11-0d2f5a8b7e44"
 const sera = "7b1d0c2a-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
 const school = "5a70c1d2-3e4f-4a5b-9c6d-7e8f9a0b1c2d"
+const playground = "6b81d2e3-4f5a-4b6c-8d7e-8f9a0b1c2d3e"
 const narrator = "e1f0a1b2-c3d4-4e5f-8a9b-0c1d2e3f4a5b"
 const rooftop = "c2e8a1b4-9d7c-4e3f-a2b1-0c9d8e7f6a5b"
 
@@ -57,7 +58,7 @@ describe("scene projection", () => {
     expect(scene.body).toContain("방과 후 옥상.")
   })
 
-  it("plans a bundle back from a scene card, resolving cast and place by name and keeping the uuid", () => {
+  it("plans a bundle back from a scene card, resolving cast and place by name, keeping the uuid and a beat place only where it differs", () => {
     const planned = planSceneBundle(
       {
         type: "scene",
@@ -67,7 +68,11 @@ describe("scene projection", () => {
         location: "school",
         thread: "jun",
         purpose: "엘리아가 처음 무너진다",
-        beats: ["엘리아가 옥상 문을 민다", { text: "세라가 먼저 와 있다", cast: ["세라", "모르는 이"], place: "학교", time: "방과 후" }]
+        beats: [
+          "엘리아가 옥상 문을 민다",
+          { text: "세라가 먼저 와 있다", cast: ["세라", "모르는 이"], place: "학교", time: "방과 후" },
+          { text: "둘이 운동장으로 내려간다", place: "운동장" }
+        ]
       },
       {
         current: rooftopContent,
@@ -75,7 +80,7 @@ describe("scene projection", () => {
         slug: "rooftop",
         resolvers: {
           characterIdOf: (reference) => ({ elia, 세라: sera })[reference],
-          placeIdOf: (reference) => ({ school, 학교: school })[reference]
+          placeIdOf: (reference) => ({ school, 학교: school, 운동장: playground })[reference]
         },
         narratorIdOf: () => undefined,
         source: studio
@@ -86,7 +91,8 @@ describe("scene projection", () => {
     expect(planned.content.statements.map((line) => [line.facet, line.value])).toEqual([["purpose", "엘리아가 처음 무너진다"]])
     expect(planned.content.beats).toEqual([
       { text: "엘리아가 옥상 문을 민다" },
-      { text: "세라가 먼저 와 있다", cast: [sera], place: school, time: "방과 후" }
+      { text: "세라가 먼저 와 있다", cast: [sera], time: "방과 후" },
+      { text: "둘이 운동장으로 내려간다", place: playground }
     ])
     expect(planned.placement).toEqual({ thread: "jun" })
     expect(planned.content.summaryText).toBe("방과 후 옥상.\n")
