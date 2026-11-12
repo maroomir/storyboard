@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   InterviewAxesPrompt,
+  InterviewCardAnswersPrompt,
   InterviewDistillPrompt,
   InterviewQuestionPrompt,
   InterviewRelationSpeechPrompt,
   InterviewUpdatePrompt,
   coerceInterviewAxes,
+  coerceInterviewCardAnswers,
   coerceInterviewDistill,
   coerceInterviewQuestion,
   coerceInterviewRelationSpeech,
@@ -151,6 +153,7 @@ describe('interview prompts golden', () => {
           cardType: 'character',
           name: '하나',
           cardText: 'type: character\nid: hana\nname: 하나\n',
+          existingLines: ['traits: 쑥스러움을 장난으로 감춘다'],
           summary: '하나는 몰릴 때 먼저 참는다.',
           tallies: ['압박 아래 방어: 침묵 ×2'],
           choices: ['준이 하나를 심문한다 → 압박 아래 방어: 침묵'],
@@ -167,6 +170,7 @@ describe('interview prompts golden', () => {
           cardType: 'background',
           name: '미감',
           cardText: 'type: location\nid: tavern\nname: 미감\n',
+          existingLines: [],
           summary: '항구 뒷골목의 술집',
           tallies: ['드나드는 길: 뒷문 있음 ×2'],
           choices: [],
@@ -177,6 +181,40 @@ describe('interview prompts golden', () => {
         variant,
       ),
     ).toMatchSnapshot();
+  });
+});
+
+describe('interview card answers prompt golden', () => {
+  it.each(['generic', 'xs'] as const)('renders the card answers prompt for the %s variant', (variant) => {
+    expect(
+      InterviewCardAnswersPrompt.build(
+        {
+          cardType: 'character',
+          name: '하나',
+          cardText: 'type: character\nid: hana\nname: 하나\ntraits:\n  - 몰리면 입을 다문다\n',
+          axes: [axis],
+        },
+        variant,
+      ),
+    ).toMatchSnapshot();
+  });
+
+  it('keeps one known value per known axis', () => {
+    expect(
+      coerceInterviewCardAnswers(
+        {
+          answers: [
+            { axisId: 'pressure-defense', valueId: 'withhold', evidence: '몰리면 입을 다문다' },
+            { axisId: 'pressure-defense', valueId: 'counter' },
+            { axisId: 'ghost', valueId: 'withhold' },
+            { axisId: 'pressure-defense', valueId: 'ghost' },
+            'not an answer',
+          ],
+        },
+        [axis],
+      ),
+    ).toEqual({ 'pressure-defense': 'withhold' });
+    expect(coerceInterviewCardAnswers(null, [axis])).toEqual({});
   });
 });
 

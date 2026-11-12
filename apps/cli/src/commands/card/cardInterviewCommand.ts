@@ -45,6 +45,7 @@ interface InterviewSessionHandle {
   readonly sessionId: string;
   readonly sceneStems: readonly string[] | undefined;
   readonly limit: number | undefined;
+  readonly shouldAskKnown: boolean;
 }
 
 function sessionRequest(handle: InterviewSessionHandle): InterviewSessionRequest {
@@ -53,6 +54,7 @@ function sessionRequest(handle: InterviewSessionHandle): InterviewSessionRequest
     cardId: handle.cardId,
     sessionId: handle.sessionId,
     ...(handle.sceneStems === undefined ? {} : { sceneStems: handle.sceneStems }),
+    ...(handle.shouldAskKnown ? { shouldAskKnown: true } : {}),
   };
 }
 
@@ -88,7 +90,7 @@ export class CardInterviewCommand implements ICommandHandler {
     usage: 'card interview <slug> [--step --json [--answer <n> | --write <text> | --skip | --confirm <n> | --rename <name> | --finish | --abandon]]',
     summary:
       '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지, 서술자면 그 순간을 어떻게 서술하는지 고르게 해, 선택의 패턴을 카드 제안으로 증류합니다 (대화형 화면, 또는 --step --json 으로 한 단계씩)',
-    flags: ['scenes', 'limit', 'reset-axes', 'step', 'session', 'answer', 'write', 'skip', 'confirm', 'rename', 'finish', 'abandon'],
+    flags: ['scenes', 'limit', 'reset-axes', 'ask-known', 'step', 'session', 'answer', 'write', 'skip', 'confirm', 'rename', 'finish', 'abandon'],
     examples: [
       'storyboard card interview hana',
       'storyboard card interview tavern --scenes 3..5',
@@ -145,6 +147,7 @@ export class CardInterviewCommand implements ICommandHandler {
       sessionId: started.opening.sessionId,
       sceneStems,
       limit,
+      shouldAskKnown: flagBoolean(args.flags, 'ask-known'),
     };
     const answered: number = await this.askUntilDone(handle);
     const summary: InterviewSessionSummary = await container.interviews.finish(sessionRequest(handle));
