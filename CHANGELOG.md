@@ -11,6 +11,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 변경 (호환성 주의)
 
+- **서술자도 인터뷰합니다.** `card interview <서술자 slug>` 가 그 서술자가 맡은 씬의 비트를 하나씩 내고 «이 순간을 어떻게 서술하는가»의 선택지를 고르게 하거나 직접 쓰게 한 뒤, 마칠 때 답을 서술자 카드의 «목소리»(`voice`) 제안으로 증류합니다. 제안은 다른 인터뷰처럼 `card apply` 로 받습니다(`--step --json` 도 같음).
 - **측정 트랙도 번들 형식입니다.** `sim` 이 트랙의 씬을 `scene/NNN-slug.card/` 번들에서 읽습니다(목표 분량은 `card.yaml` 의 `targetWordCount`, 목적은 `statements.yaml` 의 `purpose` 진술). 훼손 원고는 `floor/NNN-slug.md`, 인물 이름은 `character/<slug>.card/card.yaml` 에서 읽습니다. 0.15 형식의 트랙은 다시 만들어야 합니다.
 - **확장의 «씬 기반 카드 구성»이 번들에 씁니다.** 고른 변경만 CLI 의 `card build` 와 같은 엔진 동사로 `statements.yaml` 에 쓰고(출처 `studio`), 미리보기는 지금 카드와 제안된 카드를 같은 꼴로 견줍니다. 전에는 옛 카드 YAML 을 `card.yaml` 에 통째로 써서 번들을 깨뜨렸습니다. 스튜디오의 카드 제안 «diff 보기»도 `card.yaml` 대신 스튜디오가 본 카드를 견줍니다. 인물 호버에서 «최근 대사»가 빠졌습니다(카드가 더는 갖지 않음).
 - **초안 판본을 언제나 남깁니다.** 설정 `editor.draft.keepHistory` 가 없어지고, 생성·재생성·손질(`draft edit`·`augment`·`condense`·`expand`)·스튜디오의 초안 적용이 덮어쓰기 전에 늘 이전 판을 캐시(`.storyboard/cache/revisions/<씬 uuid>/`)에 씬마다 최근 10판까지 남깁니다. `config.json` 에 남은 옛 키는 모르는 키로 경고됩니다.
@@ -58,7 +59,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **씬 끼우기·옮기기·지우기를 엔진에 더했습니다.** 매니저 동사 `drafts.moveScene`(다른 씬 뒤로, 그 씬의 장으로)·`drafts.removeScene`(번들·초안·판본·씬 캐시를 지움)과 `drafts.createScene` 의 `after` 가 구조 파일을 고치고 뒤 씬들의 번호를 저널로 다시 매깁니다. CLI 에서는 `scene create --after`·`scene move`·`scene remove` 입니다.
 - **스튜디오 «만들기»와 «고치기»를 엔진 동사로 올렸습니다.** `studio.edit`(지시 하나로 고치고 바로 쓰거나, `shouldPropose` 면 세션에 제안만 남기고 고치기 전후를 돌려줌)과 `studio.create`(빈 카드·씬을 만든 뒤 설명으로 채움), 확장이 쓰던 제안 미리보기·적용(`studio.prepareProposal`·`applyProposal`)이 엔진에 있어 CLI 도 같은 길을 씁니다.
 - **카드 진술을 다루는 엔진 동사를 더했습니다.** `cards.setStatement`·`unsetStatement` 가 `statements.yaml` 에 작가(또는 에이전트) 줄 하나를 쓰고 지우며, 작가의 줄은 에이전트가 덮지 못합니다. `cards.remove` 는 그 카드를 가리키는 씬의 출연·장소, 다른 카드의 관계, 서술자의 초점, 구조의 서술자, 상태의 목격자를 함께 고치고(목격자가 비는 줄은 지움) 참조가 있으면 `shouldForce` 없이 거절하며, 지운 내용을 그 카드의 세션 기록에 남깁니다. `cards.listPending`·`applyPending`·`discardPending` 이 세션에 남은 제안(스튜디오 제안과 진술 줄)을 보여 주고 받거나 버립니다.
-- **인터뷰가 공용 세션 프로토콜과 질문 전략 포트(`IQuestionStrategy`) 뒤에 섰습니다.** 지금의 질문 로직이 인물·배경의 «반응 전략»이고, `InterviewSessionProtocol` 이 카드 종류로 전략을 골라 같은 start → next → answer → confirm → finish 를 부릅니다.
+- **인터뷰가 공용 세션 프로토콜과 질문 전략 포트(`IQuestionStrategy`) 뒤에 섰습니다.** 질문 로직은 종류별 «반응 전략»(`CharacterInterviewStrategy`·`BackgroundInterviewStrategy` 가 공용 기반을 나눠 쓰고, `NarratorInterviewStrategy` 가 따로)이고, `InterviewSessionProtocol` 이 카드 종류로 전략을 골라 같은 start → next → answer → confirm → finish 를 부릅니다.
 - **시놉시스 후보를 받는 엔진 동사를 더했습니다.** `notes.listSynopsisCandidates`·`applySynopsisCandidate`(가장 최근 후보를 `outline/synopsis.md` 에 쓰고 나머지를 지움)·`discardSynopsisCandidates` 가 `outline show --pending`·`outline apply`·`outline discard` 의 엔진 쪽입니다. 카드 쪽은 `cards.listPendingCards` 가 제안이 기다리는 카드를 보여 줍니다.
 
 ## [0.15.4] - 2026-11-13

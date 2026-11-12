@@ -44,6 +44,11 @@ import {
 } from '#ai/ai/DraftAiService';
 import { SceneAiService } from '#ai/ai/SceneAiService';
 import { InterviewAiService } from '#ai/ai/InterviewAiService';
+import type { NarratorInterviewDistillInput } from '#ai/ai/prompts/narratorInterviewDistill';
+import type {
+  NarratorInterviewQuestionDraft,
+  NarratorInterviewQuestionInput,
+} from '#ai/ai/prompts/narratorInterviewQuestion';
 import type { InterviewAxesInput } from '#ai/ai/prompts/interviewAxes';
 import type { InterviewDistillDraft, InterviewDistillInput } from '#ai/ai/prompts/interviewDistill';
 import type { InterviewQuestionDraft, InterviewQuestionInput } from '#ai/ai/prompts/interviewQuestion';
@@ -497,6 +502,20 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<InterviewDistillDraft> {
     return this.interviewAiService.distillInterview(input, options);
+  }
+
+  public askNarratorQuestion(
+    input: NarratorInterviewQuestionInput,
+    options: GenerateTextOptions = {},
+  ): Promise<NarratorInterviewQuestionDraft | undefined> {
+    return this.interviewAiService.askNarratorQuestion(input, options);
+  }
+
+  public distillNarratorInterview(
+    input: NarratorInterviewDistillInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string[]> {
+    return this.interviewAiService.distillNarratorInterview(input, options);
   }
 
   public async *generateTextStream(

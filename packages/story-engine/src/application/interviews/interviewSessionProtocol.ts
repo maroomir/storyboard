@@ -1,5 +1,6 @@
 import type {
   InterviewAnswerOutcome,
+  InterviewCardKind,
   InterviewQuestion,
   InterviewSessionSummary,
   StoryUri,
@@ -17,11 +18,9 @@ import type {
 } from '#engine/application/interviews/questionStrategy';
 import type { CardRoster, WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 
-export type InterviewedKind = 'character' | 'background';
-
 export interface InterviewSessionProtocolDependencies {
   readonly cards: WorkspaceCards;
-  readonly strategies: Readonly<Record<InterviewedKind, IQuestionStrategy>>;
+  readonly strategies: Readonly<Record<InterviewCardKind, IQuestionStrategy>>;
 }
 
 export class InterviewSessionProtocol {
@@ -60,12 +59,14 @@ export class InterviewSessionProtocol {
   }
 
   private async strategyFor(workspaceRoot: StoryUri, cardId: string): Promise<IQuestionStrategy> {
-    const roster: CardRoster = await this.dependencies.cards.loadRoster(workspaceRoot, [
-      'character',
-      'background',
-    ]);
-    const isBackground: boolean = roster.lookup.idOf('background', cardId) !== undefined;
+    const roster: CardRoster = await this.dependencies.cards.loadRoster(workspaceRoot);
+    const kind: InterviewCardKind =
+      roster.lookup.idOf('narrator', cardId) !== undefined
+        ? 'narrator'
+        : roster.lookup.idOf('background', cardId) !== undefined
+          ? 'background'
+          : 'character';
 
-    return this.dependencies.strategies[isBackground ? 'background' : 'character'];
+    return this.dependencies.strategies[kind];
   }
 }

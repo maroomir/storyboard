@@ -52,6 +52,7 @@ export * from '#engine/application/interviews/interviewTuning';
 export * from '#engine/application/interviews/reactionInterviewStrategy';
 export * from '#engine/application/interviews/characterInterviewStrategy';
 export * from '#engine/application/interviews/backgroundInterviewStrategy';
+export * from '#engine/application/interviews/narratorInterviewStrategy';
 export * from '#engine/application/interviews/questionStrategy';
 export * from '#engine/application/interviews/interviewSessionProtocol';
 export * from '#engine/application/interviews/describeInterviewCoverageUseCase';

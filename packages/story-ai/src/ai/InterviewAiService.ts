@@ -37,6 +37,17 @@ import {
   type InterviewUpdateDraft,
   type InterviewUpdateInput,
 } from '#ai/ai/prompts/interviewUpdate';
+import {
+  NarratorInterviewDistillPrompt,
+  coerceNarratorInterviewDistill,
+  type NarratorInterviewDistillInput,
+} from '#ai/ai/prompts/narratorInterviewDistill';
+import {
+  NarratorInterviewQuestionPrompt,
+  coerceNarratorInterviewQuestion,
+  type NarratorInterviewQuestionDraft,
+  type NarratorInterviewQuestionInput,
+} from '#ai/ai/prompts/narratorInterviewQuestion';
 import type { PromptArtifact, PromptConfig, PromptVariantId } from '#ai/ai/prompts/types';
 
 export class InterviewAiService {
@@ -118,6 +129,36 @@ export class InterviewAiService {
     );
 
     return coerceInterviewRelationSpeech(parseJsonObject(response.text));
+  }
+
+  public async askNarratorQuestion(
+    input: NarratorInterviewQuestionInput,
+    options: GenerateTextOptions = {},
+  ): Promise<NarratorInterviewQuestionDraft | undefined> {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('interviewQuestion', options);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
+      'interviewQuestion',
+      NarratorInterviewQuestionPrompt.build(input, variant),
+      NarratorInterviewQuestionPrompt.config,
+      options,
+    );
+
+    return coerceNarratorInterviewQuestion(parseJsonObject(response.text));
+  }
+
+  public async distillNarratorInterview(
+    input: NarratorInterviewDistillInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string[]> {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('interviewDistill', options);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
+      'interviewDistill',
+      NarratorInterviewDistillPrompt.build(input, variant),
+      NarratorInterviewDistillPrompt.config,
+      options,
+    );
+
+    return coerceNarratorInterviewDistill(parseJsonObject(response.text));
   }
 
   private async generateWithDefaults(

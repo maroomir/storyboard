@@ -2,6 +2,14 @@ import { z } from 'zod';
 
 import type { BibleSubjectKind } from '#model/format/bible';
 
+export type InterviewCardKind = BibleSubjectKind | 'narrator';
+
+export const interviewCardKinds: readonly [InterviewCardKind, ...InterviewCardKind[]] = [
+  'character',
+  'background',
+  'narrator',
+];
+
 export interface InterviewAxisValue {
   readonly id: string;
   readonly label: string;
@@ -78,7 +86,7 @@ export type InterviewTallies = Readonly<Record<string, Readonly<Record<string, n
 export interface InterviewWorkingModel {
   readonly version: 1;
   readonly cardId: string;
-  readonly cardType: BibleSubjectKind;
+  readonly cardType: InterviewCardKind;
   readonly cardHash: string;
   readonly summary: string;
   readonly tallies: InterviewTallies;
@@ -158,7 +166,7 @@ const interviewRecordSchema: z.ZodType<InterviewRecord> = z.object({
 export const interviewWorkingModelSchema: z.ZodType<InterviewWorkingModel> = z.object({
   version: z.literal(1),
   cardId: idSchema,
-  cardType: z.enum(['character', 'background']),
+  cardType: z.enum(interviewCardKinds),
   cardHash: idSchema,
   summary: z.string(),
   tallies: z.record(z.string(), z.record(z.string(), z.number().nonnegative())),
@@ -203,7 +211,7 @@ export interface InterviewUnreadableWorkingModel {
 
 export interface InterviewCardCoverage {
   readonly cardId: string;
-  readonly cardType: BibleSubjectKind;
+  readonly cardType: InterviewCardKind;
   readonly name: string;
   readonly hasWorkingModel: boolean;
   readonly openAxes: readonly InterviewOpenAxis[];
@@ -240,7 +248,7 @@ export interface InterviewSessionSummary {
 export interface InterviewOpening {
   readonly sessionId: string;
   readonly cardId: string;
-  readonly cardType: BibleSubjectKind;
+  readonly cardType: InterviewCardKind;
   readonly name: string;
   readonly coverage: InterviewCardCoverage;
   readonly isContractStale: boolean;
@@ -251,7 +259,7 @@ export type InterviewConfirmation =
   | { readonly kind: 'value'; readonly valueId: string }
   | { readonly kind: 'newValue'; readonly id: string; readonly label: string };
 
-const cardTypeSchema: z.ZodType<BibleSubjectKind> = z.enum(['character', 'background']);
+const cardTypeSchema: z.ZodType<InterviewCardKind> = z.enum(interviewCardKinds);
 
 export const interviewQuestionSchema: z.ZodType<InterviewQuestion> = z.object({
   id: idSchema,

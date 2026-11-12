@@ -94,6 +94,7 @@ import {
   type ISceneSidebarRepository,
   BackgroundInterviewStrategy,
   CharacterInterviewStrategy,
+  NarratorInterviewStrategy,
   InterviewSessionProtocol,
   type IInterviewRepository,
   DescribeInterviewCoverageUseCase,
@@ -467,6 +468,7 @@ function createInterviewProtocol(
     strategies: {
       character: new CharacterInterviewStrategy(host, ai, repositories),
       background: new BackgroundInterviewStrategy(host, ai, repositories),
+      narrator: new NarratorInterviewStrategy(host, ai, repositories),
     },
   });
 }
