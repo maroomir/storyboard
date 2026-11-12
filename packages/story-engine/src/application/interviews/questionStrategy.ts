@@ -33,6 +33,7 @@ export interface InterviewSessionRequest {
   readonly card?: StoryboardCard;
   readonly sessionId: string;
   readonly sceneStems?: readonly string[];
+  readonly shouldAskKnown?: boolean;
 }
 
 export interface InterviewResumeRequest {

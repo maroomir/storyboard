@@ -18,7 +18,9 @@ export class CharacterInterviewStrategy extends ReactionInterviewStrategy {
     request: InterviewSessionRequest,
     context: InterviewContext,
   ): Promise<InterviewQuestion | undefined> {
-    const relationTarget: string | undefined = this.pickRelationTarget(context);
+    const relationTarget: string | undefined = this.pickRelationTarget(context, {
+      shouldAskKnown: request.shouldAskKnown === true,
+    });
     return relationTarget === undefined
       ? undefined
       : await this.askRelationSpeech(request, context, relationTarget);

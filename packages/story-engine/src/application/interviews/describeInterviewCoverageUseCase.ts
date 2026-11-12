@@ -3,6 +3,7 @@ import type { HostAdapters, WorkspaceRepositories } from '#engine/application/en
 import {
   chooseUpcomingScenes,
   collectBeatSituations,
+  listCardAnsweredAxisIds,
   listOpenAxes,
   otherPlaceTokens,
 } from '#engine/application/interviews/interviewCoverage';
@@ -121,6 +122,7 @@ export class DescribeInterviewCoverageUseCase {
         model?.tallies ?? {},
         tuning.distillMinimumWeight,
         situations,
+        listCardAnsweredAxisIds(model, card),
       ),
       upcomingSceneStems: [...new Set(situations.map((situation) => situation.sceneStem))],
       ...(loaded.unreadable === undefined ? {} : { unreadableWorkingModel: loaded.unreadable }),

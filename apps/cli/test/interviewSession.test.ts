@@ -79,7 +79,6 @@ beforeEach(async () => {
     'relations:',
     '  - target: jun',
     '    type: 소꿉친구',
-    '    speech: 반말',
   ]);
   write('character/jun.card', ['type: character', 'id: jun', 'name: 준', 'role: supporting']);
   write('background/tavern.card', [
@@ -159,6 +158,38 @@ function captureUserPrompts(): CapturedPrompt[] {
   });
 
   return captured;
+}
+
+function answerFromCard(valueIdByAxis: Readonly<Record<string, string>>): CapturedPrompt[] {
+  const captured: CapturedPrompt[] = captureUserPrompts();
+  const capture: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+  vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+    this: MockAiProvider,
+    request: Parameters<MockAiProvider['generate']>[0],
+  ) {
+    const response = await capture.call(this, request);
+    const answers = Object.entries(valueIdByAxis).map(([axisId, valueId]) => ({ axisId, valueId }));
+    return request.taskName === 'interviewCardAnswers' ? { ...response, text: JSON.stringify({ answers }) } : response;
+  });
+
+  return captured;
+}
+
+function writeHanaWithSpeechToJun(): void {
+  write('character/hana.card', [
+    'type: character',
+    'id: hana',
+    'name: 하나',
+    'role: main',
+    'aliases:',
+    '  - 등대 아이',
+    'traits:',
+    '  - 똑 부러진다',
+    'relations:',
+    '  - target: jun',
+    '    type: 소꿉친구',
+    '    speech: 반말',
+  ]);
 }
 
 function promptsOf(captured: readonly CapturedPrompt[], taskName: string): string[] {
@@ -282,6 +313,33 @@ describe('interview session (mock provider)', () => {
     expect(promptsOf(captured, 'interviewRelationSpeech')[0]).not.toContain('[상대별 호칭·말투]');
   });
 
+  it('asks no speech question to a partner the card already gives a speech, and hands that speech to the question prompt', async () => {
+    writeHanaWithSpeechToJun();
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const first: InterviewQuestion | undefined = await app.interviews.next(request);
+
+    expect(first?.source.kind).toBe('beat');
+    expect(promptsOf(captured, 'interviewRelationSpeech')).toHaveLength(0);
+    expect(promptsOf(captured, 'interviewQuestion')[0]).toContain('[상대별 호칭·말투]\n- 하나 → 준: 반말');
+  });
+
+  it('asks the speech again to a partner the card already gives one when the writer asks for known speech', async () => {
+    writeHanaWithSpeechToJun();
+    const { container: app, sessionId } = await startSession('hana');
+
+    const first: InterviewQuestion | undefined = await app.interviews.next({
+      workspaceRoot: app.workspaceRoot,
+      cardId: 'hana',
+      sessionId,
+      shouldAskKnown: true,
+    });
+
+    expect(first?.source).toEqual({ kind: 'relation', target: 'jun' });
+  });
+
   it('hands the card speech to the question prompt when the speech question was skipped', async () => {
     const captured: CapturedPrompt[] = captureUserPrompts();
     const { container: app, sessionId } = await startSession('hana');
@@ -289,10 +347,58 @@ describe('interview session (mock provider)', () => {
 
     const speech: InterviewQuestion | undefined = await app.interviews.next(request);
     await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    writeHanaWithSpeechToJun();
     await app.interviews.next(request);
 
     expect(promptsOf(captured, 'interviewQuestion')).toHaveLength(1);
     expect(promptsOf(captured, 'interviewQuestion')[0]).toContain('[상대별 호칭·말투]\n- 하나 → 준: 반말');
+  });
+
+  it('closes the axes the card already answers, so questions and the workspace status go to the axes it leaves open', async () => {
+    const captured: CapturedPrompt[] = answerFromCard({ affection: 'indirect' });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    expect(promptsOf(captured, 'interviewCardAnswers')).toHaveLength(1);
+    expect(promptsOf(captured, 'interviewCardAnswers')[0]).toContain('- 똑 부러진다');
+    expect(promptsOf(captured, 'interviewCardAnswers')[0]).toContain('affection: 호감 표출\n- direct: 직접');
+
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    const asked: string[] = [];
+    for (let question = await app.interviews.next(request); question !== undefined; question = await app.interviews.next(request)) {
+      asked.push(question.axisId);
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'chosen', index: 1 } });
+    }
+    expect(asked).toEqual(['pressure-defense', 'pressure-defense']);
+
+    const status = await app.describeWorkspace();
+    expect(status.interviews.map((coverage) => coverage.cardId)).not.toContain('hana');
+    const summary = await app.interviews.finish(request);
+    expect(summary.undecidedAxisLabels).toEqual([]);
+    expect(promptsOf(captured, 'interviewDistill')[0]).not.toContain('호감 표출');
+
+    await startSession('hana');
+    expect(promptsOf(captured, 'interviewCardAnswers')).toHaveLength(1);
+    write('character/hana.card', ['type: character', 'id: hana', 'name: 하나', 'role: main', 'traits:', '  - 똑 부러진다', '  - 몰리면 웃는다']);
+    await startSession('hana');
+    expect(promptsOf(captured, 'interviewCardAnswers')).toHaveLength(2);
+  });
+
+  it('hands the card lines the distill may not repeat, field by field', async () => {
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    for (let i = 0; i < 2; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
+    }
+    await app.interviews.finish(request);
+
+    expect(promptsOf(captured, 'interviewDistill')[0]).toContain('[카드에 이미 있는 줄]\n- traits: 똑 부러진다');
   });
 
   it('tells the question prompt who is present at the beat, or the beat before it when no cast is written', async () => {

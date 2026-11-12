@@ -169,8 +169,13 @@ so an agent can relay each question to the writer (below); otherwise it fails wi
 answer, one `choose` to confirm the value the engine read (or rename it) → `finish`. Every step is a
 manager verb on `container.interviews` and the session state is in the engine's cache file, so
 Ctrl+C loses nothing. A character session opens with one question per relation present in the
-upcoming scenes (what the character calls them, which speech level) whose answer is kept verbatim as
-a `relationSpeech` candidate; the axis questions follow, one beat × axis pair at most once, and a
+upcoming scenes whose card gives no `relations[].speech` yet (what the character calls them, which
+speech level; `--ask-known` asks the written ones too, passed with every step) whose answer is kept
+verbatim as a `relationSpeech` candidate. `start` also asks once, when the working model is new or
+the card changed since (`cardAnswers.cardHash`), which axes the card's own lines already answer
+(`interviewCardAnswers`); those axes are closed — never asked, never distilled, not counted open by
+`status` or `doctor` — and the distill is handed the card's lines field by field so it does not
+restate them. The axis questions follow, one beat × axis pair at most once, and a
 question left unanswered (Esc, a closed tab) is forgotten when the next session starts, so its beat
 is asked again. Each beat question is told who is present (the beat's `cast`, or the beat before it when none is
 written), and when an option of a cast-written beat names or addresses a partner who is not there it

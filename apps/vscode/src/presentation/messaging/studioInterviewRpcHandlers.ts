@@ -81,6 +81,7 @@ export class StudioInterviewRpc {
       ...(await this.loadCard(payload.uri)),
       sessionId: payload.sessionId,
       ...sceneStemsOf(payload),
+      ...(payload.shouldAskKnown === true ? { shouldAskKnown: true } : {}),
     });
 
     return { question: question ?? null };

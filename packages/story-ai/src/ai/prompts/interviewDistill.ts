@@ -8,6 +8,7 @@ export interface InterviewDistillInput {
   readonly cardType: BibleSubjectKind;
   readonly name: string;
   readonly cardText: string;
+  readonly existingLines: readonly string[];
   readonly summary: string;
   readonly tallies: readonly string[];
   readonly choices: readonly string[];
@@ -42,6 +43,8 @@ export const InterviewDistillPrompt: PromptModule<
         isBackground: input.cardType === 'background',
         name: input.name,
         cardText: input.cardText,
+        hasExistingLines: input.existingLines.length > 0,
+        existingLines: input.existingLines,
         summary: input.summary,
         tallies: input.tallies,
         hasChoices: input.choices.length > 0,

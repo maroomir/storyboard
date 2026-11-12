@@ -268,6 +268,10 @@ export const flagCatalog: readonly FlagSpec[] = [
     summary: 'card interview: 축 어휘와 모든 카드의 표·작업 모델을 비우고 다시 뽑습니다 (카드는 그대로)',
   },
   {
+    name: 'ask-known',
+    summary: 'card interview: 카드에 이미 적힌 상대별 호칭·말투도 다시 묻습니다',
+  },
+  {
     name: 'step',
     summary: 'card interview: 한 단계만 돌고 질문을 JSON 으로 내고 끝냅니다 (--json 필요, 에이전트가 작가에게 질문을 전할 때)',
   },

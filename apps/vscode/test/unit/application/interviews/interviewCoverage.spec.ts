@@ -4,7 +4,9 @@ import {
   chooseUpcomingScenes,
   collectBeatSituations,
   describeBeatSituation,
+  computeInterviewCardHash,
   isAxisDecided,
+  listCardAnsweredAxisIds,
   listOpenAxes,
   otherPlaceTokens,
   unseenValueIds,
@@ -12,6 +14,7 @@ import {
 import type {
   CharacterCard,
   InterviewAxis,
+  InterviewWorkingModel,
   LocationBackgroundCard,
   SceneFile,
   SceneListItem,
@@ -128,7 +131,28 @@ describe('axis bookkeeping', () => {
 
   it('lists unseen values and open axes', () => {
     expect(unseenValueIds({ pressure: { withhold: 1 } }, axis)).toEqual(['counter']);
-    expect(listOpenAxes([axis], { pressure: { withhold: 2 } }, 2, []).map((open) => open.axisId)).toEqual([]);
-    expect(listOpenAxes([axis], {}, 2, []).map((open) => open.axisLabel)).toEqual(['압박 아래']);
+    expect(listOpenAxes([axis], { pressure: { withhold: 2 } }, 2, [], new Set()).map((open) => open.axisId)).toEqual([]);
+    expect(listOpenAxes([axis], {}, 2, [], new Set()).map((open) => open.axisLabel)).toEqual(['압박 아래']);
+    expect(listOpenAxes([axis], {}, 2, [], new Set(['pressure']))).toEqual([]);
+  });
+
+  it('closes an axis the card answers only while the card is the one that was judged', () => {
+    const model: InterviewWorkingModel = {
+      version: 1,
+      cardId: 'hana',
+      cardType: 'character',
+      cardHash: computeInterviewCardHash(hana),
+      summary: '',
+      tallies: {},
+      records: [],
+      writtenStreak: 0,
+      distilledThrough: 0,
+      cardAnswers: { cardHash: computeInterviewCardHash(hana), valueIdByAxis: { pressure: 'withhold' } },
+    };
+    const editedHana: CharacterCard = { ...hana, traits: ['몰리면 웃는다'] };
+
+    expect([...listCardAnsweredAxisIds(model, hana)]).toEqual(['pressure']);
+    expect([...listCardAnsweredAxisIds(model, editedHana)]).toEqual([]);
+    expect([...listCardAnsweredAxisIds(undefined, hana)]).toEqual([]);
   });
 });
