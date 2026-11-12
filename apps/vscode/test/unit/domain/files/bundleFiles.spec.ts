@@ -8,19 +8,24 @@ import {
   BundleFileError,
   findStatementsOutsideKind,
   parseBeatsFile,
+  parseChapterOutline,
   parseElementCard,
   parseElementMemory,
+  parseSceneDialogue,
   parseSceneStateFile,
   parseStatementsFile,
   parseStoryStructure,
   serializeBeatsFile,
+  serializeChapterOutline,
   serializeElementCard,
   serializeElementMemory,
+  serializeSceneDialogue,
   serializeSceneStateFile,
   serializeStatementsFile,
   serializeStoryStructure,
   type ElementKind,
 } from "@storyboard/story-model"
+import { parseProjectJson, serializeProjectJson } from "@storyboard/story-engine"
 
 const bundlesRoot = fileURLToPath(new URL("../../../../../../packages/story-model/test/fixtures/bundles/magicboy/", import.meta.url))
 
@@ -42,6 +47,8 @@ function roundTrip(relativePath: string, text: string): string {
   const kind = kindByDirectory[relativePath.split("/")[0] ?? ""]
   const fileName = relativePath.split("/").at(-1)
   if (relativePath === ".storyboard/structure.yaml") return serializeStoryStructure(parseStoryStructure(text, relativePath))
+  if (relativePath === ".storyboard/project.json") return serializeProjectJson(parseProjectJson(text))
+  if (relativePath === ".storyboard/outline/chapters.yaml") return serializeChapterOutline(parseChapterOutline(text))
   if (relativePath.includes("/memory/")) return serializeElementMemory(parseElementMemory(text, relativePath))
   if (kind === undefined) throw new Error(`no codec for ${relativePath}`)
   if (fileName === "card.yaml") return serializeElementCard(parseElementCard(kind, text, relativePath))
@@ -52,6 +59,8 @@ function roundTrip(relativePath: string, text: string): string {
   }
   if (fileName === "beats.yaml") return serializeBeatsFile(parseBeatsFile(text, relativePath))
   if (fileName === "state.yaml") return serializeSceneStateFile(parseSceneStateFile(text, relativePath))
+  if (fileName === "dialogue.json") return serializeSceneDialogue(parseSceneDialogue(text))
+  if (fileName === "summary.md") return `${text.trim()}\n`
   throw new Error(`no codec for ${relativePath}`)
 }
 
@@ -59,7 +68,7 @@ describe("bundle file codecs", () => {
   it("writes every fixture file back to the same bytes", () => {
     const files = listFixtureFiles(bundlesRoot)
 
-    expect(files.length).toBeGreaterThanOrEqual(12)
+    expect(files.length).toBeGreaterThanOrEqual(16)
     for (const relativePath of files) {
       const text = readFileSync(join(bundlesRoot, relativePath), "utf8")
       expect(roundTrip(relativePath, text), relativePath).toBe(text)

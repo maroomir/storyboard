@@ -1,0 +1,12 @@
+version: 1.0.0
+acts:
+  - id: act-1
+    title: 1막
+    chapters:
+      - id: chapter-1
+        title: 전학
+        summary: 엘리아가 새 학교에 온다.
+        narrator: elia-first
+        scenes:
+          - 9d41b2c3-4d5e-4f6a-8b7c-1d2e3f4a5b6c
+          - c2e8a1b4-9d7c-4e3f-a2b1-0c9d8e7f6a5b

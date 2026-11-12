@@ -64,10 +64,10 @@ describe('scene bundle files', () => {
     expect(await scenes.readBeats(scenePath)).toEqual([{ text: '엘리아가 난간에 기댄다', cast: [elia] }]);
 
     expect((await scenes.readState(scenePath))?.statements).toHaveLength(3);
-    expect(await scenes.readDialogue(scenePath)).toBeUndefined();
+    expect((await scenes.readDialogue(scenePath))?.turns).toHaveLength(2);
     await scenes.writeDialogue(scenePath, { sceneStem: '002-rooftop', bodyHash, turns: [{ index: 1, speaker: elia, text: '야.' }] });
     expect((await scenes.readDialogue(scenePath))?.turns).toHaveLength(1);
-    expect(await scenes.readSummary(scenePath)).toBeUndefined();
+    expect(await scenes.readSummary(scenePath)).toContain('전학 온 이유');
     expect(await scenes.readBeats('scene/009-none.card')).toEqual([]);
   });
 });
