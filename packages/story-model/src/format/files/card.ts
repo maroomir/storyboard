@@ -1,12 +1,8 @@
-import type { StoryUri } from '#model/format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
 import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCard } from '#model/format/card';
 import { narratorCardSchema, type NarratorCard } from '#model/format/narrator';
-import { sceneCardSchema, type SceneCard } from '#model/format/scene';
-import { serializeSceneCard } from '#model/format/files/scene';
-import type { ReadWriteFileSystem } from '#model/format/files/readWriteFileSystem';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
 
@@ -114,118 +110,6 @@ export function parseNarratorCard(rawCard: string): NarratorCard {
   } catch (error) {
     throw toCardSchemaError(error);
   }
-}
-
-export function serializeNarratorCard(card: NarratorCard): string {
-  const parsedCard: NarratorCard = narratorCardSchema.parse(card);
-
-  return yaml.dump(normalizeNarratorCard(parsedCard), {
-    lineWidth: -1,
-    noRefs: true,
-    sortKeys: false,
-  });
-}
-
-export async function readNarratorCardFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-): Promise<NarratorCard> {
-  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
-  return parseNarratorCard(new TextDecoder().decode(bytes));
-}
-
-export async function writeNarratorCardFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-  card: NarratorCard,
-): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
-}
-
-export type WorkspaceCard = StoryboardCard | SceneCard | NarratorCard;
-
-export function parseWorkspaceCard(rawCard: string): WorkspaceCard {
-  let parsedYaml: unknown;
-
-  try {
-    parsedYaml = yaml.load(rawCard);
-  } catch (error) {
-    throw new CardParseError('invalid-yaml', 'Card YAML을 파싱할 수 없습니다.', error);
-  }
-
-  const cardType: unknown =
-    typeof parsedYaml === 'object' && parsedYaml !== null
-      ? (parsedYaml as { type?: unknown }).type
-      : undefined;
-
-  try {
-    if (cardType === 'scene') {
-      return sceneCardSchema.parse(parsedYaml);
-    }
-    if (cardType === 'narrator') {
-      return narratorCardSchema.parse(parsedYaml);
-    }
-    return cardSchema.parse(parsedYaml);
-  } catch (error) {
-    throw toCardSchemaError(error);
-  }
-}
-
-export function serializeWorkspaceCard(card: WorkspaceCard): string {
-  if (card.type === 'scene') {
-    return serializeSceneCard(card);
-  }
-  if (card.type === 'narrator') {
-    return serializeNarratorCard(card);
-  }
-  return serializeCard(card);
-}
-
-export function canonicalizeNarratorCardText(rawCard: string): {
-  readonly text: string;
-  readonly changed: boolean;
-} {
-  const text: string = serializeNarratorCard(parseNarratorCard(rawCard));
-
-  return { text, changed: text !== rawCard };
-}
-
-export function canonicalizeCardText(rawCard: string): {
-  readonly text: string;
-  readonly changed: boolean;
-} {
-  const text: string = serializeCard(parseCard(rawCard));
-
-  return { text, changed: text !== rawCard };
-}
-
-export async function readCardFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-): Promise<StoryboardCard> {
-  const bytes: Uint8Array<ArrayBufferLike> = await fileSystem.readFile(uri);
-  return parseCard(new TextDecoder().decode(bytes));
-}
-
-export async function writeCardFile(
-  uri: StoryUri,
-  fileSystem: ReadWriteFileSystem,
-  card: StoryboardCard,
-): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
-}
-
-function normalizeNarratorCard(card: NarratorCard): NarratorCard {
-  return {
-    type: card.type,
-    id: card.id,
-    name: card.name,
-    person: card.person,
-    knowledge: card.knowledge,
-    ...(card.tense === undefined ? {} : { tense: card.tense }),
-    ...(card.focal === undefined ? {} : { focal: card.focal }),
-    ...(card.voice === undefined ? {} : { voice: card.voice }),
-  };
 }
 
 function normalizeCardForSerialization(card: StoryboardCard): StoryboardCard {

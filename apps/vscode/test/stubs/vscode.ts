@@ -59,6 +59,13 @@ export class Range {
   ) {}
 }
 
+export class Hover {
+  public constructor(
+    public readonly contents: unknown,
+    public readonly range?: Range
+  ) {}
+}
+
 export class RelativePattern {
   public constructor(
     public readonly base: Uri | WorkspaceFolder,

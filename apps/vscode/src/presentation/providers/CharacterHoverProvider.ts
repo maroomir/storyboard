@@ -1,22 +1,18 @@
 import * as vscode from 'vscode';
 
 import {
-  getStoryboardProjectPaths,
   isDraftMarkdownFile,
-  STORYBOARD_FILE_EXTENSIONS,
   STORYBOARD_GLOBS,
   detectCharactersInText,
-  readCardFile,
 } from '@storyboard/story-model';
-import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import type {
-  Character,
-  CharacterCard,
-  StoryboardCard,
-  StoryboardProjectPaths,
-} from '@storyboard/story-model';
+import type { Character, CharacterCard } from '@storyboard/story-model';
+import type { CardManager } from '@storyboard/story-app';
 const wordPattern: RegExp = /[0-9A-Za-z가-힣_-]+/;
+
+export interface CharacterHoverProviderDependencies {
+  readonly cards: Pick<CardManager, 'listCharacters'>;
+}
 
 interface CharacterHoverContext {
   readonly character: CharacterCard;
@@ -56,36 +52,9 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
   return markdown;
 }
 
-async function listCharacterCardsInWorkspace(
-  workspaceFolder: vscode.WorkspaceFolder,
-): Promise<CharacterCard[]> {
-  const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceFolder.uri);
-  const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(
-    paths.characterDirectory,
-  );
-  const cardNames: string[] = entries
-    .filter(
-      ([name, type]) =>
-        type === vscode.FileType.File && name.endsWith(STORYBOARD_FILE_EXTENSIONS.card),
-    )
-    .map(([name]) => name);
-
-  const cards: (Character | undefined)[] = await Promise.all(
-    cardNames.map(async (name) => {
-      const uri: vscode.Uri = vscode.Uri.joinPath(paths.characterDirectory, name);
-      try {
-        const parsed: StoryboardCard = await readCardFile(uri, vscodeFsAdapter);
-        return parsed.type === 'character' ? parsed : undefined;
-      } catch {
-        return undefined;
-      }
-    }),
-  );
-
-  return cards.filter((card): card is CharacterCard => card !== undefined);
-}
-
 export class CharacterHoverProvider implements vscode.HoverProvider {
+  public constructor(private readonly dependencies: CharacterHoverProviderDependencies) {}
+
   public register(): vscode.Disposable {
     const selector: vscode.DocumentSelector = {
       scheme: 'file',
@@ -117,7 +86,9 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       return undefined;
     }
 
-    const characters: CharacterCard[] = await listCharacterCardsInWorkspace(workspaceFolder);
+    const characters: readonly CharacterCard[] = await this.dependencies.cards.listCharacters(
+      workspaceFolder.uri,
+    );
     if (characters.length === 0) {
       return undefined;
     }

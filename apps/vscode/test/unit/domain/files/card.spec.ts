@@ -7,9 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CardParseError,
   parseCard,
-  parseWorkspaceCard,
   serializeCard,
-  serializeWorkspaceCard,
 } from '@storyboard/story-model';
 import type { StoryboardCard } from '@storyboard/story-model';
 const cardsFixtureDirectory = fileURLToPath(
@@ -243,27 +241,6 @@ describe('card file codec', () => {
     if (reparsed.type === 'character') {
       expect(reparsed.catchphrases).toEqual(['뭐 별거는 아닌데']);
     }
-  });
-
-  it('reads a narrator card through the workspace card parser the card editor uses', () => {
-    const rawCard = [
-      'type: narrator',
-      'id: jiwoon-limited',
-      'name: 지운의 시선',
-      'person: third',
-      'knowledge: witnessed',
-      'tense: past',
-      'focal: jiwoon',
-      'voice:',
-      '  - 짧은 단문',
-      '  - 본 것만 적는다',
-      '',
-    ].join('\n');
-
-    const card = parseWorkspaceCard(rawCard);
-
-    expect(card).toMatchObject({ type: 'narrator', id: 'jiwoon-limited', focal: 'jiwoon' });
-    expect(serializeWorkspaceCard(card)).toBe(rawCard);
   });
 });
 

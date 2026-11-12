@@ -64,6 +64,7 @@ import {
   type StoryboardCard,
   type StoryUri,
   type BibleSubjectKind,
+  type CharacterCard,
   type CharacterRef,
   type RelationListCharacter,
 } from '@storyboard/story-model';
@@ -163,6 +164,10 @@ export class CardManager {
 
   public listRelationCharacters(workspaceRoot: StoryUri): Promise<RelationListCharacter[]> {
     return this.deps.cardCollectRepository.listRelationCharacters(workspaceRoot);
+  }
+
+  public async listCharacters(workspaceRoot: StoryUri): Promise<readonly CharacterCard[]> {
+    return (await this.deps.cards.loadRoster(workspaceRoot)).characters;
   }
 
   public listNarrators(workspaceRoot: StoryUri): Promise<ReadonlyMap<string, NarratorCard>> {
