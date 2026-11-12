@@ -104,6 +104,22 @@ async function describeOutline(
   };
 }
 
+export async function countSummariesToRebuild(
+  manuscripts: ManuscriptManager | undefined,
+  workspaceRoot: StoryUri,
+  scenes: readonly SceneListItem[],
+): Promise<number> {
+  const pendingOrders: readonly number[] = scenes
+    .filter((scene) => scene.status !== 'ready')
+    .map((scene) => scene.order);
+  if (manuscripts === undefined || pendingOrders.length === 0) {
+    return 0;
+  }
+
+  const lastPendingOrder: number = Math.max(...pendingOrders);
+  return (await manuscripts.listMissingChapterSummaries(workspaceRoot, lastPendingOrder)).length;
+}
+
 async function countDrafts(
   drafts: DraftManager,
   workspaceRoot: StoryUri,
@@ -171,7 +187,7 @@ export async function describeWorkspaceStatus(
     drafts: draftCounts,
     manuscript,
     chapterSummaries: {
-      missing: (await manuscripts?.listMissingChapterSummaries(workspaceRoot))?.length ?? 0,
+      missing: await countSummariesToRebuild(manuscripts, workspaceRoot, scenes),
     },
     pending: await describePending(cards, input.notes, workspaceRoot),
     interviews: await suggestInterviews(interviews, workspaceRoot, draftCounts),

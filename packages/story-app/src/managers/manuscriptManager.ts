@@ -41,8 +41,11 @@ export class ManuscriptManager {
     return this.deps.revisionPlanRecorder.readLatest(workspaceRoot);
   }
 
-  public listMissingChapterSummaries(workspaceRoot: StoryUri): Promise<string[]> {
-    return this.deps.chapterSummaryRefresher.listMissing(workspaceRoot);
+  public listMissingChapterSummaries(
+    workspaceRoot: StoryUri,
+    beforeSceneOrder?: number,
+  ): Promise<string[]> {
+    return this.deps.chapterSummaryRefresher.listMissing(workspaceRoot, beforeSceneOrder);
   }
 
   public summarizeChapters(request: SummarizeChaptersRequest): Promise<SummarizeChaptersResult> {
