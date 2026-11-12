@@ -1,9 +1,0 @@
-type: scene
-id: 03-narrated
-title: 등불
-characters:
-  - hana
-location: night-market
-narrator: hana-first
-thread: ep2
-summary: 하나가 등불 아래에서 준을 기다린다.

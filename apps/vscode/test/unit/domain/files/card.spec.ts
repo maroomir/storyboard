@@ -1,7 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -10,9 +6,10 @@ import {
   serializeCard,
 } from '@storyboard/story-model';
 import type { StoryboardCard } from '@storyboard/story-model';
-const cardsFixtureDirectory = fileURLToPath(
-  new URL('../../../../../../packages/story-model/test/fixtures/cards/', import.meta.url),
-);
+const cardFixtures: Readonly<Record<string, string>> = {
+  'character.card': "type: character\nid: elia\nname: 엘리아\nprofile: profile/elia.png\nrole: main\nattributes:\n  age: 17\n  sex: female\n  mbti: ENFJ\ntraits:\n  - 활발하게 움직임\n  - 결단력 있는 발언\ndescription:\n  - 주인공. 학교에 첫 등교한 17세 여학생.\n  - 새로운 학교 생활에 대한 기대와 긴장을 함께 품고 있다.\ndesire:\n  - 새 학교에서 진짜 친구를 만들고 싶다\nrelations:\n  - target: jihoon\n    type: 친구\narc: 학교에 도착해 새 친구를 만남\n",
+  'background.card': "type: location\nid: school\nname: 학교 정문\naliases:\n  - 학교\n  - 교문\n  - 정문\ndescription:\n  - 주인공이 처음 등교하는 고등학교 정문.\n  - 아침 햇빛과 등교하는 학생들로 붐빈다.\ncharacterIds: []\ntags:\n  - 학교\n  - 도시\ntime: 아침\nweather: 맑음\nsenses:\n  - 멀리서 울리는 등교 종소리\n  - 갓 자른 잔디 냄새\nlayout:\n  - 정문은 큰길 쪽 하나뿐이고, 왼쪽 담을 따라 가면 쪽문이 있다\n  - 정문 안쪽 경비실 창으로 운동장까지 보인다\nrules:\n  - 8시 30분이 지나면 정문을 닫고 쪽문으로만 들어온다\n",
+};
 
 describe('card file codec', () => {
   it.each(['character.card', 'background.card'])(
@@ -245,7 +242,7 @@ describe('card file codec', () => {
 });
 
 function readFixtureCard(fixtureName: string): string {
-  return readFileSync(join(cardsFixtureDirectory, fixtureName), 'utf8');
+  return cardFixtures[fixtureName] ?? '';
 }
 
 describe('character role policy (decision #29)', () => {

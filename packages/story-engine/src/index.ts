@@ -97,7 +97,6 @@ export * from '#engine/persistence/bundles/sceneRenumberer';
 export * from '#engine/persistence/bundles/workspaceBundleAuditor';
 export * from '#engine/persistence/bundles/storyLedger';
 export * from '#engine/persistence/bundles/structureRepository';
-export * from '#engine/persistence/bundles/threadLedgerReader';
 export * from '#engine/persistence/bundles/workspaceCards';
 export * from '#engine/persistence/bundles/workspaceScenes';
 export * from '#engine/persistence/cache/cacheDatabase';

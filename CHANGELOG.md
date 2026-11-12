@@ -61,6 +61,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 내부
 
+- **0.15 형식의 잔재를 걷어 냈습니다.** 옛 단일 카드·씬 fixture(`packages/story-model/test/fixtures/{cards,scenes}`)는 지우고 그 텍스트를 쓰는 테스트 안으로 옮겼습니다(왕복 기준은 번들 fixture 입니다). 쓰는 곳이 없던 `selectBibleFacts`·`selectValidBibleFacts`(시기 규칙 테스트는 생성이 부르는 `selectInjectedFacts` 로 옮김), `isLegacySceneTextRelativePath`, 씬 개명이 옮기던 `.storyboard/cache/cards`, `ThreadLedgerReader` 를 지웠고 `.sample.card`·`character/profile/` 을 쓰던 테스트를 정리했습니다.
 - **확장의 옛 VSCode 설정 이관이 없어진 설정으로 옮기지 않습니다.** `draft.keepHistory`·`scene.prefixDigits` 를 `config.json` 의 없어진 키(`editor.draft.keepHistory`·`editor.scene.prefixDigits`)로 옮겨 «알 수 없는 설정 키» 경고를 남기던 두 줄을 지웠고, 이관 대상이 모두 `config.json` 이 읽는 키인지 테스트가 봅니다. 아키텍처 검사의 `OWNED_LITERALS` 는 지워진 `sampleCard.ts` 행을 뺐고, 소유 파일이 없거나 그 리터럴을 더 갖지 않으면 실패합니다.
 - **부르는 곳이 없어진 AI 작업 `sceneStructure`(씬 구조화)를 지웠습니다.** 카드 편집기의 «Summary에서 구조화»가 없어진 뒤 남아 있던 프롬프트 리소스·서비스 메서드·작업 이름입니다. 설정 파일에 `tasks.sceneStructure` 가 남아 있으면 읽지 않는 키로 경고만 합니다.
 - **스튜디오 중심 설계의 토대를 놓았습니다.** 요소 네 종류(인물·배경·씬·서술자)의 진술 어휘(진술 facet 21개와 섹션, 상태 어휘)와 진술 스키마, 작가 줄을 덮지 않는 병합 규칙, 종류별 머리말을 `story-model` 의 새 층 `element/` 에 두었습니다. 번들 폴더 경로(`<종류>/<slug>.card/`, 씬은 구조 순서에서 나온 세 자리 번호 `NNN-slug`), `.storyboard/structure.yaml`(줄기와 작품 전체의 씬 순서), 씬 번호 파생과 개명 계획, slug·번호를 uuid 로 푸는 규칙, 번들 파일 코덱과 왕복 fixture 를 더했습니다. 영구층으로 캐시 DB `.storyboard/cache/storyboard.db`(아홉 표와 schema_version, 두 앱이 함께 쓰는 WebAssembly SQLite), 번들 단위 저장소(엔진 밖에서 바뀐 카드는 경고하고 읽고, 복사된 uuid 의 폴더에는 쓰지 않음), 기억·비트·상태 파일과 구조 순서로 잇는 줄기 원장, 씬 uuid 아래 최근 10판의 초안 판본을 더했습니다. 아직 엔진과 두 앱은 옛 파일을 읽고 씁니다.

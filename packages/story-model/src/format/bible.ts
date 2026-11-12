@@ -50,21 +50,6 @@ export function revealKnownBy(fact: BibleFact): readonly string[] | undefined {
   return typeof reveal === 'object' ? reveal.knownBy : undefined;
 }
 
-export function selectBibleFacts(
-  bible: StoryBible,
-  subjects: readonly BibleFactSubject[],
-): BibleFact[] {
-  if (subjects.length === 0) {
-    return [];
-  }
-
-  const wanted: Set<string> = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
-
-  return bible.facts.filter(
-    (fact) => fact.status === 'canon' && wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
-  );
-}
-
 interface ResolvedFactVersion {
   readonly fact: BibleFact;
   readonly from: number;
@@ -142,26 +127,6 @@ function resolveValidWinners(
   });
 
   return [...winners.values()];
-}
-
-export function selectValidBibleFacts(
-  bible: StoryBible,
-  subjects: readonly BibleFactSubject[],
-  sceneOrder: number,
-  options?: InjectionOptions,
-): BibleFact[] {
-  if (subjects.length === 0) {
-    return [];
-  }
-
-  const wanted: Set<string> = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
-
-  return resolveValidWinners(
-    bible,
-    sceneOrder,
-    (fact) => wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
-    options?.storyTimeline,
-  ).map((version) => version.fact);
 }
 
 export interface InjectionOptions {

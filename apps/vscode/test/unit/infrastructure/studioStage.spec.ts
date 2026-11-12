@@ -197,7 +197,7 @@ describe("readStudioStage for card entities", () => {
           "summary: 본문"
         ].join("\n")
       },
-      ["01-intro.card", "02-departure.card", ".sample.card"]
+      ["01-intro.card", "02-departure.card"]
     )
 
     const stage = await new StudioContextRepository(stubFileSystem, createMemoryRevisionPlans(), cardsFromFiles(() => stubbedFiles), scenesFromFiles(() => stubbedFiles), stubSummaries(), historyOf()).readStage(workspaceRoot, {
