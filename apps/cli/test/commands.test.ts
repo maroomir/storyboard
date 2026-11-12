@@ -31,9 +31,8 @@ import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
-import { createWorkspaceCaches, createWorkspaceRunLocks } from './fixtures/workspaceCacheFixture';
-import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
-import { JournalStore, RunStore } from '@storyboard/story-engine';
+import { createWorkspaceCaches, createWorkspaceRunLocks, writeUnseededChapterPlan } from './fixtures/workspaceCacheFixture';
+import { JournalStore, RunStore, SessionStore } from '@storyboard/story-engine';
 import { readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
 import {
   listSceneStems,
@@ -360,6 +359,17 @@ describe('kind arguments', () => {
 });
 
 describe('scene create and scene seed', () => {
+  async function countOpenChapterPlanSessions(): Promise<number> {
+    const caches = createWorkspaceCaches();
+    try {
+      return new SessionStore(await caches.open(NodeUri.file(workspace)))
+        .listByKind('studio')
+        .filter((record) => record.closedAt === undefined && 'pendingChapterPlan' in (record.data as object)).length;
+    } finally {
+      await caches.closeAll();
+    }
+  }
+
   it('numbers a new scene after the highest one, with or without a usable name', async () => {
     const first = await run('scene create', args(['scene', 'create'], { name: 'Night Market' }, ['시험 씬']));
     const second = await run('scene create', args(['scene', 'create'], { name: '야시장' }, ['시험 씬']));
@@ -375,7 +385,7 @@ describe('scene create and scene seed', () => {
     expect(missing.message).toContain('outline generate');
 
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
-    writeUnseededChapterPlan(
+    await writeUnseededChapterPlan(
       workspace,
       [
         'version: 1.0.0',
@@ -393,9 +403,13 @@ describe('scene create and scene seed', () => {
       ].join('\n'),
     );
 
+    expect(existsSync(join(workspace, '.storyboard', 'cache', 'outline'))).toBe(false);
+    expect(await countOpenChapterPlanSessions()).toBe(1);
+
     const seeded = await run('scene seed', args(['scene', 'seed']));
     expect(seeded.ok).toBe(true);
     expect(seeded.data).toHaveLength(1);
+    expect(await countOpenChapterPlanSessions()).toBe(0);
     expect(listSceneStems(workspace).map((stem) => `${stem}.card`)).toEqual(seeded.data);
 
     const refused = await run('scene seed', args(['scene', 'seed']));
@@ -1378,7 +1392,7 @@ describe('scene show', () => {
     );
     await run('scene create', args(['scene', 'create'], { name: 'harbor' }, ['시험 씬']));
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
-    writeUnseededChapterPlan(
+    await writeUnseededChapterPlan(
       workspace,
       [
         'version: 1.0.0',

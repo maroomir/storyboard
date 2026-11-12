@@ -452,7 +452,7 @@ export class NarratorInterviewStrategy implements IQuestionStrategy {
   ): Promise<SceneFile[]> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const project: StoryboardProject = await this.repositories.project.read(paths.projectJson);
-    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem, this.host.cards, this.host.scenes);
+    const resolver: SceneNarrationResolver = new SceneNarrationResolver(this.host.fileSystem, this.host.cards, this.host.scenes, this.host.caches);
     const narrated: SceneListItem[] = [];
     const scenesByStem: Map<string, SceneFile> = new Map<string, SceneFile>();
 

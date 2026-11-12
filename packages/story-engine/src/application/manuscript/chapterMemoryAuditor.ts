@@ -18,11 +18,13 @@ import type {
 import { DraftRepository } from '#engine/persistence/repositories/draftRepository';
 import { ProjectRepository } from '#engine/persistence/repositories/projectRepository';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 
 export interface ChapterSummaryAuditRequest {
   readonly fileSystem: IFileSystem;
   readonly scenes: WorkspaceScenes;
   readonly summaries: ChapterSummaryLedger;
+  readonly caches: WorkspaceCaches;
   readonly paths: StoryboardProjectPaths;
 }
 
@@ -100,9 +102,9 @@ export class ChapterMemoryAuditor {
   }
 
   public async collectCurrentChapterHashes(projectName: string): Promise<Map<string, string>> {
-    const { fileSystem, paths, scenes } = this.request;
+    const { fileSystem, paths, scenes, caches } = this.request;
     const [plan, draftsByOrder] = await Promise.all([
-      new ChapterOutlineStore({ fileSystem, scenes }).load(paths.workspaceRoot),
+      new ChapterOutlineStore({ fileSystem, scenes, caches }).load(paths.workspaceRoot),
       new DraftRepository(fileSystem).collectByOrder(paths, { warn: (): void => undefined }),
     ]);
     const manuscript: AssembledManuscript = assembleManuscript({

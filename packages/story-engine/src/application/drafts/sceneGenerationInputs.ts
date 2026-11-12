@@ -401,7 +401,7 @@ export class SceneGenerationInputsLoader {
     project: GenerationProject,
   ): Promise<SceneThreadSetup> {
     const { host } = this.dependencies;
-    const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(host.fileSystem, host.cards, host.scenes);
+    const narrationResolver: SceneNarrationResolver = new SceneNarrationResolver(host.fileSystem, host.cards, host.scenes, host.caches);
     const chapterDefaults: ChapterNarrationDefaults = await narrationResolver.readChapterDefaults(
       paths,
       scene.order,
@@ -455,6 +455,7 @@ export class SceneGenerationInputsLoader {
       fileSystem,
       scenes,
       summaries,
+      caches: this.dependencies.host.caches,
       paths: threadPaths,
     });
     const chapterAudit: ChapterMemoryAudit = await chapterAuditor.audit();

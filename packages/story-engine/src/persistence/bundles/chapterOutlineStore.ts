@@ -1,5 +1,3 @@
-import { posix } from 'node:path';
-
 import {
   getStoryboardProjectPaths,
   isChapterOutlineUnseeded,
@@ -21,6 +19,8 @@ import {
 } from '@storyboard/story-model';
 
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import { SessionStore, type SessionRecord } from '#engine/persistence/cache/sessionStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import type {
   SceneRoster,
   SceneRosterEntry,
@@ -30,6 +30,23 @@ import type {
 export interface ChapterOutlineStoreDependencies {
   readonly fileSystem: IFileSystem;
   readonly scenes: WorkspaceScenes;
+  readonly caches: WorkspaceCaches;
+}
+
+interface PendingChapterPlanData {
+  readonly title: string;
+  readonly pendingChapterPlan: string;
+}
+
+const pendingChapterPlanSessionTitle: string = 'outline generate';
+
+function isPendingChapterPlanSession(record: SessionRecord): boolean {
+  const data: unknown = record.data;
+  const hasPlan: boolean =
+    typeof data === 'object' &&
+    data !== null &&
+    typeof (data as Partial<PendingChapterPlanData>).pendingChapterPlan === 'string';
+  return record.elementId === undefined && record.closedAt === undefined && hasPlan;
 }
 
 export class ChapterOutlineStore {
@@ -60,10 +77,7 @@ export class ChapterOutlineStore {
 
   public async save(workspaceRoot: StoryUri, plan: ChapterPlan): Promise<void> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
-    await this.dependencies.fileSystem.createDirectory(
-      paths.pendingChapterPlan.with({ path: posix.dirname(paths.pendingChapterPlan.path) }),
-    );
-    await this.writeText(paths.pendingChapterPlan, serializeChapterPlan(plan));
+    await this.savePending(workspaceRoot, plan);
     await this.dependencies.fileSystem.createDirectory(paths.outlineDirectory);
     await this.writeText(
       paths.outlineChapters,
@@ -86,9 +100,7 @@ export class ChapterOutlineStore {
       paths.outlineChapters,
       serializeChapterOutline(outlineOfChapterPlan(plan, (flatIndex) => sceneIds[flatIndex])),
     );
-    if (await this.dependencies.fileSystem.exists(paths.pendingChapterPlan)) {
-      await this.dependencies.fileSystem.delete(paths.pendingChapterPlan);
-    }
+    await this.closePending(workspaceRoot);
   }
 
   public async removeScene(workspaceRoot: StoryUri, sceneId: string): Promise<void> {
@@ -122,10 +134,34 @@ export class ChapterOutlineStore {
   }
 
   private async loadPending(workspaceRoot: StoryUri): Promise<ChapterPlan | undefined> {
-    const uri: StoryUri = getStoryboardProjectPaths(workspaceRoot).pendingChapterPlan;
-    return (await this.dependencies.fileSystem.exists(uri))
-      ? parseChapterPlan(await this.readText(uri))
-      : undefined;
+    const record: SessionRecord | undefined = (await this.sessions(workspaceRoot))
+      .listByKind('studio')
+      .filter(isPendingChapterPlanSession)
+      .at(-1);
+    return record === undefined
+      ? undefined
+      : parseChapterPlan((record.data as PendingChapterPlanData).pendingChapterPlan);
+  }
+
+  private async savePending(workspaceRoot: StoryUri, plan: ChapterPlan): Promise<void> {
+    await this.closePending(workspaceRoot);
+    const data: PendingChapterPlanData = {
+      title: pendingChapterPlanSessionTitle,
+      pendingChapterPlan: serializeChapterPlan(plan),
+    };
+    (await this.sessions(workspaceRoot)).open({ kind: 'studio', data, pendingCount: 1 });
+  }
+
+  private async closePending(workspaceRoot: StoryUri): Promise<void> {
+    const store: SessionStore = await this.sessions(workspaceRoot);
+    for (const record of store.listByKind('studio').filter(isPendingChapterPlanSession)) {
+      store.update(record.id, { data: { title: pendingChapterPlanSessionTitle }, pendingCount: 0 });
+      store.close(record.id);
+    }
+  }
+
+  private async sessions(workspaceRoot: StoryUri): Promise<SessionStore> {
+    return new SessionStore(await this.dependencies.caches.open(workspaceRoot));
   }
 
   private async readText(uri: StoryUri): Promise<string> {

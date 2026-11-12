@@ -63,8 +63,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   └── cache/                    # 지워도 다시 만드는 캐시 (.gitignore)
 │       ├── storyboard.db         # 캐시 DB: sessions·runs·usage·element_index·lock·findings·journal·chapter_summaries·revision_plans
 │       ├── scenes/               # 씬별 생성 컨텍스트 스냅샷
-│       ├── revisions/            # 덮어쓰기 전 초안 (씬 uuid 폴더마다 최근 10개)
-│       └── outline/              # outline generate 가 남긴 씬 계획 (pending-chapters.yaml)
+│       └── revisions/            # 덮어쓰기 전 초안 (씬 uuid 폴더마다 최근 10개)
 │
 ├── character/
 │   └── elia.card/                # 카드 번들
@@ -515,7 +514,7 @@ warnings:                     # 생성 검증이 잡았으나 재시도로 못 �
 
 - `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
 - `chapters.yaml`: act/chapter 구조, 장의 제목·요약·목표 분량·`narrator`·`thread`, 그리고 장에 속한 씬의 uuid 목록. (`storyboard.outline.generate`가 생성) 씬 하나하나의 계획(목적·갈등·출연·장소 …)은 여기에 없고 씬 번들의 설계 진술이 가지며, 순서는 `structure.yaml`이다.
-- 씬 계획: `outline generate`가 만든 씬 계획은 씬이 생기기 전까지 캐시(`.storyboard/cache/outline/pending-chapters.yaml`)에서 기다린다. `scene seed`(또는 장편 생성의 seeds 단계)가 씬 번들을 만들고 나면 `chapters.yaml`의 장이 씬 uuid를 적는다.
+- 씬 계획: `outline generate`가 만든 씬 계획은 씬이 생기기 전까지 캐시 DB 의 세션(작품 단위 `studio` 세션의 대기 계획)에서 기다린다. `scene seed`(또는 장편 생성의 seeds 단계)가 씬 번들을 만들고 나면 `chapters.yaml`의 장이 씬 uuid를 적고 그 세션을 닫는다.
 - 검수·재작성 계획은 더 이상 파일이 아니다. 씬 단위 기록은 캐시 DB의 `revision_plans` 표에 있고 `manuscript review --show`로 본다. 캐시를 지우면 검수를 다시 돌려야 한다.
 
 이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.card/`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. 씬 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다. 노트가 남긴 시놉시스 후보는 `outline show --pending`으로 보고 `outline apply`(가장 새 후보를 `synopsis.md`에 쓰고 나머지는 버림)·`outline discard`로 처리한다.

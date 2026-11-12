@@ -79,9 +79,7 @@ interface ReviseNarration {
 }
 
 async function resolveReviseNarration(
-  fs: IFileSystem,
-  cards: WorkspaceCards,
-  scenes: WorkspaceScenes,
+  resolver: SceneNarrationResolver,
   paths: StoryboardProjectPaths,
   scene: SceneFile,
   project: StoryboardProject | undefined,
@@ -94,7 +92,6 @@ async function resolveReviseNarration(
     };
   }
 
-  const resolver: SceneNarrationResolver = new SceneNarrationResolver(fs, cards, scenes);
   const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
     paths,
     scene.order,
@@ -251,6 +248,7 @@ async function prepareReviseDraftContext(
   cards: WorkspaceCards,
   scenes: WorkspaceScenes,
   summaries: ChapterSummaryLedger,
+  narrationResolver: SceneNarrationResolver,
   paths: StoryboardProjectPaths,
   draftUri: StoryUri,
   sceneStem: string,
@@ -261,6 +259,7 @@ async function prepareReviseDraftContext(
     cards,
     scenes,
     summaries,
+    narrationResolver,
     paths,
     sceneStem,
   );
@@ -287,6 +286,7 @@ async function loadReviseSceneSources(
   cards: WorkspaceCards,
   scenes: WorkspaceScenes,
   summaries: ChapterSummaryLedger,
+  narrationResolver: SceneNarrationResolver,
   paths: StoryboardProjectPaths,
   sceneStem: string,
 ): Promise<ReviseSceneSources> {
@@ -297,9 +297,7 @@ async function loadReviseSceneSources(
   );
   const project: StoryboardProject | undefined = await readProjectIfPresent(fs, paths.projectJson);
   const reviseNarration: ReviseNarration = await resolveReviseNarration(
-    fs,
-    cards,
-    scenes,
+    narrationResolver,
     paths,
     scene,
     project,
@@ -389,6 +387,7 @@ export class ReviseDraftUseCase {
       this.host.cards,
       this.host.scenes,
       this.host.summaries,
+      new SceneNarrationResolver(this.host.fileSystem, this.host.cards, this.host.scenes, this.host.caches),
       paths,
       draftUri,
       sceneStem,

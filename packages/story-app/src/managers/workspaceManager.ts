@@ -128,6 +128,7 @@ export class WorkspaceManager {
       fileSystem: this.deps.fileSystem,
       scenes: this.deps.scenes,
       summaries: this.deps.summaries,
+      caches: this.deps.caches,
       paths: getStoryboardProjectPaths(workspaceRoot),
     }).audit();
   }

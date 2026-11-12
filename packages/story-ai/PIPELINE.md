@@ -29,7 +29,7 @@
 
 | # | 스테이지 | 부르는 프롬프트 | 읽는 것 | 남기는 것 |
 |---|---|---|---|---|
-| ① | `outline` 아웃라인 | `outlineSynopsis` → `chapterPlan` | 프로젝트 계약(장르·톤·시놉시스 씨앗·장 수), 인물 요약 | `.storyboard/outline/synopsis.md`, `.storyboard/outline/chapters.yaml`; 씬 계획은 씬이 생길 때까지 캐시(`.storyboard/cache/outline/pending-chapters.yaml`)에서 대기 |
+| ① | `outline` 아웃라인 | `outlineSynopsis` → `chapterPlan` | 프로젝트 계약(장르·톤·시놉시스 씨앗·장 수), 인물 요약 | `.storyboard/outline/synopsis.md`, `.storyboard/outline/chapters.yaml`; 씬 계획은 씬이 생길 때까지 캐시 DB 의 세션에서 대기 |
 | ② | `characters` 인물 카드 | `outlineCharacters` | 계약 + 시놉시스 + 출연진 | `character/<slug>.card/` 번들 (이미 있는 카드는 건너뜀) |
 | ③ | `seeds` 씬 시드 | 없음 (코드) | 대기 중인 씬 계획 | `scene/NNN-<slug>.card/` 번들과 `.storyboard/structure.yaml`의 씬 순서 (있는 씬은 건너뜀); 그 뒤 `chapters.yaml`의 장이 씬 uuid를 적음 |
 | ④ | `chapters` 장별 초안·검수 | 2층 전체 + 되먹임 루프 | 씬 번들 하나씩 | `draft/NNN-*.md`, 3층의 기억 갱신, 검수 기록(캐시 DB의 `revision_plans`) |

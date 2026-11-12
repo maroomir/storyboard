@@ -51,6 +51,7 @@ import type {
   WorkspaceScenes,
   SceneRoster,
   ChapterSummaryLedger,
+  WorkspaceCaches,
 } from '@storyboard/story-engine';
 import {
   ProjectRepository,
@@ -115,6 +116,7 @@ export interface DraftManagerDependencies {
   readonly cards: WorkspaceCards;
   readonly scenes: WorkspaceScenes;
   readonly summaries: ChapterSummaryLedger;
+  readonly caches: WorkspaceCaches;
 }
 
 export class DraftManager {
@@ -281,6 +283,7 @@ export class DraftManager {
       this.deps.fileSystem,
       this.deps.cards,
       this.deps.scenes,
+      this.deps.caches,
     );
     const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
       paths,
@@ -304,6 +307,7 @@ export class DraftManager {
       this.deps.fileSystem,
       this.deps.cards,
       this.deps.scenes,
+      this.deps.caches,
     );
     const chapterDefaults: ChapterNarrationDefaults = await resolver.readChapterDefaults(
       paths,
