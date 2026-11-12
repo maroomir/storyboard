@@ -275,6 +275,32 @@ describe("ReviseDraftUseCase", () => {
     expect(writeDraftFileMock).toHaveBeenCalledTimes(1)
   })
 
+  it("keeps the current draft as a revision before writing the revised one", async () => {
+    checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
+    const archiveWrites = vi.fn(async (): Promise<void> => undefined)
+    const options = baseOptions({ maxIterations: 3 })
+    const host = createTestHost({
+      logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
+      fileSystem: {
+        createDirectory: async () => undefined,
+        writeFile: archiveWrites,
+        exists: async () => true,
+        readFile: async () => new TextEncoder().encode("---\nsceneStem: 01-scene\nformat: novel\n---\n이전 본문\n"),
+        listFileNames: async () => [],
+        delete: async () => undefined
+      } as never,
+      generator: "storyboard@0.0.0-test",
+      scenes: stubScenes([sceneUnderRevision]),
+      cards: stubCards()
+    })
+
+    await runReviseDraftWorkflow({ ...options, host })
+
+    const archivedPaths = archiveWrites.mock.calls.map((call) => String((call as unknown[])[0]))
+    expect(archivedPaths.some((path) => path.includes("/.storyboard/cache/revisions/"))).toBe(true)
+    expect(archiveWrites.mock.invocationCallOrder[0]).toBeLessThan(writeDraftFileMock.mock.invocationCallOrder.at(-1) ?? 0)
+  })
+
   it("curls straight dialogue quotes a revision wrote", async () => {
     checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
     reviseDraftMock.mockResolvedValueOnce('인물은 창가에서 "잠깐만." 하고 숨을 골랐다.')

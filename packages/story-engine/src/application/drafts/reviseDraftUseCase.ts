@@ -37,6 +37,7 @@ import {
   type SceneBeat,
 } from '@storyboard/story-model';
 import { sceneCacheFilePath, type SceneCacheKey } from '#engine/persistence/sceneCacheWorkspace';
+import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -486,8 +487,21 @@ export class ReviseDraftUseCase {
       model: revisionConfig.model,
     });
 
+    await this.archiveCurrentDraft(paths, sceneStem, draftUri);
     await writeDraftFile(draftUri, this.host.fileSystem, revised);
     await this.refreshSceneCacheBodyHash(paths, sceneStem, revised);
+  }
+
+  private async archiveCurrentDraft(
+    paths: StoryboardProjectPaths,
+    sceneStem: string,
+    draftUri: StoryUri,
+  ): Promise<void> {
+    try {
+      await new DraftHistoryArchiver(this.host).archive(paths.workspaceRoot, sceneStem, draftUri);
+    } catch (error) {
+      this.host.logger.warn(`이전 초안을 판본으로 보관하지 못했습니다: ${String(error)}`);
+    }
   }
 
   private toWorkflowResult(loopResult: ReviseLoopResult): ReviseDraftWorkflowResult {
