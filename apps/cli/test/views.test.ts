@@ -67,8 +67,8 @@ describe('scene list', () => {
   });
 
   it('lists scene cards in number order with whether each has a draft', async () => {
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'storm']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
     const listed = await runJson('scene', 'list');
@@ -88,9 +88,9 @@ describe('scene list', () => {
   });
 
   it('shows the thread column once a work has two threads', async () => {
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'opening']);
     await new CommandDispatcher(deps()).dispatch(['project', 'set', '--composition', 'omnibus', '--episodes', '2']);
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'storm']);
     const structure: string = join(workspace, '.storyboard', 'structure.yaml');
     writeFileSync(structure, readFileSync(structure, 'utf8').replace(/thread: main\n(?![\s\S]*thread: main)/, 'thread: ep1\n'));
 
@@ -102,7 +102,7 @@ describe('scene list', () => {
 
   it('moves a removed scene\'s place in fact windows to the scenes beside it', async () => {
     for (const name of ['opening', 'storm', 'harbor']) {
-      await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', name]);
+      await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', name]);
     }
     await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '하나', '--name', '하나', '--id', 'hana']);
     const ids = Object.fromEntries(
@@ -129,7 +129,7 @@ describe('scene list', () => {
 
   it('moves, inserts and removes scenes, renumbering the rest', async () => {
     for (const name of ['opening', 'storm', 'harbor']) {
-      await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', name]);
+      await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', name]);
     }
     writeDraft('003-harbor', '항구의 불빛이 꺼졌다.');
 
@@ -137,7 +137,7 @@ describe('scene list', () => {
     expect(moved.exitCode, moved.stdout).toBe(0);
     expect(moved.stdout).toContain('003-harbor → 002-harbor');
 
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'rain', '--after', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'rain', '--after', 'opening']);
     const removed = await new CommandDispatcher(deps()).dispatch(['scene', 'remove', 'storm']);
     expect(removed.exitCode, removed.stdout).toBe(0);
 
@@ -153,7 +153,7 @@ describe('scene list', () => {
 
 describe('draft show', () => {
   it('prints the body alone, and the path with --json', async () => {
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'opening']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.\n\n하나는 우산을 접었다.');
 
     const shown = await runJson('draft', 'show', '001-opening');
@@ -227,8 +227,8 @@ describe('status', () => {
     await new CommandDispatcher(deps()).dispatch(['project', 'set', '--audience', '성인', '--pov', 'third-limited', '--target-words', '90000']);
     expect((await runJson('status')).data.next.command).toBe('outline generate');
 
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'storm']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'storm']);
     await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '등대지기의 손녀', '--name', '하나', '--id', 'hana']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
@@ -287,7 +287,7 @@ describe('manuscript export --out', () => {
 
 describe('draft check', () => {
   it('runs slop locally and skips continuity when no card fact applies', async () => {
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'opening']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.');
 
     const slop = await runJson('draft', 'check', 'slop', '001-opening');
@@ -300,7 +300,7 @@ describe('draft check', () => {
 
 describe('draft expand', () => {
   it('keeps the version it started from as a revision', async () => {
-    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '--name', 'opening']);
+    await new CommandDispatcher(deps()).dispatch(['scene', 'create', '시험 씬', '--name', 'opening']);
     writeDraft('001-opening', '비가 그친 항구에 첫 배가 들어왔다.\n\n하나는 우산을 접었다.');
 
     const expanded = await new CommandDispatcher(deps()).dispatch(['draft', 'expand', '001-opening']);

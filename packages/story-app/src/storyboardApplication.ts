@@ -171,7 +171,6 @@ interface EngineGraph {
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly createCardUseCase: CreateCardUseCase;
-  readonly createSceneUseCase: CreateSceneUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
@@ -413,7 +412,6 @@ function buildServices(
     completeStoryScenesUseCase: new CompleteStoryScenesUseCase(ai, repositories),
     condenseDraftUseCase: new CondenseDraftUseCase(host, ai),
     createCardUseCase: new CreateCardUseCase(repositories),
-    createSceneUseCase: new CreateSceneUseCase(host),
     expandDraftUseCase: new ExpandDraftUseCase(host, ai),
     exportManuscriptUseCase: new ExportManuscriptUseCase(repositories),
     generateAllDraftsUseCase: new GenerateAllDraftsUseCase(host, repositories, {

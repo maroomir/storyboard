@@ -12,9 +12,6 @@ import type {
   CondenseDraftRequest,
   CondenseDraftResult,
   CondenseDraftUseCase,
-  CreateSceneRequest,
-  CreateSceneResult,
-  CreateSceneUseCase,
   ExpandDraftRequest,
   ExpandDraftResult,
   ExpandDraftUseCase,
@@ -110,7 +107,6 @@ export interface DraftManagerDependencies {
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
-  readonly createSceneUseCase: CreateSceneUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly moveSceneUseCase: MoveSceneUseCase;
   readonly removeSceneUseCase: RemoveSceneUseCase;
@@ -243,10 +239,6 @@ export class DraftManager {
 
   public saveEdit(request: SaveDraftEditRequest): Promise<SaveDraftEditResult> {
     return this.deps.saveDraftEditUseCase.execute(request);
-  }
-
-  public createScene(request: CreateSceneRequest): Promise<CreateSceneResult> {
-    return this.deps.createSceneUseCase.execute(request);
   }
 
   public generateStoryState(request: GenerateStoryStateRequest): Promise<GenerateStoryStateResult> {

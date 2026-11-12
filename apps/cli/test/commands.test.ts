@@ -361,8 +361,8 @@ describe('kind arguments', () => {
 
 describe('scene create and scene seed', () => {
   it('numbers a new scene after the highest one, with or without a usable name', async () => {
-    const first = await run('scene create', args(['scene', 'create'], { name: 'Night Market' }));
-    const second = await run('scene create', args(['scene', 'create'], { name: '야시장' }));
+    const first = await run('scene create', args(['scene', 'create'], { name: 'Night Market' }, ['시험 씬']));
+    const second = await run('scene create', args(['scene', 'create'], { name: '야시장' }, ['시험 씬']));
 
     expect(first.data).toMatchObject({ stem: '001-night-market' });
     expect(second.data).toMatchObject({ stem: '002-scene-2' });
@@ -542,7 +542,7 @@ describe('manuscript review --show', () => {
 
 describe('scene complete', () => {
   async function seedOneScene() {
-    await run('scene create', args(['scene', 'create'], { name: 'first' }));
+    await run('scene create', args(['scene', 'create'], { name: 'first' }, ['시험 씬']));
   }
 
   function containerProposing(fileName: string) {
@@ -605,17 +605,25 @@ describe('scene complete', () => {
 
 describe('scene create', () => {
   it('falls back to a numbered slug for a name with no ascii', async () => {
-    const outcome = await run('scene create', args(['scene', 'create'], { name: '첫 방송' }));
+    const outcome = await run('scene create', args(['scene', 'create'], { name: '첫 방송' }, ['시험 씬']));
 
     expect(outcome.ok).toBe(true);
     expect(listSceneStems(workspace)).toEqual(['001-scene-1']);
+  });
+
+  it('refuses an empty scene without a description', async () => {
+    const outcome = await run('scene create', args(['scene', 'create'], { name: 'empty' }));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('씬을 설명해 주세요');
+    expect(listSceneStems(workspace)).toEqual([]);
   });
 });
 
 describe('scene rename', () => {
   it('renames the scene through the shared engine and refuses a number change', async () => {
-    await run('scene create', args(['scene', 'create'], { name: 'first' }));
-    await run('scene create', args(['scene', 'create'], { name: 'second' }));
+    await run('scene create', args(['scene', 'create'], { name: 'first' }, ['시험 씬']));
+    await run('scene create', args(['scene', 'create'], { name: 'second' }, ['시험 씬']));
 
     const renamed = await run(
       'scene rename',
@@ -1327,7 +1335,7 @@ describe('composition presets', () => {
 describe('scene show', () => {
   it('reports the narration a scene will be generated with', async () => {
     await run('project set', args(['project', 'set'], { pov: 'first' }));
-    await run('scene create', args(['scene', 'create'], { name: 'night market' }));
+    await run('scene create', args(['scene', 'create'], { name: 'night market' }, ['시험 씬']));
 
     const outcome = await run('scene show', args(['scene', 'show'], {}, ['001-night-market']));
 
@@ -1341,7 +1349,7 @@ describe('scene show', () => {
       'card create',
       args(['card', 'create'], { person: 'third', knowledge: 'omniscient' }, ['narrator', 'wide']),
     );
-    await run('scene create', args(['scene', 'create'], { name: 'bridge' }));
+    await run('scene create', args(['scene', 'create'], { name: 'bridge' }, ['시험 씬']));
     declareThreads({ ep2: { title: '2화' } });
     await writeSceneBundleFromYaml(
       workspace,
@@ -1359,7 +1367,7 @@ describe('scene show', () => {
       'card create',
       args(['card', 'create'], { person: 'third', knowledge: 'omniscient' }, ['narrator', 'wide']),
     );
-    await run('scene create', args(['scene', 'create'], { name: 'harbor' }));
+    await run('scene create', args(['scene', 'create'], { name: 'harbor' }, ['시험 씬']));
     mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
     writeUnseededChapterPlan(
       workspace,
@@ -1463,8 +1471,8 @@ describe('doctor: interrupted scene rename', () => {
 
 describe('scene rename: two fresh scenes are not a cut-off rename', () => {
   beforeEach(async () => {
-    await run('scene create', args(['scene', 'create'], { name: 'opening' }));
-    await run('scene create', args(['scene', 'create'], { name: 'storm' }));
+    await run('scene create', args(['scene', 'create'], { name: 'opening' }, ['시험 씬']));
+    await run('scene create', args(['scene', 'create'], { name: 'storm' }, ['시험 씬']));
   });
 
   it('does not report a rename in doctor', async () => {
@@ -1489,7 +1497,7 @@ describe('draft edit and draft augment', () => {
   const originalBody = '첫 문단.\n\n둘째 문단.\n';
 
   async function writeSceneWithDraft(): Promise<void> {
-    await run('scene create', args(['scene', 'create'], { name: 'night market' }));
+    await run('scene create', args(['scene', 'create'], { name: 'night market' }, ['시험 씬']));
     mkdirSync(join(workspace, 'draft'), { recursive: true });
     writeFileSync(
       join(workspace, 'draft', '001-night-market.md'),
@@ -1614,7 +1622,7 @@ describe('spend that belongs to no scene', () => {
 
 describe('spend of the calls that prepare a scene', () => {
   it('charges the grounding and beat proposals to the work, not the scene file', async () => {
-    await run('scene create', args(['scene', 'create'], { name: 'night market' }));
+    await run('scene create', args(['scene', 'create'], { name: 'night market' }, ['시험 씬']));
     const roots: { readonly taskName: string; readonly root: string }[] = [];
     const recording = createCliContainer({
       workspacePath: workspace,
