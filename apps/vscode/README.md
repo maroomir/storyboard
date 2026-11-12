@@ -26,7 +26,7 @@ English README: [`README.en.md`](README.en.md)
 - 씬 사실 시트(grounding): 사건(씬 제목과 첫 비트)·장소(첫 비트의 장소나 배경 카드)·시점(첫 비트의 시간)·관계를 카드에서 파생해 대사 생성에 주입. 따로 저장하거나 AI에게 묻지 않음
 - 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
 - 고정 산문 규약: 서술은 과거형, 대사는 곡선 큰따옴표(`“ ”`). 한 작품 안에서 갈리면 안 되는 규약이라 계약이 아니라 세 생성 프롬프트에 고정으로 주입한다
-- 이전 초안 판본 보관: 생성·재생성·손질·스튜디오 적용이 덮어쓰기 직전 초안을 캐시 `.storyboard/cache/revisions/<씬 uuid>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 씬마다 최근 10판까지 늘 적재(설정 없음)
+- 이전 초안 판본 보관: 생성·재생성·손질·검수 재작성·스튜디오 적용이 덮어쓰기 직전 초안을 캐시 `.storyboard/cache/revisions/<씬 uuid>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 씬마다 최근 10판까지 늘 적재(설정 없음)
 - 장면 전환 구분자 삽입(`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - 씬의 인물·장소 카드에 적힌 사실(`fact` 진술) 주입과 초안 연속성 검사
 - **노트 흡수** (`Storyboard: Absorb Notes…`): Obsidian 폴더·노트, Notion 내보내기 zip, Notion 페이지 주소를 골라 읽고, 견적 → AI 정리 → 계획 확인 뒤 인물·배경·씬 카드와 시놉시스로 옮깁니다(CLI `notes absorb`와 같은 동작). 기존 카드에 대한 내용은 그 카드의 제안으로 남고, 카드를 열면 스튜디오의 «기다리는 제안»에서 적용합니다.
