@@ -180,15 +180,20 @@ function resolveIds(
   ];
 }
 
-function planBeat(beat: SceneBeat, resolvers: SceneCastResolvers): Beat {
+function planBeat(
+  beat: SceneBeat,
+  resolvers: SceneCastResolvers,
+  scenePlaceId: string | undefined,
+): Beat {
   if (typeof beat === 'string') {
     return { text: beat };
   }
 
   const detail: SceneBeatDetail = beat;
   const cast: string[] = resolveIds(detail.cast, resolvers.characterIdOf);
-  const place: string | undefined =
+  const beatPlaceId: string | undefined =
     detail.place === undefined ? undefined : resolvers.placeIdOf(detail.place);
+  const place: string | undefined = beatPlaceId === scenePlaceId ? undefined : beatPlaceId;
 
   return {
     text: detail.text,
@@ -269,7 +274,7 @@ export function planSceneBundle(card: SceneCard, request: PlanSceneBundleRequest
     content: {
       header,
       statements: reconcileSceneStatements(current?.statements ?? [], derivedSceneLines(card), request.source),
-      beats: card.beats === undefined ? [...(current?.beats ?? [])] : card.beats.map((beat) => planBeat(beat, resolvers)),
+      beats: card.beats === undefined ? [...(current?.beats ?? [])] : card.beats.map((beat) => planBeat(beat, resolvers, place)),
       ...(summaryText === undefined ? {} : { summaryText }),
     },
     placement: {
