@@ -48,7 +48,7 @@ Verbs read and write the work through manager verbs, not the file system: reads
 `project.read`, and `describeWorkspace` for `status` (the engine names the open step as a
 `WorkspaceNextStep`; `nextStepCommands` in `apps/cli/src/commands/workspaceNextStep.ts` owns the command for
 each), `drafts.readScene`, `drafts.resolveSceneNarration`/`resolveSceneThread`; writes
-`drafts.createScene`, `novel.seedScenes`, `project.updateContract`, `workspace.resealStoryState`,
+`novel.seedScenes`, `project.updateContract`, `workspace.resealStoryState`,
 `cards.create`, `cards.rename`, `cards.createNarrator`/`removeNarrator`,
 `cards.setStatement`/`unsetStatement`, `cards.remove`, `cards.applyPending`/`discardPending`,
 `studio.create`/`studio.edit`, `drafts.moveScene`/`removeScene`,

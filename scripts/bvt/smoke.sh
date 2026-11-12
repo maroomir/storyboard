@@ -67,7 +67,7 @@ if [ -x "$cli" ]; then
   stem="$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); process.stdout.write(r.data.scenes[0]?.stem ?? "")' "$scratch/check.out")"
   if [ -n "$stem" ]; then pass "the pipeline left a scene ($stem)"; else fail "the pipeline left no scene"; fi
   expect_json_ok "draft show --json" "$cli" draft show "$stem" --json
-  expect_json_ok "scene create" "$cli" scene create --name "덧붙인 장면" --json
+  expect_json_ok "scene create" "$cli" scene create "덧붙인 장면" --json
   expect_json_ok "status --json" "$cli" status --json
   check "manuscript export writes a file" "$cli" manuscript export --out "$scratch/manuscript.md"
   check "help prints" "$cli" help --all

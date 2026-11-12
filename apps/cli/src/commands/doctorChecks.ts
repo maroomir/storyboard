@@ -307,7 +307,7 @@ function checkSceneCount({ scenes, drafts }: WorkspaceSurvey): DoctorCheck[] {
       detail: `${scenes.length}개 (초안 ${drafts.length}개)`,
       ...(scenes.length > 0
         ? {}
-        : { fix: 'storyboard scene seed  또는  storyboard scene create --name <이름>' }),
+        : { fix: 'storyboard scene seed  또는  storyboard scene create "<설명>"' }),
     },
   ];
 }
