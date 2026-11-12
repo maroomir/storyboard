@@ -522,7 +522,7 @@ warnings:                     # 생성 검증이 잡았으나 재시도로 못 �
 
 ### 4.8a 대기 중인 AI 제안 (캐시 DB의 세션)
 
-AI가 카드에 대해 낸 제안은 카드를 곧바로 바꾸지 않고 캐시 DB의 `sessions`에 카드의 대기 진술로 남는다. 노트 흡수(위치마다 하나), 인터뷰 정리(출처 `interview`, 카드마다 한 벌), 스튜디오의 `card edit --propose`/`card build --propose`(출처 `studio`)가 이 길을 쓴다. 초안 생성은 제안을 내지 않는다(옛 `.storyboard/cache/cards/<scene>.json`은 없다).
+AI가 카드에 대해 낸 제안은 카드를 곧바로 바꾸지 않고 캐시 DB의 `sessions`에 카드의 대기 진술로 남는다. 노트 흡수(위치마다 하나), 인터뷰 정리(출처 `interview`, 카드마다 한 벌), 스튜디오의 `card edit --propose`/`card build --propose`(출처 `studio`)가 이 길을 쓴다. 인터뷰는 카드 종류마다 질문 전략이 다르다(`IQuestionStrategy`): 인물·배경은 다가올 씬의 비트에서 그 인물·장소가 어떻게 반응하는지를 축별로 묻고, 서술자는 자기가 서술하는 씬의 비트마다 그 순간을 어떻게 서술하는지 물어 «목소리»(`voice`) 제안으로 증류한다. 초안 생성은 제안을 내지 않는다(옛 `.storyboard/cache/cards/<scene>.json`은 없다).
 
 - `card apply [<slug> …]`는 대기 제안을 보이고 `statements.yaml`에 쓴다(`--dry-run`이면 보이기만). `card discard [<slug> …]`는 같은 제안을 버린다. 두 노트가 한 칸에 다른 값을 주면 나중에 흡수한 위치가 이긴다.
 - `status`는 «제안» 줄로 대기 중인 카드 제안과 시놉시스 후보를 알린다. VSCode의 스튜디오는 열린 카드에 «이 카드에 제안 n건이 기다려요» 띠를 보이고 «적용»·«버림»을 둔다.

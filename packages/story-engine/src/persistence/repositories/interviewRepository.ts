@@ -156,9 +156,14 @@ export class InterviewRepository implements IInterviewRepository {
     const roster: CardRoster = await this.dependencies.cards.loadRoster(workspaceRoot, [
       'character',
       'background',
+      'narrator',
     ]);
 
-    return roster.lookup.idOf('character', cardId) ?? roster.lookup.idOf('background', cardId);
+    return (
+      roster.lookup.idOf('character', cardId) ??
+      roster.lookup.idOf('background', cardId) ??
+      roster.lookup.idOf('narrator', cardId)
+    );
   }
 
   private async store(workspaceRoot: StoryUri): Promise<SessionStore> {

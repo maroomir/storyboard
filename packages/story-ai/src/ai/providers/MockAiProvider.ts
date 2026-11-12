@@ -119,6 +119,10 @@ function extractMockValueIds(prompt: string): string[] {
     .filter((id): id is string => id !== undefined);
 }
 
+function isMockNarratorPrompt(prompt: string): boolean {
+  return prompt.startsWith('[서술자]');
+}
+
 function isMockBackgroundPrompt(prompt: string): boolean {
   return prompt.includes('[카드 종류]\n배경') || prompt.startsWith('[장소]');
 }
@@ -171,6 +175,17 @@ function createMockInterviewAxes(prompt: string): string {
 }
 
 function createMockInterviewQuestion(prompt: string): string {
+  if (isMockNarratorPrompt(prompt)) {
+    return JSON.stringify({
+      question: '[Mock AI] 이 순간을 어떻게 서술하는가?',
+      options: [
+        { text: '[Mock AI] 한 걸음 물러서 담담하게 적는다' },
+        { text: '[Mock AI] 인물의 숨결에 바짝 붙어 짧게 끊는다' },
+        { text: '[Mock AI] 감정은 감추고 사물만 비춘다' },
+      ],
+    });
+  }
+
   const valueIds: string[] = extractMockValueIds(prompt);
   const axisId: string = /^([a-z0-9-]+): /m.exec(prompt.split('[열린 축]')[1] ?? '')?.[1] ?? '';
 
@@ -191,6 +206,10 @@ function createMockInterviewUpdate(prompt: string): string {
 }
 
 function createMockInterviewDistill(prompt: string): string {
+  if (isMockNarratorPrompt(prompt)) {
+    return JSON.stringify({ voice: ['[Mock AI] 감정을 말하지 않고 사물로 비춘다'] });
+  }
+
   return JSON.stringify(
     isMockBackgroundPrompt(prompt)
       ? { layout: ['[Mock AI] 출입구는 정문 하나다'], rules: ['[Mock AI] 밤에는 주인이 카운터를 지킨다'] }

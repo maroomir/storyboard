@@ -159,8 +159,11 @@ and the instance list in `apps/cli/src/commands/index.ts` is where those specs a
 
 ## Interview verbs
 
-`card interview <id>` is the one interview verb for characters and backgrounds alike (the card id
-decides which). Without `container.prompter` it runs only as `--step --json`, one step per call,
+`card interview <id>` is the one interview verb for characters, backgrounds and narrators alike (the
+card id decides which strategy: `CharacterInterviewStrategy`, `BackgroundInterviewStrategy` and
+`NarratorInterviewStrategy` behind one `IQuestionStrategy`). A narrator session asks, beat by beat
+through the scenes that narrator tells, how it narrates that moment (one «서술 방식» axis, a written
+answer kept as written with no confirm step) and `finish` distils the answers into `voice` proposals. Without `container.prompter` it runs only as `--step --json`, one step per call,
 so an agent can relay each question to the writer (below); otherwise it fails with exit 1. It takes no run lock — it writes only its session in the cache DB (`.storyboard/cache/storyboard.db`); the distilled lines wait there as the card's pending statements (origin `interview`) and `card apply` is the verb that writes them to `statements.yaml`. The loop is the terminal's: `start` → repeat
 `next` → `choose` (the options plus 직접 쓰기 / 건너뛰기 / 여기까지) → `answer` → on a written
 answer, one `choose` to confirm the value the engine read (or rename it) → `finish`. Every step is a
