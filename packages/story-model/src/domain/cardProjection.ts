@@ -60,7 +60,9 @@ type BackgroundScalarFacet = 'time' | 'weather';
 
 const backgroundScalarFacets: readonly BackgroundScalarFacet[] = ['time', 'weather'];
 
-const narratorListFacets: readonly 'voice'[] = ['voice'];
+type NarratorListFacet = 'description' | 'voice';
+
+const narratorListFacets: readonly NarratorListFacet[] = ['description', 'voice'];
 
 function listValuesOf(statements: readonly Statement[], facet: StatementFacetId): string[] {
   return statements.filter((statement) => statement.facet === facet).map((item) => item.value);
@@ -181,6 +183,7 @@ export function projectNarratorCard(
   const { header, statements } = content;
   const focal: string | undefined =
     header.focal === undefined ? undefined : lookup.slugOf(header.focal);
+  const description: string[] | undefined = optionalList(listValuesOf(statements, 'description'));
   const voice: string[] | undefined = optionalList(listValuesOf(statements, 'voice'));
 
   return {
@@ -191,6 +194,7 @@ export function projectNarratorCard(
     knowledge: header.knowledge,
     ...(header.tense === undefined ? {} : { tense: header.tense }),
     ...(focal === undefined ? {} : { focal }),
+    ...(description === undefined ? {} : { description }),
     ...(voice === undefined ? {} : { voice }),
   };
 }
@@ -407,7 +411,7 @@ export function planNarratorBundle(
     header,
     statements: reconcileStatements(
       request.current?.statements ?? [],
-      listLines('voice', card.voice),
+      narratorListFacets.flatMap((facet) => listLines(facet, card[facet])),
       narratorManagedFacets,
       request.source,
     ),

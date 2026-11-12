@@ -84,6 +84,7 @@ function describeNarrator(narrator: NarratorCard, focalName: string | undefined)
     knowledge: narratorKnowledgeLabels[narrator.knowledge],
     ...(narrator.tense === undefined ? {} : { tense: narrativeTenseLabels[narrator.tense] }),
     ...(focalName === undefined ? {} : { focal: focalName }),
+    description: narrator.description ?? [],
     voice: narrator.voice ?? [],
   };
 }

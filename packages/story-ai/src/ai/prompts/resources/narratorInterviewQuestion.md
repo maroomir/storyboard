@@ -15,6 +15,12 @@ maxTokens: 1500
 ## user
 [서술자]
 {{name}} · {{person}} · {{knowledge}}{{#tense}} · {{tense}}{{/tense}}{{#focal}} · 초점 인물 {{focal}}{{/focal}}
+{{#hasDescription}}
+[서술자 묘사]
+{{/hasDescription}}
+{{#description}}
+- {{.}}
+{{/description}}
 {{#hasVoice}}
 [지금 카드의 목소리]
 {{/hasVoice}}

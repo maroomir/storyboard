@@ -9,6 +9,8 @@ exports[`narrator interview prompts > renders the distill prompt 1`] = `
 {"voice":["…","…"]}",
   "user": "[서술자]
 하나의 시점 · 3인칭 · 목격 범위 · 과거형
+[서술자 묘사]
+- 하나의 어깨 너머에 붙어 있다
 [지금 카드의 목소리]
 - 감정은 사물로 비춘다
 
@@ -28,6 +30,8 @@ exports[`narrator interview prompts > renders the question prompt 1`] = `
 {"question":"…","options":[{"text":"…"},{"text":"…"}]}",
   "user": "[서술자]
 하나의 시점 · 3인칭 · 목격 범위 · 과거형 · 초점 인물 하나
+[서술자 묘사]
+- 하나의 어깨 너머에 붙어 있다
 [지금 카드의 목소리]
 - 감정은 사물로 비춘다
 
