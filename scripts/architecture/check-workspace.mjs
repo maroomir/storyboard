@@ -142,7 +142,6 @@ function checkSharedPackages(failures) {
 // «아직 아무도 쓰지 않는 새 사본»도 잡는다.
 const OWNED_LITERALS = [
   { literal: "'.storyboard/project.json'", owner: 'packages/story-model/src/format/paths.ts' },
-  { literal: "'.sample.card'", owner: 'packages/story-model/src/format/sampleCard.ts' },
   {
     literal: "'storyboard.settings.open'",
     owner: 'apps/vscode/src/contributionIds.ts',
@@ -165,7 +164,20 @@ const OWNED_LITERAL_ROOTS = [
   path.join(REPO_ROOT, 'apps', 'cli', 'src'),
 ];
 
+function checkOwnersStillHoldTheirLiterals(failures) {
+  for (const { literal, owner } of OWNED_LITERALS) {
+    const ownerPath = path.join(REPO_ROOT, owner);
+    const isHeldByOwner = fs.existsSync(ownerPath) && fs.readFileSync(ownerPath, 'utf8').includes(literal);
+
+    if (!isHeldByOwner) {
+      failures.push(`OWNED_LITERALS names ${owner} as the owner of ${literal}, but that file does not hold it`);
+    }
+  }
+}
+
 function checkOwnedLiterals(failures) {
+  checkOwnersStillHoldTheirLiterals(failures);
+
   for (const root of OWNED_LITERAL_ROOTS) {
     if (!fs.existsSync(root)) {
       continue;
