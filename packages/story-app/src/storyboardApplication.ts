@@ -92,7 +92,8 @@ import {
   type INovelRunStateRepository,
   type INovelOutlineRepository,
   type ISceneSidebarRepository,
-  InterviewSessionUseCase,
+  BackgroundInterviewStrategy,
+  CharacterInterviewStrategy,
   InterviewSessionProtocol,
   type IInterviewRepository,
   DescribeInterviewCoverageUseCase,
@@ -461,15 +462,12 @@ function createInterviewProtocol(
   ai: AiServices,
   repositories: WorkspaceRepositories,
 ): InterviewSessionProtocol {
-  const reactionStrategy: InterviewSessionUseCase = new InterviewSessionUseCase(
-    host,
-    ai,
-    repositories,
-  );
-
   return new InterviewSessionProtocol({
     cards: host.cards,
-    strategies: { character: reactionStrategy, background: reactionStrategy },
+    strategies: {
+      character: new CharacterInterviewStrategy(host, ai, repositories),
+      background: new BackgroundInterviewStrategy(host, ai, repositories),
+    },
   });
 }
 

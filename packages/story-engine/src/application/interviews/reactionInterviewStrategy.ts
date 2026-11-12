@@ -21,7 +21,6 @@ import {
   describeBeatSituation,
   isAxisDecided,
   listOpenAxes,
-  otherPlaceTokens,
   unseenValueIds,
   type BeatSituationOptions,
 } from '#engine/application/interviews/interviewCoverage';
@@ -109,7 +108,7 @@ interface BeatToAsk {
   readonly axes: readonly InterviewAxis[];
 }
 
-interface InterviewContext {
+export interface InterviewContext {
   readonly workspaceRoot: StoryUri;
   readonly card: StoryboardCard;
   readonly cardType: BibleSubjectKind;
@@ -309,13 +308,31 @@ function describeRecordAnswer(record: InterviewRecord, axes: readonly InterviewA
   return `${record.situation} → ${axis.label}: ${label} — ${text}`;
 }
 
-export class InterviewSessionUseCase implements IQuestionStrategy {
+export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
+  protected abstract readonly cardKind: BibleSubjectKind;
+
   public constructor(
-    private readonly host: HostAdapters,
-    private readonly aiServices: AiServices,
-    private readonly repositories: WorkspaceRepositories,
+    protected readonly host: HostAdapters,
+    protected readonly aiServices: AiServices,
+    protected readonly repositories: WorkspaceRepositories,
     private readonly now: () => Date = (): Date => new Date(),
   ) {}
+
+  protected async askPreludeQuestion(
+    _request: InterviewSessionRequest,
+    _context: InterviewContext,
+  ): Promise<InterviewQuestion | undefined> {
+    return undefined;
+  }
+
+  protected async situationOptionsFor(
+    _workspaceRoot: StoryUri,
+    _card: StoryboardCard,
+  ): Promise<BeatSituationOptions> {
+    return {};
+  }
+
+  protected abstract proposalDraftsFrom(distilled: InterviewDistillDraft): CardCollectProposalDraft[];
 
   public async start(request: InterviewStartRequest): Promise<InterviewStartResult> {
     try {
@@ -449,9 +466,9 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
       return undefined;
     }
 
-    const relationTarget: string | undefined = this.pickRelationTarget(context);
-    if (relationTarget !== undefined) {
-      return this.askRelationSpeech(request, context, relationTarget);
+    const prelude: InterviewQuestion | undefined = await this.askPreludeQuestion(request, context);
+    if (prelude !== undefined) {
+      return prelude;
     }
 
     const openAxes: readonly InterviewAxis[] = context.axes.filter(
@@ -518,7 +535,7 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
     return leastAsked;
   }
 
-  private pickRelationTarget(context: InterviewContext): string | undefined {
+  protected pickRelationTarget(context: InterviewContext): string | undefined {
     if (context.card.type !== 'character') {
       return undefined;
     }
@@ -540,7 +557,7 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
       .find((target) => !asked.has(target) && present.has(target));
   }
 
-  private async askRelationSpeech(
+  protected async askRelationSpeech(
     request: InterviewSessionRequest,
     context: InterviewContext,
     target: string,
@@ -1155,33 +1172,10 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
         ),
       ),
     ];
-    const drafts: CardCollectProposalDraft[] = distilled === undefined
-      ? [...relationDrafts]
-      : card.type === 'character'
-        ? [
-            ...relationDrafts,
-            ...distilled.traits.map((value): CardCollectProposalDraft => ({ kind: 'trait', value })),
-            ...distilled.voice.map((value): CardCollectProposalDraft => ({ kind: 'voiceLine', value })),
-            ...distilled.desire.map((value): CardCollectProposalDraft => ({ kind: 'desireLine', value })),
-            ...distilled.description.map(
-              (value): CardCollectProposalDraft => ({ kind: 'descriptionLine', value }),
-            ),
-            ...distilled.relationSpeech.map(
-              (entry): CardCollectProposalDraft => ({
-                kind: 'relationSpeech',
-                target: entry.target,
-                speech: entry.speech,
-              }),
-            ),
-          ]
-        : [
-            ...distilled.layout.map((value): CardCollectProposalDraft => ({ kind: 'layoutLine', value })),
-            ...distilled.rules.map((value): CardCollectProposalDraft => ({ kind: 'ruleLine', value })),
-            ...distilled.senses.map((value): CardCollectProposalDraft => ({ kind: 'sense', value })),
-            ...distilled.description.map(
-              (value): CardCollectProposalDraft => ({ kind: 'descriptionLine', value }),
-            ),
-          ];
+    const drafts: CardCollectProposalDraft[] = [
+      ...relationDrafts,
+      ...(distilled === undefined ? [] : this.proposalDraftsFrom(distilled)),
+    ];
 
     return drafts
       .map(
@@ -1235,10 +1229,7 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
       return request.card;
     }
 
-    return (
-      (await this.repositories.noteAbsorb.loadCard(request.workspaceRoot, 'character', request.cardId)) ??
-      (await this.repositories.noteAbsorb.loadCard(request.workspaceRoot, 'background', request.cardId))
-    );
+    return await this.repositories.noteAbsorb.loadCard(request.workspaceRoot, this.cardKind, request.cardId);
   }
 
   private async requireContext(request: InterviewSessionRequest): Promise<InterviewContext> {
@@ -1276,10 +1267,7 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
       attribution,
     );
     const model: InterviewWorkingModel = await this.ensureWorkingModel(workspaceRoot, card, cardType, sessionId);
-    const situationOptions: BeatSituationOptions =
-      cardType === 'background'
-        ? { otherPlaceTokens: otherPlaceTokens(card, await this.loadCards(workspaceRoot, 'background')) }
-        : {};
+    const situationOptions: BeatSituationOptions = await this.situationOptionsFor(workspaceRoot, card);
 
     const relationTargetNames: ReadonlyMap<string, string> = await this.loadRelationTargetNames(
       workspaceRoot,
@@ -1324,7 +1312,7 @@ export class InterviewSessionUseCase implements IQuestionStrategy {
     return names;
   }
 
-  private async loadCards(workspaceRoot: StoryUri, kind: BibleSubjectKind): Promise<StoryboardCard[]> {
+  protected async loadCards(workspaceRoot: StoryUri, kind: BibleSubjectKind): Promise<StoryboardCard[]> {
     const cards: StoryboardCard[] = [];
 
     for (const summary of await this.repositories.cardSidebar.list(workspaceRoot, kind)) {
