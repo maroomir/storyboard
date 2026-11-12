@@ -47,7 +47,7 @@ export class VscodeFileSystem implements IFileSystem {
   }
 
   public async delete(uri: StoryUri): Promise<void> {
-    await vscode.workspace.fs.delete(uri as vscode.Uri);
+    await vscode.workspace.fs.delete(uri as vscode.Uri, { recursive: true, useTrash: false });
   }
 
   public async modifiedTime(uri: StoryUri): Promise<number> {
