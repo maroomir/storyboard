@@ -3,7 +3,6 @@ import {
   draftRevisionRelativeDirectory,
   joinStoryPath,
   parseDraftHistoryRevision,
-  sceneCacheRelativeDirectory,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -66,14 +65,6 @@ export class DraftRevisionStore {
 
   public async removeAll(sceneId: string): Promise<void> {
     await this.dependencies.fileSystem.delete(this.revisionDirectoryOf(sceneId));
-  }
-
-  public sceneCacheDirectoryOf(sceneId: string): StoryUri {
-    return this.uriOf(sceneCacheRelativeDirectory(sceneId));
-  }
-
-  public async clearSceneCache(sceneId: string): Promise<void> {
-    await this.dependencies.fileSystem.delete(this.sceneCacheDirectoryOf(sceneId));
   }
 
   private async pruneOldRevisions(historyDirectory: StoryUri): Promise<void> {

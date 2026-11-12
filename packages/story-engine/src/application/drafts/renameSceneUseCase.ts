@@ -208,10 +208,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     paths: StoryboardProjectPaths,
     rename: SceneRename,
   ): Promise<void> {
-    for (const directory of [
-      paths.sceneCacheDirectory,
-      paths.cardCacheDirectory,
-    ]) {
+    for (const directory of [paths.cardCacheDirectory]) {
       await this.addMove(
         moves,
         stemFileUri(directory, rename.from.stem, '.json'),

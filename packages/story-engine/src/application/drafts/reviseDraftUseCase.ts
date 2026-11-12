@@ -37,7 +37,7 @@ import {
   buildStyleDirective,
   type SceneBeat,
 } from '@storyboard/story-model';
-import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
+import { sceneCacheFilePath, type SceneCacheKey } from '#engine/persistence/sceneCacheWorkspace';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -208,13 +208,17 @@ async function loadSceneCoordinateLines(
   fs: IFileSystem,
   repository: ISceneCacheRepository | undefined,
   paths: StoryboardProjectPaths,
-  scene: { readonly stem: string; readonly card?: { readonly beats?: readonly SceneBeat[] } },
+  scene: {
+    readonly sceneId?: string;
+    readonly stem: string;
+    readonly card?: { readonly beats?: readonly SceneBeat[] };
+  },
   characters: readonly { readonly id: string; readonly name: string }[],
 ): Promise<string[]> {
   let recorded: readonly string[] | undefined;
 
   if (repository) {
-    const cacheUri: StoryUri = sceneCacheFilePath(paths, scene.stem);
+    const cacheUri: StoryUri = sceneCacheFilePath(paths, scene);
     try {
       recorded = (await fs.exists(cacheUri))
         ? (await repository.read(cacheUri)).sceneCoordinates
@@ -442,13 +446,26 @@ export class ReviseDraftUseCase {
     }).run();
   }
 
+  private async findSceneCacheKey(
+    paths: StoryboardProjectPaths,
+    sceneStem: string,
+  ): Promise<SceneCacheKey> {
+    const sceneId: string | undefined = (await this.host.scenes.find(paths.workspaceRoot, sceneStem))
+      ?.content.header.id;
+    return sceneId === undefined ? { stem: sceneStem } : { stem: sceneStem, sceneId };
+  }
+
   private async recordRevisionRounds(
     paths: StoryboardProjectPaths,
     sceneStem: string,
     rounds: readonly ReviseRound[],
   ): Promise<void> {
     try {
-      await new RevisionPlanRecorder(this.host).recordRounds(paths, sceneStem, rounds);
+      await new RevisionPlanRecorder(this.host).recordRounds(
+        paths,
+        await this.findSceneCacheKey(paths, sceneStem),
+        rounds,
+      );
     } catch (error) {
       this.host.logger.warn(`감수 회차 기록을 남기지 못했습니다: ${String(error)}`);
     }
@@ -501,7 +518,7 @@ export class ReviseDraftUseCase {
       return;
     }
 
-    const cacheUri: StoryUri = sceneCacheFilePath(paths, sceneStem);
+    const cacheUri: StoryUri = sceneCacheFilePath(paths, await this.findSceneCacheKey(paths, sceneStem));
 
     try {
       const record: SceneCacheRecord = await repository.read(cacheUri);

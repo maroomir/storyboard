@@ -132,6 +132,7 @@ export function projectSceneFile(
   const card: SceneCard = projectSceneCard(content, placement, lookup);
 
   return {
+    sceneId: content.header.id,
     stem: placement.stem,
     order: placement.number,
     orderText: formatSceneNumber(placement.number),

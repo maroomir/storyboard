@@ -1,6 +1,5 @@
 import {
   createEmptyRevisionPlan,
-  joinStoryPath,
   upsertRevisionEntry,
   type RevisionPlan,
   type RevisionPlanEntry,
@@ -15,6 +14,11 @@ import {
   type StoredRevisionPlan,
 } from '#engine/persistence/cache/revisionPlanStore';
 import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
+import {
+  sceneCacheDirectoryPath,
+  sceneReviseRoundsPath,
+  type SceneCacheKey,
+} from '#engine/persistence/sceneCacheWorkspace';
 
 export interface RevisionPlanRecorderDependencies {
   readonly fileSystem: IFileSystem;
@@ -41,12 +45,13 @@ export class RevisionPlanRecorder {
 
   public async recordRounds(
     paths: StoryboardProjectPaths,
-    sceneStem: string,
+    scene: SceneCacheKey,
     rounds: readonly ReviseRound[],
   ): Promise<void> {
-    await this.dependencies.fileSystem.createDirectory(paths.revisionRoundsDirectory);
+    const sceneStem: string = scene.stem;
+    await this.dependencies.fileSystem.createDirectory(sceneCacheDirectoryPath(paths, scene));
     await this.dependencies.fileSystem.writeFile(
-      joinStoryPath(paths.revisionRoundsDirectory, `${sceneStem}.json`),
+      sceneReviseRoundsPath(paths, scene),
       new TextEncoder().encode(
         `${JSON.stringify({ sceneStem, checkedAt: new Date().toISOString(), rounds }, null, 2)}\n`,
       ),

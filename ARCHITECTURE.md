@@ -463,9 +463,9 @@ warnings:                     # 생성 검증이 잡았으나 재시도로 못 �
 
 생성·재생성, 손질(`draft edit`·`augment`·`condense`·`expand`), 스튜디오의 초안 적용은 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.storyboard/cache/revisions/<씬 uuid>/`에 보관한다. 씬마다 최근 10개만 남기고 더 오래된 것은 지운다. 항상 보관하므로 켜고 끄는 설정(`editor.draft.keepHistory`)은 없고, 설정 파일에 남은 옛 키는 알 수 없는 키로 경고만 한다. 캐시는 git에 들어가지 않는다.
 
-### 4.6 `.storyboard/cache/scenes/<scene>.json` (씬별 컨텍스트)
+### 4.6 `.storyboard/cache/scenes/<씬 uuid>/` (씬별 컨텍스트)
 
-씬별 파이프라인 컨텍스트는 이 JSON으로 캐시에 남긴다. 위치는 **`.storyboard/cache/scenes/`로 제한**되며 사용자가 직접 만들거나 옮길 수 없다. 캐시 전체(`.storyboard/cache/`)는 git 밖이고 지워도 입력에서 다시 만들어진다. 캐시 DB `storyboard.db`(§4.11)와 초안 이전본(`revisions/`)도 같은 캐시 안에 있다.
+씬별 파이프라인 컨텍스트는 씬 uuid 폴더의 `generation.json` 으로, 검수 회차는 같은 폴더의 `revise-rounds.json` 으로 캐시에 남긴다. 폴더 이름이 uuid 라 씬 번호가 바뀌거나 slug 를 바꿔도 옮길 것이 없고, 씬을 지우면 그 폴더가 함께 지워진다. 위치는 **`.storyboard/cache/scenes/`로 제한**되며 사용자가 직접 만들거나 옮길 수 없다. 캐시 전체(`.storyboard/cache/`)는 git 밖이고 지워도 입력에서 다시 만들어진다. 캐시 DB `storyboard.db`(§4.11)와 초안 이전본(`revisions/`)도 같은 캐시 안에 있다.
 
 ```json
 {

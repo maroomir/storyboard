@@ -202,6 +202,7 @@ export interface SceneFileNameParts {
 }
 
 export interface SceneFile {
+  readonly sceneId?: string;
   readonly stem: string;
   readonly order: number;
   readonly orderText: string;
