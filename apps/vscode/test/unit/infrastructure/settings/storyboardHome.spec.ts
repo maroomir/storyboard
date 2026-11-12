@@ -23,11 +23,11 @@ afterEach(() => {
 
 describe("createStoryboardHomeStores", () => {
   it("layers the workspace file over the home file and reports the origin", () => {
-    writeFileSync(join(home, "config.json"), JSON.stringify({ ai: { provider: { default: "openai" } }, editor: { draft: { keepHistory: true } } }))
+    writeFileSync(join(home, "config.json"), JSON.stringify({ ai: { provider: { default: "openai" } }, generation: { sceneBreak: { enabled: true } } }))
     const stores = createStoryboardHomeStores({ workspaceRoot: workspace, onInvalidFile: () => undefined })
 
     expect(stores.configuration.get("ai.provider.default", "mock")).toBe("openai")
-    expect(stores.configuration.inspect?.("editor.draft.keepHistory")).toEqual({ globalValue: true, workspaceValue: undefined })
+    expect(stores.configuration.inspect?.("generation.sceneBreak.enabled")).toEqual({ globalValue: true, workspaceValue: undefined })
     expect(stores.workspaceConfigFile).toBe(join(workspace, ".storyboard", "config.json"))
 
     stores.dispose()
