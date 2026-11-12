@@ -4,6 +4,7 @@ import {
   joinStoryPath,
   sceneBeatText,
   serializeSynopsisMarkdown,
+  withCharactersAtPlace,
   type BackgroundCard,
   type CharacterCard,
   type OutlineSynopsis,
@@ -69,7 +70,7 @@ export class ExportNotesUseCase implements IUseCase<ExportNotesRequest, ExportNo
         if (card.type === 'character') {
           await write(noteExportFolders.characters, fileNames.get(card.id) ?? `${card.id}.md`, renderCharacterNote(card, nameOf));
         } else {
-          await write(noteExportFolders.backgrounds, fileNames.get(card.id) ?? `${card.id}.md`, renderBackgroundNote(card, nameOf));
+          await write(noteExportFolders.backgrounds, fileNames.get(card.id) ?? `${card.id}.md`, renderBackgroundNote(withCharactersAtPlace(card, source.scenes), nameOf));
         }
       }
 

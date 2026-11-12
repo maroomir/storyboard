@@ -334,6 +334,9 @@ describe('notes absorb', () => {
     expect(scene).toContain('location: "[[항구]]"');
     expect(scene).toContain('- "[[하나]]"');
     expect(scene).toContain('만조의 밤, 하나가 항구에서 문이 열리는 것을 본다.');
+    const harbor = readFileSync(join(target, '배경', '항구.md'), 'utf8');
+    expect(harbor).toContain('## 속한 인물');
+    expect(harbor).toContain('[[하나]]');
     expect(readFileSync(join(target, '시놉시스.md'), 'utf8')).toContain('만조에만 열리는 문을 둘러싼 이야기.');
     rmSync(target, { recursive: true, force: true });
   });

@@ -19,7 +19,9 @@ import {
   parseSceneFileName,
   sceneContextPaths,
   scenePath,
+  isBackgroundCard,
   serializeCard,
+  withCharactersAtPlace,
   serializeSceneCard,
 } from '@storyboard/story-model';
 import type {
@@ -234,12 +236,15 @@ export class StudioContextRepository {
     cardId: string,
   ): Promise<StudioEntityContext | undefined> {
     const targetUri: StoryUri = cardPathFor(workspaceRoot, cardKind, cardId);
-    const card: StoryboardCard | undefined = await this.readCardOrUndefined(workspaceRoot, cardId);
+    const stored: StoryboardCard | undefined = await this.readCardOrUndefined(workspaceRoot, cardId);
 
-    if (card === undefined) {
+    if (stored === undefined) {
       return undefined;
     }
 
+    const card: StoryboardCard = isBackgroundCard(stored)
+      ? withCharactersAtPlace(stored, (await this.scenes.loadRoster(workspaceRoot)).scenes)
+      : stored;
     const baseline: string = serializeCard(card);
 
     const relatedScenes: string[] = await this.readScenesFeaturingCard(
