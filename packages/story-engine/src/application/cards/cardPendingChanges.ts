@@ -129,6 +129,16 @@ function titleOfSession(record: SessionRecord): string {
   return typeof named === 'string' && named.length > 0 ? named : record.kind;
 }
 
+function findRemovedCardId(store: SessionStore, slug: string): string | undefined {
+  return store
+    .listByKind('studio')
+    .filter((record) => {
+      const entity: unknown = (record.data as { readonly entity?: unknown } | undefined)?.entity;
+      return typeof entity === 'object' && entity !== null && (entity as { readonly key?: unknown }).key === slug;
+    })
+    .at(-1)?.elementId;
+}
+
 export class CardPendingChangesDesk {
   public constructor(private readonly dependencies: CardPendingChangesDependencies) {}
 
@@ -166,12 +176,14 @@ export class CardPendingChangesDesk {
       workspaceRoot,
       slug,
     );
-    if (bundle === undefined) {
+    const store: SessionStore = await this.store(workspaceRoot);
+    const elementId: string | undefined = bundle?.header.id ?? findRemovedCardId(store, slug);
+    if (elementId === undefined) {
       return { ok: false, kind: 'missing', message: `카드가 없습니다: ${slug}` };
     }
 
-    const report: readonly CardSessionSummary[] = (await this.store(workspaceRoot))
-      .listForElement(bundle.header.id)
+    const report: readonly CardSessionSummary[] = store
+      .listForElement(elementId)
       .map((record) => ({
         id: record.id,
         kind: record.kind,

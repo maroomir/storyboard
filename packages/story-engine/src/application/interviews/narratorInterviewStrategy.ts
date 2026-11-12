@@ -11,7 +11,6 @@ import {
   narrativeTenseLabels,
   narratorKnowledgeLabels,
   narratorPersonLabels,
-  projectUsageAttribution,
   scenePath,
   sceneBeatText,
   type InterviewAnswer,
@@ -417,7 +416,7 @@ export class NarratorInterviewStrategy implements IQuestionStrategy {
       sceneTitles: new Map(scenes.map((scene) => [scene.stem, scene.card.title ?? scene.stem])),
       tuning,
       ai: this.aiServices.gateway.createService(workspaceRoot),
-      attribution: projectUsageAttribution,
+      attribution: { primary: { kind: 'narrator', id: narrator.id } },
     };
   }
 

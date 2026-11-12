@@ -25,6 +25,7 @@ export function editTargetFile(target: StudioTarget): string | undefined {
   switch (entity.kind) {
     case 'character':
     case 'background':
+    case 'narrator':
       return `${entity.kind}/${entity.key}.card`;
     case 'scene':
       return target.kind === 'scene' ? `scene/${entity.key}.card` : `draft/${entity.key}.md`;

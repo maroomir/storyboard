@@ -29,6 +29,7 @@ const entityKindSchema: z.ZodType<EntityKind> = z.enum([
   'scene',
   'character',
   'background',
+  'narrator',
   'project',
 ]);
 
@@ -171,6 +172,7 @@ class EntityUsageTally {
         );
         return;
       }
+      case 'narrator':
       case 'project': {
         return;
       }

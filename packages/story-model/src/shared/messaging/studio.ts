@@ -22,6 +22,7 @@ import type { RelationLink } from '#model/format/card';
 export const studioEntityKindSchema: z.ZodType<EntityKind> = z.enum([
   'character',
   'background',
+  'narrator',
   'scene',
   'project',
 ]);

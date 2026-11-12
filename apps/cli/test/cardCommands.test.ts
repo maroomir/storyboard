@@ -125,6 +125,20 @@ describe('card remove', () => {
     expect(removed.ok, removed.message).toBe(true);
     expect(removed.message).toContain('character/sera.card 를 지웠습니다');
     expect((await run('card show', args(['card', 'show'], {}, ['sera']))).ok).toBe(false);
+
+    const history = await run('card show', args(['card', 'show'], { history: true }, ['sera']));
+    expect(history.ok, history.message).toBe(true);
+    expect(history.message).toContain('sera 삭제');
+  });
+
+  it('records a narrator removal as a narrator session', async () => {
+    expect((await run('card create', args(['card', 'create'], { person: 'first' }, ['narrator', 'elia-pov']))).ok).toBe(true);
+
+    const removed = await run('card remove', args(['card', 'remove'], { force: true }, ['elia-pov']));
+    expect(removed.ok, removed.message).toBe(true);
+
+    const history = await run('card show', args(['card', 'show'], { history: true, json: true }, ['elia-pov']));
+    expect(history.message).toContain('elia-pov 삭제');
   });
 });
 
