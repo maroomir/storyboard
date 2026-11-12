@@ -45,7 +45,7 @@ interface StoryCardEntity {
   voice: string[];
   desire: string[];
   relations: { target: string; type: string; }[];
-  arc: { summary: string; stage?: string | undefined; sceneRef?: string | undefined; }[];
+  arc?: string | undefined;
   senses: string[];
   characterIds: string[];
   sourceScenes: string[];
@@ -72,15 +72,7 @@ const entitySchema: z.ZodType<StoryCardEntity> = z.object({
   relations: z
     .array(z.object({ target: z.string().trim().min(1), type: z.string().trim().min(1) }))
     .default([]),
-  arc: z
-    .array(
-      z.object({
-        stage: optionalText,
-        summary: z.string().trim().min(1),
-        sceneRef: optionalText,
-      }),
-    )
-    .default([]),
+  arc: optionalText,
   senses: textList(),
   time: optionalText,
   weather: optionalText,
@@ -276,7 +268,7 @@ function entityResponseShape(): Record<string, unknown> {
     voice: ['string'],
     desire: ['string'],
     relations: [{ target: 'existing id or known name', type: 'string' }],
-    arc: [{ stage: 'optional', summary: 'string', sceneRef: 'optional scene stem' }],
+    arc: 'optional one line: how the character changes over the story',
     senses: ['string'],
     time: 'optional',
     weather: 'optional',
@@ -432,13 +424,8 @@ function toChanges(
         drafts.push({ kind: 'relation', target, type: relation.type });
       }
     }
-    for (const arc of entity.arc) {
-      drafts.push({
-        kind: 'arc',
-        stage: arc.stage,
-        summary: arc.summary,
-        sceneRef: arc.sceneRef ?? entity.sourceScenes[0] ?? 'scene',
-      });
+    if (entity.arc !== undefined) {
+      drafts.push({ kind: 'arc', summary: entity.arc });
     }
   } else {
     drafts.push(...entity.tags.map((value) => ({ kind: 'tag' as const, value })));
@@ -513,7 +500,7 @@ function changeLabel(proposal: CardCollectProposal): string {
     case 'relationSpeech':
       return `말투 · ${proposal.target}`;
     case 'arc':
-      return `아크 · ${proposal.sceneRef}`;
+      return `아크 · ${proposal.summary}`;
     case 'scalar':
       return `${proposal.field} · ${proposal.after}`;
     case 'alias':

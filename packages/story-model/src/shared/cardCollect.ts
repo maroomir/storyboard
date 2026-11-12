@@ -34,10 +34,8 @@ export type CardCollectProposal =
   | {
       kind: 'arc';
       summary: string;
-      sceneRef: string;
       id: string;
       sourceScenes: string[];
-      stage?: string;
       before?: string;
     }
   | { kind: 'trait'; value: string; id: string; sourceScenes: string[] }
@@ -87,9 +85,7 @@ export const cardCollectProposalSchema: z.ZodType<CardCollectProposal> = z.discr
     z.object({
       ...proposalBaseFields,
       kind: z.literal('arc'),
-      stage: z.string().min(1).optional(),
       summary: z.string().min(1),
-      sceneRef: z.string().min(1),
       before: z.string().optional(),
     }),
     z.object({ ...proposalBaseFields, kind: z.literal('trait'), value: z.string().min(1) }),
@@ -129,7 +125,7 @@ export function cardCollectProposalId(proposal: CardCollectProposalDraft): strin
     case 'relationSpeech':
       return `relationSpeech:${proposal.target}`;
     case 'arc':
-      return `arc:${proposal.sceneRef}`;
+      return 'arc';
     case 'scalar':
       return `scalar:${proposal.field}`;
     case 'characterId':

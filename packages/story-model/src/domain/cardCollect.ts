@@ -1,6 +1,5 @@
 import type {
   BackgroundCard,
-  CharacterArc,
   CharacterCard,
   CharacterRelation,
   StoryboardCard,
@@ -67,13 +66,13 @@ function isCharacterListProposal(proposal: CardCollectProposal): proposal is Cha
 class CharacterCardEdit {
   private readonly attributes: Record<string, string | number | boolean | null>;
   private readonly relations: CharacterRelation[];
-  private readonly arc: CharacterArc[];
+  private arc: string | undefined;
   private readonly lists: Record<CharacterListField, string[]>;
 
   public constructor(private readonly card: CharacterCard) {
     this.attributes = { ...(card.attributes ?? {}) };
     this.relations = [...(card.relations ?? [])];
-    this.arc = [...(card.arc ?? [])];
+    this.arc = card.arc;
     this.lists = {
       traits: [...(card.traits ?? [])],
       description: [...(card.description ?? [])],
@@ -122,7 +121,7 @@ class CharacterCardEdit {
       ...this.card,
       ...(Object.keys(this.attributes).length > 0 ? { attributes: this.attributes } : {}),
       ...(this.relations.length > 0 ? { relations: this.relations } : {}),
-      ...(this.arc.length > 0 ? { arc: this.arc } : {}),
+      ...(this.arc === undefined ? {} : { arc: this.arc }),
       ...filledLists,
     };
   }
@@ -157,20 +156,7 @@ class CharacterCardEdit {
   }
 
   private upsertArc(proposal: ArcProposal): void {
-    const index: number = this.arc.findIndex((entry) => entry.sceneRef === proposal.sceneRef);
-    if (index >= 0) {
-      this.arc[index] = {
-        stage: this.arc[index]?.stage ?? proposal.sceneRef,
-        summary: proposal.summary,
-        sceneRef: proposal.sceneRef,
-      };
-    } else {
-      this.arc.push({
-        stage: proposal.stage ?? proposal.sceneRef,
-        summary: proposal.summary,
-        sceneRef: proposal.sceneRef,
-      });
-    }
+    this.arc = proposal.summary;
   }
 }
 
@@ -307,12 +293,8 @@ function shouldProposeCharacterChange(card: CharacterCard, proposal: CardCollect
       const canCreateRelation: boolean = current === undefined && proposal.type !== undefined;
       return canCreateRelation || (current !== undefined && current.speech !== proposal.speech);
     }
-    case 'arc': {
-      const current: CharacterArc | undefined = (card.arc ?? []).find(
-        (entry) => entry.sceneRef === proposal.sceneRef,
-      );
-      return current?.summary !== proposal.summary;
-    }
+    case 'arc':
+      return card.arc !== proposal.summary;
     default:
       return false;
   }

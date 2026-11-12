@@ -180,7 +180,7 @@ export function renderCharacterNote(card: CharacterCard, nameOf: (id: string) =>
     ...section('바라는 것', card.desire),
     ...section('속성', attributes),
     ...section('관계', relations),
-    ...section('아크', (card.arc ?? []).map((arc) => `${arc.stage}: ${arc.summary}`)),
+    ...section('아크', card.arc === undefined ? [] : [card.arc]),
   ].join('\n');
 }
 

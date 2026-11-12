@@ -652,8 +652,7 @@ exports[`StudioAgentPrompt golden > renders an entity card edit 1`] = `
 [상태와 변화를 섞지 마라]
 - description, traits, voice, desire에는 이야기 내내 참인 상태만 적어라.
 - 시간이 흐르며 벌어지는 변화(…한 뒤, …하게 되며, …로 변한다, …을 깨닫는다)는 arc에 적어라.
-- arc는 객체 배열이다: [{"stage":"단계 이름","summary":"무엇이 어떻게 변하는지","sceneRef":"NN-slug"}]
-- sceneRef는 자료에서 확인한 씬에만 붙이고, 모르면 넣지 마라.
+- arc는 문자열 한 줄이다: 이 인물이 이야기 동안 무엇에서 무엇으로 변하는지.
 - 아직 일어나지 않은 사건을 상태 필드에 앞당겨 쓰지 마라. 인물 카드는 모든 씬을 쓸 때 함께 읽히므로, 뒷부분 줄거리가 상태로 적혀 있으면 앞 씬이 결말을 미리 흘린다.",
   "user": "[대상] 인물 카드 · 엘리아 (character/elia.card)
 
@@ -721,8 +720,7 @@ exports[`StudioAgentPrompt golden > renders an entity card edit 2`] = `
 [상태와 변화를 섞지 마라]
 - description, traits, voice, desire에는 이야기 내내 참인 상태만 적어라.
 - 시간이 흐르며 벌어지는 변화(…한 뒤, …하게 되며, …로 변한다, …을 깨닫는다)는 arc에 적어라.
-- arc는 객체 배열이다: [{"stage":"단계 이름","summary":"무엇이 어떻게 변하는지","sceneRef":"NN-slug"}]
-- sceneRef는 자료에서 확인한 씬에만 붙이고, 모르면 넣지 마라.
+- arc는 문자열 한 줄이다: 이 인물이 이야기 동안 무엇에서 무엇으로 변하는지.
 - 아직 일어나지 않은 사건을 상태 필드에 앞당겨 쓰지 마라. 인물 카드는 모든 씬을 쓸 때 함께 읽히므로, 뒷부분 줄거리가 상태로 적혀 있으면 앞 씬이 결말을 미리 흘린다.",
   "user": "[대상] 인물 카드 · 엘리아 (character/elia.card)
 
@@ -777,8 +775,7 @@ exports[`StudioAgentPrompt golden > renders an entity card edit 3`] = `
 [상태와 변화를 섞지 마라]
 - description, traits, voice, desire에는 이야기 내내 참인 상태만 적어라.
 - 시간이 흐르며 벌어지는 변화(…한 뒤, …하게 되며, …로 변한다, …을 깨닫는다)는 arc에 적어라.
-- arc는 객체 배열이다: [{"stage":"단계 이름","summary":"무엇이 어떻게 변하는지","sceneRef":"NN-slug"}]
-- sceneRef는 자료에서 확인한 씬에만 붙이고, 모르면 넣지 마라.
+- arc는 문자열 한 줄이다: 이 인물이 이야기 동안 무엇에서 무엇으로 변하는지.
 - 아직 일어나지 않은 사건을 상태 필드에 앞당겨 쓰지 마라. 인물 카드는 모든 씬을 쓸 때 함께 읽히므로, 뒷부분 줄거리가 상태로 적혀 있으면 앞 씬이 결말을 미리 흘린다.",
   "user": "[대상] 배경 카드 · 엘리아 (character/elia.card)
 

@@ -75,18 +75,6 @@ export const characterRelationSchema: z.ZodType<CharacterRelation> = z.object({
   speech: z.string().trim().min(1).optional(),
 });
 
-export interface CharacterArc {
-  stage: string;
-  summary: string;
-  sceneRef?: string;
-}
-
-export const characterArcSchema: z.ZodType<CharacterArc> = z.object({
-  stage: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
-  sceneRef: z.string().trim().min(1).optional(),
-});
-
 export interface CharacterCard {
   type: 'character';
   id: string;
@@ -101,7 +89,7 @@ export interface CharacterCard {
   catchphrases?: string[];
   desire?: string[];
   relations?: CharacterRelation[];
-  arc?: CharacterArc[];
+  arc?: string;
 }
 
 interface BackgroundCardFields {
@@ -140,7 +128,7 @@ const characterCardShape = {
   catchphrases: stringListSchema.optional(),
   desire: stringListSchema.optional(),
   relations: z.array(characterRelationSchema).optional(),
-  arc: z.array(characterArcSchema).optional(),
+  arc: z.string().trim().min(1).optional(),
 } satisfies z.ZodRawShape;
 
 const backgroundBaseShape = {

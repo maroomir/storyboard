@@ -2,7 +2,7 @@ import type { BackgroundHeader } from '#model/element/background';
 import type { CharacterAttributes, CharacterHeader } from '#model/element/character';
 import { characterAttributeKeys } from '#model/element/character';
 import type { ElementKind } from '#model/element/elementKind';
-import { getStatementFacetRow, type StatementFacetId } from '#model/element/facetCatalog';
+import type { StatementFacetId } from '#model/element/facetCatalog';
 import type { NarratorHeader } from '#model/element/narrator';
 import {
   isAuthorStatement,
@@ -12,7 +12,6 @@ import {
 import { mergeStatements } from '#model/element/statementMerge';
 import { isSameStatementText } from '#model/element/statementText';
 import type {
-  CharacterArc,
   CharacterCard,
   CharacterRelation,
   LocationBackgroundCard,
@@ -143,9 +142,7 @@ export function projectCharacterCard(
     ...(header.aliases === undefined ? {} : { aliases: [...header.aliases] }),
     ...listFields,
     ...(relations.length > 0 ? { relations } : {}),
-    ...(arcSummary === undefined
-      ? {}
-      : { arc: [{ stage: getStatementFacetRow('arc').label, summary: arcSummary }] }),
+    ...(arcSummary === undefined ? {} : { arc: arcSummary }),
   };
 }
 
@@ -273,10 +270,6 @@ function relationLines(
   });
 }
 
-function lastArcSummary(arc: readonly CharacterArc[] | undefined): string | undefined {
-  return arc === undefined || arc.length === 0 ? undefined : arc[arc.length - 1]?.summary;
-}
-
 function splitAttributes(attributes: CharacterCard['attributes']): {
   readonly header: CharacterAttributes | undefined;
   readonly facts: DerivedLine[];
@@ -330,7 +323,7 @@ export function planCharacterBundle(
   const derived: DerivedLine[] = [
     ...characterListFacets.flatMap((facet) => listLines(facet, card[facet])),
     ...relationLines(card.relations, request.lookup),
-    ...scalarLines('arc', lastArcSummary(card.arc)),
+    ...scalarLines('arc', card.arc),
     ...attributes.facts,
   ];
 

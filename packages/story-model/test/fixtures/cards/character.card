@@ -18,7 +18,4 @@ desire:
 relations:
   - target: jihoon
     type: 친구
-arc:
-  - stage: 발단
-    summary: 학교에 도착해 새 친구를 만남
-    sceneRef: 01-prologue
+arc: 학교에 도착해 새 친구를 만남
