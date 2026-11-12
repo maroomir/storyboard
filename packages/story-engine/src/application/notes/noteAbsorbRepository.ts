@@ -10,6 +10,8 @@ import type {
   PendingHeaderChange,
   NoteExtractionResponse,
   BibleSubjectKind,
+  NoteSourceKind,
+  NoteVoiceSeed,
 } from '@storyboard/story-model';
 
 export interface NoteSynopsisCandidate {
@@ -53,8 +55,8 @@ export interface INoteAbsorbRepository {
   clearSynopsisCandidates(workspaceRoot: StoryUri, location?: string): Promise<void>;
   addVoiceSeeds(
     workspaceRoot: StoryUri,
-    location: string,
-    seeds: Readonly<Record<string, readonly string[]>>,
+    sourceKind: NoteSourceKind,
+    seeds: Readonly<Record<string, readonly NoteVoiceSeed[]>>,
   ): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void>;

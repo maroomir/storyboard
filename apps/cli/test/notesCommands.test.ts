@@ -25,7 +25,7 @@ import { commands, findCommand } from '@/commands/index';
 import { createCliContainer } from '@/container';
 
 import { readBundleText, readCardYaml, writeCardBundleFromYaml } from './fixtures/cardBundles';
-import { readAbsorbPending, readAbsorbSessions } from './fixtures/absorbSessions';
+import { readAbsorbPending, readAbsorbPendingLocations, readAbsorbSessions } from './fixtures/absorbSessions';
 import {
   listScenesFromBundles,
   readSceneCardYaml,
@@ -305,9 +305,12 @@ describe('notes absorb', () => {
     expect(project.setting?.genre).toBeUndefined();
     expect(outcome.message).toContain("storyboard project set --genre '해양 미스터리'");
 
-    expect(
-      readFileSync(join(workspace, 'character', 'hana.card', 'memory', 'main.yaml'), 'utf8'),
-    ).toContain('만조엔 문이 열려. 난 봤어.');
+    const memory: string = readFileSync(join(workspace, 'character', 'hana.card', 'memory', 'main.yaml'), 'utf8');
+    expect(memory).toContain('만조엔 문이 열려. 난 봤어.');
+    expect(memory).toContain('source: note:obsidian/달의 문/인물/하나.md');
+    const statements: string = readFileSync(join(workspace, 'character', 'hana.card', 'statements.yaml'), 'utf8');
+    expect(statements).toContain('session: note:obsidian/달의 문/인물/하나.md');
+    expect(`${memory}${statements}`).not.toContain(vault);
     expect(outcome.message).toContain('노트의 예시 대사를 말투 표본으로 두었습니다');
     expect(existsSync(join(workspace, '.storyboard', 'bible'))).toBe(false);
   });
@@ -450,16 +453,16 @@ describe('notes absorb', () => {
       expect(second.message).toContain('기존 카드 hana 에 대한 내용은 제안으로 남겼습니다.');
       expect(second.message).toContain('제안을 기다리는 카드 1장 (hana)');
 
+      expect([...(await readAbsorbPendingLocations(workspace, 'hana'))].sort()).toEqual([vault, otherLocation].sort());
       const sessions = new Set((await readAbsorbPending(workspace, 'hana')).map((line) => line.source.session));
-      expect([...sessions].sort()).toEqual([vault, otherLocation].sort());
+      expect([...sessions]).toEqual(['note:obsidian/달의 문/인물/하나.md']);
       const preview = await run('card apply', args(['card', 'apply'], { 'dry-run': true }));
       expect(preview.message.match(/  노트 · /g)).toHaveLength(2);
     });
     it('replaces only what the same location left before', async () => {
       await absorbAt(vault, hanaAged('20'));
 
-      const sessions = new Set((await readAbsorbPending(workspace, 'hana')).map((line) => line.source.session));
-      expect([...sessions]).toEqual([vault]);
+      expect(await readAbsorbPendingLocations(workspace, 'hana')).toEqual([vault]);
       await run('card apply', args(['card', 'apply']));
       expect(await readCardYaml(workspace, 'hana')).toContain("age: '20'");
     });

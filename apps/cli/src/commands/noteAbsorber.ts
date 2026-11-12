@@ -311,6 +311,7 @@ export class NoteAbsorber {
       workspaceRoot: this.container.workspaceRoot,
       plan,
       location: bundle.location,
+      sourceKind: bundle.kind,
       shouldFillContract: options.shouldFillContract,
       shouldReplaceCandidates: flagBoolean(args.flags, 'replace-candidates'),
     });

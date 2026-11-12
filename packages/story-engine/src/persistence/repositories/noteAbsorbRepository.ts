@@ -11,7 +11,10 @@ import {
   mainThreadId,
   replacePendingHeader,
   replacePendingStatements,
+  describeNoteSource,
   type NoteBundle,
+  type NoteSourceKind,
+  type NoteVoiceSeed,
   type NoteExtractionResponse,
   type Statement,
   type PendingHeaderChange,
@@ -225,8 +228,8 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
 
   public async addVoiceSeeds(
     workspaceRoot: StoryUri,
-    location: string,
-    seeds: Readonly<Record<string, readonly string[]>>,
+    sourceKind: NoteSourceKind,
+    seeds: Readonly<Record<string, readonly NoteVoiceSeed[]>>,
   ): Promise<void> {
     for (const [characterId, lines] of Object.entries(seeds)) {
       const memory: ElementMemory = await this.cards.readMemory(
@@ -237,10 +240,11 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
       );
       const known: Set<string> = new Set((memory.voiceSample ?? []).map((sample) => sample.text));
       const added: VoiceSampleLine[] = [];
-      for (const text of lines.map((line) => line.trim())) {
+      for (const seed of lines) {
+        const text: string = seed.text.trim();
         if (text.length > 0 && !known.has(text)) {
           known.add(text);
-          added.push({ text, source: `note:${location}` });
+          added.push({ text, source: describeNoteSource(sourceKind, seed.noteId) });
         }
       }
       await this.cards.writeMemory(workspaceRoot, 'character', characterId, mainThreadId, {
