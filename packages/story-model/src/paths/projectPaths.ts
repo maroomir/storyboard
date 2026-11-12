@@ -34,7 +34,6 @@ export interface StoryboardProjectPaths {
   readonly outlineDirectory: StoryUri;
   readonly outlineSynopsis: StoryUri;
   readonly outlineChapters: StoryUri;
-  readonly pendingChapterPlan: StoryUri;
   readonly characterDirectory: StoryUri;
   readonly backgroundDirectory: StoryUri;
   readonly narratorDirectory: StoryUri;
@@ -69,7 +68,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),
     outlineSynopsis: resolve(STORYBOARD_RELATIVE_PATHS.outlineSynopsis),
     outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),
-    pendingChapterPlan: resolve(STORYBOARD_RELATIVE_PATHS.pendingChapterPlan),
     characterDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterDirectory),
     backgroundDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
     narratorDirectory: resolve(STORYBOARD_RELATIVE_PATHS.narratorDirectory),

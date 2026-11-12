@@ -328,7 +328,7 @@ function buildServices(
   const summaries: ChapterSummaryLedger = new ChapterSummaryLedger({
     fileSystem,
     caches,
-    chapters: new ChapterOutlineStore({ fileSystem, scenes }),
+    chapters: new ChapterOutlineStore({ fileSystem, scenes, caches }),
   });
   const usageLedger: UsageLedgerRecorder = new UsageLedgerRecorder({ caches });
   const usageMeter: UsageMeter = new UsageMeter();
@@ -552,7 +552,7 @@ function buildWorkspaceRepositories(
   fetch: NoteHttpFetch,
 ): WorkspaceRepositories {
   const { fileSystem, workspaceLocator } = host;
-  const chapters: ChapterOutlineStore = new ChapterOutlineStore({ fileSystem, scenes: host.scenes });
+  const chapters: ChapterOutlineStore = new ChapterOutlineStore({ fileSystem, scenes: host.scenes, caches: host.caches });
   const outline: OutlineRepository = new OutlineRepository(fileSystem, host.cards, chapters);
   const cardFacts: CardFactReader = new CardFactReader({ cards: host.cards, scenes: host.scenes });
   const manuscriptAssembly: ManuscriptAssemblyRepository = new ManuscriptAssemblyRepository(

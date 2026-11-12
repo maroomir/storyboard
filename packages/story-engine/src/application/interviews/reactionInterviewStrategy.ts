@@ -687,6 +687,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       this.host.fileSystem,
       this.host.cards,
       this.host.scenes,
+      this.host.caches,
     );
     try {
       const narration: NarrationDirective | undefined = await resolver.resolveNarration(

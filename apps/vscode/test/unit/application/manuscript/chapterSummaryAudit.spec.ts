@@ -17,10 +17,11 @@ import type {
   FileSystemDirectoryEntry,
   IFileSystem,
   WorkspaceScenes,
+  WorkspaceCaches,
 } from '@storyboard/story-engine';
 import { memorySummaries } from '../../../stubs/summaries';
 import { stubScenes } from '../../../stubs/scenes';
-import { unseededOutlineYaml } from '../../../stubs/chapterOutline';
+import { cachesWithPendingChapterPlan, unseededOutlineYaml } from '../../../stubs/chapterOutline';
 
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>();
@@ -106,16 +107,19 @@ acts:
 describe('chapter summary audit over a workspace', () => {
   let fileSystem: MemoryWorkspace;
   let summaries: ReturnType<typeof memorySummaries>;
+  let caches: WorkspaceCaches;
 
   const request = (): {
     fileSystem: IFileSystem;
     scenes: WorkspaceScenes;
     summaries: ChapterSummaryLedger;
+    caches: WorkspaceCaches;
     paths: typeof paths;
   } => ({
     fileSystem,
     scenes: stubScenes(),
     summaries,
+    caches,
     paths,
   });
 
@@ -136,7 +140,7 @@ describe('chapter summary audit over a workspace', () => {
       serializeProjectJson(createDefaultProjectJson({ name: '작품' })),
     );
     fileSystem.write(paths.outlineChapters.path, unseededOutlineYaml(chapterPlan));
-    fileSystem.write(paths.pendingChapterPlan.path, chapterPlan);
+    caches = await cachesWithPendingChapterPlan(paths.workspaceRoot, chapterPlan);
     writeDraft('01-first', '첫 장 본문');
     writeDraft('02-second', '둘째 장 본문');
 

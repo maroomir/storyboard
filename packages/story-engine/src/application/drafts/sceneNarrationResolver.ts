@@ -1,4 +1,5 @@
 import { ChapterOutlineStore } from '#engine/persistence/bundles/chapterOutlineStore';
+import type { WorkspaceCaches } from '#engine/persistence/cache/workspaceCaches';
 import {
   flattenChapterPlan,
   mainThreadId,
@@ -41,6 +42,7 @@ export class SceneNarrationResolver {
     private readonly fileSystem: IFileSystem,
     private readonly cards: WorkspaceCards,
     private readonly scenes: WorkspaceScenes,
+    private readonly caches: WorkspaceCaches,
   ) {}
 
   public async readChapterDefaults(
@@ -51,6 +53,7 @@ export class SceneNarrationResolver {
       const plan: ChapterPlan = await new ChapterOutlineStore({
         fileSystem: this.fileSystem,
         scenes: this.scenes,
+        caches: this.caches,
       }).load(paths.workspaceRoot);
       const placement: FlatChapterScene | undefined = flattenChapterPlan(plan)[sceneOrder - 1];
 

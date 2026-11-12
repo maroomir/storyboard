@@ -10,6 +10,7 @@ import {
   createWorkspaceRunLockRecord,
   mainThreadId,
   NodeUri,
+  parseChapterPlan,
   type ChapterSummary,
   type WorkspaceRunLockHolder,
   type WorkspaceRunLockRecord,
@@ -78,7 +79,7 @@ export function createChapterSummaryLedger(caches: WorkspaceCaches): ChapterSumm
   return new ChapterSummaryLedger({
     fileSystem,
     caches,
-    chapters: new ChapterOutlineStore({ fileSystem, scenes: createWorkspaceScenes(caches) }),
+    chapters: new ChapterOutlineStore({ fileSystem, scenes: createWorkspaceScenes(caches), caches }),
   });
 }
 
@@ -89,6 +90,19 @@ export async function writeChapterSummaries(
   const caches: WorkspaceCaches = createWorkspaceCaches();
   try {
     await createChapterSummaryLedger(caches).write(NodeUri.file(workspace), mainThreadId, summaries);
+  } finally {
+    await caches.closeAll();
+  }
+}
+
+export async function writeUnseededChapterPlan(workspace: string, chapterPlanYaml: string): Promise<void> {
+  const caches: WorkspaceCaches = createWorkspaceCaches();
+  try {
+    await new ChapterOutlineStore({
+      fileSystem: new NodeFileSystem(),
+      scenes: createWorkspaceScenes(caches),
+      caches,
+    }).save(NodeUri.file(workspace), parseChapterPlan(chapterPlanYaml));
   } finally {
     await caches.closeAll();
   }

@@ -32,8 +32,8 @@ import {
   createWorkspaceCaches,
   createWorkspaceScenes,
   writeChapterSummaries,
+  writeUnseededChapterPlan,
 } from './fixtures/workspaceCacheFixture';
-import { writeUnseededChapterPlan } from './fixtures/chapterOutline';
 import { writeCardBundleFromYaml } from './fixtures/cardBundles';
 import { readSceneState, writeSceneBundleFromYaml, writeSceneState } from './fixtures/sceneBundles';
 import type { SceneStoryState } from '@storyboard/story-model';
@@ -302,7 +302,7 @@ describe('storyboard doctor chapter summaries', () => {
         editor: {},
       }),
     );
-    writeUnseededChapterPlan(
+    await writeUnseededChapterPlan(
       workspace,
       'version: 1.0.0\nacts:\n  - id: act-1\n    title: 1막\n    chapters:\n      - id: chapter-1\n        title: 1장\n        scenes:\n          - id: s1\n            title: 첫 씬\n',
     );
@@ -335,6 +335,7 @@ describe('storyboard doctor chapter summaries', () => {
       fileSystem: cli.fileSystem,
       scenes: createWorkspaceScenes(caches),
       summaries: createChapterSummaryLedger(caches),
+      caches,
       paths: getStoryboardProjectPaths(cli.workspaceRoot),
     }).collectCurrentChapterHashes('테스트');
     await caches.closeAll();
