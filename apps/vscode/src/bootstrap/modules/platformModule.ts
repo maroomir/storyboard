@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import { type IStoryboardLogger, type UsageLedgerRecorder } from '@storyboard/story-engine';
-import { StoryboardApplication } from '@storyboard/story-app';
+import { StoryboardApplication, type WorkspaceFormatCheck } from '@storyboard/story-app';
 import { NodeSqlDatabaseHost } from '@storyboard/story-node';
 import {
   ConfigBridge,
@@ -52,6 +52,18 @@ export interface IPlatformServices extends Pick<
   readonly usageRecorder: UsageLedgerRecorder;
   readonly proposalReviewService: ProposalReviewService;
   readonly studioLauncher: StudioLauncher;
+}
+
+async function reportUnsupportedWorkFormat(
+  application: StoryboardApplication,
+  workspaceRoot: vscode.Uri,
+  logger: OutputChannelLogger,
+): Promise<void> {
+  const format: WorkspaceFormatCheck = await application.workspace.checkFormat(workspaceRoot);
+  if (!format.ok) {
+    logger.warn(format.error.message);
+    void vscode.window.showErrorMessage(format.error.message);
+  }
 }
 
 export class PlatformModule implements IApplicationModule {
@@ -107,6 +119,9 @@ export class PlatformModule implements IApplicationModule {
         logger.warn(problem.message);
       }
     });
+    if (workspaceFolder !== undefined) {
+      void reportUnsupportedWorkFormat(application, workspaceFolder.uri, logger);
+    }
 
     this.services = {
       drafts: application.drafts,

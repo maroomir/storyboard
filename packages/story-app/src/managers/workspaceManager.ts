@@ -27,6 +27,7 @@ import {
 } from '@storyboard/story-model';
 import { loadResourceOverrides, type ResourceOverrideReport } from '#app/resourceOverrides';
 import type { RunGate } from '#app/runGate';
+import { WorkspaceFormatGuard, type WorkspaceFormatCheck } from '#app/workspaceFormatGuard';
 
 export interface WorkspaceManagerDependencies {
   readonly fileSystem: IFileSystem;
@@ -57,6 +58,7 @@ export class WorkspaceManager {
   }
 
   public async repair(workspaceRoot: StoryUri): Promise<WorkspaceRepairResult> {
+    await this.refuseUnsupportedFormat(workspaceRoot);
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceRoot);
     const initializer: WorkspaceInitializer = this.createInitializer();
 
@@ -102,8 +104,17 @@ export class WorkspaceManager {
     });
   }
 
-  public async prepare(_workspaceRoot: StoryUri): Promise<ResourceOverrideReport> {
+  public async prepare(workspaceRoot: StoryUri): Promise<ResourceOverrideReport> {
+    await this.refuseUnsupportedFormat(workspaceRoot);
     return await loadResourceOverrides(this.deps.fileSystem, this.deps.resourceRoots);
+  }
+
+  public checkFormat(workspaceRoot: StoryUri): Promise<WorkspaceFormatCheck> {
+    return new WorkspaceFormatGuard(this.deps.fileSystem).check(workspaceRoot);
+  }
+
+  private refuseUnsupportedFormat(workspaceRoot: StoryUri): Promise<void> {
+    return new WorkspaceFormatGuard(this.deps.fileSystem).refuse(workspaceRoot);
   }
 
   public async auditStoryState(workspaceRoot: StoryUri): Promise<StoryMemoryAudit> {

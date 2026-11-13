@@ -38,6 +38,7 @@ export {
   type WorkspaceRepairResult,
 } from '#app/managers/workspaceManager';
 export { StudioManager, type StudioManagerDependencies } from '#app/managers/studioManager';
+export { WorkspaceFormatGuard, type WorkspaceFormatCheck } from '#app/workspaceFormatGuard';
 export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from '#app/runGate';
 export {
   describeParameters,

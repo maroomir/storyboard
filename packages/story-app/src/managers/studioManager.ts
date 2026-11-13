@@ -1,4 +1,5 @@
 import type {
+  IFileSystem,
   IStudioFollowUpRepository,
   IStudioSessionRepository,
   StudioChatRequest,
@@ -16,6 +17,7 @@ import type {
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryUri, StudioChatTurn, StudioEntity } from '@storyboard/story-model';
+import { WorkspaceFormatGuard, type WorkspaceFormatCheck } from '#app/workspaceFormatGuard';
 
 export interface StudioManagerDependencies {
   readonly studioChatUseCase: StudioChatUseCase;
@@ -26,6 +28,7 @@ export interface StudioManagerDependencies {
   readonly studioEditUseCase: StudioEditUseCase;
   readonly studioCreateUseCase: StudioCreateUseCase;
   readonly configBridge: ConfigBridge;
+  readonly fileSystem: IFileSystem;
 }
 
 export type StudioEditVerbRequest = Omit<StudioEditRequest, 'isValidationEnabled'>;
@@ -59,8 +62,15 @@ export class StudioManager {
     });
   }
 
-  public create(request: StudioCreateVerbRequest): Promise<StudioCreateResult> {
-    return this.deps.studioCreateUseCase.execute({
+  public async create(request: StudioCreateVerbRequest): Promise<StudioCreateResult> {
+    const format: WorkspaceFormatCheck = await new WorkspaceFormatGuard(this.deps.fileSystem).check(
+      request.workspaceRoot,
+    );
+    if (!format.ok) {
+      return { ok: false, kind: 'failed', message: format.error.message };
+    }
+
+    return await this.deps.studioCreateUseCase.execute({
       ...request,
       isValidationEnabled: this.deps.configBridge.isStudioValidationEnabled(),
     });
