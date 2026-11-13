@@ -8,6 +8,7 @@ import type {
   BackgroundFactConflictReport,
   CardReading,
   ResourceOverrideReport,
+  WorkspaceFormatCheck,
 } from '@storyboard/story-app';
 import type {
   BundleWarning,
@@ -550,6 +551,14 @@ export class DoctorChecks {
           detail: `${root.fsPath} 는 Storyboard 워크스페이스가 아닙니다.`,
           fix: 'storyboard init --title "작품 이름"',
         },
+      ];
+    }
+
+    const format: WorkspaceFormatCheck = await this.container.workspace.checkFormat(root);
+    if (!format.ok) {
+      return [
+        { status: 'ok', label: '워크스페이스', detail: root.fsPath },
+        { status: 'fail', label: '작품 형식', detail: format.error.message },
       ];
     }
 

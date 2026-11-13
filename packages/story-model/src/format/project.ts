@@ -84,10 +84,12 @@ export function assertSupportedProjectVersion(rawProject: unknown): void {
     );
   }
 
+  const describedVersion: string =
+    version === undefined ? 'project.json 에 형식 버전이 없습니다' : `project.json 의 형식 버전(${String(version)})을 알 수 없습니다`;
   throw new ProjectVersionError(
     'unknown-version',
     version,
-    `project.json 의 형식 버전(${String(version)})을 알 수 없습니다. 이 Storyboard 는 ${storyboardProjectVersion} 작품만 엽니다.`,
+    `${describedVersion}. 이 Storyboard 는 ${storyboardProjectVersion} 작품만 엽니다.`,
   );
 }
 
