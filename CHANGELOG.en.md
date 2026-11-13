@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-13
+
 ### Changed (breaking)
 
 - **A background's characters are computed from the scenes.** `characterIds` is not stored on the card; instead the cast of the scenes set at that background and of the beats placed there feed «속한 인물» in `notes export` and the studio's view of the background (they used to be always empty).
