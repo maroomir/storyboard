@@ -23,7 +23,11 @@ after the first public release.
 
 ### Fixed
 
-- **Claude calls stream, and reasoning models get room to think.** A Claude model that takes an effort level is sent the requested output limit plus 16,000 thinking tokens, so long thinking no longer cuts the answer short, and the response is read from a stream so a long one does not hit the HTTP timeout. A prompt with a one-hour cache boundary also caches its system prompt for an hour.
+- **Claude calls stream, and reasoning models get room to think.** A Claude model that takes an effort level is sent the requested output limit plus 16,000 thinking tokens, so long thinking no longer cuts the answer short, and the response is read from a stream so a long one does not hit the HTTP timeout. A prompt with a one-hour cache boundary also caches its system prompt for an hour; the API used to refuse a one-hour block after a five-minute one with a 400, stopping generation at dialogue polish (#192).
+- **An answer the output limit left empty says so.** From any provider, an empty response cut at the limit now fails with «응답이 출력 한도에 닿아 본문 없이 끝났습니다» (its usage is still recorded), so an empty background description no longer surfaces as a Zod validation error (#193).
+- **A truncated review is not a pass.** A continuity check or draft critique cut at the output limit fails with «통과로 볼 수 없습니다», and the revise loop records that round as a check failure. The cut JSON used to read as "no issues" and end in `revise: passed` (#193).
+- **Short judging and describing calls set their reasoning effort.** `backgroundDescription` runs at `low`, `continuityCheck` and `draftCritique` at `medium` (on models that take an effort), so a model whose default is `high` no longer spends the whole output budget thinking (#193).
+- **A Claude model missing from the catalog is called without `temperature`.** A new Claude model put in the settings before the catalog knows it no longer fails on the sampling parameter with a 400 (#194).
 
 ## [0.16.0] - 2026-11-13
 

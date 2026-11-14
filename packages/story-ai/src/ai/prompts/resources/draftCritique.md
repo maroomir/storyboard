@@ -1,6 +1,7 @@
 ---
 temperature: 0.2
 maxTokens: 2000
+reasoningEffort: medium
 ---
 ## system
 한국어 장편 소설 초안을 비평하는 도우미다.

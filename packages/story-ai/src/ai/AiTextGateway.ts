@@ -7,7 +7,11 @@ import type {
   UsageRecord,
   AiTaskName,
 } from '@storyboard/story-model';
-import { AiProviderError, projectUsageAttribution } from '@storyboard/story-model';
+import {
+  AiProviderError,
+  emptyTruncatedResponseMessage,
+  projectUsageAttribution,
+} from '@storyboard/story-model';
 import { isAttributed } from '#ai/ai/aiResponseCoercion';
 import { selectPromptVariant } from '#ai/ai/prompts/promptVariants';
 import type { PromptVariantId } from '#ai/ai/prompts/types';
@@ -19,6 +23,10 @@ import type {
 import type { TaskAiConfigResolved } from '#ai/ports/ConfigBridge';
 
 const timedOutCallAttemptLimit: number = 2;
+
+function isEmptyTruncatedResponse(response: AiGenerateResponse): boolean {
+  return response.isTruncated === true && response.text.trim().length === 0;
+}
 
 function isTimedOutCall(error: unknown): boolean {
   return error instanceof AiProviderError && error.code === 'cli-timeout';
@@ -41,6 +49,13 @@ export class AiTextGateway {
     );
 
     this.emitUsageIfNeeded(taskName, response, options.attribution);
+    if (isEmptyTruncatedResponse(response)) {
+      throw new AiProviderError(
+        'generation-failed',
+        response.providerId,
+        emptyTruncatedResponseMessage(response.providerId),
+      );
+    }
     return response;
   }
 

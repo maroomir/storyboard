@@ -1,6 +1,7 @@
 ---
 temperature: 0.1
 maxTokens: 2000
+reasoningEffort: medium
 ---
 ## system
 한국어 소설의 설정 연속성 검사 도우미다.

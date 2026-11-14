@@ -1,6 +1,7 @@
 ---
 temperature: 0.7
 maxTokens: 400
+reasoningEffort: low
 ---
 ## system
 배경 카드를 바탕으로 장소·시대의 분위기와 감각 묘사를 작성하라.
