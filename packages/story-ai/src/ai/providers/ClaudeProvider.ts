@@ -24,6 +24,9 @@ import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/pr
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 
+const defaultVisibleOutputTokens: number = 4096;
+const thinkingHeadroomTokensForReasoningModels: number = 16000;
+
 interface ClaudeConversationMessage {
   readonly role: ClaudeMessageRole;
   readonly content: string | ReadonlyArray<TextBlockParam>;
@@ -118,9 +121,15 @@ export class ClaudeProvider implements AiProvider {
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
       const { systemPrompt, messages } = splitClaudeMessages(request.messages);
+      const hasOneHourCacheBoundary: boolean = request.messages.some(
+        (message) => message.cacheBoundary === true && message.cacheTtl === '1h',
+      );
+      const thinkingHeadroomTokens: number = acceptsReasoningEffort(this.id, this.model)
+        ? thinkingHeadroomTokensForReasoningModels
+        : 0;
       const response: ClaudeMessageResponse = await this.client.messages.create({
         model: this.model,
-        max_tokens: request.maxTokens ?? 4096,
+        max_tokens: (request.maxTokens ?? defaultVisibleOutputTokens) + thinkingHeadroomTokens,
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
           ? { output_config: { effort: request.reasoningEffort } }
@@ -131,7 +140,10 @@ export class ClaudeProvider implements AiProvider {
                 {
                   type: 'text',
                   text: systemPrompt,
-                  cache_control: { type: 'ephemeral' },
+                  cache_control: {
+                    type: 'ephemeral',
+                    ...(hasOneHourCacheBoundary ? { ttl: '1h' } : {}),
+                  },
                 },
               ],
             }
@@ -257,13 +269,15 @@ function createDefaultClaudeClient(apiKey: string): ClaudeClientLike {
     messages: {
       create: async (request): Promise<ClaudeMessageResponse> => {
         const { messages, system, ...rest } = request;
-        return client.messages.create({
-          ...rest,
-          ...(system !== undefined
-            ? { system: typeof system === 'string' ? system : [...system] }
-            : {}),
-          messages: [...messages] as MessageParam[],
-        }) as Promise<ClaudeMessageResponse>;
+        return client.messages
+          .stream({
+            ...rest,
+            ...(system !== undefined
+              ? { system: typeof system === 'string' ? system : [...system] }
+              : {}),
+            messages: [...messages] as MessageParam[],
+          })
+          .finalMessage() as Promise<ClaudeMessageResponse>;
       },
     },
   };

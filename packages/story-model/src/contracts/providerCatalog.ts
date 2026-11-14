@@ -121,6 +121,15 @@ export const providerCatalog = {
         acceptsReasoningEffort: true,
       },
       {
+        id: 'claude-sonnet-5-5',
+        displayName: 'Claude Sonnet 5.5',
+        inputPricePerMillion: 2.0,
+        outputPricePerMillion: 10.0,
+        ...claudeCachePrices(2.0, 0.05),
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+      },
+      {
         id: 'claude-opus-5-5',
         displayName: 'Claude Opus 5.5',
         inputPricePerMillion: 4.0,
@@ -321,6 +330,12 @@ export const providerCatalog = {
       {
         id: 'claude-sonnet-5',
         displayName: 'Claude Sonnet 5',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+      },
+      {
+        id: 'claude-sonnet-5-5',
+        displayName: 'Claude Sonnet 5.5',
         acceptsTemperature: false,
         acceptsReasoningEffort: true,
       },
