@@ -18,6 +18,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **Claude Sonnet 5.5 를 고를 수 있습니다.** 입력·출력 요금은 Sonnet 5 와 같고(100만 토큰당 $2·$10) 캐시 읽기는 0.05배로 셉니다. `claude-code` 구독 로그인 목록에도 들어갑니다.
 - **Claude 모델 목록을 2026-11-14 기준으로 채웠습니다.** 새로 고를 수 있는 모델: Claude Fable 5.2($8·$40, 캐시 읽기 0.025배), Haiku 5.5($0.10·$0.50 — 프롬프트 10만 토큰 이하 요금으로 셉니다), Fable 5, Opus 4.7, Opus 4.6. Fable 5.2 와 Haiku 5.5 는 `claude-code` 구독 로그인 목록에도 들어갑니다. 기본 모델은 그대로입니다.
 - **OpenAI 모델 목록을 2026-11-14 기준으로 채웠습니다.** 새로 고를 수 있는 모델: GPT-6.1 Sol·Terra, GPT-5.4·5.4 nano, GPT-5.2, GPT-5.1, GPT-5·5 mini·5 nano, o3, GPT-4.1·4.1 mini, GPT-4o·4o mini. GPT-6.1 Sol·Terra 는 `chatgpt` 구독 로그인 목록에도 들어갑니다. Chat Completions 로 부를 수 없는 `*-pro` 모델은 넣지 않았습니다.
+- **Gemini 모델 목록을 2026-11-14 기준으로 채웠습니다.** 새로 고를 수 있는 모델: Gemini 4 Carbon·Argon·Hydrogen, Gemini 3.6 Flash, 3.1 Flash-Lite, 3 Flash(Preview). Gemini 4 Carbon·Argon 은 Gemini 3.1 Pro 처럼 긴 장면 프롬프트(`rich`)를 받습니다. 곧 오르는 요금은 오른 값으로 셉니다 — Gemini 4 Carbon·Argon 은 12월 1일부터의 $4·$20, Gemini 3.8·3.6 Flash 는 2027년 1월 1일부터의 $1.50·$7.50(전에는 3.8 Flash 를 $0.75·$3.75 로 셌습니다). 12월 1일부터 다른 모델로 넘겨지는 Gemini 2.5 Pro·Flash 도 그대로 남습니다.
 
 ### 고침
 

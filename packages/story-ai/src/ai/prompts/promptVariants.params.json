@@ -15,7 +15,9 @@
       "gpt-5",
       "gpt-4.1",
       "gemini-2.5-pro",
-      "gemini-3.1-pro"
+      "gemini-3.1-pro",
+      "gemini-4-carbon",
+      "gemini-4-argon"
     ]
   }
 }

@@ -19,6 +19,7 @@ after the first public release.
 - **Claude Sonnet 5.5 is selectable.** Input and output cost the same as Sonnet 5 ($2 and $10 per million tokens) and cache reads are billed at 0.05x. It is also listed for the `claude-code` subscription login.
 - **The Claude model list is complete as of 2026-11-14.** Newly selectable: Claude Fable 5.2 ($8 and $40, cache reads at 0.025x), Haiku 5.5 ($0.10 and $0.50, the rate for prompts up to 100K tokens), Fable 5, Opus 4.7 and Opus 4.6. Fable 5.2 and Haiku 5.5 are also listed for the `claude-code` subscription login. The default model is unchanged.
 - **The OpenAI model list is complete as of 2026-11-14.** Newly selectable: GPT-6.1 Sol and Terra, GPT-5.4 and 5.4 nano, GPT-5.2, GPT-5.1, GPT-5, 5 mini and 5 nano, o3, GPT-4.1 and 4.1 mini, GPT-4o and 4o mini. GPT-6.1 Sol and Terra are also listed for the `chatgpt` subscription login. The `*-pro` models, which Chat Completions cannot call, are left out.
+- **The Gemini model list is complete as of 2026-11-14.** Newly selectable: Gemini 4 Carbon, Argon and Hydrogen, Gemini 3.6 Flash, 3.1 Flash-Lite and 3 Flash (Preview). Gemini 4 Carbon and Argon get the long scene prompts (`rich`), like Gemini 3.1 Pro. Prices about to rise are counted at the new rate: $4 and $20 for Gemini 4 Carbon and Argon (from December 1) and $1.50 and $7.50 for Gemini 3.8 and 3.6 Flash (from January 1, 2027; 3.8 Flash used to be counted at $0.75 and $3.75). Gemini 2.5 Pro and Flash, which Google routes to other models from December 1, stay listed.
 
 ### Fixed
 
