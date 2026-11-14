@@ -13,6 +13,7 @@ after the first public release.
 ### Added
 
 - **Claude Sonnet 5.5 is selectable.** Input and output cost the same as Sonnet 5 ($2 and $10 per million tokens) and cache reads are billed at 0.05x. It is also listed for the `claude-code` subscription login.
+- **The Claude model list is complete as of 2026-11-14.** Newly selectable: Claude Fable 5.2 ($8 and $40, cache reads at 0.025x), Haiku 5.5 ($0.10 and $0.50, the rate for prompts up to 100K tokens), Fable 5, Opus 4.7 and Opus 4.6. Fable 5.2 and Haiku 5.5 are also listed for the `claude-code` subscription login. The default model is unchanged.
 
 ### Fixed
 
