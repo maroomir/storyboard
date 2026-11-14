@@ -61,7 +61,7 @@ describe("providerStatusBarItem", () => {
 
     expect(item?.isVisible).toBe(true)
     expect(item?.command).toBe("storyboard.settings.open")
-    expect(item?.text).toBe("$(sparkle) openai · gpt-6-sol")
+    expect(item?.text).toBe("$(sparkle) openai · gpt-6.1-sol")
 
     values.delete("ai.provider.default")
     notify?.()

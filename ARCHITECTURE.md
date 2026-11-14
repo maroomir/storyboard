@@ -675,7 +675,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 옛 이름을 대신 읽어 주는 표는 두지 않는다.
 
 - `ai.provider.default`: `"openai" | "claude" | "google" | "grok" | "ollama" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다. 0.9.2 이전의 `claude-code`·`codex`·`gemini-cli`는 카탈로그에 없으므로 «고르지 않음»으로 떨어져 생성이 거부된다 — 요금이 다른 provider 를 대신 골라 주지 않는다.
-- `providers.openai.model`: 기본 `gpt-6-sol`
+- `providers.openai.model`: 기본 `gpt-6.1-sol`
 - `providers.claude.model`: 기본 `claude-sonnet-5`
 - `providers.google.model`: 기본 `gemini-3.8-flash`
 - `providers.grok.model`: xAI OpenAI 호환 API(`https://api.x.ai/v1`), 기본 `grok-4.7`
