@@ -60,7 +60,7 @@ describe("prompt tuning front-matter", () => {
     ).toThrow("잘못되었습니다")
   })
 
-  it("reads an optional reasoning effort, which the note prompts set low", () => {
+  it("reads an optional reasoning effort, which the note and short review prompts set", () => {
     const resource = parsePromptResource(
       "x",
       "---\ntemperature: 0.5\nmaxTokens: 10\nreasoningEffort: low\n---\n## system\n지시\n## user\n본문\n"
@@ -69,6 +69,9 @@ describe("prompt tuning front-matter", () => {
     expect(resource.config).toEqual({ temperature: 0.5, maxTokens: 10, reasoningEffort: "low" })
     expect(promptResources.config("noteExtraction").reasoningEffort).toBe("low")
     expect(promptResources.config("noteSynthesis").reasoningEffort).toBe("low")
-    expect(promptResources.config("backgroundDescription").reasoningEffort).toBeUndefined()
+    expect(promptResources.config("backgroundDescription").reasoningEffort).toBe("low")
+    expect(promptResources.config("draftCritique").reasoningEffort).toBe("medium")
+    expect(promptResources.config("continuityCheck").reasoningEffort).toBe("medium")
+    expect(promptResources.config("sceneSkeleton").reasoningEffort).toBeUndefined()
   })
 })

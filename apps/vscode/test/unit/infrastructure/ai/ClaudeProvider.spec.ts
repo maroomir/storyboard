@@ -12,7 +12,8 @@ describe("ClaudeProvider", () => {
 
   it.each([
     ["claude-sonnet-5", undefined],
-    ["claude-sonnet-4-6", 0.7]
+    ["claude-sonnet-4-6", 0.7],
+    ["claude-unlisted-model", undefined]
   ] as const)("sends temperature to %s only when the model accepts it", async (model, expectedTemperature) => {
     let capturedRequest: Parameters<ClaudeClientLike["messages"]["create"]>[0] | undefined
     const provider = new ClaudeProvider({
@@ -159,6 +160,59 @@ describe("ClaudeProvider", () => {
         ]
       }
     ])
+  })
+
+  it.each([
+    ["1h", { type: "ephemeral", ttl: "1h" }],
+    [undefined, { type: "ephemeral" }]
+  ] as const)("caches the system prompt with a %s message boundary so 1h never follows 5m (#192)", async (cacheTtl, expected) => {
+    let capturedSystem: Parameters<ClaudeClientLike["messages"]["create"]>[0]["system"]
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model: "claude-sonnet-5-5",
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          onCreateMessage: (request): void => {
+            capturedSystem = request.system
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "sceneDialoguePolish",
+      messages: [
+        { role: "system", content: "대사를 다듬는다." },
+        { role: "user", content: "뼈대 전체", cacheBoundary: true, ...(cacheTtl !== undefined ? { cacheTtl } : {}) },
+        { role: "user", content: "이번 인물" }
+      ]
+    })
+
+    expect(capturedSystem).toEqual([{ type: "text", text: "대사를 다듬는다.", cache_control: expected }])
+  })
+
+  it.each([
+    ["claude-sonnet-5-5", 16400],
+    ["claude-haiku-4-5", 400]
+  ] as const)("gives %s thinking room above the visible limit only when it reasons (#193)", async (model, expectedMaxTokens) => {
+    let capturedMaxTokens: number | undefined
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model,
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          onCreateMessage: (request): void => {
+            capturedMaxTokens = request.max_tokens
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "backgroundDescription",
+      messages: [{ role: "user", content: "배경" }],
+      maxTokens: 400
+    })
+
+    expect(capturedMaxTokens).toBe(expectedMaxTokens)
   })
 
   it("generates text and separates system prompts from conversation messages", async () => {

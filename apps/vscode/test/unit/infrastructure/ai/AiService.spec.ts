@@ -151,6 +151,22 @@ describe("StoryboardAiService", () => {
     ])
   })
 
+  it("refuses a continuity check cut at the output limit instead of reading it as clean (#193)", async () => {
+    const service = createAiService({ completionText: '[{"start":0,', finishReason: "length" })
+
+    await expect(
+      service.checkContinuity("파란 눈의 엘리아가 걸어왔다.", ["엘리아 — 눈동자 색: 녹색"])
+    ).rejects.toMatchObject({ code: "generation-failed", providerId: "openai" })
+  })
+
+  it("refuses a critique cut at the output limit instead of reading it as passed (#193)", async () => {
+    const service = createAiService({ completionText: '[{"kind":"voice",', finishReason: "length" })
+
+    await expect(
+      service.critiqueDraft({ body: "본문", intent: "목적", characters: ["엘리아"], facts: [] })
+    ).rejects.toMatchObject({ code: "generation-failed", providerId: "openai" })
+  })
+
   it("skips the model call and returns nothing when no facts are provided", async () => {
     const capture: MessageCapture = {}
     const service = createAiService({ completionText: "[]", capture })
@@ -253,6 +269,7 @@ interface MessageCapture {
 
 function createAiService(options: {
   readonly completionText: string
+  readonly finishReason?: string
   readonly defaultProvider?: "openai" | "ollama"
   readonly capture?: MessageCapture
 }): StoryboardAiService {
@@ -279,13 +296,18 @@ function createAiService(options: {
         },
         chat: {
           completions: {
-            create: async (request: { readonly messages: readonly AiMessage[] }): Promise<{ readonly choices: readonly [{ readonly message: { readonly content: string } }] }> => {
+            create: async (request: { readonly messages: readonly AiMessage[] }): Promise<{ readonly choices: readonly [{ readonly message: { readonly content: string }; readonly finish_reason?: string }] }> => {
               if (options.capture) {
                 options.capture.lastMessages = request.messages
                 options.capture.lastProviderId = "openai"
               }
               return {
-                choices: [{ message: { content: options.completionText } }]
+                choices: [
+                  {
+                    message: { content: options.completionText },
+                    ...(options.finishReason !== undefined ? { finish_reason: options.finishReason } : {})
+                  }
+                ]
               }
             }
           }

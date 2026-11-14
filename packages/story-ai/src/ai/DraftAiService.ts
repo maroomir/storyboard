@@ -24,6 +24,7 @@ import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from '#ai/ai/promp
 import type { PromptArtifact, PromptConfig, PromptVariantId } from '#ai/ai/prompts/types';
 import type { AiGenerateResponse, AiTaskName } from '@storyboard/story-model';
 import {
+  AiProviderError,
   coerceCritiqueIssues,
   type DraftCritiqueIssue,
   coerceSceneCoverage,
@@ -31,6 +32,7 @@ import {
   coerceStoryStateUpdate,
   type StoryStateUpdateItem,
   parseJsonArray,
+  truncatedReviewMessage,
 } from '@storyboard/story-model';
 
 export type InlineCompletionContext = {
@@ -43,6 +45,16 @@ export type DraftExpansionContext = {
   readonly activeCharacter?: string;
   readonly background?: string;
 };
+
+function refuseTruncatedReview(response: AiGenerateResponse): void {
+  if (response.isTruncated === true) {
+    throw new AiProviderError(
+      'generation-failed',
+      response.providerId,
+      truncatedReviewMessage(response.providerId),
+    );
+  }
+}
 
 export class DraftAiService {
   public constructor(private readonly gateway: AiTextGateway) {}
@@ -84,6 +96,7 @@ export class DraftAiService {
       ContinuityCheckPrompt.config,
       options,
     );
+    refuseTruncatedReview(response);
     const parsedArray: unknown[] | null = parseJsonArray(response.text);
 
     return parsedArray ? parsedArray.flatMap((value) => toContinuityIssue(value)) : [];
@@ -170,6 +183,7 @@ export class DraftAiService {
       DraftCritiquePrompt.config,
       options,
     );
+    refuseTruncatedReview(response);
 
     return coerceCritiqueIssues(response.text);
   }

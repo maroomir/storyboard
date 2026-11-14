@@ -144,6 +144,7 @@ export class SceneAiService {
         ...options,
         temperature: options.temperature ?? BackgroundDescriptionPrompt.config.temperature,
         maxTokens: options.maxTokens ?? BackgroundDescriptionPrompt.config.maxTokens,
+        reasoningEffort: options.reasoningEffort ?? BackgroundDescriptionPrompt.config.reasoningEffort,
       },
     );
 

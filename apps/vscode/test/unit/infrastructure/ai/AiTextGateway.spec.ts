@@ -63,6 +63,22 @@ describe('AiTextGateway', () => {
     },
   );
 
+  it('reports an answer the output limit left empty as a failed generation and still counts its usage (#193)', async () => {
+    const emptyTruncated: AiGenerateResponse = { ...response, text: '  ', isTruncated: true };
+    const usage: UsageRecord[] = [];
+
+    await expect(
+      createGateway(async () => emptyTruncated, usage).generate('backgroundDescription', [], {}),
+    ).rejects.toMatchObject({ code: 'generation-failed', providerId: 'claude-code' });
+    expect(usage).toHaveLength(1);
+  });
+
+  it('keeps a truncated answer that still has text for the caller to judge', async () => {
+    const truncated: AiGenerateResponse = { ...response, isTruncated: true };
+
+    await expect(createGateway(async () => truncated).generate('sceneBeats', [], {})).resolves.toBe(truncated);
+  });
+
   it('does not send a cancelled call again', async () => {
     const aborted: Error = new Error('aborted');
     const generate = vi.fn<() => Promise<AiGenerateResponse>>().mockRejectedValue(aborted);

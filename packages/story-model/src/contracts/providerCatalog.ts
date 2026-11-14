@@ -733,11 +733,16 @@ export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: s
   return catalogRows[providerId].models.some((model) => model.id === modelId);
 }
 
+const providersRejectingTemperatureOnUnlistedModels: readonly AiProviderId[] = ['claude'];
+
 export function acceptsTemperature(providerId: AiProviderId, modelId: string): boolean {
   const model: ProviderModelEntry | undefined = catalogRows[providerId].models.find(
     (entry) => entry.id === modelId,
   );
-  return model?.acceptsTemperature !== false;
+  if (model === undefined) {
+    return !providersRejectingTemperatureOnUnlistedModels.includes(providerId);
+  }
+  return model.acceptsTemperature !== false;
 }
 
 export function acceptsReasoningEffort(providerId: AiProviderId, modelId: string): boolean {
@@ -792,6 +797,14 @@ export function generationFailedMessage(providerId: AiProviderId, cause?: unknow
     `${getProviderDisplayName(providerId)} 텍스트 생성에 실패했습니다`,
     cause,
   );
+}
+
+export function emptyTruncatedResponseMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 응답이 출력 한도에 닿아 본문 없이 끝났습니다`;
+}
+
+export function truncatedReviewMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 검수 응답이 출력 한도에서 잘려 통과로 볼 수 없습니다`;
 }
 
 export const subscriptionRiskNoticeTitle: string = '구독 로그인으로 생성하기 전에 확인해 주세요.';
