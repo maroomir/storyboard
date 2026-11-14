@@ -10,10 +10,15 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **OpenAI's default model becomes `gpt-6.1-sol`.** If you never picked a model, OpenAI now generates with GPT-6.1 Sol, the successor to GPT-6 Sol (same price, half the cache-read rate), called without `temperature`. The `chatgpt` subscription login still defaults to `gpt-6-sol`.
+
 ### Added
 
 - **Claude Sonnet 5.5 is selectable.** Input and output cost the same as Sonnet 5 ($2 and $10 per million tokens) and cache reads are billed at 0.05x. It is also listed for the `claude-code` subscription login.
 - **The Claude model list is complete as of 2026-11-14.** Newly selectable: Claude Fable 5.2 ($8 and $40, cache reads at 0.025x), Haiku 5.5 ($0.10 and $0.50, the rate for prompts up to 100K tokens), Fable 5, Opus 4.7 and Opus 4.6. Fable 5.2 and Haiku 5.5 are also listed for the `claude-code` subscription login. The default model is unchanged.
+- **The OpenAI model list is complete as of 2026-11-14.** Newly selectable: GPT-6.1 Sol and Terra, GPT-5.4 and 5.4 nano, GPT-5.2, GPT-5.1, GPT-5, 5 mini and 5 nano, o3, GPT-4.1 and 4.1 mini, GPT-4o and 4o mini. GPT-6.1 Sol and Terra are also listed for the `chatgpt` subscription login. The `*-pro` models, which Chat Completions cannot call, are left out.
 
 ### Fixed
 
