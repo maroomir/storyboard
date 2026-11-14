@@ -10,6 +10,14 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Claude Sonnet 5.5 is selectable.** Input and output cost the same as Sonnet 5 ($2 and $10 per million tokens) and cache reads are billed at 0.05x. It is also listed for the `claude-code` subscription login.
+
+### Fixed
+
+- **Claude calls stream, and reasoning models get room to think.** A Claude model that takes an effort level is sent the requested output limit plus 16,000 thinking tokens, so long thinking no longer cuts the answer short, and the response is read from a stream so a long one does not hit the HTTP timeout. A prompt with a one-hour cache boundary also caches its system prompt for an hour.
+
 ## [0.16.0] - 2026-11-13
 
 ### Changed (breaking)
