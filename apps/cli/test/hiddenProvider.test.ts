@@ -635,6 +635,28 @@ describe('the Node CLI runner', () => {
     }
   }
 
+  const exitPollIntervalMs: number = 20;
+  const exitDeadlineMs: number = 3_000;
+  const writePidFileWhole: string =
+    'const fs = require("node:fs"); fs.writeFileSync(process.argv[1] + ".tmp", String(process.pid)); fs.renameSync(process.argv[1] + ".tmp", process.argv[1]); setInterval(() => {}, 1000)';
+
+  async function waitUntilGone(pid: number): Promise<boolean> {
+    const deadline: number = Date.now() + exitDeadlineMs;
+    while (isAlive(pid)) {
+      if (Date.now() >= deadline) {
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, exitPollIntervalMs));
+    }
+    return true;
+  }
+
+  function killLeftover(pid: number): void {
+    if (isAlive(pid)) {
+      process.kill(pid, 'SIGKILL');
+    }
+  }
+
   it('ends a child that ignores SIGTERM within the grace period', async () => {
     const pidFile = join(mkdtempSync(join(tmpdir(), 'storyboard-runner-')), 'child.pid');
     const started = Date.now();
@@ -698,7 +720,7 @@ describe('the Node CLI runner', () => {
         platform: 'node',
         format: 'cjs',
       });
-      const grandchild = `"${process.execPath}" -e 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)' "${pidFile}"`;
+      const grandchild = `"${process.execPath}" -e '${writePidFileWhole}' "${pidFile}"`;
       const host = spawn(
         process.execPath,
         [
@@ -717,9 +739,13 @@ describe('the Node CLI runner', () => {
       }
       host.kill(signal);
       await new Promise((resolve) => host.once('exit', resolve));
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      const grandchildPid: number = Number(readFileSync(pidFile, 'utf8'));
 
-      expect(isAlive(Number(readFileSync(pidFile, 'utf8'))), signal).toBe(false);
+      try {
+        expect(await waitUntilGone(grandchildPid), signal).toBe(true);
+      } finally {
+        killLeftover(grandchildPid);
+      }
     }
   }, 20_000);
 
@@ -740,7 +766,7 @@ describe('the Node CLI runner', () => {
       const { NodeCliRunner } = require(${JSON.stringify(runnerBundle)});
       void new NodeCliRunner().run({
         command: process.execPath,
-        args: ['-e', 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)', ${JSON.stringify(pidFile)}],
+        args: ['-e', ${JSON.stringify(writePidFileWhole)}, ${JSON.stringify(pidFile)}],
         stdin: '', timeoutMs: 60000, withoutEnvironment: [],
       });
       const wait = setInterval(() => {
@@ -749,11 +775,14 @@ describe('the Node CLI runner', () => {
     `;
 
     execFileSync(process.execPath, ['-e', hostScript], { stdio: 'ignore' });
-    const childPid = Number(readFileSync(pidFile, 'utf8'));
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    const childPid: number = Number(readFileSync(pidFile, 'utf8'));
 
-    expect(() => process.kill(childPid, 0)).toThrow();
-  });
+    try {
+      expect(await waitUntilGone(childPid)).toBe(true);
+    } finally {
+      killLeftover(childPid);
+    }
+  }, 10_000);
 
   it('kills the child when the caller aborts', async () => {
     const abort = new AbortController();
