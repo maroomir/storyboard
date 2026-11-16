@@ -279,6 +279,10 @@ function chooseNextStep(facts: NextStepFacts): WorkspaceNextStep {
     return 'generate-drafts';
   }
 
+  if (!facts.hasChapterPlan) {
+    return 'generate-outline';
+  }
+
   if (!facts.manuscript.isAssembled || facts.manuscript.isStale) {
     return 'assemble-manuscript';
   }
