@@ -11,16 +11,12 @@ import {
   aiProvidersListResponsePayloadSchema,
 } from '#model/shared/messaging/ai';
 import {
-  cardsCreatePlaceholderRequestPayloadSchema,
-  cardsCreatePlaceholderResponsePayloadSchema,
   cardsDeleteRequestPayloadSchema,
   cardsDeleteResponsePayloadSchema,
   cardsListRequestPayloadSchema,
   cardsListResponsePayloadSchema,
   cardsOpenRequestPayloadSchema,
   cardsOpenResponsePayloadSchema,
-  cardsResolveImageUriRequestPayloadSchema,
-  cardsResolveImageUriResponsePayloadSchema,
   cardsViewerActionRequestPayloadSchema,
   cardsViewerActionResponsePayloadSchema,
   cardsPendingRequestPayloadSchema,
@@ -109,8 +105,6 @@ import {
 
 export const storyboardRequestPayloadSchemas = {
   'cards.list': cardsListRequestPayloadSchema,
-  'cards.createPlaceholder': cardsCreatePlaceholderRequestPayloadSchema,
-  'cards.resolveImageUri': cardsResolveImageUriRequestPayloadSchema,
   'cards.open': cardsOpenRequestPayloadSchema,
   'cards.delete': cardsDeleteRequestPayloadSchema,
   'cards.openText': cardsViewerActionRequestPayloadSchema,
@@ -162,8 +156,6 @@ export const storyboardRequestPayloadSchemas = {
 
 export const storyboardResponsePayloadSchemas = {
   'cards.list': cardsListResponsePayloadSchema,
-  'cards.createPlaceholder': cardsCreatePlaceholderResponsePayloadSchema,
-  'cards.resolveImageUri': cardsResolveImageUriResponsePayloadSchema,
   'cards.open': cardsOpenResponsePayloadSchema,
   'cards.delete': cardsDeleteResponsePayloadSchema,
   'cards.openText': cardsViewerActionResponsePayloadSchema,

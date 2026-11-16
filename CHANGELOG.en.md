@@ -15,6 +15,10 @@ after the first public release.
 - **`status` points a work that has drafts but no outline to `outline generate`.** It used to offer `manuscript assemble`, which then failed with a bare «조립하지 못했습니다.» `manuscript assemble` now also says why when there is no chapter plan or no draft, and which command to run first. (#187)
 - **The extension's «Build Cards from Scenes» improves an existing card under its own id.** Picking a change to an existing card used to open the «new card ID» box, and leaving it empty cancelled the whole apply. Only a new card is asked for an id now. (#180)
 
+### Internal
+
+- Removed `cards.createPlaceholder` and `cards.resolveImageUri`, which no extension handler served, from the messaging registry and their schemas. The webview never calls them. (#183)
+
 ## [0.16.1] - 2026-11-15
 
 ### Changed (breaking)
