@@ -14,6 +14,7 @@ after the first public release.
 
 - **A lone Hangul jamo («ㅈ 권», «골랐ㅆ다») no longer stays in a draft.** Expansion now rewrites a section in which a single jamo broke a character, pointing at the spot, and a review revision that adds a broken jamo the original text did not have is dropped as «깨진 한글 자모가 새로 생김». A run of two or more jamo, such as «ㅋㅋ», is kept as expression. (#188)
 - **Expansion keeps each section within its share of the catchphrase limit.** The scene's catchphrase limit (one per beat) is split over the sections by their target length and written into each expansion request, and a section that uses more catchphrases than its skeleton piece had and more than its share is rewritten with the excess pointed out. The limit used to be checked only after the whole scene was written, as a warning, and a scene could keep more than twice its limit (67 to 117 uses). (#188)
+- **Expansion no longer follows a line of dialogue with prose explaining it.** The expansion instructions used the viewpoint character's commentary as filler and said «self-justification weighs the same; in the first person, lead with commentary», so paragraphs spelling out each line's intent and one fixed pattern («결코 ~가 아니라») appeared dozens of times in a scene. Commentary is now written only as a new observation that does not repeat what the dialogue already showed, and one such pattern at most once per section. (#188)
 
 ## [0.16.3] - 2026-11-17
 
