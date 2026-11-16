@@ -12,6 +12,7 @@ export interface SceneSectionExpansionInput {
   readonly skeleton: string;
   readonly section: string;
   readonly previousSection?: string;
+  readonly upcomingOpening?: string;
   readonly targetLength: number;
   readonly backgroundFacts?: readonly string[];
   readonly backgroundConflicts?: readonly string[];
@@ -43,6 +44,7 @@ export const SceneSectionExpansionPrompt: PromptModule<
         catchphraseLimits: input.catchphraseLimits ?? [],
         skeleton: input.skeleton,
         previousSection: input.previousSection,
+        upcomingOpening: input.upcomingOpening,
         section: input.section,
       },
       partials: {

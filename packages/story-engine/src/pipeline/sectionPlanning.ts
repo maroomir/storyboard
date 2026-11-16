@@ -186,3 +186,14 @@ export function planSectionTargetLengths(
 
   return targets;
 }
+
+const upcomingOpeningLineCount: number = 3;
+
+export function extractSectionOpening(section: string | undefined): string | undefined {
+  const openingLines: string[] = (section ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && line !== SCENE_BREAK_LINE)
+    .slice(0, upcomingOpeningLineCount);
+  return openingLines.length === 0 ? undefined : openingLines.join('\n');
+}

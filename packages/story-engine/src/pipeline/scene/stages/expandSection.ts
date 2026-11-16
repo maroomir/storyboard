@@ -13,6 +13,7 @@ import type { ResolvedSceneGenerationTuning } from '#engine/pipeline/sceneGenera
 import {
   planSectionCount,
   planSectionTargetLengths,
+  extractSectionOpening,
   SECTION_OUTPUT_LIMIT,
   splitSkeletonIntoSections,
 } from '#engine/pipeline/sectionPlanning';
@@ -125,6 +126,7 @@ export function trimRunAhead(
 interface SectionExpansionRequest {
   readonly section: string;
   readonly previousSection: string | undefined;
+  readonly upcomingOpening: string | undefined;
   readonly targetLength: number;
   readonly backgroundFacts: readonly string[];
   readonly sceneCoordinates: readonly string[];
@@ -304,6 +306,7 @@ export class ExpandSectionStage implements ISceneStage {
     return {
       section: plan.sections[index] as string,
       previousSection,
+      upcomingOpening: extractSectionOpening(plan.sections[index + 1]),
       targetLength: plan.targetLengths[index] as number,
       backgroundFacts: scopeBackgroundFacts(
         plan.backgroundFacts,
@@ -379,6 +382,7 @@ export class ExpandSectionStage implements ISceneStage {
         skeleton: run.polishedText,
         section: request.section,
         previousSection: request.previousSection,
+        upcomingOpening: request.upcomingOpening,
         targetLength: request.targetLength,
         backgroundFacts: request.backgroundFacts,
         backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),

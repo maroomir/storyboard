@@ -7,6 +7,7 @@ describe("SceneSectionExpansionPrompt golden", () => {
     skeleton: "하나가 문을 연다.\n---\n준이 들어온다.",
     section: "준이 들어온다.",
     previousSection: "하나는 문고리를 잡았다.",
+    upcomingOpening: "준이 창가로 간다.",
     targetLength: 1500,
     backgroundFacts: ["해외 콘도 12층", "거실 통창 너머 바다"],
     retryReasons: ["대사 반복", "분량 부족"],

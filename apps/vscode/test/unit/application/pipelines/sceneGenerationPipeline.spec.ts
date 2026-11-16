@@ -22,6 +22,7 @@ import {
   validatePolishedSkeleton,
   validateSceneSkeleton,
   describeCatchphraseBudget,
+  extractSectionOpening,
   findCatchphraseOveruse,
   planSectionCatchphraseBudgets,
   findRepeatedDialogueRun,
@@ -887,6 +888,43 @@ describe("runSceneGenerationPipeline — 살붙임 단계", () => {
     expect(priors[0]).toBeUndefined()
     expect(priors[1]).toMatch(/^확장\(/)
     expect(priors[2]).toMatch(/^확장\(/)
+  })
+
+  it("shows each call the opening of the section after it, and the last call none (#188)", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(longSkeleton)
+    ai.expandSceneSection.mockImplementation(
+      async (input) => longProse(`확장(${(input as { section: string }).section.length})`)
+    )
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 15000 }
+    })
+
+    const sections = [
+      ...new Map(
+        ai.expandSceneSection.mock.calls.map((call) => {
+          const input = call[0] as { section: string; upcomingOpening?: string }
+          return [input.section, input.upcomingOpening] as const
+        })
+      )
+    ]
+    expect(sections.length).toBeGreaterThan(1)
+    sections.slice(0, -1).forEach(([, upcomingOpening], index) => {
+      const nextFirstLine = sections[index + 1]?.[0].split("\n").find((line) => line.trim().length > 0)?.trim()
+      expect(upcomingOpening?.split("\n")[0]).toBe(nextFirstLine)
+    })
+    expect(sections.at(-1)?.[1]).toBeUndefined()
+  })
+
+  it("takes the first lines of a section as its opening, skipping blank lines and scene breaks", () => {
+    expect(extractSectionOpening("\n---\n하나\n\n둘\n셋\n넷")).toBe("하나\n둘\n셋")
+    expect(extractSectionOpening(undefined)).toBeUndefined()
+    expect(extractSectionOpening("---\n")).toBeUndefined()
   })
 
   it("runs a single pass when the scene fits one section", async () => {
