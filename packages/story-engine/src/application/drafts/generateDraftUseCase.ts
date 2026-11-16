@@ -1,6 +1,6 @@
 import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 import { ChapterSummaryRefresher } from '#engine/application/manuscript/chapterSummaryRefresher';
-import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
+import { DraftInputRecord } from '#engine/persistence/draftInputRecord';
 import type {
   AiServices,
   HostAdapters,
@@ -11,7 +11,6 @@ import type {
   BackgroundCard,
   AiProviderId,
   AiTaskName,
-  StoryState,
   Draft,
   StyleDirective,
 } from '@storyboard/story-model';
@@ -97,20 +96,16 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       return false;
     }
 
-    if (!(await this.host.fileSystem.exists(inputs.cacheUri))) {
-      const ledger: StoryState = await new StoryLedger({
-        scenes: this.host.scenes,
-        cards: this.host.cards,
-      }).read(inputs.threadPaths.workspaceRoot, inputs.threadPaths.threadId);
-      return ledger.sceneInputHashes.get(inputs.scene.order) === inputs.inputHash;
-    }
-
-    try {
-      const record: SceneCacheRecord = await this.repositories.sceneCache.read(inputs.cacheUri);
-      return record.inputHash === inputs.inputHash;
-    } catch {
-      return false;
-    }
+    const recordedHash: string | undefined = await new DraftInputRecord({
+      fileSystem: this.host.fileSystem,
+      scenes: this.host.scenes,
+      sceneCache: this.repositories.sceneCache,
+    }).readRecordedHash({
+      workspaceRoot: inputs.threadPaths.workspaceRoot,
+      stem: inputs.scene.stem,
+      cacheUri: inputs.cacheUri,
+    });
+    return recordedHash === inputs.inputHash;
   }
 
   private async openCachedDraft(draftUri: StoryUri): Promise<GenerateDraftResult> {

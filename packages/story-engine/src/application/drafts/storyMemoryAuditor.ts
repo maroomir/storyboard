@@ -1,28 +1,19 @@
 import type { ChapterSummaryLedger } from '#engine/persistence/cache/chapterSummaryLedger';
 import { StoryLedger } from '#engine/persistence/bundles/storyLedger';
-import { SceneContextReader } from '#engine/persistence/sceneContextReader';
+import { memoizeFileReads, SceneInputHasher } from '#engine/persistence/sceneInputHasher';
 import {
-  deriveSceneGrounding,
   auditStoryState,
-  computeSceneInputHash,
   formatStoryStateStaleWarning,
   resealStoryState,
-  sceneContextPaths,
-  sceneNarrationHashInput,
   sealStoryState,
   serializeStoryState,
   storyStateSceneOrders,
 } from '@storyboard/story-model';
 import type {
-  BibleFact,
   ProjectFormat,
-  SceneContext,
-  SceneContextWorkspacePaths,
-  SceneFile,
   StoryboardProjectPaths,
   StoryState,
   StoryStateAudit,
-  StoryUri,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
@@ -43,34 +34,6 @@ export interface StoryMemoryAudit {
   readonly audit: StoryStateAudit;
   readonly staleWarning: string | undefined;
   readonly needsMarking: boolean;
-}
-
-function memoizeFileReads(fileSystem: IFileSystem): IFileSystem {
-  const reads: Map<string, Promise<Uint8Array<ArrayBufferLike>>> = new Map<
-    string,
-    Promise<Uint8Array>
-  >();
-
-  return {
-    readFile: (uri: StoryUri): Promise<Uint8Array> => {
-      const cached: Promise<Uint8Array<ArrayBufferLike>> | undefined = reads.get(uri.path);
-      if (cached) {
-        return cached;
-      }
-
-      const pending: Promise<Uint8Array> = fileSystem.readFile(uri);
-      reads.set(uri.path, pending);
-      return pending;
-    },
-    writeFile: (uri, content) => fileSystem.writeFile(uri, content),
-    createDirectory: (uri) => fileSystem.createDirectory(uri),
-    exists: (uri) => fileSystem.exists(uri),
-    listFileNames: (uri) => fileSystem.listFileNames(uri),
-    readDirectory: (uri) => fileSystem.readDirectory(uri),
-    delete: (uri) => fileSystem.delete(uri),
-    modifiedTime: (uri) => fileSystem.modifiedTime(uri),
-    isRealPathInside: (uri, root) => fileSystem.isRealPathInside(uri, root),
-  };
 }
 
 export class StoryMemoryAuditor {
@@ -207,34 +170,12 @@ export class StoryMemoryAuditor {
     reads: IFileSystem,
     fileName: string,
   ): Promise<string | undefined> {
-    const { paths, format, sceneBreakJoiner } = this.request;
+    const { cards, scenes, summaries, paths, format, sceneBreakJoiner } = this.request;
 
-    try {
-      const scene: SceneFile | undefined = await this.request.scenes.read(paths.workspaceRoot, fileName);
-      if (scene === undefined) {
-        return undefined;
-      }
-      const ctxPaths: SceneContextWorkspacePaths = sceneContextPaths(paths);
-      const context: SceneContext = await new SceneContextReader(reads, this.request.cards, this.request.scenes, this.request.summaries).build(ctxPaths, scene);
-      const bibleFacts: readonly BibleFact[] = await new SceneContextReader(
-        reads,
-        this.request.cards,
-        this.request.scenes,
-        this.request.summaries,
-      ).resolveBibleFacts(ctxPaths, context);
-
-      return computeSceneInputHash({
-        sceneBody: context.scene.body,
-        characters: context.characters,
-        background: context.background,
-        format,
-        bibleFacts,
-        sceneBreakJoiner,
-        grounding: deriveSceneGrounding(context.scene, context.background),
-        narration: sceneNarrationHashInput(context.scene),
-      });
-    } catch {
-      return undefined;
-    }
+    return await new SceneInputHasher({ fileSystem: reads, cards, scenes, summaries }).computeCurrent(
+      paths,
+      fileName,
+      { format, sceneBreakJoiner },
+    );
   }
 }

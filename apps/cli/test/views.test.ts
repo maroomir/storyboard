@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -85,6 +85,32 @@ describe('scene list', () => {
     expect(text.stdout).toContain('번호\t제목\t상태');
     expect(text.stdout).toContain('002\tstorm\t초안 없음');
     expect(text.stdout).not.toContain('main');
+  });
+
+  it('judges a generated draft by its recorded inputs, so a clone with newer card files stays current (#181)', async () => {
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '등대지기의 손녀', '--name', '하나', '--id', 'hana']);
+    await writeSceneBundleFromYaml(
+      workspace,
+      ['type: scene', 'id: 001-opening', 'characters:', '  - hana', 'beats:', '  - 하나가 시험 씬의 항구에 선다', ''].join('\n'),
+    );
+    const generated = await new CommandDispatcher(deps()).dispatch(['draft', 'generate', '001-opening', '--no-revise']);
+    expect(generated.exitCode).toBe(0);
+    rmSync(join(workspace, '.storyboard', 'cache'), { recursive: true, force: true });
+    const sceneBundle: string = join(workspace, 'scene', '001-opening.card');
+    const inAnHour: Date = new Date(Date.now() + 3_600_000);
+    for (const name of readdirSync(sceneBundle)) {
+      utimesSync(join(sceneBundle, name), inAnHour, inAnHour);
+    }
+
+    expect((await runJson('scene', 'list')).data.scenes[0].draft).toBe('ready');
+    expect((await runJson('status')).data.drafts.stale).toBe(0);
+    const again = await runJson('draft', 'generate', '--all');
+    expect(again.data).toMatchObject({ generated: 0, cacheHits: 1 });
+
+    const beats: string = join(sceneBundle, 'beats.yaml');
+    expect(readFileSync(beats, 'utf8')).toContain('시험 씬');
+    writeFileSync(beats, readFileSync(beats, 'utf8').replace('시험 씬', '바뀐 씬'));
+    expect((await runJson('scene', 'list')).data.scenes[0].draft).toBe('stale');
   });
 
   it('keeps a draft generated with scene breaks on current for doctor and scene list', async () => {

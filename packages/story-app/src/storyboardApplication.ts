@@ -562,13 +562,22 @@ function buildWorkspaceRepositories(
     host.summaries,
   );
 
+  const sceneCache: SceneCacheRepository = new SceneCacheRepository(fileSystem);
+
   return {
     drafts: new DraftRepository(fileSystem),
     scenes: new SceneRepository(host.scenes),
     sceneBatches: new SceneBatchRepository(fileSystem, workspaceLocator, host.scenes),
     sceneSeeds: new SceneSeedRepository(host.scenes),
-    sceneCache: new SceneCacheRepository(fileSystem),
-    sceneSidebar: new SceneSidebarRepository(fileSystem, host.scenes),
+    sceneCache,
+    sceneSidebar: new SceneSidebarRepository({
+      fileSystem,
+      scenes: host.scenes,
+      cards: host.cards,
+      summaries: host.summaries,
+      sceneCache,
+      configBridge: host.configBridge,
+    }),
     project: new ProjectRepository(fileSystem),
     outline,
     novelOutline: outline,
