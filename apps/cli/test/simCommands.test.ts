@@ -372,6 +372,24 @@ describe('sim rejudge', () => {
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toContain('다시 채점할 기록이 없습니다');
   });
+
+  it('reads a single-genre track root when no genre is given, as sim run does (#186)', async () => {
+    const single = join(track, 'single');
+    mkdirSync(join(single, 'scene'), { recursive: true });
+    mkdirSync(join(single, 'floor'), { recursive: true });
+    writeTrackScene(single, { stem: '001-a', title: '첫 씬', targetWordCount: 3000 });
+    writeFileSync(join(single, 'floor', '001-a.md'), '망가진 원고');
+    const out = join(home, 'runs.jsonl');
+    writeFileSync(out, '');
+
+    const outcome = await run('sim rejudge', { track: single, judge: 'openai', 'judge-model': 'gpt-5.6-terra', out });
+
+    expect(outcome?.message).toContain('다시 채점할 기록이 없습니다');
+  });
+
+  it('shows the genre as optional in its usage line (#186)', () => {
+    expect(findCommand('sim rejudge')?.spec.usage).toContain('[--genre <name>]');
+  });
 });
 
 describe('sim apply', () => {

@@ -8,7 +8,7 @@ export class SimRejudgeCommand implements ICommandHandler {
     verb: 'sim rejudge',
     group: '측정',
     usage:
-      'sim rejudge --track <path> --genre <name> --judge <provider> --judge-model <name> [--point <label>] [--source <engine>] [--yes]',
+      'sim rejudge --track <path> [--genre <name>] --judge <provider> --judge-model <name> [--point <label>] [--source <engine>] [--yes]',
     summary: '저장된 원고를 다른 심판으로 다시 채점합니다 (생성은 하지 않습니다)',
     flags: ['track', 'config', 'genre', 'point', 'source', 'judge', 'judge-model', 'out', 'yes'],
     examples: [

@@ -13,6 +13,7 @@ after the first public release.
 ### Fixed
 
 - **A revision cut off at the output limit no longer goes into the draft.** The review-and-revise loop now checks whether a revision answer ended at the output limit, and if so drops that section as «출력 한도에서 잘림» and keeps the original text. A revision missing only its last few paragraphs used to pass the length check and be applied as it was. (#198)
+- **`sim rejudge` shows `--genre` as optional in its usage.** A run made with `sim run` on a single-genre track root is rejudged from that root without `--genre`. The usage used to list `--genre` as required, and giving the root folder's name sent it looking for `track/chain/<name>` and ending in ENOENT. (#186)
 
 ## [0.16.2] - 2026-11-16
 
