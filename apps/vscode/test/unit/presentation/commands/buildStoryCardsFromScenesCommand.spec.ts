@@ -54,4 +54,29 @@ describe("build story cards from scenes", () => {
     expect(review[0]?.originalText).toBeUndefined()
     expect(review[0]?.proposedText).toContain("id: sera")
   })
+
+  it("improves an existing card under its own id without asking for one", async () => {
+    const existingTarget = { ...target, isNew: false, uriId: "character/sera" }
+    const applyBuildTargets = vi.fn(async () => ({ writtenIds: ["sera"], needsIdNames: [] }))
+    const showInputBox = vi.fn(async () => undefined)
+    window.showInputBox = showInputBox as never
+    window.showQuickPick = vi.fn(async (items: unknown) => [
+      { ...(items as { target: unknown }[])[0], proposal: traitProposal }
+    ]) as never
+    window.showWarningMessage = vi.fn(async () => "적용") as never
+    const command = new BuildStoryCardsFromScenesCommand(
+      {
+        buildFromScenes: vi.fn(async () => ({ targets: [existingTarget], snapshots: [] })),
+        hasCurrentBuildSources: vi.fn(async () => true),
+        applyBuildTargets
+      } as never,
+      { showDiffs: vi.fn(async () => undefined) } as never
+    )
+
+    await command.run()
+
+    expect(showInputBox).not.toHaveBeenCalled()
+    const [, applied] = applyBuildTargets.mock.calls[0] as unknown as [unknown, { card: { id: string } }[]]
+    expect(applied[0]?.card.id).toBe("sera")
+  })
 })

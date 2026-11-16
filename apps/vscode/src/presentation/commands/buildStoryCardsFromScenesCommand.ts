@@ -212,7 +212,8 @@ async function prepareChanges(
       }
       card = { ...card, id } as StoryboardCard;
     }
-    if (usedIds.has(card.id)) {
+    const isNewCardTakingUsedId: boolean = target.isNew && usedIds.has(card.id);
+    if (isNewCardTakingUsedId) {
       const id: string | undefined = await askForCardId(card.name, usedIds);
       if (!id) {
         return undefined;
