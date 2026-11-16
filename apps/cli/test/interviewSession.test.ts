@@ -633,6 +633,40 @@ describe('interview session (mock provider)', () => {
     expect(await readInterviewPending(workspace, 'hana')).toEqual([]);
   });
 
+  it('keeps the speech the writer answered over a distilled speech toward the same partner (#179)', async () => {
+    const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+    vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+      this: MockAiProvider,
+      request: Parameters<MockAiProvider['generate']>[0],
+    ) {
+      const response = await generate.call(this, request);
+      if (request.taskName !== 'interviewDistill') {
+        return response;
+      }
+      const distilled = JSON.parse(response.text) as Record<string, unknown>;
+      return {
+        ...response,
+        text: JSON.stringify({
+          ...distilled,
+          relationSpeech: [{ target: 'jun', speech: '자존심이 걸리면 서로 욕을 섞어 맞받아친다' }],
+        }),
+      };
+    });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'written', text: "'등대 아이'라 부르고 반말" } });
+    for (let i = 0; i < 3; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
+    }
+    await app.interviews.finish(request);
+
+    const speeches = (await readInterviewPending(workspace, 'hana')).filter((line) => line.facet === 'speech');
+    expect(speeches.map((line) => line.value)).toEqual(["'등대 아이'라 부르고 반말"]);
+  });
+
   it('calls no distill and keeps the candidates when a session ends without an answer', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };

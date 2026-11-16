@@ -320,6 +320,19 @@ function describeRecordAnswer(record: InterviewRecord, axes: readonly InterviewA
   return `${record.situation} → ${axis.label}: ${label} — ${text}`;
 }
 
+function dropDistilledSpeechToAnsweredPartners(
+  distilledDrafts: readonly CardCollectProposalDraft[],
+  relationDrafts: readonly CardCollectProposalDraft[],
+): CardCollectProposalDraft[] {
+  const answeredSpeechTargets: ReadonlySet<string> = new Set(
+    relationDrafts.flatMap((draft) => (draft.kind === 'relationSpeech' ? [draft.target] : [])),
+  );
+
+  return distilledDrafts.filter(
+    (draft) => !(draft.kind === 'relationSpeech' && answeredSpeechTargets.has(draft.target)),
+  );
+}
+
 export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
   protected abstract readonly cardKind: BibleSubjectKind;
 
@@ -1198,9 +1211,11 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
         ),
       ),
     ];
+    const distilledDrafts: CardCollectProposalDraft[] =
+      distilled === undefined ? [] : this.proposalDraftsFrom(distilled);
     const drafts: CardCollectProposalDraft[] = [
       ...relationDrafts,
-      ...(distilled === undefined ? [] : this.proposalDraftsFrom(distilled)),
+      ...dropDistilledSpeechToAnsweredPartners(distilledDrafts, relationDrafts),
     ];
 
     return drafts
