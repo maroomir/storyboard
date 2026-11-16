@@ -1,8 +1,9 @@
 # 역할 프롬프트가 한 편의 작품을 완성하는 길
 
-`packages/story-ai/src/ai/prompts/resources/`의 역할 프롬프트 35개가 어느 순서로 불리고, 무엇을
+`packages/story-ai/src/ai/prompts/resources/`의 역할 프롬프트 46개가 어느 순서로 불리고, 무엇을
 읽고, 무엇을 파일로 남겨 다음 역할에 넘기는지를 정리한 문서다. 2026-10-08, v0.12.3 `main`의
 코드를 직접 따라가며 그렸고, 파일 위치와 이름은 0.16 형식(카드·씬 번들, 캐시 DB)에 맞춰 고쳤다.
+씬 단계와 프롬프트 명단은 0.16.1 의 `sceneStageCatalog` 와 리소스 폴더에 맞췄다(그림은 아직 7단계를 그린다).
 스테이지 카탈로그(`sceneStageCatalog`, `novelStageCatalog`), 되먹임
 루프(`reviseLoop.ts`), 사후 갱신기(`PostGenerationUpdateManager`)의 실제 호출 관계를 반영한다.
 
@@ -83,14 +84,18 @@
 0.16부터 `sceneGrounding`은 없다. 사건·장소·시각은 AI에게 제안받아 카드에 쓰지 않고, 제목·첫 비트·장소
 카드에서 유도한다.
 
-### 7단계
+### 씬 단계
+
+기본으로 도는 것은 아래 8단계다. `actBeats` 는 작가가 `pipelines/scene.yaml` 에 넣을 때만 `draftSkeleton` 대신 돈다.
 
 | # | 스테이지 | 프롬프트 | 하는 일 |
 |---|---|---|---|
 | 1 | `buildPersonas` 인물 기억 | `personaGeneration` (0.7) | 등장 인물마다 그 인물의 1인칭 기억·태도를 만든다. 카드 번들의 `memory/<줄기>.yaml`에 캐시되어 다음 씬은 다시 부르지 않는다. 줄기마다 따로 쌓는다. |
 | 2 | `describeBackground` 배경 묘사 | `backgroundDescription` (0.7) | 배경 카드마다 분위기 묘사를 만든다. 직전 초안에 그 배경의 발췌가 있으면 그것을 쓰고 호출을 생략한다. |
+| 2a | `checkBackgroundFacts` 배경 사실 점검 | `backgroundFactConflicts` (0.1) | 씬 배경 카드의 사실이 둘 이상이면 함께 참일 수 없는 쌍을 찾아 경고로 남긴다. 결과는 캐시 DB 의 `findings` 표에 두어, 카드가 바뀌지 않으면 다시 부르지 않는다. |
 | 3 | `collectVoiceSamples` 말투 표본 | 없음 (코드) | 앞 초안들의 화자 기록에서 인물별 대사 표본을 뽑아 둔다. |
 | 4 | `draftSkeleton` 뼈대 | `sceneSkeleton` (0.7) | 입력 전부 + 1·2·3의 산출물을 받아 비트를 따라 씬 전체를 목표 분량의 일부(뼈대 비율)로 먼저 쓴다. 가장 비싼 호출이라 코드 검증에 실패해도 **한 번만** 사유를 붙여 다시 부르고, 둘 다 위반이면 가벼운 쪽을 남긴다. |
+| 4a | `actBeats` 배우 뼈대 (선택) | `sceneBeatActor` (0.9) → `sceneBeatArbiter` (0.7) → `sceneBeatJudge` (0.2) | 비트마다 인물별 행동 제안을 받아 감독이 한 대목으로 엮고, 심판이 인물마다 일관성을 채점한다. 넣으면 4 를 대신한다. |
 | 5 | `polishDialogue` 대사 다듬기 | `sceneDialoguePolish` (0.8) | 말투 표본과 카드 보이스로 대사만 손본다. 선택 단계이고, 실패하면 뼈대를 그대로 쓴다. |
 | 6 | `expandSection` 살붙임 | `sceneSectionExpansion` (0.75) | 뼈대를 구간으로 자르고, 구간마다 앞 구간을 보여 주며 목표 길이로 확장한다. 구간×(1+재시도) 회 호출하고, 겹침·탈락·반복을 코드로 검증한다. |
 | 7 | `attributeDialogue` 화자 붙이기 | `sceneDialogueAttribution` (0) | 완성 초안의 대사마다 화자를 붙여 씬 번들의 `dialogue.json`에 대사 기록을 남긴다. 이 기록이 다음 씬의 3단계 말투 표본이 된다. |
@@ -141,13 +146,13 @@
 
 ## 역할 프롬프트 전체 명단
 
-35개 중 파이프라인이 자동으로 부르는 것은 18개다. 나머지는 사람이 명령으로 부르는 도구이거나
-노트 흡수·스튜디오 같은 별도 경로에 속한다. 온도와 상한은 리소스 파일 front-matter의 값이다.
+46개 중 파이프라인이 기본으로 부르는 것은 16개이고, 선택 단계 `actBeats` 가 3개를 더 부른다. 나머지는
+사람이 명령으로 부르는 도구이거나 노트 흡수·스튜디오·인터뷰 같은 별도 경로에 속한다. 온도와 상한은 리소스 파일 front-matter의 값이다.
 프롬프트 본문은 `prompts/<key>.md`를 `~/.storyboard` 또는 워크스페이스 `.storyboard`에 두면
 작가가 바꿀 수 있고, 리소스를 고친 뒤에는 `npm run build:prompts --workspace @storyboard/story-ai`를
 돌려야 한다.
 
-### 자동 파이프라인이 부르는 18개
+### 자동 파이프라인이 부르는 16개 (+ 선택 3개)
 
 | 프롬프트 | 층 | 부르는 곳 | 읽는 것 → 내놓는 것 | 온도 / 상한 |
 |---|---|---|---|---|
@@ -157,7 +162,11 @@
 | `sceneBeats` | 기획 | 2층 전처리 | 비트 없는 씬 번들 → 비트 목록 | 0.7 / 1500 |
 | `personaGeneration` | 기억 | 2층 1 | 인물 카드 → 1인칭 기억·태도 | 0.7 / 500 |
 | `backgroundDescription` | 기억 | 2층 2 | 배경 카드 → 분위기 묘사 | 0.7 / 400 |
+| `backgroundFactConflicts` | 기억 | 2층 2a | 배경 카드의 사실 줄 → 함께 참일 수 없는 쌍 | 0.1 / 600 |
 | `sceneSkeleton` | 집필 | 2층 4 | 입력 전부 + 페르소나·배경 → 씬 뼈대 | 0.7 / 8000 |
+| `sceneBeatActor` | 집필 (선택) | 2층 4a, 비트×인물마다 | 비트 + 그 인물의 카드·기억 → 행동·대사 제안 | 0.9 / 2000 |
+| `sceneBeatArbiter` | 집필 (선택) | 2층 4a, 비트마다 | 인물들의 제안 → 하나로 엮은 비트 본문 | 0.7 / 3000 |
+| `sceneBeatJudge` | 집필 (선택) | 2층 4a, 비트마다 | 엮은 비트 → 출연 인물마다 일관성 점수(성격·지식 경계·관계·동기) | 0.2 / 2000 |
 | `sceneDialoguePolish` | 집필 | 2층 5 | 뼈대 + 말투 표본 → 대사만 손본 뼈대 | 0.8 / 8000 |
 | `sceneSectionExpansion` | 집필 | 2층 6, 구간마다 | 뼈대 + 구간 + 앞 구간 + 목표 길이 → 확장 구간 | 0.75 / 8000 |
 | `sceneDialogueAttribution` | 집필 | 2층 7 | 완성 초안 → 대사별 화자 | 0 / 4000 |
@@ -166,8 +175,6 @@
 | `draftRevision` | 수정 | 되먹임 루프, 1층 ⑦, `draft condense` | 본문 + 담당별 지시문 → 고친 본문 | 0.7 / 4000 |
 | `chapterSummary` | 기억 | 1층 ⑧ | 장의 씬 초안들 → 한 장 요약 | 0.3 / 600 |
 | `storyStateUpdate` | 사후 | 3층, 동기 | 초안 + 이전 원장 → 새 항목(목격자 포함) | 0.2 / 900 |
-| `traitsExtraction` | 수집 | 카드 수집 탭 | 초안 + 인물 이름 → 성향 | 0.3 / 800 |
-| `backgroundFactExtraction` | 수집 | 카드 수집 탭 | 초안 + 배경 이름 → 장소 사실·인물 | 0.2 / 700 |
 
 ### 사람이 부르는 도구 9개
 
@@ -181,11 +188,11 @@
 | `draftAugment` | `draft augment` | 빠진 비트·장면 덧붙이기 | 0.7 / 4000 |
 | `draftCondense` | 스튜디오 도구 | 줄이기. CLI의 `draft condense`는 `draftRevision`을 쓴다. | 0.4 / 4000 |
 | `genreFormatting` | `draft format` | 장르 관습(웹소설 줄바꿈 등)으로 재포맷 | 0.5 / 12000 |
-| `cardRecommendation` | `card collect` 계열 | 원고에서 카드 만들 만한 인물·장소 추천 | 0.2 / 700 |
+| `cardRecommendation` | `card recommend`, 확장의 카드 추천 | 원고에서 카드 만들 만한 인물·장소 추천 | 0.2 / 700 |
 | `situationExtraction` | 커버리지 하네스 | 본문에서 상황 목록 추출 | 0.3 / 1000 |
 | `inlineCompletion` | 에디터 인라인 완성 | 커서 뒤 짧은 이어쓰기 | 0.5 / 120 |
 
-### 별도 경로 8개
+### 별도 경로 18개
 
 - **노트 흡수** (`notes absorb`): `noteExtraction` (0.2 / 16000) → `noteSynthesis` (0.3 / 2000) →
   `noteCardConsolidation` (0.1 / 8000). Obsidian·Notion 노트를 카드·씬·계약 후보로 바꾸는, 작품
@@ -194,13 +201,21 @@
   `studioValidation` (0.1 / 1200)이 제안을 검증한다. 카드 작업에는 `studioCardSeed` (0.1 / 300)와
   `studioCardAudit` (0.1 / 1200). 코드베이스에서 유일하게 "에이전트"라는 이름을 쓰는 곳이고,
   실제로 도구 선택 루프를 돈다.
-- **`personaDialogue`** (0.8 / 2000): 서비스 메서드는 있지만 엔진의 어느 스테이지도 부르지
-  않는다. 뼈대·살붙임 방식 이전의 "인물 페르소나 대화 극화" 단계의 잔재로 보인다.
+- **초안에서 카드 수집** (스튜디오의 `collectFromDrafts` 도구, `cards.collectProposals`):
+  `cardCandidateExtraction` (0.2 / 700), `traitsExtraction` (0.3 / 800),
+  `backgroundFactExtraction` (0.2 / 700). 카드 하나를 두고 초안들에서 그 인물의 성향·후보 줄이나
+  그 배경의 사실을 뽑아 제안으로 돌려준다. 카드에 바로 쓰지 않는다.
+- **인물·배경 인터뷰** (`card interview`): `interviewAxes` (0.5 / 3000)가 축을 정하고,
+  `interviewCardAnswers` (0.2 / 1500)가 카드가 이미 답한 축을 닫고, `interviewQuestion`
+  (0.9 / 2000)·`interviewRelationSpeech` (0.7 / 1200)가 묻고, `interviewUpdate` (0.4 / 2500)가
+  답 하나마다 그 인물·장소에 대한 지금까지의 이해를 고쳐 쓰고, `interviewDistill` (0.4 / 3000)이 카드 제안으로 증류한다.
+- **서술자 인터뷰** (`card interview <서술자>`): `narratorInterviewQuestion` (0.9 / 1500)이 묻고
+  `narratorInterviewDistill` (0.3 / 1200)이 `voice` 제안으로 증류한다.
 
 ## 한 장으로 다시 읽으면
 
-- **역할은 35개지만 자동으로 도는 것은 18개**이고, 그 19개가 세 층(소설·씬·기억)에 고정된
-  순서로 꽂혀 있다.
+- **역할은 46개지만 자동으로 도는 것은 16개**(선택 단계를 넣으면 19개)이고, 그것들이 세 층(소설·씬·기억)에
+  고정된 순서로 꽂혀 있다.
 - **역할 사이의 통신 수단은 파일이다.** 시놉시스·장 계획·씬 카드·초안·원장·요약이 각각 한
   역할의 출력이자 다음 역할의 입력이고, 그래서 어느 단계든 파일을 고치고 다시 돌릴 수 있다.
 - **판단은 세 군데에만 있다.** 뼈대·살붙임의 코드 검증 재시도, 되먹임 루프의 검사 → 라우팅 →
