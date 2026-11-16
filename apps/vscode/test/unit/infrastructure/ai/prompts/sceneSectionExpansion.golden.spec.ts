@@ -10,6 +10,7 @@ describe("SceneSectionExpansionPrompt golden", () => {
     upcomingOpening: "준이 창가로 간다.",
     targetLength: 1500,
     backgroundFacts: ["해외 콘도 12층", "거실 통창 너머 바다"],
+    catchphraseLimits: ["하나: «말도 안 돼» 모두 합쳐 2번까지"],
     retryReasons: ["대사 반복", "분량 부족"],
     isUnderLengthRetry: true,
     style: {

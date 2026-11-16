@@ -125,6 +125,9 @@ exports[`SceneSectionExpansionPrompt golden > renders every block for the generi
 - 해외 콘도 12층
 - 거실 통창 너머 바다
 
+[입버릇 한도 — 이번 구간의 대사와 서술을 합친 횟수. 이 한도와 횟수를 본문에 적거나 의식하는 문장을 쓰지 마라]
+- 하나: «말도 안 돼» 모두 합쳐 2번까지
+
 [직전 구간 — 이미 완성됨]
 하나는 문고리를 잡았다.
 
@@ -177,6 +180,9 @@ exports[`SceneSectionExpansionPrompt golden > renders every block for the rich v
 - 해외 콘도 12층
 - 거실 통창 너머 바다
 
+[입버릇 한도 — 이번 구간의 대사와 서술을 합친 횟수. 이 한도와 횟수를 본문에 적거나 의식하는 문장을 쓰지 마라]
+- 하나: «말도 안 돼» 모두 합쳐 2번까지
+
 [직전 구간 — 이미 완성됨]
 하나는 문고리를 잡았다.
 
@@ -203,6 +209,9 @@ exports[`SceneSectionExpansionPrompt golden > renders every block for the xs var
   "user": "[공간 사실]
 - 해외 콘도 12층
 - 거실 통창 너머 바다
+
+[입버릇 한도 — 이번 구간의 대사와 서술을 합친 횟수. 이 한도와 횟수를 본문에 적거나 의식하는 문장을 쓰지 마라]
+- 하나: «말도 안 돼» 모두 합쳐 2번까지
 
 [직전 구간 — 이미 완성됨]
 하나는 문고리를 잡았다.
