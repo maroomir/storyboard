@@ -666,20 +666,25 @@ describe('the Node CLI runner', () => {
       command: process.execPath,
       args: [
         '-e',
-        'process.on("SIGTERM", () => {}); require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)',
+        `process.on("SIGTERM", () => {}); ${writePidFileWhole}`,
         pidFile,
       ],
       timeoutMs: 300,
     });
+    const childPid: number = Number(readFileSync(pidFile, 'utf8'));
 
     expect(result.failure).toBe('timeout');
     expect(Date.now() - started).toBeLessThan(6_000);
-    expect(isAlive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+    try {
+      expect(await waitUntilGone(childPid)).toBe(true);
+    } finally {
+      killLeftover(childPid);
+    }
   }, 10_000);
 
   it('ends the whole process group, grandchildren included', async () => {
     const pidFile = join(mkdtempSync(join(tmpdir(), 'storyboard-runner-')), 'grandchild.pid');
-    const grandchild = `"${process.execPath}" -e 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)' "${pidFile}"`;
+    const grandchild = `"${process.execPath}" -e '${writePidFileWhole}' "${pidFile}"`;
 
     for (const ending of ['timeout', 'aborted'] as const) {
       const abort = new AbortController();
@@ -698,8 +703,12 @@ describe('the Node CLI runner', () => {
 
       expect(result.failure).toBe(ending);
       expect(Date.now() - started).toBeLessThan(6_000);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(isAlive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+      const grandchildPid: number = Number(readFileSync(pidFile, 'utf8'));
+      try {
+        expect(await waitUntilGone(grandchildPid), ending).toBe(true);
+      } finally {
+        killLeftover(grandchildPid);
+      }
     }
   }, 20_000);
 
