@@ -17,7 +17,13 @@ import type {
   SectionViolationKind,
 } from '#engine/pipeline/sceneGenerationTuning';
 import { SCENE_BREAK_LINE } from '#engine/pipeline/sectionPlanning';
-import { countCatchphrase, type CatchphraseCount } from '#engine/pipeline/catchphrases';
+import {
+  countCatchphrase,
+  countCatchphrases,
+  sumCatchphraseCounts,
+  type CatchphraseBudget,
+  type CatchphraseCount,
+} from '#engine/pipeline/catchphrases';
 
 interface LineSpan {
   line: string;
@@ -293,6 +299,7 @@ interface ExpandedSectionInput {
   readonly previousSection?: string;
   readonly sectionPlaces?: readonly string[];
   readonly backgroundFacts?: readonly string[];
+  readonly catchphraseBudgets?: readonly CatchphraseBudget[];
   readonly dialoguePreservedRatio?: number;
   readonly paddingParagraphRatio?: number;
   readonly tuning?: SceneGenerationTuningInput;
@@ -382,6 +389,32 @@ function checkBrokenHangul(input: ExpandedSectionInput): SectionViolation[] {
       detail: `한글 자모가 홀로 떨어져 글자가 깨졌습니다 (${broken.map((span) => `"${span.excerpt}"`).join(', ')}). 온전한 글자로 쓰세요`,
     },
   ];
+}
+
+function checkCatchphraseBudget(
+  input: ExpandedSectionInput,
+  budget: CatchphraseBudget,
+): SectionViolation[] {
+  const written: CatchphraseCount[] = countCatchphrases(input.expanded, budget.phrases);
+  const writtenTotal: number = sumCatchphraseCounts(written);
+  const inSection: number = sumCatchphraseCounts(countCatchphrases(input.section, budget.phrases));
+  const allowed: number = Math.max(budget.limit, inSection);
+  if (writtenTotal <= allowed) {
+    return [];
+  }
+
+  return [
+    {
+      kind: 'catchphrase',
+      detail: `${budget.characterName}의 입버릇을 ${writtenTotal}번 썼습니다 (이번 구간 ${allowed}번까지: ${written.map((entry) => `«${entry.phrase}» ${entry.count}번`).join(', ')}). 넘친 자리는 입버릇 없이 그 뜻을 다른 말로 쓰세요`,
+    },
+  ];
+}
+
+function checkCatchphraseBudgets(input: ExpandedSectionInput): SectionViolation[] {
+  return (input.catchphraseBudgets ?? []).flatMap((budget) =>
+    checkCatchphraseBudget(input, budget),
+  );
 }
 
 function checkLostDialogue(
@@ -532,6 +565,7 @@ const sectionChecks: readonly SectionCheck[] = [
   checkOffCoordinatePlaces,
   checkForeignScript,
   checkBrokenHangul,
+  checkCatchphraseBudgets,
   checkLostDialogue,
   checkSceneBreakCount,
   checkSectionLength,

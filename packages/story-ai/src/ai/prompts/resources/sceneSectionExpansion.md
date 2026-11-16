@@ -51,6 +51,15 @@ prefixCacheTtl: 1h
 {{#hasSceneCoordinates}}
 
 {{/hasSceneCoordinates}}
+{{#hasCatchphraseLimits}}
+[입버릇 한도 — 이번 구간의 대사와 서술을 합친 횟수. 이 한도와 횟수를 본문에 적거나 의식하는 문장을 쓰지 마라]
+{{/hasCatchphraseLimits}}
+{{#catchphraseLimits}}
+- {{.}}
+{{/catchphraseLimits}}
+{{#hasCatchphraseLimits}}
+
+{{/hasCatchphraseLimits}}
 {{#previousSection}}
 [직전 구간 — 이미 완성됨]
 {{previousSection}}

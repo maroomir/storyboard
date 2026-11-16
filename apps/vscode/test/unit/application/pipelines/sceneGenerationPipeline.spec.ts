@@ -21,7 +21,9 @@ import {
   validateExpandedSection,
   validatePolishedSkeleton,
   validateSceneSkeleton,
+  describeCatchphraseBudget,
   findCatchphraseOveruse,
+  planSectionCatchphraseBudgets,
   findRepeatedDialogueRun,
   type ISceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
@@ -1613,6 +1615,75 @@ describe("대사 다듬기 단계", () => {
 
     expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(1)
     expect(result.warnings).toContain("엘리아의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다")
+  })
+})
+
+describe("구간별 입버릇 한도 (#188)", () => {
+  const joker: CharacterCard = { ...eliaCard, catchphrases: ["세기의 철학자", "평민"] }
+  const base = { characters: [joker, jihoonCard], targetLength: 100, skeleton: "엘리아가 걷는다." }
+
+  it("splits the scene's catchphrase limit over the sections by target length", () => {
+    const budgets = planSectionCatchphraseBudgets({
+      characters: [joker, jihoonCard],
+      sceneLimit: 10,
+      sectionTargetLengths: [6000, 3000, 1000]
+    })
+
+    expect(budgets.map((section) => section.map((budget) => budget.limit))).toEqual([[6], [3], [1]])
+    expect(budgets[0]?.[0]).toMatchObject({ characterName: "엘리아", phrases: ["세기의 철학자", "평민"] })
+    expect(describeCatchphraseBudget(budgets[0]![0]!)).toBe("엘리아: «세기의 철학자»·«평민» 모두 합쳐 6번까지")
+  })
+
+  it("plans no budget for a scene without beats", () => {
+    expect(
+      planSectionCatchphraseBudgets({ characters: [joker], sceneLimit: 0, sectionTargetLengths: [3000, 3000] })
+    ).toEqual([[], []])
+  })
+
+  it("rejects a section that spends more catchphrases than its budget", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: "엘리아가 걷는다.",
+      expanded: `엘리아가 걷는다. ${"세기의 철학자는 생각했다. ".repeat(3)}${"묘사".repeat(30)}`,
+      catchphraseBudgets: [{ characterName: "엘리아", phrases: ["세기의 철학자", "평민"], limit: 2 }]
+    })
+
+    const violation = violations.find((entry) => entry.kind === "catchphrase")
+    expect(violation?.detail).toContain("엘리아의 입버릇을 3번 썼습니다 (이번 구간 2번까지: «세기의 철학자» 3번)")
+  })
+
+  it("lets the expansion keep every catchphrase the skeleton section already has", () => {
+    const section = `"세기의 철학자가 왔다." "세기의 철학자가 간다." "세기의 철학자다."`
+    const violations = validateExpandedSection({
+      ...base,
+      section,
+      expanded: `${section} ${"묘사".repeat(30)}`,
+      catchphraseBudgets: [{ characterName: "엘리아", phrases: ["세기의 철학자"], limit: 1 }]
+    })
+
+    expect(violations.map((entry) => entry.kind)).not.toContain("catchphrase")
+  })
+
+  it("tells each expansion call its catchphrase budget", async () => {
+    const ai = createRecordingAiService()
+    const context: SceneContext = {
+      ...contextFor([joker], "본문"),
+      scene: {
+        ...sceneFile("본문"),
+        card: { type: "scene", id: "01-opening", beats: ["하나", "둘", "셋", "넷"] }
+      } as SceneFile
+    }
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context,
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 5000 }
+    })
+
+    const limits = (ai.expandSceneSection.mock.calls[0]?.[0] as { catchphraseLimits?: string[] }).catchphraseLimits
+    expect(limits).toEqual(["엘리아: «세기의 철학자»·«평민» 모두 합쳐 4번까지"])
   })
 })
 

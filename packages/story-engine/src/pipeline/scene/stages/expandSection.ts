@@ -27,6 +27,11 @@ import {
   type SectionViolation,
 } from '#engine/pipeline/sectionValidation';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
+import {
+  describeCatchphraseBudget,
+  planSectionCatchphraseBudgets,
+  type CatchphraseBudget,
+} from '#engine/pipeline/catchphrases';
 import { scopeBackgroundFacts } from '#engine/pipeline/sectionBackgroundFacts';
 import type { GenerateTextOptions } from '@storyboard/story-ai';
 import {
@@ -124,6 +129,7 @@ interface SectionExpansionRequest {
   readonly backgroundFacts: readonly string[];
   readonly sceneCoordinates: readonly string[];
   readonly sectionPlaces: readonly string[];
+  readonly catchphraseBudgets: readonly CatchphraseBudget[];
 }
 
 interface SectionExpansionPlan {
@@ -133,6 +139,7 @@ interface SectionExpansionPlan {
   readonly placesBySection: string[][];
   readonly scenePlaces: string[];
   readonly backgroundFacts: string[];
+  readonly catchphraseBudgetsBySection: CatchphraseBudget[][];
 }
 
 interface SectionRetryHint {
@@ -247,6 +254,11 @@ export class ExpandSectionStage implements ISceneStage {
       typeof beat === 'string' || beat.place === undefined ? [] : [beat.place],
     );
     const backgroundFacts: string[] = backgroundFactLines(run.background);
+    const catchphraseBudgetsBySection: CatchphraseBudget[][] = planSectionCatchphraseBudgets({
+      characters: run.context.characters,
+      sceneLimit: beats.length * run.tuning.catchphrasePerBeatLimit,
+      sectionTargetLengths: targetLengths,
+    });
 
     return {
       sections,
@@ -255,6 +267,7 @@ export class ExpandSectionStage implements ISceneStage {
       placesBySection,
       scenePlaces,
       backgroundFacts,
+      catchphraseBudgetsBySection,
     };
   }
 
@@ -299,6 +312,7 @@ export class ExpandSectionStage implements ISceneStage {
       ),
       sceneCoordinates: plan.coordinatesBySection[index] ?? [],
       sectionPlaces: plan.placesBySection[index] ?? [],
+      catchphraseBudgets: plan.catchphraseBudgetsBySection[index] ?? [],
     };
   }
 
@@ -369,6 +383,7 @@ export class ExpandSectionStage implements ISceneStage {
         backgroundFacts: request.backgroundFacts,
         backgroundConflicts: run.backgroundFactConflicts.map(formatBackgroundFactConflict),
         sceneCoordinates: request.sceneCoordinates,
+        catchphraseLimits: request.catchphraseBudgets.map(describeCatchphraseBudget),
         retryReasons: retry.retryReasons,
         isUnderLengthRetry: retry.isUnderLengthRetry,
       },
@@ -394,6 +409,7 @@ export class ExpandSectionStage implements ISceneStage {
         : { previousSection: request.previousSection }),
       sectionPlaces: request.sectionPlaces,
       backgroundFacts: request.backgroundFacts,
+      catchphraseBudgets: request.catchphraseBudgets,
       tuning: run.tuning,
     });
   }

@@ -263,7 +263,7 @@ role: main
 - 캐릭터 머리말은 `role`(`main` | `supporting` | `extra`)·`attributes`(`sex`·`age`·`job`)·`aliases`를 가질 수 있다.
 - 배경 머리말은 `aliases`와 `within`(상위 배경의 uuid)을 가질 수 있다.
 - 진술의 facet(`element/`가 소유한 어휘)은 종류마다 정해져 있다. 캐릭터는 `traits`·`catchphrases`·`desire`·`relation`·`speech`·`arc`, 배경은 `tags`·`time`·`weather`·`senses`·`layout`·`rules`, 셋 모두 `description`·`fact`(서술자와 캐릭터는 `voice`도)를 쓴다. `relation`·`speech`는 상대 카드의 uuid를 가리킨다.
-- `catchphrases`는 반복돼야 하는 입버릇이다. `voice`의 예시 대사와 달리 복사 금지·반복 제한의 예외이고, 비트당 1회(`generation.catchphrase.perBeatLimit`)를 넘으면 초안 경고가 난다. `speech`는 그 상대에게 쓰는 말투이며 인물별 대사 다듬기와 검수가 읽는다.
+- `catchphrases`는 반복돼야 하는 입버릇이다. `voice`의 예시 대사와 달리 복사 금지·반복 제한의 예외이고, 비트당 1회(`generation.catchphrase.perBeatLimit`)가 씬 전체의 한도다. 살붙임은 그 한도를 구간 목표 분량의 비율로 나눠(구간마다 최소 1회) 구간마다 알려 주고, 뼈대 조각에 이미 있는 것보다 많이 쓰면서 구간 몫도 넘긴 판은 `catchphrase` 위반으로 다시 쓰게 하며, 끝내 씬 한도를 넘으면 초안 경고가 난다. `speech`는 그 상대에게 쓰는 말투이며 인물별 대사 다듬기와 검수가 읽는다.
 - 배경의 `layout`(출입구·구역·시선)과 `rules`(이 장소에서 늘 참인 것)는 확정 사실이라 뼈대에 [배치]·[이 장소의 규칙]으로, 살붙임에 배경 사실로 들어간다.
 - 진술 출처(`origin`)는 `author`·`agent`·`studio`·`interview` 넷이다. 노트 흡수가 쓴 줄은 `studio` 에 `command: notes absorb` 와 그 카드의 첫 출처 노트(`session: note:obsidian/<볼트 기준 경로>`, Notion 은 `note:notion`)를 단다. 병합 규칙상 작가의 줄(`author`)은 다른 출처가 덮지 못한다. 출처 확인은 `card show --sources`.
 
@@ -812,7 +812,7 @@ buildPersonas
 
 **4. 기계 검증** — 뼈대가 정답지 역할을 하므로 위반을 **AI 없이 결정론적으로** 가려낼 수 있다.
 `cast`(뼈대에 없던 인물) · `foreign-script`(다른 문자 체계) · `broken-hangul`(홀로 떨어진 한글 자모 하나 —
-«ㅋㅋ»처럼 둘 이상 이어진 것은 표현으로 둔다) · `lost-dialogue`(사라진 대사 — 이어진
+«ㅋㅋ»처럼 둘 이상 이어진 것은 표현으로 둔다) · `catchphrase`(구간 몫의 입버릇 한도 초과) · `lost-dialogue`(사라진 대사 — 이어진
 조각을 합친 것과도 비교하므로 한 턴을 쪼개 쓴 것은 소실이 아니다) · `repetition`(뼈대 조각에 한 번
 있는 대사를 두 번 쓰거나 직전 구간의 대사를 다시 쓰거나 앞 문단과 닮은 문단을 되풀이함) ·
 `too-short`(목표의 절반 미만) · `too-long`(다듬기가 뼈대의 두 배 초과)를 잡아 사유를 붙여 최대 두 번
