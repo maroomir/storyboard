@@ -302,7 +302,7 @@ notes in one step:
 
 ```bash
 storyboard init --title "달의 문" --from-notes ~/Vault/달의문
-storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes
+storyboard notes absorb '<Notion 페이지 URL>' --yes
 storyboard notes absorb ~/Downloads/Export-달의문.zip --yes
 ```
 
