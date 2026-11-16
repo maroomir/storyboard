@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { AiProviderError, type ContinuityIssueLike, type DraftCritiqueIssue, type SceneFile } from "@storyboard/story-model";
+import type { DraftRevisionAnswer } from "@storyboard/story-ai";
 import { stubScenes } from "../../../stubs/scenes";
 import { stubCards } from "../../../stubs/cards";
 
@@ -10,7 +11,7 @@ const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIss
   void input
   return []
 })
-const reviseDraftMock = vi.fn(async (input: unknown): Promise<string> => {
+const reviseDraftMock = vi.fn(async (input: unknown): Promise<string | DraftRevisionAnswer> => {
   void input
   return "인물은 창가에서 잠시 숨을 골랐다."
 })
@@ -23,7 +24,10 @@ vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   StoryboardAiService: class {
     checkContinuity = (): Promise<ContinuityIssueLike[]> => checkContinuityMock()
     critiqueDraft = (input: unknown): Promise<DraftCritiqueIssue[]> => critiqueDraftMock(input)
-    reviseDraft = (input: unknown): Promise<string> => reviseDraftMock(input)
+    reviseDraft = async (input: unknown): Promise<DraftRevisionAnswer> => {
+      const answer: string | DraftRevisionAnswer = await reviseDraftMock(input)
+      return typeof answer === "string" ? { text: answer, isTruncated: false } : answer
+    }
   }
 }))
 vi.mock("@storyboard/story-model", async (importOriginal) => ({
@@ -364,6 +368,18 @@ describe("ReviseDraftUseCase", () => {
     expect(result.revisionCount).toBe(0)
     expect(writeDraftFileMock).not.toHaveBeenCalled()
     expect(checkContinuityMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("preserves the original draft when a revision was cut off at the output limit", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    reviseDraftMock.mockResolvedValueOnce({ text: "인물은 창가에서 잠시 숨을 골랐다.", isTruncated: true })
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.preservedOriginal).toBe(true)
+    expect(result.rejection).toMatchObject({ reason: "truncated" })
+    expect(result.revisionCount).toBe(0)
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
   })
 
   it("does not write an earlier valid candidate when a later candidate is rejected", async () => {

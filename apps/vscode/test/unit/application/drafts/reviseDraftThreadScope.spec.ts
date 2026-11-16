@@ -34,7 +34,10 @@ vi.mock('@storyboard/story-ai', async (importOriginal) => ({
       factLines: readonly string[],
     ): Promise<ContinuityIssueLike[]> => checkContinuityMock(body, factLines);
     critiqueDraft = (input: unknown): Promise<DraftCritiqueIssue[]> => critiqueDraftMock(input);
-    reviseDraft = async (): Promise<string> => '';
+    reviseDraft = async (): Promise<{ text: string; isTruncated: boolean }> => ({
+      text: '',
+      isTruncated: false,
+    });
   },
 }));
 

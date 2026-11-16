@@ -8,6 +8,7 @@ import {
 } from '@storyboard/story-model';
 import type {
   AiProviderRegistry,
+  DraftRevisionAnswer,
   DraftRevisionInput,
   StoryboardAiService,
 } from '@storyboard/story-ai';
@@ -567,16 +568,17 @@ export class ReviseLoop {
   ): Promise<boolean> {
     const original: string = tally.getSection(plan.section);
     const originalText: string = original.trim();
-    let candidate: string;
+    let answer: DraftRevisionAnswer;
     try {
-      candidate = await this.requestSectionRevision(plan, originalText);
+      answer = await this.requestSectionRevision(plan, originalText);
     } catch (error) {
       tally.recordFailure(toReviseLoopFailure('revise', error));
       return false;
     }
-    const validation: DraftCandidateValidation = this.validateSectionCandidate(
+    const candidate: string = answer.text;
+    const validation: DraftCandidateValidation = this.judgeSectionAnswer(
       originalText,
-      candidate,
+      answer,
       currentBody,
     );
 
@@ -597,10 +599,10 @@ export class ReviseLoop {
   private async requestSectionRevision(
     plan: SectionRevisionPlan,
     originalText: string,
-  ): Promise<string> {
+  ): Promise<DraftRevisionAnswer> {
     const { aiService, registry, attribution, loopContext } = this.options;
 
-    const revised: string = await aiService.reviseDraft(
+    const revised: DraftRevisionAnswer = await aiService.reviseDraft(
       {
         body: originalText,
         format: loopContext.format,
@@ -612,7 +614,21 @@ export class ReviseLoop {
       { providerId: registry.getTaskProvider('draftRevision'), attribution },
     );
 
-    return curlDialogueQuotes(revised);
+    return { ...revised, text: curlDialogueQuotes(revised.text) };
+  }
+
+  private judgeSectionAnswer(
+    originalText: string,
+    answer: DraftRevisionAnswer,
+    currentBody: string,
+  ): DraftCandidateValidation {
+    const validation: DraftCandidateValidation = this.validateSectionCandidate(
+      originalText,
+      answer.text,
+      currentBody,
+    );
+
+    return answer.isTruncated ? { ...validation, accepted: false, reason: 'truncated' } : validation;
   }
 
   private validateSectionCandidate(
@@ -639,6 +655,7 @@ const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
   'too-short': '분량 미달',
   'not-shorter': '줄지 않음',
   'scene-breaks-changed': '장면 구분 변경',
+  truncated: '출력 한도에서 잘림',
 };
 
 export function describeReviseRound(round: ReviseRound): string {

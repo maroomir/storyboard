@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A revision cut off at the output limit no longer goes into the draft.** The review-and-revise loop now checks whether a revision answer ended at the output limit, and if so drops that section as «출력 한도에서 잘림» and keeps the original text. A revision missing only its last few paragraphs used to pass the length check and be applied as it was. (#198)
+
 ## [0.16.2] - 2026-11-16
 
 ### Fixed

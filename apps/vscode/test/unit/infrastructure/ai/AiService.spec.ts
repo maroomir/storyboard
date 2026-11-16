@@ -167,6 +167,14 @@ describe("StoryboardAiService", () => {
     ).rejects.toMatchObject({ code: "generation-failed", providerId: "openai" })
   })
 
+  it("tells the revise loop that a revision was cut at the output limit (#198)", async () => {
+    const service = createAiService({ completionText: "고친 본문의 앞부분", finishReason: "length" })
+
+    await expect(
+      service.reviseDraft({ body: "본문", format: "novel", instructions: ["고칠 것"], intent: "목적", facts: [] })
+    ).resolves.toEqual({ text: "고친 본문의 앞부분", isTruncated: true })
+  })
+
   it("skips the model call and returns nothing when no facts are provided", async () => {
     const capture: MessageCapture = {}
     const service = createAiService({ completionText: "[]", capture })

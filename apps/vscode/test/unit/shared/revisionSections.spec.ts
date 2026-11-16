@@ -108,7 +108,7 @@ describe("ReviseLoop by section", () => {
     return {
       checkContinuity,
       critiqueDraft: vi.fn().mockResolvedValue([]),
-      reviseDraft: vi.fn(reviseDraft)
+      reviseDraft: vi.fn(async (input: { body: string }) => ({ text: await reviseDraft(input), isTruncated: false }))
     } as never
   }
 

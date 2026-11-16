@@ -12,7 +12,13 @@ export interface RevisionPlanEntry {
   readonly instructions: readonly string[];
   readonly preservedOriginal?: boolean;
   readonly rejection?: {
-    readonly reason: 'empty' | 'meta-response' | 'too-short' | 'not-shorter' | 'scene-breaks-changed';
+    readonly reason:
+      | 'empty'
+      | 'meta-response'
+      | 'too-short'
+      | 'not-shorter'
+      | 'scene-breaks-changed'
+      | 'truncated';
     readonly originalLength: number;
     readonly candidateLength: number;
   };
@@ -37,7 +43,7 @@ export class RevisionPlanParseError extends Error {
 }
 
 interface RevisionPlanEntryPayloadRejection {
-  reason: 'too-short' | 'empty' | 'meta-response' | 'not-shorter' | 'scene-breaks-changed';
+  reason: 'too-short' | 'empty' | 'meta-response' | 'not-shorter' | 'scene-breaks-changed' | 'truncated';
   originalLength: number;
   candidateLength: number;
 }
@@ -61,7 +67,14 @@ const revisionPlanEntrySchema: z.ZodType<RevisionPlanEntryPayload> = z.object({
   preservedOriginal: z.boolean().optional(),
   rejection: z
     .object({
-      reason: z.enum(['empty', 'meta-response', 'too-short', 'not-shorter', 'scene-breaks-changed']),
+      reason: z.enum([
+        'empty',
+        'meta-response',
+        'too-short',
+        'not-shorter',
+        'scene-breaks-changed',
+        'truncated',
+      ]),
       originalLength: z.number().int().nonnegative(),
       candidateLength: z.number().int().nonnegative(),
     })

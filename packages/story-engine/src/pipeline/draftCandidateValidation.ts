@@ -7,7 +7,8 @@ export type DraftCandidateRejectionReason =
   | 'meta-response'
   | 'too-short'
   | 'not-shorter'
-  | 'scene-breaks-changed';
+  | 'scene-breaks-changed'
+  | 'truncated';
 
 export interface DraftCandidateLengthPolicy {
   readonly maxCompressionPercent: number;

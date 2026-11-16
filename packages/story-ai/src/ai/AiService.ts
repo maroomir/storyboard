@@ -40,6 +40,7 @@ import {
   DraftAiService,
   type ContinuityCheckOptions,
   type DraftExpansionContext,
+  type DraftRevisionAnswer,
   type InlineCompletionContext,
 } from '#ai/ai/DraftAiService';
 import { SceneAiService } from '#ai/ai/SceneAiService';
@@ -108,6 +109,7 @@ export type {
 export type {
   ContinuityCheckOptions,
   DraftExpansionContext,
+  DraftRevisionAnswer,
   InlineCompletionContext,
 } from '#ai/ai/DraftAiService';
 
@@ -438,7 +440,7 @@ export class StoryboardAiService {
   public async reviseDraft(
     input: DraftRevisionInput,
     options: GenerateTextOptions = {},
-  ): Promise<string> {
+  ): Promise<DraftRevisionAnswer> {
     return this.draftAiService.reviseDraft(input, options);
   }
 

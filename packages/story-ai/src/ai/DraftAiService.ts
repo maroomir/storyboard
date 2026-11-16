@@ -56,6 +56,11 @@ function refuseTruncatedReview(response: AiGenerateResponse): void {
   }
 }
 
+export interface DraftRevisionAnswer {
+  readonly text: string;
+  readonly isTruncated: boolean;
+}
+
 export class DraftAiService {
   public constructor(private readonly gateway: AiTextGateway) {}
 
@@ -191,7 +196,7 @@ export class DraftAiService {
   public async reviseDraft(
     input: DraftRevisionInput,
     options: GenerateTextOptions = {},
-  ): Promise<string> {
+  ): Promise<DraftRevisionAnswer> {
     const variant: PromptVariantId = this.gateway.resolvePromptVariant('draftRevision', options);
     const prompt: PromptArtifact = DraftRevisionPrompt.build(input, variant);
     const response: AiGenerateResponse = await this.generateWithDefaults(
@@ -201,7 +206,7 @@ export class DraftAiService {
       options,
     );
 
-    return response.text.trim();
+    return { text: response.text.trim(), isTruncated: response.isTruncated === true };
   }
 
   public async condenseDraft(
