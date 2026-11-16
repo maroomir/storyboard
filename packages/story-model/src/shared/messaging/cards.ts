@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
 import { characterRoles } from '#model/element/character';
-import { cardSchema, cardTypes, type CardType } from '#model/format/card';
+import { cardTypes, type CardType } from '#model/format/card';
 import { cardSectionIds } from '#model/element/facet';
 import type { CardViewLine, CardViewSection } from '#model/shared/cardView';
 import { uriStringSchema } from '#model/shared/messaging/atoms';
-import type { StoryboardCard } from '#model/format/card';
 
 export interface CardsListRequestPayload {
   type?: CardType;
@@ -14,30 +13,6 @@ export interface CardsListRequestPayload {
 export const cardsListRequestPayloadSchema: z.ZodType<CardsListRequestPayload> = z.object({
   type: z.enum(cardTypes).optional(),
 });
-
-export interface CardsCreatePlaceholderRequestPayload {
-  type: CardType;
-  id: string;
-  name: string;
-}
-
-export const cardsCreatePlaceholderRequestPayloadSchema: z.ZodType<CardsCreatePlaceholderRequestPayload> =
-  z.object({
-    type: z.enum(cardTypes),
-    id: z.string().trim().min(1),
-    name: z.string().trim().min(1),
-  });
-
-export interface CardsResolveImageUriRequestPayload {
-  cardUri: string;
-  relativePath: string;
-}
-
-export const cardsResolveImageUriRequestPayloadSchema: z.ZodType<CardsResolveImageUriRequestPayload> =
-  z.object({
-    cardUri: uriStringSchema,
-    relativePath: z.string().trim().min(1),
-  });
 
 export interface CardsOpenRequestPayload {
   uri: string;
@@ -86,26 +61,6 @@ export interface CardsListResponsePayload {
 export const cardsListResponsePayloadSchema: z.ZodType<CardsListResponsePayload> = z.object({
   cards: z.array(cardSummarySchema),
 });
-
-export interface CardsCreatePlaceholderResponsePayload {
-  card: StoryboardCard;
-  uri: string;
-}
-
-export const cardsCreatePlaceholderResponsePayloadSchema: z.ZodType<CardsCreatePlaceholderResponsePayload> =
-  z.object({
-    card: cardSchema,
-    uri: uriStringSchema,
-  });
-
-export interface CardsResolveImageUriResponsePayload {
-  uri: string;
-}
-
-export const cardsResolveImageUriResponsePayloadSchema: z.ZodType<CardsResolveImageUriResponsePayload> =
-  z.object({
-    uri: uriStringSchema,
-  });
 
 export interface CardsOpenResponsePayload {
   [key: string]: never;
