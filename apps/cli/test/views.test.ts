@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { serializeDraft } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { listDraftRevisions } from './fixtures/sceneBundles';
+import { listDraftRevisions, writeSceneBundleFromYaml } from './fixtures/sceneBundles';
 
 import { commandCatalog } from '@/commands/index';
 import { CommandDispatcher, type DispatchDependencies } from '@/commands/commandDispatcher';
@@ -85,6 +85,26 @@ describe('scene list', () => {
     expect(text.stdout).toContain('번호\t제목\t상태');
     expect(text.stdout).toContain('002\tstorm\t초안 없음');
     expect(text.stdout).not.toContain('main');
+  });
+
+  it('keeps a draft generated with scene breaks on current for doctor and scene list', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ 'ai.provider.default': 'mock', 'generation.sceneBreak.enabled': true }),
+    );
+    await new CommandDispatcher(deps()).dispatch(['card', 'create', 'character', '등대지기의 손녀', '--name', '하나', '--id', 'hana']);
+    await writeSceneBundleFromYaml(
+      workspace,
+      ['type: scene', 'id: 001-opening', 'characters:', '  - hana', 'beats:', '  - 하나가 시험 씬의 항구에 선다', ''].join('\n'),
+    );
+    expect((await new CommandDispatcher(deps()).dispatch(['draft', 'generate', '001-opening', '--no-revise'])).exitCode).toBe(0);
+
+    const state: string = join(workspace, 'scene', '001-opening.card', 'state.yaml');
+    writeFileSync(state, readFileSync(state, 'utf8').replace('statements: []', 'statements:\n  - {facet: event, value: 하나가 항구에 섰다.}'));
+
+    const doctor = await new CommandDispatcher(deps()).dispatch(['doctor']);
+    expect(doctor.stdout + doctor.stderr).not.toContain('지금의 카드·씬과 어긋나');
+    expect((await runJson('scene', 'list')).data.scenes[0].draft).toBe('ready');
   });
 
   it('shows the thread column once a work has two threads', async () => {

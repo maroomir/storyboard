@@ -2,6 +2,7 @@ import {
   ChapterMemoryAuditor,
   ProjectRepository,
   StoryMemoryAuditor,
+  resolveSceneBreakJoiner,
   WorkspaceInitializer,
   type ChapterMemoryAudit,
   type CreateWorkspaceRequest,
@@ -163,7 +164,7 @@ export class WorkspaceManager {
       summaries: this.deps.summaries,
       paths,
       format: project.format,
-      sceneBreakJoiner: this.deps.configBridge.getDraftSceneBreakSeparator(),
+      sceneBreakJoiner: resolveSceneBreakJoiner(this.deps.configBridge.getDraftSceneBreakSeparator()),
     });
   }
 }

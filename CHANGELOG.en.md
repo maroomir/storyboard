@@ -15,6 +15,7 @@ after the first public release.
 - **A revision cut off at the output limit no longer goes into the draft.** The review-and-revise loop now checks whether a revision answer ended at the output limit, and if so drops that section as «출력 한도에서 잘림» and keeps the original text. A revision missing only its last few paragraphs used to pass the length check and be applied as it was. (#198)
 - **`sim rejudge` shows `--genre` as optional in its usage.** A run made with `sim run` on a single-genre track root is rejudged from that root without `--genre`. The usage used to list `--genre` as required, and giving the root folder's name sent it looking for `track/chain/<name>` and ending in ENOENT. (#186)
 - **A form of address the writer answered in an interview is no longer replaced by a distilled one.** When one session produced both the writer's answer and a distilled speech line toward the same partner, the distilled line came last and was what `card apply` wrote. Only the writer's answer is proposed for that partner now. (#179)
+- **With scene breaks on, `doctor` no longer reports a draft it just generated as out of step with the story state.** The ledger audit and sealing (`init --repair`) put the scene break into the input hash the way generation does. With `generation.sceneBreak.enabled` on, the audit used to find every scene «out of step with the current cards and scenes». (#199)
 
 ## [0.16.2] - 2026-11-16
 
