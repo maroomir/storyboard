@@ -2,6 +2,7 @@ export type SectionViolationKind =
   | 'cast'
   | 'place'
   | 'foreign-script'
+  | 'broken-hangul'
   | 'lost-dialogue'
   | 'too-short'
   | 'too-long'
@@ -17,6 +18,7 @@ export const sectionViolationKinds: readonly [SectionViolationKind, ...SectionVi
   'cast',
   'place',
   'foreign-script',
+  'broken-hangul',
   'lost-dialogue',
   'too-short',
   'too-long',

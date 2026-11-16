@@ -18,7 +18,8 @@ export interface RevisionPlanEntry {
       | 'too-short'
       | 'not-shorter'
       | 'scene-breaks-changed'
-      | 'truncated';
+      | 'truncated'
+      | 'broken-hangul';
     readonly originalLength: number;
     readonly candidateLength: number;
   };
@@ -43,7 +44,7 @@ export class RevisionPlanParseError extends Error {
 }
 
 interface RevisionPlanEntryPayloadRejection {
-  reason: 'too-short' | 'empty' | 'meta-response' | 'not-shorter' | 'scene-breaks-changed' | 'truncated';
+  reason: 'too-short' | 'empty' | 'meta-response' | 'not-shorter' | 'scene-breaks-changed' | 'truncated' | 'broken-hangul';
   originalLength: number;
   candidateLength: number;
 }
@@ -74,6 +75,7 @@ const revisionPlanEntrySchema: z.ZodType<RevisionPlanEntryPayload> = z.object({
         'not-shorter',
         'scene-breaks-changed',
         'truncated',
+        'broken-hangul',
       ]),
       originalLength: z.number().int().nonnegative(),
       candidateLength: z.number().int().nonnegative(),

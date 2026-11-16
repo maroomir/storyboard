@@ -29,6 +29,7 @@ export * from '#model/format/storyState';
 export * from '#model/format/storyStateFacts';
 export * from '#model/format/entityName';
 export * from '#model/format/foreignScript';
+export * from '#model/format/brokenHangul';
 export * from '#model/format/regExp';
 export * from '#model/format/slug';
 export * from '#model/format/unknownValues';

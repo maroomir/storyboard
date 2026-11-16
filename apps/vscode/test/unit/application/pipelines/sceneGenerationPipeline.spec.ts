@@ -1238,6 +1238,27 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("foreign-script")
   })
 
+  it("flags a lone Hangul jamo as a broken character", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: "엘리아가 걷는다.",
+      expanded: "엘리아가 ㅈ 권을 들고 걷는다. " + "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("broken-hangul")
+    expect(violations.find((violation) => violation.kind === "broken-hangul")?.detail).toContain("ㅈ 권")
+  })
+
+  it("keeps a run of jamo such as laughter in a text message", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: "엘리아가 걷는다.",
+      expanded: "엘리아가 걷는다. 화면에 ㅋㅋㅋ 하고 답이 왔다. " + "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).not.toContain("broken-hangul")
+  })
+
   it("accepts a skeleton line the expansion only reworded", () => {
     const violations = validateExpandedSection({
       ...base,

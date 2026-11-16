@@ -3,6 +3,7 @@ import {
   AiProviderError,
   buildRevisionInstructions,
   countBlockingIssues,
+  findBrokenHangulSpans,
   scoreCritique,
   shouldPassRevise,
 } from '@storyboard/story-model';
@@ -115,6 +116,10 @@ export interface ReviseLoopResult {
   };
   readonly failure?: ReviseLoopFailure;
   readonly rounds: readonly ReviseRound[];
+}
+
+function addsBrokenHangul(originalText: string, candidateText: string): boolean {
+  return findBrokenHangulSpans(candidateText).length > findBrokenHangulSpans(originalText).length;
 }
 
 function toReviseLoopFailure(stage: ReviseLoopFailure['stage'], error: unknown): ReviseLoopFailure {
@@ -628,7 +633,13 @@ export class ReviseLoop {
       currentBody,
     );
 
-    return answer.isTruncated ? { ...validation, accepted: false, reason: 'truncated' } : validation;
+    if (answer.isTruncated) {
+      return { ...validation, accepted: false, reason: 'truncated' };
+    }
+
+    return addsBrokenHangul(originalText, answer.text)
+      ? { ...validation, accepted: false, reason: 'broken-hangul' }
+      : validation;
   }
 
   private validateSectionCandidate(
@@ -656,6 +667,7 @@ const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
   'not-shorter': '줄지 않음',
   'scene-breaks-changed': '장면 구분 변경',
   truncated: '출력 한도에서 잘림',
+  'broken-hangul': '깨진 한글 자모가 새로 생김',
 };
 
 export function describeReviseRound(round: ReviseRound): string {

@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A lone Hangul jamo («ㅈ 권», «골랐ㅆ다») no longer stays in a draft.** Expansion now rewrites a section in which a single jamo broke a character, pointing at the spot, and a review revision that adds a broken jamo the original text did not have is dropped as «깨진 한글 자모가 새로 생김». A run of two or more jamo, such as «ㅋㅋ», is kept as expression. (#188)
+
 ## [0.16.3] - 2026-11-17
 
 ### Fixed

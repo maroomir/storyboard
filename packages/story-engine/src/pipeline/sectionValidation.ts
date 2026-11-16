@@ -1,5 +1,13 @@
-import { characterMatchTokens, findForeignScriptSpans } from '@storyboard/story-model';
-import type { CharacterCard, ForeignScriptSpan } from '@storyboard/story-model';
+import {
+  characterMatchTokens,
+  findBrokenHangulSpans,
+  findForeignScriptSpans,
+} from '@storyboard/story-model';
+import type {
+  BrokenHangulSpan,
+  CharacterCard,
+  ForeignScriptSpan,
+} from '@storyboard/story-model';
 
 import { pipelineDefaults } from '#engine/pipeline/pipelineDefaults';
 import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
@@ -362,6 +370,20 @@ function checkForeignScript(input: ExpandedSectionInput): SectionViolation[] {
   ];
 }
 
+function checkBrokenHangul(input: ExpandedSectionInput): SectionViolation[] {
+  const broken: BrokenHangulSpan[] = findBrokenHangulSpans(input.expanded);
+  if (broken.length === 0) {
+    return [];
+  }
+
+  return [
+    {
+      kind: 'broken-hangul',
+      detail: `한글 자모가 홀로 떨어져 글자가 깨졌습니다 (${broken.map((span) => `"${span.excerpt}"`).join(', ')}). 온전한 글자로 쓰세요`,
+    },
+  ];
+}
+
 function checkLostDialogue(
   input: ExpandedSectionInput,
   context: SectionCheckContext,
@@ -509,6 +531,7 @@ const sectionChecks: readonly SectionCheck[] = [
   checkAddedCast,
   checkOffCoordinatePlaces,
   checkForeignScript,
+  checkBrokenHangul,
   checkLostDialogue,
   checkSceneBreakCount,
   checkSectionLength,
