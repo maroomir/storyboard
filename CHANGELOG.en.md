@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`status` points a work that has drafts but no outline to `outline generate`.** It used to offer `manuscript assemble`, which then failed with a bare «조립하지 못했습니다.» `manuscript assemble` now also says why when there is no chapter plan or no draft, and which command to run first. (#187)
+
 ## [0.16.1] - 2026-11-15
 
 ### Changed (breaking)

@@ -239,6 +239,13 @@ describe('status', () => {
     expect(drafting.data.next.command).toBe('draft generate --all');
 
     writeDraft('002-storm', '폭풍이 방파제를 넘었다.');
+    expect((await runJson('status')).data.next.command).toBe('outline generate');
+    const withoutPlan = await new CommandDispatcher(deps()).dispatch(['manuscript', 'assemble']);
+    expect(withoutPlan.exitCode).toBe(1);
+    expect(withoutPlan.stderr + withoutPlan.stdout).toContain('storyboard outline generate');
+
+    mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
+    writeFileSync(join(workspace, '.storyboard', 'outline', 'chapters.yaml'), 'version: 1.0.0\nacts: []\n');
     expect((await runJson('status')).data.next.command).toBe('manuscript assemble');
 
     mkdirSync(join(workspace, 'manuscript'), { recursive: true });
