@@ -14,7 +14,7 @@ import {
 import { runTui } from '@/tui/index';
 import { extractErrorMessage } from '@storyboard/story-model';
 
-const version: string = '0.16.3';
+const version: string = '0.16.4';
 
 const exitCodeOnInterrupt: number = 130;
 const exitCodeOnTermination: number = 143;
