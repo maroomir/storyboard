@@ -11,6 +11,8 @@ describe("SceneSectionExpansionPrompt golden", () => {
     targetLength: 1500,
     backgroundFacts: ["해외 콘도 12층", "거실 통창 너머 바다"],
     catchphraseLimits: ["하나: «말도 안 돼» 모두 합쳐 2번까지"],
+    sentenceFrameLimit: "서술에서 «괜히»·«그저» 같은 틀은 각각 1번까지",
+    withheldAddressTerms: ["엘리트"],
     retryReasons: ["대사 반복", "분량 부족"],
     isUnderLengthRetry: true,
     style: {

@@ -5,6 +5,7 @@ export type SectionViolationKind =
   | 'broken-hangul'
   | 'catchphrase'
   | 'sentence-frame'
+  | 'address'
   | 'lost-dialogue'
   | 'too-short'
   | 'too-long'
@@ -23,6 +24,7 @@ export const sectionViolationKinds: readonly [SectionViolationKind, ...SectionVi
   'broken-hangul',
   'catchphrase',
   'sentence-frame',
+  'address',
   'lost-dialogue',
   'too-short',
   'too-long',

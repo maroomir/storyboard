@@ -65,6 +65,13 @@ prefixCacheTtl: 1h
 - {{sentenceFrameLimit}}
 
 {{/sentenceFrameLimit}}
+{{#hasWithheldAddressTerms}}
+[아직 붙지 않은 호칭 — 뒤 비트에서 처음 붙는다. 이번 구간의 대사와 서술에서 쓰지 말고 이름이나 다른 말로 불러라]
+{{#withheldAddressTerms}}
+- {{.}}
+{{/withheldAddressTerms}}
+
+{{/hasWithheldAddressTerms}}
 {{#previousSection}}
 [직전 구간 — 이미 완성됨]
 {{previousSection}}

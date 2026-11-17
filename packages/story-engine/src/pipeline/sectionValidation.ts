@@ -21,6 +21,11 @@ import {
   type CatchphraseCount,
 } from '#engine/pipeline/catchphrases';
 import {
+  findKinshipAddressSubstitutions,
+  findWithheldAddressTermsUsed,
+  type AddressSubstitution,
+} from '#engine/pipeline/addressTerms';
+import {
   findOverusedSentenceFrames,
   type SentenceFrameBudget,
   type SentenceFrameCount,
@@ -302,6 +307,7 @@ interface ExpandedSectionInput {
   readonly backgroundFacts?: readonly string[];
   readonly catchphraseBudgets?: readonly CatchphraseBudget[];
   readonly sentenceFrameBudget?: SentenceFrameBudget;
+  readonly withheldAddressTerms?: readonly string[];
   readonly dialoguePreservedRatio?: number;
   readonly paddingParagraphRatio?: number;
   readonly tuning?: SceneGenerationTuningInput;
@@ -439,6 +445,34 @@ function checkSentenceFrameBudget(input: ExpandedSectionInput): SectionViolation
       detail: `서술에서 같은 틀을 되풀이했습니다 (${overused.map((entry) => `«${entry.frame}» ${entry.count}번`).join(', ')}; 이번 구간 각각 ${input.sentenceFrameBudget.limit}번까지). 넘친 자리는 그 틀 없이 인물의 행동이나 감각으로 쓰세요`,
     },
   ];
+}
+
+function checkAddressTerms(input: ExpandedSectionInput): SectionViolation[] {
+  const early: string[] = findWithheldAddressTermsUsed(
+    input.expanded,
+    input.withheldAddressTerms ?? [],
+  );
+  const substituted: AddressSubstitution[] = findKinshipAddressSubstitutions({
+    expanded: input.expanded,
+    section: input.section,
+    characters: input.characters,
+  });
+  const violations: SectionViolation[] = [];
+
+  if (early.length > 0) {
+    violations.push({
+      kind: 'address',
+      detail: `뒤 비트에서 처음 붙는 호칭을 앞당겨 썼습니다 (${early.map((term) => `«${term}»`).join(', ')}). 이번 구간에서는 이름이나 다른 말로 부르세요`,
+    });
+  }
+  if (substituted.length > 0) {
+    violations.push({
+      kind: 'address',
+      detail: `카드가 정한 호칭을 바꿔 썼습니다 (${substituted.map((entry) => `«${entry.written}» 대신 «${entry.expected}»`).join(', ')}). 대사에서는 카드의 호칭으로 부르세요`,
+    });
+  }
+
+  return violations;
 }
 
 function checkLostDialogue(
@@ -591,6 +625,7 @@ const sectionChecks: readonly SectionCheck[] = [
   checkBrokenHangul,
   checkCatchphraseBudgets,
   checkSentenceFrameBudget,
+  checkAddressTerms,
   checkLostDialogue,
   checkSceneBreakCount,
   checkSectionLength,

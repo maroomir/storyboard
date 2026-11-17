@@ -34,6 +34,10 @@ import {
   type CatchphraseBudget,
 } from '#engine/pipeline/catchphrases';
 import {
+  findBeatCoinedAddressTerms,
+  planSectionWithheldAddressTerms,
+} from '#engine/pipeline/addressTerms';
+import {
   describeSentenceFrameBudget,
   planSectionSentenceFrameBudgets,
   type SentenceFrameBudget,
@@ -140,6 +144,7 @@ interface SectionExpansionRequest {
   readonly sectionPlaces: readonly string[];
   readonly catchphraseBudgets: readonly CatchphraseBudget[];
   readonly sentenceFrameBudget: SentenceFrameBudget | undefined;
+  readonly withheldAddressTerms: readonly string[];
 }
 
 interface SectionExpansionPlan {
@@ -151,6 +156,7 @@ interface SectionExpansionPlan {
   readonly backgroundFacts: string[];
   readonly catchphraseBudgetsBySection: CatchphraseBudget[][];
   readonly sentenceFrameBudgetsBySection: (SentenceFrameBudget | undefined)[];
+  readonly withheldAddressTermsBySection: string[][];
 }
 
 interface SectionRetryHint {
@@ -277,6 +283,11 @@ export class ExpandSectionStage implements ISceneStage {
         framesPer10kChars: craftContract.sentenceFramesPer10kChars,
         sectionTargetLengths: targetLengths,
       });
+    const withheldAddressTermsBySection: string[][] = planSectionWithheldAddressTerms({
+      skeleton: run.polishedText,
+      sections,
+      terms: findBeatCoinedAddressTerms(beats),
+    });
 
     return {
       sections,
@@ -287,6 +298,7 @@ export class ExpandSectionStage implements ISceneStage {
       backgroundFacts,
       catchphraseBudgetsBySection,
       sentenceFrameBudgetsBySection,
+      withheldAddressTermsBySection,
     };
   }
 
@@ -334,6 +346,7 @@ export class ExpandSectionStage implements ISceneStage {
       sectionPlaces: plan.placesBySection[index] ?? [],
       catchphraseBudgets: plan.catchphraseBudgetsBySection[index] ?? [],
       sentenceFrameBudget: plan.sentenceFrameBudgetsBySection[index],
+      withheldAddressTerms: plan.withheldAddressTermsBySection[index] ?? [],
     };
   }
 
@@ -409,6 +422,7 @@ export class ExpandSectionStage implements ISceneStage {
         ...(request.sentenceFrameBudget === undefined
           ? {}
           : { sentenceFrameLimit: describeSentenceFrameBudget(request.sentenceFrameBudget) }),
+        withheldAddressTerms: request.withheldAddressTerms,
         retryReasons: retry.retryReasons,
         isUnderLengthRetry: retry.isUnderLengthRetry,
       },
@@ -438,6 +452,7 @@ export class ExpandSectionStage implements ISceneStage {
       ...(request.sentenceFrameBudget === undefined
         ? {}
         : { sentenceFrameBudget: request.sentenceFrameBudget }),
+      withheldAddressTerms: request.withheldAddressTerms,
       tuning: run.tuning,
     });
   }

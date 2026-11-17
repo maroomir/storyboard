@@ -1,3 +1,4 @@
+export * from '#engine/pipeline/addressTerms';
 export * from '#engine/pipeline/beatActors';
 export * from '#engine/pipeline/catchphrases';
 export * from '#engine/pipeline/dialogueCorpus';
