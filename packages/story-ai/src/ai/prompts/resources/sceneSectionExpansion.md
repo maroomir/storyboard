@@ -60,6 +60,11 @@ prefixCacheTtl: 1h
 {{#hasCatchphraseLimits}}
 
 {{/hasCatchphraseLimits}}
+{{#sentenceFrameLimit}}
+[문형 한도 — 이번 구간의 서술에서. 대사는 세지 않는다. 이 한도를 본문에 적거나 의식하는 문장을 쓰지 마라]
+- {{sentenceFrameLimit}}
+
+{{/sentenceFrameLimit}}
 {{#previousSection}}
 [직전 구간 — 이미 완성됨]
 {{previousSection}}

@@ -1870,6 +1870,20 @@ describe("대사 화자 귀속 단계", () => {
     )
   })
 
+  it("tells each expansion its share of the sentence-frame limit (#188)", async () => {
+    const ai = createRecordingAiService()
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as { sentenceFrameLimit?: string }
+    expect(expansionInput.sentenceFrameLimit).toContain("«괜히»")
+  })
+
   it("proofreads the expanded draft and fixes the syllables that broke (#188)", async () => {
     const ai = createRecordingAiService()
     ai.expandSceneSection.mockResolvedValue(`${longProse("살붙인 본문")}\n\n성재는 벌써 반쯜 몸을 돌렸다.`)

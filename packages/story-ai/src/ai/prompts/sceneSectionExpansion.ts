@@ -18,6 +18,7 @@ export interface SceneSectionExpansionInput {
   readonly backgroundConflicts?: readonly string[];
   readonly sceneCoordinates?: readonly string[];
   readonly catchphraseLimits?: readonly string[];
+  readonly sentenceFrameLimit?: string;
   readonly retryReasons?: readonly string[];
   readonly isUnderLengthRetry?: boolean;
   readonly style?: StyleDirective;
@@ -42,6 +43,7 @@ export const SceneSectionExpansionPrompt: PromptModule<
         sceneCoordinates: input.sceneCoordinates ?? [],
         hasCatchphraseLimits: (input.catchphraseLimits ?? []).length > 0,
         catchphraseLimits: input.catchphraseLimits ?? [],
+        sentenceFrameLimit: input.sentenceFrameLimit,
         skeleton: input.skeleton,
         previousSection: input.previousSection,
         upcomingOpening: input.upcomingOpening,

@@ -3,11 +3,7 @@ import {
   findBrokenHangulSpans,
   findForeignScriptSpans,
 } from '@storyboard/story-model';
-import type {
-  BrokenHangulSpan,
-  CharacterCard,
-  ForeignScriptSpan,
-} from '@storyboard/story-model';
+import type { BrokenHangulSpan, CharacterCard, ForeignScriptSpan } from '@storyboard/story-model';
 
 import { pipelineDefaults } from '#engine/pipeline/pipelineDefaults';
 import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
@@ -24,6 +20,11 @@ import {
   type CatchphraseBudget,
   type CatchphraseCount,
 } from '#engine/pipeline/catchphrases';
+import {
+  findOverusedSentenceFrames,
+  type SentenceFrameBudget,
+  type SentenceFrameCount,
+} from '#engine/pipeline/sentenceFrames';
 
 interface LineSpan {
   line: string;
@@ -300,6 +301,7 @@ interface ExpandedSectionInput {
   readonly sectionPlaces?: readonly string[];
   readonly backgroundFacts?: readonly string[];
   readonly catchphraseBudgets?: readonly CatchphraseBudget[];
+  readonly sentenceFrameBudget?: SentenceFrameBudget;
   readonly dialoguePreservedRatio?: number;
   readonly paddingParagraphRatio?: number;
   readonly tuning?: SceneGenerationTuningInput;
@@ -415,6 +417,28 @@ function checkCatchphraseBudgets(input: ExpandedSectionInput): SectionViolation[
   return (input.catchphraseBudgets ?? []).flatMap((budget) =>
     checkCatchphraseBudget(input, budget),
   );
+}
+
+function checkSentenceFrameBudget(input: ExpandedSectionInput): SectionViolation[] {
+  if (input.sentenceFrameBudget === undefined) {
+    return [];
+  }
+
+  const overused: SentenceFrameCount[] = findOverusedSentenceFrames({
+    expanded: input.expanded,
+    section: input.section,
+    budget: input.sentenceFrameBudget,
+  });
+  if (overused.length === 0) {
+    return [];
+  }
+
+  return [
+    {
+      kind: 'sentence-frame',
+      detail: `서술에서 같은 틀을 되풀이했습니다 (${overused.map((entry) => `«${entry.frame}» ${entry.count}번`).join(', ')}; 이번 구간 각각 ${input.sentenceFrameBudget.limit}번까지). 넘친 자리는 그 틀 없이 인물의 행동이나 감각으로 쓰세요`,
+    },
+  ];
 }
 
 function checkLostDialogue(
@@ -566,6 +590,7 @@ const sectionChecks: readonly SectionCheck[] = [
   checkForeignScript,
   checkBrokenHangul,
   checkCatchphraseBudgets,
+  checkSentenceFrameBudget,
   checkLostDialogue,
   checkSceneBreakCount,
   checkSectionLength,

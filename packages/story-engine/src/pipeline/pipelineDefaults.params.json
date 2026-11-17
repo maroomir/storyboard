@@ -72,6 +72,7 @@
     "foreign-script": 3,
     "broken-hangul": 3,
     "catchphrase": 2,
+    "sentence-frame": 2,
     "dialogue-count": 2,
     "lost-dialogue": 2,
     "repeats-previous": 3,

@@ -6,6 +6,8 @@ const craftContractShape = {
   banTelling: z.boolean(),
   motifRepeatLimit: z.number().int().positive(),
   stockGestureBlacklist: z.array(z.string()).readonly(),
+  sentenceFrames: z.array(z.string().min(1)).readonly(),
+  sentenceFramesPer10kChars: z.number().int().positive(),
   requireCharacterInterior: z.boolean(),
   actionClarity: z.boolean(),
   modulateDensity: z.boolean(),
@@ -16,6 +18,8 @@ export interface CraftContract {
   banTelling: boolean;
   motifRepeatLimit: number;
   stockGestureBlacklist: readonly string[];
+  sentenceFrames: readonly string[];
+  sentenceFramesPer10kChars: number;
   requireCharacterInterior: boolean;
   actionClarity: boolean;
   modulateDensity: boolean;
@@ -28,6 +32,8 @@ export interface CraftContractOverride {
   banTelling?: boolean;
   motifRepeatLimit?: number;
   stockGestureBlacklist?: readonly string[];
+  sentenceFrames?: readonly string[];
+  sentenceFramesPer10kChars?: number;
   requireCharacterInterior?: boolean;
   actionClarity?: boolean;
   modulateDensity?: boolean;
@@ -50,6 +56,8 @@ function mergeCraftContract(base: CraftContract, override: CraftContractOverride
     banTelling: override.banTelling ?? base.banTelling,
     motifRepeatLimit: override.motifRepeatLimit ?? base.motifRepeatLimit,
     stockGestureBlacklist: override.stockGestureBlacklist ?? base.stockGestureBlacklist,
+    sentenceFrames: override.sentenceFrames ?? base.sentenceFrames,
+    sentenceFramesPer10kChars: override.sentenceFramesPer10kChars ?? base.sentenceFramesPer10kChars,
     requireCharacterInterior: override.requireCharacterInterior ?? base.requireCharacterInterior,
     actionClarity: override.actionClarity ?? base.actionClarity,
     modulateDensity: override.modulateDensity ?? base.modulateDensity,

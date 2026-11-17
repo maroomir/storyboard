@@ -9,6 +9,8 @@
     "입술을 깨물었다",
     "심장이 내려앉았다"
   ],
+  "sentenceFrames": ["게 아니", "뿐이", "괜히", "결코", "그저", "셈이", "라는 뜻", "라는 말이었"],
+  "sentenceFramesPer10kChars": 2,
   "requireCharacterInterior": true,
   "actionClarity": true,
   "modulateDensity": true,

@@ -187,7 +187,7 @@ behaviour it changes.
 | File | Owner | Holds |
 |---|---|---|
 | `packages/story-model/src/contracts/modelProfiles.params.json` | story-model | Per-model measured overrides keyed by their `generation.*` parameter id, with the `measured` block recording where each number came from |
-| `packages/story-model/src/format/craftContract.params.json` | story-model | The craft contract every generation prompt carries by default: telling ban, motif repeat limit, stock-gesture blacklist, interior/action/density rules, scene length multiplier |
+| `packages/story-model/src/format/craftContract.params.json` | story-model | The craft contract every generation prompt carries by default: telling ban, motif repeat limit, stock-gesture blacklist, sentence frames and their rate, interior/action/density rules, scene length multiplier |
 | `packages/story-ai/src/ai/prompts/promptVariants.params.json` | story-ai | When a call gets the `xs` or `rich` prompt variant instead of the generic one: compact providers, model name pattern and tasks for `xs`; output floor, long-form tasks and top-tier model keywords for `rich` |
 | `packages/story-model/src/format/compositionPresets.params.json` | story-model | What the composition presets build: the omnibus episode count and minimum, the episode thread id prefix and title suffix, the frame/inner/main thread ids and titles |
 | `packages/story-engine/src/pipeline/pipelineDefaults.params.json` | story-engine | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights, and the interview knobs (`interview.*`: option count, exploration, off-beat questions, vote weights, distill threshold) |

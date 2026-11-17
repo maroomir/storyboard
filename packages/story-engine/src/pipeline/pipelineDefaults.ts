@@ -146,6 +146,7 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     'foreign-script': positiveInt,
     'broken-hangul': positiveInt,
     catchphrase: positiveInt,
+    'sentence-frame': positiveInt,
     'dialogue-count': positiveInt,
     'lost-dialogue': positiveInt,
     'repeats-previous': positiveInt,
