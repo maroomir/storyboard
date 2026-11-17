@@ -13,6 +13,7 @@ after the first public release.
 ### Fixed
 
 - **Generation uses the model set for each task.** With `tasks.<task>.model` set, the calls in which the engine names the provider itself (skeleton, expansion, polish, review, revision and nearly every other step) dropped that model and ran on the provider default, so `config show` and the draft front matter showed the chosen model while the usage records showed the default. A call to the task's own provider now uses the task model. (#202)
+- **A review revision that breaks a syllable into a rare one is dropped.** Most broken characters in drafts were not lone jamo but a common syllable shifted to a neighbouring one («반쯜», «느껴졠다», «부딫히는»), five to twelve per measured draft, and the 0.16.4 jamo check caught none of them. A syllable outside the 2,350 common Hangul syllables now counts as broken, and a revision that adds one the original text did not have is dropped as «깨진 한글이 새로 생김». Syllables the original already uses, such as a name, are kept. (#188)
 
 ## [0.16.4] - 2026-11-17
 

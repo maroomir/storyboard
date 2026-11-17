@@ -4,6 +4,7 @@ import {
   buildRevisionInstructions,
   countBlockingIssues,
   findBrokenHangulSpans,
+  findRareHangulSyllableSpans,
   scoreCritique,
   shouldPassRevise,
 } from '@storyboard/story-model';
@@ -119,7 +120,11 @@ export interface ReviseLoopResult {
 }
 
 function addsBrokenHangul(originalText: string, candidateText: string): boolean {
-  return findBrokenHangulSpans(candidateText).length > findBrokenHangulSpans(originalText).length;
+  const addsLoneJamo: boolean =
+    findBrokenHangulSpans(candidateText).length > findBrokenHangulSpans(originalText).length;
+  const addsRareSyllable: boolean =
+    findRareHangulSyllableSpans(candidateText, originalText).length > 0;
+  return addsLoneJamo || addsRareSyllable;
 }
 
 function toReviseLoopFailure(stage: ReviseLoopFailure['stage'], error: unknown): ReviseLoopFailure {
@@ -667,7 +672,7 @@ const rejectionReasonLabels: Record<DraftCandidateRejectionReason, string> = {
   'not-shorter': '줄지 않음',
   'scene-breaks-changed': '장면 구분 변경',
   truncated: '출력 한도에서 잘림',
-  'broken-hangul': '깨진 한글 자모가 새로 생김',
+  'broken-hangul': '깨진 한글이 새로 생김',
 };
 
 export function describeReviseRound(round: ReviseRound): string {

@@ -393,6 +393,17 @@ describe("ReviseDraftUseCase", () => {
     expect(writeDraftFileMock).not.toHaveBeenCalled()
   })
 
+  it("preserves the original draft when a revision adds a syllable outside common Hangul (#188)", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    reviseDraftMock.mockResolvedValueOnce("인물은 창가에서 반쯜 숨을 골랐다.")
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.preservedOriginal).toBe(true)
+    expect(result.rejection).toMatchObject({ reason: "broken-hangul" })
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
+  })
+
   it("does not write an earlier valid candidate when a later candidate is rejected", async () => {
     checkContinuityMock.mockResolvedValue([blockingContinuity])
     reviseDraftMock
