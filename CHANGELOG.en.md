@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Generation uses the model set for each task.** With `tasks.<task>.model` set, the calls in which the engine names the provider itself (skeleton, expansion, polish, review, revision and nearly every other step) dropped that model and ran on the provider default, so `config show` and the draft front matter showed the chosen model while the usage records showed the default. A call to the task's own provider now uses the task model. (#202)
+
 ## [0.16.4] - 2026-11-17
 
 ### Fixed

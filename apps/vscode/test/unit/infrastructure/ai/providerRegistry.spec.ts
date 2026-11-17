@@ -70,6 +70,40 @@ describe("AiProviderRegistry", () => {
     expect(response.model).toBe("claude-haiku-4-5")
   })
 
+  it("uses the per-task model when the caller names the task's provider (#202)", async () => {
+    const registry = createRegistry(
+      new Map<string, unknown>([
+        ["ai.provider.default", "claude"],
+        ["providers.claude.model", "claude-sonnet-4-6"],
+        ["tasks", { sceneDraft: { provider: "claude", model: "claude-haiku-4-5" } }]
+      ])
+    )
+
+    const response = await registry.generateWithProvider("claude", {
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "테스트" }]
+    })
+
+    expect(response.model).toBe("claude-haiku-4-5")
+  })
+
+  it("keeps a named provider's own model when the task is set to another provider (#202)", async () => {
+    const registry = createRegistry(
+      new Map<string, unknown>([
+        ["ai.provider.default", "mock"],
+        ["providers.claude.model", "claude-sonnet-4-6"],
+        ["tasks", { sceneDraft: { provider: "openai", model: "gpt-5.5" } }]
+      ])
+    )
+
+    const response = await registry.generateWithProvider("claude", {
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "테스트" }]
+    })
+
+    expect(response.model).toBe("claude-sonnet-4-6")
+  })
+
   it("uses the provider global model when the task overrides provider only", async () => {
     const registry = createRegistry(
       new Map<string, unknown>([

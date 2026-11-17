@@ -99,7 +99,9 @@ export class AiProviderRegistry {
     request: AiGenerateRequest,
     modelOverride?: string,
   ): Promise<AiGenerateResponse> {
-    return (await this.createProvider(providerId, modelOverride)).generate(request);
+    const model: string | undefined =
+      modelOverride ?? this.findTaskModelFor(request.taskName, providerId);
+    return (await this.createProvider(providerId, model)).generate(request);
   }
 
   public async *generateStreamWithProvider(
@@ -107,7 +109,9 @@ export class AiProviderRegistry {
     request: AiGenerateRequest,
     modelOverride?: string,
   ): AsyncIterable<AiStreamChunk> {
-    const provider: AiProvider = await this.createProvider(providerId, modelOverride);
+    const model: string | undefined =
+      modelOverride ?? this.findTaskModelFor(request.taskName, providerId);
+    const provider: AiProvider = await this.createProvider(providerId, model);
 
     if (provider.generateStream) {
       yield* provider.generateStream(request);
@@ -119,6 +123,12 @@ export class AiProviderRegistry {
       yield { type: 'text-delta', delta: response.text };
     }
     yield { type: 'done', response };
+  }
+
+  private findTaskModelFor(taskName: AiTaskName, providerId: AiProviderId): string | undefined {
+    const taskConfig: TaskAiConfigResolved = this.options.configBridge.getTaskAiConfig(taskName);
+    const isTaskProvider: boolean = taskConfig.providerId === providerId;
+    return isTaskProvider ? taskConfig.model : undefined;
   }
 
   private async createProvider(
