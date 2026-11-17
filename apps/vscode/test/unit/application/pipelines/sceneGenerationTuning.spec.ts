@@ -47,6 +47,8 @@ describe("resolveSceneGenerationTuning", () => {
       actorLineMaxSentences: pipelineDefaults.actors.lineMaxSentences,
       paddingParagraphRatio: pipelineDefaults.padding.paragraphRatio,
       paddingParagraphMinimumLength: pipelineDefaults.padding.paragraphMinimumLength,
+      seamWindowChars: pipelineDefaults.seam.windowChars,
+      seamMinimumRunWords: pipelineDefaults.seam.minimumRunWords,
       proofreadChunkLength: pipelineDefaults.proofread.chunkLength,
       proofreadMaxEditLength: pipelineDefaults.proofread.maxEditLength,
       proofreadMaxEditDistance: pipelineDefaults.proofread.maxEditDistance,

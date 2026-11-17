@@ -165,6 +165,18 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 1, max: 5 },
   },
   {
+    id: 'generation.seam.windowChars',
+    label: '이음매 되풀이를 보는 글자 수',
+    kind: 'chars',
+    bounds: { min: 100, max: 2000 },
+  },
+  {
+    id: 'generation.seam.minimumRunWords',
+    label: '이음매 되풀이로 보는 연속 어절 수',
+    kind: 'count',
+    bounds: { min: 2, max: 10 },
+  },
+  {
     id: 'generation.proofread.chunkLength',
     label: '교정 한 번에 보내는 글자 수',
     kind: 'chars',

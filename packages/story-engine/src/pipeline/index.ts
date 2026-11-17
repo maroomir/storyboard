@@ -23,6 +23,7 @@ export * from '#engine/pipeline/sceneGenerationStages';
 export * from '#engine/pipeline/sceneGenerationTuning';
 export * from '#engine/pipeline/sceneGenerationTypes';
 export * from '#engine/pipeline/sectionPlanning';
+export * from '#engine/pipeline/seamRepeats';
 export * from '#engine/pipeline/sectionValidation';
 export * from '#engine/pipeline/sentenceFrames';
 export * from '#engine/pipeline/sceneStageCatalog';

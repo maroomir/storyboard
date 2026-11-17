@@ -64,6 +64,7 @@ export interface PipelineDefaults {
   polish: { lengthLimitRatio: number; retryLimit: number };
   catchphrase: { perBeatLimit: number };
   actors: PipelineDefaultsActors;
+  seam: { windowChars: number; minimumRunWords: number };
   proofread: { chunkLength: number; maxEditLength: number; maxEditDistance: number };
   padding: { paragraphRatio: number; paragraphMinimumLength: number };
   voiceSamples: PipelineDefaultsVoiceSamples;
@@ -109,6 +110,10 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     retryLimit: z.number().int().nonnegative(),
     lineMaxChars: positiveInt,
     lineMaxSentences: positiveInt,
+  }),
+  seam: z.object({
+    windowChars: positiveInt,
+    minimumRunWords: positiveInt,
   }),
   proofread: z.object({
     chunkLength: positiveInt,

@@ -41,6 +41,8 @@ export interface ResolvedSceneGenerationTuning {
   readonly actorRetryLimit: number;
   readonly actorLineMaxChars: number;
   readonly actorLineMaxSentences: number;
+  readonly seamWindowChars: number;
+  readonly seamMinimumRunWords: number;
   readonly proofreadChunkLength: number;
   readonly proofreadMaxEditLength: number;
   readonly proofreadMaxEditDistance: number;
@@ -118,6 +120,8 @@ export function resolveSceneGenerationTuning(
     actorRetryLimit: knob(tuning, 'generation.actors.retryLimit'),
     actorLineMaxChars: knob(tuning, 'generation.actors.lineMaxChars'),
     actorLineMaxSentences: knob(tuning, 'generation.actors.lineMaxSentences'),
+    seamWindowChars: knob(tuning, 'generation.seam.windowChars'),
+    seamMinimumRunWords: knob(tuning, 'generation.seam.minimumRunWords'),
     proofreadChunkLength: knob(tuning, 'generation.proofread.chunkLength'),
     proofreadMaxEditLength: knob(tuning, 'generation.proofread.maxEditLength'),
     proofreadMaxEditDistance: knob(tuning, 'generation.proofread.maxEditDistance'),

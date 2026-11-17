@@ -20,6 +20,7 @@ import {
   type CatchphraseBudget,
   type CatchphraseCount,
 } from '#engine/pipeline/catchphrases';
+import { findSeamRepeat } from '#engine/pipeline/seamRepeats';
 import {
   findKinshipAddressSubstitutions,
   findWithheldAddressTermsUsed,
@@ -475,6 +476,58 @@ function checkAddressTerms(input: ExpandedSectionInput): SectionViolation[] {
   return violations;
 }
 
+function collectSeamIgnoredPhrases(characters: readonly CharacterCard[]): string[] {
+  return characters.flatMap((card) => [
+    ...characterMatchTokens(card),
+    ...(card.catchphrases ?? []),
+  ]);
+}
+
+export function findSeamRepeatViolations(input: {
+  readonly previousText: string | undefined;
+  readonly text: string;
+  readonly characters: readonly CharacterCard[];
+  readonly carriedText?: string;
+  readonly tuning: ResolvedSceneGenerationTuning;
+}): SectionViolation[] {
+  if (input.previousText === undefined) {
+    return [];
+  }
+
+  const repeated: string | undefined = findSeamRepeat(input.previousText, input.text, {
+    windowChars: input.tuning.seamWindowChars,
+    minimumRunWords: input.tuning.seamMinimumRunWords,
+    ignoredPhrases: collectSeamIgnoredPhrases(input.characters),
+  });
+  const isCarriedOver: boolean =
+    repeated !== undefined &&
+    input.carriedText !== undefined &&
+    input.carriedText.includes(repeated);
+  if (repeated === undefined || isCarriedOver) {
+    return [];
+  }
+
+  return [
+    {
+      kind: 'repeats-previous',
+      detail: `앞에서 끝난 대목을 이음매에서 다시 썼습니다 («${repeated}»). 앞 대목이 끝난 다음 순간부터 이어 쓰고, 이미 한 이동이나 준비는 되풀이하지 마세요`,
+    },
+  ];
+}
+
+function checkSeamRepeat(
+  input: ExpandedSectionInput,
+  context: SectionCheckContext,
+): SectionViolation[] {
+  return findSeamRepeatViolations({
+    previousText: input.previousSection,
+    text: input.expanded,
+    characters: input.characters,
+    carriedText: input.section,
+    tuning: context.tuning,
+  });
+}
+
 function checkLostDialogue(
   input: ExpandedSectionInput,
   context: SectionCheckContext,
@@ -632,6 +685,7 @@ const sectionChecks: readonly SectionCheck[] = [
   checkRunAheadDialogue,
   checkRepeatedPreviousText,
   checkRepeatedPreviousDialogue,
+  checkSeamRepeat,
   checkPaddingRepetition,
 ];
 

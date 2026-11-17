@@ -35,7 +35,11 @@ import {
   withAttribution,
 } from '#engine/pipeline/sceneGenerationStages';
 import type { SceneGenerationPipelineAiService } from '#engine/pipeline/sceneGenerationTypes';
-import { validateSceneSkeleton, type SectionViolation } from '#engine/pipeline/sectionValidation';
+import {
+  findSeamRepeatViolations,
+  validateSceneSkeleton,
+  type SectionViolation,
+} from '#engine/pipeline/sectionValidation';
 import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/story-ai';
 import {
   formatBackgroundFactConflict,
@@ -308,6 +312,12 @@ export class SkeletonDrafter {
     const missingBeats: readonly string[] = coverage.missingBeats;
     const violations: SectionViolation[] = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
+      ...findSeamRepeatViolations({
+        previousText: input.priorSkeleton,
+        text: skeleton,
+        characters: this.run.context.characters,
+        tuning,
+      }),
       ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
       ...missingBeatsViolation(missingBeats),
       ...reversedBeatsViolation(coverage.reversedBeats),

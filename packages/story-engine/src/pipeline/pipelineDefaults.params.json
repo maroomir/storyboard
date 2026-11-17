@@ -36,6 +36,10 @@
     "lineMaxChars": 80,
     "lineMaxSentences": 2
   },
+  "seam": {
+    "windowChars": 400,
+    "minimumRunWords": 3
+  },
   "proofread": {
     "chunkLength": 6000,
     "maxEditLength": 20,
