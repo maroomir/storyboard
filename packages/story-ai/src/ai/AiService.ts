@@ -239,6 +239,13 @@ export class StoryboardAiService {
     return this.sceneAiService.attributeSceneDialogue(input, options);
   }
 
+  public async proofreadSceneText(
+    input: Parameters<SceneAiService['proofreadSceneText']>[0],
+    options: GenerateTextOptions = {},
+  ): ReturnType<SceneAiService['proofreadSceneText']> {
+    return this.sceneAiService.proofreadSceneText(input, options);
+  }
+
   public async expandSceneSection(
     input: Parameters<SceneAiService['expandSceneSection']>[0],
     options: GenerateTextOptions = {},

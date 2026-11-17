@@ -40,6 +40,7 @@ export type AiTaskName =
   | 'sceneDialoguePolish'
   | 'sceneDialogueAttribution'
   | 'sceneSectionExpansion'
+  | 'sceneProofread'
   | 'sceneBeatActor'
   | 'sceneBeatArbiter'
   | 'sceneBeatJudge'
@@ -91,6 +92,7 @@ export const aiTaskCatalog: readonly AiTaskCatalogEntry[] = [
   { name: 'sceneDialoguePolish', label: '대사 다듬기' },
   { name: 'sceneDialogueAttribution', label: '대사 화자 귀속' },
   { name: 'sceneSectionExpansion', label: '구간 살붙임' },
+  { name: 'sceneProofread', label: '초안 교정' },
   { name: 'sceneBeatActor', label: '비트 배우 제안' },
   { name: 'sceneBeatArbiter', label: '비트 감독 합침' },
   { name: 'sceneBeatJudge', label: '비트 인물 심판' },

@@ -51,6 +51,7 @@ export * from '#ai/ai/prompts/sceneBeatArbiter';
 export * from '#ai/ai/prompts/sceneBeatBlocks';
 export * from '#ai/ai/prompts/sceneBeatJudge';
 export * from '#ai/ai/prompts/sceneDialogueAttribution';
+export * from '#ai/ai/prompts/sceneProofread';
 export * from '#ai/ai/prompts/sceneDialoguePolish';
 export * from '#ai/ai/prompts/sceneSectionExpansion';
 export * from '#ai/ai/prompts/sceneSkeleton';

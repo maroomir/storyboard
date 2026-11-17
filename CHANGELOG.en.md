@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **A proofreading stage now runs on the expanded draft (`proofreadDraft`, task `sceneProofread`).** Syllables outside common Hangul are pointed out as likely broken characters, and the model returns only «phrase → corrected phrase» pairs instead of rewriting the text. Only short corrections that appear verbatim in the text, change a few characters and add no broken character are applied, so sentences and voices stay as written. Misspellings made of valid syllables, such as «뉘엿뉘엇», are fixed too. Broken characters still left after proofreading become draft warnings. Chunk size and correction limits are set with `generation.proofread.*`. (#188)
+
 ### Fixed
 
 - **Generation uses the model set for each task.** With `tasks.<task>.model` set, the calls in which the engine names the provider itself (skeleton, expansion, polish, review, revision and nearly every other step) dropped that model and ran on the provider default, so `config show` and the draft front matter showed the chosen model while the usage records showed the default. A call to the task's own provider now uses the task model. (#202)

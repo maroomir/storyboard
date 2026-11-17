@@ -5,6 +5,7 @@ export * from '#engine/pipeline/dialogueRewrites';
 export * from '#engine/pipeline/draftCandidateValidation';
 export * from '#engine/pipeline/memoryStore';
 export * from '#engine/pipeline/pipelineDefaults';
+export * from '#engine/pipeline/proofreadEdits';
 export * from '#engine/pipeline/reviewRouting';
 export * from '#engine/pipeline/reviseLoop';
 export * from '#engine/pipeline/revisionSections';

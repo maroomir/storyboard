@@ -86,7 +86,7 @@
 
 ### 씬 단계
 
-기본으로 도는 것은 아래 8단계다. `actBeats` 는 작가가 `pipelines/scene.yaml` 에 넣을 때만 `draftSkeleton` 대신 돈다.
+기본으로 도는 것은 아래 9단계다. `actBeats` 는 작가가 `pipelines/scene.yaml` 에 넣을 때만 `draftSkeleton` 대신 돈다.
 
 | # | 스테이지 | 프롬프트 | 하는 일 |
 |---|---|---|---|
@@ -98,6 +98,7 @@
 | 4a | `actBeats` 배우 뼈대 (선택) | `sceneBeatActor` (0.9) → `sceneBeatArbiter` (0.7) → `sceneBeatJudge` (0.2) | 비트마다 인물별 행동 제안을 받아 감독이 한 대목으로 엮고, 심판이 인물마다 일관성을 채점한다. 넣으면 4 를 대신한다. |
 | 5 | `polishDialogue` 대사 다듬기 | `sceneDialoguePolish` (0.8) | 말투 표본과 카드 보이스로 대사만 손본다. 선택 단계이고, 실패하면 뼈대를 그대로 쓴다. |
 | 6 | `expandSection` 살붙임 | `sceneSectionExpansion` (0.75) | 뼈대를 구간으로 자르고, 구간마다 앞 구간을 보여 주며 목표 길이로 확장한다. 구간×(1+재시도) 회 호출하고, 겹침·탈락·반복을 코드로 검증한다. |
+| 6a | `proofreadDraft` 교정 | `sceneProofread` (0) | 살붙인 초안을 문단 경계에서 약 6천 자 조각으로 나눠, 상용 한글 2,350자 밖의 음절(깨진 글자 의심)을 짚어 주고 «고칠 구절 → 고친 구절»만 받는다. 20자 이내·세 글자 이내로 바뀌고 새 깨진 글자를 만들지 않는 것만 적용한다. 실패하면 그 조각을 그대로 두고, 남은 깨진 글자는 경고로 올린다. |
 | 7 | `attributeDialogue` 화자 붙이기 | `sceneDialogueAttribution` (0) | 완성 초안의 대사마다 화자를 붙여 씬 번들의 `dialogue.json`에 대사 기록을 남긴다. 이 기록이 다음 씬의 3단계 말투 표본이 된다. |
 
 산출물은 `draft/NNN-*.md`와 입력 해시·제공자를 적은 캐시다. 같은 입력이면 캐시 적중으로 다시
@@ -169,6 +170,7 @@
 | `sceneBeatJudge` | 집필 (선택) | 2층 4a, 비트마다 | 엮은 비트 → 출연 인물마다 일관성 점수(성격·지식 경계·관계·동기) | 0.2 / 2000 |
 | `sceneDialoguePolish` | 집필 | 2층 5 | 뼈대 + 말투 표본 → 대사만 손본 뼈대 | 0.8 / 8000 |
 | `sceneSectionExpansion` | 집필 | 2층 6, 구간마다 | 뼈대 + 구간 + 앞 구간 + 목표 길이 → 확장 구간 | 0.75 / 8000 |
+| `sceneProofread` | 집필 | 2층 6a, 조각마다 | 초안 조각 + 의심 글자 → 고칠 구절 목록 | 0 / 2000 |
 | `sceneDialogueAttribution` | 집필 | 2층 7 | 완성 초안 → 대사별 화자 | 0 / 4000 |
 | `continuityCheck` | 검수 | 되먹임 루프, 1층 ⑥, `draft check continuity` | 본문 + 사실 줄 → 모순 목록(severity) | 0.1 / 2000 |
 | `draftCritique` | 검수 | 되먹임 루프, 1층 ⑥ | 본문 + 카드·시점·문체 → voice/purpose/repetition 지적 | 0.2 / 2000 |

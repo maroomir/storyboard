@@ -9,6 +9,7 @@ import { DescribeBackgroundStage } from '#engine/pipeline/scene/stages/describeB
 import { DraftSkeletonStage } from '#engine/pipeline/scene/stages/draftSkeleton';
 import { ExpandSectionStage } from '#engine/pipeline/scene/stages/expandSection';
 import { PolishDialogueStage } from '#engine/pipeline/scene/stages/polishDialogue';
+import { ProofreadDraftStage } from '#engine/pipeline/scene/stages/proofreadDraft';
 import { listSceneCoordinates } from '#engine/pipeline/sceneCoordinates';
 import type {
   RunSceneGenerationPipelineInput,
@@ -25,6 +26,7 @@ export const sceneStages: Readonly<Record<SceneStageId, ISceneStage>> = {
   actBeats: new ActBeatsStage(),
   polishDialogue: new PolishDialogueStage(),
   expandSection: new ExpandSectionStage(),
+  proofreadDraft: new ProofreadDraftStage(),
   attributeDialogue: new AttributeDialogueStage(),
 };
 

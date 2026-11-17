@@ -26,6 +26,7 @@ export type SceneGenerationPipelineAiService = Pick<
   | 'judgeBeat'
   | 'polishSceneDialogue'
   | 'attributeSceneDialogue'
+  | 'proofreadSceneText'
   | 'expandSceneSection'
 >;
 
@@ -35,7 +36,8 @@ export type SceneGenerationPipelineStage =
   | 'actBeats'
   | 'polishDialogue'
   | 'attributeDialogue'
-  | 'expandSection';
+  | 'expandSection'
+  | 'proofreadDraft';
 
 export interface SceneGenerationPipelineTaskProviders {
   readonly personaGeneration?: AiProviderId;
@@ -46,6 +48,7 @@ export interface SceneGenerationPipelineTaskProviders {
   readonly sceneDialoguePolish?: AiProviderId;
   readonly sceneDialogueAttribution?: AiProviderId;
   readonly sceneSectionExpansion?: AiProviderId;
+  readonly sceneProofread?: AiProviderId;
 }
 
 export class SceneGenerationPipelineCancelledError extends Error {

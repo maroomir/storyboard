@@ -165,6 +165,24 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 1, max: 5 },
   },
   {
+    id: 'generation.proofread.chunkLength',
+    label: '교정 한 번에 보내는 글자 수',
+    kind: 'chars',
+    bounds: { min: 1000, max: 20000 },
+  },
+  {
+    id: 'generation.proofread.maxEditLength',
+    label: '교정 한 곳의 글자 상한',
+    kind: 'chars',
+    bounds: { min: 4, max: 60 },
+  },
+  {
+    id: 'generation.proofread.maxEditDistance',
+    label: '교정 한 곳에서 바뀌는 글자 상한',
+    kind: 'count',
+    bounds: { min: 1, max: 10 },
+  },
+  {
     id: 'generation.padding.paragraphRatio',
     label: '문단 되풀이 유사도',
     kind: 'ratio',

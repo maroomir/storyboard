@@ -14,6 +14,8 @@ export function stageProgressLabel(stage: SceneGenerationPipelineStage): string 
       return '대사 화자 정리';
     case 'expandSection':
       return '구간 살붙임';
+    case 'proofreadDraft':
+      return '초안 교정';
     default:
       return '처리 중';
   }

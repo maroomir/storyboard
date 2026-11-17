@@ -8,7 +8,7 @@ import type {
   SceneDialogueRecord,
   SceneFile
 } from '@storyboard/story-model';
-import { computeDraftBodyHash } from '@storyboard/story-model';
+import { AiProviderError, computeDraftBodyHash } from '@storyboard/story-model';
 import {
   overrideScenePipelinePlan,
   resetScenePipelinePlan,
@@ -82,6 +82,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly judgeBeat: ReturnType<typeof vi.fn>
   readonly polishSceneDialogue: ReturnType<typeof vi.fn>
   readonly attributeSceneDialogue: ReturnType<typeof vi.fn>
+  readonly proofreadSceneText: ReturnType<typeof vi.fn>
   readonly expandSceneSection: ReturnType<typeof vi.fn>
 } {
   return {
@@ -103,6 +104,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
         speaker: "elia"
       }))
     ),
+    proofreadSceneText: vi.fn(async () => []),
     expandSceneSection: vi.fn(async () => longProse("살붙인 본문"))
   }
 }
@@ -195,7 +197,8 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
       "buildPersonas",
       "draftSkeleton",
       "polishDialogue",
-      "expandSection"
+      "expandSection",
+      "proofreadDraft"
     ])
     expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(1)
     expect(result.skeleton).toBe("뼈대 본문")
@@ -1865,6 +1868,57 @@ describe("대사 화자 귀속 단계", () => {
     expect(new Set(result.dialogueRecord?.turns.map((turn) => turn.speaker))).toEqual(
       new Set(["unknown"])
     )
+  })
+
+  it("proofreads the expanded draft and fixes the syllables that broke (#188)", async () => {
+    const ai = createRecordingAiService()
+    ai.expandSceneSection.mockResolvedValue(`${longProse("살붙인 본문")}\n\n성재는 벌써 반쯜 몸을 돌렸다.`)
+    ai.proofreadSceneText.mockResolvedValue([
+      { before: "반쯜", after: "반쯤" },
+      { before: "살붙인 본문", after: "완전히 새로 쓴 아주 다른 본문" }
+    ])
+
+    const stages: string[] = []
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      onProgress: (stage): void => {
+        stages.push(stage)
+      }
+    })
+
+    const suspects: string[] = ai.proofreadSceneText.mock.calls.flatMap(
+      (call) => (call[0] as { suspects: readonly string[] }).suspects
+    )
+    expect(suspects.join(" ")).toContain("반쯜")
+    expect(result.draftBody).toContain("반쯤 몸을")
+    expect(result.draftBody).not.toContain("반쯜")
+    expect(result.draftBody).toContain("살붙인 본문")
+    expect(stages.indexOf("proofreadDraft")).toBeGreaterThan(stages.lastIndexOf("expandSection"))
+    expect(sceneDefaultStageIds.indexOf("proofreadDraft")).toBeLessThan(
+      sceneDefaultStageIds.indexOf("attributeDialogue")
+    )
+  })
+
+  it("keeps the draft and warns when proofreading fails or leaves a broken syllable", async () => {
+    const ai = createRecordingAiService()
+    ai.expandSceneSection.mockResolvedValue(`${longProse("살붙인 본문")}\n\n길이 길게 느껴졠다.`)
+    ai.proofreadSceneText.mockRejectedValue(
+      new AiProviderError("generation-failed", "mock", "교정 실패")
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.draftBody).toContain("느껴졠다")
+    expect(result.warnings.join(" ")).toContain("교정 실패")
+    expect(result.warnings.join(" ")).toContain("깨진 글자 1곳")
   })
 
   it("feeds the character's earlier lines into the polish call", async () => {

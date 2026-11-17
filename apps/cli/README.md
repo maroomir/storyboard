@@ -395,7 +395,7 @@ scenes and costs several times the calls, so route its three tasks like the skel
 
 ```yaml
 version: 1
-stages: [buildPersonas, describeBackground, checkBackgroundFacts, collectVoiceSamples, actBeats, polishDialogue, expandSection, attributeDialogue]
+stages: [buildPersonas, describeBackground, checkBackgroundFacts, collectVoiceSamples, actBeats, polishDialogue, expandSection, proofreadDraft, attributeDialogue]
 ```
 
 ```bash

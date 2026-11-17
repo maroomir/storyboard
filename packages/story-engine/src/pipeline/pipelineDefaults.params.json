@@ -36,6 +36,11 @@
     "lineMaxChars": 80,
     "lineMaxSentences": 2
   },
+  "proofread": {
+    "chunkLength": 6000,
+    "maxEditLength": 20,
+    "maxEditDistance": 3
+  },
   "padding": {
     "paragraphRatio": 0.8,
     "paragraphMinimumLength": 40

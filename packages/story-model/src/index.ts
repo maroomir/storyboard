@@ -28,6 +28,7 @@ export * from '#model/contracts/noteSynthesis';
 export * from '#model/contracts/providerCatalog';
 export * from '#model/contracts/sceneCoverage';
 export * from '#model/contracts/sceneDialogueAttribution';
+export * from '#model/contracts/sceneProofread';
 export * from '#model/contracts/sectionViolationKinds';
 export * from '#model/contracts/settingCatalog';
 export * from '#model/contracts/storyStateUpdate';

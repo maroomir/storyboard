@@ -41,6 +41,9 @@ export interface ResolvedSceneGenerationTuning {
   readonly actorRetryLimit: number;
   readonly actorLineMaxChars: number;
   readonly actorLineMaxSentences: number;
+  readonly proofreadChunkLength: number;
+  readonly proofreadMaxEditLength: number;
+  readonly proofreadMaxEditDistance: number;
   readonly paddingParagraphRatio: number;
   readonly paddingParagraphMinimumLength: number;
   readonly voiceSampleLimit: number;
@@ -115,6 +118,9 @@ export function resolveSceneGenerationTuning(
     actorRetryLimit: knob(tuning, 'generation.actors.retryLimit'),
     actorLineMaxChars: knob(tuning, 'generation.actors.lineMaxChars'),
     actorLineMaxSentences: knob(tuning, 'generation.actors.lineMaxSentences'),
+    proofreadChunkLength: knob(tuning, 'generation.proofread.chunkLength'),
+    proofreadMaxEditLength: knob(tuning, 'generation.proofread.maxEditLength'),
+    proofreadMaxEditDistance: knob(tuning, 'generation.proofread.maxEditDistance'),
     paddingParagraphRatio: knob(tuning, 'generation.padding.paragraphRatio'),
     paddingParagraphMinimumLength: knob(tuning, 'generation.padding.paragraphMinimumLength'),
     voiceSampleLimit: knob(tuning, 'generation.voiceSamples.limit'),

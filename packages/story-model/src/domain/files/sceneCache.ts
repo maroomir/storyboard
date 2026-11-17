@@ -79,6 +79,7 @@ interface SceneCacheProviders {
   sceneDialoguePolish?: AiProviderId;
   sceneDialogueAttribution?: AiProviderId;
   sceneSectionExpansion?: AiProviderId;
+  sceneProofread?: AiProviderId;
   sceneBeatActor?: AiProviderId;
   sceneBeatArbiter?: AiProviderId;
   sceneBeatJudge?: AiProviderId;

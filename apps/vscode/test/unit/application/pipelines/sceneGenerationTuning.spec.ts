@@ -47,6 +47,9 @@ describe("resolveSceneGenerationTuning", () => {
       actorLineMaxSentences: pipelineDefaults.actors.lineMaxSentences,
       paddingParagraphRatio: pipelineDefaults.padding.paragraphRatio,
       paddingParagraphMinimumLength: pipelineDefaults.padding.paragraphMinimumLength,
+      proofreadChunkLength: pipelineDefaults.proofread.chunkLength,
+      proofreadMaxEditLength: pipelineDefaults.proofread.maxEditLength,
+      proofreadMaxEditDistance: pipelineDefaults.proofread.maxEditDistance,
       voiceSampleLimit: pipelineDefaults.voiceSamples.limit,
       voiceSampleMinimumLength: pipelineDefaults.voiceSamples.minimumLength,
       voiceSampleMaximumLength: pipelineDefaults.voiceSamples.maximumLength,
@@ -243,6 +246,10 @@ describe("the whole pipeline is unchanged by an explicit default", () => {
           index: offset + 1,
           speaker: "elia"
         }))
+      }),
+      proofreadSceneText: vi.fn(async () => {
+        log.push("proofread")
+        return []
       }),
       expandSceneSection: vi.fn(async (input) => {
         expandCalls += 1

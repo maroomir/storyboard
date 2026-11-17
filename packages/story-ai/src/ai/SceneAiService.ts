@@ -40,6 +40,7 @@ import {
   SceneDialogueAttributionPrompt,
   type SceneDialogueAttributionInput,
 } from '#ai/ai/prompts/sceneDialogueAttribution';
+import { SceneProofreadPrompt, type SceneProofreadInput } from '#ai/ai/prompts/sceneProofread';
 import {
   coerceDialogueRewrites,
   SceneDialoguePolishPrompt,
@@ -48,7 +49,9 @@ import {
 } from '#ai/ai/prompts/sceneDialoguePolish';
 import {
   coerceDialogueAttribution,
+  coerceProofreadEdits,
   type DialogueAttribution,
+  type ProofreadEdit,
   listBackgroundFactLines,
   parseJsonArray,
   coerceExpandedSceneBeats,
@@ -275,6 +278,25 @@ export class SceneAiService {
       input.lines.length,
       input.candidates.map((candidate) => candidate.id),
     );
+  }
+
+  public async proofreadSceneText(
+    input: SceneProofreadInput,
+    options: GenerateTextOptions = {},
+  ): Promise<ProofreadEdit[]> {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('sceneProofread', options);
+    const prompt: PromptArtifact = SceneProofreadPrompt.build(input, variant);
+    const response: AiGenerateResponse = await this.gateway.generate(
+      'sceneProofread',
+      toPromptMessages(prompt),
+      {
+        ...options,
+        temperature: options.temperature ?? SceneProofreadPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? SceneProofreadPrompt.config.maxTokens,
+      },
+    );
+
+    return coerceProofreadEdits(response.text);
   }
 
   public async expandSceneSection(
