@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.16.5] - 2026-11-18
+
 ### Added
 
 - **A proofreading stage now runs on the expanded draft (`proofreadDraft`, task `sceneProofread`).** Syllables outside common Hangul are pointed out as likely broken characters, and the model returns only «phrase → corrected phrase» pairs instead of rewriting the text. Only short corrections that appear verbatim in the text, change a few characters and add no broken character are applied, so sentences and voices stay as written. Misspellings made of valid syllables, such as «뉘엿뉘엇», are fixed too. Broken characters still left after proofreading become draft warnings. Chunk size and correction limits are set with `generation.proofread.*`. (#188)
