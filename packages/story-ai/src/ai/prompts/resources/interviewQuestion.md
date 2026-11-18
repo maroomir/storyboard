@@ -20,6 +20,9 @@ maxTokens: 2000
 {{#hasRelationSpeech}}
 [상대별 호칭·말투]는 작가가 정한 것이고 [지금까지의 이해]보다 앞선다. 선택지에서 이 인물이 상대를 부르는 말과 존댓말·반말은 거기 적힌 대로 쓴다. 입버릇 가운데 사람을 부르는 말은 거기 적힌 상대에게만 쓰고, 이 인물 자신을 가리키거나 다른 상대를 부르는 데 쓰지 마라. 거기 없는 호칭이나 낮춤말을 새로 지어내지 마라.
 {{/hasRelationSpeech}}
+{{#hasCatchphrases}}
+[입버릇]에 적힌 말은 선택지에 쓰지 마라. 카드의 말투 설명이 그 말을 인용하고 있어도 같다. 선택지는 말투·호칭·태도로 이 인물이 되게 하고, 입버릇은 초안이 횟수를 따로 맞춘다. 선택지마다 같은 말로 시작하면 작가가 값을 가를 수 없다.
+{{/hasCatchphrases}}
 {{#shouldExplore}}
 값 뒤에 (아직 안 본 값)이 붙은 것이 있으면 그중 하나를 반드시 선택지에 넣어라. 그것은 탐색 안이다. 작가가 아직 이 인물에게서 보지 않았다고 믿는 태도이지만, 말투와 몸짓은 역시 이 인물로 써서 다른 선택지와 구별되지 않게 하라.
 {{/shouldExplore}}
@@ -34,7 +37,7 @@ maxTokens: 2000
 {"axisId":"pressure-defense","question":"…","options":[{"valueId":"counter","text":"…"},{"valueId":"withhold","text":"…"}]}
 
 ## system:xs
-[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}{{#hasPresence}}[이 자리에 있는 사람]에 없는 사람은 세우지도 부르지도 않음(누구의 방처럼 주인으로만 나온 이름은 없는 사람), 혼자면 행동과 속말로만. {{/hasPresence}}{{#hasActor}}[상황]의 행동은 그 주어의 것(주어가 없으면 {{#hasFocalName}}[초점 인물]의 것{{/hasFocalName}}{{^hasFocalName}}이 인물의 것으로 단정하지 않음{{/hasFocalName}})이니 이 인물의 행동으로 바꾸지 않음, 행위자가 남이면 그 자리에서 받는 반응을, 자리에 없으면 나중에 알았을 때의 반응을 묻고 새 시각·장소는 세우지 않음. {{/hasActor}}{{#hasRelationSpeech}}호칭과 존댓말·반말은 [상대별 호칭·말투]대로, 호칭 입버릇은 적힌 상대에게만 쓰고 자칭으로 쓰지 않음. {{/hasRelationSpeech}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
+[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}{{#hasPresence}}[이 자리에 있는 사람]에 없는 사람은 세우지도 부르지도 않음(누구의 방처럼 주인으로만 나온 이름은 없는 사람), 혼자면 행동과 속말로만. {{/hasPresence}}{{#hasActor}}[상황]의 행동은 그 주어의 것(주어가 없으면 {{#hasFocalName}}[초점 인물]의 것{{/hasFocalName}}{{^hasFocalName}}이 인물의 것으로 단정하지 않음{{/hasFocalName}})이니 이 인물의 행동으로 바꾸지 않음, 행위자가 남이면 그 자리에서 받는 반응을, 자리에 없으면 나중에 알았을 때의 반응을 묻고 새 시각·장소는 세우지 않음. {{/hasActor}}{{#hasRelationSpeech}}호칭과 존댓말·반말은 [상대별 호칭·말투]대로, 호칭 입버릇은 적힌 상대에게만 쓰고 자칭으로 쓰지 않음. {{/hasRelationSpeech}}{{#hasCatchphrases}}[입버릇]의 말은 선택지에 쓰지 않음. {{/hasCatchphrases}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
 
 ## user
 [{{#isBackground}}장소{{/isBackground}}{{^isBackground}}인물{{/isBackground}}]
@@ -52,6 +55,13 @@ maxTokens: 2000
 {{#relationSpeech}}
 - {{.}}
 {{/relationSpeech}}
+{{#hasCatchphrases}}
+
+[입버릇]
+{{/hasCatchphrases}}
+{{#catchphrases}}
+- {{.}}
+{{/catchphrases}}
 
 [열린 축]
 {{#axes}}

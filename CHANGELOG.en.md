@@ -12,6 +12,7 @@ after the first public release.
 
 ### Fixed
 
+- **Interview options no longer all open with the same catchphrase.** When a card's voice or relation speech quoted a catchphrase, every option started with it and the options read alike even though their attitudes differed. The question request now lists the card's catchphrases (less the ones used to address someone) as words the options must not use, and asks once more when more than one option still uses one. (#201)
 - **A value born from a written interview answer no longer spreads to other cards' options.** A value read from one character's written answer (including one renamed at the confirm step) went into the axis vocabulary every card of that kind shares, so the next character interviewed was offered an option for it, written in the first character's manner. Such a value now stays in that card's working model (cache DB) and is used only for that card's questions and distill. Values already in the vocabulary can be cleared with `card interview --reset-axes`. (#204)
 
 ## [0.16.5] - 2026-11-18

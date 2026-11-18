@@ -38,6 +38,7 @@ import {
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
 import { failedResult } from '#engine/application/useCase';
+import { countCatchphrases } from '#engine/pipeline/catchphrases';
 import { SceneNarrationResolver } from '#engine/application/drafts/sceneNarrationResolver';
 import type {
   InterviewClassificationDraft,
@@ -322,6 +323,23 @@ function listDistillableCardLines(card: StoryboardCard): string[] {
 }
 
 const minimumQuestionOptions: number = 2;
+
+const catchphraseOptionLimit: number = 1;
+
+function listOptionCatchphrases(context: InterviewContext): string[] {
+  const relationSpeech: string = [...collectRelationSpeechByTarget(context).values()].join('\n');
+  const catchphrases: readonly string[] = context.card.type === 'character' ? (context.card.catchphrases ?? []) : [];
+
+  return catchphrases.filter((phrase) => phrase.trim().length > 0 && !relationSpeech.includes(phrase));
+}
+
+function hasCatchphraseInTooManyOptions(draft: InterviewQuestionDraft, catchphrases: readonly string[]): boolean {
+  const optionsWithCatchphrase: number = draft.options.filter(
+    (option) => countCatchphrases(option.text, catchphrases).length > 0,
+  ).length;
+
+  return optionsWithCatchphrase > catchphraseOptionLimit;
+}
 
 function hasOptionAddressingAbsentPartner(
   draft: InterviewQuestionDraft,
@@ -705,7 +723,11 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     const draft: InterviewQuestionDraft | undefined = await context.ai.askInterviewQuestion(input, {
       attribution: context.attribution,
     });
-    if (draft === undefined || !hasOptionAddressingAbsentPartner(draft, absentTerms)) {
+    const shouldAskAgain: boolean =
+      draft !== undefined &&
+      (hasOptionAddressingAbsentPartner(draft, absentTerms) ||
+        hasCatchphraseInTooManyOptions(draft, input.catchphrases));
+    if (draft === undefined || !shouldAskAgain) {
       return draft;
     }
 
@@ -800,6 +822,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       genre: context.project.setting?.genre,
       summary: model.summary,
       relationSpeech: describeRelationSpeech(context),
+      catchphrases: listOptionCatchphrases(context),
       axes: askedAxes.map(
         (axis): InterviewQuestionAxis => ({
           ...axis,

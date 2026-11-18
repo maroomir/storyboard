@@ -10,6 +10,7 @@ export interface InterviewQuestionInput {
   readonly genre?: string;
   readonly summary: string;
   readonly relationSpeech: readonly string[];
+  readonly catchphrases: readonly string[];
   readonly axes: readonly InterviewQuestionAxis[];
   readonly situation: string;
   readonly presence?: InterviewQuestionPresence;
@@ -53,6 +54,8 @@ export const InterviewQuestionPrompt: PromptModule<
         summary: input.summary,
         hasRelationSpeech: input.relationSpeech.length > 0,
         relationSpeech: input.relationSpeech,
+        hasCatchphrases: input.catchphrases.length > 0,
+        catchphrases: input.catchphrases,
         axes: input.axes.map((axis) => ({
           id: axis.id,
           label: axis.label,

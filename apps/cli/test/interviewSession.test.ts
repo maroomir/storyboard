@@ -557,6 +557,52 @@ describe('interview session (mock provider)', () => {
     expect(absentBeatQuestion?.options.map((option) => option.text).join(' ')).not.toContain('등대지기');
   });
 
+  it('tells the question prompt the catchphrases and asks again when several options use one (#201)', async () => {
+    write('character/hana.card', [
+      'type: character',
+      'id: hana',
+      'name: 하나',
+      'role: main',
+      'catchphrases:',
+      '  - 그러니까 말이야',
+      '  - 준아',
+      'voice:',
+      '  - "할 말 앞에 \'그러니까 말이야\'를 붙인다"',
+      'relations:',
+      '  - target: jun',
+      '    type: 소꿉친구',
+      '    speech: "\'준아\'라 부르고 반말"',
+    ]);
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+    let isFirstQuestion: boolean = true;
+    vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+      this: MockAiProvider,
+      request: Parameters<MockAiProvider['generate']>[0],
+    ) {
+      const response = await generate.call(this, request);
+      if (request.taskName !== 'interviewQuestion' || !isFirstQuestion) {
+        return response;
+      }
+      isFirstQuestion = false;
+      const draft = JSON.parse(response.text) as { options: { valueId: string; text: string }[] };
+      draft.options = draft.options.map((option) => ({ ...option, text: `“그러니까 말이야, ${option.text}”` }));
+      return { ...response, text: JSON.stringify(draft) };
+    });
+    const { container: app, sessionId } = await startSession('hana');
+
+    const question: InterviewQuestion | undefined = await app.interviews.next({
+      workspaceRoot: app.workspaceRoot,
+      cardId: 'hana',
+      sessionId,
+    });
+
+    const questionPrompts: string[] = promptsOf(captured, 'interviewQuestion');
+    expect(questionPrompts).toHaveLength(2);
+    expect(questionPrompts[0]).toContain('[입버릇]\n- 그러니까 말이야\n\n[열린 축]');
+    expect(question?.options.filter((option) => option.text.includes('그러니까 말이야'))).toHaveLength(0);
+  });
+
   it('classifies a written answer, lets the writer rename it to a new value, and rebuilds after a streak', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
