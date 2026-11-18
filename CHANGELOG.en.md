@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A value born from a written interview answer no longer spreads to other cards' options.** A value read from one character's written answer (including one renamed at the confirm step) went into the axis vocabulary every card of that kind shares, so the next character interviewed was offered an option for it, written in the first character's manner. Such a value now stays in that card's working model (cache DB) and is used only for that card's questions and distill. Values already in the vocabulary can be cleared with `card interview --reset-axes`. (#204)
+
 ## [0.16.5] - 2026-11-18
 
 ### Added

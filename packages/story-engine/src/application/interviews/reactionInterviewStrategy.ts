@@ -72,6 +72,7 @@ import {
   type InterviewAxisSet,
   type InterviewBeatSituation,
   type InterviewCardCoverage,
+  type InterviewCardValues,
   type InterviewClassification,
   type InterviewConfirmation,
   type InterviewOpening,
@@ -180,6 +181,43 @@ function withValue(
       ? axis
       : { ...axis, values: [...axis.values, value] },
   );
+}
+
+function withCardValues(
+  axes: readonly InterviewAxis[],
+  cardValues: InterviewCardValues | undefined,
+): InterviewAxis[] {
+  return Object.entries(cardValues ?? {}).reduce(
+    (merged: InterviewAxis[], [axisId, values]) =>
+      values.reduce((current: InterviewAxis[], value) => withValue(current, axisId, value), merged),
+    [...axes],
+  );
+}
+
+function addCardValue(
+  cardValues: InterviewCardValues | undefined,
+  axes: readonly InterviewAxis[],
+  axisId: string,
+  value: { readonly id: string; readonly label: string },
+): InterviewCardValues {
+  const isKnownValue: boolean =
+    axes.find((axis) => axis.id === axisId)?.values.some((existing) => existing.id === value.id) ?? false;
+  if (isKnownValue) {
+    return cardValues ?? {};
+  }
+
+  return { ...cardValues, [axisId]: [...(cardValues?.[axisId] ?? []), { id: value.id, label: value.label }] };
+}
+
+function removeCardValue(
+  cardValues: InterviewCardValues | undefined,
+  axisId: string,
+  valueId: string,
+): InterviewCardValues {
+  return {
+    ...cardValues,
+    [axisId]: (cardValues?.[axisId] ?? []).filter((value) => value.id !== valueId),
+  };
 }
 
 function describeRecordChoice(record: InterviewRecord, axes: readonly InterviewAxis[]): string | undefined {
@@ -852,7 +890,10 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
               )?.label ?? confirmation.valueId,
           }
         : { id: confirmation.id, label: confirmation.label };
-    const axes: InterviewAxis[] = withValue(context.axes, record.axisId, confirmed);
+    const isRenamedNewValue: boolean = answer.isNewValue && confirmed.id !== answer.valueId;
+    const keptCardValues: InterviewCardValues | undefined = isRenamedNewValue
+      ? removeCardValue(context.model.cardValues, record.axisId, answer.valueId)
+      : context.model.cardValues;
     const movedTallies: InterviewTallies = addTally(
       addTally(context.model.tallies, record.axisId, answer.valueId, -context.tuning.writtenWeight),
       record.axisId,
@@ -860,7 +901,6 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       context.tuning.writtenWeight,
     );
 
-    await this.saveAxes(request.workspaceRoot, context.cardType, axes, context);
     await this.saveModel(request.workspaceRoot, {
       ...this.replaceRecord(context.model, {
         ...record,
@@ -872,6 +912,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
         isConfirmed: true,
       }),
       tallies: movedTallies,
+      cardValues: addCardValue(keptCardValues, context.axes, record.axisId, confirmed),
     });
   }
 
@@ -1094,10 +1135,11 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       { attribution: context.attribution },
     );
     const classification: InterviewClassification = this.classify(update, axis);
-    const axes: InterviewAxis[] = withValue(context.axes, axis.id, {
+    const classifiedValue: { readonly id: string; readonly label: string } = {
       id: classification.valueId,
       label: classification.valueLabel,
-    });
+    };
+    const axes: InterviewAxis[] = withValue(context.axes, axis.id, classifiedValue);
     const writtenStreak: number = context.model.writtenStreak + 1;
     const shouldRebuild: boolean = writtenStreak >= context.tuning.rebuildAfterWrittenStreak;
     const answered: InterviewRecord = {
@@ -1115,12 +1157,12 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       summary: update?.summary ?? context.model.summary,
       tallies: addTally(context.model.tallies, axis.id, classification.valueId, context.tuning.writtenWeight),
       writtenStreak: shouldRebuild ? 0 : writtenStreak,
+      cardValues: addCardValue(context.model.cardValues, context.axes, axis.id, classifiedValue),
     };
     const rebuiltSummary: string | undefined = shouldRebuild
       ? await this.rebuildSummary(context, axes, updatedModel, record, text)
       : undefined;
 
-    await this.saveAxes(request.workspaceRoot, context.cardType, axes, context);
     await this.saveModel(request.workspaceRoot, {
       ...updatedModel,
       summary: rebuiltSummary ?? updatedModel.summary,
@@ -1323,7 +1365,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       situationOptions,
       project,
       scenes,
-      axes,
+      axes: withCardValues(axes, model.cardValues),
       model,
       tuning,
       ai,
@@ -1495,28 +1537,6 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     return (
       set !== undefined && set.contractHash !== computeInterviewContractHash(context.project.setting)
     );
-  }
-
-  private async saveAxes(
-    workspaceRoot: StoryUri,
-    cardType: BibleSubjectKind,
-    axes: readonly InterviewAxis[],
-    context: InterviewContext,
-  ): Promise<void> {
-    if (axes === context.axes) {
-      return;
-    }
-
-    const file: InterviewAxesFile = await this.repositories.interviews.loadAxes(workspaceRoot);
-    const set: InterviewAxisSet | undefined = file[cardType];
-    await this.repositories.interviews.saveAxes(workspaceRoot, {
-      ...file,
-      [cardType]: {
-        generatedAt: set?.generatedAt ?? this.now().toISOString(),
-        contractHash: set?.contractHash ?? computeInterviewContractHash(context.project.setting),
-        axes,
-      },
-    });
   }
 
   private saveModel(workspaceRoot: StoryUri, model: InterviewWorkingModel): Promise<void> {

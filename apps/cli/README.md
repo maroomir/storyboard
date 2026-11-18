@@ -192,7 +192,8 @@ the scenes that have no draft yet. Each question comes from a beat of an upcomin
 options are what that character would plausibly do, each standing for a different value of an axis
 the work's genre and contract defined once (for a romance: how affection shows, how distance is
 kept; for a thriller: what the character does under pressure, how they lie). Picking one is a vote;
-writing your own answer counts double and can become a new value. A character session opens by asking,
+writing your own answer counts double and can become a new value, which only that card is offered
+again (the axes stay the work's, the values born from one card's answers stay that card's). A character session opens by asking,
 for each relation present in those scenes, what the character calls them and how they speak to them;
 that answer goes to the card's `relations[].speech` as it is. A partner the card already gives a
 `speech` is not asked again unless you pass `--ask-known`. When a session starts on a new or changed

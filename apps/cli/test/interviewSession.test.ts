@@ -585,8 +585,9 @@ describe('interview session (mock provider)', () => {
       valueId: 'laugh-off',
       isNewValue: true,
     });
+    expect(afterConfirm.cardValues).toEqual({ 'pressure-defense': [{ id: 'laugh-off', label: '웃음으로 넘기기' }] });
     const axes = await readInterviewAxes(workspace);
-    expect(axes.character?.axes[0]?.values.map((value) => value.id)).toContain('laugh-off');
+    expect(axes.character?.axes[0]?.values.map((value) => value.id)).not.toContain('laugh-off');
 
     const second: InterviewQuestion | undefined = await app.interviews.next(request);
     const secondWritten = await app.interviews.answer({
@@ -596,6 +597,38 @@ describe('interview session (mock provider)', () => {
     });
     expect(secondWritten.isRebuilt).toBe(true);
     expect((await readInterviewWorkingModel(workspace, 'hana'))!.writtenStreak).toBe(0);
+  });
+
+  it('keeps a value born from one card\'s written answer out of another card\'s options (#204)', async () => {
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    const first: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'written', text: '웃어 버린다' } });
+    await app.interviews.confirm({
+      ...request,
+      questionId: first?.id ?? '',
+      confirmation: { kind: 'newValue', id: 'laugh-off', label: '웃음으로 넘기기' },
+    });
+    await app.interviews.next(request);
+    await app.interviews.finish(request);
+    const hanaPrompts: string[] = promptsOf(captured, 'interviewQuestion');
+
+    const jun = await startSession('jun');
+    const junRequest = { workspaceRoot: jun.container.workspaceRoot, cardId: 'jun', sessionId: jun.sessionId };
+    let junQuestion: InterviewQuestion | undefined = await jun.container.interviews.next(junRequest);
+    for (let round: number = 0; round < 3 && junQuestion?.axisId === 'relation-speech'; round += 1) {
+      await jun.container.interviews.answer({ ...junRequest, questionId: junQuestion.id, answer: { kind: 'skipped' } });
+      junQuestion = await jun.container.interviews.next(junRequest);
+    }
+    const junPrompts: string[] = promptsOf(captured, 'interviewQuestion').slice(hanaPrompts.length);
+
+    expect(hanaPrompts.at(-1)).toContain('압박 아래 방어: 웃음으로 넘기기');
+    expect(junPrompts.join('\n')).toContain('pressure-defense');
+    expect(junPrompts.join('\n')).not.toContain('웃음으로 넘기기');
+    expect(junQuestion?.options.map((option) => option.valueId)).not.toContain('laugh-off');
   });
 
   it('distills decided axes and the chosen speech into pending lines that card apply writes', async () => {
