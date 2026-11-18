@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.16.6] - 2026-11-18
+
 ### Added
 
 - **A verb sets a scene's target length.** `scene set <scene> --target-words <n>` (`--all` for every scene) writes the `targetWordCount` of the scene card header, and `scene unset <scene> target-words` removes it. There was no CLI route to this value, so lowering an overlong target carried over from 0.15 meant editing `card.yaml` by hand. `scene show` now prints the target length in force and where it came from (the scene card, the scene text's [목표 분량] line, or derived from the scene's length). (#197)
