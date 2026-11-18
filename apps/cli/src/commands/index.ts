@@ -22,6 +22,8 @@ import { SceneListCommand } from '@/commands/scene/sceneListCommand';
 import { SceneShowCommand } from '@/commands/scene/sceneShowCommand';
 import { SceneCreateCommand } from '@/commands/scene/sceneCreateCommand';
 import { SceneRenameCommand } from '@/commands/scene/sceneRenameCommand';
+import { SceneSetCommand } from '@/commands/scene/sceneSetCommand';
+import { SceneUnsetCommand } from '@/commands/scene/sceneUnsetCommand';
 import { SceneMoveCommand } from '@/commands/scene/sceneMoveCommand';
 import { SceneRemoveCommand } from '@/commands/scene/sceneRemoveCommand';
 import { SceneSeedCommand } from '@/commands/scene/sceneSeedCommand';
@@ -94,6 +96,8 @@ const workCommands: readonly ICommandHandler[] = [
   new SceneShowCommand(),
   new SceneCreateCommand(),
   new SceneRenameCommand(),
+  new SceneSetCommand(),
+  new SceneUnsetCommand(),
   new SceneMoveCommand(),
   new SceneRemoveCommand(),
   new SceneSeedCommand(),

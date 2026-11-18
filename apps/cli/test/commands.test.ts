@@ -1444,6 +1444,45 @@ describe('scene show', () => {
 
 });
 
+describe('scene set and scene unset', () => {
+  it('writes the target length to the scene card header and scene show names where it came from', async () => {
+    await run('scene create', args(['scene', 'create'], { name: 'harbor' }, ['새벽 항구에서 둘이 마주친다.']));
+    await run('scene create', args(['scene', 'create'], { name: 'bridge' }, ['다리 위에서 헤어진다.']));
+
+    const unsetShown = await run('scene show', args(['scene', 'show'], {}, ['001-harbor']));
+    expect(unsetShown.message).toContain('목표 분량: 정해지지 않음');
+
+    const set = await run('scene set', args(['scene', 'set'], { 'target-words': '20000' }, ['harbor']));
+    expect(set).toMatchObject({ ok: true, data: { stems: ['001-harbor'], targetWordCount: 20000 } });
+    expect(readFileSync(join(workspace, 'scene', '001-harbor.card', 'card.yaml'), 'utf8')).toContain('targetWordCount: 20000');
+    const shown = await run('scene show', args(['scene', 'show'], {}, ['001-harbor']));
+    expect(shown.message).toContain('목표 분량: 약 20,000자 (씬 카드)');
+    expect(shown.data).toMatchObject({ targetLength: 20000, targetLengthOrigin: 'scene-card' });
+
+    const all = await run('scene set', args(['scene', 'set'], { all: true, 'target-words': '12000' }));
+    expect(all).toMatchObject({ ok: true, data: { stems: ['001-harbor', '002-bridge'] } });
+    expect(readFileSync(join(workspace, 'scene', '002-bridge.card', 'card.yaml'), 'utf8')).toContain('targetWordCount: 12000');
+
+    const unset = await run('scene unset', args(['scene', 'unset'], {}, ['001-harbor', 'target-words']));
+    expect(unset).toMatchObject({ ok: true, data: { stems: ['001-harbor'] } });
+    expect(readFileSync(join(workspace, 'scene', '001-harbor.card', 'card.yaml'), 'utf8')).not.toContain('targetWordCount');
+    expect(readFileSync(join(workspace, 'scene', '002-bridge.card', 'card.yaml'), 'utf8')).toContain('targetWordCount: 12000');
+  });
+
+  it('refuses a missing scene, a target that is not a positive integer and an unknown field', async () => {
+    await run('scene create', args(['scene', 'create'], { name: 'harbor' }, ['새벽 항구']));
+
+    expect(await run('scene set', args(['scene', 'set'], { 'target-words': '20000' }, ['ghost']))).toMatchObject({
+      ok: false,
+      message: '씬이 없습니다: ghost',
+    });
+    expect((await run('scene set', args(['scene', 'set'], { 'target-words': '0' }, ['harbor']))).ok).toBe(false);
+    expect((await run('scene set', args(['scene', 'set'], {}, ['harbor']))).ok).toBe(false);
+    expect((await run('scene unset', args(['scene', 'unset'], {}, ['harbor', 'title']))).ok).toBe(false);
+    expect(readFileSync(join(workspace, 'scene', '001-harbor.card', 'card.yaml'), 'utf8')).not.toContain('targetWordCount');
+  });
+});
+
 describe('doctor: interrupted scene rename', () => {
   async function writeScene(stem: string, title = '야시장'): Promise<void> {
     await writeSceneBundleFromYaml(workspace, `type: scene\nid: ${stem}\ntitle: ${title}\n`);

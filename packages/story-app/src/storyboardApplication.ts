@@ -58,6 +58,7 @@ import {
   CardPendingChangesDesk,
   MoveSceneUseCase,
   RemoveSceneUseCase,
+  SetSceneTargetLengthUseCase,
   SaveDraftEditUseCase,
   SceneBatchRepository,
   SceneCacheRepository,
@@ -189,6 +190,7 @@ interface EngineGraph {
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly moveSceneUseCase: MoveSceneUseCase;
   readonly removeSceneUseCase: RemoveSceneUseCase;
+  readonly setSceneTargetLengthUseCase: SetSceneTargetLengthUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly revisionPlanRecorder: RevisionPlanRecorder;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
@@ -438,6 +440,7 @@ function buildServices(
     renameSceneUseCase: new RenameSceneUseCase(host),
     moveSceneUseCase: new MoveSceneUseCase(host),
     removeSceneUseCase: new RemoveSceneUseCase(host),
+    setSceneTargetLengthUseCase: new SetSceneTargetLengthUseCase(host),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase(host, ai, repositories),
     revisionPlanRecorder,
     reviseAfterGenerateGate,

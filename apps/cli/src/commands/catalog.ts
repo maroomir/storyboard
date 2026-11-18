@@ -64,6 +64,10 @@ export type NoteSource = 'notion';
 
 export const noteSources: readonly NoteSource[] = ['notion'];
 
+export type SceneUnsetField = 'target-words';
+
+export const sceneUnsetFields: readonly SceneUnsetField[] = ['target-words'];
+
 export const defaultNoteSource: NoteSource = 'notion';
 
 export type ProviderKey = 'model' | 'baseUrl' | 'contextTokens';
@@ -243,7 +247,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   },
   { name: 'focal', valueLabel: '<id>', summary: 'card create narrator: 초점 인물 카드 slug' },
   { name: 'voice', valueLabel: '<text>', summary: 'card create narrator: 서술자 목소리 (쉼표로 구분)' },
-  { name: 'target-words', valueLabel: '<n>', summary: '작품 계약: 목표 분량(자)' },
+  { name: 'target-words', valueLabel: '<n>', summary: '작품 계약: 목표 분량(자) / scene set: 그 씬의 목표 분량(자)' },
   { name: 'chapters', valueLabel: '<n>', summary: '작품 계약: 장 수' },
   { name: 'scenes-per-chapter', valueLabel: '<n>', summary: '작품 계약: 장당 씬 수' },
   { name: 'concept', valueLabel: '<text>', summary: '작품 계약: 한 줄 콘셉트' },

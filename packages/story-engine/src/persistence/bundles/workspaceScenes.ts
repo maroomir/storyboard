@@ -177,6 +177,25 @@ export class WorkspaceScenes {
     });
   }
 
+  public async writeTargetWordCount(
+    workspaceRoot: StoryUri,
+    stem: string,
+    targetWordCount: number | undefined,
+  ): Promise<void> {
+    const found: SceneRosterEntry | undefined = await this.find(workspaceRoot, stem);
+    if (found === undefined) {
+      throw new Error(`씬이 없습니다: ${stem}`);
+    }
+
+    const { targetWordCount: _previousTargetWordCount, ...header }: SceneHeader = found.content.header;
+    this.rosters.clear();
+    await (await this.openRepository(workspaceRoot)).writeBundle('scene', {
+      directoryName: directoryNameOf(found.path),
+      header: targetWordCount === undefined ? header : { ...header, targetWordCount },
+      statements: found.content.statements,
+    });
+  }
+
   public async readStructure(workspaceRoot: StoryUri): Promise<StoryStructure> {
     return (await this.structureRepository(workspaceRoot).read()) ?? emptyStructure();
   }

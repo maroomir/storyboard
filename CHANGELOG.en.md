@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **A verb sets a scene's target length.** `scene set <scene> --target-words <n>` (`--all` for every scene) writes the `targetWordCount` of the scene card header, and `scene unset <scene> target-words` removes it. There was no CLI route to this value, so lowering an overlong target carried over from 0.15 meant editing `card.yaml` by hand. `scene show` now prints the target length in force and where it came from (the scene card, the scene text's [목표 분량] line, or derived from the scene's length). (#197)
+
 ### Fixed
 
 - **Interview options no longer all open with the same catchphrase.** When a card's voice or relation speech quoted a catchphrase, every option started with it and the options read alike even though their attitudes differed. The question request now lists the card's catchphrases (less the ones used to address someone) as words the options must not use, and asks once more when more than one option still uses one. (#201)

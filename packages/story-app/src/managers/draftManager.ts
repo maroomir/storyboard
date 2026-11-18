@@ -44,6 +44,9 @@ import type {
   RemoveSceneResult,
   RemoveSceneUseCase,
   ReviseGateHooks,
+  SetSceneTargetLengthRequest,
+  SetSceneTargetLengthResult,
+  SetSceneTargetLengthUseCase,
   SaveDraftEditRequest,
   SaveDraftEditResult,
   SaveDraftEditUseCase,
@@ -64,6 +67,8 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   parseDraft,
+  resolveCraftContract,
+  resolveSceneTargetLengthWithOrigin,
   type Draft,
   sceneContextPaths,
   type NarrativeContext,
@@ -73,6 +78,7 @@ import {
   type StoryboardProject,
   type StoryboardProjectPaths,
   type SceneListItem,
+  type SceneTargetLength,
   type StoryUri,
 } from '@storyboard/story-model';
 
@@ -111,6 +117,7 @@ export interface DraftManagerDependencies {
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly moveSceneUseCase: MoveSceneUseCase;
   readonly removeSceneUseCase: RemoveSceneUseCase;
+  readonly setSceneTargetLengthUseCase: SetSceneTargetLengthUseCase;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly fileSystem: IFileSystem;
   readonly cards: WorkspaceCards;
@@ -336,5 +343,22 @@ export class DraftManager {
 
   public removeScene(request: RemoveSceneRequest): Promise<RemoveSceneResult> {
     return this.deps.removeSceneUseCase.execute(request);
+  }
+
+  public setSceneTargetLength(request: SetSceneTargetLengthRequest): Promise<SetSceneTargetLengthResult> {
+    return this.deps.setSceneTargetLengthUseCase.execute(request);
+  }
+
+  public async resolveSceneTargetLength(
+    workspaceRoot: StoryUri,
+    scene: SceneFile,
+  ): Promise<SceneTargetLength | undefined> {
+    const project: StoryboardProject = await this.readProject(getStoryboardProjectPaths(workspaceRoot));
+
+    return resolveSceneTargetLengthWithOrigin(
+      scene.frontmatter.targetWordCount,
+      scene.body,
+      resolveCraftContract(project.setting?.craftContract).sceneLengthMultiplier,
+    );
   }
 }

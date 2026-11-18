@@ -1,13 +1,29 @@
 const DERIVED_SCENE_LENGTH_MIN: number = 2000;
 const DERIVED_SCENE_LENGTH_MAX: number = 20000;
 
+export type SceneTargetLengthOrigin = 'scene-card' | 'scene-body' | 'derived';
+
+export interface SceneTargetLength {
+  readonly targetLength: number;
+  readonly origin: SceneTargetLengthOrigin;
+}
+
 export function resolveSceneTargetLength(
   frontmatterTargetLength: number | undefined,
   sceneBody: string,
   lengthMultiplier?: number,
 ): number | undefined {
+  return resolveSceneTargetLengthWithOrigin(frontmatterTargetLength, sceneBody, lengthMultiplier)
+    ?.targetLength;
+}
+
+export function resolveSceneTargetLengthWithOrigin(
+  frontmatterTargetLength: number | undefined,
+  sceneBody: string,
+  lengthMultiplier?: number,
+): SceneTargetLength | undefined {
   if (frontmatterTargetLength !== undefined && frontmatterTargetLength > 0) {
-    return frontmatterTargetLength;
+    return { targetLength: frontmatterTargetLength, origin: 'scene-card' };
   }
 
   const match: RegExpExecArray | null = /\[목표 분량\]\s*\n?\s*(?:약\s*)?([\d,]+)\s*자/.exec(
@@ -17,11 +33,12 @@ export function resolveSceneTargetLength(
     const parsed: number = Number.parseInt(match[1].replace(/,/g, ''), 10);
 
     if (Number.isInteger(parsed) && parsed > 0) {
-      return parsed;
+      return { targetLength: parsed, origin: 'scene-body' };
     }
   }
 
-  return deriveSceneTargetLength(sceneBody, lengthMultiplier);
+  const derived: number | undefined = deriveSceneTargetLength(sceneBody, lengthMultiplier);
+  return derived === undefined ? undefined : { targetLength: derived, origin: 'derived' };
 }
 
 function deriveSceneTargetLength(

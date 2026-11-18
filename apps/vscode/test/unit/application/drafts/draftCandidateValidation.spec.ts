@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { resolveMinimumDraftLength, validateDraftCandidate } from '@storyboard/story-engine';
-import { resolveSceneTargetLength } from '@storyboard/story-model';
+import { resolveSceneTargetLength, resolveSceneTargetLengthWithOrigin } from '@storyboard/story-model';
 
 describe('draft candidate validation', () => {
   it('uses the configured compression limit when no scene target exists', () => {
@@ -42,6 +42,22 @@ describe('draft candidate validation', () => {
   it('reads an inline target length from an outline-derived scene seed', () => {
     expect(resolveSceneTargetLength(undefined, '[목표 분량]\n약 3,000자')).toBe(3000);
     expect(resolveSceneTargetLength(2400, '[목표 분량]\n약 3,000자')).toBe(2400);
+  });
+
+  it('names where the scene target length came from', () => {
+    expect(resolveSceneTargetLengthWithOrigin(2400, '[목표 분량]\n약 3,000자', 12)).toEqual({
+      targetLength: 2400,
+      origin: 'scene-card',
+    });
+    expect(resolveSceneTargetLengthWithOrigin(undefined, '[목표 분량]\n약 3,000자', 12)).toEqual({
+      targetLength: 3000,
+      origin: 'scene-body',
+    });
+    expect(resolveSceneTargetLengthWithOrigin(undefined, '가'.repeat(500), 12)).toEqual({
+      targetLength: 6000,
+      origin: 'derived',
+    });
+    expect(resolveSceneTargetLengthWithOrigin(undefined, '', 12)).toBeUndefined();
   });
 
   it('rejects empty, meta, and overly short candidates', () => {

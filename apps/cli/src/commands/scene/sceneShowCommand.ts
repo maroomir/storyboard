@@ -4,15 +4,27 @@ import type { CommandSpec } from '@/commands/catalog';
 import { describeSceneNarration } from '@/commands/card/narratorViews';
 import { failure, success } from '@/commands/outcomes';
 import { resolveSceneStemFrom } from '@/commands/sceneArguments';
-import type { SceneFile } from '@storyboard/story-model';
+import type { SceneFile, SceneTargetLength, SceneTargetLengthOrigin } from '@storyboard/story-model';
 import type { SceneThreadContext } from '@storyboard/story-engine';
+
+const targetLengthOriginLabels: Readonly<Record<SceneTargetLengthOrigin, string>> = {
+  'scene-card': '씬 카드',
+  'scene-body': '씬 본문의 [목표 분량]',
+  derived: '씬 개요 길이로 정함',
+};
+
+function describeTargetLength(targetLength: SceneTargetLength | undefined): string {
+  return targetLength === undefined
+    ? '목표 분량: 정해지지 않음 (scene set --target-words 로 정할 수 있습니다)'
+    : `목표 분량: 약 ${targetLength.targetLength.toLocaleString('en-US')}자 (${targetLengthOriginLabels[targetLength.origin]})`;
+}
 
 export class SceneShowCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
     verb: 'scene show',
     group: '씬',
     usage: 'scene show <stem>',
-    summary: '씬 카드의 내용과 이 씬에 적용될 시점·줄기를 보여 줍니다',
+    summary: '씬 카드의 내용과 이 씬에 적용될 시점·줄기·목표 분량을 보여 줍니다',
     examples: ['storyboard scene show 003-night-market'],
   };
 
@@ -36,12 +48,17 @@ export class SceneShowCommand implements ICommandHandler {
       container.workspaceRoot,
       scene,
     );
+    const targetLength: SceneTargetLength | undefined = await container.drafts.resolveSceneTargetLength(
+      container.workspaceRoot,
+      scene,
+    );
 
     return success(
       [
         `${scene.card.title ?? stem} (${stem})`,
         `시점: ${narration}`,
         `줄기: ${thread}`,
+        describeTargetLength(targetLength),
         ...(scene.card.characters && scene.card.characters.length > 0
           ? [`인물: ${scene.card.characters.join(', ')}`]
           : []),
@@ -55,6 +72,8 @@ export class SceneShowCommand implements ICommandHandler {
         narration,
         thread,
         characters: scene.card.characters ?? [],
+        targetLength: targetLength?.targetLength ?? null,
+        targetLengthOrigin: targetLength?.origin ?? null,
       },
     );
   }

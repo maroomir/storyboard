@@ -281,6 +281,17 @@ If a renumbering is cut off partway, `doctor` reports it, and the next scene-wri
 storyboard scene rename night-market --to moon-market   # or: scene rename 3 --to moon-market
 ```
 
+A scene's target length is the `targetWordCount` of its card header. `scene set <scene> --target-words <n>`
+writes it (`--all` for every scene), and `scene unset <scene> target-words` removes it, after which the
+`[목표 분량]` line of the scene text or a length derived from the scene's text is used. `scene show`
+prints the target length in force and where it came from.
+
+```bash
+storyboard scene set 3 --target-words 20000
+storyboard scene set --all --target-words 20000
+storyboard scene unset 3 target-words
+```
+
 Notes kept in Obsidian or Notion come in with `notes absorb`. It reads a vault folder (or one note)
 or a Notion page with everything under it, plus the notes they link to one step away, and sorts
 them into character and background cards, scene cards and a synopsis. It shows the cost estimate

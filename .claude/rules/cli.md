@@ -47,11 +47,11 @@ Verbs read and write the work through manager verbs, not the file system: reads
 `drafts.listScenes`, `drafts.readDraft`, `cards.list`, `cards.read`, `cards.listNarrators`,
 `project.read`, and `describeWorkspace` for `status` (the engine names the open step as a
 `WorkspaceNextStep`; `nextStepCommands` in `apps/cli/src/commands/workspaceNextStep.ts` owns the command for
-each), `drafts.readScene`, `drafts.resolveSceneNarration`/`resolveSceneThread`; writes
+each), `drafts.readScene`, `drafts.resolveSceneNarration`/`resolveSceneThread`/`resolveSceneTargetLength`; writes
 `novel.seedScenes`, `project.updateContract`, `workspace.resealStoryState`,
 `cards.create`, `cards.rename`, `cards.createNarrator`/`removeNarrator`,
 `cards.setStatement`/`unsetStatement`, `cards.remove`, `cards.applyPending`/`discardPending`,
-`studio.create`/`studio.edit`, `drafts.moveScene`/`removeScene`,
+`studio.create`/`studio.edit`, `drafts.moveScene`/`removeScene`/`setSceneTargetLength`,
 `cards.applyBuildTargets`, `novel.applyCompletedScenes`, `drafts.saveEdit` and
 `manuscript.writeExport`; checks `drafts.check` (the extension's diagnostics call the same one).
 What stays in the CLI is the terminal's input form — flags turned into a request, `--lines`
