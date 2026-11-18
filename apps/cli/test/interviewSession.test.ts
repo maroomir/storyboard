@@ -566,12 +566,13 @@ describe('interview session (mock provider)', () => {
       'catchphrases:',
       '  - 그러니까 말이야',
       '  - 준아',
+      '  - 있잖아',
       'voice:',
       '  - "할 말 앞에 \'그러니까 말이야\'를 붙인다"',
       'relations:',
       '  - target: jun',
       '    type: 소꿉친구',
-      '    speech: "\'준아\'라 부르고 반말"',
+      '    speech: "\'준아\'라 부르고 반말, 말머리에 \'있잖아\'를 붙인다"',
     ]);
     const captured: CapturedPrompt[] = captureUserPrompts();
     const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
@@ -599,7 +600,7 @@ describe('interview session (mock provider)', () => {
 
     const questionPrompts: string[] = promptsOf(captured, 'interviewQuestion');
     expect(questionPrompts).toHaveLength(2);
-    expect(questionPrompts[0]).toContain('[입버릇]\n- 그러니까 말이야\n\n[열린 축]');
+    expect(questionPrompts[0]).toContain('[입버릇]\n- 그러니까 말이야\n- 있잖아\n\n[열린 축]');
     expect(question?.options.filter((option) => option.text.includes('그러니까 말이야'))).toHaveLength(0);
   });
 

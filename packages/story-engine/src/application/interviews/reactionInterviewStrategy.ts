@@ -38,6 +38,7 @@ import {
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
 import { failedResult } from '#engine/application/useCase';
+import { extractQuotedAddressTerms } from '#engine/pipeline/addressTerms';
 import { countCatchphrases } from '#engine/pipeline/catchphrases';
 import { SceneNarrationResolver } from '#engine/application/drafts/sceneNarrationResolver';
 import type {
@@ -327,10 +328,12 @@ const minimumQuestionOptions: number = 2;
 const catchphraseOptionLimit: number = 1;
 
 function listOptionCatchphrases(context: InterviewContext): string[] {
-  const relationSpeech: string = [...collectRelationSpeechByTarget(context).values()].join('\n');
+  const addressTerms: string[] = [...collectRelationSpeechByTarget(context).values()].flatMap((speech) =>
+    extractQuotedAddressTerms(speech),
+  );
   const catchphrases: readonly string[] = context.card.type === 'character' ? (context.card.catchphrases ?? []) : [];
 
-  return catchphrases.filter((phrase) => phrase.trim().length > 0 && !relationSpeech.includes(phrase));
+  return catchphrases.filter((phrase) => phrase.trim().length > 0 && !addressTerms.includes(phrase.trim()));
 }
 
 function hasCatchphraseInTooManyOptions(draft: InterviewQuestionDraft, catchphrases: readonly string[]): boolean {

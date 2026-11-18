@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The catchphrase ban on interview options now covers catchphrases quoted in a relation's speech.** 0.16.6 treated any catchphrase mentioned in a relation's speech as a form of address and left it off the ban list, so a card whose speech line quoted one as a sentence opener still got options starting with it (measured: 35 of 52 options). Only a phrase written as an address («calls them '…'») is now left to the address rule; the rest are banned (0 of 51 on the same card). (#201)
+
 ## [0.16.6] - 2026-11-18
 
 ### Added

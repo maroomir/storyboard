@@ -23,7 +23,7 @@ export interface AddressSubstitution {
   readonly expected: string;
 }
 
-function extractQuotedAddressTerms(text: string): string[] {
+export function extractQuotedAddressTerms(text: string): string[] {
   return [...text.matchAll(quotedAddressPattern)].map((match) => (match[1] ?? '').trim());
 }
 
