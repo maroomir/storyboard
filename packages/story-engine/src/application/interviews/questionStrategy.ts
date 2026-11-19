@@ -20,6 +20,7 @@ export interface InterviewStartRequest {
   readonly card?: StoryboardCard;
   readonly sceneStems?: readonly string[];
   readonly shouldResetAxes?: boolean;
+  readonly shouldAskUntilDecided?: boolean;
 }
 
 export type InterviewStartResult =
@@ -34,6 +35,7 @@ export interface InterviewSessionRequest {
   readonly sessionId: string;
   readonly sceneStems?: readonly string[];
   readonly shouldAskKnown?: boolean;
+  readonly shouldAskUntilDecided?: boolean;
 }
 
 export interface InterviewResumeRequest {
@@ -41,7 +43,10 @@ export interface InterviewResumeRequest {
   readonly cardId: string;
   readonly card?: StoryboardCard;
   readonly sceneStems?: readonly string[];
+  readonly shouldAskUntilDecided?: boolean;
 }
+
+export type InterviewSceneRequest = Pick<InterviewSessionRequest, 'sceneStems' | 'shouldAskUntilDecided'>;
 
 export type InterviewOpenSessionStep =
   | { readonly kind: 'answer' }

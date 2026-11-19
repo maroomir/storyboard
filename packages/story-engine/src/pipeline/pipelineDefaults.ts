@@ -55,6 +55,7 @@ export interface PipelineDefaultsInterview {
   distillMinimumWeight: number;
   rebuildAfterWrittenStreak: number;
   skipsBeforeSetAside: number;
+  distillEveryAnswers: number;
 }
 
 export interface PipelineDefaults {
@@ -142,6 +143,7 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     distillMinimumWeight: positiveInt,
     rebuildAfterWrittenStreak: positiveInt,
     skipsBeforeSetAside: positiveInt,
+    distillEveryAnswers: positiveInt,
   }),
   context: z.object({
     condensedMaxChars: positiveInt,

@@ -296,6 +296,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     kind: 'count',
     bounds: { min: 1, max: 5 },
   },
+  {
+    id: 'generation.interview.distillEveryAnswers',
+    label: '끝까지 묻기에서 중간 정제하는 답 수',
+    kind: 'count',
+    bounds: { min: 2, max: 30 },
+  },
   ...weightParameters,
 ];
 

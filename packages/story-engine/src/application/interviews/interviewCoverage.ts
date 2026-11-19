@@ -32,6 +32,12 @@ export function chooseUpcomingScenes(
   return (undrafted.length > 0 ? undrafted : ordered).slice(0, limit);
 }
 
+export function orderScenesUpcomingFirst(scenes: readonly SceneListItem[]): SceneListItem[] {
+  const ordered: SceneListItem[] = [...scenes].sort((a, b) => a.order - b.order);
+
+  return [...ordered.filter((scene) => scene.status !== 'ready'), ...ordered.filter((scene) => scene.status === 'ready')];
+}
+
 export function cardTokens(card: StoryboardCard): Set<string> {
   return new Set(
     [card.id, card.name, ...(card.aliases ?? [])].map((token) => normalizeCardListText(token)),

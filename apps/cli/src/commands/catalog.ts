@@ -268,6 +268,10 @@ export const flagCatalog: readonly FlagSpec[] = [
   },
   { name: 'limit', valueLabel: '<n>', summary: 'card interview: 이 세션에서 답할 질문 수 상한' },
   {
+    name: 'until-decided',
+    summary: 'card interview: 축이 모두 정해지거나 보류될 때까지 작품의 모든 씬에서 묻고, 답 몇 개마다 카드 제안을 미리 정제합니다',
+  },
+  {
     name: 'reset-axes',
     summary: 'card interview: 축 어휘와 모든 카드의 표·작업 모델을 비우고 다시 뽑습니다 (카드는 그대로)',
   },

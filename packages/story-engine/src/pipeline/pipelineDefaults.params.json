@@ -65,7 +65,8 @@
     "writtenWeight": 2,
     "distillMinimumWeight": 2,
     "rebuildAfterWrittenStreak": 2,
-    "skipsBeforeSetAside": 2
+    "skipsBeforeSetAside": 2,
+    "distillEveryAnswers": 6
   },
   "context": {
     "condensedMaxChars": 1200,

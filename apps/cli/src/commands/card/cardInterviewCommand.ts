@@ -47,6 +47,7 @@ interface InterviewSessionHandle {
   readonly sceneStems: readonly string[] | undefined;
   readonly limit: number | undefined;
   readonly shouldAskKnown: boolean;
+  readonly shouldAskUntilDecided: boolean;
 }
 
 function sessionRequest(handle: InterviewSessionHandle): InterviewSessionRequest {
@@ -56,17 +57,18 @@ function sessionRequest(handle: InterviewSessionHandle): InterviewSessionRequest
     sessionId: handle.sessionId,
     ...(handle.sceneStems === undefined ? {} : { sceneStems: handle.sceneStems }),
     ...(handle.shouldAskKnown ? { shouldAskKnown: true } : {}),
+    ...(handle.shouldAskUntilDecided ? { shouldAskUntilDecided: true } : {}),
   };
 }
 
 const sceneOrderRangePattern: RegExp = /^(\d+)\.\.(\d+)$/;
 
-function describeOpening(opening: InterviewOpening): string[] {
+function describeOpening(opening: InterviewOpening, mode: { readonly shouldAskUntilDecided: boolean }): string[] {
   const openAxisLabels: string[] = opening.coverage.openAxes.map((axis) => axis.axisLabel);
 
   return [
-    `┌  ${opening.name} 인터뷰`,
-    `│  다가올 씬: ${opening.coverage.upcomingSceneStems.join(', ') || '(없음)'}`,
+    `┌  ${opening.name} 인터뷰${mode.shouldAskUntilDecided ? ' (축이 모두 정해질 때까지)' : ''}`,
+    `│  ${mode.shouldAskUntilDecided ? '묻는 씬' : '다가올 씬'}: ${opening.coverage.upcomingSceneStems.join(', ') || '(없음)'}`,
     `│  열린 축: ${openAxisLabels.join(' · ') || '(없음 — 모두 정해졌습니다)'}`,
     ...(opening.isContractStale
       ? ['│  작품 계약이 바뀌었습니다. 축을 다시 뽑으려면 --reset-axes 를 주세요.']
@@ -100,10 +102,11 @@ export class CardInterviewCommand implements ICommandHandler {
     usage: 'card interview <slug> [--step --json [--answer <n> | --write <text> | --skip | --confirm <n> | --rename <name> | --finish | --abandon]]',
     summary:
       '다가올 씬의 상황을 하나씩 내고 그 인물(또는 장소)이 어떻게 하는지, 서술자면 그 순간을 어떻게 서술하는지 고르게 해, 선택의 패턴을 카드 제안으로 증류합니다 (대화형 화면, 또는 --step --json 으로 한 단계씩)',
-    flags: ['scenes', 'limit', 'reset-axes', 'ask-known', 'step', 'session', 'answer', 'write', 'skip', 'confirm', 'rename', 'finish', 'abandon'],
+    flags: ['scenes', 'limit', 'until-decided', 'reset-axes', 'ask-known', 'step', 'session', 'answer', 'write', 'skip', 'confirm', 'rename', 'finish', 'abandon'],
     examples: [
       'storyboard card interview hana',
       'storyboard card interview tavern --scenes 3..5',
+      'storyboard card interview hana --until-decided',
       'storyboard card interview hana --step --json',
       'storyboard card interview hana --step --json --answer 2',
     ],
@@ -136,17 +139,19 @@ export class CardInterviewCommand implements ICommandHandler {
       container,
       flagString(args.flags, 'scenes'),
     );
+    const shouldAskUntilDecided: boolean = flagBoolean(args.flags, 'until-decided');
     const started: InterviewStartResult = await container.interviews.start({
       workspaceRoot: container.workspaceRoot,
       cardId,
       ...(sceneStems === undefined ? {} : { sceneStems }),
       ...(flagBoolean(args.flags, 'reset-axes') ? { shouldResetAxes: true } : {}),
+      ...(shouldAskUntilDecided ? { shouldAskUntilDecided: true } : {}),
     });
     if (!started.ok) {
       return failure(started.message);
     }
 
-    for (const line of describeOpening(started.opening)) {
+    for (const line of describeOpening(started.opening, { shouldAskUntilDecided })) {
       prompter.announce(line);
     }
 
@@ -158,6 +163,7 @@ export class CardInterviewCommand implements ICommandHandler {
       sceneStems,
       limit,
       shouldAskKnown: flagBoolean(args.flags, 'ask-known'),
+      shouldAskUntilDecided,
     };
     const answered: number = await this.askUntilDone(handle);
     const summary: InterviewSessionSummary = await container.interviews.finish(sessionRequest(handle));

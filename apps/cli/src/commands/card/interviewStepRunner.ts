@@ -130,6 +130,22 @@ function describeFinished(summary: InterviewSessionSummary): string {
     : `인터뷰를 마쳤습니다 (답 ${summary.answered}, 카드 후보 없음).`;
 }
 
+function untilDecidedRequest(
+  flags: Readonly<Record<string, string | boolean>>,
+): { readonly shouldAskUntilDecided?: true } {
+  return flagBoolean(flags, 'until-decided') ? { shouldAskUntilDecided: true } : {};
+}
+
+function describeQuestionLimit(session: StepSession): { readonly limit?: number; readonly untilDecided?: true } {
+  if (session.limit !== undefined) {
+    return { limit: session.limit };
+  }
+
+  return session.request.shouldAskUntilDecided === true
+    ? { untilDecided: true }
+    : { limit: session.opening.maxQuestions };
+}
+
 export class InterviewStepRunner {
   public constructor(private readonly container: CliContainer) {}
 
@@ -148,6 +164,7 @@ export class InterviewStepRunner {
       workspaceRoot: this.container.workspaceRoot,
       cardId: request.cardId,
       ...(request.sceneStems === undefined ? {} : { sceneStems: request.sceneStems }),
+      ...untilDecidedRequest(request.flags),
     });
     const sessionMismatch: string | undefined = this.checkRequestedSession(request.flags, open);
     if (sessionMismatch !== undefined) {
@@ -187,6 +204,7 @@ export class InterviewStepRunner {
       cardId: request.cardId,
       ...(request.sceneStems === undefined ? {} : { sceneStems: request.sceneStems }),
       ...(flagBoolean(request.flags, 'reset-axes') ? { shouldResetAxes: true } : {}),
+      ...untilDecidedRequest(request.flags),
     });
     if (!started.ok) {
       return failure(started.message);
@@ -360,7 +378,7 @@ export class InterviewStepRunner {
         canSkip: true,
       },
       answered: answeredCount,
-      limit: session.limit ?? session.opening.maxQuestions,
+      ...describeQuestionLimit(session),
     });
   }
 
@@ -396,6 +414,7 @@ export class InterviewStepRunner {
         sessionId: opening.sessionId,
         ...(request.sceneStems === undefined ? {} : { sceneStems: request.sceneStems }),
         ...(flagBoolean(request.flags, 'ask-known') ? { shouldAskKnown: true } : {}),
+        ...untilDecidedRequest(request.flags),
       },
     };
   }

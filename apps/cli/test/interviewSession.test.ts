@@ -11,7 +11,7 @@ import {
   readInterviewWorkingModel,
 } from './fixtures/interviewSessions';
 import type { InterviewStartResult } from '@storyboard/story-engine';
-import { MockAiProvider } from '@storyboard/story-ai';
+import { ConfigBridge, MockAiProvider } from '@storyboard/story-ai';
 
 import type { ParsedArguments } from '@/cliArguments';
 import { findCommand } from '@/commands/index';
@@ -779,6 +779,58 @@ describe('interview session (mock provider)', () => {
     expect(rest.map((question) => question.axisId)).toEqual(['affection']);
     expect(summary.setAsideAxisLabels).toEqual(['압박 아래 방어']);
     expect(summary.undecidedAxisLabels).toEqual([]);
+  });
+
+  it('asks until every axis is decided across the whole work and distills on the way (--until-decided)', async () => {
+    vi.spyOn(ConfigBridge.prototype, 'getSceneGenerationTuning').mockReturnValue({
+      'generation.interview.distillEveryAnswers': 2,
+    });
+    for (const [stem, beat] of [
+      ['003-noon', '하나가 항구를 걷는다'],
+      ['004-dusk', '하나가 준에게 편지를 건넨다'],
+    ] as const) {
+      await write(`scene/${stem}.card`, ['type: scene', `id: ${stem}`, 'characters:', '  - hana', 'beats:', `  - ${beat}`]);
+    }
+    const captured: CapturedPrompt[] = judgeAxisScenes({
+      '001-night': ['pressure-defense'],
+      '002-dawn': ['pressure-defense'],
+      '003-noon': ['pressure-defense'],
+      '004-dusk': ['affection'],
+    });
+    const app: CliContainer = container();
+    const started: InterviewStartResult = await app.interviews.start({
+      workspaceRoot: app.workspaceRoot,
+      cardId: 'hana',
+      shouldAskUntilDecided: true,
+    });
+    if (!started.ok) {
+      throw new Error(started.message);
+    }
+    const request = {
+      workspaceRoot: app.workspaceRoot,
+      cardId: 'hana',
+      sessionId: started.opening.sessionId,
+      shouldAskUntilDecided: true,
+    };
+
+    const asked: InterviewQuestion[] = [];
+    let pendingBeforeFinish: number = 0;
+    for (let question = await app.interviews.next(request); question !== undefined; question = await app.interviews.next(request)) {
+      asked.push(question);
+      pendingBeforeFinish = (await readInterviewPending(workspace, 'hana')).length;
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'chosen', index: 0 } });
+    }
+    const summary = await app.interviews.finish(request);
+
+    expect(started.opening.coverage.upcomingSceneStems).toEqual(['001-night', '002-dawn', '003-noon', '004-dusk']);
+    expect(asked.filter((question) => question.axisId === 'affection').map((question) => question.source)).toEqual([
+      { kind: 'beat', sceneStem: '004-dusk', beatIndex: 0 },
+      { kind: 'offBeat' },
+    ]);
+    expect(summary.undecidedAxisLabels).toEqual([]);
+    expect(summary.waitingAxisLabels).toEqual([]);
+    expect(pendingBeforeFinish).toBeGreaterThan(0);
+    expect(promptsOf(captured, 'interviewDistill').length).toBeGreaterThan(1);
   });
 
   it('distills decided axes and the chosen speech into pending lines that card apply writes', async () => {

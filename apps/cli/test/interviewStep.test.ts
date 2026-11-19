@@ -125,6 +125,20 @@ describe('card interview --step', () => {
     expect(JSON.parse(withoutStep.stdout).message).toContain('--step --json');
   });
 
+  it('asks until every axis is decided when --until-decided goes with every call', async () => {
+    const opened = await step('--until-decided');
+    expect(opened.report.data).toMatchObject({ state: 'question', answered: 0, untilDecided: true });
+    expect(opened.report.data).not.toHaveProperty('limit');
+
+    let report: StepReport = opened.report;
+    for (let calls = 0; report.data?.state === 'question' && calls < 10; calls += 1) {
+      report = (await step('--until-decided', '--answer', '1')).report;
+    }
+
+    expect(report.data).toMatchObject({ state: 'finished' });
+    expect(report.data?.summary).toMatchObject({ answered: 4, undecidedAxisLabels: [], waitingAxisLabels: [] });
+  });
+
   it('opens a session, keeps the question until it is answered, and walks to the end', async () => {
     const opened = await step();
     expect(opened.exitCode).toBe(0);

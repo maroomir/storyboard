@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **An interview can go on until every axis is decided (`card interview <id> --until-decided`).** Without the caps of 20 questions, the next 3 scenes and 4 off-beat situations, it asks over the beats of every scene of the work (undrafted scenes first), goes on with off-beat situations once the beats run out, and ends when every axis is decided, set aside or waiting for later scenes. It distils the card proposals every 6 answers (`generation.interview.distillEveryAnswers`), so stopping early with «여기까지» or Ctrl+C keeps the proposals so far. With `--step --json` the flag goes with every call, and a question reports `untilDecided: true` in place of `limit`. Character and background interviews only.
+
 ### Fixed
 
 - **The interview no longer forces an axis onto a scene it does not fit.** The axis vocabulary is drawn once from the whole work, while questions come from the beats of the upcoming scenes, so an axis that belongs to the ending (an attitude before parting) was a candidate on the first scene's beats too. As a session went on, the axes that fit got decided and dropped out, leaving only the ones that did not, and the question invented a premise the beat did not hold («the day of parting is set»). Each scene is now judged once for the axes its beats put in play as written, kept with the vocabulary in the cache database (and judged again when the beats change), and a beat is asked only those axes. An axis no scene tests is reported at the end of the session as waiting for later scenes. The question prompt no longer says to take the closest axis when none fits, and tells the model not to add a premise the situation lacks. (#208)

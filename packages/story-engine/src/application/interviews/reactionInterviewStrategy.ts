@@ -5,6 +5,7 @@ import type {
   InterviewOpenSession,
   InterviewOpenSessionStep,
   InterviewResumeRequest,
+  InterviewSceneRequest,
   InterviewSessionRequest,
   InterviewStartRequest,
   InterviewStartResult,
@@ -25,6 +26,7 @@ import {
   isSceneJudgedForAxes,
   listCardAnsweredAxisIds,
   listOpenAxes,
+  orderScenesUpcomingFirst,
   readSceneAxisScope,
   unseenValueIds,
   type BeatSituationOptions,
@@ -115,6 +117,10 @@ export type {
   InterviewStartResult,
 } from '#engine/application/interviews/questionStrategy';
 
+type ProposalOutcome = Pick<InterviewSessionSummary, 'candidateCount' | 'excluded'>;
+
+const noProposals: ProposalOutcome = { candidateCount: 0, excluded: [] };
+
 interface PartitionedProposals {
   readonly kept: CardCollectProposal[];
   readonly alreadyOnCard: CardCollectProposal[];
@@ -155,6 +161,7 @@ export interface InterviewContext {
   readonly scenes: readonly SceneFile[];
   readonly axes: readonly InterviewAxis[];
   readonly sceneAxisScope: InterviewSceneAxisScope;
+  readonly isUntilDecided: boolean;
   readonly model: InterviewWorkingModel;
   readonly tuning: InterviewTuning;
   readonly ai: StoryboardAiService;
@@ -508,7 +515,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       const context: InterviewContext = await this.ensureCardAnswers(
         await this.forgetUnansweredQuestions(
           request.workspaceRoot,
-          await this.loadContext(request.workspaceRoot, card, request.sceneStems, sessionId),
+          await this.loadContext(request.workspaceRoot, card, request, sessionId),
         ),
       );
 
@@ -528,12 +535,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       return undefined;
     }
 
-    const context: InterviewContext = await this.loadContext(
-      request.workspaceRoot,
-      card,
-      request.sceneStems,
-      latest.sessionId,
-    );
+    const context: InterviewContext = await this.loadContext(request.workspaceRoot, card, request, latest.sessionId);
 
     return {
       opening: await this.describeOpening(request.workspaceRoot, latest.sessionId, context),
@@ -618,7 +620,9 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     if (pending !== undefined) {
       return this.toQuestion(pending, context.axes);
     }
-    if (sessionRecords.length >= tuning.maxQuestionsPerSession) {
+    const hasReachedQuestionCap: boolean =
+      !context.isUntilDecided && sessionRecords.length >= tuning.maxQuestionsPerSession;
+    if (hasReachedQuestionCap) {
       return undefined;
     }
 
@@ -627,6 +631,17 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       return prelude;
     }
 
+    const current: InterviewContext = context.isUntilDecided ? await this.distillWhenDue(request, context) : context;
+
+    return this.askAxisQuestion(request, current, sessionRecords);
+  }
+
+  private async askAxisQuestion(
+    request: InterviewSessionRequest,
+    context: InterviewContext,
+    sessionRecords: readonly InterviewRecord[],
+  ): Promise<InterviewQuestion | undefined> {
+    const { model, tuning } = context;
     const openAxes: readonly InterviewAxis[] = this.listOpenAxesForSession(context, sessionRecords);
     const preferredAxes: readonly InterviewAxis[] = this.preferAxesOtherThanLastSkipped(openAxes, sessionRecords);
     const nextBeat: BeatToAsk | undefined =
@@ -635,7 +650,8 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     const offBeatCount: number = sessionRecords.filter(
       (record) => record.source.kind === 'offBeat',
     ).length;
-    const canAskOffBeat: boolean = offBeatCount < tuning.offBeatQuestionsPerSession && offBeatAxes.length > 0;
+    const hasOffBeatRoom: boolean = context.isUntilDecided || offBeatCount < tuning.offBeatQuestionsPerSession;
+    const canAskOffBeat: boolean = hasOffBeatRoom && offBeatAxes.length > 0;
     if (nextBeat === undefined && !canAskOffBeat) {
       return undefined;
     }
@@ -1068,7 +1084,6 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       (record) => record.sessionId === request.sessionId && record.answer !== undefined,
     );
     const answered: number = sessionRecords.filter((record) => record.answer?.kind !== 'skipped').length;
-    const decidedLines: string[] = this.decidedTallyLines(context);
     const summary: Omit<InterviewSessionSummary, 'candidateCount' | 'excluded'> = {
       sessionId: request.sessionId,
       cardId: model.cardId,
@@ -1077,11 +1092,22 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       ...this.describeAxisLeftovers(context, sessionRecords),
     };
 
+    if (answered === 0) {
+      return { ...summary, ...noProposals };
+    }
+
+    return { ...summary, ...(await this.proposeFromAnswers(request, context)) };
+  }
+
+  private async proposeFromAnswers(
+    request: InterviewSessionRequest,
+    context: InterviewContext,
+  ): Promise<ProposalOutcome> {
+    const { model } = context;
+    const decidedLines: string[] = this.decidedTallyLines(context);
     const relationDrafts: CardCollectProposalDraft[] = this.relationSpeechProposals(context);
-    const hasNothingNewToDistill: boolean =
-      answered === 0 || (decidedLines.length === 0 && relationDrafts.length === 0);
-    if (hasNothingNewToDistill) {
-      return { ...summary, candidateCount: 0, excluded: [] };
+    if (decidedLines.length === 0 && relationDrafts.length === 0) {
+      return noProposals;
     }
 
     const distilled: InterviewDistillDraft | undefined =
@@ -1102,7 +1128,25 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     }
     await this.saveModel(request.workspaceRoot, { ...model, distilledThrough: model.records.length });
 
-    return { ...summary, candidateCount: proposals.kept.length, excluded };
+    return { candidateCount: proposals.kept.length, excluded };
+  }
+
+  private async distillWhenDue(request: InterviewSessionRequest, context: InterviewContext): Promise<InterviewContext> {
+    const answersSinceDistill: number = context.model.records
+      .slice(context.model.distilledThrough)
+      .filter((record) => record.answer !== undefined && record.answer.kind !== 'skipped').length;
+    if (answersSinceDistill < context.tuning.distillEveryAnswers) {
+      return context;
+    }
+
+    const outcome: ProposalOutcome = await this.proposeFromAnswers(request, context);
+    const hasDistilled: boolean = outcome.candidateCount > 0 || outcome.excluded.length > 0;
+    if (hasDistilled) {
+      const excludedCount: string = outcome.excluded.length > 0 ? ` · 제외 ${outcome.excluded.length}건` : '';
+      this.host.logger.info(`중간 정제: 카드 제안 ${outcome.candidateCount}건${excludedCount}`);
+    }
+
+    return { ...context, model: { ...context.model, distilledThrough: context.model.records.length } };
   }
 
   private async closeSession(request: InterviewSessionRequest, context: InterviewContext): Promise<InterviewContext> {
@@ -1510,15 +1554,16 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       throw new Error(`카드 ${request.cardId} 를 찾을 수 없습니다.`);
     }
 
-    return this.loadContext(request.workspaceRoot, card, request.sceneStems, request.sessionId);
+    return this.loadContext(request.workspaceRoot, card, request, request.sessionId);
   }
 
   private async loadContext(
     workspaceRoot: StoryUri,
     card: StoryboardCard,
-    requestedStems: readonly string[] | undefined,
+    sceneRequest: InterviewSceneRequest,
     sessionId: string,
   ): Promise<InterviewContext> {
+    const isUntilDecided: boolean = sceneRequest.shouldAskUntilDecided === true;
     const cardType: BibleSubjectKind = cardTypeOf(card);
     const tuning: InterviewTuning = resolveInterviewTuning(
       this.host.configBridge.getSceneGenerationTuning(),
@@ -1528,7 +1573,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     );
     const ai: StoryboardAiService = this.aiServices.gateway.createService(workspaceRoot);
     const attribution: UsageAttribution = { primary: { kind: cardType, id: card.id } };
-    const scenes: SceneFile[] = await this.loadUpcomingScenes(workspaceRoot, tuning, requestedStems);
+    const scenes: SceneFile[] = await this.loadUpcomingScenes(workspaceRoot, tuning, sceneRequest);
     const axes: readonly InterviewAxis[] = await this.ensureAxes(
       workspaceRoot,
       cardType,
@@ -1559,6 +1604,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       scenes,
       axes: withCardValues(axes, model.cardValues),
       sceneAxisScope,
+      isUntilDecided,
       model,
       tuning,
       ai,
@@ -1609,10 +1655,14 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
   private async loadUpcomingScenes(
     workspaceRoot: StoryUri,
     tuning: InterviewTuning,
-    requestedStems: readonly string[] | undefined,
+    sceneRequest: InterviewSceneRequest,
   ): Promise<SceneFile[]> {
     const listed: SceneListItem[] = await this.repositories.sceneSidebar.list(workspaceRoot);
-    const chosen: SceneListItem[] = chooseUpcomingScenes(listed, tuning.upcomingScenes, requestedStems);
+    const hasRequestedStems: boolean = (sceneRequest.sceneStems ?? []).length > 0;
+    const chosen: SceneListItem[] =
+      sceneRequest.shouldAskUntilDecided === true && !hasRequestedStems
+        ? orderScenesUpcomingFirst(listed)
+        : chooseUpcomingScenes(listed, tuning.upcomingScenes, sceneRequest.sceneStems);
     const scenes: SceneFile[] = [];
 
     for (const item of chosen) {

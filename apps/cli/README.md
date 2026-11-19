@@ -216,7 +216,10 @@ distilled goes to the card.
 A background is interviewed through the same verb (`card interview tavern`): the writer then plays
 the place — where someone slips out, who notices, what carries from the kitchen — and the answers
 distil into its `layout` and `rules`. `--scenes 3..5` narrows the questions to those scenes,
-`--limit 5` ends the session after five answers, and `--reset-axes` throws away the axis vocabulary
+`--limit 5` ends the session after five answers, `--until-decided` keeps asking until every axis is
+decided or set aside — over every scene of the work (the undrafted ones first), with no question cap and
+as many off-beat questions as it takes, distilling the proposals every few answers so stopping early
+loses nothing — and `--reset-axes` throws away the axis vocabulary
 (and every card's votes) when the contract has changed. `status` names the cards whose upcoming
 scenes still have unanswered axes; `doctor` repeats it and warns when the contract moved under the
 vocabulary. The verb asks at a terminal (or in the tui); the lock is not taken, so an interview can
@@ -236,7 +239,8 @@ storyboard card interview hana --step --json --finish        # distil; then stor
 Every call prints `data.state` — `question` (`question.options` numbered from 1, `allowsText`),
 `confirm` (`options`, or `--rename "<name>"` for a new value), `finished` or `abandoned` — and the
 open session is continued without `--session`. `--skip` passes over a question, `--abandon` closes
-the session without distilling, and `--limit`/`--scenes` go with every call. The answers must be the
+the session without distilling, and `--limit`/`--scenes`/`--until-decided` go with every call (with
+`--until-decided` a question reports `untilDecided: true` in place of `limit`). The answers must be the
 writer's own choices: an agent passes only the number the writer picked or the words they wrote.
 
 ### 시점과 구성
