@@ -198,7 +198,12 @@ for each relation present in those scenes, what the character calls them and how
 that answer goes to the card's `relations[].speech` as it is. A partner the card already gives a
 `speech` is not asked again unless you pass `--ask-known`. When a session starts on a new or changed
 card, one call reads the card against the axes, and an axis the card's own lines already answer is
-closed: it is not asked, not distilled again, and not counted as open by `status` or `doctor`. When one value of an axis reaches
+closed: it is not asked, not distilled again, and not counted as open by `status` or `doctor`. An axis is
+asked only on the scenes that test it: the first time a scene is interviewed (and again when its beats
+change), one call reads its beats against the axes and keeps, with the vocabulary, which axes the beats
+put in play as written. An axis no upcoming scene tests waits for later scenes instead of being forced
+onto an unrelated beat, and the session's end lists it as waiting. After a skip the next question takes
+another axis, and an axis skipped twice in one session is set aside until the next. When one value of an axis reaches
 the threshold, the session's end distils it into a proposal for the card — a conditional tendency
 such as "몰릴 때 먼저 참고, 밀리면 되묻는다" — that waits in the card's session until `card apply`
 writes it to `statements.yaml` (or `card discard` drops it), next to what notes left. The chosen lines themselves never reach a prompt: the choice records, the axis

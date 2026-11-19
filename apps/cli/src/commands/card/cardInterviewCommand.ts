@@ -79,6 +79,12 @@ function describeSummary(summary: InterviewSessionSummary): string[] {
     ...(summary.undecidedAxisLabels.length > 0
       ? [`   아직 정해지지 않은 축: ${summary.undecidedAxisLabels.join(' · ')}`]
       : []),
+    ...(summary.waitingAxisLabels.length > 0
+      ? [`   뒤 장면을 기다리는 축: ${summary.waitingAxisLabels.join(' · ')}`]
+      : []),
+    ...(summary.setAsideAxisLabels.length > 0
+      ? [`   건너뛰어 보류한 축: ${summary.setAsideAxisLabels.join(' · ')}`]
+      : []),
     ...(summary.candidateCount > 0 ? [`   storyboard card apply ${summary.cardId} 로 반영할 수 있습니다`] : []),
   ];
 }

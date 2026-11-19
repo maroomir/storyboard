@@ -175,6 +175,34 @@ function answerFromCard(valueIdByAxis: Readonly<Record<string, string>>): Captur
   return captured;
 }
 
+function judgeAxisScenes(axisIdsByStem: Readonly<Record<string, readonly string[]>>): CapturedPrompt[] {
+  const captured: CapturedPrompt[] = captureUserPrompts();
+  const capture: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+  vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+    this: MockAiProvider,
+    request: Parameters<MockAiProvider['generate']>[0],
+  ) {
+    const response = await capture.call(this, request);
+    const isAxisScenesRequest: boolean = request.messages.some(
+      (message) => message.role === 'user' && message.content.startsWith('[축 범위]'),
+    );
+    const scenes = Object.entries(axisIdsByStem).map(([stem, axisIds]) => ({ stem, axisIds }));
+    return isAxisScenesRequest ? { ...response, text: JSON.stringify({ scenes }) } : response;
+  });
+
+  return captured;
+}
+
+function axisScenePromptsOf(captured: readonly CapturedPrompt[]): string[] {
+  return promptsOf(captured, 'interviewAxes').filter((prompt) => prompt.startsWith('[축 범위]'));
+}
+
+function openAxisIdsOf(prompt: string): string[] {
+  const block: string = prompt.split('[열린 축]')[1]?.split('[상황]')[0] ?? '';
+
+  return [...block.matchAll(/^([a-z0-9-]+): /gm)].map((match) => match[1] ?? '');
+}
+
 function writeHanaWithSpeechToJun(): void {
   write('character/hana.card', [
     'type: character',
@@ -676,6 +704,81 @@ describe('interview session (mock provider)', () => {
     expect(junPrompts.join('\n')).toContain('pressure-defense');
     expect(junPrompts.join('\n')).not.toContain('웃음으로 넘기기');
     expect(junQuestion?.options.map((option) => option.valueId)).not.toContain('laugh-off');
+  });
+
+  it('asks an axis only on the scenes judged to test it and reports the axis no scene tests as waiting (#208)', async () => {
+    const captured: CapturedPrompt[] = judgeAxisScenes({ '001-night': ['pressure-defense'], '002-dawn': [] });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    const asked: InterviewQuestion[] = [];
+    for (let question = await app.interviews.next(request); question !== undefined; question = await app.interviews.next(request)) {
+      asked.push(question);
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'chosen', index: 0 } });
+    }
+    const summary = await app.interviews.finish(request);
+
+    expect(asked.map((question) => [question.axisId, question.source])).toEqual([
+      ['pressure-defense', { kind: 'beat', sceneStem: '001-night', beatIndex: 0 }],
+      ['pressure-defense', { kind: 'beat', sceneStem: '001-night', beatIndex: 1 }],
+    ]);
+    expect(promptsOf(captured, 'interviewQuestion').map(openAxisIdsOf)).toEqual([
+      ['pressure-defense'],
+      ['pressure-defense'],
+    ]);
+    expect(summary.waitingAxisLabels).toEqual(['호감 표출']);
+    expect(summary.undecidedAxisLabels).toEqual([]);
+    expect(axisScenePromptsOf(captured)).toHaveLength(1);
+    expect((await readInterviewAxes(workspace)).character?.sceneAxes?.['002-dawn']?.axisIds).toEqual([]);
+  });
+
+  it('judges a scene again once its beats change', async () => {
+    const captured: CapturedPrompt[] = judgeAxisScenes({ '001-night': ['pressure-defense'], '002-dawn': ['affection'] });
+    await startSession('hana');
+    await write('scene/002-dawn.card', [
+      'type: scene',
+      'id: 002-dawn',
+      'characters:',
+      '  - hana',
+      'beats:',
+      '  - 하나가 등대에서 준을 기다린다',
+    ]);
+    await waitForNextSessionId();
+    await startSession('hana');
+
+    const judged: string[] = axisScenePromptsOf(captured);
+    expect(judged).toHaveLength(2);
+    expect(judged[1]).toContain('[장면] 002-dawn');
+    expect(judged[1]).not.toContain('[장면] 001-night');
+  });
+
+  it('moves to another axis after a skip and sets an axis aside after two skips (#208)', async () => {
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+
+    const first: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: first?.id ?? '', answer: { kind: 'skipped' } });
+    const second: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: second?.id ?? '', answer: { kind: 'chosen', index: 0 } });
+    const third: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: third?.id ?? '', answer: { kind: 'skipped' } });
+    const rest: InterviewQuestion[] = [];
+    for (let question = await app.interviews.next(request); question !== undefined; question = await app.interviews.next(request)) {
+      rest.push(question);
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'chosen', index: 0 } });
+    }
+    const summary = await app.interviews.finish(request);
+
+    expect([first?.axisId, second?.axisId, third?.axisId]).toEqual(['pressure-defense', 'affection', 'pressure-defense']);
+    expect(openAxisIdsOf(promptsOf(captured, 'interviewQuestion')[1] ?? '')).toEqual(['affection']);
+    expect(rest.map((question) => question.axisId)).toEqual(['affection']);
+    expect(summary.setAsideAxisLabels).toEqual(['압박 아래 방어']);
+    expect(summary.undecidedAxisLabels).toEqual([]);
   });
 
   it('distills decided axes and the chosen speech into pending lines that card apply writes', async () => {

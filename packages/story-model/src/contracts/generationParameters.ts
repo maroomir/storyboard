@@ -290,6 +290,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     kind: 'count',
     bounds: { min: 1, max: 5 },
   },
+  {
+    id: 'generation.interview.skipsBeforeSetAside',
+    label: '세션에서 축을 보류하는 건너뛰기 수',
+    kind: 'count',
+    bounds: { min: 1, max: 5 },
+  },
   ...weightParameters,
 ];
 

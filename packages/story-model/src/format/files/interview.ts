@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type { z } from 'zod';
 
 import type { ProjectSetting } from '#model/format/project';
+import { sceneBeatText, type SceneFile } from '#model/format/scene';
 import {
   interviewAxesFileSchema,
   interviewWorkingModelSchema,
@@ -17,6 +18,16 @@ export function computeInterviewContractHash(setting: ProjectSetting | undefined
     concept: setting?.concept ?? '',
     description: setting?.description ?? '',
     tags: setting?.tags ?? [],
+  };
+
+  return `sha256:${createHash('sha256').update(JSON.stringify(digestSource)).digest('hex')}`;
+}
+
+export function computeInterviewSceneHash(scene: SceneFile): string {
+  const digestSource: Readonly<Record<string, unknown>> = {
+    title: scene.card.title ?? '',
+    purpose: scene.card.purpose ?? '',
+    beats: (scene.card.beats ?? []).map((beat) => sceneBeatText(beat)),
   };
 
   return `sha256:${createHash('sha256').update(JSON.stringify(digestSource)).digest('hex')}`;

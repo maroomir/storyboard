@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   InterviewAxesPrompt,
+  InterviewAxisScenesPrompt,
   InterviewCardAnswersPrompt,
   InterviewDistillPrompt,
   InterviewQuestionPrompt,
   InterviewRelationSpeechPrompt,
   InterviewUpdatePrompt,
   coerceInterviewAxes,
+  coerceInterviewAxisScenes,
   coerceInterviewCardAnswers,
   coerceInterviewDistill,
   coerceInterviewQuestion,
@@ -50,6 +52,49 @@ describe('interview prompts golden', () => {
         variant,
       ),
     ).toMatchSnapshot();
+  });
+
+  it.each(['generic', 'xs'] as const)('renders the axis scenes prompt for the %s variant', (variant) => {
+    expect(
+      InterviewAxisScenesPrompt.build(
+        {
+          cardType: 'character',
+          synopsis: '하나는 세부로 돌아온다',
+          axes: [axis],
+          scenes: [
+            { stem: '001-night', title: '미감의 밤', beats: ['준이 하나를 심문한다', '하나가 자리를 뜨려 한다'] },
+            { stem: '002-dawn', beats: ['하나가 등대로 돌아간다'] },
+          ],
+        },
+        variant,
+      ),
+    ).toMatchSnapshot();
+  });
+
+  it('keeps the judged axes of the scenes it asked about and drops unknown axes and scenes', () => {
+    const judged: Map<string, string[]> = coerceInterviewAxisScenes(
+      {
+        scenes: [
+          { stem: '001-night', axisIds: ['pressure-defense', 'parting'] },
+          { stem: '002-dawn', axisIds: [] },
+          { stem: '009-elsewhere', axisIds: ['pressure-defense'] },
+          { stem: '003-noon' },
+        ],
+      },
+      {
+        axes: [axis],
+        scenes: [
+          { stem: '001-night', beats: [] },
+          { stem: '002-dawn', beats: [] },
+          { stem: '003-noon', beats: [] },
+        ],
+      },
+    );
+
+    expect([...judged]).toEqual([
+      ['001-night', ['pressure-defense']],
+      ['002-dawn', []],
+    ]);
   });
 
   it.each(['generic', 'xs'] as const)('renders the question prompt for the %s variant', (variant) => {

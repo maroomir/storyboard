@@ -5,6 +5,7 @@ import {
   collectBeatSituations,
   listCardAnsweredAxisIds,
   listOpenAxes,
+  readSceneAxisScope,
   otherPlaceTokens,
 } from '#engine/application/interviews/interviewCoverage';
 import {
@@ -123,6 +124,7 @@ export class DescribeInterviewCoverageUseCase {
         tuning.distillMinimumWeight,
         situations,
         listCardAnsweredAxisIds(model, card),
+        readSceneAxisScope(axesFile[cardType], scenes),
       ),
       upcomingSceneStems: [...new Set(situations.map((situation) => situation.sceneStem))],
       ...(loaded.unreadable === undefined ? {} : { unreadableWorkingModel: loaded.unreadable }),

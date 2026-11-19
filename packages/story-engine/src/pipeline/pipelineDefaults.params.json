@@ -64,7 +64,8 @@
     "chosenWeight": 1,
     "writtenWeight": 2,
     "distillMinimumWeight": 2,
-    "rebuildAfterWrittenStreak": 2
+    "rebuildAfterWrittenStreak": 2,
+    "skipsBeforeSetAside": 2
   },
   "context": {
     "condensedMaxChars": 1200,

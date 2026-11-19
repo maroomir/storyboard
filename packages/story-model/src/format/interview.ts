@@ -21,10 +21,16 @@ export interface InterviewAxis {
   readonly values: readonly InterviewAxisValue[];
 }
 
+export interface InterviewSceneAxes {
+  readonly sceneHash: string;
+  readonly axisIds: readonly string[];
+}
+
 export interface InterviewAxisSet {
   readonly generatedAt: string;
   readonly contractHash: string;
   readonly axes: readonly InterviewAxis[];
+  readonly sceneAxes?: Readonly<Record<string, InterviewSceneAxes>>;
 }
 
 export interface InterviewAxesFile {
@@ -117,10 +123,16 @@ const interviewAxisSchema: z.ZodType<InterviewAxis> = z.object({
   values: z.array(interviewAxisValueSchema),
 });
 
+const interviewSceneAxesSchema: z.ZodType<InterviewSceneAxes> = z.object({
+  sceneHash: idSchema,
+  axisIds: z.array(idSchema),
+});
+
 const interviewAxisSetSchema: z.ZodType<InterviewAxisSet> = z.object({
   generatedAt: z.string().datetime(),
   contractHash: idSchema,
   axes: z.array(interviewAxisSchema),
+  sceneAxes: z.record(z.string(), interviewSceneAxesSchema).optional(),
 });
 
 export const interviewAxesFileSchema: z.ZodType<InterviewAxesFile> = z.object({
@@ -256,6 +268,8 @@ export interface InterviewSessionSummary {
   readonly skipped: number;
   readonly candidateCount: number;
   readonly undecidedAxisLabels: readonly string[];
+  readonly waitingAxisLabels: readonly string[];
+  readonly setAsideAxisLabels: readonly string[];
 }
 
 export interface InterviewOpening {
@@ -359,4 +373,6 @@ export const interviewSessionSummarySchema: z.ZodType<InterviewSessionSummary> =
   skipped: z.number().int().nonnegative(),
   candidateCount: z.number().int().nonnegative(),
   undecidedAxisLabels: z.array(z.string()),
+  waitingAxisLabels: z.array(z.string()),
+  setAsideAxisLabels: z.array(z.string()),
 });

@@ -1,9 +1,11 @@
 import {
   computeBackgroundCardHash,
+  computeInterviewSceneHash,
   computePersonaCardHash,
   normalizeCardListText,
   sceneBeatText,
   type InterviewAxis,
+  type InterviewAxisSet,
   type InterviewBeatSituation,
   type InterviewOpenAxis,
   type InterviewTallies,
@@ -165,16 +167,47 @@ export function listCardAnsweredAxisIds(
   return new Set<string>(Object.keys(answers.valueIdByAxis));
 }
 
+export type InterviewSceneAxisScope = ReadonlyMap<string, ReadonlySet<string>>;
+
+export function isSceneJudgedForAxes(set: InterviewAxisSet | undefined, scene: SceneFile): boolean {
+  return set?.sceneAxes?.[scene.stem]?.sceneHash === computeInterviewSceneHash(scene);
+}
+
+export function readSceneAxisScope(
+  set: InterviewAxisSet | undefined,
+  scenes: readonly SceneFile[],
+): Map<string, ReadonlySet<string>> {
+  const scope: Map<string, ReadonlySet<string>> = new Map<string, ReadonlySet<string>>();
+
+  for (const scene of scenes) {
+    const axisIds: readonly string[] | undefined = set?.sceneAxes?.[scene.stem]?.axisIds;
+    if (axisIds !== undefined && isSceneJudgedForAxes(set, scene)) {
+      scope.set(scene.stem, new Set(axisIds));
+    }
+  }
+
+  return scope;
+}
+
+export function isAxisInSceneScope(scope: InterviewSceneAxisScope, sceneStem: string, axisId: string): boolean {
+  return scope.get(sceneStem)?.has(axisId) ?? !scope.has(sceneStem);
+}
+
 export function listOpenAxes(
   axes: readonly InterviewAxis[],
   tallies: InterviewTallies,
   minimumWeight: number,
   beatSituations: readonly InterviewBeatSituation[],
   cardAnsweredAxisIds: ReadonlySet<string>,
+  scope: InterviewSceneAxisScope = new Map<string, ReadonlySet<string>>(),
 ): InterviewOpenAxis[] {
   return axes
     .filter((axis) => !cardAnsweredAxisIds.has(axis.id) && !isAxisDecided(tallies, axis.id, minimumWeight))
-    .map((axis) => ({ axisId: axis.id, axisLabel: axis.label, beatSituations }));
+    .map((axis) => ({
+      axisId: axis.id,
+      axisLabel: axis.label,
+      beatSituations: beatSituations.filter((situation) => isAxisInSceneScope(scope, situation.sceneStem, axis.id)),
+    }));
 }
 
 export function describeBeatSituation(situation: InterviewBeatSituation): string {

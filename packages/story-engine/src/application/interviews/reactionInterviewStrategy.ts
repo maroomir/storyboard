@@ -21,10 +21,14 @@ import {
   computeInterviewCardHash,
   describeBeatSituation,
   isAxisDecided,
+  isAxisInSceneScope,
+  isSceneJudgedForAxes,
   listCardAnsweredAxisIds,
   listOpenAxes,
+  readSceneAxisScope,
   unseenValueIds,
   type BeatSituationOptions,
+  type InterviewSceneAxisScope,
 } from '#engine/application/interviews/interviewCoverage';
 import {
   collectAbsentPartnerTerms,
@@ -56,7 +60,9 @@ import {
   applyCardCollectProposals,
   cardCollectProposalId,
   computeInterviewContractHash,
+  computeInterviewSceneHash,
   getStoryboardProjectPaths,
+  sceneBeatText,
   scenePath,
   serializeCard,
   shouldProposeCardCollect,
@@ -79,6 +85,7 @@ import {
   type InterviewConfirmation,
   type InterviewOpening,
   type InterviewOption,
+  type InterviewSceneAxes,
   type InterviewQuestion,
   type InterviewRecord,
   type InterviewSessionSummary,
@@ -120,6 +127,7 @@ export interface InterviewContext {
   readonly project: StoryboardProject;
   readonly scenes: readonly SceneFile[];
   readonly axes: readonly InterviewAxis[];
+  readonly sceneAxisScope: InterviewSceneAxisScope;
   readonly model: InterviewWorkingModel;
   readonly tuning: InterviewTuning;
   readonly ai: StoryboardAiService;
@@ -324,6 +332,41 @@ function listDistillableCardLines(card: StoryboardCard): string[] {
 }
 
 const minimumQuestionOptions: number = 2;
+
+const scenesPerAxisScopeRequest: number = 8;
+
+function countSessionSkipsByAxis(sessionRecords: readonly InterviewRecord[]): Map<string, number> {
+  const skipsByAxis: Map<string, number> = new Map<string, number>();
+  for (const record of sessionRecords) {
+    if (record.answer?.kind === 'skipped' && !isRelationRecord(record)) {
+      skipsByAxis.set(record.axisId, (skipsByAxis.get(record.axisId) ?? 0) + 1);
+    }
+  }
+
+  return skipsByAxis;
+}
+
+function findLastSkippedAxisId(sessionRecords: readonly InterviewRecord[]): string | undefined {
+  const lastAnswered: InterviewRecord | undefined = [...sessionRecords]
+    .reverse()
+    .find((record) => record.answer !== undefined);
+
+  return lastAnswered?.answer?.kind === 'skipped' ? lastAnswered.axisId : undefined;
+}
+
+function listCardSceneStems(context: InterviewContext): string[] {
+  return [
+    ...new Set(
+      collectBeatSituations(context.card, context.scenes, context.situationOptions).map(
+        (situation) => situation.sceneStem,
+      ),
+    ),
+  ];
+}
+
+function isAxisTestedByAnyScene(context: InterviewContext, sceneStems: readonly string[], axisId: string): boolean {
+  return sceneStems.some((sceneStem) => isAxisInSceneScope(context.sceneAxisScope, sceneStem, axisId));
+}
 
 const catchphraseOptionLimit: number = 1;
 
@@ -557,23 +600,22 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       return prelude;
     }
 
-    const cardAnsweredAxisIds: ReadonlySet<string> = listCardAnsweredAxisIds(model, context.card);
-    const openAxes: readonly InterviewAxis[] = context.axes.filter(
-      (axis) =>
-        !cardAnsweredAxisIds.has(axis.id) && !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight),
-    );
-    const nextBeat: BeatToAsk | undefined = this.pickNextBeat(context, openAxes);
+    const openAxes: readonly InterviewAxis[] = this.listOpenAxesForSession(context, sessionRecords);
+    const preferredAxes: readonly InterviewAxis[] = this.preferAxesOtherThanLastSkipped(openAxes, sessionRecords);
+    const nextBeat: BeatToAsk | undefined =
+      this.pickNextBeat(context, preferredAxes) ?? this.pickNextBeat(context, openAxes);
+    const offBeatAxes: readonly InterviewAxis[] = this.listOffBeatAxes(context, preferredAxes, openAxes);
     const offBeatCount: number = sessionRecords.filter(
       (record) => record.source.kind === 'offBeat',
     ).length;
-    const canAskOffBeat: boolean = offBeatCount < tuning.offBeatQuestionsPerSession;
-    if (openAxes.length === 0 || (nextBeat === undefined && !canAskOffBeat)) {
+    const canAskOffBeat: boolean = offBeatCount < tuning.offBeatQuestionsPerSession && offBeatAxes.length > 0;
+    if (nextBeat === undefined && !canAskOffBeat) {
       return undefined;
     }
 
     const draft: InterviewQuestionDraft | undefined = await this.draftQuestion(
       context,
-      nextBeat === undefined ? openAxes : nextBeat.axes,
+      nextBeat === undefined ? offBeatAxes : nextBeat.axes,
       nextBeat?.situation,
     );
     if (draft === undefined) {
@@ -588,6 +630,52 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     });
 
     return this.toQuestion(record, context.axes);
+  }
+
+  private listOpenAxesForSession(
+    context: InterviewContext,
+    sessionRecords: readonly InterviewRecord[],
+  ): InterviewAxis[] {
+    const { model, tuning } = context;
+    const cardAnsweredAxisIds: ReadonlySet<string> = listCardAnsweredAxisIds(model, context.card);
+    const setAsideAxisIds: ReadonlySet<string> = this.listSetAsideAxisIds(context, sessionRecords);
+
+    return context.axes.filter(
+      (axis) =>
+        !cardAnsweredAxisIds.has(axis.id) &&
+        !setAsideAxisIds.has(axis.id) &&
+        !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight),
+    );
+  }
+
+  private listSetAsideAxisIds(context: InterviewContext, sessionRecords: readonly InterviewRecord[]): Set<string> {
+    return new Set(
+      [...countSessionSkipsByAxis(sessionRecords)]
+        .filter(([, skips]) => skips >= context.tuning.skipsBeforeSetAside)
+        .map(([axisId]) => axisId),
+    );
+  }
+
+  private preferAxesOtherThanLastSkipped(
+    openAxes: readonly InterviewAxis[],
+    sessionRecords: readonly InterviewRecord[],
+  ): readonly InterviewAxis[] {
+    const lastSkippedAxisId: string | undefined = findLastSkippedAxisId(sessionRecords);
+    const otherAxes: InterviewAxis[] = openAxes.filter((axis) => axis.id !== lastSkippedAxisId);
+
+    return otherAxes.length > 0 ? otherAxes : openAxes;
+  }
+
+  private listOffBeatAxes(
+    context: InterviewContext,
+    preferredAxes: readonly InterviewAxis[],
+    openAxes: readonly InterviewAxis[],
+  ): readonly InterviewAxis[] {
+    const sceneStems: string[] = listCardSceneStems(context);
+    const isInScope = (axis: InterviewAxis): boolean => isAxisTestedByAnyScene(context, sceneStems, axis.id);
+    const preferredInScope: InterviewAxis[] = preferredAxes.filter(isInScope);
+
+    return preferredInScope.length > 0 ? preferredInScope : openAxes.filter(isInScope);
   }
 
   private pickNextBeat(
@@ -612,7 +700,11 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     let leastAskedCount: number = Number.POSITIVE_INFINITY;
     for (const situation of collectBeatSituations(context.card, context.scenes, context.situationOptions)) {
       const beatKey: string = `${situation.sceneStem}#${situation.beatIndex}`;
-      const axes: InterviewAxis[] = openAxes.filter((axis) => !askedPairs.has(`${beatKey}#${axis.id}`));
+      const axes: InterviewAxis[] = openAxes.filter(
+        (axis) =>
+          !askedPairs.has(`${beatKey}#${axis.id}`) &&
+          isAxisInSceneScope(context.sceneAxisScope, situation.sceneStem, axis.id),
+      );
       const askedCount: number = askedPerBeat.get(beatKey) ?? 0;
       if (axes.length > 0 && askedCount < leastAskedCount) {
         leastAsked = { situation, axes };
@@ -955,7 +1047,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       cardId: model.cardId,
       answered,
       skipped: sessionRecords.length - answered,
-      undecidedAxisLabels: this.undecidedAxisLabels(context, sessionRecords),
+      ...this.describeAxisLeftovers(context, sessionRecords),
     };
 
     const relationDrafts: CardCollectProposalDraft[] = this.relationSpeechProposals(context);
@@ -1001,24 +1093,29 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     );
   }
 
-  private undecidedAxisLabels(
+  private describeAxisLeftovers(
     context: InterviewContext,
     sessionRecords: readonly InterviewRecord[],
-  ): string[] {
+  ): Pick<InterviewSessionSummary, 'undecidedAxisLabels' | 'waitingAxisLabels' | 'setAsideAxisLabels'> {
     const { model, tuning, axes } = context;
     const cardAnsweredAxisIds: ReadonlySet<string> = listCardAnsweredAxisIds(model, context.card);
+    const setAsideAxisIds: ReadonlySet<string> = this.listSetAsideAxisIds(context, sessionRecords);
+    const sceneStems: string[] = listCardSceneStems(context);
+    const leftovers: InterviewAxis[] = axes.filter(
+      (axis) => !cardAnsweredAxisIds.has(axis.id) && !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight),
+    );
+    const isWaiting = (axis: InterviewAxis): boolean =>
+      !setAsideAxisIds.has(axis.id) && !isAxisTestedByAnyScene(context, sceneStems, axis.id);
+    const isTouched = (axis: InterviewAxis): boolean =>
+      model.tallies[axis.id] !== undefined || sessionRecords.some((record) => record.axisId === axis.id);
 
-    return axes
-      .filter((axis) => {
-        if (cardAnsweredAxisIds.has(axis.id)) {
-          return false;
-        }
-        const isTouched: boolean =
-          model.tallies[axis.id] !== undefined ||
-          sessionRecords.some((record) => record.axisId === axis.id);
-        return isTouched && !isAxisDecided(model.tallies, axis.id, tuning.distillMinimumWeight);
-      })
-      .map((axis) => axis.label);
+    return {
+      undecidedAxisLabels: leftovers
+        .filter((axis) => !setAsideAxisIds.has(axis.id) && !isWaiting(axis) && isTouched(axis))
+        .map((axis) => axis.label),
+      waitingAxisLabels: leftovers.filter(isWaiting).map((axis) => axis.label),
+      setAsideAxisLabels: leftovers.filter((axis) => setAsideAxisIds.has(axis.id)).map((axis) => axis.label),
+    };
   }
 
   private distill(context: InterviewContext, decidedLines: readonly string[]): Promise<InterviewDistillDraft> {
@@ -1327,6 +1424,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
         context.tuning.distillMinimumWeight,
         situations,
         listCardAnsweredAxisIds(context.model, context.card),
+        context.sceneAxisScope,
       ),
       upcomingSceneStems: [...new Set(context.scenes.map((scene) => scene.stem))],
     };
@@ -1376,6 +1474,10 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       ai,
       attribution,
     );
+    const sceneAxisScope: InterviewSceneAxisScope = await this.ensureSceneAxisScope(workspaceRoot, cardType, scenes, {
+      ai,
+      attribution,
+    });
     const model: InterviewWorkingModel = await this.ensureWorkingModel(workspaceRoot, card, cardType, sessionId);
     const situationOptions: BeatSituationOptions = await this.situationOptionsFor(workspaceRoot, card);
 
@@ -1392,6 +1494,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       project,
       scenes,
       axes: withCardValues(axes, model.cardValues),
+      sceneAxisScope,
       model,
       tuning,
       ai,
@@ -1502,6 +1605,66 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     });
 
     return axes;
+  }
+
+  private async ensureSceneAxisScope(
+    workspaceRoot: StoryUri,
+    cardType: BibleSubjectKind,
+    scenes: readonly SceneFile[],
+    caller: { readonly ai: StoryboardAiService; readonly attribution: UsageAttribution },
+  ): Promise<InterviewSceneAxisScope> {
+    const file: InterviewAxesFile = await this.repositories.interviews.loadAxes(workspaceRoot);
+    const set: InterviewAxisSet | undefined = file[cardType];
+    const unjudged: SceneFile[] = scenes.filter(
+      (scene) => (scene.card.beats ?? []).length > 0 && !isSceneJudgedForAxes(set, scene),
+    );
+    if (set === undefined || unjudged.length === 0) {
+      return readSceneAxisScope(set, scenes);
+    }
+
+    const judged: Record<string, InterviewSceneAxes> = await this.judgeSceneAxes(workspaceRoot, cardType, set, unjudged, caller);
+    const updated: InterviewAxisSet = { ...set, sceneAxes: { ...set.sceneAxes, ...judged } };
+    await this.repositories.interviews.saveAxes(workspaceRoot, { ...file, [cardType]: updated });
+
+    return readSceneAxisScope(updated, scenes);
+  }
+
+  private async judgeSceneAxes(
+    workspaceRoot: StoryUri,
+    cardType: BibleSubjectKind,
+    set: InterviewAxisSet,
+    scenes: readonly SceneFile[],
+    caller: { readonly ai: StoryboardAiService; readonly attribution: UsageAttribution },
+  ): Promise<Record<string, InterviewSceneAxes>> {
+    const synopsis: OutlineSynopsis | undefined = await this.repositories.outline.loadSynopsis(workspaceRoot);
+    const judged: Record<string, InterviewSceneAxes> = {};
+
+    for (let start: number = 0; start < scenes.length; start += scenesPerAxisScopeRequest) {
+      const batch: readonly SceneFile[] = scenes.slice(start, start + scenesPerAxisScopeRequest);
+      const axisIdsByStem: Map<string, string[]> = await caller.ai.judgeInterviewAxisScenes(
+        {
+          cardType,
+          synopsis: synopsis?.logline,
+          axes: set.axes,
+          scenes: batch.map((scene) => ({
+            stem: scene.stem,
+            title: scene.card.title,
+            beats: (scene.card.beats ?? []).map((beat) => sceneBeatText(beat)),
+          })),
+        },
+        { attribution: caller.attribution },
+      );
+      for (const scene of batch) {
+        const axisIds: string[] | undefined = axisIdsByStem.get(scene.stem);
+        if (axisIds === undefined) {
+          this.host.logger.warn(`인터뷰 축이 맞는 장면을 판정하지 못했습니다: ${scene.stem} (모든 축을 묻고 다음에 다시 판정합니다)`);
+          continue;
+        }
+        judged[scene.stem] = { sceneHash: computeInterviewSceneHash(scene), axisIds };
+      }
+    }
+
+    return judged;
   }
 
   private async ensureWorkingModel(

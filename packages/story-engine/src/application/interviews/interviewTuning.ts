@@ -13,6 +13,7 @@ export interface InterviewTuning {
   readonly writtenWeight: number;
   readonly distillMinimumWeight: number;
   readonly rebuildAfterWrittenStreak: number;
+  readonly skipsBeforeSetAside: number;
 }
 
 function knob(knobs: GenerationKnobs | undefined, leaf: keyof InterviewTuning): number {
@@ -33,5 +34,6 @@ export function resolveInterviewTuning(knobs: GenerationKnobs | undefined): Inte
     writtenWeight: knob(knobs, 'writtenWeight'),
     distillMinimumWeight: knob(knobs, 'distillMinimumWeight'),
     rebuildAfterWrittenStreak: knob(knobs, 'rebuildAfterWrittenStreak'),
+    skipsBeforeSetAside: knob(knobs, 'skipsBeforeSetAside'),
   };
 }

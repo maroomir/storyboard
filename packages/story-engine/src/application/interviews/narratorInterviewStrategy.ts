@@ -281,6 +281,8 @@ export class NarratorInterviewStrategy implements IQuestionStrategy {
       skipped: sessionRecords.filter((record) => record.answer?.kind === 'skipped').length,
       candidateCount: voiceLines.length,
       undecidedAxisLabels: [],
+      waitingAxisLabels: [],
+      setAsideAxisLabels: [],
     };
   }
 

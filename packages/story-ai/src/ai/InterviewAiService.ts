@@ -14,6 +14,11 @@ import {
   type InterviewAxesInput,
 } from '#ai/ai/prompts/interviewAxes';
 import {
+  InterviewAxisScenesPrompt,
+  coerceInterviewAxisScenes,
+  type InterviewAxisScenesInput,
+} from '#ai/ai/prompts/interviewAxisScenes';
+import {
   InterviewCardAnswersPrompt,
   coerceInterviewCardAnswers,
   type InterviewCardAnswersInput,
@@ -71,6 +76,21 @@ export class InterviewAiService {
     );
 
     return coerceInterviewAxes(parseJsonObject(response.text));
+  }
+
+  public async judgeAxisScenes(
+    input: InterviewAxisScenesInput,
+    options: GenerateTextOptions = {},
+  ): Promise<Map<string, string[]>> {
+    const variant: PromptVariantId = this.gateway.resolvePromptVariant('interviewAxes', options);
+    const response: AiGenerateResponse = await this.generateWithDefaults(
+      'interviewAxes',
+      InterviewAxisScenesPrompt.build(input, variant),
+      InterviewAxisScenesPrompt.config,
+      options,
+    );
+
+    return coerceInterviewAxisScenes(parseJsonObject(response.text), input);
   }
 
   public async findCardAnswers(

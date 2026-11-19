@@ -127,7 +127,25 @@ function isMockBackgroundPrompt(prompt: string): boolean {
   return prompt.includes('[카드 종류]\n배경') || prompt.startsWith('[장소]');
 }
 
+function isMockAxisScenesPrompt(prompt: string): boolean {
+  return prompt.startsWith('[축 범위]');
+}
+
+function createMockAxisScenes(prompt: string): string {
+  const axisIds: string[] = (prompt.split('[축]')[1]?.split('\n\n')[0] ?? '')
+    .split('\n')
+    .map((line) => /^- ([a-z0-9-]+):/.exec(line.trim())?.[1])
+    .filter((id): id is string => id !== undefined);
+  const stems: string[] = [...prompt.matchAll(/^\[장면\] (\S+)$/gm)].map((match) => match[1] ?? '');
+
+  return JSON.stringify({ scenes: stems.map((stem) => ({ stem, axisIds })) });
+}
+
 function createMockInterviewAxes(prompt: string): string {
+  if (isMockAxisScenesPrompt(prompt)) {
+    return createMockAxisScenes(prompt);
+  }
+
   const axes: readonly { id: string; label: string; values: { id: string; label: string }[] }[] =
     isMockBackgroundPrompt(prompt)
       ? [

@@ -318,6 +318,16 @@ export function InterviewPanel({
             아직 정해지지 않은 축: {phase.summary.undecidedAxisLabels.join(' · ')}
           </p>
         ) : null}
+        {phase.summary.waitingAxisLabels.length > 0 ? (
+          <p className="m-0 text-xs text-sb-fg-muted">
+            뒤 장면을 기다리는 축: {phase.summary.waitingAxisLabels.join(' · ')}
+          </p>
+        ) : null}
+        {phase.summary.setAsideAxisLabels.length > 0 ? (
+          <p className="m-0 text-xs text-sb-fg-muted">
+            건너뛰어 보류한 축: {phase.summary.setAsideAxisLabels.join(' · ')}
+          </p>
+        ) : null}
         {phase.summary.candidateCount > 0 ? (
           <p className="m-0 text-xs text-sb-fg-muted">
             대화로 돌아가 «기다리는 제안»에서 «적용»하거나 «버림»합니다.

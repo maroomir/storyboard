@@ -208,6 +208,7 @@
   `backgroundFactExtraction` (0.2 / 700). 카드 하나를 두고 초안들에서 그 인물의 성향·후보 줄이나
   그 배경의 사실을 뽑아 제안으로 돌려준다. 카드에 바로 쓰지 않는다.
 - **인물·배경 인터뷰** (`card interview`): `interviewAxes` (0.5 / 3000)가 축을 정하고,
+  `interviewAxisScenes` (0.2 / 2000)가 장면마다 그 비트가 실제로 가르는 축을 판정하고(작업은 `interviewAxes`),
   `interviewCardAnswers` (0.2 / 1500)가 카드가 이미 답한 축을 닫고, `interviewQuestion`
   (0.9 / 2000)·`interviewRelationSpeech` (0.7 / 1200)가 묻고, `interviewUpdate` (0.4 / 2500)가
   답 하나마다 그 인물·장소에 대한 지금까지의 이해를 고쳐 쓰고, `interviewDistill` (0.4 / 3000)이 카드 제안으로 증류한다.

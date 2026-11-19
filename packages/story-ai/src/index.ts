@@ -29,6 +29,7 @@ export * from '#ai/ai/prompts/grammarCheck';
 export * from '#ai/ai/prompts/inlineCompletion';
 export * from '#ai/ai/prompts/noteExtraction';
 export * from '#ai/ai/prompts/interviewAxes';
+export * from '#ai/ai/prompts/interviewAxisScenes';
 export * from '#ai/ai/prompts/interviewQuestion';
 export * from '#ai/ai/prompts/interviewUpdate';
 export * from '#ai/ai/prompts/interviewCardAnswers';

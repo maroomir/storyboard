@@ -12,6 +12,8 @@ after the first public release.
 
 ### Fixed
 
+- **The interview no longer forces an axis onto a scene it does not fit.** The axis vocabulary is drawn once from the whole work, while questions come from the beats of the upcoming scenes, so an axis that belongs to the ending (an attitude before parting) was a candidate on the first scene's beats too. As a session went on, the axes that fit got decided and dropped out, leaving only the ones that did not, and the question invented a premise the beat did not hold («the day of parting is set»). Each scene is now judged once for the axes its beats put in play as written, kept with the vocabulary in the cache database (and judged again when the beats change), and a beat is asked only those axes. An axis no scene tests is reported at the end of the session as waiting for later scenes. The question prompt no longer says to take the closest axis when none fits, and tells the model not to add a premise the situation lacks. (#208)
+- **A skipped axis is not asked again on the very next beat.** After a skip the next question prefers another axis, and an axis skipped twice in one session is set aside for that session and reported. The count is `generation.interview.skipsBeforeSetAside`. (#208)
 - **The catchphrase ban on interview options now covers catchphrases quoted in a relation's speech.** 0.16.6 treated any catchphrase mentioned in a relation's speech as a form of address and left it off the ban list, so a card whose speech line quoted one as a sentence opener still got options starting with it (measured: 35 of 52 options). Only a phrase written as an address («calls them '…'») is now left to the address rule; the rest are banned (0 of 51 on the same card). (#201)
 
 ## [0.16.6] - 2026-11-18
