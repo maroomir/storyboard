@@ -22,6 +22,7 @@ import type {
   UsageAttribution,
 } from '@storyboard/story-model';
 
+import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import {
   validateDraftCandidate,
   type DraftCandidateRejectionReason,
@@ -42,6 +43,7 @@ import {
   replaceSectionText,
   splitDraftSections,
   type DraftSections,
+  type DraftSectionSplitOptions,
 } from '#engine/pipeline/revisionSections';
 
 export interface ReviseLoopCharacter extends RoutingCharacter {
@@ -75,6 +77,7 @@ export interface ReviseLoopOptions {
   readonly maxIterations: number;
   readonly reviseScoreThreshold: number;
   readonly maxCompressionPercent: number;
+  readonly sectionMaxChars?: number;
   readonly onProgress?: (message: string) => void;
   readonly shouldCancel?: () => boolean;
   readonly seedIssues?: ReviseSeedIssues;
@@ -127,6 +130,10 @@ function addsBrokenHangul(originalText: string, candidateText: string): boolean 
   return addsLoneJamo || addsRareSyllable;
 }
 
+function isAnswerLostAtOutputLimit(error: unknown): boolean {
+  return error instanceof AiProviderError && error.code === 'output-limit';
+}
+
 function toReviseLoopFailure(stage: ReviseLoopFailure['stage'], error: unknown): ReviseLoopFailure {
   if (!(error instanceof AiProviderError)) {
     throw error;
@@ -175,8 +182,9 @@ export function planSectionRevisions(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[],
   characters: readonly ReviseLoopCharacter[],
+  splitOptions: DraftSectionSplitOptions = {},
 ): SectionRevisionPlan[] {
-  const { sections } = splitDraftSections(body);
+  const { sections } = splitDraftSections(body, splitOptions);
   const continuityBySection: ContinuityIssueLike[][] = sections.map(
     (): ContinuityIssueLike[] => [],
   );
@@ -398,7 +406,7 @@ class SectionRevisionTally {
 
   public toOutcome(): SectionRevisionOutcome {
     return {
-      body: joinDraftSections({ sections: this.sections, breakLines: this.split.breakLines }),
+      body: joinDraftSections({ sections: this.sections, separators: this.split.separators }),
       acceptedSections: this.acceptedSections,
       rejectedSections: this.rejectedSections,
       ...(this.failure === undefined ? {} : { failure: this.failure }),
@@ -499,6 +507,7 @@ export class ReviseLoop {
       checkedRound.continuityIssues,
       checkedRound.critiqueIssues,
       this.options.loopContext.characters,
+      this.sectionSplitOptions(),
     );
     if (plans.length === 0) {
       state.endRound(checkedRound);
@@ -520,6 +529,13 @@ export class ReviseLoop {
 
     state.acceptRevision(applied.body);
     return !state.hasFailure();
+  }
+
+  private sectionSplitOptions(): DraftSectionSplitOptions {
+    return {
+      maxSectionChars:
+        this.options.sectionMaxChars ?? resolveSceneGenerationTuning().reviseSectionMaxChars,
+    };
   }
 
   private async runReviewChecks(body: string): Promise<ReviewCheckResults> {
@@ -553,7 +569,9 @@ export class ReviseLoop {
     currentBody: string,
     onSection: (done: number, total: number) => void,
   ): Promise<SectionRevisionOutcome> {
-    const tally: SectionRevisionTally = new SectionRevisionTally(splitDraftSections(currentBody));
+    const tally: SectionRevisionTally = new SectionRevisionTally(
+      splitDraftSections(currentBody, this.sectionSplitOptions()),
+    );
 
     for (const [done, plan] of plans.entries()) {
       if (this.isCancelled()) {
@@ -582,6 +600,16 @@ export class ReviseLoop {
     try {
       answer = await this.requestSectionRevision(plan, originalText);
     } catch (error) {
+      if (isAnswerLostAtOutputLimit(error)) {
+        tally.addRejection({
+          section: plan.section,
+          reason: 'truncated',
+          originalLength: originalText.length,
+          candidateLength: 0,
+        });
+        return true;
+      }
+
       tally.recordFailure(toReviseLoopFailure('revise', error));
       return false;
     }

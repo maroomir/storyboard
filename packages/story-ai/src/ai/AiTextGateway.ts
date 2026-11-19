@@ -51,7 +51,7 @@ export class AiTextGateway {
     this.emitUsageIfNeeded(taskName, response, options.attribution);
     if (isEmptyTruncatedResponse(response)) {
       throw new AiProviderError(
-        'generation-failed',
+        'output-limit',
         response.providerId,
         emptyTruncatedResponseMessage(response.providerId),
       );

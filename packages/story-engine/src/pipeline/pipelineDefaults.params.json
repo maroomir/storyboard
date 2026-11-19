@@ -45,6 +45,9 @@
     "maxEditLength": 20,
     "maxEditDistance": 3
   },
+  "revise": {
+    "sectionMaxChars": 6000
+  },
   "padding": {
     "paragraphRatio": 0.8,
     "paragraphMinimumLength": 40

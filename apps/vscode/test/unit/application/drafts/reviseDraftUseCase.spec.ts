@@ -101,6 +101,7 @@ function baseOptions(
   return {
     host: createTestHost({
       logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
+      configBridge: { getSceneGenerationTuning: () => ({}) } as never,
       fileSystem: { createDirectory: async () => undefined, writeFile: fileWriteMock, exists: async () => false } as never,
       generator: "storyboard@0.0.0-test",
       scenes: stubScenes([sceneUnderRevision]),
@@ -285,6 +286,7 @@ describe("ReviseDraftUseCase", () => {
     const options = baseOptions({ maxIterations: 3 })
     const host = createTestHost({
       logger: { error: () => undefined, info: loggerInfoMock, warn: () => undefined } as never,
+      configBridge: { getSceneGenerationTuning: () => ({}) } as never,
       fileSystem: {
         createDirectory: async () => undefined,
         writeFile: archiveWrites,

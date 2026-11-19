@@ -45,6 +45,7 @@ describe("resolveSceneGenerationTuning", () => {
       actorRetryLimit: pipelineDefaults.actors.retryLimit,
       actorLineMaxChars: pipelineDefaults.actors.lineMaxChars,
       actorLineMaxSentences: pipelineDefaults.actors.lineMaxSentences,
+      reviseSectionMaxChars: pipelineDefaults.revise.sectionMaxChars,
       paddingParagraphRatio: pipelineDefaults.padding.paragraphRatio,
       paddingParagraphMinimumLength: pipelineDefaults.padding.paragraphMinimumLength,
       seamWindowChars: pipelineDefaults.seam.windowChars,

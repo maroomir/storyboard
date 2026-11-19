@@ -63,13 +63,13 @@ describe('AiTextGateway', () => {
     },
   );
 
-  it('reports an answer the output limit left empty as a failed generation and still counts its usage (#193)', async () => {
+  it('reports an answer the output limit left empty as an output-limit error and still counts its usage (#193, #213)', async () => {
     const emptyTruncated: AiGenerateResponse = { ...response, text: '  ', isTruncated: true };
     const usage: UsageRecord[] = [];
 
     await expect(
       createGateway(async () => emptyTruncated, usage).generate('backgroundDescription', [], {}),
-    ).rejects.toMatchObject({ code: 'generation-failed', providerId: 'claude-code' });
+    ).rejects.toMatchObject({ code: 'output-limit', providerId: 'claude-code' });
     expect(usage).toHaveLength(1);
   });
 

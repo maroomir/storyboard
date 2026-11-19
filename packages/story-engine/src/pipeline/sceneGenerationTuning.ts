@@ -46,6 +46,7 @@ export interface ResolvedSceneGenerationTuning {
   readonly proofreadChunkLength: number;
   readonly proofreadMaxEditLength: number;
   readonly proofreadMaxEditDistance: number;
+  readonly reviseSectionMaxChars: number;
   readonly paddingParagraphRatio: number;
   readonly paddingParagraphMinimumLength: number;
   readonly voiceSampleLimit: number;
@@ -125,6 +126,7 @@ export function resolveSceneGenerationTuning(
     proofreadChunkLength: knob(tuning, 'generation.proofread.chunkLength'),
     proofreadMaxEditLength: knob(tuning, 'generation.proofread.maxEditLength'),
     proofreadMaxEditDistance: knob(tuning, 'generation.proofread.maxEditDistance'),
+    reviseSectionMaxChars: knob(tuning, 'generation.revise.sectionMaxChars'),
     paddingParagraphRatio: knob(tuning, 'generation.padding.paragraphRatio'),
     paddingParagraphMinimumLength: knob(tuning, 'generation.padding.paragraphMinimumLength'),
     voiceSampleLimit: knob(tuning, 'generation.voiceSamples.limit'),

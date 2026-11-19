@@ -28,6 +28,25 @@ describe("splitDraftSections", () => {
     expect(joinDraftSections(split)).toBe(body)
   })
 
+  it("cuts a long section at paragraph breaks into even parts and joins back byte for byte (#213)", () => {
+    const paragraph: string = `${"가".repeat(98)}\n\n`
+    const longScene: string = paragraph.repeat(25)
+    const longBody: string = `${longScene}\n---\n\n짧은 장면.`
+
+    const split = splitDraftSections(longBody, { maxSectionChars: 1000 })
+
+    expect(split.sections).toHaveLength(4)
+    expect(split.sections.slice(0, 3).every((part) => part.length <= 1000 && part.endsWith("\n\n"))).toBe(true)
+    expect(split.sections[3]).toBe("\n짧은 장면.")
+    expect(joinDraftSections(split)).toBe(longBody)
+  })
+
+  it("leaves a section with no line break whole", () => {
+    const split = splitDraftSections("가".repeat(50), { maxSectionChars: 10 })
+
+    expect(split.sections).toHaveLength(1)
+  })
+
   it("keeps the blank lines around a rewritten section", () => {
     expect(replaceSectionText("\n원문\n", "  새 문장  ")).toBe("\n새 문장\n")
   })
@@ -195,5 +214,64 @@ describe("ReviseLoop by section", () => {
 
     expect(result.body).toBe(body)
     expect(result.rejection?.reason).toBe("scene-breaks-changed")
+  })
+
+  it("rewrites a long scene part by part (#213)", async () => {
+    const longBody: string = `${"백과사전을 펼쳤다. ".repeat(9)}\n\n`.repeat(6).trimEnd()
+    const reviseDraft = vi.fn(async (input: { body: string }) => ({ text: `${input.body} 고쳤다.`, isTruncated: false }))
+    const aiService = {
+      checkContinuity: vi
+        .fn()
+        .mockResolvedValueOnce([{ original: "", reason: "전반의 모순", severity: "high" }])
+        .mockResolvedValue([]),
+      critiqueDraft: vi.fn().mockResolvedValue([]),
+      reviseDraft
+    } as never
+
+    const result = await new ReviseLoop({
+      aiService,
+      registry,
+      attribution: { primary: { kind: "scene", id: "01" } },
+      loopContext,
+      body: longBody,
+      maxIterations: 1,
+      reviseScoreThreshold: 0,
+      maxCompressionPercent: 50,
+      sectionMaxChars: 250
+    }).run()
+
+    expect(reviseDraft).toHaveBeenCalledTimes(3)
+    expect(reviseDraft.mock.calls.every(([input]) => input.body.length <= 250)).toBe(true)
+    expect(result.body.match(/고쳤다\./g)).toHaveLength(3)
+    expect(result.body.split("\n\n")).toHaveLength(6)
+  })
+
+  it("goes on to the other sections when one answer is lost at the output limit (#213)", async () => {
+    const aiService = serviceWith(async ({ body: section }) => {
+      if (section.startsWith("아침")) {
+        throw new AiProviderError("output-limit", "claude", "출력 한도")
+      }
+      return `${section} 고쳤다.`
+    })
+
+    const result = await new ReviseLoop({
+      aiService,
+      registry,
+      attribution: { primary: { kind: "scene", id: "01" } },
+      loopContext,
+      body,
+      maxIterations: 1,
+      reviseScoreThreshold: 0,
+      maxCompressionPercent: 50
+    }).run()
+
+    const sections = splitDraftSections(result.body).sections
+    expect(result.failure).toBeUndefined()
+    expect(result.revisionCount).toBe(1)
+    expect(sections[0]).toBe(splitDraftSections(body).sections[0])
+    expect(sections[2]).toContain("고쳤다.")
+    expect(result.rounds[0]?.rewrite?.rejectedSections).toEqual([
+      expect.objectContaining({ section: 0, reason: "truncated", candidateLength: 0 })
+    ])
   })
 })

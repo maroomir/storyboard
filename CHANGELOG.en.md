@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The revise loop no longer stops at the output limit on a long scene.** A rewrite took each section between scene breaks (`---`) whole, so on a scene aiming at 40,000 characters a section of about 12,000 was cut at the output limit and rejected every round, and an answer that reached the limit with no text stopped the whole loop. A section over 6,000 characters (`generation.revise.sectionMaxChars`) is now cut evenly at paragraph breaks and each part rewritten on its own, and when one part's answer comes back empty at the limit only that part is rejected as cut and the round goes on with the rest. The warning's «재작성가» typo is «재작성이» now. (#213)
+
 ## [0.16.7] - 2026-11-19
 
 ### Added

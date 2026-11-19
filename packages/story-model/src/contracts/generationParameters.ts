@@ -195,6 +195,12 @@ export const generationParameterCatalog: readonly GenerationParameterDefinition[
     bounds: { min: 1, max: 10 },
   },
   {
+    id: 'generation.revise.sectionMaxChars',
+    label: '감수 재작성 한 번에 보내는 글자 수',
+    kind: 'chars',
+    bounds: { min: 1000, max: 20000 },
+  },
+  {
     id: 'generation.padding.paragraphRatio',
     label: '문단 되풀이 유사도',
     kind: 'ratio',
