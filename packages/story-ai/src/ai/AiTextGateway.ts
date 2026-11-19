@@ -16,6 +16,7 @@ import { isAttributed } from '#ai/ai/aiResponseCoercion';
 import { selectPromptVariant } from '#ai/ai/prompts/promptVariants';
 import type { PromptVariantId } from '#ai/ai/prompts/types';
 import type {
+  AiCallObservation,
   GenerateTextOptions,
   OnUsageRecordCallback,
   StoryboardAiServiceOptions,
@@ -43,9 +44,11 @@ export class AiTextGateway {
     messages: readonly AiMessage[],
     options: GenerateTextOptions,
   ): Promise<AiGenerateResponse> {
-    const response: AiGenerateResponse = await this.retryTimedOutCall(
-      () => this.requestGeneration(taskName, messages, options),
-      timedOutCallAttemptLimit,
+    const response: AiGenerateResponse = await this.observeCall(taskName, messages, options, () =>
+      this.retryTimedOutCall(
+        () => this.requestGeneration(taskName, messages, options),
+        timedOutCallAttemptLimit,
+      ),
     );
 
     this.emitUsageIfNeeded(taskName, response, options.attribution);
@@ -78,9 +81,12 @@ export class AiTextGateway {
           maxTokens: options.maxTokens,
         });
 
+    const startedAt: Date = new Date();
+
     for await (const chunk of stream) {
       if (chunk.type === 'done') {
         this.emitUsageIfNeeded(taskName, chunk.response, options.attribution);
+        this.emitCall(taskName, messages, options, startedAt, { response: chunk.response });
       }
       yield chunk;
     }
@@ -118,6 +124,44 @@ export class AiTextGateway {
           maxTokens: options.maxTokens,
           reasoningEffort: options.reasoningEffort,
         });
+  }
+
+  private async observeCall(
+    taskName: AiTaskName,
+    messages: readonly AiMessage[],
+    options: GenerateTextOptions,
+    send: () => Promise<AiGenerateResponse>,
+  ): Promise<AiGenerateResponse> {
+    const startedAt: Date = new Date();
+
+    try {
+      const response: AiGenerateResponse = await send();
+      this.emitCall(taskName, messages, options, startedAt, { response });
+      return response;
+    } catch (error) {
+      this.emitCall(taskName, messages, options, startedAt, { error });
+      throw error;
+    }
+  }
+
+  private emitCall(
+    taskName: AiTaskName,
+    messages: readonly AiMessage[],
+    options: GenerateTextOptions,
+    startedAt: Date,
+    outcome: Pick<AiCallObservation, 'response' | 'error'>,
+  ): void {
+    this.options.onCall?.({
+      taskName,
+      messages,
+      ...(options.temperature === undefined ? {} : { temperature: options.temperature }),
+      ...(options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens }),
+      ...(options.reasoningEffort === undefined ? {} : { reasoningEffort: options.reasoningEffort }),
+      startedAt,
+      durationMs: Date.now() - startedAt.getTime(),
+      ...outcome,
+      ...(options.traceTag === undefined ? {} : { traceTag: options.traceTag }),
+    });
   }
 
   private async retryTimedOutCall(

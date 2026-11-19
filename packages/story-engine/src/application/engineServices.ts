@@ -26,6 +26,7 @@ import type { IStoryFeatureRepository } from '#engine/application/story/storyFea
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { IUsageSink } from '#engine/ports/usageSink';
+import type { GenerationTraceRecorder } from '#engine/persistence/generationTraceRecorder';
 import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
 import type {
   IChapterSummaryRepository,
@@ -59,6 +60,7 @@ export interface AiServices {
   readonly gateway: AiGateway;
   readonly providerRegistry: AiProviderRegistry;
   readonly usageSink: IUsageSink;
+  readonly traceRecorder: GenerationTraceRecorder;
 }
 
 export interface WorkspaceRepositories {

@@ -416,6 +416,14 @@ export class ConfigBridge {
     return this.readBooleanSetting('editor.slop.realtime');
   }
 
+  public isTraceEnabled(): boolean {
+    return this.readBooleanSetting('trace.enabled');
+  }
+
+  public getTraceKeepRuns(): number {
+    return this.readIntegerSetting('trace.keepRuns');
+  }
+
   public isStudioValidationEnabled(): boolean {
     return this.readBooleanSetting('editor.studio.validation');
   }

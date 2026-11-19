@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **A generation trace can be recorded (`trace.enabled`).** After `storyboard config set trace.enabled true`, every model call writes the prompt it sent and the response it got, with the model, request parameters, tokens, cost, duration and whether the output was cut, to `.storyboard/cache/traces/<run>/` as the call finishes (`run.json`, `calls/00001.json` …, each text once in `blobs/<sha256>.txt`). Generating one draft is one run; calls made outside one collect in an `ambient` run. A run that fails or is interrupted keeps what it had recorded. The texts contain the manuscript, so they stay in the git-ignored cache, and only the last 3 runs per scene (or per kind of work) are kept (`trace.keepRuns`). Off by default; turning it on changes no prompt, call count or cost. Section and attempt numbers, post-processing records (trims and the like) and a screen to read the trace follow in later work. (#216)
+
 ## [0.16.8] - 2026-11-20
 
 ### Fixed

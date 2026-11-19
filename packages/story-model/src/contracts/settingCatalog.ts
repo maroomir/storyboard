@@ -10,7 +10,7 @@ export interface StoryboardSettingDefinition {
   readonly defaultValue: boolean | number | string;
   readonly minimum?: number;
   readonly maximum?: number;
-  readonly group: '생성' | '검수' | '편집기';
+  readonly group: '생성' | '검수' | '편집기' | '진단';
 }
 
 export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = [
@@ -149,6 +149,25 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     kind: 'boolean',
     defaultValue: false,
     group: '편집기',
+  },
+  {
+    key: 'trace.enabled',
+    label: '생성 추적 기록',
+    description:
+      '모델 호출마다 프롬프트와 응답을 .storyboard/cache/traces 에 남깁니다. 원고 본문이 들어가며 생성 결과와 비용은 바뀌지 않습니다.',
+    kind: 'boolean',
+    defaultValue: false,
+    group: '진단',
+  },
+  {
+    key: 'trace.keepRuns',
+    label: '추적 보관 횟수',
+    description: '씬(또는 작업 종류)마다 최근 몇 번의 추적을 남길지 정합니다.',
+    kind: 'integer',
+    defaultValue: 3,
+    minimum: 1,
+    maximum: 50,
+    group: '진단',
   },
 ];
 

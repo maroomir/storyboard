@@ -147,6 +147,7 @@ export * from '#engine/persistence/repositories/studioSessionRepository';
 export * from '#engine/persistence/revisionPlanRecorder';
 export * from '#engine/persistence/sceneContextReader';
 export * from '#engine/persistence/usageLedgerRecorder';
+export * from '#engine/persistence/generationTraceRecorder';
 export * from '#engine/persistence/workspaceRunLock';
 export * from '#engine/persistence/sceneCacheWorkspace';
 export * from '#engine/persistence/studioContextRepository';
