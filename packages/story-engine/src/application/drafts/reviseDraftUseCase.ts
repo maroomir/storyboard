@@ -35,7 +35,13 @@ import {
   resolveSceneTargetLength,
   buildStyleDirective,
   type SceneBeat,
+  type DraftGenerationStepId,
+  type TraceRunStatus,
+  draftGenerationTraceKind,
+  draftRevisionTraceKind,
+  extractErrorMessage,
 } from '@storyboard/story-model';
+import type { TraceRunSession } from '#engine/persistence/generationTraceRecorder';
 import { sceneCacheFilePath, type SceneCacheKey } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
@@ -129,6 +135,7 @@ export interface ReviseDraftRequest {
   readonly onProgress?: (message: string) => void;
   readonly shouldCancel?: () => boolean;
   readonly seedIssues?: ReviseSeedIssues;
+  readonly followsGeneration?: boolean;
 }
 
 export interface ReviseDraftWorkflowResult {
@@ -375,7 +382,31 @@ export class ReviseDraftUseCase {
   ) {}
 
   public async execute(request: ReviseDraftRequest): Promise<ReviseDraftWorkflowResult> {
-    return await this.runReviseDraftWorkflow(request);
+    const session: TraceRunSession = await this.ai.traceRecorder.startRun(request.workspaceUri, {
+      kind: draftRevisionTraceKind,
+      subject: { sceneStem: request.sceneStem },
+      ...(request.followsGeneration === true ? { continuesRunOfKind: draftGenerationTraceKind } : {}),
+    });
+    const reviseStep: DraftGenerationStepId = 'reviseLoop';
+
+    try {
+      const result: ReviseDraftWorkflowResult = await this.ai.traceRecorder.runStage(
+        request.workspaceUri,
+        reviseStep,
+        () => this.runReviseDraftWorkflow(request),
+        (revised) => revised.failure?.message,
+      );
+      const status: TraceRunStatus = result.cancelled
+        ? 'cancelled'
+        : result.failure === undefined
+          ? 'completed'
+          : 'failed';
+      await session.finish(status, result.failure?.message);
+      return result;
+    } catch (error) {
+      await session.finish('failed', extractErrorMessage(error));
+      throw error;
+    }
   }
 
   private async runReviseDraftWorkflow(

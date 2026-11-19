@@ -196,6 +196,74 @@ describe('GenerationTraceRecorder', () => {
     expect(readdirSync(join(runDirectory, 'calls'))).toHaveLength(simultaneousCallCount);
   });
 
+  it('removes a run that made no model call', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+
+    const session: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate' });
+    await recorder.runStage(root, 'resolveSceneBeats', async () => undefined);
+    await session.finish('completed');
+
+    expect(readdirSync(traceRootOf(workspace))).toEqual([]);
+  });
+
+  it('continues the generation run of the same scene and marks a failed step', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+    const subject: { readonly sceneStem: string } = { sceneStem: '001-opening' };
+
+    const generation: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate', subject });
+    await recorder.recordCall(root, observeCall('구간 1', '본문'));
+    await generation.finish('completed');
+    const revision: TraceRunSession = await recorder.startRun(root, {
+      kind: 'draft-revise',
+      subject,
+      continuesRunOfKind: 'draft-generate',
+    });
+    const outcome: { readonly failure: string } = await recorder.runStage(
+      root,
+      'reviseLoop',
+      async () => {
+        await recorder.recordCall(root, observeCall('검수', '끊긴 본문'));
+        return { failure: '출력 한도' };
+      },
+      (result) => result.failure,
+    );
+    await revision.finish('failed', outcome.failure);
+
+    const runDirectory: string = join(traceRootOf(workspace), generation.runId ?? '');
+    expect(revision.runId).toBe(generation.runId);
+    expect(readdirSync(traceRootOf(workspace))).toHaveLength(1);
+    expect(readdirSync(join(runDirectory, 'calls'))).toEqual(['00001.json', '00002.json']);
+    expect(traceRunHeaderSchema.parse(readJson(join(runDirectory, 'run.json')))).toMatchObject({
+      kind: 'draft-generate',
+      status: 'failed',
+      failureMessage: '출력 한도',
+    });
+    expect(
+      traceStageRecordSchema.parse(readJson(join(runDirectory, 'stages', '00001.json'))),
+    ).toMatchObject({ stageId: 'reviseLoop', status: 'failed', callCount: 1, firstCallSequence: 2 });
+  });
+
+  it('starts a revision run of its own when no generation run precedes it', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+
+    const revision: TraceRunSession = await recorder.startRun(root, {
+      kind: 'draft-revise',
+      subject: { sceneStem: '001-opening' },
+      continuesRunOfKind: 'draft-generate',
+    });
+    await recorder.recordCall(root, observeCall('검수', '본문'));
+    await revision.finish('completed');
+
+    const runDirectory: string = join(traceRootOf(workspace), revision.runId ?? '');
+    expect(traceRunHeaderSchema.parse(readJson(join(runDirectory, 'run.json'))).kind).toBe('draft-revise');
+  });
+
   it('keeps a failed call with its error and no response', async () => {
     const workspace: string = workspaces.create('storyboard-trace-');
     const root: StoryUri = NodeUri.file(workspace);
@@ -240,6 +308,7 @@ describe('GenerationTraceRecorder', () => {
         kind: 'draft-generate',
         subject: { sceneStem },
       });
+      await recorder.recordCall(root, observeCall('구간 1', '본문'));
       await session.finish('completed');
       startedRunIds.push(session.runId ?? '');
       await new Promise((resolve) => setTimeout(resolve, 5));

@@ -35,12 +35,15 @@ export interface GenerationTraceRecorderDependencies {
 export interface TraceRunOpening {
   readonly kind: string;
   readonly subject?: TraceRunSubject;
+  readonly continuesRunOfKind?: string;
 }
 
 export interface TraceRunSession {
   readonly runId: string | undefined;
   finish(status: TraceRunStatus, failureMessage?: string): Promise<void>;
 }
+
+type StageFailureReader<T> = (result: T) => string | undefined;
 
 interface OpenTraceRun {
   readonly header: TraceRunHeader;
@@ -81,6 +84,7 @@ function errorMessageOf(error: unknown): string {
 
 export class GenerationTraceRecorder {
   private readonly openRuns: Map<string, OpenTraceRun> = new Map<string, OpenTraceRun>();
+  private readonly lastClosedRuns: Map<string, OpenTraceRun> = new Map<string, OpenTraceRun>();
 
   public constructor(private readonly dependencies: GenerationTraceRecorderDependencies) {}
 
@@ -101,7 +105,9 @@ export class GenerationTraceRecorder {
         await this.closeRun(workspaceRoot, current, 'completed');
       }
 
-      const opened: OpenTraceRun = await this.openRun(workspaceRoot, opening, { isAmbient: false });
+      const opened: OpenTraceRun =
+        (await this.reopenRunToContinue(workspaceRoot, opening)) ??
+        (await this.openRun(workspaceRoot, opening, { isAmbient: false }));
 
       return {
         runId: opened.header.runId,
@@ -150,6 +156,25 @@ export class GenerationTraceRecorder {
     });
   }
 
+  public async runStage<T>(
+    workspaceRoot: StoryUri,
+    stageId: string,
+    work: () => Promise<T>,
+    readFailure: StageFailureReader<T> = (): undefined => undefined,
+  ): Promise<T> {
+    this.enterStage(workspaceRoot, stageId);
+
+    try {
+      const result: T = await work();
+      const failureMessage: string | undefined = readFailure(result);
+      await this.leaveStage(workspaceRoot, failureMessage === undefined ? undefined : new Error(failureMessage));
+      return result;
+    } catch (error) {
+      await this.leaveStage(workspaceRoot, error);
+      throw error;
+    }
+  }
+
   public enterStage(workspaceRoot: StoryUri, stageId: string): void {
     const run: OpenTraceRun | undefined = this.findTracedRun(workspaceRoot);
     if (run === undefined) {
@@ -196,6 +221,26 @@ export class GenerationTraceRecorder {
   private findTracedRun(workspaceRoot: StoryUri): OpenTraceRun | undefined {
     const run: OpenTraceRun | undefined = this.openRuns.get(workspaceRoot.toString());
     return run === undefined || run.isAmbient ? undefined : run;
+  }
+
+  private async reopenRunToContinue(
+    workspaceRoot: StoryUri,
+    opening: TraceRunOpening,
+  ): Promise<OpenTraceRun | undefined> {
+    const closed: OpenTraceRun | undefined = this.lastClosedRuns.get(workspaceRoot.toString());
+    const isRunToContinue: boolean =
+      closed !== undefined &&
+      opening.continuesRunOfKind === closed.header.kind &&
+      opening.subject?.sceneStem !== undefined &&
+      opening.subject.sceneStem === closed.header.subject.sceneStem;
+    if (closed === undefined || !isRunToContinue) {
+      return undefined;
+    }
+
+    this.lastClosedRuns.delete(workspaceRoot.toString());
+    this.openRuns.set(workspaceRoot.toString(), closed);
+    await this.writeHeader(workspaceRoot, closed.header);
+    return closed;
   }
 
   private async openRun(
@@ -247,6 +292,18 @@ export class GenerationTraceRecorder {
     const workspaceKey: string = workspaceRoot.toString();
     if (this.openRuns.get(workspaceKey) === run) {
       this.openRuns.delete(workspaceKey);
+    }
+
+    const hasNothingToShow: boolean = run.callCount === 0;
+    if (hasNothingToShow) {
+      this.lastClosedRuns.delete(workspaceKey);
+      await this.dependencies.fileSystem.delete(
+        workspacePathOf(workspaceRoot, traceRunRelativeDirectory(run.header.runId)),
+      );
+      return;
+    }
+    if (!run.isAmbient) {
+      this.lastClosedRuns.set(workspaceKey, run);
     }
 
     await this.writeHeader(workspaceRoot, {
