@@ -37,6 +37,7 @@ import {
   type SceneBeat,
 } from '@storyboard/story-model';
 import { sceneCacheFilePath, type SceneCacheKey } from '#engine/persistence/sceneCacheWorkspace';
+import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
@@ -171,7 +172,7 @@ export function describeReviseOutcome(reviseResult: ReviseDraftWorkflowResult): 
     return {
       status: reviseResult.failure.kind === 'timeout' ? 'timeout' : 'failed',
       revisionCount,
-      warning: `검수 ${stage}가 끝나지 않아 감수를 멈췄습니다. ${kept}: ${reviseResult.failure.message}`,
+      warning: `검수 ${stage}${stage === '검사' ? '가' : '이'} 끝나지 않아 감수를 멈췄습니다. ${kept}: ${reviseResult.failure.message}`,
     };
   }
 
@@ -437,11 +438,17 @@ export class ReviseDraftUseCase {
       maxIterations,
       reviseScoreThreshold,
       maxCompressionPercent,
+      sectionMaxChars: this.resolveSectionMaxChars(),
       onProgress: request.onProgress,
       shouldCancel: request.shouldCancel,
       ...(request.seedIssues === undefined ? {} : { seedIssues: request.seedIssues }),
       onRound: (round) => this.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
     }).run();
+  }
+
+  private resolveSectionMaxChars(): number {
+    return resolveSceneGenerationTuning(this.host.configBridge.getSceneGenerationTuning())
+      .reviseSectionMaxChars;
   }
 
   private async findSceneCacheKey(

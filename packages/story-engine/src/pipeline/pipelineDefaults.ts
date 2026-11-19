@@ -68,6 +68,7 @@ export interface PipelineDefaults {
   actors: PipelineDefaultsActors;
   seam: { windowChars: number; minimumRunWords: number };
   proofread: { chunkLength: number; maxEditLength: number; maxEditDistance: number };
+  revise: { sectionMaxChars: number };
   padding: { paragraphRatio: number; paragraphMinimumLength: number };
   voiceSamples: PipelineDefaultsVoiceSamples;
   interview: PipelineDefaultsInterview;
@@ -121,6 +122,9 @@ const pipelineDefaultsSchema: z.ZodType<PipelineDefaults> = z.object({
     chunkLength: positiveInt,
     maxEditLength: positiveInt,
     maxEditDistance: positiveInt,
+  }),
+  revise: z.object({
+    sectionMaxChars: positiveInt,
   }),
   padding: z.object({
     paragraphRatio: ratio,

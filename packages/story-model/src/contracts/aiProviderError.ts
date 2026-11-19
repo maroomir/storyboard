@@ -6,6 +6,7 @@ export type AiProviderErrorCode =
   | 'missing-model'
   | 'connection-failed'
   | 'generation-failed'
+  | 'output-limit'
   | 'provider-not-enabled'
   | 'risk-not-acknowledged'
   | 'cli-not-found'

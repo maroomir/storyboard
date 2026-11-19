@@ -182,7 +182,7 @@ function threadedWorkspace(): InMemoryFileSystem {
 }
 
 async function reviseAlleyScene(fs: InMemoryFileSystem): Promise<void> {
-  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, cards: legacyCards(fs, { characterDirectory: paths.characterDirectory, backgroundDirectory: paths.backgroundDirectory, narratorDirectory: paths.narratorDirectory, joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments) }), scenes: legacyScenesUnder(fs, paths.workspaceRoot, undefined, sceneStates()), summaries: stubSummaries(), logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
+  const useCase = new ReviseDraftUseCase(createTestHost({ fileSystem: fs, configBridge: { getSceneGenerationTuning: () => ({}) } as never, cards: legacyCards(fs, { characterDirectory: paths.characterDirectory, backgroundDirectory: paths.backgroundDirectory, narratorDirectory: paths.narratorDirectory, joinPath: (base: never, ...segments: string[]) => joinStoryPath(base, ...segments) }), scenes: legacyScenesUnder(fs, paths.workspaceRoot, undefined, sceneStates()), summaries: stubSummaries(), logger: { info: () => undefined, warn: () => undefined, error: () => undefined } as never, generator: 'storyboard@0.0.0-test' }), createTestAi({ providerRegistry: {
       getTaskProvider: () => 'mock',
       getTaskAiConfig: () => ({ providerId: 'mock', model: 'mock-model' }),
     } as never, usageSink: { record: async (): Promise<void> => undefined } }), createTestRepositories());
