@@ -399,6 +399,25 @@ describe("runSceneGenerationPipeline — 되짚기 경고 (#120)", () => {
     expect(result.warnings.find((warning) => warning.includes("되짚는 표현"))).toMatch(/^1구간: 앞 장면을 «아까 …»로 되짚는 표현이 \d+회입니다 \(허용 3회\)/)
   })
 
+  it("tags each expansion call with its section, attempt and the reason it was asked again", async () => {
+    const ai = createRecordingAiService()
+    ai.expandSceneSection.mockResolvedValueOnce("짧다.").mockResolvedValue(longProse("살붙인 본문"))
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const tags = ai.expandSceneSection.mock.calls.map(
+      (call) => (call[1] as { traceTag?: { sectionIndex?: number; attempt?: number; retryReason?: string } }).traceTag
+    )
+    expect(tags[0]).toEqual({ sectionIndex: 1, attempt: 1 })
+    expect(tags[1]).toMatchObject({ sectionIndex: 1, attempt: 2 })
+    expect(tags[1]?.retryReason?.length).toBeGreaterThan(0)
+  })
+
   it("curls straight dialogue quotes a section expansion wrote", async () => {
     const ai = createRecordingAiService()
     ai.expandSceneSection.mockResolvedValue(longProse('엘리아가 "가자." 하고 말했다. '))

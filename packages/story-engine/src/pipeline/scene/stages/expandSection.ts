@@ -51,6 +51,7 @@ import {
   type CraftContract,
   type SceneBeat,
   type StyleDirective,
+  type TraceCallTag,
 } from '@storyboard/story-model';
 
 export interface CheckedSectionText {
@@ -135,6 +136,7 @@ export function trimRunAhead(
 }
 
 interface SectionExpansionRequest {
+  readonly sectionNumber: number;
   readonly section: string;
   readonly previousSection: string | undefined;
   readonly upcomingOpening: string | undefined;
@@ -218,6 +220,22 @@ class SectionExpansionAttempts {
   public toBestOutcome(): CheckedSectionText {
     return { text: this.best.text, violations: this.best.violations };
   }
+}
+
+const retryReasonSeparator: string = ' / ';
+
+function describeAttemptForTrace(
+  sectionNumber: number,
+  attemptNumber: number,
+  retry: SectionRetryHint,
+): TraceCallTag {
+  return {
+    sectionIndex: sectionNumber,
+    attempt: attemptNumber,
+    ...(retry.retryReasons.length === 0
+      ? {}
+      : { retryReason: retry.retryReasons.join(retryReasonSeparator) }),
+  };
 }
 
 export class ExpandSectionStage implements ISceneStage {
@@ -333,6 +351,7 @@ export class ExpandSectionStage implements ISceneStage {
     previousSection: string | undefined,
   ): SectionExpansionRequest {
     return {
+      sectionNumber: index + 1,
       section: plan.sections[index] as string,
       previousSection,
       upcomingOpening: extractSectionOpening(plan.sections[index + 1]),
@@ -377,11 +396,12 @@ export class ExpandSectionStage implements ISceneStage {
     );
 
     for (let attempt: number = 0; attempt <= run.tuning.sectionRetryLimit; attempt += 1) {
+      const retry: SectionRetryHint = attempts.describeRetry();
       const expanded: string = await this.requestSectionExpansion(
         run,
         request,
-        options,
-        attempts.describeRetry(),
+        { ...options, traceTag: describeAttemptForTrace(request.sectionNumber, attempt + 1, retry) },
+        retry,
       );
       const violations: SectionViolation[] = this.validateSection(run, request, expanded);
 
