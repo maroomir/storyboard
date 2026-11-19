@@ -29,6 +29,8 @@ import {
 } from '@storyboard/story-ai';
 import type { CharacterCard } from '@storyboard/story-model';
 
+const firstAttemptNumber: number = 1;
+
 export interface DialoguePolishOutcome {
   readonly text: string;
   readonly warnings: readonly string[];
@@ -283,7 +285,14 @@ export class PolishDialogueStage implements ISceneStage {
         otherVoices: otherVoices(run.context.characters, name),
         ...(retryReasons === undefined ? {} : { retryReasons }),
       },
-      context.options,
+      {
+        ...context.options,
+        traceTag: {
+          subject: name,
+          attempt: retryReasons === undefined ? firstAttemptNumber : firstAttemptNumber + 1,
+          ...(retryReasons === undefined ? {} : { retryReason: retryReasons.join(' / ') }),
+        },
+      },
     );
   }
 

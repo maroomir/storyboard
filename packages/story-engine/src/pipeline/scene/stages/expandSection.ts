@@ -339,10 +339,60 @@ export class ExpandSectionStage implements ISceneStage {
       ),
     );
 
-    return restoreSectionBreaks(
-      section,
-      trimRunAhead(run.polishedText, section, outcome, run.tuning),
-    );
+    const trimmed: CheckedSectionText = trimRunAhead(run.polishedText, section, outcome, run.tuning);
+    const restored: CheckedSectionText = restoreSectionBreaks(section, trimmed);
+    this.reportSectionRepair(run, index + 1, { outcome, trimmed, restored });
+    run.report({
+      kind: 'section-measured',
+      sectionIndex: index + 1,
+      lengths: {
+        target: plan.targetLengths[index] as number,
+        skeleton: section.length,
+        expanded: outcome.text.length,
+        final: restored.text.length,
+      },
+    });
+
+    return restored;
+  }
+
+  private reportSectionRepair(
+    run: SceneGenerationRun,
+    sectionNumber: number,
+    texts: {
+      readonly outcome: CheckedSectionText;
+      readonly trimmed: CheckedSectionText;
+      readonly restored: CheckedSectionText;
+    },
+  ): void {
+    const { outcome, trimmed, restored } = texts;
+
+    if (outcome.violations.length > 0) {
+      run.report({
+        kind: 'output-kept-despite-violations',
+        sectionIndex: sectionNumber,
+        reasons: outcome.violations.map((violation) => violation.detail),
+        afterText: outcome.text,
+      });
+    }
+    if (trimmed.text !== outcome.text) {
+      run.report({
+        kind: 'text-trimmed',
+        sectionIndex: sectionNumber,
+        rule: 'runs-ahead',
+        beforeText: outcome.text,
+        afterText: trimmed.text,
+      });
+    }
+    if (restored.text !== trimmed.text) {
+      run.report({
+        kind: 'scene-breaks-restored',
+        sectionIndex: sectionNumber,
+        rule: 'scene-breaks',
+        beforeText: trimmed.text,
+        afterText: restored.text,
+      });
+    }
   }
 
   private buildSectionRequest(
@@ -408,6 +458,14 @@ export class ExpandSectionStage implements ISceneStage {
       if (violations.length === 0) {
         return { text: expanded, violations: [] };
       }
+
+      run.report({
+        kind: 'output-rejected',
+        sectionIndex: request.sectionNumber,
+        attempt: attempt + 1,
+        reasons: violations.map((violation) => violation.detail),
+        afterText: expanded,
+      });
 
       const isUnderLength: boolean = violations.some((violation) => violation.kind === 'too-short');
       attempts.recordRejected({

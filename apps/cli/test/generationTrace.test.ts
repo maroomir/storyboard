@@ -13,11 +13,13 @@ import {
   NodeUri,
   STORYBOARD_RELATIVE_PATHS,
   traceCallRecordSchema,
+  traceEventRecordSchema,
   tracePipelinePlanSchema,
   traceRunHeaderSchema,
   traceStageRecordSchema,
   type StoryUri,
   type TraceCallRecord,
+  type TraceEventRecord,
   type TraceRunHeader,
   type TraceStageRecord,
 } from '@storyboard/story-model';
@@ -262,6 +264,39 @@ describe('GenerationTraceRecorder', () => {
 
     const runDirectory: string = join(traceRootOf(workspace), revision.runId ?? '');
     expect(traceRunHeaderSchema.parse(readJson(join(runDirectory, 'run.json'))).kind).toBe('draft-revise');
+  });
+
+  it('records what happened to the text between calls, under the stage that did it', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+
+    const session: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate' });
+    recorder.enterStage(root, 'expandSection');
+    await recorder.recordCall(root, observeCall('구간 2', '본문과 앞당겨 쓴 대사'));
+    await recorder.recordEvent(root, {
+      kind: 'text-trimmed',
+      sectionIndex: 2,
+      rule: 'runs-ahead',
+      beforeText: '본문과 앞당겨 쓴 대사',
+      afterText: '본문',
+    });
+    await recorder.recordEvent(root, {
+      kind: 'section-measured',
+      sectionIndex: 2,
+      lengths: { target: 6667, skeleton: 2310, expanded: 7396, final: 5590 },
+    });
+    await recorder.leaveStage(root);
+
+    const runDirectory: string = join(traceRootOf(workspace), session.runId ?? '');
+    const readEvent = (name: string): TraceEventRecord =>
+      traceEventRecordSchema.parse(readJson(join(runDirectory, 'events', name)));
+    const trimmed: TraceEventRecord = readEvent('00001.json');
+
+    expect(trimmed).toMatchObject({ kind: 'text-trimmed', stage: 'expandSection', sectionIndex: 2, rule: 'runs-ahead' });
+    expect(readFileSync(join(runDirectory, 'blobs', `${trimmed.before?.hash}.txt`), 'utf8')).toBe('본문과 앞당겨 쓴 대사');
+    expect(readFileSync(join(runDirectory, 'blobs', `${trimmed.after?.hash}.txt`), 'utf8')).toBe('본문');
+    expect(readEvent('00002.json').lengths).toEqual({ target: 6667, skeleton: 2310, expanded: 7396, final: 5590 });
   });
 
   it('keeps a failed call with its error and no response', async () => {

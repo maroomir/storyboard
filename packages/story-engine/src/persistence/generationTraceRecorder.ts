@@ -7,6 +7,7 @@ import {
   joinStoryPath,
   traceBlobRelativePath,
   traceCallRelativePath,
+  traceEventRelativePath,
   tracePlanRelativePath,
   traceStageRelativePath,
   traceRunHeaderRelativePath,
@@ -14,6 +15,9 @@ import {
   traceRunRelativeDirectory,
   type StoryUri,
   type TraceCallRecord,
+  type TraceEventKind,
+  type TraceEventRecord,
+  type TraceSectionLengthName,
   type TracePipelinePlan,
   type TraceStageRecord,
   type TraceRunHeader,
@@ -51,8 +55,21 @@ interface OpenTraceRun {
   readonly foldersCreated: Promise<void>;
   readonly blobWrites: Map<string, Promise<void>>;
   callCount: number;
+  eventCount: number;
   stageCount: number;
   openStage: OpenTraceStage | undefined;
+}
+
+export interface TraceEventObservation {
+  readonly kind: TraceEventKind;
+  readonly sectionIndex?: number;
+  readonly attempt?: number;
+  readonly rule?: string;
+  readonly reasons?: readonly string[];
+  readonly message?: string;
+  readonly beforeText?: string;
+  readonly afterText?: string;
+  readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
 }
 
 interface OpenTraceStage {
@@ -153,6 +170,35 @@ export class GenerationTraceRecorder {
     await this.withoutFailingGeneration(undefined, async () => {
       await run.foldersCreated;
       await this.writeJson(workspacePathOf(workspaceRoot, tracePlanRelativePath(run.header.runId)), plan);
+    });
+  }
+
+  public async recordEvent(workspaceRoot: StoryUri, observation: TraceEventObservation): Promise<void> {
+    const run: OpenTraceRun | undefined = this.findTracedRun(workspaceRoot);
+    if (run === undefined) {
+      return;
+    }
+
+    run.eventCount += 1;
+    const sequence: number = run.eventCount;
+    const stageId: string | undefined = run.openStage?.stageId;
+    const recordedAt: string = new Date().toISOString();
+
+    await this.withoutFailingGeneration(undefined, async () => {
+      await run.foldersCreated;
+      const { beforeText, afterText, ...facts } = observation;
+      const record: TraceEventRecord = {
+        sequence,
+        recordedAt,
+        ...(stageId === undefined ? {} : { stage: stageId }),
+        ...facts,
+        ...(beforeText === undefined ? {} : { before: await this.storeText(workspaceRoot, run, beforeText) }),
+        ...(afterText === undefined ? {} : { after: await this.storeText(workspaceRoot, run, afterText) }),
+      };
+      await this.writeJson(
+        workspacePathOf(workspaceRoot, traceEventRelativePath(run.header.runId, sequence)),
+        record,
+      );
     });
   }
 
@@ -263,6 +309,7 @@ export class GenerationTraceRecorder {
       foldersCreated: this.createRunFolders(workspaceRoot, header.runId),
       blobWrites: new Map<string, Promise<void>>(),
       callCount: 0,
+      eventCount: 0,
       stageCount: 0,
       openStage: undefined,
     };
@@ -276,7 +323,7 @@ export class GenerationTraceRecorder {
   }
 
   private async createRunFolders(workspaceRoot: StoryUri, runId: string): Promise<void> {
-    for (const folder of ['calls', 'stages', 'blobs']) {
+    for (const folder of ['calls', 'stages', 'events', 'blobs']) {
       await this.dependencies.fileSystem.createDirectory(
         workspacePathOf(workspaceRoot, `${traceRunRelativeDirectory(runId)}/${folder}`),
       );

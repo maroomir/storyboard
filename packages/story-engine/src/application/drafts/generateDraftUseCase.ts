@@ -456,6 +456,9 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
           catalog: sceneStageCatalog,
         });
       },
+      onEvent: (event): void => {
+        void recorder.recordEvent(workspaceRoot, event);
+      },
       onStageStart: (stageId): void => recorder.enterStage(workspaceRoot, stageId),
       onStageEnd: (_stageId, failure): void => {
         void recorder.leaveStage(workspaceRoot, failure);

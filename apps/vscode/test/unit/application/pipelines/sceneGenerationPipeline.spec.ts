@@ -418,6 +418,27 @@ describe("runSceneGenerationPipeline — 되짚기 경고 (#120)", () => {
     expect(tags[1]?.retryReason?.length).toBeGreaterThan(0)
   })
 
+  it("reports the rejected attempt, the section lengths and each warning to the observer", async () => {
+    const ai = createRecordingAiService()
+    ai.expandSceneSection.mockResolvedValueOnce("짧다.").mockResolvedValue(longProse("살붙인 본문"))
+    const events: { kind: string; sectionIndex?: number; attempt?: number; lengths?: Record<string, number>; message?: string }[] = []
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      observer: { onPlan: () => {}, onStageStart: () => {}, onStageEnd: () => {}, onEvent: (event) => void events.push(event) }
+    })
+
+    const rejected = events.find((event) => event.kind === "output-rejected")
+    const measured = events.find((event) => event.kind === "section-measured")
+    expect(rejected).toMatchObject({ sectionIndex: 1, attempt: 1 })
+    expect(measured?.sectionIndex).toBe(1)
+    expect(Object.keys(measured?.lengths ?? {}).sort()).toEqual(["expanded", "final", "skeleton", "target"])
+    expect(events.filter((event) => event.kind === "warning").map((event) => event.message)).toEqual(result.warnings)
+  })
+
   it("curls straight dialogue quotes a section expansion wrote", async () => {
     const ai = createRecordingAiService()
     ai.expandSceneSection.mockResolvedValue(longProse('엘리아가 "가자." 하고 말했다. '))
