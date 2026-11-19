@@ -179,6 +179,23 @@ describe('CLI configuration validation', () => {
     ).toThrow(ConfigFileError);
   });
 
+  it('reads the trace switch from the workspace file and refuses a retention out of range', () => {
+    const user = write('user.json', { trace: { keepRuns: 5 } });
+    const workspace = write('workspace.json', { trace: { enabled: true } });
+    const tooMany = write('tooMany.json', { trace: { keepRuns: 500 } });
+
+    const bridge = new ConfigBridge({
+      getConfiguration: () => createFileConfiguration({ userConfigFile: user, workspaceConfigFile: workspace }),
+    });
+    const untouched = new ConfigBridge({ getConfiguration: () => createFileConfiguration({}) });
+
+    expect([bridge.isTraceEnabled(), bridge.getTraceKeepRuns()]).toEqual([true, 5]);
+    expect([untouched.isTraceEnabled(), untouched.getTraceKeepRuns()]).toEqual([false, 3]);
+    expect(() => createFileConfiguration({ userConfigFile: tooMany }).get('trace.keepRuns', 3)).toThrow(
+      ConfigFileError,
+    );
+  });
+
   it('lets a tolerant host fall back to defaults for a file with a bad value', () => {
     const user = write('user.json', { budget: { run: { limitUsd: -1 } } });
     const reported: ConfigFileError[] = [];
