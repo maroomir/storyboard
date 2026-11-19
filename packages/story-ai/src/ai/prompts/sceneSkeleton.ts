@@ -33,6 +33,8 @@ export interface SceneSkeletonInput {
   readonly plannedBreaks?: boolean;
   readonly priorSkeleton?: string;
   readonly nextBeat?: string;
+  readonly withheldAddressTerms?: readonly string[];
+  readonly coinedAddressNotes?: readonly string[];
 }
 
 export const SceneSkeletonPrompt: PromptModule<
@@ -72,6 +74,10 @@ export const SceneSkeletonPrompt: PromptModule<
         previousContext: input.previousContext,
         narrativeSource: input.narrativeSource,
         plannedBreaks: input.plannedBreaks === true,
+        hasWithheldAddressTerms: (input.withheldAddressTerms ?? []).length > 0,
+        withheldAddressTerms: input.withheldAddressTerms ?? [],
+        hasCoinedAddressNotes: (input.coinedAddressNotes ?? []).length > 0,
+        coinedAddressNotes: input.coinedAddressNotes ?? [],
       },
       partials: {
         proseConventions: proseConventionLines(style?.narration?.tense).join('\n'),

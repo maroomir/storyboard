@@ -40,6 +40,13 @@ import {
   validateSceneSkeleton,
   type SectionViolation,
 } from '#engine/pipeline/sectionValidation';
+import {
+  findBeatCoinedAddresses,
+  findWithheldAddressTermsUsed,
+  listAddressTermsCoinedAfter,
+  withholdCatchphrases,
+  type CoinedAddress,
+} from '#engine/pipeline/addressTerms';
 import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/story-ai';
 import {
   formatBackgroundFactConflict,
@@ -105,6 +112,19 @@ function keepSegmentMarkers(
   return keepOnlyMarkers(withLeadingMarker, segmentNumbers);
 }
 
+function earlyAddressViolation(earlyTerms: readonly string[]): SectionViolation[] {
+  if (earlyTerms.length === 0) {
+    return [];
+  }
+
+  return [
+    {
+      kind: 'address',
+      detail: `뒤 사건에서 처음 붙는 호칭을 앞당겨 썼습니다 (${earlyTerms.map((term) => `«${term}»`).join(', ')}). 이번 사건들에서는 이름이나 다른 말로 부르세요`,
+    },
+  ];
+}
+
 class SkeletonRetryTally {
   private reasons: string[] = [];
   private best: BestSkeletonAttempt | undefined;
@@ -148,17 +168,19 @@ class SkeletonRetryTally {
 export class SkeletonDrafter {
   private readonly beats: readonly SceneBeat[];
 
+  private readonly coinedAddresses: readonly CoinedAddress[];
+
   public constructor(private readonly run: SceneGenerationRun) {
     this.beats = run.context.scene.card?.beats ?? [];
+    this.coinedAddresses = findBeatCoinedAddresses(this.beats, run.context.characters);
   }
 
   public async draft(): Promise<void> {
-    const { run, beats } = this;
+    const { run } = this;
     const targetLength: number | undefined = skeletonTargetLength(
       run.styleDirective,
       run.tuning.skeletonRatio,
     );
-    const endState: string | undefined = run.context.scene.card?.endState;
     const base: SkeletonCallInput = {
       narrativeSource: run.narrativeSource,
       ...(run.design.length > 0 ? { design: run.design } : {}),
@@ -185,31 +207,44 @@ export class SkeletonDrafter {
         ? undefined
         : planSkeletonCalls(run.breakPlan, targetLength, run.tuning.skeletonCharsPerCall);
 
-    let skeleton: CombinedSkeletonDraft;
-    if (calls === undefined || calls.length === 1 || targetLength === undefined) {
-      run.onProgress?.('draftSkeleton', 1, 1);
-      const whole: SkeletonDraft = await this.draftWithRetries(
-        { ...base, ...(endState === undefined ? {} : { endState }) },
-        options,
-        beats.map((beat) => beatText(beat) ?? ''),
-      );
-      skeleton = {
-        text: whole.text,
-        warnings: whole.violations.map(
-          (violation) => `${skeletonWarningLabel('뼈대', whole.retries)}: ${violation.detail}`,
-        ),
-      };
-    } else {
-      skeleton = await this.draftInCalls({
-        base,
-        options,
-        calls,
-        plan: run.breakPlan as SceneBreakPlan,
-        targetLength,
-      });
-    }
+    const skeleton: CombinedSkeletonDraft =
+      calls === undefined || calls.length === 1 || targetLength === undefined
+        ? await this.draftInOneCall(base, options)
+        : await this.draftInCalls({
+            base,
+            options,
+            calls,
+            plan: run.breakPlan as SceneBreakPlan,
+            targetLength,
+          });
     run.warnings.push(...skeleton.warnings);
     this.adopt(skeleton.text);
+  }
+
+  private async draftInOneCall(
+    base: SkeletonCallInput,
+    options: GenerateTextOptions,
+  ): Promise<CombinedSkeletonDraft> {
+    const { run, beats } = this;
+    const endState: string | undefined = run.context.scene.card?.endState;
+    const everyBeat: number[] = beats.map((_, beatIndex) => beatIndex);
+
+    run.onProgress?.('draftSkeleton', 1, 1);
+    const whole: SkeletonDraft = await this.draftWithRetries(
+      {
+        ...this.withAddressCoinage(base, everyBeat),
+        ...(endState === undefined ? {} : { endState }),
+      },
+      options,
+      beats.map((beat) => beatText(beat) ?? ''),
+    );
+
+    return {
+      text: whole.text,
+      warnings: whole.violations.map(
+        (violation) => `${skeletonWarningLabel('뼈대', whole.retries)}: ${violation.detail}`,
+      ),
+    };
   }
 
   private async draftInCalls(batch: SkeletonCallBatch): Promise<CombinedSkeletonDraft> {
@@ -229,7 +264,7 @@ export class SkeletonDrafter {
 
       const skeletonDraft: SkeletonDraft = await this.draftWithRetries(
         {
-          ...base,
+          ...this.withAddressCoinage(base, call.beats),
           narrativeSource: renderPlannedNarrative(beats, plan, castName, call.beats),
           targetLength: Math.round((targetLength * call.beats.length) / totalBeats),
           ...(parts.length > 0 ? { priorSkeleton: parts.join('\n\n') } : {}),
@@ -321,9 +356,34 @@ export class SkeletonDrafter {
       ...validatePlannedSceneBreaks(skeleton, breakPlan, segmentNumbers),
       ...missingBeatsViolation(missingBeats),
       ...reversedBeatsViolation(coverage.reversedBeats),
+      ...earlyAddressViolation(
+        findWithheldAddressTermsUsed(skeleton, input.withheldAddressTerms ?? []),
+      ),
     ];
 
     return { text: skeleton, violations, missingBeats };
+  }
+
+  private withAddressCoinage(
+    input: SkeletonCallInput,
+    callBeats: readonly number[],
+  ): SkeletonCallInput {
+    const lastBeat: number = Math.max(...callBeats);
+    const withheldTerms: string[] = listAddressTermsCoinedAfter(this.coinedAddresses, lastBeat);
+    const coinedNotes: string[] = this.coinedAddresses
+      .filter((entry) => callBeats.includes(entry.beatIndex))
+      .map((entry) => `«${entry.term}»: «${beatText(this.beats[entry.beatIndex]) ?? ''}»에서 처음 붙는다`);
+
+    return {
+      ...input,
+      ...(withheldTerms.length === 0
+        ? {}
+        : {
+            withheldAddressTerms: withheldTerms,
+            catchphrases: withholdCatchphrases(input.catchphrases ?? new Map(), withheldTerms),
+          }),
+      ...(coinedNotes.length === 0 ? {} : { coinedAddressNotes: coinedNotes }),
+    };
   }
 
   private rankSkeleton(

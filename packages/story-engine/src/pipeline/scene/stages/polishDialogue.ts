@@ -5,6 +5,7 @@ import {
   type DialogueRewriteMerge,
   type NumberedSkeleton,
 } from '#engine/pipeline/dialogueRewrites';
+import { findBeatCoinedAddressTerms } from '#engine/pipeline/addressTerms';
 import { characterSpeechToOthers } from '#engine/pipeline/scene/characterVoices';
 import type { SceneGenerationRun } from '#engine/pipeline/scene/sceneGenerationRun';
 import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
@@ -59,6 +60,7 @@ interface DialoguePolishContext {
   readonly numbered: NumberedSkeleton;
   readonly speakers: readonly string[];
   readonly catchphrases: ReadonlyMap<string, readonly string[]>;
+  readonly coinedAddressTerms: readonly string[];
   readonly speechToOthers: ReadonlyMap<string, readonly string[]>;
 }
 
@@ -178,6 +180,10 @@ export class PolishDialogueStage implements ISceneStage {
       numbered,
       speakers,
       catchphrases: characterCatchphrases(run.context.characters),
+      coinedAddressTerms: findBeatCoinedAddressTerms(
+        run.context.scene.card?.beats ?? [],
+        run.context.characters,
+      ),
       speechToOthers: characterSpeechToOthers(run.context.characters),
     };
     const tally: DialoguePolishTally = new DialoguePolishTally();
@@ -298,6 +304,8 @@ export class PolishDialogueStage implements ISceneStage {
       lines,
       characters: run.context.characters,
       tuning: run.tuning,
+      lineEnds: new Map(numbered.dialogues.map((dialogue, at) => [at + 1, dialogue.end] as const)),
+      coinedAddressTerms: context.coinedAddressTerms,
     });
     const kept: SceneDialogueRewrite[] = response.rewrites.filter(
       (rewrite) => !lineViolations.has(rewrite.index),

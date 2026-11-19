@@ -632,6 +632,71 @@ describe('interview session (mock provider)', () => {
     expect(question?.options.filter((option) => option.text.includes('그러니까 말이야'))).toHaveLength(0);
   });
 
+  it('keeps a nickname a later beat of the scene coins out of the options for the beats before it (#214)', async () => {
+    await write('scene/001-night.card', [
+      'type: scene',
+      'id: 001-night',
+      'characters:',
+      '  - hana',
+      '  - jun',
+      'beats:',
+      '  - text: 준이 하나를 심문한다',
+      '    cast: [하나, 준]',
+      "  - text: \"하나가 준을 '등대지기'라 부르기 시작한다\"",
+      '    cast: [하나, 준]',
+    ]);
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+    let isFirstEarlyBeatQuestion: boolean = true;
+    vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+      this: MockAiProvider,
+      request: Parameters<MockAiProvider['generate']>[0],
+    ) {
+      const response = await generate.call(this, request);
+      const prompt: string = request.messages.map((message) => message.content).join('\n');
+      const isEarlyBeat: boolean =
+        request.taskName === 'interviewQuestion' && prompt.includes('[상황]\n001-night: 준이 하나를 심문한다');
+      if (!isEarlyBeat || !isFirstEarlyBeatQuestion) {
+        return response;
+      }
+      isFirstEarlyBeatQuestion = false;
+      const draft = JSON.parse(response.text) as { options: { valueId: string; text: string }[] };
+      draft.options = draft.options.map((option, index) =>
+        index === 0 ? { ...option, text: '“등대지기, 그만 좀 물어.” 하고 받아친다' } : option,
+      );
+      return { ...response, text: JSON.stringify(draft) };
+    });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+
+    const asked: InterviewQuestion[] = [];
+    for (let round: number = 0; round < 5; round += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      if (question === undefined) {
+        break;
+      }
+      asked.push(question);
+      await app.interviews.answer({ ...request, questionId: question.id, answer: { kind: 'skipped' } });
+    }
+
+    const prompts: string[] = promptsOf(captured, 'interviewQuestion');
+    const earlyBeatPrompts: string[] = prompts.filter((prompt) =>
+      prompt.includes('[상황]\n001-night: 준이 하나를 심문한다'),
+    );
+    const coiningBeatPrompt: string | undefined = prompts.find((prompt) => prompt.includes("'등대지기'라 부르기 시작한다"));
+    const earlyBeatQuestion: InterviewQuestion | undefined = asked.find((question) =>
+      question.situation.includes('심문한다'),
+    );
+    const earlyBeatQuestionCount: number = asked.filter((question) => question.situation.includes('심문한다')).length;
+    const redrawCount: number = 1;
+    expect(earlyBeatPrompts).toHaveLength(earlyBeatQuestionCount + redrawCount);
+    expect(earlyBeatPrompts[0]).toContain('[아직 붙지 않은 호칭');
+    expect(earlyBeatPrompts[0]).toContain('- 등대지기\n');
+    expect(coiningBeatPrompt).toBeDefined();
+    expect(coiningBeatPrompt).not.toContain('[아직 붙지 않은 호칭');
+    expect(earlyBeatQuestion?.options.map((option) => option.text).join(' ')).not.toContain('등대지기');
+  });
+
   it('classifies a written answer, lets the writer rename it to a new value, and rebuilds after a streak', async () => {
     const { container: app, sessionId } = await startSession('hana');
     const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };

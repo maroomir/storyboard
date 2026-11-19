@@ -1,4 +1,9 @@
 import {
+  findBeatCoinedAddresses,
+  listAddressTermsCoinedAfter,
+  type CoinedAddress,
+} from '#engine/pipeline/addressTerms';
+import {
   addBeatNote,
   assembleActedSkeleton,
   actorKnowledge,
@@ -80,6 +85,7 @@ class BeatActingSession {
   private readonly notes: Map<string, readonly BeatNote[]> = new Map<string, readonly BeatNote[]>();
   private readonly passages: Map<number, string> = new Map<number, string>();
   private readonly focal: string | undefined;
+  private readonly coinedAddresses: readonly CoinedAddress[];
 
   public constructor(
     private readonly run: SceneGenerationRun,
@@ -90,6 +96,7 @@ class BeatActingSession {
     this.catchphrases = characterCatchphrases(run.context.characters);
     this.speechToOthers = characterSpeechToOthers(run.context.characters);
     this.focal = run.styleDirective?.narration?.focal;
+    this.coinedAddresses = findBeatCoinedAddresses(sourceBeats, run.context.characters);
   }
 
   public async actAllBeats(): Promise<void> {
@@ -148,11 +155,21 @@ class BeatActingSession {
 
   private characterFor(name: string, beat: ActedBeat): SceneBeatCharacter {
     const { run } = this;
+    const withheldTerms: string[] = listAddressTermsCoinedAfter(
+      this.coinedAddresses,
+      beat.number - 1,
+    );
+    const withheldNotes: string[] = withheldTerms.map(
+      (term) =>
+        `«${term}»은(는) 뒤 사건에서 처음 붙는 호칭이다. 이번 사건에서는 쓰지 말고 이름이나 다른 말로 불러라`,
+    );
 
     return {
       name,
       persona: run.personasUsed.get(name) ?? '',
-      catchphrases: this.catchphrases.get(name) ?? [],
+      catchphrases: (this.catchphrases.get(name) ?? []).filter(
+        (phrase) => !withheldTerms.includes(phrase),
+      ),
       knowledge: actorKnowledge({
         name,
         ledgerKnowledge: run.input.characterKnowledge,
@@ -160,7 +177,7 @@ class BeatActingSession {
       }),
       speechToOthers: this.speechToOthers.get(name) ?? [],
       relationChanges: run.input.characterRelations?.get(name) ?? [],
-      notes: liveBeatNotes(this.notes.get(name) ?? [], beat.number),
+      notes: [...liveBeatNotes(this.notes.get(name) ?? [], beat.number), ...withheldNotes],
       witnessed: witnessedPassages(this.beats, this.passages, name),
     };
   }

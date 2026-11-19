@@ -117,6 +117,20 @@ maxTokens: 20000
 [앞 대목까지 쓴 뼈대]
 {{priorSkeleton}}
 {{/priorSkeleton}}
+{{#hasWithheldAddressTerms}}
+
+[아직 붙지 않은 호칭 — 이번 사건들보다 뒤에서 처음 붙는다. 페르소나·입버릇·상대별 말투에 적혀 있어도 대사와 서술에서 쓰지 말고 이름이나 다른 말로 불러라]
+{{#withheldAddressTerms}}
+- {{.}}
+{{/withheldAddressTerms}}
+{{/hasWithheldAddressTerms}}
+{{#hasCoinedAddressNotes}}
+
+[이 장면에서 처음 붙는 호칭 — 적힌 사건에서 처음 쓴다. 그 앞 사건의 대사와 서술에서는 쓰지 말고 이름이나 다른 말로 불러라]
+{{#coinedAddressNotes}}
+- {{.}}
+{{/coinedAddressNotes}}
+{{/hasCoinedAddressNotes}}
 
 [이 장면의 사건]
 {{narrativeSource}}

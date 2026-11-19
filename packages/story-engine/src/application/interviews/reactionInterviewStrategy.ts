@@ -45,7 +45,11 @@ import {
   type InterviewTuning,
 } from '#engine/application/interviews/interviewTuning';
 import { failedResult } from '#engine/application/useCase';
-import { extractQuotedAddressTerms } from '#engine/pipeline/addressTerms';
+import {
+  extractQuotedAddressTerms,
+  findBeatCoinedAddresses,
+  listAddressTermsCoinedAfter,
+} from '#engine/pipeline/addressTerms';
 import { countCatchphrases } from '#engine/pipeline/catchphrases';
 import { SceneNarrationResolver } from '#engine/application/drafts/sceneNarrationResolver';
 import type {
@@ -105,6 +109,7 @@ import {
   type StoryboardProjectPaths,
   type StoryUri,
   type UsageAttribution,
+  type CharacterCard,
 } from '@storyboard/story-model';
 
 export type {
@@ -412,6 +417,30 @@ function listOptionCatchphrases(context: InterviewContext): string[] {
   const catchphrases: readonly string[] = context.card.type === 'character' ? (context.card.catchphrases ?? []) : [];
 
   return catchphrases.filter((phrase) => phrase.trim().length > 0 && !addressTerms.includes(phrase.trim()));
+}
+
+function listAddressTermsCoinedLaterInScene(
+  context: InterviewContext,
+  situation: InterviewBeatSituation | undefined,
+): string[] {
+  const scene: SceneFile | undefined = context.scenes.find(
+    (candidate) => candidate.stem === situation?.sceneStem,
+  );
+  if (situation === undefined || scene === undefined) {
+    return [];
+  }
+
+  const characters: CharacterCard[] = context.characters.filter(
+    (card): card is CharacterCard => card.type === 'character',
+  );
+  return listAddressTermsCoinedAfter(
+    findBeatCoinedAddresses(scene.card?.beats ?? [], characters),
+    situation.beatIndex,
+  );
+}
+
+function isOptionUsingTerm(optionText: string, terms: readonly string[]): boolean {
+  return terms.some((term) => optionText.includes(term));
 }
 
 function hasCatchphraseInTooManyOptions(draft: InterviewQuestionDraft, catchphrases: readonly string[]): boolean {
@@ -862,10 +891,12 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     const draft: InterviewQuestionDraft | undefined = await context.ai.askInterviewQuestion(input, {
       attribution: context.attribution,
     });
+    const withheldTerms: readonly string[] = input.withheldAddressTerms ?? [];
     const shouldAskAgain: boolean =
       draft !== undefined &&
       (hasOptionAddressingAbsentPartner(draft, absentTerms) ||
-        hasCatchphraseInTooManyOptions(draft, input.catchphrases));
+        hasCatchphraseInTooManyOptions(draft, input.catchphrases) ||
+        draft.options.some((option) => isOptionUsingTerm(option.text, withheldTerms)));
     if (draft === undefined || !shouldAskAgain) {
       return draft;
     }
@@ -873,7 +904,30 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     const redrawn: InterviewQuestionDraft | undefined = await context.ai.askInterviewQuestion(input, {
       attribution: context.attribution,
     });
-    return this.keepOptionsForPresentPeople(redrawn ?? draft, absentTerms);
+    return this.keepOptionsWithoutEarlyAddress(
+      this.keepOptionsForPresentPeople(redrawn ?? draft, absentTerms),
+      withheldTerms,
+    );
+  }
+
+  private keepOptionsWithoutEarlyAddress(
+    draft: InterviewQuestionDraft,
+    withheldTerms: readonly string[],
+  ): InterviewQuestionDraft {
+    const kept: InterviewQuestionDraft['options'] = draft.options.filter(
+      (option) => !isOptionUsingTerm(option.text, withheldTerms),
+    );
+    if (kept.length === draft.options.length) {
+      return draft;
+    }
+    if (kept.length >= minimumQuestionOptions) {
+      return { ...draft, options: kept };
+    }
+
+    this.host.logger.warn(
+      `인터뷰 선택지가 이 장면의 뒤 비트에서 처음 붙는 호칭(${withheldTerms.join(', ')})을 앞당겨 씁니다. 고르기 전에 확인하세요.`,
+    );
+    return draft;
   }
 
   private keepOptionsForPresentPeople(
@@ -963,6 +1017,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       relationSpeech: describeRelationSpeech(context),
       catchphrases: listOptionCatchphrases(context),
       partners: context.card.type === 'character' ? describePartnerFacts(context.card, nextBeat, context.characters) : [],
+      withheldAddressTerms: listAddressTermsCoinedLaterInScene(context, nextBeat),
       axes: askedAxes.map(
         (axis): InterviewQuestionAxis => ({
           ...axis,
