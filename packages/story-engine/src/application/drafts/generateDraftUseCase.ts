@@ -22,8 +22,11 @@ import {
   parseDraft,
   serializeDraft,
   buildStyleDirective,
+  type DraftGenerationStepId,
   type SceneCacheRecord,
   type TraceRunStatus,
+  draftGenerationTraceKind,
+  parseSceneFileName,
   extractErrorMessage,
 } from '@storyboard/story-model';
 import { BackgroundFactConflictStore } from '#engine/persistence/backgroundFactConflictStore';
@@ -61,7 +64,6 @@ import type {
 } from '#engine/persistence/generationTraceRecorder';
 import { sceneStageCatalog } from '#engine/pipeline/sceneStageCatalog';
 
-const draftGenerationTraceKind: string = 'draft-generate';
 const scenePipelineTraceName: string = 'scene';
 
 export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
@@ -84,7 +86,9 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
   }
 
   public async execute(request: GenerateDraftRequest): Promise<GenerateDraftResult> {
-    return await this.generateDraftForWorkspaceSceneWorkflow(request);
+    return await this.traceGeneration(request, () =>
+      this.generateDraftForWorkspaceSceneWorkflow(request),
+    );
   }
 
   private toBackgroundSnapshot(
@@ -216,10 +220,9 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
 
     await this.repositories.sceneCache.write(cacheUri, cacheRecord);
 
-    await this.storyStateRecorder.updateAfterGeneration(
-      inputs,
-      aiService,
-      pipelineResult.draftBody,
+    const stateStep: DraftGenerationStepId = 'updateStoryState';
+    await this.ai.traceRecorder.runStage(inputs.paths.workspaceRoot, stateStep, () =>
+      this.storyStateRecorder.updateAfterGeneration(inputs, aiService, pipelineResult.draftBody),
     );
 
     return {
@@ -435,15 +438,11 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       return await this.openCachedDraft(inputs.draftUri);
     }
 
-    return await this.traceGeneration(inputs, async (): Promise<GenerateDraftResult> => {
-      const refreshed: SceneGenerationInputsResult = await this.refreshChapterSummaries(
-        inputs,
-        request,
-      );
-      return refreshed.ok
-        ? await this.runAndPersistDraft(refreshed.inputs, request)
-        : refreshed.result;
-    });
+    const refreshed: SceneGenerationInputsResult = await this.refreshChapterSummaries(
+      inputs,
+      request,
+    );
+    return refreshed.ok ? await this.runAndPersistDraft(refreshed.inputs, request) : refreshed.result;
   }
 
   private tracePipelineStages(workspaceRoot: StoryUri): IScenePipelineObserver {
@@ -465,12 +464,20 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
   }
 
   private async traceGeneration(
-    inputs: SceneGenerationInputs,
+    request: GenerateDraftRequest,
     generate: () => Promise<GenerateDraftResult>,
   ): Promise<GenerateDraftResult> {
-    const session: TraceRunSession = await this.ai.traceRecorder.startRun(inputs.paths.workspaceRoot, {
+    const workspaceRoot: StoryUri | undefined = this.host.workspaceLocator.folderFor(request.sceneUri)?.uri;
+    const sceneStem: string | undefined = parseSceneFileName(
+      request.sceneUri.path.split('/').at(-1) ?? '',
+    )?.stem;
+    if (workspaceRoot === undefined || sceneStem === undefined) {
+      return await generate();
+    }
+
+    const session: TraceRunSession = await this.ai.traceRecorder.startRun(workspaceRoot, {
       kind: draftGenerationTraceKind,
-      subject: { sceneStem: inputs.scene.stem },
+      subject: { sceneStem },
     });
 
     try {
@@ -488,9 +495,11 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     inputs: SceneGenerationInputs,
     request: GenerateDraftRequest,
   ): Promise<SceneGenerationInputsResult> {
-    const summarizedCount: number = await this.summaryRefresher.refreshBefore(
+    const refreshStep: DraftGenerationStepId = 'refreshChapterSummaries';
+    const summarizedCount: number = await this.ai.traceRecorder.runStage(
       inputs.paths.workspaceRoot,
-      inputs.scene.order,
+      refreshStep,
+      () => this.summaryRefresher.refreshBefore(inputs.paths.workspaceRoot, inputs.scene.order),
     );
 
     return summarizedCount === 0

@@ -50,13 +50,14 @@ export class ReviseAfterGenerateGate {
     }
 
     hooks.onWillRun?.();
-    return await this.runForScene(folder.uri, sceneStem, hooks);
+    return await this.runForScene(folder.uri, sceneStem, hooks, { followsGeneration: true });
   }
 
   public async runForScene(
     workspaceUri: StoryUri,
     sceneStem: string,
     hooks: ReviseGateHooks = {},
+    options: { readonly followsGeneration: boolean } = { followsGeneration: false },
   ): Promise<ReviseDraftWorkflowResult | undefined> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(workspaceUri);
     const draftUri: StoryUri = draftPath(workspaceUri, sceneStem);
@@ -76,6 +77,7 @@ export class ReviseAfterGenerateGate {
         reviseScoreThreshold: this.host.configBridge.getReviseScoreThreshold(),
         onProgress: hooks.onProgress,
         shouldCancel: hooks.shouldCancel,
+        followsGeneration: options.followsGeneration,
       });
 
     try {

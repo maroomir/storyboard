@@ -22,6 +22,7 @@ import type {
   StoryboardProject,
   StoryUri,
   StoryWorkspaceFolder,
+  DraftGenerationStepId,
 } from '@storyboard/story-model';
 import type {
   IProjectRepository,
@@ -384,10 +385,16 @@ export class SceneGenerationInputsLoader {
       return groundedScene;
     }
 
-    const beatScene: SceneFile = await this.beatsResolver.resolve(
-      { workspaceRoot: paths.workspaceRoot, sceneUri },
-      groundedScene,
-      builtContext.characters,
+    const beatsStep: DraftGenerationStepId = 'resolveSceneBeats';
+    const beatScene: SceneFile = await this.dependencies.ai.traceRecorder.runStage(
+      paths.workspaceRoot,
+      beatsStep,
+      () =>
+        this.beatsResolver.resolve(
+          { workspaceRoot: paths.workspaceRoot, sceneUri },
+          groundedScene,
+          builtContext.characters,
+        ),
     );
     return withDerivedGrounding(
       { ...beatScene, frontmatter: rawScene.frontmatter },
