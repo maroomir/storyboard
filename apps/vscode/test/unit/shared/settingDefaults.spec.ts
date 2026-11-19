@@ -18,7 +18,9 @@ const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | numbe
   "generation.context.condense": (bridge) => bridge.isAiContextCondenseEnabled(),
   "editor.studio.validation": (bridge) => bridge.isStudioValidationEnabled(),
   "editor.grammar.realtime": (bridge) => bridge.isGrammarRealtimeEnabled(),
-  "editor.slop.realtime": (bridge) => bridge.isSlopRealtimeEnabled()
+  "editor.slop.realtime": (bridge) => bridge.isSlopRealtimeEnabled(),
+  "trace.enabled": (bridge) => bridge.isTraceEnabled(),
+  "trace.keepRuns": (bridge) => bridge.getTraceKeepRuns()
 }
 
 function bridgeReading(values: Readonly<Record<string, unknown>>): ConfigBridge {

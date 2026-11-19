@@ -21,6 +21,7 @@ export * from '#model/contracts/aiTypes';
 export * from '#model/contracts/backgroundFactConflicts';
 export * from '#model/contracts/draftReview';
 export * from '#model/contracts/generationParameters';
+export * from '#model/contracts/generationTrace';
 export * from '#model/contracts/modelProfiles';
 export * from '#model/contracts/noteConsolidation';
 export * from '#model/contracts/noteExtraction';

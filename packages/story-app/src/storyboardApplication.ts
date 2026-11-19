@@ -73,6 +73,7 @@ import {
   StudioFollowUpRepository,
   SummarizeChaptersUseCase,
   UpdateProjectContractUseCase,
+  GenerationTraceRecorder,
   UsageLedgerRecorder,
   UsageMeter,
   WorkspaceCaches,
@@ -337,7 +338,13 @@ function buildServices(
   const usageSink: IUsageSink = usageMeter.wrap(
     recordUsageWithoutFailingPaidGeneration([usageLedger, dependencies.usageObserver], logger),
   );
-  const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
+  const traceRecorder: GenerationTraceRecorder = new GenerationTraceRecorder({
+    fileSystem,
+    logger,
+    isEnabled: () => configBridge.isTraceEnabled(),
+    keepRunCount: () => configBridge.getTraceKeepRuns(),
+  });
+  const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger, traceRecorder);
 
   const host: HostAdapters = {
     fileSystem,
@@ -351,7 +358,12 @@ function buildServices(
     scenes,
     summaries,
   };
-  const ai: AiServices = { gateway: aiGateway, providerRegistry: aiProviderRegistry, usageSink };
+  const ai: AiServices = {
+    gateway: aiGateway,
+    providerRegistry: aiProviderRegistry,
+    usageSink,
+    traceRecorder,
+  };
   const repositories: WorkspaceRepositories = buildWorkspaceRepositories(
     host,
     dependencies.fetch ?? globalThis.fetch,

@@ -1,0 +1,187 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { afterEach, describe, expect, it } from 'vitest';
+
+import type { AiCallObservation } from '@storyboard/story-ai';
+import {
+  GenerationTraceRecorder,
+  type IStoryboardLogger,
+  type TraceRunSession,
+} from '@storyboard/story-engine';
+import {
+  NodeUri,
+  STORYBOARD_RELATIVE_PATHS,
+  traceCallRecordSchema,
+  traceRunHeaderSchema,
+  type StoryUri,
+  type TraceCallRecord,
+  type TraceRunHeader,
+} from '@storyboard/story-model';
+import { NodeFileSystem } from '@storyboard/story-node';
+
+import { TemporaryWorkspaces } from './fixtures/cacheWorkspace';
+
+const workspaces: TemporaryWorkspaces = new TemporaryWorkspaces();
+const silentLogger: IStoryboardLogger = {
+  info: (): void => {},
+  warn: (): void => {},
+  error: (): void => {},
+  show: (): void => {},
+};
+
+interface RecorderSettings {
+  readonly isEnabled: boolean;
+  readonly keepRunCount?: number;
+}
+
+function createRecorder(settings: RecorderSettings): GenerationTraceRecorder {
+  return new GenerationTraceRecorder({
+    fileSystem: new NodeFileSystem(),
+    logger: silentLogger,
+    isEnabled: () => settings.isEnabled,
+    keepRunCount: () => settings.keepRunCount ?? 3,
+  });
+}
+
+function observeCall(prompt: string, responseText: string): AiCallObservation {
+  return {
+    taskName: 'sceneSectionExpansion',
+    messages: [
+      { role: 'system', content: '공통 지시문' },
+      { role: 'user', content: prompt },
+    ],
+    maxTokens: 8000,
+    startedAt: new Date('2026-11-20T00:00:00.000Z'),
+    durationMs: 1200,
+    response: {
+      text: responseText,
+      providerId: 'mock',
+      model: 'mock-model',
+      usage: { inputTokens: 10, outputTokens: 20 },
+      isTruncated: true,
+    },
+    traceTag: { stage: 'expandSection', sectionIndex: 3, attempt: 2, retryReason: '분량 미달' },
+  };
+}
+
+function traceRootOf(workspace: string): string {
+  return join(workspace, ...STORYBOARD_RELATIVE_PATHS.traceDirectory.split('/'));
+}
+
+function readJson(path: string): unknown {
+  return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+afterEach(() => workspaces.cleanUp());
+
+describe('GenerationTraceRecorder', () => {
+  it('writes nothing while tracing is off', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: false });
+
+    const session: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate' });
+    await recorder.recordCall(root, observeCall('구간 1', '본문'));
+    await session.finish('completed');
+
+    expect(session.runId).toBeUndefined();
+    expect(existsSync(traceRootOf(workspace))).toBe(false);
+  });
+
+  it('records each call with its prompt and response and closes the run', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+
+    const session: TraceRunSession = await recorder.startRun(root, {
+      kind: 'draft-generate',
+      subject: { sceneStem: '001-opening' },
+    });
+    await recorder.recordCall(root, observeCall('구간 1', '첫 본문'));
+    await recorder.recordCall(root, observeCall('구간 2', '둘째 본문'));
+    await session.finish('failed', '출력 한도');
+
+    const runDirectory: string = join(traceRootOf(workspace), session.runId ?? '');
+    const header: TraceRunHeader = traceRunHeaderSchema.parse(readJson(join(runDirectory, 'run.json')));
+    const second: TraceCallRecord = traceCallRecordSchema.parse(
+      readJson(join(runDirectory, 'calls', '00002.json')),
+    );
+    const userPromptHash: string = second.messages[1]?.hash ?? '';
+
+    expect(header).toMatchObject({
+      kind: 'draft-generate',
+      status: 'failed',
+      failureMessage: '출력 한도',
+      subject: { sceneStem: '001-opening' },
+    });
+    expect(readdirSync(join(runDirectory, 'calls'))).toEqual(['00001.json', '00002.json']);
+    expect(second).toMatchObject({
+      sequence: 2,
+      taskName: 'sceneSectionExpansion',
+      providerId: 'mock',
+      parameters: { maxTokens: 8000 },
+      response: { isTruncated: true, charCount: '둘째 본문'.length },
+      tag: { sectionIndex: 3, attempt: 2, retryReason: '분량 미달' },
+    });
+    expect(readFileSync(join(runDirectory, 'blobs', `${userPromptHash}.txt`), 'utf8')).toBe('구간 2');
+    expect(readFileSync(join(runDirectory, 'blobs', `${second.response?.hash}.txt`), 'utf8')).toBe('둘째 본문');
+    expect(readdirSync(join(runDirectory, 'blobs'))).toHaveLength(5);
+  });
+
+  it('keeps a failed call with its error and no response', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+    const { response: _response, ...unanswered } = observeCall('구간 1', '');
+
+    const session: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate' });
+    await recorder.recordCall(root, { ...unanswered, error: new Error('연결이 끊겼습니다') });
+
+    const call: TraceCallRecord = traceCallRecordSchema.parse(
+      readJson(join(traceRootOf(workspace), session.runId ?? '', 'calls', '00001.json')),
+    );
+    expect(call.errorMessage).toBe('연결이 끊겼습니다');
+    expect(call.response).toBeUndefined();
+  });
+
+  it('collects calls made outside a run into an ambient run', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+
+    await Promise.all([
+      recorder.recordCall(root, observeCall('질문 1', '답 1')),
+      recorder.recordCall(root, observeCall('질문 2', '답 2')),
+    ]);
+
+    const runIds: string[] = readdirSync(traceRootOf(workspace));
+    expect(runIds).toHaveLength(1);
+    const runDirectory: string = join(traceRootOf(workspace), runIds[0] ?? '');
+    expect(traceRunHeaderSchema.parse(readJson(join(runDirectory, 'run.json'))).kind).toBe('ambient');
+    expect(readdirSync(join(runDirectory, 'calls'))).toHaveLength(2);
+  });
+
+  it('keeps only the newest runs of one scene', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true, keepRunCount: 2 });
+    const startedRunIds: string[] = [];
+
+    for (const sceneStem of ['001-opening', '001-opening', '002-other', '001-opening']) {
+      const session: TraceRunSession = await recorder.startRun(root, {
+        kind: 'draft-generate',
+        subject: { sceneStem },
+      });
+      await session.finish('completed');
+      startedRunIds.push(session.runId ?? '');
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+
+    const [firstOpening, secondOpening, otherScene, thirdOpening] = startedRunIds;
+    expect(readdirSync(traceRootOf(workspace)).sort()).toEqual(
+      [secondOpening, otherScene, thirdOpening].sort(),
+    );
+    expect(existsSync(join(traceRootOf(workspace), firstOpening ?? ''))).toBe(false);
+  });
+});

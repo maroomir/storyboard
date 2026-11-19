@@ -23,6 +23,7 @@ import {
   serializeDraft,
   buildStyleDirective,
   type SceneCacheRecord,
+  type TraceRunStatus,
   extractErrorMessage,
 } from '@storyboard/story-model';
 import { BackgroundFactConflictStore } from '#engine/persistence/backgroundFactConflictStore';
@@ -53,6 +54,9 @@ import {
 import { sceneCacheDirectoryPath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IUseCase } from '#engine/application/useCase';
 import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
+import type { TraceRunSession } from '#engine/persistence/generationTraceRecorder';
+
+const draftGenerationTraceKind: string = 'draft-generate';
 
 export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
 
@@ -424,11 +428,35 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       return await this.openCachedDraft(inputs.draftUri);
     }
 
-    const refreshed: SceneGenerationInputsResult = await this.refreshChapterSummaries(
-      inputs,
-      request,
-    );
-    return refreshed.ok ? await this.runAndPersistDraft(refreshed.inputs, request) : refreshed.result;
+    return await this.traceGeneration(inputs, async (): Promise<GenerateDraftResult> => {
+      const refreshed: SceneGenerationInputsResult = await this.refreshChapterSummaries(
+        inputs,
+        request,
+      );
+      return refreshed.ok
+        ? await this.runAndPersistDraft(refreshed.inputs, request)
+        : refreshed.result;
+    });
+  }
+
+  private async traceGeneration(
+    inputs: SceneGenerationInputs,
+    generate: () => Promise<GenerateDraftResult>,
+  ): Promise<GenerateDraftResult> {
+    const session: TraceRunSession = await this.ai.traceRecorder.startRun(inputs.paths.workspaceRoot, {
+      kind: draftGenerationTraceKind,
+      subject: { sceneStem: inputs.scene.stem },
+    });
+
+    try {
+      const result: GenerateDraftResult = await generate();
+      const status: TraceRunStatus = result.ok ? 'completed' : result.kind;
+      await session.finish(status, result.ok || result.kind === 'cancelled' ? undefined : result.message);
+      return result;
+    } catch (error) {
+      await session.finish('failed', extractErrorMessage(error));
+      throw error;
+    }
   }
 
   private async refreshChapterSummaries(

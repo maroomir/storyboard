@@ -3,11 +3,13 @@ import type { IStoryboardLogger } from '#engine/ports/logger';
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, TaskAiConfigResolved } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
+import type { GenerationTraceRecorder } from '#engine/persistence/generationTraceRecorder';
 export class AiGateway {
   public constructor(
     private readonly providerRegistry: AiProviderRegistry,
     private readonly usageSink: IUsageSink,
     private readonly logger: IStoryboardLogger,
+    private readonly traceRecorder: GenerationTraceRecorder,
   ) {}
 
   public createService(workspaceUri: StoryUri): StoryboardAiService {
@@ -16,6 +18,9 @@ export class AiGateway {
         void this.usageSink.record(workspaceUri, record).catch((error: unknown) => {
           this.logger.error('사용량 기록에 실패했습니다.', error);
         });
+      },
+      onCall: (observation): void => {
+        void this.traceRecorder.recordCall(workspaceUri, observation);
       },
     });
   }

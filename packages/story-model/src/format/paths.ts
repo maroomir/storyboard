@@ -7,6 +7,7 @@ interface StoryboardRelativePaths {
   readonly cacheDirectory: string;
   readonly sceneCacheDirectory: string;
   readonly revisionRoundsDirectory: string;
+  readonly traceDirectory: string;
   readonly outlineDirectory: string;
   readonly outlineSynopsis: string;
   readonly outlineChapters: string;
@@ -31,6 +32,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   cacheDirectory: '.storyboard/cache',
   sceneCacheDirectory: '.storyboard/cache/scenes',
   revisionRoundsDirectory: '.storyboard/cache/revisions',
+  traceDirectory: '.storyboard/cache/traces',
   outlineDirectory: '.storyboard/outline',
   outlineSynopsis: '.storyboard/outline/synopsis.md',
   outlineChapters: '.storyboard/outline/chapters.yaml',

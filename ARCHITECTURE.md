@@ -638,6 +638,18 @@ statements: []
 
 장 요약이 빠져 있으면(캐시를 지웠거나 낡은 요약을 지웠다면) 앞 장들을 씬 초안을 쓰기 직전에 다시 요약한다. `draft generate --all`과 `novel generate`의 실행 확인은 다시 만들 요약 수를 알린다.
 
+### 4.12 `.storyboard/cache/traces/<run>/` (생성 추적)
+
+`trace.enabled` 를 켜면 모델 호출마다 기록이 남는다. run 하나가 폴더 하나이고, 폴더 이름은 시작 시각으로 시작해 이름순이 시간순이다.
+
+| 파일 | 내용 |
+| --- | --- |
+| `run.json` | 형식 `version`, `kind`(`draft-generate`, run 밖의 호출을 모으는 `ambient`), `status`(`running`·`completed`·`failed`·`cancelled`), 시작·종료 시각, 대상 씬, 실패 메시지 |
+| `calls/NNNNN.json` | 호출 한 건: 작업 이름, 프로바이더·모델, 요청 파라미터, 메시지별 본문 해시와 글자 수, 응답 해시·글자 수·끊김 여부(또는 오류 메시지), 토큰·비용, 시작 시각·소요, 구간·시도 태그 |
+| `blobs/<sha256>.txt` | 프롬프트·응답 본문. 같은 본문은 한 번만 저장한다 |
+
+호출이 끝날 때마다 파일 하나를 쓰므로 실패하거나 중단된 run 도 그때까지의 기록이 남는다. 본문에 원고가 들어가므로 캐시에만 두며, 같은 종류·같은 씬의 run 은 최근 `trace.keepRuns`(기본 3)회만 남긴다. 기록은 생성에 영향을 주지 않고, 쓰지 못하면 경고만 남기고 생성은 계속된다. 형식의 스키마는 `packages/story-model/src/contracts/generationTrace.ts` 에 있다.
+
 ## 5. 명령어 (확정)
 
 | 명령어 ID | 표시 이름 | 동작 |
@@ -695,6 +707,8 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 `temperature`를 거부하는 모델(Claude 4.7 이후, GPT-6, Gemini 3.x)은 그 행에 `acceptsTemperature: false`를 적고,
 프로바이더는 그 모델에 `temperature`를 보내지 않는다.
 - `tasks.<taskName>.provider`·`tasks.<taskName>.model`: 작업별 provider·모델 오버라이드. 모델만 있고 provider가 없는 항목은 무시된다. CLI는 `config set|unset`으로 다룬다.
+- `trace.enabled`: 모델 호출마다 프롬프트·응답을 `.storyboard/cache/traces/` 에 남긴다(§4.12). 기본 `false`.
+- `trace.keepRuns`: 같은 종류·같은 씬의 추적을 최근 몇 회 남길지. 기본 `3`, 1~50.
 - `revise.loop.afterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
 - `editor.grammar.realtime`: 기본 `false`
 - `revise.loop.maxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
