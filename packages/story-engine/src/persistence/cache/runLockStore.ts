@@ -142,9 +142,16 @@ export class RunLockStore {
   private holdLock(record: WorkspaceRunLockRecord): WorkspaceRunLock {
     let isReleased: boolean = false;
     const timer: NodeJS.Timeout = setInterval((): void => {
-      if (!isReleased) {
-        this.heartbeat(record.token);
+      if (isReleased) {
+        return;
       }
+      if (!this.dependencies.database.isOpen) {
+        isReleased = true;
+        clearInterval(timer);
+        return;
+      }
+
+      this.heartbeat(record.token);
     }, workspaceRunLockTiming.heartbeatIntervalMs);
     timer.unref?.();
 

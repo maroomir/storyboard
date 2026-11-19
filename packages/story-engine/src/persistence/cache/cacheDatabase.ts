@@ -26,7 +26,13 @@ export interface CacheDatabaseOpening {
 const sqliteInternalTablePrefix: string = 'sqlite_';
 
 export class CacheDatabase {
+  private isClosed: boolean = false;
+
   private constructor(private readonly database: ISqlDatabase) {}
+
+  public get isOpen(): boolean {
+    return !this.isClosed;
+  }
 
   public static async open(request: CacheDatabaseOpenRequest): Promise<CacheDatabaseOpening> {
     const paths: StoryboardProjectPaths = getStoryboardProjectPaths(request.workspaceRoot);
@@ -73,6 +79,7 @@ export class CacheDatabase {
   }
 
   public close(): void {
+    this.isClosed = true;
     this.database.close();
   }
 

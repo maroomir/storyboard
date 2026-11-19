@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CacheDatabase, RunLockStore } from '@storyboard/story-engine';
 import { NodeUri, type WorkspaceRunLockHolder } from '@storyboard/story-model';
@@ -82,5 +82,21 @@ describe('run lock in the cache database', () => {
     expect(store.readHolder()?.heartbeatAt).toBe('2026-11-11T00:00:30.000Z');
     await result.lock.release();
     expect(store.readHolder()).toBeUndefined();
+  });
+  it('stops the heartbeat instead of throwing once the database is closed with the lock still held (#212)', async () => {
+    const workspace: string = await openWorkspace();
+    const database: CacheDatabase = await openDatabase(workspace);
+    const store = new RunLockStore({ database, isHolderGone: () => false });
+    vi.useFakeTimers();
+    try {
+      expect(store.acquire(cliHolder).ok).toBe(true);
+      databases.splice(databases.indexOf(database), 1);
+      database.close();
+
+      expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
