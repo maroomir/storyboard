@@ -658,6 +658,47 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(result.warnings.filter((warning) => warning.startsWith("뼈대 2/2:"))).toHaveLength(1)
   })
 
+  it("keeps a nickname a later call's beat coins out of the earlier call and redrafts when it slips in (#214)", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton
+      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다. “꼬맹이, 더 먹어.”", "", "엘리아가 설거지를 했다."].join("\n"))
+      .mockResolvedValueOnce(["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다."].join("\n"))
+      .mockResolvedValue("엘리아가 교문을 나섰다. “꼬맹이.”")
+
+    const planned = plannedScene(contextFor([{ ...eliaCard, catchphrases: ["꼬맹이"] }], "본문"))
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: {
+        ...planned,
+        scene: {
+          ...planned.scene,
+          card: {
+            ...planned.scene.card,
+            beats: [
+              { text: "밥을 먹는다", place: "집 식탁", time: "아침 7시" },
+              { text: "설거지를 한다", place: "집 부엌", time: "아침 7시 20분" },
+              { text: "교문을 나서며 성재를 \"꼬맹이\"라 부르기 시작한다", place: "학교 교문 앞", time: "오후 4시" }
+            ]
+          }
+        }
+      } as SceneContext,
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 9000 },
+      tuning: { "generation.skeleton.charsPerCall": 2000, "generation.skeleton.retryLimit": 1 }
+    })
+
+    const first = ai.draftSceneSkeleton.mock.calls[0]?.[0] as Record<string, unknown>
+    const retried = ai.draftSceneSkeleton.mock.calls[1]?.[0] as Record<string, unknown>
+    const last = ai.draftSceneSkeleton.mock.calls[2]?.[0] as Record<string, unknown>
+    expect(first.withheldAddressTerms).toEqual(["꼬맹이"])
+    expect([...(first.catchphrases as Map<string, string[]>).values()]).toEqual([[]])
+    expect(String((retried.retryReasons as string[]).join(" "))).toContain("«꼬맹이»")
+    expect(last.withheldAddressTerms).toBeUndefined()
+    expect(last.coinedAddressNotes).toEqual(["«꼬맹이»: «교문을 나서며 성재를 \"꼬맹이\"라 부르기 시작한다»에서 처음 붙는다"])
+    expect(result.skeleton).not.toContain("꼬맹이, 더 먹어")
+  })
+
   it("curls straight dialogue quotes a skeleton call wrote", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce('엘리아가 말했다.\n\n"밥 먹자." 성재가 "응." 하고 답했다.')

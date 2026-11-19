@@ -17,6 +17,7 @@ export interface InterviewQuestionInput {
   readonly relationSpeech: readonly string[];
   readonly catchphrases: readonly string[];
   readonly partners?: readonly InterviewQuestionPartner[];
+  readonly withheldAddressTerms?: readonly string[];
   readonly axes: readonly InterviewQuestionAxis[];
   readonly situation: string;
   readonly presence?: InterviewQuestionPresence;
@@ -62,6 +63,8 @@ export const InterviewQuestionPrompt: PromptModule<
         relationSpeech: input.relationSpeech,
         hasCatchphrases: input.catchphrases.length > 0,
         catchphrases: input.catchphrases,
+        hasWithheldAddressTerms: (input.withheldAddressTerms ?? []).length > 0,
+        withheldAddressTerms: input.withheldAddressTerms ?? [],
         hasPartners: (input.partners ?? []).length > 0,
         partners: (input.partners ?? []).map((partner) => ({ name: partner.name, facts: partner.facts.join(' / ') })),
         axes: input.axes.map((axis) => ({

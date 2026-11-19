@@ -38,7 +38,7 @@ maxTokens: 2000
 {"axisId":"pressure-defense","question":"…","options":[{"valueId":"counter","text":"…"},{"valueId":"withhold","text":"…"}]}
 
 ## system:xs
-[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 축에 맞추려고 [상황]에 없는 전제·앞일을 덧붙이지 않음. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}{{#hasPresence}}[이 자리에 있는 사람]에 없는 사람은 세우지도 부르지도 않음(누구의 방처럼 주인으로만 나온 이름은 없는 사람), 혼자면 행동과 속말로만. {{/hasPresence}}{{#hasActor}}[상황]의 행동은 그 주어의 것(주어가 없으면 {{#hasFocalName}}[초점 인물]의 것{{/hasFocalName}}{{^hasFocalName}}이 인물의 것으로 단정하지 않음{{/hasFocalName}})이니 이 인물의 행동으로 바꾸지 않음, 행위자가 남이면 그 자리에서 받는 반응을, 자리에 없으면 나중에 알았을 때의 반응을 묻고 새 시각·장소는 세우지 않음. {{/hasActor}}{{#hasRelationSpeech}}호칭과 존댓말·반말은 [상대별 호칭·말투]대로, 호칭 입버릇은 적힌 상대에게만 쓰고 자칭으로 쓰지 않음. {{/hasRelationSpeech}}{{#hasCatchphrases}}[입버릇]의 말은 선택지에 쓰지 않음. {{/hasCatchphrases}}{{^isBackground}}다른 인물의 몸·겉모습은 [상황]·[다른 인물의 설정]에 적힌 것만, 이 인물의 것을 상대에게 옮기지 않음. {{/isBackground}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
+[열린 축] 중 [상황]이 가르는 축 하나를 골라(axisId) 작가에게 그 값을 고르게 하는 질문을 써라. 축에 맞추려고 [상황]에 없는 전제·앞일을 덧붙이지 않음. 선택지 {{optionCount}}개, 각각 다른 값 id, 겉모습은 {{#isBackground}}장소의 응답{{/isBackground}}{{^isBackground}}이 인물의 행동과 말{{/isBackground}} 한두 문장, 상황에 없는 사물·숫자·고유명사는 만들지 않음. {{#shouldExplore}}(아직 안 본 값) 하나를 탐색 안으로 넣되 이 인물 말투로. {{/shouldExplore}}{{#hasPresence}}[이 자리에 있는 사람]에 없는 사람은 세우지도 부르지도 않음(누구의 방처럼 주인으로만 나온 이름은 없는 사람), 혼자면 행동과 속말로만. {{/hasPresence}}{{#hasActor}}[상황]의 행동은 그 주어의 것(주어가 없으면 {{#hasFocalName}}[초점 인물]의 것{{/hasFocalName}}{{^hasFocalName}}이 인물의 것으로 단정하지 않음{{/hasFocalName}})이니 이 인물의 행동으로 바꾸지 않음, 행위자가 남이면 그 자리에서 받는 반응을, 자리에 없으면 나중에 알았을 때의 반응을 묻고 새 시각·장소는 세우지 않음. {{/hasActor}}{{#hasRelationSpeech}}호칭과 존댓말·반말은 [상대별 호칭·말투]대로, 호칭 입버릇은 적힌 상대에게만 쓰고 자칭으로 쓰지 않음. {{/hasRelationSpeech}}{{#hasCatchphrases}}[입버릇]의 말은 선택지에 쓰지 않음. {{/hasCatchphrases}}{{#hasWithheldAddressTerms}}[아직 붙지 않은 호칭]의 말은 선택지에 쓰지 않음. {{/hasWithheldAddressTerms}}{{^isBackground}}다른 인물의 몸·겉모습은 [상황]·[다른 인물의 설정]에 적힌 것만, 이 인물의 것을 상대에게 옮기지 않음. {{/isBackground}}JSON 하나만: {"axisId":"…","question":"…","options":[{"valueId":"…","text":"…"}]}
 
 ## user
 [{{#isBackground}}장소{{/isBackground}}{{^isBackground}}인물{{/isBackground}}]
@@ -63,6 +63,13 @@ maxTokens: 2000
 {{#catchphrases}}
 - {{.}}
 {{/catchphrases}}
+{{#hasWithheldAddressTerms}}
+
+[아직 붙지 않은 호칭 — 이 장면의 뒤 비트에서 처음 붙는다. [상대별 호칭·말투]에 적혀 있어도 선택지에 쓰지 말고 이름이나 다른 말로 불러라]
+{{/hasWithheldAddressTerms}}
+{{#withheldAddressTerms}}
+- {{.}}
+{{/withheldAddressTerms}}
 {{#hasPartners}}
 
 [다른 인물의 설정]

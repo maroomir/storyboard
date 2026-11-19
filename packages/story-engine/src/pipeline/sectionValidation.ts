@@ -22,6 +22,7 @@ import {
 } from '#engine/pipeline/catchphrases';
 import { findSeamRepeat } from '#engine/pipeline/seamRepeats';
 import {
+  findEarlyAddressTermsInLines,
   findKinshipAddressSubstitutions,
   findWithheldAddressTermsUsed,
   type AddressSubstitution,
@@ -854,8 +855,16 @@ export function findPolishedLineViolations(input: {
   readonly lines: ReadonlyMap<number, string>;
   readonly characters: readonly CharacterCard[];
   readonly tuning?: SceneGenerationTuningInput;
+  readonly lineEnds?: ReadonlyMap<number, number>;
+  readonly coinedAddressTerms?: readonly string[];
 }): Map<number, SectionViolation[]> {
   const resolved: ResolvedSceneGenerationTuning = resolveSceneGenerationTuning(input.tuning);
+  const earlyAddressTermsByLine: Map<number, string[]> = findEarlyAddressTermsInLines({
+    skeleton: input.skeleton,
+    lineEnds: input.lineEnds ?? new Map<number, number>(),
+    rewrittenLines: input.lines,
+    terms: input.coinedAddressTerms ?? [],
+  });
   const skeletonCast: Set<string> = detectCanonicalCast(input.skeleton, input.characters);
   const violationsByIndex: Map<number, SectionViolation[]> = new Map<number, SectionViolation[]>();
 
@@ -884,6 +893,14 @@ export function findPolishedLineViolations(input: {
       violations.push({
         kind: 'foreign-script',
         detail: `⟨${index}⟩에 외국 문자가 섞였습니다 (${foreign.map((span) => `"${span.text}"`).join(', ')})`,
+      });
+    }
+
+    const earlyAddressTerms: string[] = earlyAddressTermsByLine.get(index) ?? [];
+    if (earlyAddressTerms.length > 0) {
+      violations.push({
+        kind: 'address',
+        detail: `⟨${index}⟩에 뒤 비트에서 처음 붙는 호칭을 앞당겨 썼습니다 (${earlyAddressTerms.map((term) => `«${term}»`).join(', ')}). 이름이나 다른 말로 부르세요`,
       });
     }
 

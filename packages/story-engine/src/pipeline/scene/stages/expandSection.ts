@@ -286,7 +286,7 @@ export class ExpandSectionStage implements ISceneStage {
     const withheldAddressTermsBySection: string[][] = planSectionWithheldAddressTerms({
       skeleton: run.polishedText,
       sections,
-      terms: findBeatCoinedAddressTerms(beats),
+      terms: findBeatCoinedAddressTerms(beats, run.context.characters),
     });
 
     return {
