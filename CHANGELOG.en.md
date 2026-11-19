@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.16.7] - 2026-11-19
+
 ### Added
 
 - **An interview can go on until every axis is decided (`card interview <id> --until-decided`).** Without the caps of 20 questions, the next 3 scenes and 4 off-beat situations, it asks over the beats of every scene of the work (undrafted scenes first), goes on with off-beat situations once the beats run out, and ends when every axis is decided, set aside or waiting for later scenes. It distils the card proposals every 6 answers (`generation.interview.distillEveryAnswers`), so stopping early with «여기까지» or Ctrl+C keeps the proposals so far. With `--step --json` the flag goes with every call, and a question reports `untilDecided: true` in place of `limit`. Character and background interviews only.
