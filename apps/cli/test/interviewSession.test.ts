@@ -706,6 +706,34 @@ describe('interview session (mock provider)', () => {
     expect(junQuestion?.options.map((option) => option.valueId)).not.toContain('laugh-off');
   });
 
+  it('hands the question the card facts of the other characters at the beat, and none when the character is alone (#211)', async () => {
+    write('character/jun.card', [
+      'type: character',
+      'id: jun',
+      'name: 준',
+      'role: supporting',
+      'description:',
+      '  - 190에 가까운 큰 키',
+      '  - 마른 체격',
+    ]);
+    const captured: CapturedPrompt[] = captureUserPrompts();
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    for (let i = 0; i < 3; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: i } });
+    }
+
+    const prompts: string[] = promptsOf(captured, 'interviewQuestion');
+    const withJun: string | undefined = prompts.find((prompt) => prompt.includes('준이 하나를 심문한다'));
+    const alone: string | undefined = prompts.find((prompt) => prompt.includes('하나가 등대로 돌아간다'));
+    expect(withJun).toContain('[다른 인물의 설정]\n- 준: 190에 가까운 큰 키 / 마른 체격');
+    expect(alone).toBeDefined();
+    expect(alone).not.toContain('[다른 인물의 설정]');
+  });
+
   it('asks an axis only on the scenes judged to test it and reports the axis no scene tests as waiting (#208)', async () => {
     const captured: CapturedPrompt[] = judgeAxisScenes({ '001-night': ['pressure-defense'], '002-dawn': [] });
     const { container: app, sessionId } = await startSession('hana');

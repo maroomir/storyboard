@@ -35,6 +35,7 @@ import {
 import {
   collectAbsentPartnerTerms,
   describeBeatActor,
+  describePartnerFacts,
   describePresence,
   isOptionAddressingAbsentPartner,
   type InterviewPartner,
@@ -961,6 +962,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       summary: model.summary,
       relationSpeech: describeRelationSpeech(context),
       catchphrases: listOptionCatchphrases(context),
+      partners: context.card.type === 'character' ? describePartnerFacts(context.card, nextBeat, context.characters) : [],
       axes: askedAxes.map(
         (axis): InterviewQuestionAxis => ({
           ...axis,

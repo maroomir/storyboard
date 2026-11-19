@@ -183,7 +183,7 @@ axis skipped `skipsBeforeSetAside` times in a session is set aside for it (`setA
 question left unanswered (Esc, a closed tab) is forgotten when the next session starts, so its beat
 is asked again. Each beat question is told who is present (the beat's `cast`, or the beat before it when none is
 written), and when an option of a cast-written beat names or addresses a partner who is not there it
-is asked once more. It is handed the card's catchphrases (less the ones a relation's speech uses to
+is asked once more. It is handed the card facts (attributes and description) of the other characters at the beat or named in it — the relation targets when the question is off-beat — and told to speak of another character's body only as those and the situation state (#211). It is handed the card's catchphrases (less the ones a relation's speech uses to
 address someone) as words options must not use, and asked once more when more than one option
 uses one. It is also told the scene's focal character (the resolved narration's `focal`) and
 whether the beat names the character at all, so an action stays with whoever does it and the

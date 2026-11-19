@@ -6,7 +6,11 @@ import {
   type SceneFile,
   type StoryboardCard,
 } from '@storyboard/story-model';
-import type { InterviewQuestionActor, InterviewQuestionPresence } from '@storyboard/story-ai';
+import type {
+  InterviewQuestionActor,
+  InterviewQuestionPartner,
+  InterviewQuestionPresence,
+} from '@storyboard/story-ai';
 
 import { cardTokens } from '#engine/application/interviews/interviewCoverage';
 
@@ -124,4 +128,40 @@ export function collectAbsentPartnerTerms(input: {
 
 export function isOptionAddressingAbsentPartner(text: string, absentTerms: readonly string[]): boolean {
   return absentTerms.some((term) => text.includes(term));
+}
+
+const partnerFactLimit: number = 24;
+
+function listCardFacts(card: StoryboardCard): string[] {
+  if (card.type !== 'character') {
+    return [];
+  }
+
+  const attributes: string[] = Object.entries(card.attributes ?? {})
+    .filter(([, value]) => value !== null && String(value).trim().length > 0)
+    .map(([key, value]) => `${key} ${String(value)}`);
+
+  return [...attributes, ...(card.description ?? [])].slice(0, partnerFactLimit);
+}
+
+function isCardNamedInSituation(card: StoryboardCard, situation: InterviewBeatSituation): boolean {
+  return [card.name, ...(card.aliases ?? [])].some((name) => name.trim().length > 0 && situation.text.includes(name.trim()));
+}
+
+export function describePartnerFacts(
+  card: StoryboardCard,
+  situation: InterviewBeatSituation | undefined,
+  characters: readonly StoryboardCard[],
+): InterviewQuestionPartner[] {
+  const relationTargets: readonly string[] =
+    card.type === 'character' ? (card.relations ?? []).map((relation) => relation.target) : [];
+  const isInvolved = (other: StoryboardCard): boolean =>
+    situation === undefined
+      ? relationTargets.includes(other.id)
+      : isCardPresent(other, situation) || isCardNamedInSituation(other, situation);
+
+  return characters
+    .filter((other) => other.id !== card.id && isInvolved(other))
+    .map((other): InterviewQuestionPartner => ({ name: other.name, facts: listCardFacts(other) }))
+    .filter((partner) => partner.facts.length > 0);
 }

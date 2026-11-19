@@ -4,6 +4,11 @@ import { renderPrompt } from '#ai/ai/prompts/promptResource';
 import { promptTuning } from '#ai/ai/prompts/promptTuning';
 import { type PromptArtifact, type PromptModule, type PromptVariantId } from '#ai/ai/prompts/types';
 
+export interface InterviewQuestionPartner {
+  readonly name: string;
+  readonly facts: readonly string[];
+}
+
 export interface InterviewQuestionInput {
   readonly cardType: BibleSubjectKind;
   readonly name: string;
@@ -11,6 +16,7 @@ export interface InterviewQuestionInput {
   readonly summary: string;
   readonly relationSpeech: readonly string[];
   readonly catchphrases: readonly string[];
+  readonly partners?: readonly InterviewQuestionPartner[];
   readonly axes: readonly InterviewQuestionAxis[];
   readonly situation: string;
   readonly presence?: InterviewQuestionPresence;
@@ -56,6 +62,8 @@ export const InterviewQuestionPrompt: PromptModule<
         relationSpeech: input.relationSpeech,
         hasCatchphrases: input.catchphrases.length > 0,
         catchphrases: input.catchphrases,
+        hasPartners: (input.partners ?? []).length > 0,
+        partners: (input.partners ?? []).map((partner) => ({ name: partner.name, facts: partner.facts.join(' / ') })),
         axes: input.axes.map((axis) => ({
           id: axis.id,
           label: axis.label,
