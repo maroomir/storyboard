@@ -647,7 +647,8 @@ statements: []
 | `run.json` | 형식 `version`, `kind`(`draft-generate`, 생성에 이어지지 않은 검수의 `draft-revise`, run 밖의 호출을 모으는 `ambient`), `status`(`running`·`completed`·`failed`·`cancelled`), 시작·종료 시각, 대상 씬, 실패 메시지 |
 | `plan.json` | 씬 파이프라인이 돌았을 때: 적용된 스테이지 순서(`stageIds`)와 그 시점의 스테이지 카탈로그(이름·필수·선택·대체·선행 조건). 순서에 없는 카탈로그 행이 실행되지 않은 스테이지다 |
 | `stages/NNNNN.json` | 스테이지 또는 파이프라인 앞뒤 단계(`resolveSceneBeats`·`refreshChapterSummaries`·`updateStoryState`·`reviseLoop`) 한 번의 실행: 순번, 스테이지 id, `completed`·`failed`, 시작 시각·소요, 그 안에서 나간 첫 호출 번호와 호출 수, 실패 메시지 |
-| `calls/NNNNN.json` | 호출 한 건: 작업 이름, 프로바이더·모델, 요청 파라미터, 메시지별 본문 해시와 글자 수, 응답 해시·글자 수·끊김 여부(또는 오류 메시지), 토큰·비용, 시작 시각·소요, 태그(스테이지 안에서 나간 호출은 `tag.stage` 에 스테이지 id, 살붙임 호출은 `sectionIndex`·`attempt` 와 재시도면 `retryReason`) |
+| `calls/NNNNN.json` | 호출 한 건: 작업 이름, 프로바이더·모델, 요청 파라미터, 메시지별 본문 해시와 글자 수, 응답 해시·글자 수·끊김 여부(또는 오류 메시지), 토큰·비용, 시작 시각·소요, 태그(스테이지 안에서 나간 호출은 `tag.stage` 에 스테이지 id; 뼈대는 조각 번호 `sectionIndex`·비트 번호 `beatIds`·`attempt`, 대사 다듬기는 인물 이름 `subject`·`attempt`, 살붙임은 `sectionIndex`·`attempt`; 재시도면 `retryReason`) |
+| `events/NNNNN.json` | 호출 사이에 본문에 일어난 일 한 건: `output-rejected`(반려된 시도와 그 까닭, 반려된 본문), `output-kept-despite-violations`(재시도가 다해 위반이 남은 채 채택한 판), `text-trimmed`(잘라내기 전후 본문과 규칙), `scene-breaks-restored`(장면 구분을 되살린 전후), `section-measured`(구간의 목표·뼈대·살붙임·최종 글자 수), `warning`(스테이지가 낸 경고 한 줄). 스테이지 id·구간 번호·시도 번호가 붙는다 |
 | `blobs/<sha256>.txt` | 프롬프트·응답 본문. 같은 본문은 한 번만 저장한다 |
 
 생성 직후 이어 도는 검수 루프는 같은 run 에 이어 적는다. 모델 호출이 한 번도 없던 run(캐시 적중 등)은 끝날 때 지운다. 호출이 끝날 때마다 파일 하나를 쓰므로 실패하거나 중단된 run 도 그때까지의 기록이 남는다. 본문에 원고가 들어가므로 캐시에만 두며, 같은 종류·같은 씬의 run 은 최근 `trace.keepRuns`(기본 3)회만 남긴다. 기록은 생성에 영향을 주지 않고, 쓰지 못하면 경고만 남기고 생성은 계속된다. 형식의 스키마는 `packages/story-model/src/contracts/generationTrace.ts` 에 있다.

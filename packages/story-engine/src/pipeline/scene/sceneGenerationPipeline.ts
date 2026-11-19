@@ -57,6 +57,7 @@ export class SceneGenerationPipeline {
 
   private async runObservedStage(id: SceneStageId, run: SceneGenerationRun): Promise<void> {
     this.input.observer?.onStageStart(id);
+    const warningCountBeforeStage: number = run.warnings.length;
 
     try {
       await sceneStages[id].run(run);
@@ -65,6 +66,9 @@ export class SceneGenerationPipeline {
       throw error;
     }
 
+    for (const message of run.warnings.slice(warningCountBeforeStage)) {
+      run.report({ kind: 'warning', message });
+    }
     this.input.observer?.onStageEnd(id);
   }
 }

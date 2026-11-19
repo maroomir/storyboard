@@ -12,6 +12,7 @@ import {
 import type {
   DialoguePolishSummary,
   RunSceneGenerationPipelineInput,
+  ScenePipelineEvent,
   SceneGenerationPipelineAiService,
   SceneGenerationPipelineTaskProviders,
 } from '#engine/pipeline/sceneGenerationTypes';
@@ -87,6 +88,10 @@ export class SceneGenerationRun {
     this.warnings = [];
     this.draftBody = '';
     this.dialogueRecord = undefined;
+  }
+
+  public report(event: ScenePipelineEvent): void {
+    this.input.observer?.onEvent(event);
   }
 
   public static create(input: RunSceneGenerationPipelineInput): SceneGenerationRun {

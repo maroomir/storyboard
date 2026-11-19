@@ -27,6 +27,7 @@ export interface TraceRunHeader {
 
 export interface TraceCallTag {
   readonly stage?: string;
+  readonly subject?: string;
   readonly sectionIndex?: number;
   readonly beatIds?: readonly string[];
   readonly attempt?: number;
@@ -116,6 +117,40 @@ export interface TraceStageRecord {
   readonly errorMessage?: string;
 }
 
+export type TraceEventKind =
+  | 'output-rejected'
+  | 'output-kept-despite-violations'
+  | 'text-trimmed'
+  | 'scene-breaks-restored'
+  | 'section-measured'
+  | 'warning';
+
+export const traceEventKinds: readonly TraceEventKind[] = [
+  'output-rejected',
+  'output-kept-despite-violations',
+  'text-trimmed',
+  'scene-breaks-restored',
+  'section-measured',
+  'warning',
+];
+
+export type TraceSectionLengthName = 'target' | 'skeleton' | 'expanded' | 'final';
+
+export interface TraceEventRecord {
+  readonly sequence: number;
+  readonly kind: TraceEventKind;
+  readonly recordedAt: string;
+  readonly stage?: string;
+  readonly sectionIndex?: number;
+  readonly attempt?: number;
+  readonly rule?: string;
+  readonly reasons?: readonly string[];
+  readonly message?: string;
+  readonly before?: TraceTextRef;
+  readonly after?: TraceTextRef;
+  readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
+}
+
 const traceTextRefShape: { hash: z.ZodString; charCount: z.ZodNumber } = {
   hash: z.string().regex(/^[a-f0-9]{64}$/),
   charCount: z.number().int().min(0),
@@ -123,6 +158,7 @@ const traceTextRefShape: { hash: z.ZodString; charCount: z.ZodNumber } = {
 
 const traceCallTagSchema: z.ZodType<TraceCallTag> = z.object({
   stage: z.string().optional(),
+  subject: z.string().optional(),
   sectionIndex: z.number().int().optional(),
   beatIds: z.array(z.string()).optional(),
   attempt: z.number().int().optional(),
@@ -193,6 +229,35 @@ export const traceStageRecordSchema: z.ZodType<TraceStageRecord> = z.object({
   errorMessage: z.string().optional(),
 });
 
+export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
+  sequence: z.number().int().min(1),
+  kind: z.enum([
+    'output-rejected',
+    'output-kept-despite-violations',
+    'text-trimmed',
+    'scene-breaks-restored',
+    'section-measured',
+    'warning',
+  ]),
+  recordedAt: z.string(),
+  stage: z.string().optional(),
+  sectionIndex: z.number().int().optional(),
+  attempt: z.number().int().optional(),
+  rule: z.string().optional(),
+  reasons: z.array(z.string()).optional(),
+  message: z.string().optional(),
+  before: z.object(traceTextRefShape).optional(),
+  after: z.object(traceTextRefShape).optional(),
+  lengths: z
+    .object({
+      target: z.number().optional(),
+      skeleton: z.number().optional(),
+      expanded: z.number().optional(),
+      final: z.number().optional(),
+    })
+    .optional(),
+});
+
 const sequenceDigitCount: number = 5;
 
 export function traceRunRelativeDirectory(runId: string): string {
@@ -213,6 +278,10 @@ export function tracePlanRelativePath(runId: string): string {
 
 export function traceStageRelativePath(runId: string, sequence: number): string {
   return `${traceRunRelativeDirectory(runId)}/stages/${String(sequence).padStart(sequenceDigitCount, '0')}.json`;
+}
+
+export function traceEventRelativePath(runId: string, sequence: number): string {
+  return `${traceRunRelativeDirectory(runId)}/events/${String(sequence).padStart(sequenceDigitCount, '0')}.json`;
 }
 
 export function traceBlobRelativePath(runId: string, hash: string): string {

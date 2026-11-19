@@ -4,6 +4,8 @@ import type {
   SceneDialogueRecord,
   AiProviderId,
   StyleDirective,
+  TraceEventKind,
+  TraceSectionLengthName,
 } from '@storyboard/story-model';
 import type {
   IBackgroundFactConflictStore,
@@ -90,8 +92,21 @@ export interface RunSceneGenerationPipelineInput {
   readonly observer?: IScenePipelineObserver;
 }
 
+export interface ScenePipelineEvent {
+  readonly kind: TraceEventKind;
+  readonly sectionIndex?: number;
+  readonly attempt?: number;
+  readonly rule?: string;
+  readonly reasons?: readonly string[];
+  readonly message?: string;
+  readonly beforeText?: string;
+  readonly afterText?: string;
+  readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
+}
+
 export interface IScenePipelineObserver {
   onPlan(stageIds: readonly SceneStageId[]): void;
+  onEvent(event: ScenePipelineEvent): void;
   onStageStart(stageId: SceneStageId): void;
   onStageEnd(stageId: SceneStageId, failure?: unknown): void;
 }

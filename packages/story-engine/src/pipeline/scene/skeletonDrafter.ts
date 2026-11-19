@@ -53,6 +53,7 @@ import {
   type CoverageStatus,
   type SceneBeat,
   type SceneCoverageIssue,
+  type TraceCallTag,
 } from '@storyboard/story-model';
 
 export interface CombinedSkeletonDraft {
@@ -274,6 +275,7 @@ export class SkeletonDrafter {
         options,
         call.beats.map((beat) => beatText(beats[beat]) ?? ''),
         call.markers,
+        { sectionIndex: index + 1, beatIds: call.beats.map((beat) => String(beat + 1)) },
       );
       parts.push(skeletonDraft.text);
       drafts.push(skeletonDraft);
@@ -305,14 +307,24 @@ export class SkeletonDrafter {
     options: GenerateTextOptions,
     coverageBeats: readonly string[],
     segmentNumbers?: readonly number[],
+    partTag: TraceCallTag = {},
   ): Promise<SkeletonDraft> {
     const tally: SkeletonRetryTally = new SkeletonRetryTally();
 
     for (let attempt: number = 0; attempt <= this.run.tuning.skeletonRetryLimit; attempt += 1) {
       tally.startAttempt(attempt);
+      const attemptInput: SkeletonCallInput = tally.addRetryReasons(input);
+      const retryReasons: readonly string[] = attemptInput.retryReasons ?? [];
       const checked: CheckedSkeleton = await this.draftCheckedSkeleton(
-        tally.addRetryReasons(input),
-        options,
+        attemptInput,
+        {
+          ...options,
+          traceTag: {
+            ...partTag,
+            attempt: attempt + 1,
+            ...(retryReasons.length === 0 ? {} : { retryReason: retryReasons.join(' / ') }),
+          },
+        },
         coverageBeats,
         segmentNumbers,
       );
