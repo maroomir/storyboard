@@ -261,6 +261,12 @@ export interface InterviewAnswerOutcome {
   readonly answeredCount: number;
 }
 
+export interface InterviewDistillExclusion {
+  readonly value: string;
+  readonly existingLine?: string;
+  readonly note?: string;
+}
+
 export interface InterviewSessionSummary {
   readonly sessionId: string;
   readonly cardId: string;
@@ -270,6 +276,7 @@ export interface InterviewSessionSummary {
   readonly undecidedAxisLabels: readonly string[];
   readonly waitingAxisLabels: readonly string[];
   readonly setAsideAxisLabels: readonly string[];
+  readonly excluded: readonly InterviewDistillExclusion[];
 }
 
 export interface InterviewOpening {
@@ -366,6 +373,12 @@ export const interviewConfirmationSchema: z.ZodType<InterviewConfirmation> = z.d
   ],
 );
 
+export const interviewDistillExclusionSchema: z.ZodType<InterviewDistillExclusion> = z.object({
+  value: idSchema,
+  existingLine: z.string().optional(),
+  note: z.string().optional(),
+});
+
 export const interviewSessionSummarySchema: z.ZodType<InterviewSessionSummary> = z.object({
   sessionId: idSchema,
   cardId: idSchema,
@@ -375,4 +388,5 @@ export const interviewSessionSummarySchema: z.ZodType<InterviewSessionSummary> =
   undecidedAxisLabels: z.array(z.string()),
   waitingAxisLabels: z.array(z.string()),
   setAsideAxisLabels: z.array(z.string()),
+  excluded: z.array(interviewDistillExclusionSchema),
 });

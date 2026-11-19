@@ -1,6 +1,7 @@
 import type {
   PendingHeaderChange,
   InterviewAxesFile,
+  InterviewDistillExclusion,
   InterviewWorkingModel,
   Statement,
   StoryUri,
@@ -17,5 +18,6 @@ export interface IInterviewRepository {
     cardId: string,
     statements: readonly Statement[],
     header?: PendingHeaderChange,
+    excluded?: readonly InterviewDistillExclusion[],
   ): Promise<void>;
 }

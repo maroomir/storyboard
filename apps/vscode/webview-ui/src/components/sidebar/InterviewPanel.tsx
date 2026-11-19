@@ -312,6 +312,7 @@ export function InterviewPanel({
         <p className="m-0 text-sm">
           답 {phase.summary.answered} · 건너뜀 {phase.summary.skipped} · 읽은 줄{' '}
           {phase.summary.candidateCount}건
+          {phase.summary.excluded.length > 0 ? ` · 제외 ${phase.summary.excluded.length}건` : ''}
         </p>
         {phase.summary.undecidedAxisLabels.length > 0 ? (
           <p className="m-0 text-xs text-sb-fg-muted">

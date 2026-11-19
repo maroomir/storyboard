@@ -352,7 +352,13 @@ describe('interview response coercion', () => {
   it('keeps relation speech only for known targets', () => {
     expect(
       coerceInterviewDistill(
-        { traits: ['참는다'], relationSpeech: [{ target: 'jun', speech: '반말' }, { target: 'ghost', speech: '존댓말' }], layout: 'not a list' },
+        {
+          traits: ['참는다'],
+          relationSpeech: [{ target: 'jun', speech: '반말' }, { target: 'ghost', speech: '존댓말' }],
+          layout: 'not a list',
+          covered: [{ value: '호감 표출: 우회', line: '…' }, { line: '값 없음' }],
+          excluded: [{ value: '압박 아래 방어: 침묵', existingLine: ' 참는다 ' }, { value: ' ', note: '빈 값' }, 'text'],
+        },
         ['jun'],
       ),
     ).toEqual({
@@ -364,6 +370,8 @@ describe('interview response coercion', () => {
       layout: [],
       rules: [],
       senses: [],
+      coveredValues: ['호감 표출: 우회'],
+      excluded: [{ value: '압박 아래 방어: 침묵', existingLine: '참는다' }],
     });
   });
 });

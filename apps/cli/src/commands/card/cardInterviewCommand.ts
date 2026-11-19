@@ -1,6 +1,7 @@
 import type { ChoiceOption, IPrompter } from '@/adapters/prompter';
 import { flagBoolean, flagString } from '@/cliArguments';
 import { invalidLimitMessage, parsePositiveInteger } from '@/commands/card/interviewFlags';
+import { describeInterviewExclusion } from '@/commands/card/interviewExclusions';
 import {
   formatConfirmTitle,
   formatKeepLabel,
@@ -74,8 +75,11 @@ function describeOpening(opening: InterviewOpening): string[] {
 }
 
 function describeSummary(summary: InterviewSessionSummary): string[] {
+  const excludedCount: string = summary.excluded.length > 0 ? ` · 제외 ${summary.excluded.length}건` : '';
+
   return [
-    `└  답 ${summary.answered} · 건너뜀 ${summary.skipped} · 카드 제안 ${summary.candidateCount}건`,
+    `└  답 ${summary.answered} · 건너뜀 ${summary.skipped} · 카드 제안 ${summary.candidateCount}건${excludedCount}`,
+    ...summary.excluded.map((exclusion) => `   ${describeInterviewExclusion(exclusion)}`),
     ...(summary.undecidedAxisLabels.length > 0
       ? [`   아직 정해지지 않은 축: ${summary.undecidedAxisLabels.join(' · ')}`]
       : []),

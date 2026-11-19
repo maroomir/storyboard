@@ -187,7 +187,7 @@ is asked once more. It is handed the card's catchphrases (less the ones a relati
 address someone) as words options must not use, and asked once more when more than one option
 uses one. It is also told the scene's focal character (the resolved narration's `focal`) and
 whether the beat names the character at all, so an action stays with whoever does it and the
-question asks for the character's reaction instead. `finish` distils the whole card and replaces the card's pending interview lines, so repeated sessions never duplicate proposals; a session that ends with no answer distils nothing and leaves the proposals as they are. `--scenes` narrows the beats (stems, or `3..5` by
+question asks for the character's reaction instead. `finish` distils the whole card and replaces the card's pending interview lines, so repeated sessions never duplicate proposals; the distill accounts for every decided value in `covered` (the line it gave) or `excluded` (the card line it repeats, or a note), a value in neither is added as not handled, and so are the lines dropped as already on the card; the exclusions are shown in the summary and kept with the pending lines for `card apply --dry-run`; a session that ends with no answer distils nothing and leaves the proposals as they are. `--scenes` narrows the beats (stems, or `3..5` by
 order) and is passed with every step; `--limit` caps the answers; `--reset-axes` empties the axis
 vocabulary and every working model. `status` adds an `인터뷰` line from `WorkspaceStatus.interviews` (`describeInterviewHint`),
 `doctor` lists cards with undecided axes as info, warns when the contract changed after the

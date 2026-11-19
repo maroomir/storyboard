@@ -4,10 +4,12 @@ import {
   interviewWorkingModelSchema,
   parseInterviewAxesFile,
   parseInterviewWorkingModel,
+  replacePendingExclusions,
   replacePendingHeader,
   replacePendingStatements,
   type PendingHeaderChange,
   type InterviewAxesFile,
+  type InterviewDistillExclusion,
   type InterviewWorkingModel,
   type Statement,
   type StoryUri,
@@ -111,9 +113,10 @@ export class InterviewRepository implements IInterviewRepository {
     cardId: string,
     statements: readonly Statement[],
     header?: PendingHeaderChange,
+    excluded: readonly InterviewDistillExclusion[] = [],
   ): Promise<void> {
     await this.updateCardSession(workspaceRoot, cardId, (data) => ({
-      data: replacePendingHeader(replacePendingStatements(data, statements), header),
+      data: replacePendingExclusions(replacePendingHeader(replacePendingStatements(data, statements), header), excluded),
       pendingCount: statements.length + (header === undefined ? 0 : 1),
     }));
   }

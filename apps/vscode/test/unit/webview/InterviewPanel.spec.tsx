@@ -107,7 +107,7 @@ describe("InterviewPanel", () => {
     expect(await screen.findByText(/1\/12 답/)).toBeTruthy()
     fireEvent.click(screen.getByRole("button", { name: "여기까지" }))
     await respond(postMessage, "interviews.finish", {
-      summary: { sessionId: "s1", cardId: "hana", answered: 1, skipped: 0, candidateCount: 2, undecidedAxisLabels: ["호감 표출"], waitingAxisLabels: [], setAsideAxisLabels: [] }
+      summary: { sessionId: "s1", cardId: "hana", answered: 1, skipped: 0, candidateCount: 2, undecidedAxisLabels: ["호감 표출"], waitingAxisLabels: [], setAsideAxisLabels: [], excluded: [] }
     })
 
     expect(await screen.findByText(/읽은 줄 2건/)).toBeTruthy()

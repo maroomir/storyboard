@@ -1,4 +1,4 @@
-import { coerceStringList, type BibleSubjectKind } from '@storyboard/story-model';
+import { coerceStringList, type BibleSubjectKind, type InterviewDistillExclusion } from '@storyboard/story-model';
 
 import { renderPrompt } from '#ai/ai/prompts/promptResource';
 import { promptTuning } from '#ai/ai/prompts/promptTuning';
@@ -31,6 +31,8 @@ export interface InterviewDistillDraft {
   readonly layout: readonly string[];
   readonly rules: readonly string[];
   readonly senses: readonly string[];
+  readonly coveredValues: readonly string[];
+  readonly excluded: readonly InterviewDistillExclusion[];
 }
 
 export const InterviewDistillPrompt: PromptModule<
@@ -77,6 +79,44 @@ function coerceRelationSpeech(
   });
 }
 
+function readOptionalText(value: unknown): string | undefined {
+  const text: string = typeof value === 'string' ? value.trim() : '';
+
+  return text.length === 0 ? undefined : text;
+}
+
+function coerceExclusions(value: unknown): InterviewDistillExclusion[] {
+  return (Array.isArray(value) ? value : []).flatMap((entry): InterviewDistillExclusion[] => {
+    if (typeof entry !== 'object' || entry === null) {
+      return [];
+    }
+
+    const record: Record<string, unknown> = entry as Record<string, unknown>;
+    const excludedValue: string | undefined = readOptionalText(record.value);
+    const existingLine: string | undefined = readOptionalText(record.existingLine);
+    const note: string | undefined = readOptionalText(record.note);
+
+    return excludedValue === undefined
+      ? []
+      : [
+          {
+            value: excludedValue,
+            ...(existingLine === undefined ? {} : { existingLine }),
+            ...(note === undefined ? {} : { note }),
+          },
+        ];
+  });
+}
+
+function coerceCoveredValues(value: unknown): string[] {
+  return (Array.isArray(value) ? value : []).flatMap((entry): string[] => {
+    const coveredValue: string | undefined =
+      typeof entry === 'object' && entry !== null ? readOptionalText((entry as Record<string, unknown>).value) : undefined;
+
+    return coveredValue === undefined ? [] : [coveredValue];
+  });
+}
+
 export function coerceInterviewDistill(
   parsed: Record<string, unknown> | null,
   relationTargets: readonly string[],
@@ -90,5 +130,7 @@ export function coerceInterviewDistill(
     layout: coerceStringList(parsed?.layout),
     rules: coerceStringList(parsed?.rules),
     senses: coerceStringList(parsed?.senses),
+    coveredValues: coerceCoveredValues(parsed?.covered),
+    excluded: coerceExclusions(parsed?.excluded),
   };
 }

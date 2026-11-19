@@ -206,7 +206,9 @@ onto an unrelated beat, and the session's end lists it as waiting. After a skip 
 another axis, and an axis skipped twice in one session is set aside until the next. When one value of an axis reaches
 the threshold, the session's end distils it into a proposal for the card — a conditional tendency
 such as "몰릴 때 먼저 참고, 밀리면 되묻는다" — that waits in the card's session until `card apply`
-writes it to `statements.yaml` (or `card discard` drops it), next to what notes left. The chosen lines themselves never reach a prompt: the choice records, the axis
+writes it to `statements.yaml` (or `card discard` drops it), next to what notes left. A decided value
+that gives no proposal is listed with the reason — usually the card line it would only repeat — at the
+end of the session and under the proposals in `card apply --dry-run`. The chosen lines themselves never reach a prompt: the choice records, the axis
 vocabulary and the working model stay in the interview sessions of the cache database
 (`.storyboard/cache/storyboard.db`), and only what is
 distilled goes to the card.

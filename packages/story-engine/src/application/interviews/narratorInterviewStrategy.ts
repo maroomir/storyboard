@@ -283,6 +283,7 @@ export class NarratorInterviewStrategy implements IQuestionStrategy {
       undecidedAxisLabels: [],
       waitingAxisLabels: [],
       setAsideAxisLabels: [],
+      excluded: [],
     };
   }
 

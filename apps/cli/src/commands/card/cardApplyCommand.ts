@@ -2,6 +2,7 @@ import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandContext, CommandOutcome } from '@/commands/outcome';
 import type { CommandSpec } from '@/commands/catalog';
 import { cardIdPattern } from '@/commands/card/cardArguments';
+import { describeInterviewExclusion } from '@/commands/card/interviewExclusions';
 import { flagBoolean } from '@/cliArguments';
 import { failure, success } from '@/commands/outcomes';
 import type { CliContainer } from '@/container';
@@ -30,6 +31,7 @@ function describeChanges(changes: PendingCardChanges): string[] {
     ...changes.changes.flatMap((change) => [
       `  ${describeOrigin(change.origin)} · ${change.summary}`,
       ...change.statements.map((line) => `    ${line.facet}${line.key === undefined ? '' : ` ${line.key}`}: ${line.value}`),
+      ...change.excluded.map((exclusion) => `    ${describeInterviewExclusion(exclusion)}`),
     ]),
   ];
 }

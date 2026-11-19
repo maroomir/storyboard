@@ -816,6 +816,86 @@ describe('interview session (mock provider)', () => {
     expect(await readInterviewPending(workspace, 'hana')).toEqual([]);
   });
 
+  it('reports the decided values that gave no proposal, with the card line they repeat, in the summary and card apply --dry-run (#209)', async () => {
+    const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+    vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+      this: MockAiProvider,
+      request: Parameters<MockAiProvider['generate']>[0],
+    ) {
+      const response = await generate.call(this, request);
+      if (request.taskName !== 'interviewDistill') {
+        return response;
+      }
+      const distilled = JSON.parse(response.text) as { readonly traits: readonly string[] };
+      return {
+        ...response,
+        text: JSON.stringify({
+          ...distilled,
+          traits: [...distilled.traits, '똑 부러진다'],
+          excluded: [
+            { value: '압박 아래 방어: 침묵', existingLine: '똑 부러진다' },
+            { value: '호감 표출: 우회', note: '표가 갈렸다' },
+            { value: '' },
+          ],
+        }),
+      };
+    });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    for (let i = 0; i < 2; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
+    }
+
+    const summary = await app.interviews.finish(request);
+    const dryRun = await findCommand('card apply')?.execute({
+      container: app,
+      args: args(['card', 'apply'], { 'dry-run': true }),
+    });
+
+    expect(summary.candidateCount).toBe(1);
+    expect(summary.excluded).toEqual([
+      { value: '압박 아래 방어: 침묵', existingLine: '똑 부러진다' },
+      { value: '호감 표출: 우회', note: '표가 갈렸다' },
+      { value: '똑 부러진다', note: '카드에 이미 같은 줄이 있습니다' },
+    ]);
+    expect(dryRun?.message).toContain('제외: 압박 아래 방어: 침묵 (카드에 이미 있는 줄과 같은 뜻: «똑 부러진다»)');
+    expect(dryRun?.message).toContain('제외: 호감 표출: 우회 (표가 갈렸다)');
+
+    expect(await app.cards.applyPending(app.workspaceRoot, 'hana')).toMatchObject({ ok: true });
+    const listed = await findCommand('card apply')?.execute({ container: app, args: args(['card', 'apply'], { 'dry-run': true }) });
+    expect(listed?.message).not.toContain('제외:');
+  });
+
+  it('reports a decided value the distill neither turned into a line nor excluded (#209)', async () => {
+    const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
+    vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (
+      this: MockAiProvider,
+      request: Parameters<MockAiProvider['generate']>[0],
+    ) {
+      const response = await generate.call(this, request);
+      return request.taskName === 'interviewDistill'
+        ? { ...response, text: JSON.stringify({ traits: ['[Mock AI] 다른 줄'], covered: [] }) }
+        : response;
+    });
+    const { container: app, sessionId } = await startSession('hana');
+    const request = { workspaceRoot: app.workspaceRoot, cardId: 'hana', sessionId };
+    const speech: InterviewQuestion | undefined = await app.interviews.next(request);
+    await app.interviews.answer({ ...request, questionId: speech?.id ?? '', answer: { kind: 'skipped' } });
+    for (let i = 0; i < 2; i += 1) {
+      const question: InterviewQuestion | undefined = await app.interviews.next(request);
+      await app.interviews.answer({ ...request, questionId: question?.id ?? '', answer: { kind: 'chosen', index: 1 } });
+    }
+
+    const summary = await app.interviews.finish(request);
+
+    expect(summary.excluded).toEqual([
+      { value: '압박 아래 방어: 침묵', note: '증류가 이 값으로 줄을 내지도, 뺀 까닭을 적지도 않았습니다' },
+    ]);
+  });
+
   it('keeps the speech the writer answered over a distilled speech toward the same partner (#179)', async () => {
     const generate: MockAiProvider['generate'] = MockAiProvider.prototype.generate;
     vi.spyOn(MockAiProvider.prototype, 'generate').mockImplementation(async function (

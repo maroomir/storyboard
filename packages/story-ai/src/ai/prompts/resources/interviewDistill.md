@@ -14,16 +14,17 @@ traits 에는 행동과 태도의 경향을, voice 에는 말투·어휘·호칭
 layout 에는 출입구·구역·거리·시선과 소리의 범위를, rules 에는 그 장소에서 늘 참인 것(누가 언제 있는가, 무엇이 금지되는가)을, senses 에는 시간대·날씨별 감각을, description 에는 그 밖의 설정 사실을 넣어라. 각 항목은 사실 문장 하나. [카드]에 없는 방·시설·시각을 세우지 마라.
 {{/isBackground}}
 [카드에 이미 있는 줄]과 같은 뜻인 것은 내지 마라. 그 줄을 바꿔 말한 것, 같은 경향을 다른 상황에 옮겨 다시 쓴 것도 같은 뜻이다. 카드가 비워 둔 것만 새 줄로 내라. 항목은 한 문장씩, 전부 합쳐 열 개를 넘기지 마라.
+[표]에서 {{minimumWeight}} 이상인 값은 하나도 빠짐없이 covered 나 excluded 중 한 곳에 적어라. value 에는 [표]에 적힌 «축: 값»을 그대로(뒤의 «×n» 빼고) 쓴다. 그 값으로 새 줄을 냈으면 covered 에 그 줄과 함께 적는다. 새 줄을 내지 않았으면 excluded 에 적고, 카드에 이미 있는 줄과 같은 뜻이라 뺐으면 existingLine 에 그 줄을 [카드에 이미 있는 줄]에 적힌 그대로(앞의 «필드:» 빼고) 옮기고, 다른 까닭이면 note 에 한 마디로 적어라. 같은 뜻의 줄이 카드에 없으면 빼지 말고 새 줄을 내라.
 설명 없이 JSON 하나만 출력하라:
 {{^isBackground}}
-{"traits":["…"],"voice":["…"],"desire":["…"],"description":["…"],"relationSpeech":[{"target":"jun","speech":"…"}]}
+{"traits":["…"],"voice":["…"],"desire":["…"],"description":["…"],"relationSpeech":[{"target":"jun","speech":"…"}],"covered":[{"value":"호감 표출: 우회","line":"…"}],"excluded":[{"value":"압박 아래 방어: 역공","existingLine":"…"}]}
 {{/isBackground}}
 {{#isBackground}}
-{"layout":["…"],"rules":["…"],"senses":["…"],"description":["…"]}
+{"layout":["…"],"rules":["…"],"senses":["…"],"description":["…"],"covered":[{"value":"늘 있는 사람: 주인이 지킨다","line":"…"}],"excluded":[{"value":"드나드는 길: 뒷문 있음","note":"…"}]}
 {{/isBackground}}
 
 ## system:xs
-[표]에서 {{minimumWeight}} 이상인 값만 {{#isBackground}}장소의 사실 문장(layout·rules·senses·description){{/isBackground}}{{^isBackground}}조건부 경향 문장(traits·voice·desire·description, 상대별 말투는 relationSpeech; 상황 속 행동은 traits, desire 는 끝내 바라는 것만)으로, 절대 표현 금지{{/isBackground}}. 값·상황·카드에 없는 사물·시각·숫자 발명 금지. [카드에 이미 있는 줄]과 같은 뜻(바꿔 말한 것 포함)은 제외, 열 개 이내. JSON 하나만.
+[표]에서 {{minimumWeight}} 이상인 값만 {{#isBackground}}장소의 사실 문장(layout·rules·senses·description){{/isBackground}}{{^isBackground}}조건부 경향 문장(traits·voice·desire·description, 상대별 말투는 relationSpeech; 상황 속 행동은 traits, desire 는 끝내 바라는 것만)으로, 절대 표현 금지{{/isBackground}}. 값·상황·카드에 없는 사물·시각·숫자 발명 금지. [카드에 이미 있는 줄]과 같은 뜻(바꿔 말한 것 포함)은 제외, 열 개 이내. [표]의 값마다 줄을 냈으면 covered 에 {"value":"축: 값","line":"낸 줄"}, 내지 않았으면 excluded 에 {"value":"축: 값","existingLine":"겹친 카드 줄"} 또는 {"value":"…","note":"까닭"}. 카드에 같은 뜻의 줄이 없으면 빼지 말 것. JSON 하나만.
 
 ## user
 [{{#isBackground}}장소{{/isBackground}}{{^isBackground}}인물{{/isBackground}}]

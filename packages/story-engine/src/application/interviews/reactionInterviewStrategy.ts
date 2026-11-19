@@ -81,6 +81,7 @@ import {
   type InterviewBeatSituation,
   type InterviewCardCoverage,
   type InterviewCardValues,
+  type InterviewDistillExclusion,
   type InterviewClassification,
   type InterviewConfirmation,
   type InterviewOpening,
@@ -113,6 +114,32 @@ export type {
   InterviewStartRequest,
   InterviewStartResult,
 } from '#engine/application/interviews/questionStrategy';
+
+interface PartitionedProposals {
+  readonly kept: CardCollectProposal[];
+  readonly alreadyOnCard: CardCollectProposal[];
+}
+
+const proposalAlreadyOnCardNote: string = '카드에 이미 같은 줄이 있습니다';
+
+const unaccountedValueNote: string = '증류가 이 값으로 줄을 내지도, 뺀 까닭을 적지도 않았습니다';
+
+const decidedValueWeightSuffix: RegExp = /\s*×\d+$/;
+
+function normalizeDecidedValue(value: string): string {
+  return value.replace(decidedValueWeightSuffix, '').replace(/\s+/g, ' ').trim();
+}
+
+function describeProposalAlreadyOnCard(proposal: CardCollectProposal): InterviewDistillExclusion {
+  const text: string =
+    proposal.kind === 'relationSpeech'
+      ? `${proposal.target}: ${proposal.speech}`
+      : 'value' in proposal && typeof proposal.value === 'string'
+        ? proposal.value
+        : proposal.kind;
+
+  return { value: text, note: proposalAlreadyOnCardNote };
+}
 
 interface BeatToAsk {
   readonly situation: InterviewBeatSituation;
@@ -1042,7 +1069,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     );
     const answered: number = sessionRecords.filter((record) => record.answer?.kind !== 'skipped').length;
     const decidedLines: string[] = this.decidedTallyLines(context);
-    const summary: Omit<InterviewSessionSummary, 'candidateCount'> = {
+    const summary: Omit<InterviewSessionSummary, 'candidateCount' | 'excluded'> = {
       sessionId: request.sessionId,
       cardId: model.cardId,
       answered,
@@ -1054,23 +1081,28 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     const hasNothingNewToDistill: boolean =
       answered === 0 || (decidedLines.length === 0 && relationDrafts.length === 0);
     if (hasNothingNewToDistill) {
-      return { ...summary, candidateCount: 0 };
+      return { ...summary, candidateCount: 0, excluded: [] };
     }
 
     const distilled: InterviewDistillDraft | undefined =
       decidedLines.length === 0 ? undefined : await this.distill(context, decidedLines);
-    const changes: CardCollectProposal[] = this.toProposals(
+    const proposals: PartitionedProposals = this.partitionProposals(
       distilled,
       relationDrafts,
       context.card,
       model.records,
     );
-    if (changes.length > 0) {
-      await this.writeCandidates(request, context, changes);
+    const excluded: InterviewDistillExclusion[] = [
+      ...(distilled?.excluded ?? []),
+      ...this.listUnaccountedValues(context, distilled),
+      ...proposals.alreadyOnCard.map(describeProposalAlreadyOnCard),
+    ];
+    if (proposals.kept.length > 0) {
+      await this.writeCandidates(request, context, proposals.kept, excluded);
     }
     await this.saveModel(request.workspaceRoot, { ...model, distilledThrough: model.records.length });
 
-    return { ...summary, candidateCount: changes.length };
+    return { ...summary, candidateCount: proposals.kept.length, excluded };
   }
 
   private async closeSession(request: InterviewSessionRequest, context: InterviewContext): Promise<InterviewContext> {
@@ -1078,6 +1110,33 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     await this.saveModel(request.workspaceRoot, model);
 
     return { ...context, model };
+  }
+
+  private listUnaccountedValues(
+    context: InterviewContext,
+    distilled: InterviewDistillDraft | undefined,
+  ): InterviewDistillExclusion[] {
+    if (distilled === undefined) {
+      return [];
+    }
+
+    const accounted: ReadonlySet<string> = new Set(
+      [...distilled.coveredValues, ...distilled.excluded.map((exclusion) => exclusion.value)].map(normalizeDecidedValue),
+    );
+
+    return this.decidedValueLabels(context)
+      .filter((value) => !accounted.has(normalizeDecidedValue(value)))
+      .map((value): InterviewDistillExclusion => ({ value, note: unaccountedValueNote }));
+  }
+
+  private decidedValueLabels(context: InterviewContext): string[] {
+    const { model, tuning, axes } = context;
+
+    return axes.flatMap((axis) =>
+      Object.entries(model.tallies[axis.id] ?? {})
+        .filter(([, weight]) => weight >= tuning.distillMinimumWeight)
+        .map(([valueId]) => `${axis.label}: ${axis.values.find((value) => value.id === valueId)?.label ?? valueId}`),
+    );
   }
 
   private decidedTallyLines(context: InterviewContext): string[] {
@@ -1147,6 +1206,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     request: InterviewSessionRequest,
     context: InterviewContext,
     changes: readonly CardCollectProposal[],
+    excluded: readonly InterviewDistillExclusion[],
   ): Promise<void> {
     const proposed: StoryboardCard = applyCardCollectProposals(context.card, changes);
     const planned: PlannedCardChanges = await this.host.cards.planCardChanges(
@@ -1160,6 +1220,7 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       context.card.id,
       planned.statements,
       planned.header,
+      excluded,
     );
   }
 
@@ -1363,12 +1424,12 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
     });
   }
 
-  private toProposals(
+  private partitionProposals(
     distilled: InterviewDistillDraft | undefined,
     relationDrafts: readonly CardCollectProposalDraft[],
     card: StoryboardCard,
     sessionRecords: readonly InterviewRecord[],
-  ): CardCollectProposal[] {
+  ): PartitionedProposals {
     const sourceScenes: string[] = [
       ...new Set(
         sessionRecords.flatMap((record) =>
@@ -1383,12 +1444,15 @@ export abstract class ReactionInterviewStrategy implements IQuestionStrategy {
       ...dropDistilledSpeechToAnsweredPartners(distilledDrafts, relationDrafts),
     ];
 
-    return drafts
-      .map(
-        (draft): CardCollectProposal =>
-          ({ ...draft, id: cardCollectProposalId(draft), sourceScenes }) as CardCollectProposal,
-      )
-      .filter((proposal) => shouldProposeCardCollect(card, proposal));
+    const proposals: CardCollectProposal[] = drafts.map(
+      (draft): CardCollectProposal =>
+        ({ ...draft, id: cardCollectProposalId(draft), sourceScenes }) as CardCollectProposal,
+    );
+
+    return {
+      kept: proposals.filter((proposal) => shouldProposeCardCollect(card, proposal)),
+      alreadyOnCard: proposals.filter((proposal) => !shouldProposeCardCollect(card, proposal)),
+    };
   }
 
   private toQuestion(record: InterviewRecord, axes: readonly InterviewAxis[]): InterviewQuestion {

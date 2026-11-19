@@ -228,10 +228,16 @@ function createMockInterviewDistill(prompt: string): string {
     return JSON.stringify({ voice: ['[Mock AI] 감정을 말하지 않고 사물로 비춘다'] });
   }
 
+  const covered: { value: string; line: string }[] = (prompt.split('[표]\n')[1]?.split('\n\n')[0] ?? '')
+    .split('\n')
+    .map((line) => /^- (.+?) ×\d+$/.exec(line.trim())?.[1])
+    .filter((value): value is string => value !== undefined)
+    .map((value) => ({ value, line: '[Mock AI]' }));
+
   return JSON.stringify(
     isMockBackgroundPrompt(prompt)
-      ? { layout: ['[Mock AI] 출입구는 정문 하나다'], rules: ['[Mock AI] 밤에는 주인이 카운터를 지킨다'] }
-      : { traits: ['[Mock AI] 몰릴 때 먼저 참고, 밀리면 되묻는 쪽으로 기울인다'], voice: [], relationSpeech: [] },
+      ? { layout: ['[Mock AI] 출입구는 정문 하나다'], rules: ['[Mock AI] 밤에는 주인이 카운터를 지킨다'], covered }
+      : { traits: ['[Mock AI] 몰릴 때 먼저 참고, 밀리면 되묻는 쪽으로 기울인다'], voice: [], relationSpeech: [], covered },
   );
 }
 

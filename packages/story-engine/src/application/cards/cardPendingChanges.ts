@@ -1,10 +1,13 @@
 import {
   mergeStatements,
   parseStudioSession,
+  readPendingExclusions,
   readPendingHeader,
   readPendingStatements,
+  replacePendingExclusions,
   replacePendingHeader,
   replacePendingStatements,
+  type InterviewDistillExclusion,
   type PendingHeaderChange,
   serializeStudioSession,
   type Statement,
@@ -37,6 +40,7 @@ export interface PendingCardChange {
   readonly origin: SessionRecord['kind'];
   readonly summary: string;
   readonly statements: readonly Statement[];
+  readonly excluded: readonly InterviewDistillExclusion[];
 }
 
 export interface PendingCardChanges {
@@ -86,6 +90,7 @@ function describeChange(session: PendingSession): readonly PendingCardChange[] {
       origin: session.record.kind,
       summary: turn.summary,
       statements: [],
+      excluded: [],
     }));
   const headerKeys: readonly string[] = Object.keys(session.header ?? {});
   const lineCount: number = session.statements.length + headerKeys.length;
@@ -98,6 +103,7 @@ function describeChange(session: PendingSession): readonly PendingCardChange[] {
             origin: session.record.kind,
             summary: `${lineCount}줄`,
             statements: session.statements,
+            excluded: readPendingExclusions(session.record.data),
           },
         ];
 
@@ -357,7 +363,10 @@ export class CardPendingChangesDesk {
 
   private clearStatements(store: SessionStore, session: PendingSession): void {
     store.update(session.record.id, {
-      data: replacePendingHeader(replacePendingStatements(session.record.data, []), undefined),
+      data: replacePendingExclusions(
+        replacePendingHeader(replacePendingStatements(session.record.data, []), undefined),
+        [],
+      ),
       pendingCount: 0,
     });
   }

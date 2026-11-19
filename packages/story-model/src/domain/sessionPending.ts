@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { statementListSchema, type Statement } from '#model/element/statement';
+import { interviewDistillExclusionSchema, type InterviewDistillExclusion } from '#model/format/interview';
 
 interface PendingStatementsEnvelope {
   readonly pendingStatements: readonly Statement[];
@@ -41,4 +42,22 @@ export function replacePendingStatements(
   pendingStatements: readonly Statement[],
 ): Readonly<Record<string, unknown>> {
   return { ...(isRecord(sessionData) ? sessionData : {}), pendingStatements };
+}
+
+const pendingExclusionsSchema: z.ZodType<readonly InterviewDistillExclusion[]> = z.array(interviewDistillExclusionSchema);
+
+export function readPendingExclusions(sessionData: unknown): readonly InterviewDistillExclusion[] {
+  const parsed: z.ZodSafeParseResult<readonly InterviewDistillExclusion[]> = pendingExclusionsSchema.safeParse(
+    isRecord(sessionData) ? sessionData.pendingExclusions : undefined,
+  );
+
+  return parsed.success ? parsed.data : [];
+}
+
+export function replacePendingExclusions(
+  sessionData: unknown,
+  pendingExclusions: readonly InterviewDistillExclusion[],
+): Readonly<Record<string, unknown>> {
+  const { pendingExclusions: _previous, ...rest } = isRecord(sessionData) ? sessionData : {};
+  return pendingExclusions.length === 0 ? rest : { ...rest, pendingExclusions };
 }
