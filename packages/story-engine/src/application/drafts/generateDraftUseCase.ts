@@ -37,6 +37,7 @@ import type { StoryboardAiService, TaskAiConfigResolved } from '@storyboard/stor
 import { SceneGenerationPipeline } from '#engine/pipeline/scene/sceneGenerationPipeline';
 import {
   SceneGenerationPipelineCancelledError,
+  type IScenePipelineObserver,
   type RunSceneGenerationPipelineResult,
   type SceneGenerationPipelineTaskProviders,
 } from '#engine/pipeline/sceneGenerationTypes';
@@ -54,9 +55,14 @@ import {
 import { sceneCacheDirectoryPath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IUseCase } from '#engine/application/useCase';
 import { StoryStateRecorder } from '#engine/application/drafts/updateStoryState';
-import type { TraceRunSession } from '#engine/persistence/generationTraceRecorder';
+import type {
+  GenerationTraceRecorder,
+  TraceRunSession,
+} from '#engine/persistence/generationTraceRecorder';
+import { sceneStageCatalog } from '#engine/pipeline/sceneStageCatalog';
 
 const draftGenerationTraceKind: string = 'draft-generate';
+const scenePipelineTraceName: string = 'scene';
 
 export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
 
@@ -365,6 +371,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
         request.onPipelineProgress?.(stage, current, total);
       },
       shouldCancel: request.shouldCancel,
+      observer: this.tracePipelineStages(paths.workspaceRoot),
       useContextCondense: this.host.configBridge.isAiContextCondenseEnabled(),
       sectionOutputLimit: this.host.configBridge.getSectionOutputLimit(),
       tuning: this.host.configBridge.getSceneGenerationTuning(),
@@ -437,6 +444,24 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
         ? await this.runAndPersistDraft(refreshed.inputs, request)
         : refreshed.result;
     });
+  }
+
+  private tracePipelineStages(workspaceRoot: StoryUri): IScenePipelineObserver {
+    const recorder: GenerationTraceRecorder = this.ai.traceRecorder;
+
+    return {
+      onPlan: (stageIds): void => {
+        void recorder.recordPlan(workspaceRoot, {
+          pipeline: scenePipelineTraceName,
+          stageIds,
+          catalog: sceneStageCatalog,
+        });
+      },
+      onStageStart: (stageId): void => recorder.enterStage(workspaceRoot, stageId),
+      onStageEnd: (_stageId, failure): void => {
+        void recorder.leaveStage(workspaceRoot, failure);
+      },
+    };
   }
 
   private async traceGeneration(

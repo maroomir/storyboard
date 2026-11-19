@@ -13,10 +13,13 @@ import {
   NodeUri,
   STORYBOARD_RELATIVE_PATHS,
   traceCallRecordSchema,
+  tracePipelinePlanSchema,
   traceRunHeaderSchema,
+  traceStageRecordSchema,
   type StoryUri,
   type TraceCallRecord,
   type TraceRunHeader,
+  type TraceStageRecord,
 } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
@@ -127,6 +130,70 @@ describe('GenerationTraceRecorder', () => {
     expect(readFileSync(join(runDirectory, 'blobs', `${userPromptHash}.txt`), 'utf8')).toBe('구간 2');
     expect(readFileSync(join(runDirectory, 'blobs', `${second.response?.hash}.txt`), 'utf8')).toBe('둘째 본문');
     expect(readdirSync(join(runDirectory, 'blobs'))).toHaveLength(5);
+  });
+
+  it('records the plan and each stage with the calls made inside it', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+    const { traceTag: _traceTag, ...untagged } = observeCall('뼈대', '뼈대 본문');
+
+    const session: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate' });
+    await recorder.recordPlan(root, {
+      pipeline: 'scene',
+      stageIds: ['draftSkeleton', 'expandSection'],
+      catalog: [{ id: 'draftSkeleton', label: '뼈대', required: true }],
+    });
+    recorder.enterStage(root, 'draftSkeleton');
+    await recorder.recordCall(root, untagged);
+    await recorder.leaveStage(root);
+    recorder.enterStage(root, 'expandSection');
+    await recorder.recordCall(root, observeCall('구간 1', '첫 본문'));
+    await recorder.recordCall(root, observeCall('구간 2', '둘째 본문'));
+    await recorder.leaveStage(root, new Error('출력 한도'));
+
+    const runDirectory: string = join(traceRootOf(workspace), session.runId ?? '');
+    const readStage = (name: string): TraceStageRecord =>
+      traceStageRecordSchema.parse(readJson(join(runDirectory, 'stages', name)));
+    const readCall = (name: string): TraceCallRecord =>
+      traceCallRecordSchema.parse(readJson(join(runDirectory, 'calls', name)));
+
+    expect(tracePipelinePlanSchema.parse(readJson(join(runDirectory, 'plan.json'))).stageIds).toEqual([
+      'draftSkeleton',
+      'expandSection',
+    ]);
+    expect(readStage('00001.json')).toMatchObject({
+      stageId: 'draftSkeleton',
+      status: 'completed',
+      firstCallSequence: 1,
+      callCount: 1,
+    });
+    expect(readStage('00002.json')).toMatchObject({
+      stageId: 'expandSection',
+      status: 'failed',
+      firstCallSequence: 2,
+      callCount: 2,
+      errorMessage: '출력 한도',
+    });
+    expect(readCall('00001.json').tag).toEqual({ stage: 'draftSkeleton' });
+    expect(readCall('00003.json').tag).toMatchObject({ stage: 'expandSection', sectionIndex: 3 });
+  });
+
+  it('keeps every call when many share one prompt at the same moment', async () => {
+    const workspace: string = workspaces.create('storyboard-trace-');
+    const root: StoryUri = NodeUri.file(workspace);
+    const recorder: GenerationTraceRecorder = createRecorder({ isEnabled: true });
+    const simultaneousCallCount: number = 24;
+
+    const session: TraceRunSession = await recorder.startRun(root, { kind: 'draft-generate' });
+    await Promise.all(
+      Array.from({ length: simultaneousCallCount }, (_unused, index) =>
+        recorder.recordCall(root, observeCall(`구간 ${index}`, '같은 응답')),
+      ),
+    );
+
+    const runDirectory: string = join(traceRootOf(workspace), session.runId ?? '');
+    expect(readdirSync(join(runDirectory, 'calls'))).toHaveLength(simultaneousCallCount);
   });
 
   it('keeps a failed call with its error and no response', async () => {
