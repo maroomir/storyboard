@@ -87,6 +87,13 @@ export interface RunSceneGenerationPipelineInput {
   readonly dialogueCorpus?: ISceneDialogueCorpus;
   readonly backgroundRecentExcerpt?: string;
   readonly stages?: readonly SceneStageId[];
+  readonly observer?: IScenePipelineObserver;
+}
+
+export interface IScenePipelineObserver {
+  onPlan(stageIds: readonly SceneStageId[]): void;
+  onStageStart(stageId: SceneStageId): void;
+  onStageEnd(stageId: SceneStageId, failure?: unknown): void;
 }
 
 export interface DialoguePolishSummary {

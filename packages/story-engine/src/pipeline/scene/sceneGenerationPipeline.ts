@@ -37,8 +37,9 @@ export class SceneGenerationPipeline {
     const run: SceneGenerationRun = SceneGenerationRun.create(this.input);
     const plan: readonly SceneStageId[] = this.input.stages ?? resolveScenePipelinePlan();
 
+    this.input.observer?.onPlan(plan);
     for (const id of plan) {
-      await sceneStages[id].run(run);
+      await this.runObservedStage(id, run);
     }
 
     return {
@@ -52,6 +53,19 @@ export class SceneGenerationPipeline {
       ...(run.dialogueRecord === undefined ? {} : { dialogueRecord: run.dialogueRecord }),
       ...(run.dialoguePolish === undefined ? {} : { dialoguePolish: run.dialoguePolish }),
     };
+  }
+
+  private async runObservedStage(id: SceneStageId, run: SceneGenerationRun): Promise<void> {
+    this.input.observer?.onStageStart(id);
+
+    try {
+      await sceneStages[id].run(run);
+    } catch (error) {
+      this.input.observer?.onStageEnd(id, error);
+      throw error;
+    }
+
+    this.input.observer?.onStageEnd(id);
   }
 }
 

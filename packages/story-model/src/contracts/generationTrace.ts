@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { STORYBOARD_RELATIVE_PATHS } from '#model/format/paths';
+import type { PipelineStageDefinition } from '#model/format/pipelineSpec';
 
 export const generationTraceFormatVersion: number = 1;
 
@@ -74,6 +75,25 @@ export interface TraceCallRecord {
   readonly tag?: TraceCallTag;
 }
 
+export interface TracePipelinePlan {
+  readonly pipeline: string;
+  readonly stageIds: readonly string[];
+  readonly catalog: readonly PipelineStageDefinition[];
+}
+
+export type TraceStageStatus = 'completed' | 'failed';
+
+export interface TraceStageRecord {
+  readonly sequence: number;
+  readonly stageId: string;
+  readonly status: TraceStageStatus;
+  readonly startedAt: string;
+  readonly durationMs: number;
+  readonly firstCallSequence: number;
+  readonly callCount: number;
+  readonly errorMessage?: string;
+}
+
 const traceTextRefShape: { hash: z.ZodString; charCount: z.ZodNumber } = {
   hash: z.string().regex(/^[a-f0-9]{64}$/),
   charCount: z.number().int().min(0),
@@ -125,6 +145,32 @@ export const traceCallRecordSchema: z.ZodType<TraceCallRecord> = z.object({
   tag: traceCallTagSchema.optional(),
 });
 
+export const tracePipelinePlanSchema: z.ZodType<TracePipelinePlan> = z.object({
+  pipeline: z.string().min(1),
+  stageIds: z.array(z.string()),
+  catalog: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      required: z.boolean().optional(),
+      requires: z.array(z.string()).optional(),
+      replaces: z.string().optional(),
+      isOptIn: z.boolean().optional(),
+    }),
+  ),
+});
+
+export const traceStageRecordSchema: z.ZodType<TraceStageRecord> = z.object({
+  sequence: z.number().int().min(1),
+  stageId: z.string().min(1),
+  status: z.enum(['completed', 'failed']),
+  startedAt: z.string(),
+  durationMs: z.number().min(0),
+  firstCallSequence: z.number().int().min(1),
+  callCount: z.number().int().min(0),
+  errorMessage: z.string().optional(),
+});
+
 const sequenceDigitCount: number = 5;
 
 export function traceRunRelativeDirectory(runId: string): string {
@@ -137,6 +183,14 @@ export function traceRunHeaderRelativePath(runId: string): string {
 
 export function traceCallRelativePath(runId: string, sequence: number): string {
   return `${traceRunRelativeDirectory(runId)}/calls/${String(sequence).padStart(sequenceDigitCount, '0')}.json`;
+}
+
+export function tracePlanRelativePath(runId: string): string {
+  return `${traceRunRelativeDirectory(runId)}/plan.json`;
+}
+
+export function traceStageRelativePath(runId: string, sequence: number): string {
+  return `${traceRunRelativeDirectory(runId)}/stages/${String(sequence).padStart(sequenceDigitCount, '0')}.json`;
 }
 
 export function traceBlobRelativePath(runId: string, hash: string): string {
