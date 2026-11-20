@@ -60,7 +60,7 @@ describe('DraftManager.generateAndRevise', () => {
 
     const result = await manager.generateAndRevise({ sceneUri, isReviseAllowed: false });
 
-    expect(events).toEqual(['generate reviseFollows,sceneUri']);
+    expect(events).toEqual(['generate sceneUri']);
     expect(result.revision).toBeUndefined();
   });
 
