@@ -27,7 +27,7 @@ import {
   type SceneDialoguePolishResult,
   type SceneDialogueRewrite,
 } from '@storyboard/story-ai';
-import type { CharacterCard } from '@storyboard/story-model';
+import type { CharacterCard, TraceDialogueLineChange } from '@storyboard/story-model';
 
 const firstAttemptNumber: number = 1;
 
@@ -246,6 +246,13 @@ export class PolishDialogueStage implements ISceneStage {
       ...[...judgement.lineViolations.values()].flat(),
       ...judgement.sceneViolations,
     ];
+    context.run.report({
+      kind: 'dialogue-polished',
+      subject: name,
+      attempt: tally.getRetryReasons(name) === undefined ? firstAttemptNumber : firstAttemptNumber + 1,
+      reasons: judgement.sceneViolations.map((violation) => violation.detail),
+      lines: this.describeLineChanges(context.numbered, response, judgement),
+    });
 
     if (violations.length === 0) {
       tally.recordAccepted(name, response.rewrites);
@@ -260,6 +267,33 @@ export class PolishDialogueStage implements ISceneStage {
         : undefined,
     );
     return false;
+  }
+
+  private describeLineChanges(
+    numbered: NumberedSkeleton,
+    response: SceneDialoguePolishResult,
+    judgement: RewriteJudgement,
+  ): TraceDialogueLineChange[] {
+    return response.rewrites.flatMap((rewrite) => {
+      const after: string | undefined = claimableRewriteText(rewrite, numbered);
+      const before: string | undefined = numbered.dialogues[rewrite.index - 1]?.text;
+      if (after === undefined || before === undefined) {
+        return [];
+      }
+
+      const lineReasons: readonly string[] = (judgement.lineViolations.get(rewrite.index) ?? []).map(
+        (violation) => violation.detail,
+      );
+      return [
+        {
+          number: rewrite.index,
+          before,
+          after,
+          isKept: lineReasons.length === 0 && judgement.sceneViolations.length === 0,
+          ...(lineReasons.length === 0 ? {} : { reasons: lineReasons }),
+        },
+      ];
+    });
   }
 
   private requestPolish(

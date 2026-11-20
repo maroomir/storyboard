@@ -15,6 +15,7 @@ import {
   traceRunRelativeDirectory,
   type StoryUri,
   type TraceBeatVerdict,
+  type TraceDialogueLineChange,
   type TraceCallRecord,
   type TraceEventKind,
   type TraceEventRecord,
@@ -75,6 +76,8 @@ export interface TraceEventObservation {
   readonly beats?: readonly TraceBeatVerdict[];
   readonly beatNumbers?: readonly number[];
   readonly startOffset?: number;
+  readonly subject?: string;
+  readonly lines?: readonly TraceDialogueLineChange[];
 }
 
 interface OpenTraceStage {

@@ -128,6 +128,7 @@ export type TraceEventKind =
   | 'section-measured'
   | 'text-measured'
   | 'beats-checked'
+  | 'dialogue-polished'
   | 'revision-checked'
   | 'revision-accepted'
   | 'revision-rejected'
@@ -141,6 +142,7 @@ export const traceEventKinds: readonly TraceEventKind[] = [
   'section-measured',
   'text-measured',
   'beats-checked',
+  'dialogue-polished',
   'revision-checked',
   'revision-accepted',
   'revision-rejected',
@@ -153,6 +155,14 @@ export interface TraceBeatVerdict {
   readonly number: number;
   readonly text: string;
   readonly status: TraceBeatStatus;
+}
+
+export interface TraceDialogueLineChange {
+  readonly number: number;
+  readonly before: string;
+  readonly after: string;
+  readonly isKept: boolean;
+  readonly reasons?: readonly string[];
 }
 
 export type TraceSectionLengthName = 'target' | 'skeleton' | 'expanded' | 'final' | 'before' | 'after';
@@ -173,6 +183,8 @@ export interface TraceEventRecord {
   readonly beats?: readonly TraceBeatVerdict[];
   readonly beatNumbers?: readonly number[];
   readonly startOffset?: number;
+  readonly subject?: string;
+  readonly lines?: readonly TraceDialogueLineChange[];
 }
 
 const traceTextRefShape: { hash: z.ZodString; charCount: z.ZodNumber } = {
@@ -265,6 +277,7 @@ export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
     'section-measured',
     'text-measured',
     'beats-checked',
+    'dialogue-polished',
     'revision-checked',
     'revision-accepted',
     'revision-rejected',
@@ -300,6 +313,18 @@ export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
     .optional(),
   beatNumbers: z.array(z.number().int().min(1)).optional(),
   startOffset: z.number().int().min(0).optional(),
+  subject: z.string().optional(),
+  lines: z
+    .array(
+      z.object({
+        number: z.number().int().min(1),
+        before: z.string(),
+        after: z.string(),
+        isKept: z.boolean(),
+        reasons: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
 });
 
 const sequenceDigitCount: number = 5;
