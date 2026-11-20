@@ -382,6 +382,9 @@ export class GenerationTraceRecorder {
         : {
             ...(await this.storeText(workspaceRoot, run, observation.response.text)),
             isTruncated: observation.response.isTruncated === true,
+            ...(observation.response.stopReason === undefined
+              ? {}
+              : { stopReason: observation.response.stopReason }),
           };
 
     return {

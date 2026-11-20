@@ -93,6 +93,14 @@ describe("computeCostUsd", () => {
 })
 
 describe("aiGenerateResponseWithUsage", () => {
+  it("keeps the provider's stop reason and leaves an absent one out", () => {
+    const stopped = aiGenerateResponseWithUsage({ providerId: "openai", model: "gpt-5.4-mini", text: "hi", stopReason: "length" })
+    const unknown = aiGenerateResponseWithUsage({ providerId: "openai", model: "gpt-5.4-mini", text: "hi", stopReason: null })
+
+    expect(stopped.stopReason).toBe("length")
+    expect("stopReason" in unknown).toBe(false)
+  })
+
   it("omits usage and cost when usage is absent", () => {
     expect(
       aiGenerateResponseWithUsage({

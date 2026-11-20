@@ -117,6 +117,7 @@ export class GoogleProvider implements AiProvider {
         text,
         usage,
         isTruncated: generation.response.candidates?.[0]?.finishReason === 'MAX_TOKENS',
+        stopReason: generation.response.candidates?.[0]?.finishReason,
       });
     } catch (error) {
       throw new AiProviderError(

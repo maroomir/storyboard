@@ -51,6 +51,7 @@ export interface TraceCallParameters {
 
 export interface TraceCallResponse extends TraceTextRef {
   readonly isTruncated: boolean;
+  readonly stopReason?: string;
 }
 
 export interface TraceCallUsage {
@@ -201,7 +202,9 @@ export const traceCallRecordSchema: z.ZodType<TraceCallRecord> = z.object({
     reasoningEffort: z.string().optional(),
   }),
   messages: z.array(z.object({ role: z.string(), ...traceTextRefShape })),
-  response: z.object({ ...traceTextRefShape, isTruncated: z.boolean() }).optional(),
+  response: z
+    .object({ ...traceTextRefShape, isTruncated: z.boolean(), stopReason: z.string().optional() })
+    .optional(),
   errorMessage: z.string().optional(),
   usage: z
     .object({

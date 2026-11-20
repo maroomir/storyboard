@@ -124,6 +124,7 @@ export class OllamaProvider implements AiProvider {
         text,
         usage,
         isTruncated: response.done_reason === 'length',
+        stopReason: response.done_reason,
       });
     } catch (error) {
       throw new AiProviderError(

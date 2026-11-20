@@ -69,6 +69,7 @@ export interface AiGenerateResponse {
   readonly usage?: AiUsage;
   readonly costUsd?: number;
   readonly isTruncated?: boolean;
+  readonly stopReason?: string;
 }
 
 export type EntityKind = 'scene' | 'character' | 'background' | 'narrator' | 'project';
