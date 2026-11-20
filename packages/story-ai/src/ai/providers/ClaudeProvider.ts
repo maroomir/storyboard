@@ -159,6 +159,7 @@ export class ClaudeProvider implements AiProvider {
         text,
         usage,
         isTruncated: response.stop_reason === 'max_tokens',
+        stopReason: response.stop_reason,
       });
     } catch (error) {
       throw new AiProviderError(

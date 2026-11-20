@@ -52,6 +52,7 @@ describe("ClaudeProvider", () => {
     })
 
     expect(response.isTruncated).toBe(expectedTruncation)
+    expect(response.stopReason).toBe(stopReason)
   })
 
   it.each([

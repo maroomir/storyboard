@@ -349,6 +349,7 @@ export class ChatGptProvider implements AiProvider {
         text,
         ...(usage === undefined ? {} : { usage }),
         ...(event.type === 'response.incomplete' ? { isTruncated: true } : {}),
+        ...(typeof event.type === 'string' ? { stopReason: event.type } : {}),
       }),
     };
   }

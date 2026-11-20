@@ -369,6 +369,7 @@ export class ClaudeCodeProvider implements AiProvider {
       text: result.text,
       ...(result.usage === undefined ? {} : { usage: result.usage }),
       ...(result.stopReason === 'max_tokens' ? { isTruncated: true } : {}),
+      ...(result.stopReason === undefined ? {} : { stopReason: result.stopReason }),
     });
   }
 

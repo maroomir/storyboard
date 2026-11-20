@@ -8,9 +8,13 @@ export function aiGenerateResponseWithUsage(params: {
   readonly text: string;
   readonly usage?: AiUsage;
   readonly isTruncated?: boolean;
+  readonly stopReason?: string | null;
 }): AiGenerateResponse {
-  const { providerId, model, text, usage, isTruncated } = params;
-  const truncation: { readonly isTruncated?: true } = isTruncated === true ? { isTruncated } : {};
+  const { providerId, model, text, usage, isTruncated, stopReason } = params;
+  const truncation: { readonly isTruncated?: true; readonly stopReason?: string } = {
+    ...(isTruncated === true ? { isTruncated } : {}),
+    ...(typeof stopReason === 'string' && stopReason.length > 0 ? { stopReason } : {}),
+  };
 
   if (!usage) {
     return { providerId, model, text, ...truncation };

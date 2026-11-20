@@ -65,6 +65,7 @@ function observeCall(prompt: string, responseText: string): AiCallObservation {
       model: 'mock-model',
       usage: { inputTokens: 10, outputTokens: 20 },
       isTruncated: true,
+      stopReason: 'max_tokens',
     },
     traceTag: { stage: 'expandSection', sectionIndex: 3, attempt: 2, retryReason: '분량 미달' },
   };
@@ -126,7 +127,7 @@ describe('GenerationTraceRecorder', () => {
       taskName: 'sceneSectionExpansion',
       providerId: 'mock',
       parameters: { maxTokens: 8000 },
-      response: { isTruncated: true, charCount: '둘째 본문'.length },
+      response: { isTruncated: true, stopReason: 'max_tokens', charCount: '둘째 본문'.length },
       tag: { sectionIndex: 3, attempt: 2, retryReason: '분량 미달' },
     });
     expect(readFileSync(join(runDirectory, 'blobs', `${userPromptHash}.txt`), 'utf8')).toBe('구간 2');

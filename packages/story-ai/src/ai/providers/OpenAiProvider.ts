@@ -123,6 +123,7 @@ export class OpenAiProvider implements AiProvider {
         text,
         usage,
         isTruncated: response.choices[0]?.finish_reason === 'length',
+        stopReason: response.choices[0]?.finish_reason,
       });
     } catch (error) {
       throw new AiProviderError(
