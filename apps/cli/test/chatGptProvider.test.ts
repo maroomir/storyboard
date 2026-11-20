@@ -423,6 +423,7 @@ describe('the ChatGPT plan provider: the call', () => {
       model: 'gpt-6-sol',
       text: '빗물이 흘렀다.',
       usage: { inputTokens: 120, outputTokens: 30, cacheReadInputTokens: 100 },
+      stopReason: 'response.completed',
     });
   });
 

@@ -376,6 +376,7 @@ describe('the hidden subscription provider: the call', () => {
       model: 'claude-sonnet-5',
       text: '빗물이 흘렀다.',
       usage: { inputTokens: 545, outputTokens: 129 },
+      stopReason: 'end_turn',
     });
   });
 
