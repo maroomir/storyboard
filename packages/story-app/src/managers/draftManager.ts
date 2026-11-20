@@ -182,7 +182,10 @@ export class DraftManager {
     request: GenerateAndReviseDraftRequest,
   ): Promise<GenerateAndReviseDraftResult> {
     const { isReviseAllowed, onDraftReady, onReviseProgress, ...generateRequest } = request;
-    const generation: GenerateDraftResult = await this.generate(generateRequest);
+    const generation: GenerateDraftResult = await this.generate({
+      ...generateRequest,
+      reviseFollows: isReviseAllowed,
+    });
 
     if (!generation.ok) {
       return { generation, revision: undefined };

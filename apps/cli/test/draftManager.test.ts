@@ -44,7 +44,7 @@ describe('DraftManager.generateAndRevise', () => {
     });
 
     expect(events).toEqual([
-      'generate force,sceneUri,shouldCancel',
+      'generate force,reviseFollows,sceneUri,shouldCancel',
       'ready /ws/draft/01-first.md',
       'revise /ws/scene/01-first.card cancel=false',
     ]);
@@ -60,7 +60,7 @@ describe('DraftManager.generateAndRevise', () => {
 
     const result = await manager.generateAndRevise({ sceneUri, isReviseAllowed: false });
 
-    expect(events).toEqual(['generate sceneUri']);
+    expect(events).toEqual(['generate reviseFollows,sceneUri']);
     expect(result.revision).toBeUndefined();
   });
 
@@ -76,7 +76,7 @@ describe('DraftManager.generateAndRevise', () => {
       },
     });
 
-    expect(events).toEqual(['generate sceneUri', 'ready']);
+    expect(events).toEqual(['generate reviseFollows,sceneUri', 'ready']);
     expect(result.revision).toBeUndefined();
   });
 
@@ -92,7 +92,7 @@ describe('DraftManager.generateAndRevise', () => {
       },
     });
 
-    expect(events).toEqual(['generate sceneUri']);
+    expect(events).toEqual(['generate reviseFollows,sceneUri']);
     expect(result.generation.ok).toBe(false);
   });
 });

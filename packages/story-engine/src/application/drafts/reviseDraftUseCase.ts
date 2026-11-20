@@ -21,6 +21,7 @@ import type {
   ProjectSetting,
 } from '@storyboard/story-model';
 import {
+  sceneBeatText,
   sceneContextPaths,
   type StoryboardProjectPaths,
   createDraft,
@@ -45,6 +46,7 @@ import type { TraceRunSession } from '#engine/persistence/generationTraceRecorde
 import { sceneCacheFilePath, type SceneCacheKey } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
+import { FinalBeatCoverageTracer } from '#engine/application/drafts/finalBeatCoverageTracer';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -205,6 +207,7 @@ export function describeReviseOutcome(reviseResult: ReviseDraftWorkflowResult): 
 }
 
 interface ReviseDraftContext {
+  readonly beats: readonly string[];
   readonly loop: ReviseLoopContext;
   readonly draft: ReturnType<typeof parseDraft>;
 }
@@ -286,6 +289,7 @@ async function prepareReviseDraftContext(
 
   return {
     draft,
+    beats: (sources.scene.card?.beats ?? []).map(sceneBeatText),
     loop: buildReviseLoopContext(draft, factLines, sources),
   };
 }
@@ -441,6 +445,16 @@ export class ReviseDraftUseCase {
 
     if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
       await this.writeRevisedDraft(request, reviseContext, loopResult.body);
+    }
+
+    if (!loopResult.cancelled && loopResult.failure === undefined) {
+      await new FinalBeatCoverageTracer(this.ai, this.host.logger).trace({
+        workspaceRoot: request.workspaceUri,
+        sceneStem,
+        beats: reviseContext.beats,
+        body: loopResult.body,
+        aiService,
+      });
     }
 
     return this.toWorkflowResult(loopResult);

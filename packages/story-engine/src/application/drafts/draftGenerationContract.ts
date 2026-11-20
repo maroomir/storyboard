@@ -17,6 +17,7 @@ export interface GenerateDraftRequest {
   readonly shouldCancel?: () => boolean;
   readonly skipSceneBeats?: boolean;
   readonly suppressLoggerPanel?: boolean;
+  readonly reviseFollows?: boolean;
 }
 
 export type GenerateDraftResult =
