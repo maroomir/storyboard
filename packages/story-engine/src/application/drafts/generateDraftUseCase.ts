@@ -227,7 +227,8 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       this.storyStateRecorder.updateAfterGeneration(inputs, aiService, pipelineResult.draftBody),
     );
     const isReviseAboutToFollow: boolean =
-      request.reviseFollows === true && this.host.configBridge.isReviseAfterGenerateEnabled();
+      request.reviseFollows === 'always' ||
+      (request.reviseFollows === 'when-enabled' && this.host.configBridge.isReviseAfterGenerateEnabled());
     if (!isReviseAboutToFollow) {
       await new FinalBeatCoverageTracer(this.ai, this.host.logger).trace({
         workspaceRoot: inputs.paths.workspaceRoot,

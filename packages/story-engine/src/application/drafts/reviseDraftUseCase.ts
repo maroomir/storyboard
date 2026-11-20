@@ -46,7 +46,10 @@ import type { TraceRunSession } from '#engine/persistence/generationTraceRecorde
 import { sceneCacheFilePath, type SceneCacheKey } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneGenerationTuning } from '#engine/pipeline/sceneGenerationTuning';
 import { DraftHistoryArchiver } from '#engine/application/drafts/draftHistoryArchiver';
-import { FinalBeatCoverageTracer } from '#engine/application/drafts/finalBeatCoverageTracer';
+import {
+  FinalBeatCoverageTracer,
+  type FinalBeatCoverageRequest,
+} from '#engine/application/drafts/finalBeatCoverageTracer';
 import type { WorkspaceCards } from '#engine/persistence/bundles/workspaceCards';
 import type { WorkspaceScenes } from '#engine/persistence/bundles/workspaceScenes';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -204,6 +207,11 @@ export function describeReviseOutcome(reviseResult: ReviseDraftWorkflowResult): 
   }
 
   return { status: revisionCount > 0 ? 'applied' : 'unresolved', revisionCount };
+}
+
+interface ReviseDraftWorkflowOutcome {
+  readonly result: ReviseDraftWorkflowResult;
+  readonly finishedText?: FinalBeatCoverageRequest;
 }
 
 interface ReviseDraftContext {
@@ -394,12 +402,16 @@ export class ReviseDraftUseCase {
     const reviseStep: DraftGenerationStepId = 'reviseLoop';
 
     try {
-      const result: ReviseDraftWorkflowResult = await this.ai.traceRecorder.runStage(
+      const outcome: ReviseDraftWorkflowOutcome = await this.ai.traceRecorder.runStage(
         request.workspaceUri,
         reviseStep,
         () => this.runReviseDraftWorkflow(request),
-        (revised) => revised.failure?.message,
+        (revised) => revised.result.failure?.message,
       );
+      const { result } = outcome;
+      if (outcome.finishedText !== undefined) {
+        await new FinalBeatCoverageTracer(this.ai, this.host.logger).trace(outcome.finishedText);
+      }
       const status: TraceRunStatus = result.cancelled
         ? 'cancelled'
         : result.failure === undefined
@@ -415,7 +427,7 @@ export class ReviseDraftUseCase {
 
   private async runReviseDraftWorkflow(
     request: ReviseDraftRequest,
-  ): Promise<ReviseDraftWorkflowResult> {
+  ): Promise<ReviseDraftWorkflowOutcome> {
     const { paths, draftUri, sceneStem } = request;
 
     const aiService: StoryboardAiService = this.createUsageRecordingAiService(request.workspaceUri);
@@ -447,17 +459,21 @@ export class ReviseDraftUseCase {
       await this.writeRevisedDraft(request, reviseContext, loopResult.body);
     }
 
-    if (!loopResult.cancelled && loopResult.failure === undefined) {
-      await new FinalBeatCoverageTracer(this.ai, this.host.logger).trace({
-        workspaceRoot: request.workspaceUri,
-        sceneStem,
-        beats: reviseContext.beats,
-        body: loopResult.body,
-        aiService,
-      });
-    }
-
-    return this.toWorkflowResult(loopResult);
+    const hasFinishedText: boolean = !loopResult.cancelled && loopResult.failure === undefined;
+    return {
+      result: this.toWorkflowResult(loopResult),
+      ...(hasFinishedText
+        ? {
+            finishedText: {
+              workspaceRoot: request.workspaceUri,
+              sceneStem,
+              beats: reviseContext.beats,
+              body: loopResult.body,
+              aiService,
+            },
+          }
+        : {}),
+    };
   }
 
   private createUsageRecordingAiService(workspaceUri: StoryUri): StoryboardAiService {

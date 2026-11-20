@@ -136,6 +136,7 @@ export class ChaptersStage implements INovelStage {
           force: false,
           suppressLoggerPanel: true,
           shouldCancel: options.shouldCancel,
+          reviseFollows: 'always',
         });
 
       if (!draftResult.ok) {
@@ -160,6 +161,7 @@ export class ChaptersStage implements INovelStage {
             integerSettingDefault('revise.length.maxCompressionPercent'),
           reviseScoreThreshold: 0,
           shouldCancel: options.shouldCancel,
+          followsGeneration: true,
         });
 
       await new RevisionPlanRecorder(run.services.host).recordEntry(paths.workspaceRoot, {

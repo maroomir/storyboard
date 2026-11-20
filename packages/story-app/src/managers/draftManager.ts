@@ -184,7 +184,7 @@ export class DraftManager {
     const { isReviseAllowed, onDraftReady, onReviseProgress, ...generateRequest } = request;
     const generation: GenerateDraftResult = await this.generate({
       ...generateRequest,
-      reviseFollows: isReviseAllowed,
+      ...(isReviseAllowed ? { reviseFollows: 'when-enabled' } : {}),
     });
 
     if (!generation.ok) {

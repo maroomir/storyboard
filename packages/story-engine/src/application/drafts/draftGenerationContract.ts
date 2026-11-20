@@ -17,8 +17,10 @@ export interface GenerateDraftRequest {
   readonly shouldCancel?: () => boolean;
   readonly skipSceneBeats?: boolean;
   readonly suppressLoggerPanel?: boolean;
-  readonly reviseFollows?: boolean;
+  readonly reviseFollows?: ReviseFollowing;
 }
+
+export type ReviseFollowing = 'always' | 'when-enabled';
 
 export type GenerateDraftResult =
   | {
