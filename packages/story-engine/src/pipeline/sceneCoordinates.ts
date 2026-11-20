@@ -170,6 +170,22 @@ export function sectionPlaces(
   ]);
 }
 
+export function sectionBeatNumbers(
+  ledger: SceneCoordinateLedger,
+  sections: readonly string[],
+): number[][] {
+  const beatsBySegment: readonly (readonly number[])[] | undefined = ledger.beats;
+  if (beatsBySegment === undefined || !ledger.isAlignedWithBreaks) {
+    return sections.map(() => []);
+  }
+
+  return sectionSegmentRanges(sections).map((range) =>
+    beatsBySegment
+      .slice(range.first, range.last + 1)
+      .flatMap((indexes) => indexes.map((index) => index + 1)),
+  );
+}
+
 export function placeWordSet(places: readonly string[]): Set<string> {
   return new Set(places.flatMap(placeWords).filter((word) => word.length >= 2));
 }

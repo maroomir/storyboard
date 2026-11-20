@@ -104,6 +104,7 @@ export interface ScenePipelineEvent {
   readonly afterText?: string;
   readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
   readonly beats?: readonly TraceBeatVerdict[];
+  readonly beatNumbers?: readonly number[];
 }
 
 export interface IScenePipelineObserver {

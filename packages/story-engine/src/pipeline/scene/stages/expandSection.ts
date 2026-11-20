@@ -3,7 +3,7 @@ import type { ISceneStage } from '#engine/pipeline/scene/sceneStage';
 import { curlDialogueQuotes } from '#engine/pipeline/dialogueQuotes';
 import { weighViolations } from '#engine/pipeline/scene/skeletonChecks';
 import { countSceneBreakLines, restoreSceneBreaks } from '#engine/pipeline/sceneBreakPlan';
-import { sectionPlaces, sectionSceneCoordinates } from '#engine/pipeline/sceneCoordinates';
+import { sectionBeatNumbers, sectionPlaces, sectionSceneCoordinates } from '#engine/pipeline/sceneCoordinates';
 import {
   assertNotCancelled,
   buildGenerateOptions,
@@ -137,6 +137,7 @@ export function trimRunAhead(
 
 interface SectionExpansionRequest {
   readonly sectionNumber: number;
+  readonly beatNumbers: readonly number[];
   readonly section: string;
   readonly previousSection: string | undefined;
   readonly upcomingOpening: string | undefined;
@@ -154,6 +155,7 @@ interface SectionExpansionPlan {
   readonly targetLengths: number[];
   readonly coordinatesBySection: string[][];
   readonly placesBySection: string[][];
+  readonly beatNumbersBySection: number[][];
   readonly scenePlaces: string[];
   readonly backgroundFacts: string[];
   readonly catchphraseBudgetsBySection: CatchphraseBudget[][];
@@ -225,12 +227,13 @@ class SectionExpansionAttempts {
 const retryReasonSeparator: string = ' / ';
 
 function describeAttemptForTrace(
-  sectionNumber: number,
+  request: SectionExpansionRequest,
   attemptNumber: number,
   retry: SectionRetryHint,
 ): TraceCallTag {
   return {
-    sectionIndex: sectionNumber,
+    sectionIndex: request.sectionNumber,
+    ...(request.beatNumbers.length === 0 ? {} : { beatIds: request.beatNumbers.map(String) }),
     attempt: attemptNumber,
     ...(retry.retryReasons.length === 0
       ? {}
@@ -285,6 +288,7 @@ export class ExpandSectionStage implements ISceneStage {
       castNameOf(run.context),
     );
     const placesBySection: string[][] = sectionPlaces(run.sceneCoordinates, sections, beats);
+    const beatNumbersBySection: number[][] = sectionBeatNumbers(run.sceneCoordinates, sections);
     const scenePlaces: string[] = beats.flatMap((beat) =>
       typeof beat === 'string' || beat.place === undefined ? [] : [beat.place],
     );
@@ -312,6 +316,7 @@ export class ExpandSectionStage implements ISceneStage {
       targetLengths,
       coordinatesBySection,
       placesBySection,
+      beatNumbersBySection,
       scenePlaces,
       backgroundFacts,
       catchphraseBudgetsBySection,
@@ -342,9 +347,11 @@ export class ExpandSectionStage implements ISceneStage {
     const trimmed: CheckedSectionText = trimRunAhead(run.polishedText, section, outcome, run.tuning);
     const restored: CheckedSectionText = restoreSectionBreaks(section, trimmed);
     this.reportSectionRepair(run, index + 1, { outcome, trimmed, restored });
+    const beatNumbers: readonly number[] = plan.beatNumbersBySection[index] ?? [];
     run.report({
       kind: 'section-measured',
       sectionIndex: index + 1,
+      ...(beatNumbers.length === 0 ? {} : { beatNumbers }),
       lengths: {
         target: plan.targetLengths[index] as number,
         skeleton: section.length,
@@ -402,6 +409,7 @@ export class ExpandSectionStage implements ISceneStage {
   ): SectionExpansionRequest {
     return {
       sectionNumber: index + 1,
+      beatNumbers: plan.beatNumbersBySection[index] ?? [],
       section: plan.sections[index] as string,
       previousSection,
       upcomingOpening: extractSectionOpening(plan.sections[index + 1]),
@@ -450,7 +458,7 @@ export class ExpandSectionStage implements ISceneStage {
       const expanded: string = await this.requestSectionExpansion(
         run,
         request,
-        { ...options, traceTag: describeAttemptForTrace(request.sectionNumber, attempt + 1, retry) },
+        { ...options, traceTag: describeAttemptForTrace(request, attempt + 1, retry) },
         retry,
       );
       const violations: SectionViolation[] = this.validateSection(run, request, expanded);
