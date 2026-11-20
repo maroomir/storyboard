@@ -449,6 +449,9 @@ export class ReviseDraftUseCase {
           .record(workspaceUri, record)
           .catch((error: unknown) => this.host.logger.error('사용량 기록에 실패했습니다.', error));
       },
+      onCall: (observation): void => {
+        void this.ai.traceRecorder.recordCall(workspaceUri, observation);
+      },
     });
   }
 
@@ -473,7 +476,25 @@ export class ReviseDraftUseCase {
       onProgress: request.onProgress,
       shouldCancel: request.shouldCancel,
       ...(request.seedIssues === undefined ? {} : { seedIssues: request.seedIssues }),
-      onRound: (round) => this.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`),
+      onRound: (round): void => {
+        this.host.logger.info(`${sceneStem}: ${describeReviseRound(round)}`);
+        void this.ai.traceRecorder.recordEvent(request.workspaceUri, {
+          kind: 'revision-checked',
+          attempt: round.round,
+          message: describeReviseRound(round),
+          reasons: round.instructions,
+        });
+      },
+      onSectionJudged: (judgement): void => {
+        void this.ai.traceRecorder.recordEvent(request.workspaceUri, {
+          kind: judgement.rejectionReason === undefined ? 'revision-accepted' : 'revision-rejected',
+          sectionIndex: judgement.section + 1,
+          attempt: judgement.round,
+          ...(judgement.rejectionReason === undefined ? {} : { rule: judgement.rejectionReason }),
+          beforeText: judgement.originalText,
+          afterText: judgement.candidateText,
+        });
+      },
     }).run();
   }
 
