@@ -1606,6 +1606,34 @@ describe("대사 다듬기 단계", () => {
     expect(result.warnings).toEqual([])
   })
 
+  it("reports the lines a character's polish changed to the observer", async () => {
+    const ai = createRecordingAiService()
+    const skeleton = `엘리아가 문 앞에서 걸음을 멈췄다. "가자, 지금." ${"복도는 조용했다. ".repeat(20)}`
+    ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
+    ai.polishSceneDialogue.mockResolvedValueOnce(polishResponse([{ index: 1, text: "“가자, 지금 당장.”" }]))
+    ai.expandSceneSection.mockImplementation(
+      async (input) => `${(input as { section: string }).section} ${longProse("살붙인 본문")}`
+    )
+    const polished: { subject?: string; attempt?: number; lines?: readonly { number: number; after: string; isKept: boolean }[] }[] = []
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      observer: {
+        onPlan: () => {},
+        onStageStart: () => {},
+        onStageEnd: () => {},
+        onEvent: (event) => void (event.kind === "dialogue-polished" && polished.push(event))
+      }
+    })
+
+    expect(polished).toHaveLength(1)
+    expect(polished[0]).toMatchObject({ subject: eliaCard.name, attempt: 1 })
+    expect(polished[0]?.lines).toMatchObject([{ number: 1, after: "가자, 지금 당장.", isKept: true }])
+  })
+
   it("calls the polish once per character with only that character's persona", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “알았어.”")
