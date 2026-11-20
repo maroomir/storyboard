@@ -160,6 +160,7 @@ export interface TraceEventRecord {
   readonly after?: TraceTextRef;
   readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
   readonly beats?: readonly TraceBeatVerdict[];
+  readonly beatNumbers?: readonly number[];
 }
 
 const traceTextRefShape: { hash: z.ZodString; charCount: z.ZodNumber } = {
@@ -277,6 +278,7 @@ export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
       }),
     )
     .optional(),
+  beatNumbers: z.array(z.number().int().min(1)).optional(),
 });
 
 const sequenceDigitCount: number = 5;

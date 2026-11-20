@@ -850,6 +850,31 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(checks[1]?.beats?.map((beat) => beat.status)).toEqual(["present", "present", "present"])
   })
 
+  it("reports which beats each expanded section covers", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(
+      ["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "---", "", "엘리아가 설거지를 했다.", "", "⟪대목 2⟫", "엘리아가 교문을 나섰다."].join("\n")
+    )
+    const measured: { sectionIndex?: number; beatNumbers?: readonly number[] }[] = []
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel",
+      observer: {
+        onPlan: () => {},
+        onStageStart: () => {},
+        onStageEnd: () => {},
+        onEvent: (event) => void (event.kind === "section-measured" && measured.push(event))
+      }
+    })
+
+    const expansionOptions = ai.expandSceneSection.mock.calls[0]?.[1] as { traceTag?: { beatIds?: readonly string[] } }
+    expect(measured.flatMap((event) => event.beatNumbers ?? [])).toEqual([1, 2, 3])
+    expect(expansionOptions.traceTag?.beatIds).toEqual(measured[0]?.beatNumbers?.map(String))
+  })
+
   it("keeps a missing-beat warning the whole-skeleton recheck confirms", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton
