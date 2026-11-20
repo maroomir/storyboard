@@ -173,7 +173,7 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     key: 'trace.checkFinalBeats',
     label: '최종 원고의 비트 확인',
     description:
-      '추적을 켠 생성에서, 저장한 초안이 씬 카드의 비트를 담았는지 한 번 더 확인해 추적에 남깁니다. 씬마다 모델 호출이 하나 늘어납니다.',
+      '추적을 켠 생성·검수에서, 끝난 원고(검수 루프가 이어지면 그 뒤의 원고)가 씬 카드의 비트를 담았는지 확인해 추적에 남깁니다. 씬마다 모델 호출이 하나 늘어납니다.',
     kind: 'boolean',
     defaultValue: false,
     group: '진단',

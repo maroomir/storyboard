@@ -181,6 +181,7 @@ export class GenerateAllDraftsUseCase implements IUseCase<
       sceneUri,
       force: false,
       suppressLoggerPanel: true,
+      reviseFollows: true,
       onPipelineProgress: (stage, stageCurrent, stageTotal) => {
         if (!options.shouldCancel?.()) {
           options.onProgress?.({
