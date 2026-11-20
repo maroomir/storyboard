@@ -174,6 +174,37 @@ describe("ReviseLoop by section", () => {
     expect(sections[2]).toContain("고쳤다.")
   })
 
+  it("reports each section judgement with both texts, and tags the call with its section and round", async () => {
+    const aiService = serviceWith(async ({ body: section }) =>
+      section.startsWith("아침") ? "짧" : `${section} 고쳤다.`
+    )
+    const judgements: { round: number; section: number; originalText: string; candidateText: string; rejectionReason?: string }[] = []
+
+    await new ReviseLoop({
+      aiService,
+      registry,
+      attribution: { primary: { kind: "scene", id: "01" } },
+      loopContext,
+      body,
+      maxIterations: 1,
+      reviseScoreThreshold: 0,
+      maxCompressionPercent: 50,
+      onSectionJudged: (judgement): void => void judgements.push(judgement)
+    }).run()
+
+    const reviseDraft = (aiService as { reviseDraft: { mock: { calls: [unknown, { traceTag?: unknown }][] } } }).reviseDraft
+    expect(judgements.map((judgement) => [judgement.round, judgement.section, judgement.rejectionReason])).toEqual([
+      [1, 0, "too-short"],
+      [1, 2, undefined]
+    ])
+    expect(judgements[0]?.candidateText).toBe("짧")
+    expect(judgements[1]?.candidateText).toBe(`${judgements[1]?.originalText} 고쳤다.`)
+    expect(reviseDraft.mock.calls.map((call) => call[1].traceTag)).toEqual([
+      { sectionIndex: 1, attempt: 1 },
+      { sectionIndex: 3, attempt: 1 }
+    ])
+  })
+
   it("keeps the sections accepted before a provider timeout", async () => {
     const aiService = serviceWith(async ({ body: section }) => {
       if (section.startsWith("옥상")) {

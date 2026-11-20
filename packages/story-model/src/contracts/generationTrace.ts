@@ -125,6 +125,9 @@ export type TraceEventKind =
   | 'scene-breaks-restored'
   | 'section-measured'
   | 'beats-checked'
+  | 'revision-checked'
+  | 'revision-accepted'
+  | 'revision-rejected'
   | 'warning';
 
 export const traceEventKinds: readonly TraceEventKind[] = [
@@ -134,6 +137,9 @@ export const traceEventKinds: readonly TraceEventKind[] = [
   'scene-breaks-restored',
   'section-measured',
   'beats-checked',
+  'revision-checked',
+  'revision-accepted',
+  'revision-rejected',
   'warning',
 ];
 
@@ -253,6 +259,9 @@ export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
     'scene-breaks-restored',
     'section-measured',
     'beats-checked',
+    'revision-checked',
+    'revision-accepted',
+    'revision-rejected',
     'warning',
   ]),
   recordedAt: z.string(),

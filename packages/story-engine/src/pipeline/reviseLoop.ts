@@ -82,6 +82,15 @@ export interface ReviseLoopOptions {
   readonly shouldCancel?: () => boolean;
   readonly seedIssues?: ReviseSeedIssues;
   readonly onRound?: (round: ReviseRound) => void;
+  readonly onSectionJudged?: (judgement: SectionRevisionJudgement) => void;
+}
+
+export interface SectionRevisionJudgement {
+  readonly round: number;
+  readonly section: number;
+  readonly originalText: string;
+  readonly candidateText: string;
+  readonly rejectionReason?: DraftCandidateRejectionReason;
 }
 
 export interface ReviseLoopFailure {
@@ -415,6 +424,8 @@ class SectionRevisionTally {
 }
 
 export class ReviseLoop {
+  private roundInProgress: number = 0;
+
   public constructor(private readonly options: ReviseLoopOptions) {}
 
   public async run(): Promise<ReviseLoopResult> {
@@ -500,6 +511,7 @@ export class ReviseLoop {
   ): Promise<boolean> {
     const { round } = checkedRound;
     const { maxIterations } = this.options;
+    this.roundInProgress = round;
     this.options.onProgress?.(`재작성 중 (${round}/${maxIterations})…`);
 
     const plans: SectionRevisionPlan[] = planSectionRevisions(
@@ -620,6 +632,14 @@ export class ReviseLoop {
       currentBody,
     );
 
+    this.options.onSectionJudged?.({
+      round: this.roundInProgress,
+      section: plan.section,
+      originalText,
+      candidateText: candidate,
+      ...(validation.accepted ? {} : { rejectionReason: validation.reason ?? 'empty' }),
+    });
+
     if (!validation.accepted) {
       tally.addRejection({
         section: plan.section,
@@ -649,7 +669,11 @@ export class ReviseLoop {
         facts: loopContext.factLines,
         characterCards: loopContext.characterCards,
       },
-      { providerId: registry.getTaskProvider('draftRevision'), attribution },
+      {
+        providerId: registry.getTaskProvider('draftRevision'),
+        attribution,
+        traceTag: { sectionIndex: plan.section + 1, attempt: this.roundInProgress },
+      },
     );
 
     return { ...revised, text: curlDialogueQuotes(revised.text) };
