@@ -123,6 +123,7 @@ export type TraceEventKind =
   | 'text-trimmed'
   | 'scene-breaks-restored'
   | 'section-measured'
+  | 'beats-checked'
   | 'warning';
 
 export const traceEventKinds: readonly TraceEventKind[] = [
@@ -131,8 +132,17 @@ export const traceEventKinds: readonly TraceEventKind[] = [
   'text-trimmed',
   'scene-breaks-restored',
   'section-measured',
+  'beats-checked',
   'warning',
 ];
+
+export type TraceBeatStatus = 'present' | 'missing' | 'reversed';
+
+export interface TraceBeatVerdict {
+  readonly number: number;
+  readonly text: string;
+  readonly status: TraceBeatStatus;
+}
 
 export type TraceSectionLengthName = 'target' | 'skeleton' | 'expanded' | 'final';
 
@@ -149,6 +159,7 @@ export interface TraceEventRecord {
   readonly before?: TraceTextRef;
   readonly after?: TraceTextRef;
   readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
+  readonly beats?: readonly TraceBeatVerdict[];
 }
 
 const traceTextRefShape: { hash: z.ZodString; charCount: z.ZodNumber } = {
@@ -237,6 +248,7 @@ export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
     'text-trimmed',
     'scene-breaks-restored',
     'section-measured',
+    'beats-checked',
     'warning',
   ]),
   recordedAt: z.string(),
@@ -255,6 +267,15 @@ export const traceEventRecordSchema: z.ZodType<TraceEventRecord> = z.object({
       expanded: z.number().optional(),
       final: z.number().optional(),
     })
+    .optional(),
+  beats: z
+    .array(
+      z.object({
+        number: z.number().int().min(1),
+        text: z.string(),
+        status: z.enum(['present', 'missing', 'reversed']),
+      }),
+    )
     .optional(),
 });
 

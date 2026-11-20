@@ -14,6 +14,7 @@ import {
   traceRunHeaderSchema,
   traceRunRelativeDirectory,
   type StoryUri,
+  type TraceBeatVerdict,
   type TraceCallRecord,
   type TraceEventKind,
   type TraceEventRecord,
@@ -70,6 +71,7 @@ export interface TraceEventObservation {
   readonly beforeText?: string;
   readonly afterText?: string;
   readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
+  readonly beats?: readonly TraceBeatVerdict[];
 }
 
 interface OpenTraceStage {

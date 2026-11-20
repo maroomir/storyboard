@@ -820,6 +820,36 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(result.warnings.filter((warning) => warning.includes("뼈대에 없습니다"))).toEqual([])
   })
 
+  it("reports each beat verdict of a skeleton check to the observer", async () => {
+    const ai = createRecordingAiService()
+    ai.checkSceneCoverage
+      .mockResolvedValueOnce([{ index: 2, status: "missing", note: "" }])
+      .mockResolvedValue([])
+    const checks: { attempt?: number; beats?: readonly { number: number; text: string; status: string }[] }[] = []
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: plannedScene(contextFor([eliaCard], "본문")),
+      aiService: ai,
+      format: "novel",
+      observer: {
+        onPlan: () => {},
+        onStageStart: () => {},
+        onStageEnd: () => {},
+        onEvent: (event) => void (event.kind === "beats-checked" && checks.push(event))
+      }
+    })
+
+    expect(checks[0]).toMatchObject({ attempt: 1 })
+    expect(checks[0]?.beats).toEqual([
+      { number: 1, text: "밥을 먹는다", status: "present" },
+      { number: 2, text: "설거지를 한다", status: "missing" },
+      { number: 3, text: "교문을 나선다", status: "present" }
+    ])
+    expect(checks[1]?.attempt).toBe(2)
+    expect(checks[1]?.beats?.map((beat) => beat.status)).toEqual(["present", "present", "present"])
+  })
+
   it("keeps a missing-beat warning the whole-skeleton recheck confirms", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton

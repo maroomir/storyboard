@@ -53,6 +53,7 @@ import {
   type CoverageStatus,
   type SceneBeat,
   type SceneCoverageIssue,
+  type TraceBeatStatus,
   type TraceCallTag,
 } from '@storyboard/story-model';
 
@@ -287,6 +288,16 @@ export class SkeletonDrafter {
     const stillMissing: Set<string> = new Set(
       reported.length === 0 ? [] : await this.findMissingBeats(reported, text, options),
     );
+    if (reported.length > 0) {
+      run.report({
+        kind: 'beats-checked',
+        beats: reported.flatMap((reportedText) => {
+          const beatIndex: number = beats.findIndex((beat) => beatText(beat) === reportedText);
+          const status: TraceBeatStatus = stillMissing.has(reportedText) ? 'missing' : 'present';
+          return beatIndex === -1 ? [] : [{ number: beatIndex + 1, text: reportedText, status }];
+        }),
+      });
+    }
     const warnings: string[] = drafts.flatMap((draft, index) => {
       const label: string = skeletonWarningLabel(
         `뼈대 ${index + 1}/${calls.length}`,
@@ -357,6 +368,7 @@ export class SkeletonDrafter {
       options,
     );
     const missingBeats: readonly string[] = coverage.missingBeats;
+    this.reportCheckedBeats(coverageBeats, coverage, options.traceTag ?? {});
     const violations: SectionViolation[] = [
       ...validateSceneSkeleton(skeleton, input.targetLength, tuning),
       ...findSeamRepeatViolations({
@@ -396,6 +408,29 @@ export class SkeletonDrafter {
           }),
       ...(coinedNotes.length === 0 ? {} : { coinedAddressNotes: coinedNotes }),
     };
+  }
+
+  private reportCheckedBeats(
+    beats: readonly string[],
+    coverage: SkeletonCoverageGaps,
+    tag: TraceCallTag,
+  ): void {
+    if (beats.length === 0) {
+      return;
+    }
+
+    const statusOf = (text: string): TraceBeatStatus =>
+      coverage.missingBeats.includes(text) ? 'missing' : coverage.reversedBeats.includes(text) ? 'reversed' : 'present';
+    this.run.report({
+      kind: 'beats-checked',
+      ...(tag.sectionIndex === undefined ? {} : { sectionIndex: tag.sectionIndex }),
+      ...(tag.attempt === undefined ? {} : { attempt: tag.attempt }),
+      beats: beats.map((text, index) => ({
+        number: Number(tag.beatIds?.[index] ?? index + 1),
+        text,
+        status: statusOf(text),
+      })),
+    });
   }
 
   private rankSkeleton(
