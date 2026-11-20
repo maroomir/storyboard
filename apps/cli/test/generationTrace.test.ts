@@ -38,6 +38,7 @@ const silentLogger: IStoryboardLogger = {
 interface RecorderSettings {
   readonly isEnabled: boolean;
   readonly keepRunCount?: number;
+  readonly isFinalBeatCheckEnabled?: boolean;
 }
 
 function createRecorder(settings: RecorderSettings): GenerationTraceRecorder {
@@ -46,6 +47,7 @@ function createRecorder(settings: RecorderSettings): GenerationTraceRecorder {
     logger: silentLogger,
     isEnabled: () => settings.isEnabled,
     keepRunCount: () => settings.keepRunCount ?? 3,
+    isFinalBeatCheckEnabled: () => settings.isFinalBeatCheckEnabled ?? false,
   });
 }
 
@@ -355,5 +357,15 @@ describe('GenerationTraceRecorder', () => {
       [secondOpening, otherScene, thirdOpening].sort(),
     );
     expect(existsSync(join(traceRootOf(workspace), firstOpening ?? ''))).toBe(false);
+  });
+
+  it('asks for the final beat check only when both the trace and that check are on', () => {
+    const answers: readonly boolean[] = [
+      createRecorder({ isEnabled: true, isFinalBeatCheckEnabled: true }),
+      createRecorder({ isEnabled: true }),
+      createRecorder({ isEnabled: false, isFinalBeatCheckEnabled: true }),
+    ].map((recorder) => recorder.shouldCheckFinalBeats());
+
+    expect(answers).toEqual([true, false, false]);
   });
 });

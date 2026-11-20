@@ -87,6 +87,7 @@ export type DraftGenerationStepId =
   | 'resolveSceneBeats'
   | 'refreshChapterSummaries'
   | 'updateStoryState'
+  | 'checkFinalBeats'
   | 'reviseLoop';
 
 export interface DraftGenerationStepDefinition {
@@ -99,6 +100,7 @@ export const draftGenerationStepCatalog: readonly DraftGenerationStepDefinition[
   { id: 'resolveSceneBeats', label: '비트 전개', runsAfterPipeline: false },
   { id: 'refreshChapterSummaries', label: '장 요약 갱신', runsAfterPipeline: false },
   { id: 'updateStoryState', label: '이야기 상태 갱신', runsAfterPipeline: true },
+  { id: 'checkFinalBeats', label: '최종 원고 비트 확인', runsAfterPipeline: true },
   { id: 'reviseLoop', label: '검수·재작성 루프', runsAfterPipeline: true },
 ];
 

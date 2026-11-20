@@ -343,6 +343,7 @@ function buildServices(
     logger,
     isEnabled: () => configBridge.isTraceEnabled(),
     keepRunCount: () => configBridge.getTraceKeepRuns(),
+    isFinalBeatCheckEnabled: () => configBridge.isTraceFinalBeatCheckEnabled(),
   });
   const aiGateway: AiGateway = new AiGateway(aiProviderRegistry, usageSink, logger, traceRecorder);
 

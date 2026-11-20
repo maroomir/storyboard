@@ -424,6 +424,10 @@ export class ConfigBridge {
     return this.readIntegerSetting('trace.keepRuns');
   }
 
+  public isTraceFinalBeatCheckEnabled(): boolean {
+    return this.readBooleanSetting('trace.checkFinalBeats');
+  }
+
   public isStudioValidationEnabled(): boolean {
     return this.readBooleanSetting('editor.studio.validation');
   }
