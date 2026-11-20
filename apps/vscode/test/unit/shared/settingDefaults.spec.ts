@@ -20,6 +20,7 @@ const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | numbe
   "editor.grammar.realtime": (bridge) => bridge.isGrammarRealtimeEnabled(),
   "editor.slop.realtime": (bridge) => bridge.isSlopRealtimeEnabled(),
   "trace.enabled": (bridge) => bridge.isTraceEnabled(),
+  "trace.checkFinalBeats": (bridge) => bridge.isTraceFinalBeatCheckEnabled(),
   "trace.keepRuns": (bridge) => bridge.getTraceKeepRuns()
 }
 

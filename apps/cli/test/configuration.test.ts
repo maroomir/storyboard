@@ -181,7 +181,7 @@ describe('CLI configuration validation', () => {
 
   it('reads the trace switch from the workspace file and refuses a retention out of range', () => {
     const user = write('user.json', { trace: { keepRuns: 5 } });
-    const workspace = write('workspace.json', { trace: { enabled: true } });
+    const workspace = write('workspace.json', { trace: { enabled: true, checkFinalBeats: true } });
     const tooMany = write('tooMany.json', { trace: { keepRuns: 500 } });
 
     const bridge = new ConfigBridge({
@@ -191,6 +191,7 @@ describe('CLI configuration validation', () => {
 
     expect([bridge.isTraceEnabled(), bridge.getTraceKeepRuns()]).toEqual([true, 5]);
     expect([untouched.isTraceEnabled(), untouched.getTraceKeepRuns()]).toEqual([false, 3]);
+    expect([bridge.isTraceFinalBeatCheckEnabled(), untouched.isTraceFinalBeatCheckEnabled()]).toEqual([true, false]);
     expect(() => createFileConfiguration({ userConfigFile: tooMany }).get('trace.keepRuns', 3)).toThrow(
       ConfigFileError,
     );

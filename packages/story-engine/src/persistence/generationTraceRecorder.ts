@@ -35,6 +35,7 @@ export interface GenerationTraceRecorderDependencies {
   readonly logger: IStoryboardLogger;
   readonly isEnabled: () => boolean;
   readonly keepRunCount: () => number;
+  readonly isFinalBeatCheckEnabled: () => boolean;
 }
 
 export interface TraceRunOpening {
@@ -175,6 +176,10 @@ export class GenerationTraceRecorder {
       await run.foldersCreated;
       await this.writeJson(workspacePathOf(workspaceRoot, tracePlanRelativePath(run.header.runId)), plan);
     });
+  }
+
+  public shouldCheckFinalBeats(): boolean {
+    return this.dependencies.isEnabled() && this.dependencies.isFinalBeatCheckEnabled();
   }
 
   public async recordEvent(workspaceRoot: StoryUri, observation: TraceEventObservation): Promise<void> {

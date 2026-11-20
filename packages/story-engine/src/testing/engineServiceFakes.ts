@@ -13,6 +13,7 @@ function createSwitchedOffTraceRecorder(): GenerationTraceRecorder {
     logger: {} as IStoryboardLogger,
     isEnabled: () => false,
     keepRunCount: () => 0,
+    isFinalBeatCheckEnabled: () => false,
   });
 }
 

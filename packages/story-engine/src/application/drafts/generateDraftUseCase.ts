@@ -24,7 +24,10 @@ import {
   buildStyleDirective,
   type DraftGenerationStepId,
   type SceneCacheRecord,
+  type SceneCoverageIssue,
+  type TraceBeatStatus,
   type TraceRunStatus,
+  sceneBeatText,
   draftGenerationTraceKind,
   parseSceneFileName,
   extractErrorMessage,
@@ -67,6 +70,19 @@ import { sceneStageCatalog } from '#engine/pipeline/sceneStageCatalog';
 const scenePipelineTraceName: string = 'scene';
 
 export type { GenerateDraftRequest, GenerateDraftResult } from '#engine/application/drafts/draftGenerationContract';
+
+const finalDraftCoverageRule: string = 'final-draft';
+
+function traceStatusOfBeat(issues: readonly SceneCoverageIssue[], beatNumber: number): TraceBeatStatus {
+  const statuses: readonly string[] = issues
+    .filter((issue) => issue.index === beatNumber)
+    .map((issue) => issue.status);
+  if (statuses.includes('missing')) {
+    return 'missing';
+  }
+
+  return statuses.includes('reversed') ? 'reversed' : 'present';
+}
 
 export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
   private readonly inputsLoader: SceneGenerationInputsLoader;
@@ -224,6 +240,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
     await this.ai.traceRecorder.runStage(inputs.paths.workspaceRoot, stateStep, () =>
       this.storyStateRecorder.updateAfterGeneration(inputs, aiService, pipelineResult.draftBody),
     );
+    await this.traceFinalBeatCoverage(inputs, aiService, pipelineResult.draftBody);
 
     return {
       ok: true,
@@ -231,6 +248,42 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       draftUri,
       warnings: [...inputs.warnings, ...pipelineResult.warnings],
     };
+  }
+
+  private async traceFinalBeatCoverage(
+    inputs: SceneGenerationInputs,
+    aiService: StoryboardAiService,
+    draftBody: string,
+  ): Promise<void> {
+    const recorder: GenerationTraceRecorder = this.ai.traceRecorder;
+    const beats: readonly string[] = (inputs.context.scene.card?.beats ?? []).map(sceneBeatText);
+    if (!recorder.shouldCheckFinalBeats() || beats.length === 0) {
+      return;
+    }
+
+    const workspaceRoot: StoryUri = inputs.paths.workspaceRoot;
+    const checkStep: DraftGenerationStepId = 'checkFinalBeats';
+    try {
+      await recorder.runStage(workspaceRoot, checkStep, async () => {
+        const issues: readonly SceneCoverageIssue[] = await aiService.checkSceneCoverage(beats, draftBody, {
+          providerId: this.ai.gateway.getTaskProvider('sceneCoverage'),
+          attribution: { primary: { kind: 'scene', id: inputs.scene.stem } },
+        });
+        await recorder.recordEvent(workspaceRoot, {
+          kind: 'beats-checked',
+          rule: finalDraftCoverageRule,
+          beats: beats.map((text, index) => ({
+            number: index + 1,
+            text,
+            status: traceStatusOfBeat(issues, index + 1),
+          })),
+        });
+      });
+    } catch (error) {
+      this.host.logger.warn(
+        `${inputs.scene.stem}: 최종 원고의 비트 확인에 실패했습니다. 초안은 저장됐습니다. (${extractErrorMessage(error)})`,
+      );
+    }
   }
 
   private logDialoguePolish(
