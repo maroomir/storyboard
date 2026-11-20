@@ -4,6 +4,7 @@ import type {
   SceneDialogueRecord,
   AiProviderId,
   StyleDirective,
+  TraceBeatVerdict,
   TraceEventKind,
   TraceSectionLengthName,
 } from '@storyboard/story-model';
@@ -102,6 +103,7 @@ export interface ScenePipelineEvent {
   readonly beforeText?: string;
   readonly afterText?: string;
   readonly lengths?: Readonly<Partial<Record<TraceSectionLengthName, number>>>;
+  readonly beats?: readonly TraceBeatVerdict[];
 }
 
 export interface IScenePipelineObserver {
