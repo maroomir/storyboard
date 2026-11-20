@@ -225,6 +225,7 @@ class SectionExpansionAttempts {
 }
 
 const retryReasonSeparator: string = ' / ';
+const sectionSeparator: string = '\n\n';
 
 function describeAttemptForTrace(
   request: SectionExpansionRequest,
@@ -255,14 +256,14 @@ export class ExpandSectionStage implements ISceneStage {
         run,
         plan,
         index,
-        expandedSections.at(-1),
+        expandedSections,
       );
       expandedSections.push(repaired.text);
       this.addSectionWarnings(run, index, repaired);
       assertNotCancelled(run.shouldCancel);
     }
 
-    run.draftBody = expandedSections.join('\n\n');
+    run.draftBody = expandedSections.join(sectionSeparator);
     run.warnings.push(
       ...findCatchphraseOveruse({
         text: run.draftBody,
@@ -329,9 +330,14 @@ export class ExpandSectionStage implements ISceneStage {
     run: SceneGenerationRun,
     plan: SectionExpansionPlan,
     index: number,
-    previousSection: string | undefined,
+    finishedSections: readonly string[],
   ): Promise<CheckedSectionText> {
     const section: string = plan.sections[index] as string;
+    const previousSection: string | undefined = finishedSections.at(-1);
+    const startOffset: number = finishedSections.reduce(
+      (offset, finished) => offset + finished.length + sectionSeparator.length,
+      0,
+    );
     const outcome: CheckedSectionText = await this.expandSectionWithRetries(
       run,
       this.buildSectionRequest(plan, index, previousSection),
@@ -352,6 +358,7 @@ export class ExpandSectionStage implements ISceneStage {
       kind: 'section-measured',
       sectionIndex: index + 1,
       ...(beatNumbers.length === 0 ? {} : { beatNumbers }),
+      startOffset,
       lengths: {
         target: plan.targetLengths[index] as number,
         skeleton: section.length,

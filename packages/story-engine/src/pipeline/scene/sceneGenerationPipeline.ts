@@ -30,6 +30,11 @@ export const sceneStages: Readonly<Record<SceneStageId, ISceneStage>> = {
   attributeDialogue: new AttributeDialogueStage(),
 };
 
+function workingTextLength(run: SceneGenerationRun): number {
+  const workingText: string = [run.draftBody, run.polishedText, run.skeleton].find((text) => text.length > 0) ?? '';
+  return workingText.length;
+}
+
 export class SceneGenerationPipeline {
   public constructor(private readonly input: RunSceneGenerationPipelineInput) {}
 
@@ -58,6 +63,7 @@ export class SceneGenerationPipeline {
   private async runObservedStage(id: SceneStageId, run: SceneGenerationRun): Promise<void> {
     this.input.observer?.onStageStart(id);
     const warningCountBeforeStage: number = run.warnings.length;
+    const lengthBeforeStage: number = workingTextLength(run);
 
     try {
       await sceneStages[id].run(run);
@@ -68,6 +74,10 @@ export class SceneGenerationPipeline {
 
     for (const message of run.warnings.slice(warningCountBeforeStage)) {
       run.report({ kind: 'warning', message });
+    }
+    const lengthAfterStage: number = workingTextLength(run);
+    if (lengthAfterStage !== lengthBeforeStage) {
+      run.report({ kind: 'text-measured', lengths: { before: lengthBeforeStage, after: lengthAfterStage } });
     }
     this.input.observer?.onStageEnd(id);
   }

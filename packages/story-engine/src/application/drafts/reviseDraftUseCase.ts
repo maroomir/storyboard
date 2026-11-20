@@ -434,6 +434,10 @@ export class ReviseDraftUseCase {
     );
 
     await this.recordRevisionRounds(paths, sceneStem, loopResult.rounds);
+    void this.ai.traceRecorder.recordEvent(request.workspaceUri, {
+      kind: 'text-measured',
+      lengths: { before: reviseContext.draft.body.length, after: loopResult.body.length },
+    });
 
     if (loopResult.revisionCount > 0 && !loopResult.rejection && !loopResult.cancelled) {
       await this.writeRevisedDraft(request, reviseContext, loopResult.body);
