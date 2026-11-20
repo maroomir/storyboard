@@ -436,6 +436,9 @@ describe("runSceneGenerationPipeline — 되짚기 경고 (#120)", () => {
     expect(rejected).toMatchObject({ sectionIndex: 1, attempt: 1 })
     expect(measured?.sectionIndex).toBe(1)
     expect(Object.keys(measured?.lengths ?? {}).sort()).toEqual(["expanded", "final", "skeleton", "target"])
+    const stageLengths = events.filter((event) => event.kind === "text-measured").map((event) => event.lengths)
+    expect(stageLengths.length).toBeGreaterThan(0)
+    expect(stageLengths.at(-1)?.after).toBe(result.draftBody.length)
     expect(events.filter((event) => event.kind === "warning").map((event) => event.message)).toEqual(result.warnings)
   })
 
@@ -855,7 +858,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     ai.draftSceneSkeleton.mockResolvedValueOnce(
       ["⟪대목 1⟫", "엘리아가 밥을 먹었다.", "", "---", "", "엘리아가 설거지를 했다.", "", "⟪대목 2⟫", "엘리아가 교문을 나섰다."].join("\n")
     )
-    const measured: { sectionIndex?: number; beatNumbers?: readonly number[] }[] = []
+    const measured: { sectionIndex?: number; beatNumbers?: readonly number[]; startOffset?: number }[] = []
 
     await runSceneGenerationPipeline({
       sceneStem: "01-opening",
@@ -872,6 +875,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
 
     const expansionOptions = ai.expandSceneSection.mock.calls[0]?.[1] as { traceTag?: { beatIds?: readonly string[] } }
     expect(measured.flatMap((event) => event.beatNumbers ?? [])).toEqual([1, 2, 3])
+    expect(measured.map((event) => event.startOffset)[0]).toBe(0)
     expect(expansionOptions.traceTag?.beatIds).toEqual(measured[0]?.beatNumbers?.map(String))
   })
 
