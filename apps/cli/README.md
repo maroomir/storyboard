@@ -11,7 +11,7 @@ interactive screen — is in the [screen guide](GUIDE.md) (Korean).
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/scripts/install.sh | bash
 ```
 
 The script resolves the latest release, verifies the checksum, unpacks into

@@ -236,7 +236,7 @@ export async function findModelProfilesFile(): Promise<string | undefined> {
     const candidate: string = join(
       directory,
       'packages',
-      'story-ai',
+      'story-model',
       'src',
       'contracts',
       'modelProfiles.params.json',
