@@ -22,8 +22,12 @@ const leakPatterns = [
 ];
 
 const emailPattern = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
-const publishingCommandPattern =
-  /\b(?:gh\s+(?:issue|pr)\s+(?:create|edit|comment|review|close|merge)\b|gh\s+(?:release|gist)\s+(?:create|edit)\b|gh\s+api\b|git\s+commit\b)/;
+// NOTE: git takes global options before the verb (`-C <dir>`, `-c <key>=<value>`, `--no-pager`).
+const gitGlobalOptions = String.raw`(?:\s+-{1,2}[A-Za-z][\w-]*(?:=\S*)?(?:\s+(?:"[^"]*"|'[^']*'|[^-\s]\S*))?)*`;
+const publishingCommandPattern = new RegExp(
+  String.raw`\b(?:gh\s+(?:issue|pr)\s+(?:create|edit|comment|review|close|merge)\b|gh\s+(?:release|gist)\s+(?:create|edit)\b|gh\s+api\b|git${gitGlobalOptions}\s+(?<gitVerb>commit\b))`,
+  'd',
+);
 const apiWritePattern =
   /(?:-X|--method)[\s=]+(?:POST|PATCH|PUT)\b|\s(?:-f|-F|--field|--raw-field)\s+(?!query=)/i;
 // NOTE: scratchpad and temp paths carry a session UUID; they are never part of a post.
@@ -34,8 +38,16 @@ function readStdin() {
   return readFileSync(0, 'utf8');
 }
 
+// NOTE: a commit is checked from its verb on; the global options before it (a `-C` path) are not posted.
+function findPublishedPart(command) {
+  const match = publishingCommandPattern.exec(command);
+  if (!match) return undefined;
+  const start = match.indices.groups.gitVerb?.[0] ?? match.index;
+  return command.slice(start);
+}
+
 function collectPublishedText(command) {
-  const publishedPart = command.slice(command.search(publishingCommandPattern));
+  const publishedPart = findPublishedPart(command);
   const fileTexts = [];
 
   for (const match of publishedPart.matchAll(bodyFileArgPattern)) {
@@ -63,9 +75,8 @@ const input = JSON.parse(readStdin());
 const command = input.tool_input?.command ?? '';
 
 function isPublishingCommand(command) {
-  const start = command.search(publishingCommandPattern);
-  if (start < 0) return false;
-  const publishedPart = command.slice(start);
+  const publishedPart = findPublishedPart(command);
+  if (publishedPart === undefined) return false;
   if (!/^gh\s+api\b/.test(publishedPart)) return true;
   if (/^gh\s+api\s+graphql\b/.test(publishedPart)) return /\bmutation\b/.test(publishedPart);
   return apiWritePattern.test(publishedPart);
