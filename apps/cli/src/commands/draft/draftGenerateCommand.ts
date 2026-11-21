@@ -12,13 +12,16 @@ import { describeMissingChapterSummaries, WorkspaceInput, cancelledBeforeRun } f
 import { resolveSceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import {
   describeReviseOutcome,
+  draftWarningMessages,
+  type DraftWarning,
   type GenerateAllDraftsResult,
   type GenerateAllDraftsSummary,
   type ReviseDraftWorkflowResult,
   type ReviseOutcome,
+  type StageUsage,
 } from '@storyboard/story-engine';
 import type { GenerateAndReviseDraftResult, ReadyDraft } from '@storyboard/story-app';
-import type { StoryUri } from '@storyboard/story-model';
+import type { DraftGenerationStepId, StoryUri } from '@storyboard/story-model';
 
 export class DraftGenerateCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -27,7 +30,7 @@ export class DraftGenerateCommand implements ICommandHandler {
     group: '초안',
     usage: 'draft generate <stem> | --all',
     summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
-    flags: ['all', 'force', 'no-revise', 'revise-iterations'],
+    flags: ['all', 'force', 'no-revise', 'revise-iterations', 'params'],
     examples: ['storyboard draft generate 001-scene-1-1', 'storyboard draft generate --all'],
   };
 
@@ -78,7 +81,7 @@ export class DraftGenerateCommand implements ICommandHandler {
       return failure('씬 stem을 지정해 주세요. 예: storyboard draft generate 001-scene-1-1');
     }
 
-    const { generation, revision }: GenerateAndReviseDraftResult =
+    const { generation, revision, usage }: GenerateAndReviseDraftResult =
       await container.drafts.generateAndRevise({
         sceneUri: sceneUriFor(container.workspaceRoot, stem),
         force: flagBoolean(args.flags, 'force'),
@@ -88,8 +91,8 @@ export class DraftGenerateCommand implements ICommandHandler {
           container.progress.update({ line: step, step });
         },
         onDraftReady: (draft) => {
-          for (const warning of draftWarningsOf(draft)) {
-            container.logger.warn(warning);
+          for (const message of draftWarningMessages(draftWarningsOf(draft))) {
+            container.logger.warn(message);
           }
         },
         onReviseProgress: (message) => container.progress.update({ line: message, step: message }),
@@ -99,33 +102,47 @@ export class DraftGenerateCommand implements ICommandHandler {
       return failure(generation.kind === 'failed' ? generation.message : '취소했습니다.');
     }
 
-    return this.describeGeneratedScene(container, generation, revision);
+    return this.describeGeneratedScene(container, { generation, revision, usage });
   }
 
   private describeGeneratedScene(
     container: CommandContext['container'],
-    draft: ReadyDraft,
-    revision: ReviseDraftWorkflowResult | undefined,
+    { generation: draft, revision, usage }: GeneratedSceneRun,
   ): CommandOutcome {
-    const warnings: readonly string[] = draftWarningsOf(draft);
+    const warnings: readonly DraftWarning[] = draftWarningsOf(draft);
     const revise: ReviseOutcome | undefined = revision && describeReviseOutcome(revision);
+    const reviseStage: DraftGenerationStepId = 'reviseLoop';
 
     if (revise?.warning) {
       container.logger.warn(revise.warning);
     }
 
+    const isCached: boolean = draft.kind === 'cache_hit';
     return success(
-      draft.kind === 'cache_hit' ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
+      isCached ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
       {
         draft: (draft.draftUri as StoryUri).fsPath,
-        warnings: revise?.warning ? [...warnings, revise.warning] : warnings,
+        cached: isCached,
+        usage,
+        ...(draft.kind === 'generated' && draft.traceRunId !== undefined
+          ? { traceRunId: draft.traceRunId }
+          : {}),
+        warnings: revise?.warning
+          ? [...warnings, { message: revise.warning, stage: reviseStage }]
+          : warnings,
         ...(revise === undefined ? {} : { revise }),
       },
     );
   }
 }
 
-function draftWarningsOf(draft: ReadyDraft): readonly string[] {
+interface GeneratedSceneRun {
+  readonly generation: ReadyDraft;
+  readonly revision: ReviseDraftWorkflowResult | undefined;
+  readonly usage: readonly StageUsage[];
+}
+
+function draftWarningsOf(draft: ReadyDraft): readonly DraftWarning[] {
   return draft.kind === 'generated' ? draft.warnings : [];
 }
 

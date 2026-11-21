@@ -47,6 +47,7 @@ import {
   type SceneGenerationPipelineTaskProviders,
 } from '#engine/pipeline/sceneGenerationTypes';
 import {
+  draftWarningMessages,
   emptyDraftBodyMessage,
   type GenerateDraftRequest,
   type GenerateDraftResult,
@@ -243,7 +244,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       ok: true,
       kind: 'generated',
       draftUri,
-      warnings: [...inputs.warnings, ...pipelineResult.warnings],
+      warnings: [...inputs.warnings.map((message) => ({ message })), ...pipelineResult.warnings],
     };
   }
 
@@ -269,7 +270,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       sceneStem: inputs.scene.stem,
       format: inputs.project.format,
       body: pipelineResult.draftBody,
-      warnings: pipelineResult.warnings,
+      warnings: draftWarningMessages(pipelineResult.warnings),
       generator: this.host.generator,
       providerId: sceneDraftConfig.providerId,
       model: sceneDraftConfig.model,
@@ -501,7 +502,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       const result: GenerateDraftResult = await generate();
       const status: TraceRunStatus = result.ok ? 'completed' : result.kind;
       await session.finish(status, result.ok || result.kind === 'cancelled' ? undefined : result.message);
-      return result;
+      return withTraceRunId(result, session.runId);
     } catch (error) {
       await session.finish('failed', extractErrorMessage(error));
       throw error;
@@ -523,4 +524,12 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       ? { ok: true, inputs }
       : await this.inputsLoader.load(request.sceneUri, request);
   }
+}
+
+function withTraceRunId(result: GenerateDraftResult, traceRunId: string | undefined): GenerateDraftResult {
+  if (result.kind !== 'generated' || traceRunId === undefined) {
+    return result;
+  }
+
+  return { ...result, traceRunId };
 }

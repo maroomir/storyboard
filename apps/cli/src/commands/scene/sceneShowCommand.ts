@@ -4,7 +4,14 @@ import type { CommandSpec } from '@/commands/catalog';
 import { describeSceneNarration } from '@/commands/card/narratorViews';
 import { failure, success } from '@/commands/outcomes';
 import { resolveSceneStemFrom } from '@/commands/sceneArguments';
-import type { SceneFile, SceneTargetLength, SceneTargetLengthOrigin } from '@storyboard/story-model';
+import {
+  sceneBeatText,
+  type SceneBeat,
+  type SceneBeatDetail,
+  type SceneFile,
+  type SceneTargetLength,
+  type SceneTargetLengthOrigin,
+} from '@storyboard/story-model';
 import type { SceneThreadContext } from '@storyboard/story-engine';
 
 const targetLengthOriginLabels: Readonly<Record<SceneTargetLengthOrigin, string>> = {
@@ -12,6 +19,27 @@ const targetLengthOriginLabels: Readonly<Record<SceneTargetLengthOrigin, string>
   'scene-body': '씬 본문의 [목표 분량]',
   derived: '씬 개요 길이로 정함',
 };
+
+interface NumberedSceneBeat {
+  readonly number: number;
+  readonly text: string;
+  readonly cast?: readonly string[];
+  readonly place?: string;
+  readonly time?: string;
+}
+
+function numberSceneBeats(beats: readonly SceneBeat[] | undefined): NumberedSceneBeat[] {
+  return (beats ?? []).map((beat, index) => {
+    const detail: Omit<SceneBeatDetail, 'text' | 'break'> = typeof beat === 'string' ? {} : beat;
+    return {
+      number: index + 1,
+      text: sceneBeatText(beat),
+      ...(detail.cast === undefined ? {} : { cast: detail.cast }),
+      ...(detail.place === undefined ? {} : { place: detail.place }),
+      ...(detail.time === undefined ? {} : { time: detail.time }),
+    };
+  });
+}
 
 function describeTargetLength(targetLength: SceneTargetLength | undefined): string {
   return targetLength === undefined
@@ -74,6 +102,7 @@ export class SceneShowCommand implements ICommandHandler {
         characters: scene.card.characters ?? [],
         targetLength: targetLength?.targetLength ?? null,
         targetLengthOrigin: targetLength?.origin ?? null,
+        beats: numberSceneBeats(scene.card.beats),
       },
     );
   }

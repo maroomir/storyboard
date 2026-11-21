@@ -7,6 +7,7 @@ export const parameterKindLabels: Record<ParameterEntry['kind'], string> = {
 };
 
 export const parameterOriginLabels: Record<ParameterEntry['origin'], string> = {
+  run: '이번 실행 (--params)',
   workspace: '이 작품',
   user: '공통',
   model: '모델 실측',

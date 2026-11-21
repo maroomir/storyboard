@@ -13,6 +13,7 @@ import {
   StoryboardApplication,
   type ParameterReport,
   type ResourceOverrideReport,
+  type RunParameters,
   type WorkspaceStatus,
 } from '@storyboard/story-app';
 import {
@@ -88,6 +89,7 @@ export interface CliContainerOptions {
   readonly configWriteTarget?: ConfigurationTarget;
   readonly usageSink?: IUsageSink;
   readonly createConfigBridge?: (dependencies: ConfigBridgeDependencies) => ConfigBridge;
+  readonly runParameters?: RunParameters;
   readonly localRuntime?: {
     readonly baseUrl?: string;
     readonly contextTokens?: number;
@@ -97,7 +99,7 @@ export interface CliContainerOptions {
 }
 
 function createCommandLineConfigOverrides(options: CliContainerOptions): Record<string, unknown> {
-  const overrides: Record<string, unknown> = {};
+  const overrides: Record<string, unknown> = { ...options.runParameters?.configOverrides };
 
   if (options.provider !== undefined) {
     overrides['ai.provider.default'] = options.provider;
@@ -155,6 +157,9 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const configBridgeDependencies: ConfigBridgeDependencies = {
     getConfiguration: () => configuration,
     ...(options.configWriteTarget === undefined ? {} : { writeTarget: options.configWriteTarget }),
+    ...(options.runParameters === undefined
+      ? {}
+      : { generationKnobOverrides: options.runParameters.generationKnobs }),
   };
   const configBridge: ConfigBridge =
     options.createConfigBridge?.(configBridgeDependencies) ??
@@ -169,6 +174,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       configBridge,
       sqlDatabaseHost: new NodeSqlDatabaseHost(),
       ...(options.usageSink === undefined ? {} : { usageObserver: options.usageSink }),
+      ...(options.runParameters === undefined ? {} : { runParameters: options.runParameters }),
       resourceRoots: [
         NodeUri.file(homePaths.home),
         getStoryboardProjectPaths(workspaceRoot).metadataDirectory,

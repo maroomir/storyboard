@@ -47,7 +47,17 @@ export {
   type ParameterKind,
   type ParameterOrigin,
   type ParameterReport,
+  type ParameterValueKind,
+  type TaskModelEntry,
 } from '#app/parameterRegistry';
+export {
+  emptyRunParameters,
+  listRunParameterKeys,
+  RunParametersError,
+  splitRunParameters,
+  type RunParameters,
+  type RunParametersErrorCode,
+} from '#app/runParameters';
 export {
   countSummariesToRebuild,
   describeWorkspaceStatus,

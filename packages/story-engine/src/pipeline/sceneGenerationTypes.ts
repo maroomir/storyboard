@@ -3,6 +3,7 @@ import type {
   SceneContext,
   SceneDialogueRecord,
   AiProviderId,
+  SectionViolationKind,
   StyleDirective,
   TraceBeatVerdict,
   TraceDialogueLineChange,
@@ -124,11 +125,21 @@ export interface DialoguePolishSummary {
   readonly contestedCount: number;
 }
 
+export interface SceneWarning {
+  readonly message: string;
+  readonly kinds?: readonly SectionViolationKind[];
+  readonly sectionNumber?: number;
+}
+
+export interface SceneStageWarning extends SceneWarning {
+  readonly stage: SceneStageId;
+}
+
 export interface RunSceneGenerationPipelineResult {
   readonly draftBody: string;
   readonly skeleton: string;
   readonly sceneCoordinates: readonly string[];
-  readonly warnings: readonly string[];
+  readonly warnings: readonly SceneStageWarning[];
   readonly detectedCharacters: readonly string[];
   readonly personasUsed: ReadonlyMap<string, string>;
   readonly providers: Readonly<SceneGenerationPipelineTaskProviders>;

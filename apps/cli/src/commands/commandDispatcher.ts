@@ -42,8 +42,10 @@ import {
 import { findCommand, findCommandSpec, commands } from '@/commands/index';
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandOutcome } from '@/commands/outcome';
+import { success } from '@/commands/outcomes';
 import { markOutcome } from '@/commands/outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
+import { readRunParametersFile, type RunParametersRead } from '@/adapters/runParametersFile';
 import { CommandRun, reportText } from '@/commands/commandRun';
 import type {
   DispatchDependencies,
@@ -224,7 +226,7 @@ export class CommandDispatcher {
     const { args, verb } = invocation;
 
     if (flagBoolean(args.flags, 'version')) {
-      return { exitCode: 0, stdout: `${this.deps.version}\n`, stderr: '' };
+      return this.reportVersion(invocation.mode);
     }
 
     if (this.shouldLaunchTui(invocation)) {
@@ -236,6 +238,20 @@ export class CommandDispatcher {
     }
 
     return verb === 'completion' ? renderCompletionVerb(invocation) : undefined;
+  }
+
+  private reportVersion(mode: OutputMode): DispatchResult {
+    const { version, build = {} } = this.deps;
+    if (!mode.json) {
+      return { exitCode: 0, stdout: `${version}\n`, stderr: '' };
+    }
+
+    const outcome: CommandOutcome = success(version, {
+      version,
+      ...(build.commit === undefined ? {} : { commit: build.commit }),
+      ...(build.isDirty === undefined ? {} : { dirty: build.isDirty }),
+    });
+    return { exitCode: 0, stdout: reportText(outcome, mode), stderr: '' };
   }
 
   private shouldLaunchTui({ args, verb }: Invocation): boolean {
@@ -296,7 +312,21 @@ export class CommandDispatcher {
       return failure(workspaceRefusal, mode, terminal.stderr);
     }
 
-    return new CommandRun({ command, invocation, target, dispatch: this.deps }).execute();
+    const paramsFile: string | undefined = flagString(args.flags, 'params');
+    const runParameters: RunParametersRead | undefined =
+      paramsFile === undefined ? undefined : readRunParametersFile(resolve(this.deps.cwd, paramsFile));
+
+    if (runParameters !== undefined && !runParameters.ok) {
+      return failure(runParameters.message, mode, terminal.stderr);
+    }
+
+    return new CommandRun({
+      command,
+      invocation,
+      target,
+      dispatch: this.deps,
+      ...(runParameters === undefined ? {} : { runParameters: runParameters.parameters }),
+    }).execute();
   }
 
   private resolveWorkspaceTarget({ args, verb }: Invocation): WorkspaceTarget {

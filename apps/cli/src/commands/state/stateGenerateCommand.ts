@@ -14,7 +14,7 @@ export class StateGenerateCommand implements ICommandHandler {
     usage: 'state generate [<씬 범위>]',
     summary:
       '기존 초안에서 이야기 상태 원장을 세웁니다 (원장에 없는 씬만, --force 로 적은 씬을 다시)',
-    flags: ['force'],
+    flags: ['force', 'params'],
     examples: ['storyboard state generate', 'storyboard state generate 1-12 --force'],
   };
 

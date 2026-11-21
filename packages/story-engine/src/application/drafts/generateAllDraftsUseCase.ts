@@ -6,6 +6,10 @@ import { describeReviseOutcome, type ReviseDraftWorkflowResult } from '#engine/a
 import type { IUseCase } from '#engine/application/useCase';
 import type { BatchSceneList } from '#engine/application/drafts/draftRepositories';
 import type { StoryUri } from '@storyboard/story-model';
+import {
+  draftWarningMessages,
+  type DraftWarning,
+} from '#engine/application/drafts/draftGenerationContract';
 
 export type GenerateAllDraftsProgress = {
   readonly current: number;
@@ -205,7 +209,7 @@ export class GenerateAllDraftsUseCase implements IUseCase<
 
   private async recordGeneratedDraft(
     sceneUri: StoryUri,
-    warnings: readonly string[],
+    warnings: readonly DraftWarning[],
     position: BatchScenePosition,
     options: GenerateAllDraftsOptions,
     tally: DraftBatchTally,
@@ -213,7 +217,7 @@ export class GenerateAllDraftsUseCase implements IUseCase<
     const { current, label, total } = position;
     tally.recordGenerated();
     if (warnings.length > 0) {
-      this.host.logger.warn(`${label}: ${warnings.join(' / ')}`);
+      this.host.logger.warn(`${label}: ${draftWarningMessages(warnings).join(' / ')}`);
     }
 
     const revised: ReviseDraftWorkflowResult | undefined =

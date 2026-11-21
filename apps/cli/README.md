@@ -73,7 +73,9 @@ for combinations that were never measured.
 `storyboard help <group>` lists one group (by its id — `start`, `plan`, `scene`, `draft`, `card`,
 `notes`, `manuscript`, `sim` — or its Korean name), `storyboard help --all` lists every command, and
 `storyboard <command> --help` (or `-h`) shows one command's options and examples. Lines wrap to the
-terminal width, and a mistyped verb suggests the closest real ones. `-v` prints the version.
+terminal width, and a mistyped verb suggests the closest real ones. `-v` prints the version;
+`--version --json` adds the commit the build came from and whether its tree had uncommitted
+changes (`commit`, `dirty`).
 
 ## Commands
 
@@ -295,7 +297,8 @@ storyboard scene rename night-market --to moon-market   # or: scene rename 3 --t
 A scene's target length is the `targetWordCount` of its card header. `scene set <scene> --target-words <n>`
 writes it (`--all` for every scene), and `scene unset <scene> target-words` removes it, after which the
 `[목표 분량]` line of the scene text or a length derived from the scene's text is used. `scene show`
-prints the target length in force and where it came from.
+prints the target length in force and where it came from; under `--json` it also lists the beats as
+`{ number, text, cast?, place?, time? }` (cast as card ids, place as the background card's name).
 
 ```bash
 storyboard scene set 3 --target-words 20000
@@ -353,8 +356,12 @@ keeps the right people in the right place and the pipeline can decide the scene 
 from them; a name the model uses that matches no card stays as written and `doctor` reports it.
 
 `draft generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
-`--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
-runs, which is how you tell a 20-minute scene apart from a hung one.
+`--json`, in `data.warnings` as `{ message, stage?, kinds?, sectionNumber? }` (the stage that raised
+it, the violation kinds and the section, when known); the exit code stays 0. `data.usage` lists
+the run's model calls by stage and task (calls, tokens, and the cost when every price is known),
+`data.cached` says whether the existing draft was kept, and with `trace.enabled` on
+`data.traceRunId` names the trace run. `--verbose` also logs each pipeline stage as it runs, which
+is how you tell a 20-minute scene apart from a hung one.
 
 `--workspace <path>` picks the workspace (default: the current directory). `--json` puts a single
 JSON object on stdout — for failures too (`{"ok":false,"message":…}`), so an agent never has to
@@ -377,6 +384,14 @@ limit — with where its current value comes from, plus the author resource file
 (`prompts/<key>.md`, `craftContract.json`, `promptVariants.json`, `compositionPresets.json`,
 `pipelines/scene.yaml`, `pipelines/novel.yaml` under `~/.storyboard/` or the workspace's
 `.storyboard/`). `storyboard doctor` fails on a resource file it cannot use and says why.
+
+`--params <file>` gives values for one run without saving them anywhere: a JSON object whose keys
+are setting keys, `generation.*` knobs or `prompt.<name>.temperature|maxTokens`, laid over every
+other source. `draft generate`, `draft revise`, `state generate` and `params show` take it, and a
+file with an unknown key or a value out of range is refused before anything runs. `params show
+--json` lists each parameter's `valueKind` and its `minimum`/`maximum`, which are the bounds the
+file is checked against, and under `tasks` the provider and model each task would run with and that
+model's price per million tokens when the catalog knows it.
 
 Writes follow git's rule: run inside a workspace and the value lands in that workspace's
 `.storyboard/config.json`; add `--global` to write `~/.storyboard/config.json` instead. Outside a

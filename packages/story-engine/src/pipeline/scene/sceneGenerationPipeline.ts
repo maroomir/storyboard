@@ -14,6 +14,8 @@ import { listSceneCoordinates } from '#engine/pipeline/sceneCoordinates';
 import type {
   RunSceneGenerationPipelineInput,
   RunSceneGenerationPipelineResult,
+  SceneStageWarning,
+  SceneWarning,
 } from '#engine/pipeline/sceneGenerationTypes';
 import { resolveScenePipelinePlan, type SceneStageId } from '#engine/pipeline/sceneStageCatalog';
 
@@ -41,17 +43,19 @@ export class SceneGenerationPipeline {
   public async run(): Promise<RunSceneGenerationPipelineResult> {
     const run: SceneGenerationRun = SceneGenerationRun.create(this.input);
     const plan: readonly SceneStageId[] = this.input.stages ?? resolveScenePipelinePlan();
+    const warnings: SceneStageWarning[] = [];
 
     this.input.observer?.onPlan(plan);
-    for (const id of plan) {
-      await this.runObservedStage(id, run);
+    for (const stage of plan) {
+      const stageWarnings: readonly SceneWarning[] = await this.runObservedStage(stage, run);
+      warnings.push(...stageWarnings.map((warning) => ({ ...warning, stage })));
     }
 
     return {
       draftBody: run.draftBody,
       skeleton: run.polishedText,
       sceneCoordinates: listSceneCoordinates(run.sceneCoordinates),
-      warnings: run.warnings,
+      warnings,
       detectedCharacters: run.detectedCharacters,
       personasUsed: run.personasUsed,
       providers: run.providers,
@@ -60,7 +64,10 @@ export class SceneGenerationPipeline {
     };
   }
 
-  private async runObservedStage(id: SceneStageId, run: SceneGenerationRun): Promise<void> {
+  private async runObservedStage(
+    id: SceneStageId,
+    run: SceneGenerationRun,
+  ): Promise<readonly SceneWarning[]> {
     this.input.observer?.onStageStart(id);
     const warningCountBeforeStage: number = run.warnings.length;
     const lengthBeforeStage: number = workingTextLength(run);
@@ -72,14 +79,16 @@ export class SceneGenerationPipeline {
       throw error;
     }
 
-    for (const message of run.warnings.slice(warningCountBeforeStage)) {
-      run.report({ kind: 'warning', message });
+    const stageWarnings: readonly SceneWarning[] = run.warnings.slice(warningCountBeforeStage);
+    for (const warning of stageWarnings) {
+      run.report({ kind: 'warning', message: warning.message });
     }
     const lengthAfterStage: number = workingTextLength(run);
     if (lengthAfterStage !== lengthBeforeStage) {
       run.report({ kind: 'text-measured', lengths: { before: lengthBeforeStage, after: lengthAfterStage } });
     }
     this.input.observer?.onStageEnd(id);
+    return stageWarnings;
   }
 }
 

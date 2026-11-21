@@ -33,7 +33,7 @@ describe("GenerateAllDraftsUseCase", () => {
     const generateDraftUseCase = {
       execute: vi
         .fn()
-        .mockResolvedValueOnce({ kind: "generated", ok: true, draftUri: firstScene, warnings: ["1구간: 목표 3,000자에 크게 못 미칩니다"] })
+        .mockResolvedValueOnce({ kind: "generated", ok: true, draftUri: firstScene, warnings: [{ message: "1구간: 목표 3,000자에 크게 못 미칩니다" }] })
         .mockResolvedValueOnce({ kind: "cache_hit", ok: true, draftUri: secondScene })
         .mockResolvedValueOnce({ kind: "failed", ok: false, message: "AI unavailable" })
     }

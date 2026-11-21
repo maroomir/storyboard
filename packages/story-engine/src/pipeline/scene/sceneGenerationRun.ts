@@ -15,6 +15,7 @@ import type {
   ScenePipelineEvent,
   SceneGenerationPipelineAiService,
   SceneGenerationPipelineTaskProviders,
+  SceneWarning,
 } from '#engine/pipeline/sceneGenerationTypes';
 import {
   createEmptyBackground,
@@ -55,7 +56,7 @@ export class SceneGenerationRun {
   public sceneCoordinates: SceneCoordinateLedger;
   public polishedText: string;
   public dialoguePolish: DialoguePolishSummary | undefined;
-  public readonly warnings: string[];
+  public readonly warnings: SceneWarning[];
   public draftBody: string;
   public dialogueRecord: SceneDialogueRecord | undefined;
 

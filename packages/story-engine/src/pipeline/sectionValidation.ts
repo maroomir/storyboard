@@ -58,6 +58,12 @@ export interface SectionViolation {
   readonly detail: string;
 }
 
+export function violationKindsOf(
+  violations: readonly SectionViolation[],
+): readonly SectionViolationKind[] {
+  return [...new Set(violations.map((violation) => violation.kind))];
+}
+
 const spaceNouns: readonly string[] = [
   '서재',
   '침실',

@@ -63,7 +63,7 @@ export class ProofreadDraftStage implements ISceneStage {
         throw error;
       }
 
-      run.warnings.push(`교정: 한 조각을 교정하지 못했습니다 (${error.message})`);
+      run.warnings.push({ message: `교정: 한 조각을 교정하지 못했습니다 (${error.message})` });
       return chunk;
     }
 
@@ -88,8 +88,9 @@ export class ProofreadDraftStage implements ISceneStage {
       return;
     }
 
-    run.warnings.push(
-      `교정 뒤에도 깨진 글자 ${remaining.length}곳이 남았습니다: ${remaining.map((span) => `"${span.excerpt}"`).join(', ')}`,
-    );
+    run.warnings.push({
+      message: `교정 뒤에도 깨진 글자 ${remaining.length}곳이 남았습니다: ${remaining.map((span) => `"${span.excerpt}"`).join(', ')}`,
+      kinds: ['broken-hangul'],
+    });
   }
 }

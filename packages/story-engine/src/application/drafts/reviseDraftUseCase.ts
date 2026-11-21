@@ -59,7 +59,7 @@ import {
   type ChapterNarrationDefaults,
   type SceneThreadContext,
 } from '#engine/application/drafts/sceneNarrationResolver';
-import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
+import { formatAugmentCards, type StoryboardAiService } from '@storyboard/story-ai';
 import type { TaskAiConfigResolved } from '@storyboard/story-ai';
 import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
 import { listSceneCoordinates, sceneCoordinatesFromBeats } from '#engine/pipeline/sceneCoordinates';
@@ -430,7 +430,7 @@ export class ReviseDraftUseCase {
   ): Promise<ReviseDraftWorkflowOutcome> {
     const { paths, draftUri, sceneStem } = request;
 
-    const aiService: StoryboardAiService = this.createUsageRecordingAiService(request.workspaceUri);
+    const aiService: StoryboardAiService = this.ai.gateway.createService(request.workspaceUri);
     const reviseContext: ReviseDraftContext = await prepareReviseDraftContext(
       this.host.fileSystem,
       this.host.cards,
@@ -474,19 +474,6 @@ export class ReviseDraftUseCase {
           }
         : {}),
     };
-  }
-
-  private createUsageRecordingAiService(workspaceUri: StoryUri): StoryboardAiService {
-    return new StoryboardAiService(this.ai.providerRegistry, {
-      onUsage: (record): void => {
-        void this.ai.usageSink
-          .record(workspaceUri, record)
-          .catch((error: unknown) => this.host.logger.error('사용량 기록에 실패했습니다.', error));
-      },
-      onCall: (observation): void => {
-        void this.ai.traceRecorder.recordCall(workspaceUri, observation);
-      },
-    });
   }
 
   private async runReviseLoop(

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { DraftManager, type DraftManagerDependencies } from '@storyboard/story-app';
-import type { GenerateDraftRequest, GenerateDraftResult } from '@storyboard/story-engine';
+import { UsageMeter, type GenerateDraftRequest, type GenerateDraftResult } from '@storyboard/story-engine';
 import { NodeUri, type StoryUri } from '@storyboard/story-model';
 
 const sceneUri: StoryUri = NodeUri.file('/ws/scene/01-first.card');
@@ -22,6 +22,7 @@ function createManager(generation: GenerateDraftResult, events: string[]): Draft
         return revision;
       }),
     },
+    usageMeter: new UsageMeter(),
   } as unknown as DraftManagerDependencies);
 }
 
@@ -49,6 +50,7 @@ describe('DraftManager.generateAndRevise', () => {
       'revise /ws/scene/01-first.card cancel=false',
     ]);
     expect(result.revision).toBe(revision);
+    expect(result.usage).toEqual([]);
   });
 
   it('does not review when the caller declines', async () => {

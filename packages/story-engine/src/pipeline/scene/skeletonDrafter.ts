@@ -34,7 +34,7 @@ import {
   buildGenerateOptions,
   withAttribution,
 } from '#engine/pipeline/sceneGenerationStages';
-import type { SceneGenerationPipelineAiService } from '#engine/pipeline/sceneGenerationTypes';
+import type { SceneGenerationPipelineAiService, SceneWarning } from '#engine/pipeline/sceneGenerationTypes';
 import {
   findSeamRepeatViolations,
   validateSceneSkeleton,
@@ -59,7 +59,7 @@ import {
 
 export interface CombinedSkeletonDraft {
   readonly text: string;
-  readonly warnings: readonly string[];
+  readonly warnings: readonly SceneWarning[];
 }
 
 export type SkeletonCallInput = Parameters<
@@ -243,9 +243,10 @@ export class SkeletonDrafter {
 
     return {
       text: whole.text,
-      warnings: whole.violations.map(
-        (violation) => `${skeletonWarningLabel('뼈대', whole.retries)}: ${violation.detail}`,
-      ),
+      warnings: whole.violations.map((violation) => ({
+        message: `${skeletonWarningLabel('뼈대', whole.retries)}: ${violation.detail}`,
+        kinds: [violation.kind],
+      })),
     };
   }
 
@@ -298,19 +299,26 @@ export class SkeletonDrafter {
         }),
       });
     }
-    const warnings: string[] = drafts.flatMap((draft, index) => {
-      const label: string = skeletonWarningLabel(
-        `뼈대 ${index + 1}/${calls.length}`,
-        draft.retries,
-      );
+    return { text, warnings: this.describeCallWarnings(drafts, stillMissing) };
+  }
+
+  private describeCallWarnings(
+    drafts: readonly SkeletonDraft[],
+    stillMissing: ReadonlySet<string>,
+  ): SceneWarning[] {
+    return drafts.flatMap((draft, index) => {
+      const sectionNumber: number = index + 1;
+      const label: string = skeletonWarningLabel(`뼈대 ${sectionNumber}/${drafts.length}`, draft.retries);
       const kept: SectionViolation[] = [
         ...draft.violations.filter((violation) => violation.kind !== 'missing-beats'),
         ...missingBeatsViolation(draft.missingBeats.filter((beat) => stillMissing.has(beat))),
       ];
-      return kept.map((violation) => `${label}: ${violation.detail}`);
+      return kept.map((violation) => ({
+        message: `${label}: ${violation.detail}`,
+        kinds: [violation.kind],
+        sectionNumber,
+      }));
     });
-
-    return { text, warnings };
   }
 
   private async draftWithRetries(
@@ -513,9 +521,9 @@ export class SkeletonDrafter {
         castNameOf(run.context),
       );
       if (hasSceneCoordinates(extracted.ledger)) {
-        run.warnings.push(
-          `뼈대: 장면 표식이 ${missingCoordinates}곳 빠져 비트의 좌표를 대신 씁니다.`,
-        );
+        run.warnings.push({
+          message: `뼈대: 장면 표식이 ${missingCoordinates}곳 빠져 비트의 좌표를 대신 씁니다.`,
+        });
       }
     }
     run.polishedText = run.skeleton;

@@ -101,6 +101,29 @@ describe('params show', () => {
     expect(byId.has('prompt.grammarCheck.reasoningEffort')).toBe(false);
   });
 
+  it('names the provider, model and unit price each task will run with', async () => {
+    writeFile(
+      home,
+      'config.json',
+      '{ "ai.provider.default": "claude", "tasks.sceneProofread.provider": "ollama" }',
+    );
+
+    const result = await new CommandDispatcher(deps()).dispatch(['params', 'show', '--json']);
+    const tasks: { task: string; providerId: string; model: string; price?: unknown }[] =
+      JSON.parse(result.stdout).data.tasks;
+    const byTask = new Map(tasks.map((row) => [row.task, row]));
+
+    expect(byTask.get('sceneSkeleton')).toMatchObject({
+      providerId: 'claude',
+      price: { inputPricePerMillion: expect.any(Number), outputPricePerMillion: expect.any(Number) },
+    });
+    expect(byTask.get('sceneProofread')).toMatchObject({ providerId: 'ollama' });
+
+    const text = await new CommandDispatcher(deps()).dispatch(['params', 'show']);
+    expect(text.stdout).toContain('[작업별 모델]');
+    expect(text.stdout).toMatch(/sceneProofread\s+ollama\//);
+  });
+
   it('shows a prompt file as the origin of the tuning it carries', async () => {
     writeFile(
       join(cwd, '.storyboard', 'prompts'),

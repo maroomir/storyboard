@@ -1,4 +1,4 @@
-import { isRunBudgetExceeded, UsageMeter } from '@storyboard/story-engine';
+import { isRunBudgetExceeded, summarizeUsageByStage, UsageMeter } from '@storyboard/story-engine';
 import type { UsageRecord } from '@storyboard/story-model';
 import { NodeUri } from '@storyboard/story-model';
 import { describe, expect, it, vi } from 'vitest';
@@ -64,5 +64,42 @@ describe('isRunBudgetExceeded', () => {
     expect(isRunBudgetExceeded(spent, 0)).toBe(false);
     expect(isRunBudgetExceeded(spent, 6)).toBe(false);
     expect(isRunBudgetExceeded(spent, 5)).toBe(true);
+  });
+});
+
+describe('summarizeUsageByStage', () => {
+  it('adds the calls of one stage and task together, in the order they first ran', () => {
+    const rows = summarizeUsageByStage([
+      { ...usage(0.1, 10), stage: 'draftSkeleton' },
+      { ...usage(0.2, 20), stage: 'expandSection', taskName: 'sceneSectionExpansion' },
+      { ...usage(0.3, 30), stage: 'draftSkeleton' },
+    ]);
+
+    expect(rows).toEqual([
+      { stage: 'draftSkeleton', task: 'sceneDraft', calls: 2, inputTokens: 40, outputTokens: 0, cacheReadInputTokens: 0, costUsd: 0.4 },
+      { stage: 'expandSection', task: 'sceneSectionExpansion', calls: 1, inputTokens: 20, outputTokens: 0, cacheReadInputTokens: 0, costUsd: 0.2 },
+    ]);
+  });
+
+  it('leaves the cost out when one call of the group has no price', () => {
+    const rows = summarizeUsageByStage([
+      { ...usage(0.1), stage: 'expandSection' },
+      { ...usage(undefined), stage: 'expandSection' },
+    ]);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).not.toHaveProperty('costUsd');
+  });
+
+  it('keeps a call made outside any stage in a row without one', async () => {
+    const meter = new UsageMeter();
+    const sink = meter.wrap({ record: async () => undefined });
+    const session = meter.startSession();
+
+    await sink.record(workspaceRoot, usage(0.1));
+
+    expect(summarizeUsageByStage(session.records())).toEqual([
+      { task: 'sceneDraft', calls: 1, inputTokens: 100, outputTokens: 0, cacheReadInputTokens: 0, costUsd: 0.1 },
+    ]);
   });
 });

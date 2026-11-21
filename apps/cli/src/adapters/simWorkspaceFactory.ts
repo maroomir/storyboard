@@ -8,7 +8,7 @@ import type {
 } from '@storyboard/story-sim';
 
 import { createCliContainer, type CliContainer, type CliContainerOptions } from '@/container';
-import type { GenerateDraftResult } from '@storyboard/story-engine';
+import { draftWarningMessages, type GenerateDraftResult } from '@storyboard/story-engine';
 
 const shouldBypassDraftCacheSoEveryRunCallsAi: boolean = true;
 
@@ -66,7 +66,7 @@ export function createSimWorkspaceFactory(
           return {
             ok: true,
             kind: draftGeneration.kind,
-            warnings: draftGeneration.kind === 'generated' ? draftGeneration.warnings : [],
+            warnings: generatedWarningMessages(draftGeneration),
           };
         },
         drainUsage: (): readonly UsageRecord[] => {
@@ -83,4 +83,8 @@ export function createSimWorkspaceFactory(
       };
     },
   };
+}
+
+function generatedWarningMessages(draftGeneration: GenerateDraftResult): readonly string[] {
+  return draftGeneration.kind === 'generated' ? draftWarningMessages(draftGeneration.warnings) : [];
 }

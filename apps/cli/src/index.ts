@@ -4,6 +4,7 @@ import { LiveArea } from '@/adapters/liveArea';
 import { PauseRequests } from '@/adapters/pauseRequests';
 import { TerminalPrompter } from '@/adapters/prompter';
 import { CommandDispatcher, type DispatchResult } from '@/commands/commandDispatcher';
+import type { BuildIdentity } from '@/commands/dispatchContract';
 import {
   bellSignal,
   createWindowTitle,
@@ -15,6 +16,10 @@ import { runTui } from '@/tui/index';
 import { extractErrorMessage } from '@storyboard/story-model';
 
 const version: string = '0.16.8';
+
+declare const storyboardBuildIdentity: BuildIdentity | undefined;
+const buildIdentity: BuildIdentity =
+  typeof storyboardBuildIdentity === 'undefined' ? {} : storyboardBuildIdentity;
 
 const exitCodeOnInterrupt: number = 130;
 const exitCodeOnTermination: number = 143;
@@ -96,6 +101,7 @@ async function main(argv: readonly string[]): Promise<number> {
   const isInteractive: boolean = process.stdin.isTTY === true && process.stderr.isTTY === true;
   const dispatched: DispatchResult = await new CommandDispatcher({
     version,
+    build: buildIdentity,
     cwd: process.cwd(),
     isInteractive,
     ...(isInteractive

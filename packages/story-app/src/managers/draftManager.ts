@@ -55,9 +55,13 @@ import type {
   SceneRoster,
   ChapterSummaryLedger,
   WorkspaceCaches,
+  StageUsage,
+  UsageMeter,
+  UsageMeterSession,
 } from '@storyboard/story-engine';
 import {
   ProjectRepository,
+  summarizeUsageByStage,
   SceneContextReader,
   SceneNarrationResolver,
   type ChapterNarrationDefaults,
@@ -98,6 +102,7 @@ export interface GenerateAndReviseDraftRequest extends GenerateDraftRequest {
 export interface GenerateAndReviseDraftResult {
   readonly generation: GenerateDraftResult;
   readonly revision: ReviseDraftWorkflowResult | undefined;
+  readonly usage: readonly StageUsage[];
 }
 
 export interface DraftManagerDependencies {
@@ -124,6 +129,7 @@ export interface DraftManagerDependencies {
   readonly scenes: WorkspaceScenes;
   readonly summaries: ChapterSummaryLedger;
   readonly caches: WorkspaceCaches;
+  readonly usageMeter: UsageMeter;
 }
 
 export class DraftManager {
@@ -181,6 +187,20 @@ export class DraftManager {
   public async generateAndRevise(
     request: GenerateAndReviseDraftRequest,
   ): Promise<GenerateAndReviseDraftResult> {
+    const spending: UsageMeterSession = this.deps.usageMeter.startSession();
+
+    try {
+      const outcome: Omit<GenerateAndReviseDraftResult, 'usage'> =
+        await this.generateThenRevise(request);
+      return { ...outcome, usage: summarizeUsageByStage(spending.records()) };
+    } finally {
+      spending.stop();
+    }
+  }
+
+  private async generateThenRevise(
+    request: GenerateAndReviseDraftRequest,
+  ): Promise<Omit<GenerateAndReviseDraftResult, 'usage'>> {
     const { isReviseAllowed, onDraftReady, onReviseProgress, ...generateRequest } = request;
     const generation: GenerateDraftResult = await this.generate({
       ...generateRequest,

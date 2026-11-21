@@ -54,6 +54,20 @@ describe('dispatch', () => {
     expect((await new CommandDispatcher(deps({ isInteractive: true })).dispatch(['--help'])).launchTui).toBeUndefined();
   });
 
+  it('names the commit the bundle was built from under --version --json', async () => {
+    const build = { commit: 'b3f2767', isDirty: false };
+    const built = await new CommandDispatcher(deps({ build })).dispatch(['--version', '--json']);
+    const unbuilt = await new CommandDispatcher(deps()).dispatch(['--version', '--json']);
+
+    expect(JSON.parse(built.stdout)).toEqual({
+      ok: true,
+      message: '1.2.3',
+      data: { version: '1.2.3', commit: 'b3f2767', dirty: false },
+    });
+    expect(JSON.parse(unbuilt.stdout).data).toEqual({ version: '1.2.3' });
+    expect((await new CommandDispatcher(deps({ build })).dispatch(['--version'])).stdout).toBe('1.2.3\n');
+  });
+
   it('answers -v and per-verb -h', async () => {
     expect((await new CommandDispatcher(deps()).dispatch(['-v'])).stdout).toBe('1.2.3\n');
     const help = await new CommandDispatcher(deps()).dispatch(['draft', 'generate', '-h']);

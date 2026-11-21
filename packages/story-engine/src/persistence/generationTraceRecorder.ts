@@ -110,6 +110,7 @@ function errorMessageOf(error: unknown): string {
 export class GenerationTraceRecorder {
   private readonly openRuns: Map<string, OpenTraceRun> = new Map<string, OpenTraceRun>();
   private readonly lastClosedRuns: Map<string, OpenTraceRun> = new Map<string, OpenTraceRun>();
+  private readonly openStageIds: Map<string, string> = new Map<string, string>();
 
   public constructor(private readonly dependencies: GenerationTraceRecorderDependencies) {}
 
@@ -233,7 +234,12 @@ export class GenerationTraceRecorder {
     }
   }
 
+  public currentStageOf(workspaceRoot: StoryUri): string | undefined {
+    return this.openStageIds.get(workspaceRoot.toString());
+  }
+
   public enterStage(workspaceRoot: StoryUri, stageId: string): void {
+    this.openStageIds.set(workspaceRoot.toString(), stageId);
     const run: OpenTraceRun | undefined = this.findTracedRun(workspaceRoot);
     if (run === undefined) {
       return;
@@ -249,6 +255,7 @@ export class GenerationTraceRecorder {
   }
 
   public async leaveStage(workspaceRoot: StoryUri, failure?: unknown): Promise<void> {
+    this.openStageIds.delete(workspaceRoot.toString());
     const run: OpenTraceRun | undefined = this.findTracedRun(workspaceRoot);
     const stage: OpenTraceStage | undefined = run?.openStage;
     if (run === undefined || stage === undefined) {

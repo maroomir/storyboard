@@ -9,8 +9,14 @@ import type { Theme } from '@/terminal/theme';
 import type { CommandSpec } from '@/commands/catalog';
 import type { CommandOutcome } from '@/commands/outcome';
 
+export interface BuildIdentity {
+  readonly commit?: string;
+  readonly isDirty?: boolean;
+}
+
 export interface DispatchDependencies {
   readonly version: string;
+  readonly build?: BuildIdentity;
   readonly cwd: string;
   readonly isInteractive: boolean;
   readonly createLogger: (

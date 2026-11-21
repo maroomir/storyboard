@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { execFileSync } from 'node:child_process';
+
 import * as esbuild from 'esbuild';
 
 import { aliasesFromTsconfig } from '../../scripts/aliases.mjs';
@@ -8,6 +10,17 @@ import { writeRuntimeManifest } from '../../scripts/runtimeManifest.mjs';
 import { copySqliteWasm } from '../../scripts/sqliteWasm.mjs';
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url));
+
+// The commit the bundle was built from, so a tool driving the CLI from outside this repository can
+// record which engine produced a result. A build outside a git checkout simply has no commit.
+function readBuildIdentity() {
+  try {
+    const git = (args) => execFileSync('git', args, { cwd: packageRoot, encoding: 'utf8' }).trim();
+    return { commit: git(['rev-parse', 'HEAD']), isDirty: git(['status', '--porcelain']).length > 0 };
+  } catch {
+    return {};
+  }
+}
 
 // Bundling (rather than tsc emit) lets every consumer of @storyboard/story-engine read the package
 // SOURCE, so there is no build ordering between packages and no stale dist to drift out of sync.
@@ -37,6 +50,7 @@ await esbuild.build({
       'const __dirname = __storyboardDirname(__storyboardFileURLToPath(import.meta.url));',
     ].join('\n'),
   },
+  define: { storyboardBuildIdentity: JSON.stringify(readBuildIdentity()) },
   alias: {
     ...aliasesFromTsconfig(path.join(packageRoot, 'tsconfig.json')),
     'react-devtools-core': path.join(packageRoot, 'scripts/stubs/react-devtools-core.js'),

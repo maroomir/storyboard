@@ -19,10 +19,9 @@ export class CheckBackgroundFactsStage implements ISceneStage {
     if (card) {
       run.backgroundFactConflicts = await this.findConflicts(run, card);
       run.warnings.push(
-        ...run.backgroundFactConflicts.map(
-          (conflict) =>
-            `배경 «${card.name}»: ${formatBackgroundFactConflict(conflict)}는 함께 참일 수 없어 사건에 맞는 쪽만 씁니다.`,
-        ),
+        ...run.backgroundFactConflicts.map((conflict) => ({
+          message: `배경 «${card.name}»: ${formatBackgroundFactConflict(conflict)}는 함께 참일 수 없어 사건에 맞는 쪽만 씁니다.`,
+        })),
       );
     }
     assertNotCancelled(run.shouldCancel);

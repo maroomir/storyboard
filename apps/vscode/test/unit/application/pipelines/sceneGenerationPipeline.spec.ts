@@ -26,6 +26,7 @@ import {
   findCatchphraseOveruse,
   planSectionCatchphraseBudgets,
   findRepeatedDialogueRun,
+  draftWarningMessages,
   type ISceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage,
@@ -281,7 +282,7 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     }
     expect(retryInput.retryReasons?.join(" ")).toContain("80%")
     expect(result.skeleton).toBe(fuller)
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대:"))).toEqual([])
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대:"))).toEqual([])
   })
 
   it("keeps the fuller of two short skeletons rather than the last one", async () => {
@@ -314,7 +315,7 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
       styleDirective: { targetWordCount: 3000 }
     })
 
-    const skeletonWarnings = result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판):"))
+    const skeletonWarnings = draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판):"))
     expect(skeletonWarnings).toHaveLength(1)
     expect(skeletonWarnings[0]).toContain("목표 1,000자의 80%")
   })
@@ -395,8 +396,8 @@ describe("runSceneGenerationPipeline — 되짚기 경고 (#120)", () => {
       format: "novel"
     })
 
-    expect(result.warnings.filter((warning) => warning.includes("되짚는 표현"))).toHaveLength(1)
-    expect(result.warnings.find((warning) => warning.includes("되짚는 표현"))).toMatch(/^1구간: 앞 장면을 «아까 …»로 되짚는 표현이 \d+회입니다 \(허용 3회\)/)
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.includes("되짚는 표현"))).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings).find((warning) => warning.includes("되짚는 표현"))).toMatch(/^1구간: 앞 장면을 «아까 …»로 되짚는 표현이 \d+회입니다 \(허용 3회\)/)
   })
 
   it("tags each expansion call with its section, attempt and the reason it was asked again", async () => {
@@ -439,7 +440,7 @@ describe("runSceneGenerationPipeline — 되짚기 경고 (#120)", () => {
     const stageLengths = events.filter((event) => event.kind === "text-measured").map((event) => event.lengths)
     expect(stageLengths.length).toBeGreaterThan(0)
     expect(stageLengths.at(-1)?.after).toBe(result.draftBody.length)
-    expect(events.filter((event) => event.kind === "warning").map((event) => event.message)).toEqual(result.warnings)
+    expect(events.filter((event) => event.kind === "warning").map((event) => event.message)).toEqual(draftWarningMessages(result.warnings))
   })
 
   it("curls straight dialogue quotes a section expansion wrote", async () => {
@@ -496,7 +497,7 @@ describe("runSceneGenerationPipeline — 배경 사실 점검", () => {
     })
 
     const pair = "「손님은 거실 소파에서 잔다」 ↔ 「손님에게 자기 방이 있다」"
-    expect(result.warnings).toContain(
+    expect(draftWarningMessages(result.warnings)).toContain(
       `배경 «해외 콘도»: ${pair}는 함께 참일 수 없어 사건에 맞는 쪽만 씁니다.`
     )
     const skeletonInput = ai.draftSceneSkeleton.mock.calls[0]?.[0] as {
@@ -598,7 +599,7 @@ describe("runSceneGenerationPipeline — 장면 좌표", () => {
 
     expect(result.skeleton).not.toContain("⟪")
     expect(result.sceneCoordinates).toEqual(["1. 장소: 거실 / 시각: 아침", "2. 장소: 교문 앞 / 시각: 방과 후"])
-    expect(result.warnings).toContain("뼈대: 장면 표식이 1곳 빠져 비트의 좌표를 대신 씁니다.")
+    expect(draftWarningMessages(result.warnings)).toContain("뼈대: 장면 표식이 1곳 빠져 비트의 좌표를 대신 씁니다.")
   })
 
   it("leaves the ledger empty when neither the skeleton nor the beats give coordinates", async () => {
@@ -697,8 +698,8 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(second.targetLength).toBe(1000)
     expect(second.endState).toBe("엘리아가 집에 닿는다.")
     expect(result.skeleton).toBe(["엘리아가 밥을 먹었다.", "", "엘리아가 설거지를 했다.", "", "---", "", "엘리아가 교문을 나섰다."].join("\n"))
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 1/2:"))).toHaveLength(1)
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 2/2:"))).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대 1/2:"))).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대 2/2:"))).toHaveLength(1)
   })
 
   it("keeps a nickname a later call's beat coins out of the earlier call and redrafts when it slips in (#214)", async () => {
@@ -774,7 +775,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(ai.checkSceneCoverage.mock.calls[0]?.[0]).toEqual(["밥을 먹는다", "설거지를 한다", "교문을 나선다"])
     const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
     expect(retry.retryReasons.join(" ")).toContain("사건 «설거지를 한다»이 뼈대에 없습니다")
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»"))).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»"))).toHaveLength(1)
   })
 
   it("redrafts a skeleton that reversed a beat, naming the beat, and warns when it stays reversed", async () => {
@@ -794,7 +795,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     const retry = ai.draftSceneSkeleton.mock.calls[1]?.[0] as { retryReasons: readonly string[] }
     expect(retry.retryReasons.join(" ")).toContain("사건 «설거지를 한다»이 뼈대에서 거꾸로 벌어집니다")
     expect(retry.retryReasons.join(" ")).not.toContain("뼈대에 없습니다")
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»이 뼈대에서 거꾸로"))).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대 (재시도 1회 뒤 채택한 판): 사건 «설거지를 한다»이 뼈대에서 거꾸로"))).toHaveLength(1)
   })
 
   it("drops a missing-beat warning when the beat turns up elsewhere in the whole skeleton (#118)", async () => {
@@ -820,7 +821,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     const recheck = ai.checkSceneCoverage.mock.calls[2] as [readonly string[], string]
     expect(recheck[0]).toEqual(["설거지를 한다"])
     expect(recheck[1]).toContain("설거지를 하고 교문을 나섰다")
-    expect(result.warnings.filter((warning) => warning.includes("뼈대에 없습니다"))).toEqual([])
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.includes("뼈대에 없습니다"))).toEqual([])
   })
 
   it("reports each beat verdict of a skeleton check to the observer", async () => {
@@ -898,7 +899,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
       tuning: { "generation.skeleton.charsPerCall": 2000, "generation.skeleton.retryLimit": 0 }
     })
 
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대 1/2: 사건 «설거지를 한다»이 뼈대에 없습니다"))).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대 1/2: 사건 «설거지를 한다»이 뼈대에 없습니다"))).toHaveLength(1)
   })
 
   it("keeps a skeleton that covers every beat without a retry", async () => {
@@ -914,7 +915,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     })
 
     expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(1)
-    expect(result.warnings.filter((warning) => warning.startsWith("뼈대:"))).toEqual([])
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.startsWith("뼈대:"))).toEqual([])
   })
 
   it("skips the coverage check for a scene without beats", async () => {
@@ -971,7 +972,7 @@ describe("runSceneGenerationPipeline — 장면 전환 계획 (#115, #112)", () 
     expect(firstRetry.retryReasons.join(" ")).toContain("장면 전환(---) 1개가 0개")
     expect(result.draftBody.split("\n").filter((line) => line === "---")).toHaveLength(1)
     expect(result.draftBody.indexOf("---")).toBeLessThan(result.draftBody.indexOf("교문을 나섰다"))
-    expect(result.warnings.join("\n")).toContain("되살렸습니다")
+    expect(draftWarningMessages(result.warnings).join("\n")).toContain("되살렸습니다")
   })
 })
 
@@ -1105,7 +1106,7 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
       retryReasons?: readonly string[]
     }
     expect(retryInput.retryReasons?.join(" ")).toContain("지훈")
-    expect(result.warnings).toEqual([])
+    expect(draftWarningMessages(result.warnings)).toEqual([])
     expect(result.draftBody).toContain("엘리아가 천천히 문을 연다.")
   })
 
@@ -1123,9 +1124,26 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
 
     expect(ai.expandSceneSection).toHaveBeenCalledTimes(3)
     expect(result.draftBody).toContain("엘리아와 지훈이 문을 연다.")
-    expect(result.warnings).toHaveLength(1)
-    expect(result.warnings[0]).toContain("1구간")
-    expect(result.warnings[0]).toContain("지훈")
+    expect(draftWarningMessages(result.warnings)).toHaveLength(1)
+    expect(draftWarningMessages(result.warnings)[0]).toContain("1구간")
+    expect(draftWarningMessages(result.warnings)[0]).toContain("지훈")
+  })
+
+  it("names the stage, the violation kind and the section of a warning", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
+    ai.expandSceneSection.mockResolvedValue(longProse("엘리아와 지훈이 문을 연다."))
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.warnings).toEqual([
+      expect.objectContaining({ stage: "expandSection", kinds: ["cast"], sectionNumber: 1 })
+    ])
   })
 
   it("marks only a retry after a too-short attempt as an under-length retry", async () => {
@@ -1187,7 +1205,7 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
 
     expect(ai.expandSceneSection).toHaveBeenCalledTimes(3)
     expect(result.draftBody).toContain("엘리아가 문을 천천히 열었다.")
-    expect(result.warnings.find((warning) => warning.startsWith("1구간"))).toContain(
+    expect(draftWarningMessages(result.warnings).find((warning) => warning.startsWith("1구간"))).toContain(
       "크게 못 미칩니다"
     )
   })
@@ -1603,7 +1621,7 @@ describe("대사 다듬기 단계", () => {
 
     const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as { skeleton: string }
     expect(expansionInput.skeleton).toBe(polished)
-    expect(result.warnings).toEqual([])
+    expect(draftWarningMessages(result.warnings)).toEqual([])
   })
 
   it("reports the lines a character's polish changed to the observer", async () => {
@@ -1701,7 +1719,7 @@ describe("대사 다듬기 단계", () => {
     })
 
     expect(result.skeleton).toBe("엘리아가 말했다. “가자, 당장.” 지훈이 답했다. “알았어.”")
-    expect(result.warnings[0]).toContain("대사 2번은 두 인물이 자기 대사라고 해")
+    expect(draftWarningMessages(result.warnings)[0]).toContain("대사 2번은 두 인물이 자기 대사라고 해")
   })
 
   it("re-asks only the character whose rewrite failed, and keeps the skeleton line for it in the end", async () => {
@@ -1725,9 +1743,9 @@ describe("대사 다듬기 단계", () => {
     )
     expect(names).toEqual(["엘리아", "지훈", "엘리아"])
     expect(result.skeleton).toBe("엘리아가 말했다. “가자, 지금.” 그가 답했다. “알았다니까.”")
-    const polishWarnings = result.warnings.filter((warning) => warning.includes("다듬기"))
+    const polishWarnings = draftWarningMessages(result.warnings).filter((warning) => warning.includes("다듬기"))
     expect(polishWarnings).toEqual([])
-    const heldBack = result.warnings.filter((warning) => warning.includes("뼈대대로 두었습니다"))
+    const heldBack = draftWarningMessages(result.warnings).filter((warning) => warning.includes("뼈대대로 두었습니다"))
     expect(heldBack).toHaveLength(1)
     expect(heldBack[0]).toContain("엘리아의 대사 1개를")
     expect(heldBack[0]).toContain("⟨1⟩에 뼈대에 없는 인물이 나옵니다 (지훈)")
@@ -1760,7 +1778,7 @@ describe("대사 다듬기 단계", () => {
     expect(result.skeleton).toBe(
       "엘리아가 말했다. “가자, 당장.” 이어서 “정말이야, 진짜로.” 마지막으로 “늦으면 끝이야.”"
     )
-    expect(result.warnings).toContain(
+    expect(draftWarningMessages(result.warnings)).toContain(
       "엘리아의 대사 1개를 뼈대대로 두었습니다 — ⟨2⟩이 4자보다 짧아져 대사로 세어지지 않습니다"
     )
     expect(result.dialoguePolish).toEqual({ lineCount: 3, polishedCount: 2, contestedCount: 0 })
@@ -1779,7 +1797,7 @@ describe("대사 다듬기 단계", () => {
     })
 
     expect(result.skeleton).toBe("엘리아가 말했다. “가자, 지금.”")
-    expect(result.warnings.some((warning) => warning.startsWith("엘리아의 대사 다듬기를 되돌렸습니다"))).toBe(true)
+    expect(draftWarningMessages(result.warnings).some((warning) => warning.startsWith("엘리아의 대사 다듬기를 되돌렸습니다"))).toBe(true)
   })
 
   it("hands the rejection reasons to the retry call", async () => {
@@ -1807,7 +1825,7 @@ describe("대사 다듬기 단계", () => {
     expect(eliaInputs[0]).not.toHaveProperty("retryReasons")
     expect(eliaInputs[1]?.retryReasons?.[0]).toContain("뼈대에 없는 인물")
     expect(result.skeleton).toBe("엘리아가 말했다. “가자, 당장.”")
-    expect(result.warnings.filter((warning) => warning.includes("다듬기"))).toEqual([])
+    expect(draftWarningMessages(result.warnings).filter((warning) => warning.includes("다듬기"))).toEqual([])
   })
 
   it("warns when a polish response was cut at the output limit", async () => {
@@ -1823,7 +1841,7 @@ describe("대사 다듬기 단계", () => {
     })
 
     expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(1)
-    expect(result.warnings).toContain("엘리아의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다")
+    expect(draftWarningMessages(result.warnings)).toContain("엘리아의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다")
   })
 })
 
@@ -1952,7 +1970,7 @@ it("reports catchphrase overuse in the generated draft's warnings", async () => 
     format: "novel"
   })
 
-  expect(result.warnings.some((warning) => warning.startsWith("엘리아의 입버릇이 3회 나옵니다 (비트 2개"))).toBe(true)
+  expect(draftWarningMessages(result.warnings).some((warning) => warning.startsWith("엘리아의 입버릇이 3회 나옵니다 (비트 2개"))).toBe(true)
 })
 
 describe("대사 화자 귀속 단계", () => {
@@ -2032,7 +2050,7 @@ describe("대사 화자 귀속 단계", () => {
     })
 
     expect(result.draftBody.length).toBeGreaterThan(0)
-    expect(result.warnings.join(" ")).not.toContain("귀속")
+    expect(draftWarningMessages(result.warnings).join(" ")).not.toContain("귀속")
     expect(new Set(result.dialogueRecord?.turns.map((turn) => turn.speaker))).toEqual(
       new Set(["unknown"])
     )
@@ -2099,8 +2117,8 @@ describe("대사 화자 귀속 단계", () => {
     })
 
     expect(result.draftBody).toContain("느껴졠다")
-    expect(result.warnings.join(" ")).toContain("교정 실패")
-    expect(result.warnings.join(" ")).toContain("깨진 글자 1곳")
+    expect(draftWarningMessages(result.warnings).join(" ")).toContain("교정 실패")
+    expect(draftWarningMessages(result.warnings).join(" ")).toContain("깨진 글자 1곳")
   })
 
   it("feeds the character's earlier lines into the polish call", async () => {
@@ -2451,7 +2469,7 @@ describe("runSceneGenerationPipeline — 배우 뼈대 단계", () => {
       "1. 시각: 밤 9시 / 장소: 창고 / 있는 사람: 엘리아",
       "2. 시각: 밤 9시 20분 / 장소: 부두 / 있는 사람: 지훈"
     ])
-    expect(stageWarnings(result.warnings)).toEqual([])
+    expect(stageWarnings(draftWarningMessages(result.warnings))).toEqual([])
     expect(result.draftBody).toContain("살붙인 본문")
   })
 
@@ -2476,7 +2494,7 @@ describe("runSceneGenerationPipeline — 배우 뼈대 단계", () => {
     expect((ai.arbitrateBeat.mock.calls[2]?.[0] as { retryReasons?: readonly string[] }).retryReasons).toEqual([
       "지훈: 모르는 사실을 말함 → 피할 것: 먼저 밝히기"
     ])
-    expect(stageWarnings(result.warnings)).toEqual(["배우 뼈대 2번 대목: 지훈: 모르는 사실을 말함 → 피할 것: 먼저 밝히기"])
+    expect(stageWarnings(draftWarningMessages(result.warnings))).toEqual(["배우 뼈대 2번 대목: 지훈: 모르는 사실을 말함 → 피할 것: 먼저 밝히기"])
 
     const thirdBeatActor = ai.proposeBeatAction.mock.calls
       .map((call) => call[0] as { character: { name: string; notes?: readonly string[] }; beat: { number: number } })
@@ -2496,9 +2514,9 @@ describe("runSceneGenerationPipeline — 배우 뼈대 단계", () => {
     const result = await runSceneGenerationPipeline({ sceneStem: "01-opening", context, aiService: ai, format: "novel", stages: actedStages })
 
     expect(ai.arbitrateBeat).toHaveBeenCalledTimes(3)
-    expect(stageWarnings(result.warnings)).toHaveLength(1)
-    expect(stageWarnings(result.warnings)[0]).toContain("배우 뼈대 1번 대목")
-    expect(stageWarnings(result.warnings)[0]).toContain("입버릇")
+    expect(stageWarnings(draftWarningMessages(result.warnings))).toHaveLength(1)
+    expect(stageWarnings(draftWarningMessages(result.warnings))[0]).toContain("배우 뼈대 1번 대목")
+    expect(stageWarnings(draftWarningMessages(result.warnings))[0]).toContain("입버릇")
   })
 
   it("asks an actor again when a proposed line breaks the length cap", async () => {
@@ -2536,7 +2554,7 @@ describe("runSceneGenerationPipeline — 배우 뼈대 단계", () => {
     expect(ai.proposeBeatAction).not.toHaveBeenCalled()
     expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(1)
     expect(result.skeleton).toBe("뼈대 본문")
-    expect(stageWarnings(result.warnings)).toEqual(["배우 뼈대: 씬 카드에 비트가 없어 뼈대 단계로 대신 썼습니다."])
+    expect(stageWarnings(draftWarningMessages(result.warnings))).toEqual(["배우 뼈대: 씬 카드에 비트가 없어 뼈대 단계로 대신 썼습니다."])
   })
 
   it("stays out of the bundled plan but stands in for the skeleton when a spec names it", () => {

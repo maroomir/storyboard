@@ -28,6 +28,7 @@ import {
   type SectionViolation,
 } from '#engine/pipeline/sectionValidation';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
+import type { SceneWarning } from '#engine/pipeline/sceneGenerationTypes';
 import {
   describeCatchphraseBudget,
   planSectionCatchphraseBudgets,
@@ -264,13 +265,14 @@ export class ExpandSectionStage implements ISceneStage {
     }
 
     run.draftBody = expandedSections.join(sectionSeparator);
+    const catchphraseOveruse: readonly string[] = findCatchphraseOveruse({
+      text: run.draftBody,
+      characters: run.context.characters,
+      beatCount: run.context.scene.card?.beats?.length ?? 0,
+      tuning: run.tuning,
+    });
     run.warnings.push(
-      ...findCatchphraseOveruse({
-        text: run.draftBody,
-        characters: run.context.characters,
-        beatCount: run.context.scene.card?.beats?.length ?? 0,
-        tuning: run.tuning,
-      }),
+      ...catchphraseOveruse.map((message): SceneWarning => ({ message, kinds: ['catchphrase'] })),
     );
   }
 
@@ -439,14 +441,20 @@ export class ExpandSectionStage implements ISceneStage {
     index: number,
     repaired: CheckedSectionText,
   ): void {
+    const sectionNumber: number = index + 1;
     run.warnings.push(
-      ...repaired.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
+      ...repaired.violations.map((violation) => ({
+        message: `${sectionNumber}구간: ${violation.detail}`,
+        kinds: [violation.kind],
+        sectionNumber,
+      })),
     );
     const recaps: number = countRecapPhrases(repaired.text);
     if (recaps > run.tuning.sectionRecapPhraseLimit) {
-      run.warnings.push(
-        `${index + 1}구간: 앞 장면을 «아까 …»로 되짚는 표현이 ${recaps}회입니다 (허용 ${run.tuning.sectionRecapPhraseLimit}회). 새 반응·논평·대사로 채우는 쪽이 낫습니다`,
-      );
+      run.warnings.push({
+        message: `${sectionNumber}구간: 앞 장면을 «아까 …»로 되짚는 표현이 ${recaps}회입니다 (허용 ${run.tuning.sectionRecapPhraseLimit}회). 새 반응·논평·대사로 채우는 쪽이 낫습니다`,
+        sectionNumber,
+      });
     }
   }
 

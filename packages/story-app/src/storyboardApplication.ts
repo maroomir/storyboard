@@ -104,6 +104,7 @@ import {
 } from '@storyboard/story-engine';
 import { type WorkspaceRunLockOwner } from '@storyboard/story-model';
 import {
+  applyPromptTuningOverrides,
   createAiProviderRegistry,
   type AiProviderRegistry,
   type ConfigBridge,
@@ -120,6 +121,7 @@ import { NovelManager } from '#app/managers/novelManager';
 import { StudioManager } from '#app/managers/studioManager';
 import { RunGate } from '#app/runGate';
 import { describeParameters, type ParameterReport } from '#app/parameterRegistry';
+import { emptyRunParameters, type RunParameters } from '#app/runParameters';
 import { loadResourceOverrides, type ResourceOverrideReport } from '#app/resourceOverrides';
 import { describeWorkspaceStatus, type WorkspaceStatus } from '#app/workspaceStatus';
 import type { StoryUri } from '@storyboard/story-model';
@@ -133,6 +135,7 @@ export interface StoryboardApplicationDependencies {
   readonly sqlDatabaseHost: ISqlDatabaseHost;
   readonly usageObserver?: IUsageSink;
   readonly resourceRoots?: readonly StoryUri[];
+  readonly runParameters?: RunParameters;
   readonly fetch?: NoteHttpFetch;
 }
 
@@ -228,6 +231,7 @@ export class StoryboardApplication {
   public readonly workspace: WorkspaceManager;
   public readonly runGate: RunGate;
   private readonly resourceRoots: readonly StoryUri[];
+  private readonly runParameters: RunParameters;
   public readonly aiGateway: AiGateway;
   public readonly aiProviderRegistry: AiProviderRegistry;
   public readonly configBridge: ConfigBridge;
@@ -253,6 +257,8 @@ export class StoryboardApplication {
     this.project = new ProjectManager(services);
     this.runGate = new RunGate({ runLocks: services.runLocks, owner: options.lockOwner });
     this.resourceRoots = dependencies.resourceRoots ?? [];
+    this.runParameters = dependencies.runParameters ?? emptyRunParameters;
+    applyPromptTuningOverrides(this.runParameters.promptConfigs);
     this.workspace = new WorkspaceManager({
       fileSystem: services.fileSystem,
       cards: services.cards,
@@ -286,6 +292,7 @@ export class StoryboardApplication {
       configBridge: this.configBridge,
       resources,
       roots: this.resourceRoots,
+      runParameters: this.runParameters,
     });
   }
 
