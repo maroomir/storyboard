@@ -94,6 +94,7 @@ export interface ConfigBridgeDependencies {
     listener: (event: StoryboardConfigurationChangeEventLike) => void,
   ) => DisposableHandle;
   readonly writeTarget?: number;
+  readonly generationKnobOverrides?: GenerationKnobs;
 }
 
 export class ConfigBridge {
@@ -475,15 +476,10 @@ export class ConfigBridge {
   }
 
   public getSceneGenerationTuning(): GenerationKnobs {
-    const profile: ModelProfile | undefined = this.getModelProfile();
+    const { [sectionOutputLimitParameterId]: _limit, ...profileKnobs } =
+      this.getModelProfile()?.knobs ?? {};
 
-    if (profile === undefined) {
-      return {};
-    }
-
-    const { [sectionOutputLimitParameterId]: _limit, ...knobs } = profile.knobs;
-
-    return knobs;
+    return { ...profileKnobs, ...this.dependencies.generationKnobOverrides };
   }
 
   public getSectionOutputLimit(): number {

@@ -7,6 +7,7 @@ import {
 import {
   promptResourceKeys,
   promptResources,
+  promptTuning,
   type ConfigBridge,
   type PromptConfig,
 } from '@storyboard/story-ai';
@@ -19,10 +20,30 @@ import type {
 } from '@storyboard/story-model';
 
 import type { ResourceOverrideApplied, ResourceOverrideReport } from '#app/resourceOverrides';
+import { emptyRunParameters, listRunParameterKeys, type RunParameters } from '#app/runParameters';
 
 export type ParameterKind = 'setting' | 'generation' | 'prompt';
 
-export type ParameterOrigin = 'workspace' | 'user' | 'model' | 'default' | 'provider-unsupported';
+export type ParameterOrigin =
+  | 'run'
+  | 'workspace'
+  | 'user'
+  | 'model'
+  | 'default'
+  | 'provider-unsupported';
+
+export type ParameterValueKind =
+  | 'boolean'
+  | 'integer'
+  | 'decimal'
+  | 'string'
+  | 'ratio'
+  | 'count'
+  | 'chars'
+  | 'weight'
+  | 'temperature'
+  | 'tokens'
+  | 'effort';
 
 export interface ParameterEntry {
   readonly kind: ParameterKind;
@@ -31,6 +52,9 @@ export interface ParameterEntry {
   readonly value: boolean | number | string;
   readonly defaultValue: boolean | number | string;
   readonly origin: ParameterOrigin;
+  readonly valueKind: ParameterValueKind;
+  readonly minimum?: number;
+  readonly maximum?: number;
 }
 
 export interface ParameterReport {
@@ -42,15 +66,27 @@ export interface DescribeParametersInput {
   readonly configBridge: ConfigBridge;
   readonly resources: ResourceOverrideReport;
   readonly roots: readonly StoryUri[];
+  readonly runParameters?: RunParameters;
 }
 
+const temperatureMinimum: number = 0;
+const temperatureMaximum: number = 2;
+const maxTokensMinimum: number = 1;
+
 export function describeParameters(input: DescribeParametersInput): ParameterReport {
+  const runParameterKeys: ReadonlySet<string> = new Set(
+    listRunParameterKeys(input.runParameters ?? emptyRunParameters),
+  );
+  const entries: readonly ParameterEntry[] = [
+    ...settingEntries(input.configBridge),
+    ...generationEntries(input.configBridge),
+    ...promptEntries(input.resources, input.roots, input.configBridge),
+  ];
+
   return {
-    parameters: [
-      ...settingEntries(input.configBridge),
-      ...generationEntries(input.configBridge),
-      ...promptEntries(input.resources, input.roots, input.configBridge),
-    ],
+    parameters: entries.map((entry) =>
+      runParameterKeys.has(entry.id) ? { ...entry, origin: 'run' } : entry,
+    ),
     resources: input.resources,
   };
 }
@@ -67,6 +103,9 @@ function settingEntries(configBridge: ConfigBridge): ParameterEntry[] {
       value: configBridge.getSettingValue(definition.key),
       defaultValue: modelDefault ?? definition.defaultValue,
       origin: origin === 'default' && modelDefault !== undefined ? 'model' : origin,
+      valueKind: definition.kind,
+      ...(definition.minimum === undefined ? {} : { minimum: definition.minimum }),
+      ...(definition.maximum === undefined ? {} : { maximum: definition.maximum }),
     };
   });
 }
@@ -85,6 +124,9 @@ function generationEntries(configBridge: ConfigBridge): ParameterEntry[] {
       value: measured ?? defaultValue,
       defaultValue,
       origin: measured === undefined ? 'default' : 'model',
+      valueKind: definition.kind,
+      minimum: definition.bounds.min,
+      maximum: definition.bounds.max,
     };
   });
 }
@@ -112,7 +154,7 @@ function promptEntries(
   const unsupported: UnsupportedSamplingKnobs = unsupportedSamplingKnobs(configBridge);
 
   return promptResourceKeys().flatMap((key) => {
-    const config: PromptConfig = promptResources.config(key);
+    const config: PromptConfig = promptTuning(key);
     const bundled: PromptConfig = promptResources.bundledConfig(key);
     const origin: ParameterOrigin = promptOrigin(key, resources, roots);
 
@@ -128,6 +170,9 @@ function promptEntries(
           : config.temperature === bundled.temperature
             ? 'default'
             : origin,
+        valueKind: 'temperature' as const,
+        minimum: temperatureMinimum,
+        maximum: temperatureMaximum,
       },
       {
         kind: 'prompt' as const,
@@ -140,6 +185,8 @@ function promptEntries(
           : config.maxTokens === bundled.maxTokens
             ? 'default'
             : origin,
+        valueKind: 'tokens' as const,
+        minimum: maxTokensMinimum,
       },
       ...(config.reasoningEffort === undefined && bundled.reasoningEffort === undefined
         ? []
@@ -151,6 +198,7 @@ function promptEntries(
               value: config.reasoningEffort ?? '',
               defaultValue: bundled.reasoningEffort ?? '',
               origin: config.reasoningEffort === bundled.reasoningEffort ? 'default' : origin,
+              valueKind: 'effort' as const,
             },
           ]),
     ];

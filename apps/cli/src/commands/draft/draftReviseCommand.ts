@@ -13,7 +13,7 @@ export class DraftReviseCommand implements ICommandHandler {
     group: '초안',
     usage: 'draft revise <stem>',
     summary: '기존 초안을 검수하고 재작성합니다',
-    flags: ['revise-iterations'],
+    flags: ['revise-iterations', 'params'],
   };
 
   public async execute({ container, args }: CommandContext): Promise<CommandOutcome> {

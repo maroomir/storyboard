@@ -2,7 +2,11 @@ import { existsSync } from 'node:fs';
 import { usageCacheHitRate } from '@storyboard/story-model';
 import type { ConfigurationTarget } from '@storyboard/story-config';
 import { type IStoryboardLogger, type UsageMeterSession } from '@storyboard/story-engine';
-import type { ResourceOverrideReport, WorkspaceHoldResult } from '@storyboard/story-app';
+import type {
+  ResourceOverrideReport,
+  RunParameters,
+  WorkspaceHoldResult,
+} from '@storyboard/story-app';
 import { flagBoolean, flagString } from '@/cliArguments';
 import { LineRunProgress, RailRunProgress, type IRunProgress } from '@/adapters/runProgress';
 import { createCliContainer, type CliContainer } from '@/container';
@@ -73,6 +77,7 @@ export interface CommandRunDependencies {
   readonly invocation: Invocation;
   readonly target: WorkspaceTarget;
   readonly dispatch: DispatchDependencies;
+  readonly runParameters?: RunParameters;
 }
 
 const hintOmittedSoTheFinishedRunStillSucceeds: string = '';
@@ -163,6 +168,7 @@ export class CommandRun {
         : { model: flagString(args.flags, 'model') }),
       ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
       ...(configWriteTarget === undefined ? {} : { configWriteTarget }),
+      ...(this.deps.runParameters === undefined ? {} : { runParameters: this.deps.runParameters }),
     });
   }
 

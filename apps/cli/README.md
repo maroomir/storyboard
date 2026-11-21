@@ -378,6 +378,13 @@ limit — with where its current value comes from, plus the author resource file
 `pipelines/scene.yaml`, `pipelines/novel.yaml` under `~/.storyboard/` or the workspace's
 `.storyboard/`). `storyboard doctor` fails on a resource file it cannot use and says why.
 
+`--params <file>` gives values for one run without saving them anywhere: a JSON object whose keys
+are setting keys, `generation.*` knobs or `prompt.<name>.temperature|maxTokens`, laid over every
+other source. `draft generate`, `draft revise`, `state generate` and `params show` take it, and a
+file with an unknown key or a value out of range is refused before anything runs. `params show
+--json` lists each parameter's `valueKind` and its `minimum`/`maximum`, which are the bounds the
+file is checked against.
+
 Writes follow git's rule: run inside a workspace and the value lands in that workspace's
 `.storyboard/config.json`; add `--global` to write `~/.storyboard/config.json` instead. Outside a
 workspace, `config set` and `setup` refuse rather than guess — pass `--global` (or `--workspace`).

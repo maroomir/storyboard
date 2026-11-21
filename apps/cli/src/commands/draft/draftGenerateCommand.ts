@@ -27,7 +27,7 @@ export class DraftGenerateCommand implements ICommandHandler {
     group: '초안',
     usage: 'draft generate <stem> | --all',
     summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
-    flags: ['all', 'force', 'no-revise', 'revise-iterations'],
+    flags: ['all', 'force', 'no-revise', 'revise-iterations', 'params'],
     examples: ['storyboard draft generate 001-scene-1-1', 'storyboard draft generate --all'],
   };
 

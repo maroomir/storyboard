@@ -174,6 +174,12 @@ export const flagCatalog: readonly FlagSpec[] = [
       'init: 만든 워크스페이스에 노트를 흡수합니다 (Obsidian 폴더·노트, Notion 주소, Notion 내보내기 zip)',
   },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
+  {
+    name: 'params',
+    valueLabel: '<file>',
+    summary:
+      '이번 실행에만 쓸 값을 JSON 파일로 줍니다: 설정 키, generation.* 손잡이, prompt.<이름>.temperature|maxTokens (어떤 파일에도 저장하지 않음)',
+  },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
   {
     name: 'all',

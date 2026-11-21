@@ -44,6 +44,7 @@ import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandOutcome } from '@/commands/outcome';
 import { markOutcome } from '@/commands/outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
+import { readRunParametersFile, type RunParametersRead } from '@/adapters/runParametersFile';
 import { CommandRun, reportText } from '@/commands/commandRun';
 import type {
   DispatchDependencies,
@@ -296,7 +297,21 @@ export class CommandDispatcher {
       return failure(workspaceRefusal, mode, terminal.stderr);
     }
 
-    return new CommandRun({ command, invocation, target, dispatch: this.deps }).execute();
+    const paramsFile: string | undefined = flagString(args.flags, 'params');
+    const runParameters: RunParametersRead | undefined =
+      paramsFile === undefined ? undefined : readRunParametersFile(resolve(this.deps.cwd, paramsFile));
+
+    if (runParameters !== undefined && !runParameters.ok) {
+      return failure(runParameters.message, mode, terminal.stderr);
+    }
+
+    return new CommandRun({
+      command,
+      invocation,
+      target,
+      dispatch: this.deps,
+      ...(runParameters === undefined ? {} : { runParameters: runParameters.parameters }),
+    }).execute();
   }
 
   private resolveWorkspaceTarget({ args, verb }: Invocation): WorkspaceTarget {

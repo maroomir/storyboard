@@ -16,7 +16,12 @@ export class ParamsShowCommand implements ICommandHandler {
     usage: 'params show',
     summary:
       '작가가 움직일 수 있는 값 전부(설정·생성 손잡이·프롬프트 온도)와 출처, 적용된 리소스 파일을 보여 줍니다',
-    examples: ['storyboard params show', 'storyboard params show --json'],
+    examples: [
+      'storyboard params show',
+      'storyboard params show --json',
+      'storyboard params show --params point.json',
+    ],
+    flags: ['params'],
     needsWorkspace: false,
   };
 
