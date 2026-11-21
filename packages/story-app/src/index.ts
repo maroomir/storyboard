@@ -48,6 +48,7 @@ export {
   type ParameterOrigin,
   type ParameterReport,
   type ParameterValueKind,
+  type TaskModelEntry,
 } from '#app/parameterRegistry';
 export {
   emptyRunParameters,

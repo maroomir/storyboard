@@ -6,7 +6,7 @@ import {
   parameterKindLabels,
   parameterOriginLabels,
 } from '@/commands/params/parameterLabels';
-import type { ParameterEntry, ParameterReport } from '@storyboard/story-app';
+import type { ParameterEntry, ParameterReport, TaskModelEntry } from '@storyboard/story-app';
 import { success } from '@/commands/outcomes';
 
 export class ParamsShowCommand implements ICommandHandler {
@@ -46,6 +46,7 @@ export class ParamsShowCommand implements ICommandHandler {
       lines.push('');
     }
 
+    lines.push(...describeTaskModels(report.tasks), '');
     lines.push('[적용된 리소스 파일]');
     if (report.resources.applied.length === 0) {
       lines.push('(없음)');
@@ -59,4 +60,24 @@ export class ParamsShowCommand implements ICommandHandler {
 
     return success(lines.join('\n'), report);
   }
+}
+
+function describeTaskPrice(entry: TaskModelEntry): string {
+  if (entry.price === undefined) {
+    return '단가 모름';
+  }
+
+  const { inputPricePerMillion, outputPricePerMillion } = entry.price;
+  return `입력 ${inputPricePerMillion}달러 · 출력 ${outputPricePerMillion}달러 (백만 토큰당)`;
+}
+
+function describeTaskModels(tasks: readonly TaskModelEntry[]): string[] {
+  const width: number = Math.max(...tasks.map((entry) => entry.task.length));
+  return [
+    '[작업별 모델]',
+    ...tasks.map(
+      (entry) =>
+        `${entry.task.padEnd(width)}  ${entry.providerId}/${entry.model}  ${describeTaskPrice(entry)}`,
+    ),
+  ];
 }

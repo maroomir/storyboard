@@ -11,6 +11,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 추가
 
+- **`params show` 가 작업마다 쓰일 모델과 단가를 보여 줍니다.** `[작업별 모델]` 에 작업마다 지금 설정으로 쓰일 프로바이더·모델과, 카탈로그가 단가를 알면 백만 토큰당 입력·출력 단가가 나옵니다. `--json` 에서는 `data.tasks` 에 `task`·`providerId`·`model` 과 `price`(입력·출력·캐시 쓰기·캐시 읽기)가 실립니다. 돌리기 전에 견적을 내는 데 씁니다. (#218)
 - **`storyboard --version --json` 이 빌드한 커밋을 알려 줍니다.** `data` 에 `version` 과 함께, 빌드할 때의 커밋(`commit`)과 그때 작업 트리에 커밋하지 않은 변경이 있었는지(`dirty`)가 실립니다. git 저장소 밖에서 빌드한 번들은 `version` 만 냅니다. 글로 찍는 `--version` 은 그대로입니다. (#218)
 - **이번 실행에만 쓸 값을 파일로 줄 수 있습니다(`--params <file>`).** `draft generate`, `draft revise`, `state generate`, `params show` 가 받습니다. 파일은 `{ "<키>": 값 }` 형태의 JSON 이고, 설정 키와 `generation.*` 손잡이, `prompt.<이름>.temperature|maxTokens` 를 한 파일에 섞어 적을 수 있습니다. 작품·공통 설정과 모델 실측값 위에 얹혀 그 실행에만 적용되고 어떤 파일에도 저장되지 않습니다. 모르는 키, 범위를 벗어난 값, 읽을 수 없는 파일은 실행 전에 거절합니다(종료 코드 1). `params show --params <file>` 은 그 파일이 얹힌 값을 출처 «이번 실행»으로 보여 줍니다. (#218)
 - **`params show --json` 이 값의 종류와 범위를 함께 냅니다.** 항목마다 `valueKind`(`ratio`·`count`·`chars`·`weight`·`temperature`·`tokens`·`boolean`·`integer`·`decimal`·`string`·`effort`)와, 범위가 있으면 `minimum`·`maximum` 이 실립니다. `--params` 가 거절하는 경계와 같은 값입니다. (#218)

@@ -1,7 +1,9 @@
 import {
   acceptsMaxTokens,
   acceptsTemperature,
+  aiTaskNames,
   generationParameterCatalog,
+  storyboardModelPricing,
   storyboardSettingCatalog,
 } from '@storyboard/story-model';
 import {
@@ -10,12 +12,15 @@ import {
   promptTuning,
   type ConfigBridge,
   type PromptConfig,
+  type TaskAiConfigResolved,
 } from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-engine';
 import type {
   AiProviderId,
+  AiTaskName,
   ConfigValueOrigin,
   GenerationKnobs,
+  ModelPricePerMillion,
   StoryUri,
 } from '@storyboard/story-model';
 
@@ -57,8 +62,16 @@ export interface ParameterEntry {
   readonly maximum?: number;
 }
 
+export interface TaskModelEntry {
+  readonly task: AiTaskName;
+  readonly providerId: AiProviderId;
+  readonly model: string;
+  readonly price?: ModelPricePerMillion;
+}
+
 export interface ParameterReport {
   readonly parameters: readonly ParameterEntry[];
+  readonly tasks: readonly TaskModelEntry[];
   readonly resources: ResourceOverrideReport;
 }
 
@@ -87,8 +100,18 @@ export function describeParameters(input: DescribeParametersInput): ParameterRep
     parameters: entries.map((entry) =>
       runParameterKeys.has(entry.id) ? { ...entry, origin: 'run' } : entry,
     ),
+    tasks: taskModelEntries(input.configBridge),
     resources: input.resources,
   };
+}
+
+function taskModelEntries(configBridge: ConfigBridge): TaskModelEntry[] {
+  return aiTaskNames.map((task) => {
+    const { providerId, model }: TaskAiConfigResolved = configBridge.getTaskAiConfig(task);
+    const price: ModelPricePerMillion | undefined = storyboardModelPricing[providerId][model];
+
+    return { task, providerId, model, ...(price === undefined ? {} : { price }) };
+  });
 }
 
 function settingEntries(configBridge: ConfigBridge): ParameterEntry[] {
