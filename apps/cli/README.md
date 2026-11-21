@@ -73,7 +73,9 @@ for combinations that were never measured.
 `storyboard help <group>` lists one group (by its id — `start`, `plan`, `scene`, `draft`, `card`,
 `notes`, `manuscript`, `sim` — or its Korean name), `storyboard help --all` lists every command, and
 `storyboard <command> --help` (or `-h`) shows one command's options and examples. Lines wrap to the
-terminal width, and a mistyped verb suggests the closest real ones. `-v` prints the version.
+terminal width, and a mistyped verb suggests the closest real ones. `-v` prints the version;
+`--version --json` adds the commit the build came from and whether its tree had uncommitted
+changes (`commit`, `dirty`).
 
 ## Commands
 

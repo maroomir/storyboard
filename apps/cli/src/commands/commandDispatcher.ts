@@ -42,6 +42,7 @@ import {
 import { findCommand, findCommandSpec, commands } from '@/commands/index';
 import type { ICommandHandler } from '@/commands/commandHandler';
 import type { CommandOutcome } from '@/commands/outcome';
+import { success } from '@/commands/outcomes';
 import { markOutcome } from '@/commands/outcomeView';
 import { availableProviderIds } from '@/adapters/availableProviders';
 import { readRunParametersFile, type RunParametersRead } from '@/adapters/runParametersFile';
@@ -225,7 +226,7 @@ export class CommandDispatcher {
     const { args, verb } = invocation;
 
     if (flagBoolean(args.flags, 'version')) {
-      return { exitCode: 0, stdout: `${this.deps.version}\n`, stderr: '' };
+      return this.reportVersion(invocation.mode);
     }
 
     if (this.shouldLaunchTui(invocation)) {
@@ -237,6 +238,20 @@ export class CommandDispatcher {
     }
 
     return verb === 'completion' ? renderCompletionVerb(invocation) : undefined;
+  }
+
+  private reportVersion(mode: OutputMode): DispatchResult {
+    const { version, build = {} } = this.deps;
+    if (!mode.json) {
+      return { exitCode: 0, stdout: `${version}\n`, stderr: '' };
+    }
+
+    const outcome: CommandOutcome = success(version, {
+      version,
+      ...(build.commit === undefined ? {} : { commit: build.commit }),
+      ...(build.isDirty === undefined ? {} : { dirty: build.isDirty }),
+    });
+    return { exitCode: 0, stdout: reportText(outcome, mode), stderr: '' };
   }
 
   private shouldLaunchTui({ args, verb }: Invocation): boolean {
