@@ -9,6 +9,7 @@ import { readRuns } from '@storyboard/story-sim';
 
 import type { ParsedArguments } from '@/cliArguments';
 import { commands, findCommand } from '@/commands/index';
+import { findModelProfilesFile } from '@/commands/sim/simTrack';
 import { createCliContainer } from '@/container';
 import { writeTrackScene } from './fixtures/trackScenes';
 
@@ -463,5 +464,19 @@ describe('sim apply', () => {
 
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toContain('중앙값');
+  });
+
+  it('finds the engine profile file from a build inside the repository', async () => {
+    const repoRoot: string = join(__dirname, '..', '..', '..');
+    const originalEntry: string | undefined = process.argv[1];
+    process.argv[1] = join(repoRoot, 'apps', 'cli', 'dist', 'index.mjs');
+
+    try {
+      const found: string | undefined = await findModelProfilesFile();
+
+      expect(found).toBe(join(repoRoot, 'packages', 'story-model', 'src', 'contracts', 'modelProfiles.params.json'));
+    } finally {
+      process.argv[1] = originalEntry as string;
+    }
   });
 });

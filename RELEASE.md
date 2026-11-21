@@ -130,17 +130,17 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 
 ## One public repository
 
-`maroomir/storyboard` is public and is the whole product: the source under Apache-2.0, the
+`webfic/storyboard` is public and is the whole product: the source under Apache-2.0, the
 changelogs, `scripts/install.sh`, and the releases every app installs and updates from. There is
 no mirror; the former `webfic/storyboard` is gone, and a release is published once, here.
 
-- `scripts/install.sh` defaults to `STORYBOARD_REPO=maroomir/storyboard`; set the variable to
+- `scripts/install.sh` defaults to `STORYBOARD_REPO=webfic/storyboard`; set the variable to
   install from a fork's release instead.
 
 ## How users install
 
 - **Extension** — download the `.vsix` and install it from VS Code.
-- **CLI** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
+- **CLI** — `curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/scripts/install.sh | bash`.
   The script resolves the latest release, verifies the checksum, unpacks the CLI into
   `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node
   script, so the machine needs Node 20 or newer. With the tarball already downloaded (an offline

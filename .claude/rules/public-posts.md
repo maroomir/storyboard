@@ -1,6 +1,6 @@
 # Public Posts: Mask Personal Data
 
-`maroomir/storyboard` is a public repository. Everything an agent writes to it — issues, PRs,
+`webfic/storyboard` is a public repository. Everything an agent writes to it — issues, PRs,
 comments, reviews, releases, commit messages, test fixtures, docs — is public and keeps its edit
 history. Personal data never goes there, not even for a moment: an edited post still shows the
 original in its history.

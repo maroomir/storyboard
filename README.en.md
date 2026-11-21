@@ -23,10 +23,10 @@ credits their plan includes: [`API_KEY_GUIDE.md`](API_KEY_GUIDE.md) (Korean).
 **CLI** — needs Node 20 or newer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/scripts/install.sh | bash
 ```
 
-**VS Code extension** — download the `.vsix` from the [latest release](https://github.com/maroomir/storyboard/releases/latest) and install it:
+**VS Code extension** — download the `.vsix` from the [latest release](https://github.com/webfic/storyboard/releases/latest) and install it:
 
 ```bash
 code --install-extension storyboard-vscode-*.vsix

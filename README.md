@@ -22,10 +22,10 @@ Claude Max 구독자는 구독에 포함된 월 API 크레딧으로 키를 만�
 **CLI** — Node 20 이상이 필요합니다.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/scripts/install.sh | bash
 ```
 
-**VS Code 확장** — [최신 릴리즈](https://github.com/maroomir/storyboard/releases/latest)에서 `.vsix`를 받아 설치합니다.
+**VS Code 확장** — [최신 릴리즈](https://github.com/webfic/storyboard/releases/latest)에서 `.vsix`를 받아 설치합니다.
 
 ```bash
 code --install-extension storyboard-vscode-*.vsix
