@@ -291,7 +291,7 @@ class BeatActingSession {
 
   private recordReview(beat: ActedBeat, reviewed: BeatReview): void {
     if (reviewed.reasons.length > 0) {
-      this.run.warnings.push(`배우 뼈대 ${beat.number}번 대목: ${reviewed.reasons.join(' / ')}`);
+      this.run.warnings.push({ message: `배우 뼈대 ${beat.number}번 대목: ${reviewed.reasons.join(' / ')}` });
     }
     for (const score of reviewed.verdict?.scores ?? []) {
       if (shouldNoteScore(score.score) && beat.cast.includes(score.name)) {
@@ -312,7 +312,7 @@ export class ActBeatsStage implements ISceneStage {
     const beats: ActedBeat[] = planActedBeats(sourceBeats, run.context.characters);
 
     if (beats.length === 0) {
-      run.warnings.push('배우 뼈대: 씬 카드에 비트가 없어 뼈대 단계로 대신 썼습니다.');
+      run.warnings.push({ message: '배우 뼈대: 씬 카드에 비트가 없어 뼈대 단계로 대신 썼습니다.' });
       await new DraftSkeletonStage().run(run);
       return;
     }

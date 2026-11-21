@@ -12,13 +12,15 @@ import { describeMissingChapterSummaries, WorkspaceInput, cancelledBeforeRun } f
 import { resolveSceneStemFrom, sceneUriFor } from '@/commands/sceneArguments';
 import {
   describeReviseOutcome,
+  draftWarningMessages,
+  type DraftWarning,
   type GenerateAllDraftsResult,
   type GenerateAllDraftsSummary,
   type ReviseDraftWorkflowResult,
   type ReviseOutcome,
 } from '@storyboard/story-engine';
 import type { GenerateAndReviseDraftResult, ReadyDraft } from '@storyboard/story-app';
-import type { StoryUri } from '@storyboard/story-model';
+import type { DraftGenerationStepId, StoryUri } from '@storyboard/story-model';
 
 export class DraftGenerateCommand implements ICommandHandler {
   public readonly spec: CommandSpec = {
@@ -88,8 +90,8 @@ export class DraftGenerateCommand implements ICommandHandler {
           container.progress.update({ line: step, step });
         },
         onDraftReady: (draft) => {
-          for (const warning of draftWarningsOf(draft)) {
-            container.logger.warn(warning);
+          for (const message of draftWarningMessages(draftWarningsOf(draft))) {
+            container.logger.warn(message);
           }
         },
         onReviseProgress: (message) => container.progress.update({ line: message, step: message }),
@@ -107,8 +109,9 @@ export class DraftGenerateCommand implements ICommandHandler {
     draft: ReadyDraft,
     revision: ReviseDraftWorkflowResult | undefined,
   ): CommandOutcome {
-    const warnings: readonly string[] = draftWarningsOf(draft);
+    const warnings: readonly DraftWarning[] = draftWarningsOf(draft);
     const revise: ReviseOutcome | undefined = revision && describeReviseOutcome(revision);
+    const reviseStage: DraftGenerationStepId = 'reviseLoop';
 
     if (revise?.warning) {
       container.logger.warn(revise.warning);
@@ -118,14 +121,16 @@ export class DraftGenerateCommand implements ICommandHandler {
       draft.kind === 'cache_hit' ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
       {
         draft: (draft.draftUri as StoryUri).fsPath,
-        warnings: revise?.warning ? [...warnings, revise.warning] : warnings,
+        warnings: revise?.warning
+          ? [...warnings, { message: revise.warning, stage: reviseStage }]
+          : warnings,
         ...(revise === undefined ? {} : { revise }),
       },
     );
   }
 }
 
-function draftWarningsOf(draft: ReadyDraft): readonly string[] {
+function draftWarningsOf(draft: ReadyDraft): readonly DraftWarning[] {
   return draft.kind === 'generated' ? draft.warnings : [];
 }
 

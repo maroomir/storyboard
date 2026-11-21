@@ -47,6 +47,7 @@ import {
   type SceneGenerationPipelineTaskProviders,
 } from '#engine/pipeline/sceneGenerationTypes';
 import {
+  draftWarningMessages,
   emptyDraftBodyMessage,
   type GenerateDraftRequest,
   type GenerateDraftResult,
@@ -243,7 +244,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       ok: true,
       kind: 'generated',
       draftUri,
-      warnings: [...inputs.warnings, ...pipelineResult.warnings],
+      warnings: [...inputs.warnings.map((message) => ({ message })), ...pipelineResult.warnings],
     };
   }
 
@@ -269,7 +270,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       sceneStem: inputs.scene.stem,
       format: inputs.project.format,
       body: pipelineResult.draftBody,
-      warnings: pipelineResult.warnings,
+      warnings: draftWarningMessages(pipelineResult.warnings),
       generator: this.host.generator,
       providerId: sceneDraftConfig.providerId,
       model: sceneDraftConfig.model,

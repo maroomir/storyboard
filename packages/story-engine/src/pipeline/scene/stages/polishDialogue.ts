@@ -14,10 +14,11 @@ import {
   buildGenerateOptions,
   withAttribution,
 } from '#engine/pipeline/sceneGenerationStages';
-import type { DialoguePolishSummary } from '#engine/pipeline/sceneGenerationTypes';
+import type { DialoguePolishSummary, SceneWarning } from '#engine/pipeline/sceneGenerationTypes';
 import {
   findPolishedLineViolations,
   validatePolishedSkeleton,
+  violationKindsOf,
   type SectionViolation,
 } from '#engine/pipeline/sectionValidation';
 import type { SceneStageId } from '#engine/pipeline/sceneStageCatalog';
@@ -33,7 +34,7 @@ const firstAttemptNumber: number = 1;
 
 export interface DialoguePolishOutcome {
   readonly text: string;
-  readonly warnings: readonly string[];
+  readonly warnings: readonly SceneWarning[];
   readonly summary: DialoguePolishSummary | undefined;
 }
 
@@ -125,20 +126,22 @@ class DialoguePolishTally {
     return this.accepted;
   }
 
-  public describeWarnings(): string[] {
+  public describeWarnings(): SceneWarning[] {
     return [
-      ...[...this.rejected.entries()].map(([name, violations]) => {
+      ...[...this.rejected.entries()].map(([name, violations]): SceneWarning => {
         const details: string = violations.map((violation) => violation.detail).join(' / ');
         const kept: PartialRewrites | undefined = this.partial.get(name);
-        return kept === undefined
-          ? `${name}의 대사 다듬기를 되돌렸습니다 — ${details}`
-          : `${name}의 대사 ${kept.heldBack}개를 뼈대대로 두었습니다 — ${details}`;
+        const message: string =
+          kept === undefined
+            ? `${name}의 대사 다듬기를 되돌렸습니다 — ${details}`
+            : `${name}의 대사 ${kept.heldBack}개를 뼈대대로 두었습니다 — ${details}`;
+        return { message, kinds: violationKindsOf(violations) };
       }),
       ...[...this.truncated]
         .filter((name) => !this.rejected.has(name))
-        .map(
-          (name) => `${name}의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다`,
-        ),
+        .map((name): SceneWarning => ({
+          message: `${name}의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다`,
+        })),
     ];
   }
 }
@@ -377,7 +380,7 @@ export class PolishDialogueStage implements ISceneStage {
     tally: DialoguePolishTally,
   ): DialoguePolishOutcome {
     const { run, numbered }: DialoguePolishContext = context;
-    const warnings: string[] = tally.describeWarnings();
+    const warnings: SceneWarning[] = tally.describeWarnings();
     const merged: DialogueRewriteMerge = mergeDialogueRewrites(
       run.skeleton,
       numbered,
@@ -390,9 +393,10 @@ export class PolishDialogueStage implements ISceneStage {
         text: run.skeleton,
         warnings: [
           ...warnings,
-          ...combinedViolations.map(
-            (violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`,
-          ),
+          ...combinedViolations.map((violation) => ({
+            message: `대사 다듬기를 되돌렸습니다 — ${violation.detail}`,
+            kinds: [violation.kind],
+          })),
         ],
         summary: { lineCount: numbered.dialogues.length, polishedCount: 0, contestedCount: 0 },
       };
@@ -404,7 +408,7 @@ export class PolishDialogueStage implements ISceneStage {
   private buildPolishedOutcome(
     numbered: NumberedSkeleton,
     merged: DialogueRewriteMerge,
-    warnings: readonly string[],
+    warnings: readonly SceneWarning[],
   ): DialoguePolishOutcome {
     return {
       text: merged.text,
@@ -413,7 +417,9 @@ export class PolishDialogueStage implements ISceneStage {
         ...(merged.contestedIndices.length === 0
           ? []
           : [
-              `대사 ${merged.contestedIndices.join(', ')}번은 두 인물이 자기 대사라고 해 뼈대 그대로 두었습니다`,
+              {
+                message: `대사 ${merged.contestedIndices.join(', ')}번은 두 인물이 자기 대사라고 해 뼈대 그대로 두었습니다`,
+              },
             ]),
       ],
       summary: {

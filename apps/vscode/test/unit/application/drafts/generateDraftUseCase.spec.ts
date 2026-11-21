@@ -123,7 +123,7 @@ const pipelineSuccessResult = {
   sceneCoordinates: [] as readonly string[],
   situations: [],
   personasUsed: new Map<string, string>(),
-  warnings: [] as readonly string[],
+  warnings: [] as readonly never[],
   providers: {}
 }
 
@@ -714,9 +714,9 @@ describe("GenerateDraftUseCase", () => {
       const result = await execute(dependencies, createRequest({ force: true }))
 
       expect(result.kind).toBe("generated")
-      expect((result as { warnings: string[] }).warnings).toContain(
-        "비트 1의 출연 «minsu»이(가) 이 씬의 인물 카드와 맞지 않아 그대로 프롬프트에 실렸습니다"
-      )
+      expect((result as { warnings: unknown[] }).warnings).toContainEqual({
+        message: "비트 1의 출연 «minsu»이(가) 이 씬의 인물 카드와 맞지 않아 그대로 프롬프트에 실렸습니다"
+      })
     })
 
     it("skips beats entirely when generation.beats.auto is off", async () => {

@@ -353,8 +353,9 @@ keeps the right people in the right place and the pipeline can decide the scene 
 from them; a name the model uses that matches no card stays as written and `doctor` reports it.
 
 `draft generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
-`--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
-runs, which is how you tell a 20-minute scene apart from a hung one.
+`--json`, in `data.warnings` as `{ message, stage?, kinds?, sectionNumber? }` (the stage that raised
+it, the violation kinds and the section, when known); the exit code stays 0. `--verbose` also
+logs each pipeline stage as it runs, which is how you tell a 20-minute scene apart from a hung one.
 
 `--workspace <path>` picks the workspace (default: the current directory). `--json` puts a single
 JSON object on stdout — for failures too (`{"ok":false,"message":…}`), so an agent never has to

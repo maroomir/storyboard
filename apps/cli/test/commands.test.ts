@@ -1144,7 +1144,14 @@ describe('draft generate warnings', () => {
             ok: true,
             kind: 'generated',
             draftUri: real.workspaceRoot,
-            warnings: ['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)'],
+            warnings: [
+              {
+                message: '1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)',
+                stage: 'expandSection',
+                kinds: ['too-short'],
+                sectionNumber: 1,
+              },
+            ],
           } as const;
           await request.onDraftReady?.(generation);
           request.onReviseProgress?.('검사 중 (1/1)');
@@ -1160,7 +1167,14 @@ describe('draft generate warnings', () => {
 
     expect(outcome.ok).toBe(true);
     expect(warned).toEqual(['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)', '검사 중 (1/1)']);
-    expect((outcome.data as { warnings: string[] }).warnings).toHaveLength(1);
+    expect((outcome.data as { warnings: unknown[] }).warnings).toEqual([
+      {
+        message: '1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)',
+        stage: 'expandSection',
+        kinds: ['too-short'],
+        sectionNumber: 1,
+      },
+    ]);
   });
 });
 
@@ -1229,10 +1243,14 @@ describe('draft generate after a failed review', () => {
     });
 
     expect(outcome.ok).toBe(true);
-    const data = outcome.data as { draft: string; warnings: string[]; revise: { status: string } };
+    const data = outcome.data as {
+      draft: string;
+      warnings: { message: string; stage?: string }[];
+      revise: { status: string };
+    };
     expect(data.draft).toBeTruthy();
     expect(data.revise.status).toBe('timeout');
-    expect(data.warnings).toHaveLength(1);
+    expect(data.warnings).toEqual([expect.objectContaining({ stage: 'reviseLoop' })]);
     expect(warned[0]).toContain('600초');
   });
 });
