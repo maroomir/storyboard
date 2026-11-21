@@ -297,7 +297,8 @@ storyboard scene rename night-market --to moon-market   # or: scene rename 3 --t
 A scene's target length is the `targetWordCount` of its card header. `scene set <scene> --target-words <n>`
 writes it (`--all` for every scene), and `scene unset <scene> target-words` removes it, after which the
 `[목표 분량]` line of the scene text or a length derived from the scene's text is used. `scene show`
-prints the target length in force and where it came from.
+prints the target length in force and where it came from; under `--json` it also lists the beats as
+`{ number, text, cast?, place?, time? }` (cast as card ids, place as the background card's name).
 
 ```bash
 storyboard scene set 3 --target-words 20000
