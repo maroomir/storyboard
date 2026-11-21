@@ -116,4 +116,5 @@ export interface UsageRecord {
   readonly usage?: AiUsage;
   readonly costUsd?: number;
   readonly attribution: UsageAttribution;
+  readonly stage?: string;
 }

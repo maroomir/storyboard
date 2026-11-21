@@ -1,4 +1,4 @@
-import type { StoryUri, AiProviderId, AiTaskName } from '@storyboard/story-model';
+import type { StoryUri, AiProviderId, AiTaskName, UsageRecord } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, TaskAiConfigResolved } from '@storyboard/story-ai';
@@ -15,7 +15,9 @@ export class AiGateway {
   public createService(workspaceUri: StoryUri): StoryboardAiService {
     return new StoryboardAiService(this.providerRegistry, {
       onUsage: (record): void => {
-        void this.usageSink.record(workspaceUri, record).catch((error: unknown) => {
+        const stage: string | undefined = this.traceRecorder.currentStageOf(workspaceUri);
+        const stagedRecord: UsageRecord = stage === undefined ? record : { ...record, stage };
+        void this.usageSink.record(workspaceUri, stagedRecord).catch((error: unknown) => {
           this.logger.error('사용량 기록에 실패했습니다.', error);
         });
       },

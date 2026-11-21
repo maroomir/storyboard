@@ -502,7 +502,7 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       const result: GenerateDraftResult = await generate();
       const status: TraceRunStatus = result.ok ? 'completed' : result.kind;
       await session.finish(status, result.ok || result.kind === 'cancelled' ? undefined : result.message);
-      return result;
+      return withTraceRunId(result, session.runId);
     } catch (error) {
       await session.finish('failed', extractErrorMessage(error));
       throw error;
@@ -524,4 +524,12 @@ export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, Gene
       ? { ok: true, inputs }
       : await this.inputsLoader.load(request.sceneUri, request);
   }
+}
+
+function withTraceRunId(result: GenerateDraftResult, traceRunId: string | undefined): GenerateDraftResult {
+  if (result.kind !== 'generated' || traceRunId === undefined) {
+    return result;
+  }
+
+  return { ...result, traceRunId };
 }

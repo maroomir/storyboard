@@ -1,15 +1,17 @@
-import type { UsageAmount } from '@storyboard/story-model';
+import type { UsageAmount, UsageRecord } from '@storyboard/story-model';
 
 import { addUsageAmount, emptyUsageAmount, usageAmountOfEntry } from '@storyboard/story-model';
 import type { IUsageSink } from '#engine/ports/usageSink';
 
 export interface UsageMeterSession {
   reading(): UsageAmount;
+  records(): readonly UsageRecord[];
   stop(): void;
 }
 
 interface ActiveSession {
   amount: UsageAmount;
+  readonly records: UsageRecord[];
   readonly onChange?: (reading: UsageAmount) => void;
 }
 
@@ -23,6 +25,7 @@ export class UsageMeter {
 
         for (const session of this.sessions) {
           session.amount = addUsageAmount(session.amount, amount);
+          session.records.push(usage);
           session.onChange?.(session.amount);
         }
 
@@ -32,11 +35,16 @@ export class UsageMeter {
   }
 
   public startSession(onChange?: (reading: UsageAmount) => void): UsageMeterSession {
-    const session: ActiveSession = { amount: emptyUsageAmount(), ...(onChange ? { onChange } : {}) };
+    const session: ActiveSession = {
+      amount: emptyUsageAmount(),
+      records: [],
+      ...(onChange ? { onChange } : {}),
+    };
     this.sessions.add(session);
 
     return {
       reading: () => session.amount,
+      records: () => session.records,
       stop: (): void => {
         this.sessions.delete(session);
       },

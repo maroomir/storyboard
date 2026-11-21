@@ -18,6 +18,7 @@ after the first public release.
 
 ### Changed
 
+- **`draft generate --json` reports the run's model calls by stage.** `data.usage` holds, for each stage (`stage`) and task (`task`), the number of calls, the input, output and cache-read tokens and, when every call's price is known, the cost (`costUsd`). The steps around the pipeline appear under their own names too (`reviseLoop`, `updateStoryState`). `data.cached` says whether the inputs matched and the existing draft was kept (`usage` is then empty), and with the generation trace on `data.traceRunId` names that run's folder. (#218)
 - **`draft generate --json` reports `data.warnings` as objects rather than sentences.** Each entry carries `message` (the sentence as before) and, when known, the `stage` that raised it (a scene stage id, `reviseLoop` for the revise loop), the violation `kinds` (names such as `cast`, `too-short`, `repeats-previous`) and the `sectionNumber`. A tool that read the sentences reads `message` now. The warnings printed on stderr and kept in the draft file are unchanged. (#218)
 
 ## [0.16.8] - 2026-11-20

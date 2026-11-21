@@ -39,6 +39,7 @@ export type GenerateDraftResult =
       readonly kind: 'generated';
       readonly draftUri: StoryUri;
       readonly warnings: readonly DraftWarning[];
+      readonly traceRunId?: string;
     }
   | { readonly ok: true; readonly kind: 'cache_hit'; readonly draftUri: StoryUri }
   | {

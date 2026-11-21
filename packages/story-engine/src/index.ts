@@ -3,6 +3,7 @@ export * from '#engine/ai/cardRecommendationBuilder';
 export * from '#engine/application/useCase';
 export * from '#engine/application/ai/aiGateway';
 export * from '#engine/application/ai/usageMeter';
+export * from '#engine/application/ai/stageUsage';
 export * from '#engine/application/cards/cardSidebarRepository';
 export * from '#engine/application/cards/collectCardProposalsUseCase';
 export * from '#engine/application/cards/narratorCardRepository';
